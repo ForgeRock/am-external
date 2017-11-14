@@ -1,0 +1,115 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+{{> headers/_TitleWithSubAndIcon title=entity.name type="console.authorization.common.policy" icon="gavel" detail=status }}
+
+<p class="panel-description">{{entity.description}}</p>
+
+<div class="tab-menu">
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="active">
+            <a href="#summaryTab" role="tab" data-toggle="tab" aria-expanded="false">
+                {{t "console.authorization.common.summary"}}
+            </a>
+        </li>
+        <li>
+            <a href="#resourcesTab" role="tab" data-toggle="tab" aria-expanded="false">
+                {{t "console.authorization.common.resources"}}
+            </a>
+        </li>
+        <li>
+            <a href="#actionsTab" role="tab" data-toggle="tab" aria-expanded="false">
+                {{t "console.authorization.common.actions"}}
+            </a>
+        </li>
+        <li>
+            <a href="#subjectsTab" role="tab" data-toggle="tab" aria-expanded="false">
+                {{t "console.authorization.common.subjects"}}
+            </a>
+        </li>
+        <li>
+            <a href="#environmentsTab" role="tab" data-toggle="tab" aria-expanded="false">
+                {{t "console.authorization.common.environments"}}
+            </a>
+        </li>
+        <li>
+            <a href="#responseAttributesTab" role="tab" data-toggle="tab" aria-expanded="false">
+                {{t "console.authorization.common.responseAttributes"}}
+            </a>
+        </li>
+    </ul>
+</div>
+
+<div class="panel panel-default fr-panel-tab">
+
+    <div class="panel-body tab-content">
+        <div role="tabpanel" class="tab-pane active" id="summaryTab"></div>
+
+        <div role="tabpanel" class="tab-pane" id="resourcesTab">
+            <p class="panel-description">{{t "console.authorization.policies.edit.resourcesDescription"}}</p>
+            <div class="form-horizontal">
+                <div class="form-group clearfix">
+                    <label class="col-sm-2 control-label" for="resTypesSelection">
+                        {{t "console.authorization.common.resourceType"}}
+                    </label>
+
+                    <div class="col-sm-9">
+                        <select class="selectize" id="resTypesSelection">
+                            {{#each options.availableResourceTypes}}
+                                <option {{#equals uuid ../entity.resourceTypeUuid}}selected{{/equals}} value="{{uuid}}">{{name}}</option>
+                            {{/each}}
+                        </select>
+
+                        <span class="input-helper-text">
+                            {{t "console.authorization.policies.edit.selectResourceTypeHelper"}}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div id="editResources" class="form-horizontal clearfix"></div>
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="actionsTab">
+            <div class="form-inline">
+                <p class="panel-description">{{t "console.authorization.policies.edit.actionsDescription"}}</p>
+                <div id="actions" class="clearfix"></div>
+            </div>
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="subjectsTab">
+            <p class="panel-description">{{t "console.authorization.policies.edit.subjectConditionsDescription"}}</p>
+            <div id="subjectContainer" class="clearfix"></div>
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="environmentsTab">
+            <p class="panel-description">{{t "console.authorization.policies.edit.environmentConditionsDescription"}}</p>
+            <div id="environmentContainer" class="clearfix"></div>
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="responseAttributesTab">
+            <div id="userAttrs" class="block"></div>
+
+            <div class="block">
+                <h3 class="block-header">{{t "console.authorization.common.staticAttributes"}}</h3>
+                <div data-static-attributes></div>
+            </div>
+
+            <div id="customAttrs" class="block"></div>
+        </div>
+    </div>
+
+    <div id="policyFooter"></div>
+    <div id="settingsModal"></div>
+</div>

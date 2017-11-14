@@ -1,0 +1,66 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+<div id="menu" class="menubar"></div>
+<div class="container">
+   <div class="page-header-min">
+       <h3><a href="{{ routeTo 'umaResourcesMyResources' }}">{{t 'uma.resources.title'}}</a></h3>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-3 col-md-2">
+            <nav class="sidenav" role="navigation">
+                <ol class="list-unstyled">
+                    <li>
+                        <a class="text-primary"
+                           data-toggle="collapse"
+                           href="{{ routeTo 'umaResourcesMyResources' }}"
+                           aria-expanded="true"
+                           aria-controls="applications"
+                           data-target="#applications">
+                            <i class="fa fa-folder"></i>{{t "uma.resources.myresources.title"}}
+                        </a>
+                        <ol class="collapse in list-unstyled sidenav-submenu" id="applications">
+                        {{#each labels.system}}
+                            <li><a class="text-primary" href="{{routeTo 'umaResourcesMyResources' 'myresources' _id}}">{{name}}</a></li>
+                        {{/each}}
+                        </ol>
+                    </li>
+
+                    <li><a class="text-primary" href="{{ routeTo 'umaResourcesSharedWithMe' }}"><i class="fa fa-folder"></i>{{t "uma.resources.sharedWithMe.title"}}</a></li>
+                    <li><a class="text-primary" href="{{ routeTo 'umaResourcesStarred' }}"><i class="fa fa-star"></i>{{t "uma.resources.starred.title"}}</a></li>
+
+                    <li>
+                        <a class="text-primary"
+                           data-toggle="collapse"
+                           aria-expanded="false"
+                           aria-controls="labels"
+                           data-target="#labels">
+                            <i class="fa fa-tags"></i>{{t "uma.resources.myLabels.title"}}
+                        </a>
+                        <ol class="collapse in list-unstyled sidenav-submenu" id="labels">
+                        {{#each nestedLabels}}
+                            {{> templates/user/uma/views/resource/_NestedList }}
+                        {{/each}}
+                        </ol>
+                    </li>
+               </ol>
+           </nav>
+        </div>
+       <div id="uma">
+           <div id="sidePageContent" class="col-sm-9 col-md-10"></div>
+       </div>
+    </div>
+</div>

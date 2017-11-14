@@ -1,0 +1,1476 @@
+{
+    "config" : {
+        "dates" : {
+            "monthNames" : "January, February, March, April, May, June, July, August, September, October, November, December",
+            "monthNamesShort" : "Jan., Feb., Mar., Apr., May., Jun., Jul., Aug., Sep., Oct., Nov., Dec.",
+            "dayNames" : "Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday",
+            "dayNamesShort" : "Sun. , Mon., Tue., Wed., Thu., Fri., Sat."
+        },
+        "messages" : {
+            "AppMessages" : {
+                "invalidRealm": "The realm doesn't exist",
+                "duplicateRealm": "Duplicate realm",
+                "deleteFail": "Failed to delete",
+                "duplicateItem": "Duplicate item",
+                "invalidItem": "Invalid item",
+                "changesSaved": "Changes saved"
+            },
+            "CommonMessages" : {
+                "authenticationFailed" : "User name/password combination is invalid.",
+                "serviceUnavailable" : "Service unavailable",
+                "unknown" : "Unknown error. Please contact your Administrator",
+                "loggedIn" : "You have been successfully logged in.",
+                "errorFetchingData" : "Error fetching user data",
+                "loggedOut" : "You have been logged out.",
+                "loginTimeout" : "Login processed timed out. Restarting...",
+                "unauthorized" : "Unauthorized access",
+                "internalError" : "Internal server error",
+                "forbiddenError" : "Forbidden request error.",
+                "notFoundError" : "Not found error.",
+                "badRequestError" : "Bad request error.",
+                "conflictError" : "Detected conflict in request.",
+                "incorrectRevisionError" : "Cannot update the record because the version is not the latest.",
+                "tokenNotFound" : "Token not found.",
+                "securityDataChanged" : "Password was changed"
+            },
+            "UserMessages" : {
+                "invalidOldPassword" : "Old password is invalid.",
+                "usernameNotFound" : "Username not found",
+                "noEmailProvided" : "No email provided in profile",
+                "emailNotSent" : "Email not sent",
+                "unableToRegister" : "Unable to register at this time. Please contact your Administrator",
+                "changedPassword" : "Password has been changed",
+                "profileUpdateFailed" : "Problem during profile update",
+                "profileUpdateSuccessful" : "Profile has been updated",
+                "userNameUpdated" : "Username has been modified successfully.",
+                "afterRegistration" : "Your account has been registered successfully.",
+                "siteIdentificationChanged" : "Site identification image has been changed",
+                "userAlreadyExists" : "User already exists",
+                "errorDeletingNotification" : "Error deleting notification.",
+                "errorFetchingNotifications" : "Error Fetching notifications.",
+                "identityNoSpace" : "Identity names may not have a space <br> character at the beginning or end.",
+                "selfRegistrationDisabled"  : "Self Registration is disabled."
+            },
+            "AdminMessages" : {
+                "cannotDeleteYourself" : "You can't delete yourself",
+                "userDeleted" : "User has been deleted",
+                "userDeleteError" : "Error when deleting user",
+                "userApplicationsUpdate" : "Application settings have been changed.",
+                "completedTask" : "Task has been completed.",
+                "claimedTask" : "Task has been claimed.",
+                "unclaimedTask" : "Task has been unclaimed.",
+                "startedProcess" : "Process has been started",
+                "scripts": {
+                    "error": {
+                        "noName": "Name is required",
+                        "noLanguage": "Language is required"
+                    }
+                },
+                "policies": {
+                    "unableToRetrievePolicy": "Unable to retrieve policy",
+                    "invalidResource": "Invalid resource",
+                    "duplicateResource": "Duplicate resource",
+                    "duplicateAttribute": "Duplicate attribute",
+                    "unableToPersistPolicy": "Unable to persist policy in datastore",
+                    "policiesUploaded": "Policies uploaded successfully",
+                    "policiesUploadFailed": "Failed to upload policies",
+                    "importFailed": "Import Failed: __applicationName__ policy set not found in realm",
+                    "error": {
+                        "cantStartWithHash": "LDAP entity can't start with #",
+                        "noName": "Name is required",
+                        "noId": "ID is required",
+                        "noResourceTypes": "Please select one or more resource types",
+                        "noResources": "Please select one or more resources",
+                        "noActions": "Please add one or more actions",
+                        "noPatterns": "Please add one or more patterns"
+                    }
+                }
+            }
+        },
+        "AppConfiguration" : {
+            "Navigation" : {
+                "links" : {
+                    "commonTasks": "Common Tasks",
+                    "realms": {
+                        "title": "Realms",
+                        "showAll": "Show All",
+                        "newRealm": "New Realm",
+                        "viewAll": "View all..."
+                    },
+                    "configure": {
+                        "title": "Configure",
+                        "authentication": "Authentication",
+                        "server-defaults": "Server Defaults",
+                        "global-services": "Global Services"
+                    },
+                    "deployment": {
+                        "title" : "deployment",
+                        "servers" : "Servers",
+                        "sites" : "Sites"
+                    },
+                    "configuration": "Configuration",
+                    "dashboard" : "Dashboard",
+                    "users" : "Users",
+                    "apps" : "Applications",
+                    "allApps" : "All applications",
+                    "addMore" : "Add more apps",
+                    "groups" : "Groups",
+                    "tasksMenu" : "Tasks",
+                    "allTasks" : "Tasks that are in my group's queue",
+                    "myTasks" : "My tasks",
+                    "startProcess" : "Start process",
+                    "oauthtokens" : "OAuth 2 Token Manager",
+                    "uma" : "Shares",
+                    "umaLinks": {
+                        "history" : "History",
+                        "resources" : "Resources",
+                        "requests" : "Requests"
+                    },
+                    "console": "Console"
+                },
+                "username" : {
+                    "label" : "Signed in as"
+                },
+                "helpLinks" : {
+                    "apiExplorer" : "API EXPLORER",
+                    "apiDocs" : "API DOCS"
+                }
+            }
+        }
+    },
+    "templates" : {
+        "user" : {
+            "LoginDialog" : {
+                "refreshOnLogin" : "Should refresh on login"
+            },
+            "LoginTemplate" : {
+                "loginRemember" : "Remember my username",
+                "noAccountQuestion" : "Don't have an account?",
+                "registerAccount" : "Register your account",
+                "problemLoggingQuestion" : "Having trouble logging in?",
+                "socialAuthentication" : "Or login with:",
+                "resetPassword" : "Forgot Password?",
+                "forgotUsername" : "Forgot Username?",
+                "onMobileDevice": "On a mobile device?",
+                "waitingForResponse": "Waiting for response...",
+                "havingTrouble": "Having trouble?",
+                "getTheAppFromThe": "Get the app from the",
+                "orOn": "or on",
+                "appStore": "App Store",
+                "googlePlay": "Google Play",
+                "useRecoveryCode": "Use recovery code"
+            },
+            "404" : {
+                "pageNotFound" : "Page not found",
+                "requestedPageCouldNotBeFound" : "The requested page could not be found."
+            },
+            "403" : {
+                "title" : "Forbidden",
+                "description" : "You are not authorized to view this page."
+            },
+            "DefaultBaseTemplate" : {
+                "orPhone" : ", or phone"
+            },
+            "ChangeSecurityDataDialogTemplate" : {
+                "securityDataChange" : "Security data change",
+                "enterNewPasswordToChange" : "Please enter new password in the fields below to change your password.",
+                "selectQuestionAndAnserIfYouWant" : "Please select question and enter your answer if you want to set up a one.",
+                "securityQuestionAndAnserExplanation" : "The Security Question selected and corresponding Answer provided by you will be used to help identify you in the event that you forget your password."
+            },
+            "ConfirmPasswordDialogTemplate" : {
+                "title" : "Current Password",
+                "explanation1" : "Changing the following attributes requires re-authentication: ",
+                "explanation2" : "Please confirm your current password to continue."
+            },
+            "ChangeSiteIdentificationDialogTemplate" : {
+                "siteImageAndPhaseExplanation" : "The Site Image and Phrase selected will be shown to you upon login to confirm that you are logging in to the genuine site"
+            },
+            "EnterOldPasswordDialog" : {
+                "passwordAndSecurityQuestionChange" : "Password and security question change",
+                "enterYourOldPassword" : "Please enter your old password"
+            },
+            "TermsOfUseTemplate" : {
+                "termsOfUse" : "Terms of use",
+                "termsOfUseContent" : "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris idvulputate urna. Quisque tristique dictum sodales. Nullam tempus eleifend erat,vel facilisis nibh euismod non. Phasellus vitae elit velit, in sollicitudindiam. Maecenas ornare nunc non ipsum ornare vehicula id sed dolor. Duispellentesque congue sapien, dictum adipiscing est posuere sit amet. Suspendissein lectus lorem. Suspendisse vitae metus sapien, sit amet luctus libero.Integer nec nunc sed massa pellentesque pulvinar. Integer vulputate nunc atnunc lacinia eu luctus neque elementum. Aenean ultricies arcu sed enimultricies blandit placerat ut massa. Donec at dolor sit amet magna vulputateelementum sit amet in sapien. Donec sit amet erat neque.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris idvulputate urna. Quisque tristique dictum sodales. Nullam tempus eleifend erat,vel facilisis nibh euismod non. Phasellus vitae elit velit, in sollicitudindiam. Maecenas ornare nunc non ipsum ornare vehicula id sed dolor. Duispellentesque congue sapien, dictum adipiscing est posuere sit amet. Suspendissein lectus lorem. Suspendisse vitae metus sapien, sit amet luctus libero.Integer nec nunc sed massa pellentesque pulvinar. Integer vulputate nunc atnunc lacinia eu luctus neque elementum. Aenean ultricies arcu sed enimultricies blandit placerat ut massa. Donec at dolor sit amet magna vulputateelementum sit amet in sapien. Donec sit amet erat neque.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris idvulputate urna. Quisque tristique dictum sodales. Nullam tempus eleifend erat,vel facilisis nibh euismod non. Phasellus vitae elit velit, in sollicitudindiam. Maecenas ornare nunc non ipsum ornare vehicula id sed dolor. Duispellentesque congue sapien, dictum adipiscing est posuere sit amet. Suspendissein lectus lorem. Suspendisse vitae metus sapien, sit amet luctus libero.Integer nec nunc sed massa pellentesque pulvinar. Integer vulputate nunc atnunc lacinia eu luctus neque elementum. Aenean ultricies arcu sed enimultricies blandit placerat ut massa. Donec at dolor sit amet magna vulputateelementum sit amet in sapien. Donec sit amet erat neque.</p><p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris idvulputate urna. Quisque tristique dictum sodales. Nullam tempus eleifend erat,vel facilisis nibh euismod non. Phasellus vitae elit velit, in sollicitudindiam. Maecenas ornare nunc non ipsum ornare vehicula id sed dolor. Duispellentesque congue sapien, dictum adipiscing est posuere sit amet. Suspendissein lectus lorem. Suspendisse vitae metus sapien, sit amet luctus libero.Integer nec nunc sed massa pellentesque pulvinar. Integer vulputate nunc atnunc lacinia eu luctus neque elementum. Aenean ultricies arcu sed enimultricies blandit placerat ut massa. Donec at dolor sit amet magna vulputateelementum sit amet in sapien. Donec sit amet erat neque.</p>"
+            },
+            "UserProfileTemplate" : {
+                "changeEmailAddress" : "Change Email Address",
+                "changeSecurityData" : "Change Password",
+                "changeSiteIdentification" : "Change Site Identification"
+            },
+            "RestLogoutTemplate" : {
+                "loggedOut" : "You have been logged out."
+            },
+            "SessionExpiredTemplate" : {
+                "sessionExpired" : "Your session expired."
+            },
+            "ChangesPendingTemplate": {
+                "undo": "Undo Changes",
+                "changesPending": "Changes Pending"
+            }
+        },
+        "admin" : {
+            "tasks" : {
+                "ShowUserProfile" : {
+                    "requestInitiator" : "Request initiated by"
+                },
+                "TasksDashboardTemplate" : {
+                    "tasksFromGroupsQueue" : "Tasks that are in my group's queue"
+                },
+                "ProcessUserTaskTableTemplate" : {
+                    "requestCount" : "__count__  request",
+                    "requestCount_plural" : "__count__  requests"
+                }
+            },
+            "ChangeUserPasswordDialogTemplate" : {
+                "securityDataChange" : "Security data change",
+                "enterNewPasswordToChange" : "Please enter new password in the fields below to change user's password."
+            },
+            "UsersTemplate" : {
+                "remainingUsers" : "remaining users"
+            }
+        },
+        "oauth": {
+            "clientID" : "Client ID",
+            "tokenList" : "Authorized Apps",
+            "remainingTokens" : "remaining tokens",
+            "tokenID" : "Token ID",
+            "expireDate" : "Expire Date",
+            "scope" : "Scope",
+            "tokenType" : "Token Type",
+            "parent" : "Parent",
+            "username" : "Username",
+            "redirecturi" : "Redirect URI",
+            "refreshToken" : "Refresh Token",
+            "issued" : "Issued",
+            "realm" : "Realm",
+            "tokenInfo": "TokenInfo"
+        },
+        "login" : {
+            "newHere": "New here?",
+            "createAccount": "Create an account"
+        }
+    },
+    "common" : {
+        "form" : {
+            "accept" : "Accept",
+            "actions" : "Actions",
+            "activate": "Activate",
+            "active": "Active",
+            "add": "Add",
+            "addItem": "Add __item__",
+            "addKey" : "Add Key",
+            "addUser" : "Add user",
+            "addValue" : "Add Value",
+            "advanced": "Advanced",
+            "allow": "Allow",
+            "back" : "Back",
+            "build": "Build",
+            "cancel" : "Cancel",
+            "change": "Change",
+            "clear": "Clear",
+            "clone" : "Clone",
+            "close" : "Close",
+            "complete" : "Complete",
+            "confirm": "Confirm",
+            "continue" : "Continue",
+            "copyright" : "Copyright &copy; 2010-2017 ForgeRock AS. All rights reserved.",
+            "create" : "Create",
+            "createdAt" : "Created at",
+            "createNew": "Create New",
+            "deactivate": "Deactivate",
+            "decision" : "Decision",
+            "delete" : "Delete",
+            "deleteSelected" : "Delete Selected",
+            "deny": "Deny",
+            "details" : "Details",
+            "disable": "Disable",
+            "disabled": "Disabled",
+            "done" : "Done",
+            "download": "Download",
+            "edit": "Edit",
+            "editDetails": "Edit Details",
+            "empty" : "Empty",
+            "enable": "Enable",
+            "enableCookies" : "Cookies must be enabled to login",
+            "enabled": "Enabled",
+            "fail" : "Fail",
+            "false" : "False",
+            "filter": "Filter...",
+            "help" : "Help",
+            "home" : "Home",
+            "inactive": "Inactive",
+            "key":"Key",
+            "logout" : "Log out",
+            "more" : "more...",
+            "moveDown" : "Move Down",
+            "moveUp" : "Move Up",
+            "name" : "Name",
+            "next" : "Next",
+            "no" : "No",
+            "notApplicable": "n/a",
+            "ok" : "OK",
+            "pass" : "Pass",
+            "passwordPlaceholder": "••••••••••••",
+            "pleaseSelect" : "Please Select",
+            "properties": "Properties",
+            "propertyName": "Property Name",
+            "propertyValue": "Property Value",
+            "redirecting": "Redirecting...",
+            "register" : "Register",
+            "reject" : "Reject",
+            "reset" : "Reset",
+            "revert": "Revert",
+            "revoke" : "Revoke",
+            "save" : "Save",
+            "saveChanges": "Save Changes",
+            "search" : "Search",
+            "select" : "Select",
+            "selectAll": "Select all",
+            "sessionExpired" : "Session Expired",
+            "settings" : "Settings",
+            "standard": "Standard",
+            "start" : "Start",
+            "startTypingToSearch": "Start typing to search",
+            "submit" : "Submit",
+            "success" : "Success",
+            "true" : "True",
+            "type": "Type",
+            "update" : "Update",
+            "upload": "Upload",
+            "validate": "Validate",
+            "value": "Value",
+            "working" : "Working...",
+            "yes" : "Yes",
+            "validation" : {
+                "errorsNotSaved" : "Validation errors exist in form. Changes not saved.",
+                "VALID_PHONE_FORMAT": "Contains invalid characters",
+                "VALID_NAME_FORMAT": "Contains invalid characters",
+                "VALID_EMAIL_ADDRESS_FORMAT": "Not a valid email address",
+                "AT_LEAST_X_CAPITAL_LETTERS" : "At least __numCaps__ capital letters",
+                "AT_LEAST_X_NUMBERS" : "At least __numNums__ numbers",
+                "CANNOT_CONTAIN_OTHERS" : "Cannot contain values from: __disallowedFields__",
+                "MIN_LENGTH" : "At least __minLength__ characters",
+                "REQUIRED" : "Cannot be blank",
+                "UNIQUE" : "Already exists",
+                "REAUTH_REQUIRED" : "",
+                "formContainsErrors" : "Form contains validation errors",
+                "atLeastOneCapitalLetter" : "At least one capital letter",
+                "atLeastOneNumber" : "At least one number",
+                "atLeast8Characters" : "At least 8 characters",
+                "cannotMatchLogin" : "Cannot match login",
+                "confirmationMatchesPassword" : "Passwords must match",
+                "usernameExists" : "Username already exists",
+                "emailAddressAlreadyExists" : "Email address already exists",
+                "onlyAlphabeticCharacters" : "Only alphabetic characters",
+                "onlyNumbersAndSpecialCharacters" : "Only numbers and special characters",
+                "cannotMatchOldPassword" : "Cannot match old password",
+                "minimum4Characters" : "Minimum 4 characters",
+                "acceptanceRequiredForRegistration" : "Acceptance required for registration",
+                "incorrectPassword" : "Incorrect password",
+                "incorrectSecurityAnswer" : "Incorrect answer",
+                "required" : "Required",
+                "emailNotValid" : "Not a valid email address.",
+                "emailExists" : "Email address already exists.",
+                "shouldBeLong" : "Should be long value",
+                "wrongDateFormat" : "Wrong format"
+            },
+            "inheritValue": "Inherit value"
+        },
+        "grid": {
+            "pagination": {
+                "first": "First",
+                "previous": "Previous",
+                "next": "Next",
+                "last": "Last"
+            }
+        },
+        "user" : {
+            "userQuery" : {
+                "mainEnterPromptUsername": "Enter your $t(common.user.username)",
+                "mainEnterPromptEmailAddress": "Enter your $t(common.user.emailAddress)",
+                "optionalEnterPromptEmail": "or your $t(common.user.emailAddress)",
+                "orAllEnterPrompt" : "or all of the following information",
+                "title" : "Enter details to find your account",
+                "any" : "Any of these:"
+            },
+            "passwordReset" : {
+                "title": "Reset Your Password",
+                "completed": "Your password has been successfully reset.",
+                "failed": "Unable to reset your password",
+                "tryAgain": "Try Resetting Your Password Again",
+                "answerQuestions": "Answer the security questions below to reset your password."
+            },
+            "selfRegistration" : {
+                "title": "Register Your Account",
+                "completed": "Your account has been successfully registered.",
+                "failed": "Unable to register your account",
+                "tryAgain": "Try Registering Again"
+            },
+            "forgotUsername" : {
+                "title" : "Retrieve Your Username",
+                "checkEmail" : "An email containing your username has been sent to your account.",
+                "failed": "Unable to retrieve your username",
+                "found": "Username found:",
+                "tryAgain": "Try Finding Your Username Again",
+                "answerQuestions": "Answer the security questions below to retrieve your username."
+            },
+            "kba" : {
+                "description": "Select __numberOfQuestions__ or more security questions below. These questions will help us verify your identity if you forget your password.",
+                "provideAnother": "Add a question",
+                "selectQuestion": "Select a security question",
+                "provideYourOwn": "Provide your own",
+                "customQuestion": "Custom Security Question",
+                "answer": "Security Answer",
+                "securityQuestions": "Security Questions"
+            },
+            "switchRealm" : {
+                "title" : "Leaving Site",
+                "description" : "Leaving this site will log you out. Continue and log into the new site?",
+                "leave" : "Yes, log into the new site",
+                "goBack" : "No, go back"
+            },
+            "returnToLoginPage": "Return to Login Page",
+            "userIdValidation" : "Enter the username or email address associated with your account. We will send you an email with a link that will allow you to reset your password.",
+            "emailValidation" : "Enter your email address to proceed. We will send you an email with a link that will allow you to continue registering.",
+            "send": "Send",
+            "validateCode" : "An email has been sent to the address you entered. Click the link in that email to proceed.",
+            "user" : "User",
+            "login" : "Log in",
+            "loggedOutOfPreviousSite" : "We have logged you out of the previous site.",
+            "selfService" : "Self-service",
+            "administration": "Administration",
+            "basicInfo" : "Basic Info",
+            "myProfile" : "My Profile",
+            "userProfile" : "User profile",
+            "profile": "Profile",
+            "username" : "Username",
+            "emailAddress" : "Email address",
+            "givenName" : "First Name",
+            "sn" : "Last Name",
+            "changePassword" : "Change password",
+            "forgotPassword" : "Forgot password?",
+            "accountStatus" : "Account status",
+            "active" : "Active",
+            "inactive" : "Inactive",
+            "address" : "Address",
+            "address1" : "Address 1",
+            "address2" : "Address 2",
+            "country" : "Country",
+            "city" : "City",
+            "role" : "Admin Role",
+            "stateProvince" : "State/Province",
+            "phoneNumber" : "Phone number",
+            "postalCode" : "Postal Code",
+            "lastPasswordSet" : "Last password set",
+            "siteImage" : "Site Image",
+            "sitePhrase" : "Site Phrase",
+            "securityQuestion" : "Security question",
+            "securityAnswer" : "Security answer",
+            "adaptiveAuthMethod" : "Adaptive auth method",
+            "SMS" : "SMS",
+            "OAuth" : "OAuth",
+            "createNewAccount" : "Create new account",
+            "password" : "Password",
+            "confirmPassword" : "Confirm password",
+            "newPassword" : "New password",
+            "oldPassword" : "Old password",
+            "currentPassword" : "Current password",
+            "confirmNewPassword" : "Confirm new password",
+            "usersList" : "Users list",
+            "addUsers" : "Add users",
+            "name" : "Name",
+            "status" : "Status",
+            "email" : "Email",
+            "system" : "System",
+            "changePhoto" : "Change photo",
+            "SKYPE" : "SKYPE",
+            "googlePlus" : "Google+"
+        },
+        "task" : {
+            "unassigned" : "Unassigned",
+            "assignToMe" : "Assign to me",
+            "claim" : "Claim",
+            "unclaim" : "Unclaim",
+            "approve" : "Approve",
+            "deny" : "Deny",
+            "requeue" : "Requeue",
+            "taskName" : "Task Name",
+            "processName" : "Process Name",
+            "startProcess" : "Start Process",
+            "assignee" : "Assignee",
+            "taskDetails" : "Task Details",
+            "myTasks" : "My tasks",
+            "tasksList" : "Tasks list",
+            "processes" : "Processes"
+        },
+        "application" : {
+            "applicationName" : "Application Name",
+            "requestedBy" : "Requested by",
+            "yourFrequentlyUsedApplications" : "Your frequently used apps",
+            "applicationsYouHaveAdded" : "Apps you've added",
+            "defaultApplications" : "Default apps",
+            "addMoreApplications" : "Add more apps",
+            "allAvailableApps" : "All available apps",
+            "dropApplicationsHere" : "drop apps here"
+        },
+        "notification" : {
+            "notifications" : "Notifications",
+            "deleteThisMessage" : "Delete this message",
+            "type" : "Notification type",
+            "message" : "Message",
+            "types" : {
+                "info" : "Info",
+                "warning" : "Warning",
+                "error" : "Error"
+            }
+        },
+        "select": {
+            "allSelected": "All selected",
+            "noneSelected": "None selected",
+            "nSelected": "selected",
+            "selectAll": "Select all"
+        }
+    },
+    "openam" : {
+        "dashboard": {
+            "title": "Dashboard"
+        },
+        "apps" : {
+            "header" : "My Applications",
+            "noneFound": "You have no applications assigned to you"
+        },
+        "trusted" : {
+            "devices" : {
+                "header" : "Trusted Devices",
+                "deviceName" : "Name",
+                "lastUsed" : "Last Used",
+                "deleteDevice" : "Delete Device"
+            }
+        },
+        "oAuth2" : {
+            "tokens" : {
+                "appName" : "Application",
+                "scopes" : "Scopes",
+                "expires" : "Expires",
+                "deleteToken" : "Revoke Access",
+                "neverExpires": "Never"
+            }
+        },
+        "authentication": {
+            "input": {
+                "name": "Username",
+                "password": "Password"
+            },
+            "unavailable": "Unable to login"
+        },
+        "authDevices": {
+            "header": "Authentication Devices",
+            "noneFound": "You have not registered any devices",
+            "menu": {
+                "recoveryCodes": "Recovery Codes",
+                "delete": "Delete"
+            },
+            "devicesSettingDialog": {
+                "title": "Devices Settings",
+                "description": "Configure global settings across all your devices.",
+                "authentication": "2-Step Authentication",
+                "help": "Authenticate using one-time passwords generated by one of your registered devices."
+            },
+            "deviceDetailsDialog": {
+                "recoveryCodes": "Recovery codes",
+                "deviceName": "Device name",
+                "copyRecoveryCodes": "Keep a copy of these codes in a safe place. You will need to use one of your recovery codes to authenticate if you lose your device."
+            }
+        }
+    },
+    "uma": {
+        "common": {
+            "shares" : "Shares"
+        },
+        "share": {
+            "shareResource": "Share the resource",
+            "people": "Add or select people to share your resource with",
+            "permission": "Select Permission",
+            "labels": "Labels",
+            "share": "Share",
+            "info": "Shared with __count__ person",
+            "info_plural": "Shared with __count__ people",
+            "info_none": "Not shared",
+            "messages": {
+                "success": "Resource successfully shared",
+                "fail": "Failed to share resource"
+            },
+            "notSpecifiedResource": "You have not specified a resource to share."
+        },
+        "resources": {
+            "title": "Resources",
+            "grid": {
+                "header": ["Name", "Host", "Type", ""]
+            },
+            "myresources": {
+                "title": "My Resources",
+                "description": "Resources you own.",
+                "unshareAllResources": {
+                    "button": "Unshare All Resources",
+                    "dialog": {
+                        "title": "Unshare all resources?",
+                        "message": "Are you sure you want to unshare all resources? Selecting OK will not remove your resources, but will remove all the shares within your resources."
+                    },
+                    "messages": {
+                        "success" : "All resources successfully unshared",
+                        "fail" : "We have been unable to unshare all resources. Please contact your Administrator"
+                    }
+                }
+            },
+            "sharedWithMe": {
+                "title": "Shared with me",
+                "description": "Resources that have been shared with you."
+            },
+            "starred": {
+                "title": "Starred",
+                "description": "Your favorite resources."
+            },
+            "myLabels": {
+                "title": "My Labels",
+                "description": "Resources with this label applied to them.",
+                "deleteLabel": {
+                    "button": "Delete Label",
+                    "dialog": {
+                        "title": "Delete label?",
+                        "message": "Are you sure you want to delete this label? Deleting a resource label does not delete the resources themselves."
+                    },
+                    "messages": {
+                        "success" : "Label successfully deleted",
+                        "fail" : "We have been unable delete the label. Please contact your Administrator"
+                    }
+                },
+                "noResources": {
+                    "headline": "Nothing here!",
+                    "text": "There are no resources associated with this label."
+                }
+            },
+            "show": {
+                "subtitle": "Users allowed to access this resource and their permissions",
+                "grid": ["User", "Last accessed", "Permissions"],
+                "share": "Share",
+                "editLabels" : "Edit Labels",
+                "revoke": "Unshare Resource",
+                "revokeAllMessage": "Are you sure you want to revoke all access?",
+                "resource" : "Resource",
+                "revokeAllPoliciesSuccess" : "All access successfully revoked for your resource",
+                "revokeAllPoliciesFail" : "We have been unable revoke all access to your resource. Please contact your Administrator",
+                "revokePolicySuccess" : "Access successfully revoked for your resource",
+                "revokePolicyFail" : "We have been unable revoke access to your resource. Please contact your Administrator",
+                "revokeAllResourcesMessage": "Are you sure you want to revoke all access? Selecting OK will not remove your resources, but will remove all the shares within your resources."
+            }
+        },
+        "history": {
+            "title": "History",
+            "subtitle": "History of events on your resources",
+            "grid": {
+                "header": ["User", "Resource", "Action", "When"],
+                "types": {
+                    "authorisation_requested": "Requested authorisation",
+                    "authorisation_request_approved": "Granted authorisation",
+                    "authorisation_request_denied": "Denied authorisation",
+                    "authorisation_granted": "Granted authorisation",
+                    "authorisation_denied": "Denied authorisation",
+                    "policy_created": "Shared",
+                    "policy_updated": "Updated share"
+                }
+            }
+        },
+        "requests": {
+            "list": {
+                "title": "Requests",
+                "description": "Pending requests for access to your resources."
+            },
+            "show": {
+                "title": "Request",
+                "description": "Pending request for access to your resources."
+            },
+            "grid": {
+                "header": ["User", "Resource", "When", "Permissions", "Actions"]
+            }
+        }
+    },
+    "console": {
+        "common": {
+            "id": "Id",
+            "topLevelRealm": "Top Level Realm",
+            "realmStatus": "Status",
+            "realmDnsAliases": "Aliases/DNS Aliases",
+            "noResults": "No results to display",
+            "name": "Name",
+            "loading": "Loading...",
+            "navigation": {
+                "advanced": "Advanced",
+                "agents": "Agents",
+                "applications": "Applications",
+                "applications-agents": "Applications - Agents",
+                "applications-oauth2": "Applications - OAuth 2.0",
+                "authentication-chains": "Authentication - Chains",
+                "authentication-modules": "Authentication - Modules",
+                "authentication-trees": "Authentication - Trees",
+                "authentication-settings": "Authentication - Settings",
+                "authentication": "Authentication",
+                "authorization-policySets": "Authorization - Policy Sets",
+                "authorization-resourceTypes": "Authorization - Resource Types",
+                "authorization": "Authorization",
+                "chains": "Chains",
+                "cts": "CTS",
+                "dashboard": "Dashboard",
+                "dataStores": "Data Stores",
+                "directoryConfiguration": "Directory Configuration",
+                "edit" : "Edit",
+                "general": "General",
+                "global-services" : "Global Services",
+                "modules": "Modules",
+                "new" : "New",
+                "oauth20": "OAuth 2.0",
+                "policies": "Policies",
+                "policySets": "Policy Sets",
+                "privileges": "Privileges",
+                "realms": "Realms",
+                "remoteConsentAgents": "Remote Consent Agents",
+                "resourceTypes": "Resource Types",
+                "saml": "SAML",
+                "scripts": "Scripts",
+                "sdk": "SDK",
+                "security": "Security",
+                "server-settings" : "Server Settings",
+                "serverDefaults": "Server Defaults",
+                "servers": "Servers",
+                "services": "Services",
+                "session": "Session",
+                "sessions": "Sessions",
+                "settings": "Settings",
+                "sites": "Sites",
+                "sts": "STS",
+                "subjects": "Subjects",
+                "trees": "Trees",
+                "uma": "UMA",
+                "wsfed": "WS-Fed"
+            },
+            "description": "Description",
+            "type": "Type",
+            "editFullScreen": "Edit Fullscreen",
+            "exitFullScreen": "Exit Fullscreen",
+            "confirmAction": "Are you sure that you want to perform this action?",
+            "confirmDelete": "Confirm delete",
+            "confirmDeleteText": "Are you sure that you want to delete this __type__?",
+            "confirmDeleteSelected": "Are you sure that you want to delete these items?",
+            "configuration": "Configuration",
+            "secondaryConfigurations": "Secondary Configurations",
+            "realmDefaults": "Realm Defaults",
+            "dynamicAttributes": "Dynamic Attributes",
+            "globalAttributes": "Global Attributes",
+            "global": "Global"
+        },
+        "api": {
+            "explorer": {
+                "iFrameTitle": "Available API end-point actions"
+            }
+        },
+        "sites" : {
+            "common" : {
+                "confirmType": "site"
+            },
+            "edit": {
+                "title" : "Site Settings"
+            },
+            "list" :{
+                "title" : "Sites",
+                "new" : "Add a Site",
+                "table" : ["Name", "URL", "Secondary URLs", "Assigned Servers"],
+                "empty" : "No sites found",
+                "description": "Create Sites to contain a pool of servers that can respond to client requests in a highly-available fashion."
+            },
+            "new": {
+                "title": "New Site",
+                "nameValidationError": "Spaces are not allowed in the site's name"
+            }
+        },
+        "servers" : {
+            "common" : {
+                "confirmType": "server"
+            },
+            "list" : {
+                "title" : "Servers",
+                "new" : "Add a Server",
+                "table" : ["Url", "Site Name"],
+                "empty" : "No Servers found",
+                "clone" : "Clone",
+                "description": "Configure server-specific properties in OpenAM instances."
+            },
+            "new": {
+                "title" : "New Server",
+                "serverUrl": "Server URL"
+            },
+            "clone": {
+                "title" : "Clone Server",
+                "serverUrl": "Server URL"
+            }
+        },
+        "authentication": {
+            "common": {
+                "module": "module",
+                "chain": "chain"
+            },
+            "settings": {
+                "title": "Settings"
+            },
+            "modules": {
+                "title" : "Modules",
+                "newModule": "New Module",
+                "description" : "OpenAM uses authentication modules to identify the user. Normally authentication modules are associated with an authentication chain. Each realm has a default authentication chain that will be used to authenticate users. This section is used to add, configure or remove authentication module available for authentication into this realm.",
+                "addModuleTitle" : "New Module",
+                "addModuleError": "Authentication instance already exists.",
+                "selectModuleType" : "Select Module type",
+                "addModule" : "Add Module",
+                "moduleName" : "Module Name",
+                "moduleType" : "Type",
+                "chain" : "Chain",
+                "notFound" : "The module __name__ could not be found",
+                "inUse": {
+                    "title": "Edit module",
+                    "message": "The <code>__moduleName__</code> module is being used by the following Authentication Chain(s) <code>__usedChains__</code>. Editing this module may change their behaviour. <br><br>Are you sure you want to continue?"
+                },
+                "moduleNameValidationError" : "Spaces are not allowed in a module's name",
+                "confirmDeleteSelected": "Are you sure you want to delete the selected module?",
+                "confirmDeleteSelected_plural": "Are you sure you want to delete the selected modules?"
+            },
+            "chains": {
+                "title" : "Chains",
+                "newChain" : "Add Chain",
+                "chainName" : "Chain Name",
+                "description" : "Use authentication chains to define the steps a subject takes to authenticate. Authentication chains consist of a series of one or more authentication modules, with credentials being passed down the chain to each module instance.",
+                "defaultAdminAuthConfiguration" : "Default Administrator Authentication Chain",
+                "defaultOrgAuthConfiguration" : "Default Organization Authentication Chain",
+                "duplicateChain" : "A Chain with the same name already exists",
+                "confirmDeleteSelected": "Are you sure you want to delete the selected chain?",
+                "confirmDeleteSelected_plural": "Are you sure you want to delete the selected chains?"
+            },
+            "editChains": {
+                "options" : "Options",
+                "noOptions" : "No Options",
+                "selectCriteria" : "Select Criteria",
+                "addValue" : "Add Value",
+                "selectModule" : "Select Module",
+                "chains" : "Chains",
+                "editChain" : "Edit Chain",
+                "newModule" : "New Module",
+                "addModule": "Add a Module",
+                "editModule" : "Edit Module",
+                "gotoNextModule" : "Pass through to next module",
+                "gotoSuccessUrl" : "Go to Successful Login URL",
+                "gotoFailUrl" : "Go to Failed Login URL",
+                "redirectUrls" : "Redirect URLS",
+                "redirectUrlsHelp" : "Specify the URL to which the subject is redirected. You can specify separate URLs for authenticating successfully and when authentication fails.",
+                "successUrl" : "Successful Login URL",
+                "failUrl" : "Failed Login URL",
+                "addUrl" : "Add URL",
+                "dropHere" : "Drop here",
+                "moduleHelp" : "Add authentication modules to build a process in which a user must pass credentials to all module instances.",
+                "processingClass": {
+                    "title": "Post Authentication Processing Class",
+                    "className": "Class Name",
+                    "addClassNameDialog": {
+                        "title": "Add new Class Name",
+                        "message": "The new class name <mark>__newClassName__</mark> for Post Authentication Processing has not been saved. Do you want to save it?"
+                    },
+                    "duplicateClass" : "A Class with the same name already exists",
+                    "help" : "Specify the name of a Java class to execute at the end of the authentication process."
+                },
+                "criteria" : [
+                    {
+                        "title": "Required",
+                        "passText" : "Pass this module and you will get a pass flag, and continue in the chain.",
+                        "failText" : "Fail this module and you will get a fail flag, and continue in the chain."
+                    },
+                    {
+                        "title": "Optional",
+                        "passText" : "Pass this module and you will get a pass flag, and continue in the chain.",
+                        "failText" : "Fail this module and you will continue in the chain."
+                    },
+                    {
+                        "title": "Requisite",
+                        "passText" : "Pass this module and you will get a pass flag, and continue in the chain.",
+                        "failText" : "Fail this module and you will get a fail flag, and exit the chain."
+
+                    },
+                    {
+                        "title": "Sufficient",
+                        "passText" : "Pass this module and you will get a pass flag, and exit the chain.",
+                        "failText" : "Fail this module and you will continue in the chain."
+                    }
+                ],
+                "alerts" : {
+                    "reqdFailSuffPass" : "Warning: Passing a SUFFICIENT module after the failing a REQUIRED module will continue through the chain and will not exit at that point. Consider using REQUISITE instead of REQUIRED."
+                },
+                "callToAction" : "Chains require at least one module",
+                "lastCriteria" : "Will advance to success or failure URL",
+                "deletedChain": "Chain deleted successfully",
+                "deleteBtnTooltip": {
+                    "defaultAdminAuthChain": "This is the default authentication chain for Administrators.",
+                    "defaultOrgAuthChain": "This is the default authentication chain for Organizations.",
+                    "defaultAdminOrgAuthChain": "This is the default authentication chain for Administrators and Organizations."
+                },
+                "legend" : ["Successful authentication requires:","At least one PASS flag", "No FAIL flags"]
+            },
+            "trees": {
+                "edit": {
+                    "nodes": {
+                        "failure": {
+                            "title": "Failure"
+                        },
+                        "success": {
+                            "title": "Success"
+                        },
+                        "start": {
+                            "title": "Start"
+                        },
+                        "properties": {
+                            "noProperties": "There are no properties to display."
+                        },
+                        "nodeTypes": {
+                            "title": "Components"
+                        }
+                    },
+                    "toolbar": {
+                        "deleteNode": "Delete Node",
+                        "fullscreen": "Toggle fullscreen",
+                        "autoLayout": "Auto layout"
+                    },
+                    "type": "Trees"
+                },
+                "list": {
+                    "title": "Trees",
+                    "confirmDeleteSelected": "Are you sure you want to delete the selected Tree?",
+                    "confirmDeleteSelected_plural": "Are you sure you want to delete the selected Trees?",
+                    "callToAction": {
+                        "title": "No Trees configured.",
+                        "description": "Create Trees to define the steps a subject takes to authenticate.",
+                        "button" : "Create Tree"
+                    },
+                    "grid": ["Name"]
+                },
+                "new": {
+                    "title": "New Tree",
+                    "treeName": "Tree Name"
+                }
+            }
+        },
+        "dashboard": {
+            "realmProperties" : "Properties",
+            "title" : "Realm Overview",
+            "quickStart" : "Common Tasks"
+        },
+        "services": {
+            "edit": {
+                "title": "Service",
+                "titleNew": "New Service",
+                "chooseServiceType": "Choose a service type",
+                "serviceTypes": "Service Types...",
+                "settings": "Settings",
+                "unavaliable": "No services available to add",
+                "unavaliableAlert": "No services available to add. To view a list of the existing services, click Cancel."
+            },
+            "list": {
+                "service": "Service",
+                "title": "Services",
+                "description": "Configure realm-specific properties for OpenAM functionality.",
+                "addService": "Add a Service",
+                "addServicePrompt": "No services found",
+                "grid": {
+                    "header": ["Name"]
+                },
+                "confirmDeleteSelected": "Are you sure you want to delete the selected service?",
+                "confirmDeleteSelected_plural": "Are you sure you want to delete the selected services?"
+            },
+            "subSchema": {
+                "add": "Add a Secondary Configuration",
+                "title": "__subSchema__ configuration",
+                "new": {
+                    "title": "New __subSchema__ configuration"
+                },
+                "confirmDeleteSelected": "Are you sure you want to delete the selected configuration?",
+                "callToAction": "No secondary configurations found"
+            }
+        },
+        "realms": {
+            "title": "Realms",
+            "description" : "Use realms to organize subjects and configuration data. Within each realm you can configure data stores, administration privileges, authentication chains, authorization policies, and other realm-specific settings.",
+            "newRealm": "New Realm",
+            "grid": {
+                "header": ["Realm name", "Status", "Path", "Realm/DNS Aliases"]
+            },
+            "parentRealmCannotDeleted": "Parent-realms cannot be deleted. Please delete any sub-realms first.",
+            "edit": {
+                "title": "Realm",
+                "realmAliases": {
+                    "title": "Realm Aliases",
+                    "description": "List of text aliases for the realm.<br/>Must not include full stops."
+                },
+                "dnsAliases": {
+                    "title": "DNS Aliases",
+                    "description": "List of fully-qualified DNS aliases for the realm.<br/>Editing the list of DNS aliases also applies appropriate changes to the advanced default server property <code>com.sun.identity.server.fqdnMap</code>."
+                },
+                "errors": {
+                    "statelessSessions" : "Stateless Sessions settings failed to save",
+                    "fqdnMap" : "Fully-qualified DNS alias settings failed to save"
+                }
+            },
+            "warningDialog": {
+                "title": "Delete \"__realmName__\"?",
+                "activateMessage": "This is an active realm. All configuration data will be lost if deleted. You can set the realm as inactive to prevent login but retain configuration data. <br>Do you want to delete this realm?",
+                "deactivateMessage": "This is an inactive realm. No one can currently login. All configuration data will be lost if deleted. <br>Are you sure you want to delete this realm?"
+            },
+            "realmStatusPopover": {
+                "title": "Realm Status",
+                "content": "If the realm is inactive, all OpenAM services will be unavailable for all users in this realm."
+            },
+            "realmAliasesPopover": {
+                "title": "Realm/DNS Aliases",
+                "content": "When a request is received by the authentication user interface, OpenAM searches this attribute in all realms to find the matching realm into which the user should be authenticated. <br> OpenAM must only find one matching realm so therefore do not put duplicate entries into multiple realms. <br> Additionally if OpenAM does not find a matching realm, the user is presented with an error screen."
+            },
+            "realmNameValidationError" : "Characters $, &, +, \\, \", comma, /, :, ;, =, ?, @, space, #, %, <, > are not allowed in a realm's name."
+        },
+        "scripts": {
+            "edit": {
+                "title": "New Script",
+                "language": "Language",
+                "script": "Script",
+                "scriptType": "Script Type",
+                "validation": {
+                    "line": "line",
+                    "column": "column",
+                    "message": "message",
+                    "errors": "This script contains errors:",
+                    "noErrors": "No errors found."
+                },
+                "dialog": {
+                    "title":  "Change Script Type",
+                    "warning": "By changing the script type you will lose any unsaved data."
+                }
+            },
+            "list": {
+                "title": "Scripts",
+                "addNew": "New Script",
+                "grid": ["Name", "Script Type", "Language", "Description"],
+                "confirmDeleteText": "Are you sure you want to delete the selected scripts?"
+            }
+        },
+        "configuration" : {
+            "authentication" : {
+                "description": "Configure default properties for global authentication functionality.",
+                "core": {
+                    "coreAttributes": "Core Attributes",
+                    "title": "Realm Authentication Defaults",
+                    "description": "Configure default authentication properties applied when creating new realms."
+                },
+                "modules": {
+                    "title": "Authentication Module Defaults",
+                    "description": "Configure default properties applied when creating new authentication modules."
+                }
+            },
+            "globalServices" : {
+                "description": "Configure default properties applied when creating new services."
+            }
+        },
+        "authorization": {
+            "common": {
+                "realm": "Realm",
+                "realms": "Realms",
+                "policy": "Policy",
+                "policySet": "Policy Set",
+                "policySets": "Policy Sets",
+                "pattern": "Pattern",
+                "patterns": "Patterns",
+                "responseAttributes": "Response Attributes",
+                "subjectAttributes": "Subject attributes",
+                "customAttributes": "Custom attributes",
+                "availablePatterns": "Available patterns",
+                "staticAttributes": "Static attributes",
+                "action": "Action",
+                "actions": "Actions",
+                "resources": "Resources",
+                "subjects": "Subjects",
+                "environments": "Environments",
+                "resourceType": "Resource Type",
+                "resourceTypes": "Resource Types",
+                "defaultState": "Default State",
+                "allowed": "Allowed",
+                "denied": "Denied",
+                "summary": "Summary",
+
+                "noRealms": "There are no selected realms...",
+                "noActions": "There are no actions...",
+                "noActionsSelected": "There are no selected actions...",
+                "noResources": "There are no selected resources...",
+                "noResourceTypes": "There are no selected resources types...",
+                "noStaticAttributes": "There are no static attributes...",
+                "noSubjectAttributes": "There are no subject attributes...",
+                "noApplications": "There are no selected policy sets...",
+                "noPatterns": "There are no patterns...",
+                "noResourceTypesAvailable": "There are no available resource types...",
+                "noApplicationsAvailable": "There are no available policy sets...",
+                "noItems": "There are no items ...",
+
+                "weekdays": {
+                    "Monday": {
+                        "short": "mon",
+                        "full": "Monday"
+                    },
+                    "Tuesday": {
+                        "short": "tue",
+                        "full": "Tuesday"
+                    },
+                    "Wednesday": {
+                        "short": "wed",
+                        "full": "Wednesday"
+                    },
+                    "Thursday": {
+                        "short": "thu",
+                        "full": "Thursday"
+                    },
+                    "Friday": {
+                        "short": "fri",
+                        "full": "Friday"
+                    },
+                    "Saturday": {
+                        "short": "sat",
+                        "full": "Saturday"
+                    },
+                    "Sunday": {
+                        "short": "sun",
+                        "full": "Sunday"
+                    }
+                }
+            },
+
+            "policySets":{
+                "edit": {
+                    "new": "New Policy Set",
+                    "policies": "Policies",
+                    "addResourceTypes": "Add Resource Types...",
+                    "selectResourceTypes": "Select the resource types to be available within this policy set.",
+                    "resourceTypes": {
+                        "availableResourceTypes": "Available Resource Types",
+                        "selectedResourceTypes": "Selected Resource Types"
+                    }
+                },
+                "list": {
+                    "addNew": "New Policy Set",
+                    "description": "Define sets of policies for protecting web sites, web applications, or other resources.",
+                    "importPolicySets": "Import Policy Sets",
+                    "exportPolicySets": "Export Policy Sets",
+                    "grid": ["Name"],
+                    "noPolicySets": "No policy sets found",
+                    "addPolicySets": "Add a Policy Set",
+                    "noResourceTypesMessage" : "Policy Sets require a resource type"
+                }
+            },
+
+            "policies": {
+                "edit": {
+                    "createNew": "New Policy",
+                    "resourcesDescription": "Specify resources to be managed with this policy.",
+                    "actionsDescription": "Select the actions that the policy applies.",
+                    "subjectConditionsDescription": "Specify the subject conditions to which the policy applies.",
+                    "environmentConditionsDescription": "Specify the environment conditions to which the policy applies.",
+                    "deleteLogical": "Deleting will also remove any child objects",
+                    "addLogical": "Add a Logical Operator",
+                    "selectResourceTypeHelper": "Select the type of resource for which this policy will manage access.",
+                    "selectResourceType": "Select a resource type...",
+                    "selectResourcePattern": "Select resource pattern...",
+                    "addAction": "Add an Action",
+                    "availableActions": "Available Resource Type Actions",
+                    "selectedActions": "Selected Actions",
+                    "subjectAttributesPlaceholder": "Select or search for subject attributes",
+                    "addEnvironmentCondition": "Add an Environment Condition",
+                    "addSubjectCondition": "Add a Subject Condition",
+                    "canAcceptOneChild": "The \"Not...\" logical operator can only accept one child",
+
+                    "operators": {
+                        "NOT": "Not...",
+                        "OR": "Any of...",
+                        "AND": "All of..."
+                    },
+
+                    "subjectTypes": {
+                        "AuthenticatedUsers": {
+                            "title": "Authenticated Users",
+                            "props": {}
+                        },
+                        "Identity": {
+                            "title": "Users & Groups",
+                            "props": {
+                                "subjectValues": "Subject Values",
+                                "users": "User Subjects",
+                                "groups": "Group Subjects"
+                            },
+                            "placeholder": "Search for subjects"
+                        },
+                        "JwtClaim": {
+                            "title": "OpenID Connect/JWT Claim",
+                            "props": {
+                                "claimName": "Claim Name",
+                                "claimValue": "Claim Value"
+                            }
+                        },
+                        "NONE": {
+                            "title": "Never Match",
+                            "props": {}
+                        }
+                    },
+
+                    "conditionTypes": {
+                        "AMIdentityMembership": {
+                            "title": "Identity Membership",
+                            "props": {
+                                "amIdentityName": "AM Identity Name"
+                            }
+                        },
+                        "AuthLevel": {
+                            "title": "Authentication Level (greater than or equal to)",
+                            "props": {
+                                "authLevel": "Authentication Level"
+                            }
+                        },
+                        "AuthScheme": {
+                            "title": "Authentication by Module Instance",
+                            "props": {
+                                "authScheme": "Authentication Scheme",
+                                "applicationIdleTimeout": "Application Idle Timeout Scheme",
+                                "applicationName": "Application Name"
+                            }
+                        },
+                        "AuthenticateToRealm": {
+                            "title": "Authentication to a Realm",
+                            "props": {
+                                "authenticateToRealm": "Authenticate to a Realm"
+                            }
+                        },
+                        "AuthenticateToService": {
+                            "title": "Authentication by Module Chain",
+                            "props": {
+                                "authenticateToService": "Authenticate To Service"
+                            }
+                        },
+                        "IPv4": {
+                            "title": "IPv4 Address/DNS Name",
+                            "props": {
+                                "ipRange": "IP Range",
+                                "dnsName": "DNS Name",
+                                "startIp": "Start IP",
+                                "endIp": "End IP"
+                            }
+                        },
+                        "IPv6": {
+                            "title": "IPv6 Address/DNS Name",
+                            "props": {
+                                "ipRange": "IP Range",
+                                "dnsName": "DNS Name",
+                                "startIp": "Start IP",
+                                "endIp": "End IP"
+                            }
+                        },
+                        "LDAPFilter": {
+                            "title": "LDAP Filter Condition",
+                            "props": {
+                                "ldapFilter": "LDAP Filter"
+                            }
+                        },
+                        "LEAuthLevel": {
+                            "title": "Authentication Level (less than or equal to)",
+                            "props": {
+                                "authLevel": "Authentication Level"
+                            }
+                        },
+                        "OAuth2Scope": {
+                            "title": "OAuth2 Scope",
+                            "props": {
+                                "requiredScopes": "Scopes"
+                            }
+                        },
+                        "ResourceEnvIP": {
+                            "title": "Resource/Environment/IP Address",
+                            "props": {
+                                "resourceEnvIPConditionValue": "Resource/Environment/IP Address"
+                            }
+                        },
+                        "Session": {
+                            "title": "Active Session Time",
+                            "props": {
+                                "maxSessionTime": "Max Session Time",
+                                "terminateSession": "Terminate Session"
+                            }
+                        },
+                        "SessionProperty": {
+                            "title": "Current Session Properties",
+                            "props": {
+                                "ignoreValueCase": "Ignore Value Case",
+                                "properties": "Properties"
+                            }
+                        },
+                        "SimpleTime": {
+                            "title": "Time (day, date, time, and timezone)",
+                            "props": {
+                                "startTime": "Start Time",
+                                "endTime": "End Time",
+                                "startDay": "Start Day",
+                                "endDay": "End Day",
+                                "startDate": "Start Date",
+                                "endDate": "End Date",
+                                "enforcementTimeZone": "Time Zone",
+                                "enterTimeZone": "Enter Time Zone"
+                            },
+                            "helperTitle": "Time condition",
+                            "helperContent": "Must contain one or more of the following values: Time (Start and End), Day (Start and End), Date (Start and End) and/or Time Zone."
+                        },
+                        "Script": {
+                            "title": "Script",
+                            "props": {
+                                "scriptId": "Script Name"
+                            },
+                            "placeholder": "Select from scripts"
+                        },
+                        "Transaction": {
+                            "title": "Transaction",
+                            "props": {
+                                "authenticationStrategy": "Authentication Strategy",
+                                "strategySpecifier": "Strategy Specifier",
+                                "AuthSchemeConditionAdvice": "Authenticate To Module",
+                                "AuthLevelConditionAdvice": "Auth Level",
+                                "AuthenticateToServiceConditionAdvice": "Authenticate To Chain",
+                                "AuthenticateToRealmConditionAdvice": "Authenticate To Realm",
+                                "AuthenticateToTreeConditionAdvice": "Authenticate To Tree"
+                            }
+                        },
+                        "ipHelperTitle": "IP Condition",
+                        "ipHelperContent": "Enter at least one of Start IP, End IP or DNS Name. To match a single IP, enter it in either Start IP or End IP. Start IP must be less than or equal to End IP. DNS Name is an explicit match, or you can use a wildcard in the lowest sub-domain.",
+                        "legacyFormat": "This condition is in a legacy format, and should be replaced.",
+                        "nothingSelected": "Nothing selected",
+                        "attributes": {
+                            "object": "key:value[,value2,...]"
+                        }
+                    }
+                },
+                "list": {
+                    "grid": ["Name", "Status"],
+                    "addNew": "Add a Policy",
+                    "description": "Configure this policy set by adding, editing, or removing authorization policies.",
+                    "noPolicies": "No policies found"
+                }
+            },
+
+            "resourceTypes": {
+                "list": {
+                    "add": "New Resource Type",
+                    "title": "Resource Types",
+                    "description": "Define template for the resources that policies apply to, and the actions that could be performed on those resources.",
+                    "grid": ["Name"],
+                    "noResourceTypes" : "No resource types found",
+                    "addNewResourceType" : "Add a Resource Type"
+                },
+                "edit": {
+                    "title" : "New Resource Type",
+                    "actionsDescription" : "Define the actions that policies using this resource type can allow or deny.",
+                    "specifyActions" : "Specify Actions",
+                    "addAction": "Add Action",
+                    "addNewActionPlaceholder": "Add a new action...",
+                    "patternsDescription" : "Define resource patterns that policies using this resource type can expand upon.",
+                    "specifyPatterns" : "Specify Patterns",
+                    "addPattern": "Add Pattern",
+                    "addNewPatternPlaceholder": "Add a new pattern..."
+                }
+            }
+        },
+        "sessions": {
+            "search": {
+                "intro": "Find sessions by entering a username.",
+                "noResults": "No users found",
+                "placeholder": "Username",
+                "searchPrompt": "Type to search",
+                "title": "Username"
+            },
+            "table": {
+                "expires": "Expires __timestamp__",
+                "headers": [
+                    "Idle Time",
+                    "Idle Time Remaining",
+                    "Session Time Remaining"
+                ],
+                "noResults": "No sessions found."
+            },
+            "title": "Sessions",
+            "invalidate": "Invalidate",
+            "invalidateSelected": "Invalidate Selected",
+            "yourSession": "Your session"
+        },
+        "applications": {
+            "agents": {
+                "select": {
+                    "title": "New Agent",
+                    "description": "Select the type of agent you want to configure."
+                },
+                "new": {
+                    "title": "Create a New __agentType__ Profile",
+                    "description": "First, create an agent profile which will be used during installation of the agent on your server, and to control configuration options of the agent once installed.",
+                    "create": "Create Profile"
+                }
+            },
+            "oauth2": {
+                "tabs": ["Clients", "Groups"],
+                "title": "OAuth 2.0",
+                "clients": {
+                    "confirmDeleteSelected": "Are you sure you want to delete the selected OAuth 2.0 Client?",
+                    "confirmDeleteSelected_plural": "Are you sure you want to delete the selected OAuth 2.0 Clients?",
+                    "list": {
+                        "grid": ["Client ID", "Group", "Status"],
+                        "callToAction": {
+                            "title": "No OAuth 2.0 clients configured.",
+                            "description": "Configure OAuth 2.0 clients to use access tokens issued by AM to access protected resources.",
+                            "button": "Add Client"
+                        }
+                    },
+                    "new": {
+                        "clientId": "Client ID",
+                        "title": "New OAuth 2.0 Client"
+                    },
+                    "edit": {
+                        "type": "OAuth 2.0 Client",
+                        "unassigned": "Unassigned"
+                    }
+                },
+                "groups": {
+                    "confirmDeleteSelected": "Are you sure you want to delete the selected OAuth 2.0 Group?",
+                    "confirmDeleteSelected_plural": "Are you sure you want to delete the selected OAuth 2.0 Groups?",
+                    "list": {
+                        "grid": ["Group ID", "Status"],
+                        "callToAction": {
+                            "title": "No OAuth 2.0 client groups configured.",
+                            "description": "Specify settings for multiple OAuth 2.0 clients by adding them to a group.",
+                            "button" : "Add Group"
+                        }
+                    },
+                    "edit": {
+                        "type": "OAuth 2.0 Group"
+                    },
+                    "new": {
+                        "groupId": "Group ID",
+                        "title": "New OAuth 2.0 Group"
+                    }
+                }
+            }
+        }
+    },
+    "errorPage": {
+        "503": {
+            "title": "Service Unavailable",
+            "description": "The service is currently unavailable. It may be temporarily overloaded or undergoing maintenance. Please try again later."
+        }
+    }
+}

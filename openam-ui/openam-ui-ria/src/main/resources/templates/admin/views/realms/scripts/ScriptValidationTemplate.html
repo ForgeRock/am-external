@@ -1,0 +1,43 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+<div class="alert {{#if success}} alert-success {{else}} alert-danger {{/if}}" role="alert">
+    <div class="media">
+        <button type="button" class="close" data-dismiss="alert">
+            <span aria-hidden="true" class="fa fa-times"></span><span class="sr-only">{{t "common.form.close"}}</span>
+        </button>
+        <div class="media-left" href="#">
+            {{#if success}}
+            <i class="fa fa-check-circle-o"></i>
+            {{else}}
+            <i class="fa fa-exclamation-circle"></i>
+            {{/if}}
+        </div>
+        <div class="media-body">
+            {{#if errors}}
+            {{t "console.scripts.edit.validation.errors"}}
+            <pre class="validation-error">
+            {{#each errors}}
+               <span class="validation-key">{{t "console.scripts.edit.validation.line"}}:</span> {{this.line}}
+               <span class="validation-key">{{t "console.scripts.edit.validation.column"}}:</span> {{this.column}}
+               <span class="validation-key">{{t "console.scripts.edit.validation.message"}}:</span> {{this.message}}
+            {{/each}}
+            </pre>
+            {{else}}
+            {{t "console.scripts.edit.validation.noErrors"}}
+            {{/if}}
+        </div>
+    </div>
+</div>

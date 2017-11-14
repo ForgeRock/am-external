@@ -1,0 +1,61 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+}}
+{{> headers/_Title title="console.services.edit.titleNew" }}
+
+<div class="panel multiple-panels panel-content">
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div class="clearfix">
+                <div class="form-group">
+                    {{#if creatableTypes.[1]}}
+                    <label class="control-label" for="serviceSelection">{{t "console.services.edit.chooseServiceType"}}</label>
+                    <select data-service-selection class="selectize form-control">
+                        <option disabled selected value="">{{t "console.services.edit.serviceTypes"}}</option>
+                        {{#each creatableTypes}}
+                        <option value="{{_id}}">{{name}}</option>
+                        {{/each}}
+                    </select>
+
+                    {{else}}
+                        {{#if creatableTypes.[0]}}
+                        <label class=" control-label" for="serviceSelection">{{t "common.form.type"}}</label>
+                        <div class="">
+                            <input type="text" id="serviceSelection" class="form-control" value="{{creatableTypes.[0].name}}" readonly="true" >
+                        </div>
+                        {{/if}}
+                    {{/if}}
+                </div>
+
+            </div>
+
+            {{#if creatableTypes.[0]}}
+                <div class="clearfix">
+                    <form data-json-form></form>
+                </div>
+            {{else}}
+                {{> alerts/_Alert text="console.services.edit.unavaliableAlert" type="info"}}
+            {{/if}}
+
+        </div>
+    </div>
+
+    <div class="panel-footer clearfix">
+        <div class="pull-right">
+            <a class="btn btn-default" href="{{routeTo 'realmsServices' realmPath}}">{{t "common.form.cancel"}}</a>
+            <button data-create class="btn btn-primary" type="button" disabled>{{t "common.form.create"}}</button>
+        </div>
+    </div>
+</div>

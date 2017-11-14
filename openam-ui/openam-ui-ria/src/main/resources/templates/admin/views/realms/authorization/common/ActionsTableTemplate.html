@@ -1,0 +1,54 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+{{#if items}}
+<table class="table actions-table table-with-border-bottom">
+    <thead>
+        <tr>
+            <th>{{t "console.authorization.common.action"}}</th>
+            <th>{{t "console.authorization.common.defaultState"}}</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    {{#each items}}
+        <tr>
+            {{#if action}}
+                <td class="action-name">{{action}}</td>
+            {{/if}}
+            {{#if name}}
+                <td class="action-name">{{name}}</td>
+            {{/if}}
+            <td class="action-permissions">
+                <div class="radio-group">
+                    <label class="radio-inline" data-toggle-item>
+                        <input name="{{action}}{{name}}Permission" type="radio" value="true" {{#if value}}checked{{/if}}> {{t "common.form.allow"}}
+                    </label>
+
+                    <label class="radio-inline" data-toggle-item>
+                        <input name="{{action}}{{name}}Permission" type="radio" value="false" {{#unless value}}checked{{/unless}}> {{t "common.form.deny"}}
+                    </label>
+                </div>
+            </td>
+            <td>
+                <button name="delete" type="button" class="btn btn-link pull-right" data-delete title="{{t 'common.form.delete'}}">
+                    <i class="fa fa-close"></i>
+                </button>
+            </td>
+        </tr>
+    {{/each}}
+    </tbody>
+</table>
+{{/if}}

@@ -1,0 +1,38 @@
+<!--
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+-->
+<header class="page-header page-header-no-border clearfix">
+
+    {{#if icon}}
+    <span class="header-icon pull-left bg-primary"><i class="fa fa-{{icon}}"></i></span>
+    {{/if}}
+
+
+    <div class="deep-page-header-button-group button-group pull-right">
+        <div data-tab-search />
+        {{#each headerActions}}
+            {{partial actionPartial this}}
+        {{/each}}
+    </div>
+
+    <div class="pull-left">
+        <h4 class="page-type">{{t type}}</h4>
+        {{#if detail}}
+            <span class="page-header-detail {{detail.class}}">{{#if detail.icon}}<i class="fa {{detail.icon}}"></i> {{/if}} {{t detail.text safeString=false}}</span>
+        {{/if}}
+        <h1 class="wordwrap">{{t title safeString=false}}</h1>
+    </div>
+
+</header>

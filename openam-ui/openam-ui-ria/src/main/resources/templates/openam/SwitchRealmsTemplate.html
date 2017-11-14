@@ -1,0 +1,27 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+}}
+<div class="container">
+    <div class="col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3 text-center">
+        <div class="page-header">
+            <h1 class="text-primary">{{t 'common.user.switchRealm.title'}}</h1>
+        </div>
+        {{> alerts/_Alert text="common.user.switchRealm.description" type="info" }}
+        {{!-- Although the view handles the link in the button below, the href remains so that the user can see where
+              the link will take them. Equally the button contains the js so that the savvy user can see what it does --}}
+        <a data-switch-realms class="btn btn-primary btn-block" href="{{{urlTo 'login' args}}}">{{t 'common.user.switchRealm.leave'}}</a>
+        <button class="btn btn-default btn-block" onclick="window.history.back(-1)">{{t 'common.user.switchRealm.goBack'}}</button>
+    </div>
+</div>
