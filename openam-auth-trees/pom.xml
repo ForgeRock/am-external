@@ -38,5 +38,14 @@
         <module>auth-nodes</module>
         <module>auth-node-api</module>
     </modules>
-
+    <repositories>
+        <repository>
+            <id>forgerock-private-releases</id>
+            <name>ForgeRock Private Release Repository</name>
+            <url>http://maven.forgerock.org/repo/private-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>    
 </project>
