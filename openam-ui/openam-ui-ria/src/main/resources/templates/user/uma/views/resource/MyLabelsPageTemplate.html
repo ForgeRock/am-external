@@ -1,0 +1,31 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+{{#if label}}
+    {{> headers/_TitleWithSubAndIcon title=label.name type="uma.resources.myLabels.title" buttons="templates/user/uma/views/resource/_DeleteLabelButton" }}
+    <p class="page-description">{{label.path}}</p>
+
+    <div class="tab-content clearfix">
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <div class="table-container"></div>
+            </div>
+        </div>
+    </div>
+{{else}}
+    <div class="alert alert-info" role="alert">
+        <strong>{{t "uma.resources.myLabels.noResources.headline"}}</strong> {{t "uma.resources.myLabels.noResources.text"}}
+    </div>
+{{/if}}

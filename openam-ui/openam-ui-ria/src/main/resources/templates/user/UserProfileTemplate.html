@@ -1,0 +1,75 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+<div class="container">
+    <div class="page-header">
+        <h1>{{t "common.user.userProfile"}}</h1>
+    </div>
+    <div class="tab-menu">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="active"><a href="#userDetailsTab" role="tab" data-toggle="tab">{{t "common.user.basicInfo"}}</a></li>
+            <li><a href="#userPasswordTab" role="tab" data-toggle="tab">{{t "common.user.password"}}</a></li>
+        </ul>
+    </div>
+    <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active panel panel-default fr-panel-tab" id="userDetailsTab">
+            <form class="form-horizontal" id="details" data-form-validate="true">
+                <div class="panel-body">
+                    {{#user}}
+                        {{> form/_basicInput property="username" label="common.user.username" readonly=true}}
+                        {{> form/_basicInput property="givenName" label="common.user.givenName"}}
+                        {{> form/_basicInput property="sn" label="common.user.sn" required="true"}}
+                        {{> form/_basicInput type="email" property="mail" label="common.user.emailAddress"
+                            extraAttributes='data-validator="validEmailAddressFormat" data-validator-event="keyup"' }}
+                        {{> form/_basicInput type="tel" property="telephoneNumber" label="common.user.phoneNumber"
+                            extraAttributes='data-validator="validPhoneFormat" data-validator-event="keyup"'}}
+
+                    {{/user}}
+                </div>
+                <div class="panel-footer clearfix">
+                    {{> form/_basicSaveReset}}
+                </div>
+            </form>
+        </div>
+
+        <div role="tabpanel" class="tab-pane panel panel-default fr-panel-tab" id="userPasswordTab">
+            <form class="form-horizontal" id="password">
+                <div class="panel-body">
+                    <div class="form-group" data-form-group>
+                        <label class="col-sm-3 control-label" for="input-password">{{t "common.user.newPassword"}}</label>
+                        <div class="col-sm-6">
+                            <input class="form-control" type="password" id="input-password" name="password" value="" placeholder="{{t 'common.form.passwordPlaceholder'}}"
+                                data-validator="required minLength" minLength="8" data-validation-dependents="input-confirmPassword" data-validator-event="keyup" />
+                            <div role="status" class="validation-message"></div>
+                            <span class="form-control-feedback"><i class='fa validation-icon'></i></span>
+                        </div>
+                    </div>
+                    <div class="form-group" data-form-group>
+                        <label class="col-sm-3 control-label" for="input-confirmPassword">{{t 'common.user.confirmNewPassword'}}</label>
+                        <div class="col-sm-6">
+                            <input class="form-control" type="password" id="input-confirmPassword" value="" placeholder="{{t 'common.form.passwordPlaceholder'}}"
+                                data-validator="passwordConfirm" data-validator-event="keyup" passwordField="input-password" />
+                            <div role="status" class="validation-message"></div>
+                            <span class="form-control-feedback"><i class='fa validation-icon'></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-footer clearfix">
+                    {{> form/_basicSaveReset}}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

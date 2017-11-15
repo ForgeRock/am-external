@@ -1,0 +1,68 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+<div class="row">
+    <div class="col-xs-6">
+
+        {{#equals type 'REQUIRED'}}
+        <div class="panel-arrow-down panel-arrow-fail text-danger text-center">
+            {{t 'common.form.fail'}} <span class="badge badge-danger"><i class="fa fa-flag"></i></span>
+            <div class="panel-arrow">
+                <div class="panel-arrow-square"></div>
+                <div class="panel-arrow-triangle"></div>
+            </div>
+        </div>
+        {{/equals}}
+
+        {{#equals type 'SUFFICIENT'}}
+        <div class="panel-arrow-down panel-arrow-fail text-muted text-center">
+            {{t 'common.form.continue'}}
+            <div class="panel-arrow">
+                <div class="panel-arrow-square"></div>
+                <div class="panel-arrow-triangle"></div>
+            </div>
+        </div>
+        {{/equals}}
+
+        {{#equals type 'OPTIONAL'}}
+        <div class="panel-arrow-down panel-arrow-fail text-muted text-center">
+            {{t 'common.form.continue'}}
+            <div class="panel-arrow">
+                <div class="panel-arrow-square"></div>
+                <div class="panel-arrow-triangle"></div>
+            </div>
+        </div>
+        {{/equals}}
+
+        {{#equals type 'REQUISITE'}}
+        <div class="panel-arrow-left panel-arrow-fail text-danger text-center">
+            {{t 'common.form.fail'}} <span class="badge badge-danger"><i class="fa fa-flag"></i></span>
+            <div class="panel-arrow">
+                <div class="panel-arrow-square"></div>
+                <div class="panel-arrow-triangle"></div>
+            </div>
+        </div>
+        {{/equals}}
+    </div>
+    <div class="col-xs-6">
+        <div class="{{#equals type 'SUFFICIENT'}}panel-arrow-right{{else}} panel-arrow-down{{/equals}} panel-arrow-success text-success text-center">
+            {{t 'common.form.pass'}} <span class="badge badge-success"><i class="fa fa-flag"></i></span>
+            <div class="panel-arrow">
+                <div class="panel-arrow-square"></div>
+                <div class="panel-arrow-triangle"></div>
+            </div>
+        </div>
+    </div>
+</div>
