@@ -1,0 +1,46 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+<div class="panel-heading">
+    <h4 class="panel-title">
+        {{#if taskGroup.name}}
+            <span data-common-tasks id="commonTasksBtn">{{t 'console.dashboard.quickStart'}}</span>  <i class="fa fa-angle-right"></i> {{taskGroup.name}}
+        {{else}}
+            {{t 'console.dashboard.quickStart'}}
+        {{/if}}
+    </h4>
+</div>
+<div class="panel-body">
+    {{#if taskGroup.description}}
+    <div class="panel-description">{{taskGroup.description}}</div>
+    {{/if}}
+    <div class="grid-list">
+    {{#each taskGroup.tasks}}
+        <div class="col-sm-6 col-md-3">
+            <div data-panel-card class="panel-default panel am-panel-card">
+                <a href="{{#if link}}{{link}}{{else}}#{{_id}}{{/if}}" data-task-{{#if link}}link="{{link}}"{{else}}group="{{_id}}"{{/if}}>
+                    <div class="card-body">
+                        <div class="card-icon-circle card-icon-circle-sm bg-primary">
+                            <i class="fa fa-cog"></i>
+                        </div>
+                        <h3 class="card-name card-name-sm am-text-lines-three text-primary hidden-md">{{name}}</h3>
+                        <h3 class="card-name card-name-sm am-text-lines-four text-primary visible-md-block">{{name}}</h3>
+                    </div>
+                </a>
+            </div>
+        </div>
+    {{/each}}
+    </div>
+</div>

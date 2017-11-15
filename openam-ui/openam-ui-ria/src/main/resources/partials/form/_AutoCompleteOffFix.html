@@ -1,0 +1,21 @@
+<!--
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+-->
+{{!-- There is a bug in Firefox where it assumes an input above a password field is the username field. It then goes on
+    to pre-populate these assumed fields if you have previously set the browser to remember them.
+    The markup below fools firefox into pre-populating hidden inputs instead, without effecting any other browsers
+    or their autocomplete functionality which is often required --}}
+<input type="text" class="hidden" aria-hidden="true" id="badFireFoxBad" name="badFireFoxBad" value="" />
+<input type="password" class="hidden" aria-hidden="true" id="fakePassword" name="fakePassword" value="" />

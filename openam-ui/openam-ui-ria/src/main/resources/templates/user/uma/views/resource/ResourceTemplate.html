@@ -1,0 +1,63 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+<header class="page-header page-header-no-border clearfix">
+    <span id="umaShareImage" class="header-icon pull-left fa" aria-hidden="true">
+        {{#if icon}}
+            <img title="{{name}}" src="{{icon}}" />
+        {{else}}
+            <i class="fa fa-share"></i>
+        {{/if}}
+    </span>
+
+    <div class="pull-left">
+        <h4 class="page-type">{{t "uma.resources.show.resource"}}</h4>
+        <h1>{{name}}</h1>
+    </div>
+
+    <div class="deep-page-header-button-group button-group pull-right">
+        <button id="starred" type="button" class="btn btn-link"><i class="fa fa-star-o"></i></button>
+
+        <div class="btn-group">
+            <button id="share" type="button" class="btn btn-primary"><i class="fa fa-share"></i> {{t "uma.resources.show.share"}}</button>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-right">
+                    <li class="disabled" id="unshare"><a href="#" aria-disabled="true" role="button"><i class="fa fa-ban"></i> {{t "uma.resources.show.revoke"}}</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</header>
+
+<p class="page-description">{{t "uma.resources.show.subtitle"}}</p>
+<div class="btn-toolbar page-toolbar">
+    <div class="btn-group pull-right">
+        <button id="saveLabels" disabled class="btn btn-default"><i class="fa fa-check"></i></button>
+        <button id="discardLabels" class="btn btn-default"><i class="fa fa-times"></i></button>
+    </div>
+    <div id="labels">
+        <select multiple class="selectize pull-left"></select>
+    </div>
+    <button id="editLabels" class="btn btn-primary btn-xs"><i class="fa fa-tag"></i> {{t "uma.resources.show.editLabels"}}</button>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-body">
+        <div class="table-container"></div>
+    </div>
+</div>

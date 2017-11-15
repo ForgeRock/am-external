@@ -1,0 +1,80 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+<div class="panel panel-default panel-card">
+
+    <div class="panel-body">
+        <div class="form-group">
+            <div class="media">
+                <div class="media-left">
+                    <div class="circle-icon circle-icon-sm">
+                        <i class="fa fa-cube"></i>
+                    </div>
+                </div>
+                <div class="media-body">
+                    <h3 class="media-heading">{{linkConfig.module}}</h3>
+                    <div class="status text-muted">
+                        {{#if typeDescription}}
+                            {{typeDescription}}
+                        {{else}}
+                            {{linkConfig.type}}
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pull-right">
+            <div class="text-valign-middle">
+                {{t 'console.authentication.editChains.options'}} <span class="badge">{{optionsLength}}</span>
+            </div>
+        </div>
+
+        <div class="row">
+
+            <div class="col-xs-12 col-sm-9 col-md-6 col-lg-4">
+                <div class="select-group">
+                    <select class="form-control inline-block" data-select-criteria>
+                        {{#each allCriteria}}
+                            <option value="{{@key}}" {{#equals ../linkConfig.criteria @key}}selected{{/equals}}>
+                                {{this}}
+                            </option>
+                        {{/each}}
+                    </select>
+                    <button type="button" class="btn btn-link hidden-xs" data-auth-criteria-info><i class="fa fa-info-circle"></i></button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="panel-menu">
+        <div class="btn-group">
+            <button type="button" class="btn btn-link">
+                <i class="fa fa-arrows "></i>
+            </button>
+            <button type="button" class="btn btn-link" data-edit>
+                <i class="fa fa-pencil "></i>
+            </button>
+            <button type="button" class="btn btn-link" data-delete>
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="panel-footer criteria-view"></div>
+
+</div>

@@ -1,0 +1,60 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+{{#if applications}}
+<div id="oAuthTokens" class="panel panel-default">
+
+    <div class="panel-heading" role="tab" id="tokensCollapseHeading">
+        <h4 class="panel-title collapse-title">
+            <a data-toggle="collapse" href="#tokensCollapse" aria-expanded="true" aria-controls="tokensCollapseHeading" class="">{{t "templates.oauth.tokenList"}}</a>
+        </h4>
+    </div>
+
+    <div id="tokensCollapse" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="tokensCollapse" aria-expanded="true">
+        <div class="panel-body">
+            <div class="table-container">
+                <table id="oAuthTokensTable" class="table">
+                    <thead>
+                    <th id="oAuthTokensAppName"     class="col-md-4"  scope="col">{{t "openam.oAuth2.tokens.appName"}}</th>
+                    <th id="oAuthTokensScope"       class="col-md-3"  scope="col">{{t "openam.oAuth2.tokens.scopes"}}</th>
+                    <th id="oAuthTokensExpiryDate"  class="col-md-3"  scope="col">{{t "openam.oAuth2.tokens.expires"}}</th>
+                    <th id="oAuthTokensDeleteBtn"   class="col-md-2"  abbr="" scope="col"></th>
+                    </thead>
+
+                    <tbody>
+                    {{#each applications}}
+                    <tr id="oAuthToken_{{@index}}">
+                        <td>{{this.name}}</td>
+                        <td>{{this.scopes}}</td>
+                        <td>{{this.expiryDateTime}}</td>
+                        <td>
+                            <div class="pull-right">
+                                <a  href="#" id="{{this.id}}" role="button"
+                                    class="deleteToken" data-toggle="tooltip"
+                                    title="{{t 'openam.oAuth2.tokens.deleteToken'}}">
+                                    <i class="fa fa-times" aria-hidden="true"></i>
+                                    <span class="sr-only">{{t 'openam.oAuth2.tokens.deleteToken'}}</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {{/each}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{{/if}}
