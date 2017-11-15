@@ -1,0 +1,379 @@
+<?xml version='1.0' encoding="ISO-8859-1"?>
+
+<!--
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+
+
+<!DOCTYPE ServicesConfiguration
+        PUBLIC "=//forgerock//Service Management Services (SMS) 1.0 DTD//EN"
+        "jar://com/sun/identity/sm/sms.dtd">
+
+<ServicesConfiguration>
+    <Service name="iPlanetAMAuthSAML2Service" version="1.0">
+        <Schema
+                serviceHierarchy="/DSAMEConfig/authentication/iPlanetAMAuthSAML2Service"
+                i18nFileName="amAuthSAML2"
+                revisionNumber="1"
+                i18nKey="iPlanetAMAuthSAML2ServiceDescription"
+                resourceName="authSaml">
+
+            <Organization>
+                <AttributeSchema name="forgerock-am-auth-saml2-auth-level"
+                                 type="single"
+                                 syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+                                 validator="RequiredValueValidator"
+                                 i18nKey="a500"
+                                 order="100"
+                                 resourceName="authenticationLevel">
+                    <DefaultValues>
+                        <Value>0</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-entity-name"
+                                 type="single"
+                                 syntax="string"
+                                 validator="RequiredValueValidator"
+                                 i18nKey="a501"
+                                 order="200"
+                                 resourceName="entityName">
+                    <DefaultValues>
+                        <Value>http://</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-meta-alias"
+                                 type="single"
+                                 syntax="string"
+                                 validator="RequiredValueValidator"
+                                 i18nKey="a502"
+                                 order="300"
+                                 resourceName="metaAlias">
+                    <DefaultValues>
+                        <Value>/sp</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-allow-create"
+                                 type="single_choice"
+                                 syntax="string"
+                                 i18nKey="a503"
+                                 order="400"
+                                 resourceName="allowCreate">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="true">true</ChoiceValue>
+                        <ChoiceValue i18nKey="false">false</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>true</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-login-chain"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="a504"
+                                 order="500"
+                                 resourceName="loginChain">
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-auth-comparison"
+                                 type="single_choice"
+                                 syntax="string"
+                                 i18nKey="a505"
+                                 order="600"
+                                 resourceName="authComparison">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="better">better</ChoiceValue>
+                        <ChoiceValue i18nKey="exact">exact</ChoiceValue>
+                        <ChoiceValue i18nKey="maximum">maximum</ChoiceValue>
+                        <ChoiceValue i18nKey="minimum">minimum</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>exact</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-authn-context-class-ref"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="a506"
+                                 order="700"
+                                 resourceName="authnContextClassRef">
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-authn-context-decl-ref"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="a507"
+                                 order="800"
+                                 resourceName="authnContextDeclRef">
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-req-binding"
+                                 type="single_choice"
+                                 syntax="string"
+                                 i18nKey="a508"
+                                 order="900"
+                                 resourceName="reqBinding">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="HTTP-Redirect">urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect</ChoiceValue>
+                        <ChoiceValue i18nKey="HTTP-POST">urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-binding"
+                                 type="single_choice"
+                                 syntax="string"
+                                 i18nKey="a509"
+                                 order="1000"
+                                 resourceName="binding">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="HTTP-POST">urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST</ChoiceValue>
+                        <ChoiceValue i18nKey="HTTP-Artifact">urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-force-authn"
+                                 type="single_choice"
+                                 syntax="string"
+                                 i18nKey="a510"
+                                 order="1100"
+                                 resourceName="forceAuthn">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="true">true</ChoiceValue>
+                        <ChoiceValue i18nKey="false">false</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>false</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-is-passive"
+                                 type="single_choice"
+                                 syntax="string"
+                                 i18nKey="a511"
+                                 order="1200"
+                                 resourceName="isPassive">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="true">true</ChoiceValue>
+                        <ChoiceValue i18nKey="false">false</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>false</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-name-id-format"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="a512"
+                                 order="1300"
+                                 resourceName="nameIdFormat">
+                    <DefaultValues>
+                        <Value>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-slo-enabled"
+                                 type="single_choice"
+                                 syntax="string"
+                                 i18nKey="a515"
+                                 order="1400"
+                                 resourceName="sloEnabled">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="true">true</ChoiceValue>
+                        <ChoiceValue i18nKey="false">false</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>false</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-saml2-slo-relay"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="a516"
+                                 order="1500"
+                                 resourceName="sloRelay">
+                    <DefaultValues>
+                        <Value>http://</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <SubSchema name="serverconfig" inheritance="multiple" resourceName="USE-PARENT">
+                    <AttributeSchema name="forgerock-am-auth-saml2-auth-level"
+                                     type="single"
+                                     syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="a500"
+                                     order="100"
+                                     resourceName="authenticationLevel">
+                        <DefaultValues>
+                            <Value>0</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-entity-name"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="a501"
+                                     order="200"
+                                     resourceName="entityName">
+                        <DefaultValues>
+                            <Value>http://</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-meta-alias"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="a502"
+                                     order="300"
+                                     resourceName="metaAlias">
+                        <DefaultValues>
+                            <Value>/sp</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-allow-create"
+                                     type="single_choice"
+                                     syntax="string"
+                                     i18nKey="a503"
+                                     order="400"
+                                     resourceName="allowCreate">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="true">true</ChoiceValue>
+                            <ChoiceValue i18nKey="false">false</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>true</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-login-chain"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="a504"
+                                     order="500"
+                                     resourceName="loginChain">
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-auth-comparison"
+                                     type="single_choice"
+                                     syntax="string"
+                                     i18nKey="a505"
+                                     order="600"
+                                     resourceName="authComparison">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="better">better</ChoiceValue>
+                            <ChoiceValue i18nKey="exact">exact</ChoiceValue>
+                            <ChoiceValue i18nKey="maximum">maximum</ChoiceValue>
+                            <ChoiceValue i18nKey="minimum">minimum</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>exact</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-authn-context-class-ref"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="a506"
+                                     order="700"
+                                     resourceName="authnContextClassRef">
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-authn-context-decl-ref"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="a507"
+                                     order="800"
+                                     resourceName="authnContextDeclRef">
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-req-binding"
+                                     type="single_choice"
+                                     syntax="string"
+                                     i18nKey="a508"
+                                     order="900"
+                                     resourceName="reqBinding">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="HTTP-Redirect">urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect</ChoiceValue>
+                            <ChoiceValue i18nKey="HTTP-POST">urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-binding"
+                                     type="single_choice"
+                                     syntax="string"
+                                     i18nKey="a509"
+                                     order="1000"
+                                     resourceName="binding">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="HTTP-POST">urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST</ChoiceValue>
+                            <ChoiceValue i18nKey="HTTP-Artifact">urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-force-authn"
+                                     type="single_choice"
+                                     syntax="string"
+                                     i18nKey="a510"
+                                     order="1100"
+                                     resourceName="forceAuthn">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="true">true</ChoiceValue>
+                            <ChoiceValue i18nKey="false">false</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>false</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-is-passive"
+                                     type="single_choice"
+                                     syntax="string"
+                                     i18nKey="a511"
+                                     order="1200"
+                                     resourceName="isPassive">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="true">true</ChoiceValue>
+                            <ChoiceValue i18nKey="false">false</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>false</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-name-id-format"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="a512"
+                                     order="1300"
+                                     resourceName="nameIdFormat">
+                        <DefaultValues>
+                            <Value>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-slo-enabled"
+                                     type="single_choice"
+                                     syntax="string"
+                                     i18nKey="a515"
+                                     order="1400"
+                                     resourceName="sloEnabled">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="true">true</ChoiceValue>
+                            <ChoiceValue i18nKey="false">false</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>false</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-saml2-slo-relay"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="a516"
+                                     order="1500"
+                                     resourceName="sloRelay">
+                        <DefaultValues>
+                            <Value>http://</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                </SubSchema>
+            </Organization>
+        </Schema>
+    </Service>
+</ServicesConfiguration>
