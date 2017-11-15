@@ -1,0 +1,109 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+{{> headers/_TitleWithSubAndIcon title=entity.name type="console.scripts.edit.script" icon="code" }}
+
+<div class="panel panel-default panel-content">
+    <div class="panel-body form-horizontal">
+        <!-- NAME -->
+        <div class="form-group">
+            <label class="col-sm-2 control-label" for="name">{{t "console.common.name"}}</label>
+
+            <div class="col-sm-9">
+                <input type="text" id="name" name="scriptName" class="form-control" value="{{entity.name}}"
+                       data-field="name" placeholder="{{t 'common.form.validation.required'}}" autofocus required>
+            </div>
+        </div>
+
+        <!-- DESCRIPTION -->
+        <div class="form-group">
+            <label class="col-sm-2 control-label" for="description">{{t "console.common.description"}}</label>
+
+            <div class="col-sm-9">
+                <textarea id="description" class="form-control pull-left script-text" rows="3"
+                          data-field="description">{{entity.description}}</textarea>
+            </div>
+        </div>
+
+        <!-- CONTEXT -->
+        <div class="form-group">
+            <label class="col-sm-2 control-label" for="context">{{t "console.scripts.edit.scriptType"}}</label>
+
+            <div class="col-sm-9 script-context">
+                <span class="form-control" id="context">{{contextName}}</span>
+                <button type="button" class="btn fr-btn-secondary pull-right" data-change-context>
+                    <i class="fa fa-gear"></i> {{t "common.form.change"}}
+                </button>
+            </div>
+        </div>
+
+        <!-- LANGUAGE -->
+        <div class="form-group">
+            <label class="col-sm-2 control-label">{{t "console.scripts.edit.language"}}</label>
+
+            <div class="col-sm-9">
+                {{#if languages.[1]}}
+                    {{#each languages}}
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="language" id="{{id}}" value="{{id}}" data-field="language"
+                                {{#equals ../entity.language id}} checked {{/equals}}> {{name}}
+                        </label>
+                    </div>
+                    {{/each}}
+                {{else}}
+                    {{#each languages}}
+                    <input class="form-control" value="{{name}}" readonly />
+                    {{/each}}
+                {{/if}}
+            </div>
+        </div>
+
+        <!--SCRIPT-->
+        <div class="form-group">
+            <label class="col-sm-2 control-label" for="script">{{t "console.scripts.edit.script"}}</label>
+
+            <div class="col-sm-9">
+                <div class="script-area">
+                    <textarea id="script">{{entity.script}}</textarea>
+                </div>
+
+                <input type="button" class="btn btn-default script-upload" id="upload" value="{{t 'common.form.upload'}}" data-upload-script>
+                <input type="file" name="upload" class="hidden">
+
+                <input type="button" class="btn btn-default" value="{{t 'common.form.validate'}}" data-validation-script>
+
+                <button type="button" class="btn btn-default" data-show-fullscreen>
+                    <i class="fa fa-expand"></i> {{t "console.common.editFullScreen"}}
+                </button>
+
+                <div id="validation" class="script-validation-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-footer clearfix">
+        <div class="script-changes-pending pull-left"></div>
+        <button data-save class="btn btn-primary pull-right" type="button">
+            {{t 'common.form.saveChanges'}}
+        </button>
+    </div>
+
+    <div class="full-screen-bar">
+        <button type="button" class="btn btn-link pull-right" data-exit-fullscreen>
+            <i class="fa fa-compress"></i> {{t "console.common.exitFullScreen"}}
+        </button>
+    </div>
+</div>

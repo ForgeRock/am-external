@@ -1,0 +1,45 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+{{> headers/_TitleWithSubAndIcon title=name type=typeDescription icon="link" }}
+
+{{#if values}}
+    {{#if schema.grouped}}
+    <div class="tab-menu">
+        <ul class="nav nav-tabs" role="tablist">
+            {{#each schema.orderedProperties}}
+                <li><a href="#{{this._id}}" role="tab" data-toggle="tab" aria-expanded="false">{{this.title}}</a></li>
+            {{/each}}
+        </ul>
+    </div>
+    {{/if}}
+
+    <div class="panel panel-default {{#if schema.grouped}}fr-panel-tab{{/if}}">
+        <div class="panel-body tab-content">
+            <div role="tabpanel" class="tab-pane active" id="tabpanel"></div>
+        </div>
+        <div class="panel-footer clearfix">
+            {{> form/_JSONSchemaFooter revert=true }}
+        </div>
+    </div>
+{{else}}
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div class="call-to-action-block">
+                <h3>{{error}}</h3>
+            </div>
+        </div>
+    </div>
+{{/if}}

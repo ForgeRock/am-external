@@ -1,0 +1,38 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+{{> headers/_Title title="console.dashboard.title" }}
+
+<div class="raised-page-header-button-group button-group pull-right">
+    <a href="{{routeTo 'realmEdit' realmPath}}" class="btn btn-primary">{{t 'console.dashboard.realmProperties'}}</a>
+</div>
+
+<div class="page-description">
+    <ul class="list-inline fr-list-inline-piped ellipsis">
+        <li>
+            {{> util/_Status active=realm.active }}
+        </li>
+        {{#if realm.aliases}}
+        <li class="text-muted">
+            <i class="fa fa-globe"></i>
+            {{#each realm.aliases}}
+                {{this}}{{#unless @last}}, {{/unless}}
+            {{/each}}
+        </li>
+        {{/if}}
+    </ul>
+</div>
+
+<div data-common-tasks-container id="commonTasks" class="panel panel-default"></div>

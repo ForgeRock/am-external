@@ -1,0 +1,38 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+<li class="rule clearfix legacy-condition" id="legacy_{{itemID}}" tabindex="0">
+	<span class="item-button-panel">
+        <span tabindex="0" class="fa fa-exclamation-circle" data-toggle="popover" data-placement="top" data-trigger="hover"
+              data-content='{{t "console.authorization.policies.edit.conditionTypes.legacyFormat"}}'></span>
+		<span tabindex="0" class="fa fa-times"></span>
+	</span>
+
+	<div class="item-data">
+		{{#each itemData}}
+		  	{{#ifObject this}}
+                <div>
+                    <h3>{{t @key}}</h3>
+                    <span>{{stringify this}}</span>
+                </div>
+		  	{{else}}
+                <div>
+                    <h3>{{t @key}}</h3>
+                    <span>{{this}}</span>
+                </div>
+		  	{{/ifObject}}
+		{{/each}}
+	</div>
+</li>
