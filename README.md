@@ -9,7 +9,7 @@ Copyright 2017 ForgeRock AS.
 
 # am-external
 
-This repository contains OpenAM and AM source code that ForgeRock that you can used to modify and extend AM functionality. The repository contains branches co-responding to the version of OpenAM/AM that you're extending. At the time of writing this includes;
+This repository contains OpenAM and AM source code that you can use to modify and extend AM functionality. The repository contains branches co-responding to the version of OpenAM/AM that you're extending. At the time of writing this includes;
 
 
 Product Version   |  Branch Name
