@@ -46,6 +46,7 @@
         <module>openam-scope-sample</module>
         <module>jwt-bearer-client</module>
         <module>openam-example-api-descriptor</module>
+        <module>auth-node-examples</module>
     </modules>
 
     <repositories>
