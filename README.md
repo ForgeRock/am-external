@@ -14,6 +14,7 @@ This repository contains OpenAM and AM source code that you can use to modify an
 
 Product Version   |  Branch Name
 ------------------|-----------------
+AM 5.5.1          |  releases/5.5.1
 AM 5.5.0          |  releases/5.5.0 
 AM 5.1.1          |  releases/14.1.1  
 AM 5.1.0          |  releases/14.1.0
@@ -30,7 +31,8 @@ Looking at the 5.5.0 branch we can see that it contains the following directorie
 openam-auth-trees		# The auth tree nodes and API classes  
 openam-authentication	# The authentication modules  
 openam-samples			# Sample code referred to in the AM 5.5 docs  
-openam-ui				# The UI code   
+openam-ui					# The UI code   
+openam-federation      # Code used to build the fedlet etc. n.b. This doesn't build as it's dependent on other elements of the am build. Best modify, build class files, unpack original war, jars, replace class file and rebuild jar, wars.
 ```
 
 Each directory contains a README that explains more about how to use that code. 
