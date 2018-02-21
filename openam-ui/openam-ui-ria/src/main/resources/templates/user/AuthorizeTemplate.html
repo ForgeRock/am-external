@@ -1,0 +1,172 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+<div class="container">
+
+    {{#if error}}
+    <div class="alert alert-warning col-md-6 col-md-offset-3" role="alert">
+        <strong>
+        {{#if error.uri}}
+            <a href="{{{error.uri}}}">{{{error.message}}}</a>
+        {{else}}
+            {{{error.message}}}
+        {{/if}}
+        </strong>
+        {{#if error.description}}
+            {{{error.description}}}
+        {{/if}}
+    </div>
+    {{else}}
+
+    <div class="page-header col-md-6 col-md-offset-3 wordwrap">
+        <h1 class="text-center">{{{oauth2Data.displayName}}}</h1>
+        {{#if oauth2Data.displayDescription}}
+        <p class="text-center"><em>{{{oauth2Data.displayDescription}}}</em></p>
+        {{/if}}
+    </div>
+
+    <form action="{{oauth2Data.formTarget}}" method="post" class="form col-md-6 col-md-offset-3" autocomplete="off">
+
+        <fieldset>
+            {{#if noScopes}}
+                <p>{{t 'form.noScopes'}}</p>
+            {{else}}
+                <p>{{t 'form.description'}}</p>
+            {{/if}}
+
+            <div class="panel-group form-horizontal" aria-multiselectable="true">
+
+                {{#each oauth2Data.displayScopes}}
+                {{#if this.values}}
+                <div class="panel panel-info">
+                    <div
+                        class="panel-heading clearfix am-panel-heading-hover clearfix"
+                        data-toggle="collapse"
+                        aria-expanded="false"
+                        data-target="#oauth2Scope{{@index}}"
+                        aria-controls="oauth2Scope{{@index}}"
+                        role="tab"
+                        tabindex="0"
+                    >
+                        {{{this.name}}}
+                        <div class="pull-right"><i class="fa fa-angle-down"></i></div>
+                    </div>
+
+                    <div id="oauth2Scope{{@index}}" class="panel-collapse collapse" role="tabpanel"  aria-expanded="false">
+                        <div class="panel-body">
+                            {{#if this.values.length}}
+                                <small>{{{this.values}}}</small><br/>
+                            {{else}}
+                                {{#each this.values}}
+                                <small><strong>{{{@key}}}:</strong> {{{this}}}</small><br/>
+                                {{/each}}
+                            {{/if}}
+                        </div>
+                    </div>
+                </div>
+                {{else}}
+                <div class="panel panel-default">
+                    <div class="panel-heading">{{{this.name}}}</div>
+                </div>
+                {{/if}}
+                {{/each}}
+
+                {{#each oauth2Data.displayClaims}}
+                {{#if this.values}}
+                <div class="panel panel-info">
+                    <div
+                        class="panel-heading clearfix am-panel-heading-hover clearfix"
+                        data-toggle="collapse"
+                        aria-expanded="false"
+                        data-target="#oauth2Claims{{@index}}"
+                        aria-controls="oauth2Claims{{@index}}"
+                        role="tab"
+                        tabindex="0"
+                    >
+                        {{{this.name}}}
+                        <div class="pull-right"><i class="fa fa-angle-down"></i></div>
+                    </div>
+                    <div id="oauth2Claims{{@index}}" class="panel-collapse collapse" role="tabpanel"  aria-expanded="false">
+                        <div class="panel-body">
+                            {{#if this.values.length}}
+                            <small>{{{this.values}}}</small><br/>
+                            {{else}}
+                            {{#each this.values}}
+                            <small><strong>{{{@key}}}:</strong> {{{this}}}</small><br/>
+                            {{/each}}
+                            {{/if}}
+                        </div>
+                    </div>
+                </div>
+                {{else}}
+                <div class="panel panel-default">
+                    <div class="panel-heading">{{{this.name}}}</div>
+                </div>
+                {{/if}}
+                {{/each}}
+            </div>
+
+            {{#if oauth2Data.userName}}
+            <p>{{t 'form.signedInAs'}} <span class="text-primary">{{{oauth2Data.userName}}}</span></p>
+            {{/if}}
+
+            <!-- Optional parameters -->
+            {{#if oauth2Data.realm}}
+            <input type="hidden" name="realm" aria-hidden="true" value="{{oauth2Data.realm}}"/>
+            {{/if}}
+            {{#if oauth2Data.redirectUri}}
+            <input type="hidden" name="redirect_uri" aria-hidden="true" value="{{oauth2Data.redirectUri}}"/>
+            {{/if}}
+            {{#if oauth2Data.scope}}
+            <input type="hidden" name="scope" aria-hidden="true" value="{{oauth2Data.scope}}"/>
+            {{/if}}
+            {{#if oauth2Data.state}}
+            <input type="hidden" name="state" aria-hidden="true" value="{{oauth2Data.state}}"/>
+            {{/if}}
+            {{#if oauth2Data.nonce}}
+            <input type="hidden" name="nonce" aria-hidden="true" value="{{oauth2Data.nonce}}"/>
+            {{/if}}
+            {{#if oauth2Data.acr}}
+            <input type="hidden" name="acr" aria-hidden="true" value="{{oauth2Data.acr}}"/>
+            {{/if}}
+            {{#if oauth2Data.userCode}}
+            <input type="hidden" name="user_code" aria-hidden="true" value="{{oauth2Data.userCode}}"/>
+            {{/if}}
+            {{#if oauth2Data.consent_request}}
+            <input type="hidden" name="consent_request" aria-hidden="true" value="{{oauth2Data.consent_request}}"/>
+            {{/if}}
+
+            <!-- Required parameters -->
+            <input type="hidden" name="response_type" aria-hidden="true" value="{{oauth2Data.responseType}}"/>
+            <input type="hidden" name="client_id" aria-hidden="true" value="{{oauth2Data.clientId}}"/>
+            <input type="hidden" name="csrf" aria-hidden="true" value="{{oauth2Data.csrf}}"/>
+
+            <div class="form-group clearfix">
+                <div class="pull-right">
+                    <button type="submit" name="decision" class="btn btn-default" value="deny">{{t 'form.deny'}}</button>
+                    <button type="submit" name="decision" class="btn btn-primary" value="allow">{{t 'form.allow'}}</button>
+                </div>
+                {{#if oauth2Data.isSaveConsentEnabled}}
+                <div class="pull-left checkbox">
+                    <label for="saveConsent"><input type="checkbox" name="save_consent" id="saveConsent"/>{{t 'form.save'}}</label>
+                </div>
+                {{/if}}
+            </div>
+
+        </fieldset>
+    </form>
+
+    {{/if}}
+</div>

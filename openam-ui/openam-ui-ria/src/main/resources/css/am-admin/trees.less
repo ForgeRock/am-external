@@ -1,0 +1,301 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2018 ForgeRock AS.
+ */
+.authtree-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.authtree-content-centre {
+    margin: 0 0 0 265px;
+    .transition(margin, 0.3s);
+
+    &.collapsed-right {
+        margin-right: 265px;
+    }
+}
+
+.authtree-container {
+    background-color: #eee;
+}
+
+.authtree-content-side {
+    width: 265px;
+    background: #f7f7f7;
+    z-index: 20;
+    position: absolute;
+    bottom: 0;
+    top: 0;
+    padding: 15px;
+    overflow-y: scroll;
+
+    &.authtree-content-left {
+        background-color: transparent;
+        box-shadow: 4px 56px 6px 0 rgba(0,0,0,.1);
+        border-right: 1px solid #ddd;
+
+        hr {
+            border-color: #ccc;
+            margin-top: 12px;
+        }
+    }
+
+    &.authtree-content-right {
+        .transition(right, 0.3s);
+        right: -265px;
+        width: 265px;
+        z-index: 20;
+        box-shadow: 0 56px 6px 2px rgba(0,0,0,0.1);
+        border-left: 1px solid #ddd;
+
+        &.expanded {
+            right: 0;
+        }
+
+        .key-value-field .table {
+            margin-bottom: 0;
+            font-size: 12px;
+        }
+    }
+
+    .authtree-content-side-title {
+        font-size: 16px;
+        margin-bottom: 30px;
+    }
+}
+
+.authtree-content-left-item {
+    padding: 0 0 10px 8px;
+
+    .panel-default {
+        margin: 0;
+        width: 224px;
+        &:hover {
+            box-shadow: 0 3px 7px 0px rgba(0,0,0,0.15);
+            .grabbable();
+        }
+    }
+
+    .panel-body {
+        padding: 7px 15px 7px 23px;
+        position: relative;
+        user-select: none;
+    }
+
+    .authtree-content-left-item-icon {
+        position: absolute;
+        left: -14px;
+        top: 4px;
+    }
+}
+
+.edit-tree-type-item-selected.authtree-content-left-item {
+    opacity: 0.5;
+}
+
+.authtree-editor-container {
+    overflow: auto;
+    user-select: none;
+    &.authtree-editor-container-dragging {
+        cursor: default;
+    }
+    .authtree-editor {
+        position: relative;
+        .authtree-editor-svg {
+            overflow: visible;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAANklEQVQoU2N8+PDhfwYGBgYBAQEQhRV8+PCBgRGkUExMDKcimATjx48f/7OxsY0qxBoCRIcjAOQ8KbH7nUw8AAAAAElFTkSuQmCC) repeat;
+        }
+    }
+}
+
+.react-draggable {
+    position: absolute;
+    z-index: 10;
+    &.react-draggable-dragging {
+        z-index: 15;
+    }
+}
+
+.authtree-connector {
+    fill: none;
+    stroke: #b4b4b4;
+    stroke-width: 1.5;
+    .transition(stroke-opacity, 1s, ease);
+
+    &.authtree-connector-selected-node-input, &.authtree-connector-selected-node-output {
+        animation: animate-dash 5s infinite linear;
+        stroke-opacity: 0.9;
+        stroke-dasharray: 5,5;
+    }
+
+    &.authtree-connector-new {
+        stroke-width: 2;
+        stroke-dasharray: 5,5;
+        stroke: @base-theme-color;
+    }
+
+    &.authtree-connector-selected-node-input {
+        stroke: #f0ad4e;
+    }
+
+    &.authtree-connector-selected-node-output {
+        stroke: #5bc0de;
+    }
+}
+
+&.authtree-editor-container-dragging-connector .authtree-connector {
+    stroke-opacity: 0.6;
+    .transition(stroke-opacity, 0.5s, ease);
+    &.authtree-connector-new {
+        stroke-opacity: 1;
+    }
+}
+
+@keyframes animate-dash {
+    to {
+        stroke-dashoffset: -100;
+    }
+}
+
+.authtree-node {
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.7);
+    .grabbable();
+    border: 1px solid rgba(0,0,0,.3);
+    box-shadow: 6px 6px 28px -2px rgba(0,0,0,0.4);
+
+    &.authtree-node-has-input:before {
+        color: #999;
+        content: "\f111";
+        font: normal normal normal 14px/1 FontAwesome;
+        left: -5px;
+        position: absolute;
+        top: 15px;
+        .transition(color, 0.5s, ease);
+
+        &:hover {
+            font-size: 16px;
+        }
+    }
+
+    &.authtree-node-has-input.authtree-node-has-input-invalid:before {
+        color: @failure-color;
+    }
+}
+
+.authtree-node-title {
+    padding: 10px;
+    white-space: nowrap;
+    min-width: 50px;
+    text-align: center;
+}
+
+ .react-draggable-dragging-connector .authtree-node, .authtree-node.authtree-node-selected  {
+     border-color: fade(@base-theme-color, 60%);
+
+     .authtree-node-title {
+         color: @base-theme-color;
+         .transition(color, 0.5s);
+     }
+ }
+
+.authtree-node-outcomes {
+    padding: 5px;
+    border-top: 1px solid rgba(0,0,0,.1);
+    background: rgba(0,0,0,0.05);
+
+    ul {
+        padding: 0;
+        margin: 0;
+        list-style: none;
+        text-align: right;
+    }
+}
+
+.authtree-outcome {
+    font-size: 12px;
+    margin: 13px -6px 0 0;
+
+    &:after {
+        content: "\f111";
+        font: normal normal normal 14px/1 FontAwesome;
+        font-size: 12px;
+        text-rendering: auto;
+        color: @base-theme-color;
+        padding-left: 5px;
+    }
+
+    label {
+        font-weight: normal;
+        margin: 0
+    }
+
+    &.authtree-outcome-invalid {
+        &:after {
+            color: @failure-color;
+        }
+    }
+
+    &:hover {
+        &:after, label {
+            color: darken(@base-theme-color, 10%);
+        }
+    }
+
+    &.authtree-multi-outcome {
+        margin: 0 -10px 0 0;
+    }
+}
+
+.authtree-btn-toolbar {
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    background: #f7f7f7;
+    position: relative;
+    z-index: 10;
+
+    &.btn-toolbar {
+        margin: 0;
+        border-bottom: 1px solid #ddd;
+        padding: 10px 15px 10px 10px;
+        height: 55px;
+    }
+
+    .fr-btn-secondary {
+        border-color: transparent;
+        &:hover:enabled {
+            border-color: #adadad;
+        }
+
+        &:disabled {
+            background: transparent;
+            &:hover {
+                border-color: transparent;
+            }
+        }
+        .fa {
+            color: #777;
+        }
+    }
+
+    .authtree-btn-toolbar-divider {
+        float: left;
+        margin: 0 10px;
+        border-left: 1px solid #ddd;
+        height: 34px;
+    }
+}

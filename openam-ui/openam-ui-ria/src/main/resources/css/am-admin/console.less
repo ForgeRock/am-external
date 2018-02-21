@@ -1,0 +1,425 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2017 ForgeRock AS.
+ */
+
+
+.block {
+    padding-bottom: 40px;
+
+    &:last-of-type {
+        padding-bottom: 0;
+    }
+
+    .block-description {
+        margin-bottom: 20px;
+    }
+}
+
+h3.block-header {
+    border: none;
+    font-size: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding-bottom: 10px;
+    margin-top: 0;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+    .transition(color, 0.5s);
+
+    &.block-header-inactive {
+        color: #bbb;
+    }
+}
+
+.fr-panel-tab {
+    .btn-toolbar {
+        margin-top: 0;
+    }
+}
+
+.am-btn-action-group {
+    margin: 0 -2px;
+    > .btn {
+        margin: 0 2px;
+    }
+}
+
+.form-horizontal .form-group {
+    [class*="col-"] + .help-block + .info-button {
+        margin-left: -15px;
+    }
+}
+
+.info-button {
+    background-color: transparent;
+    background-image: none;
+    border-color: transparent;
+    box-shadow: none;
+    color:@base-theme-color;
+
+    &:hover{
+        background-color:transparent;
+        border-color:transparent;
+        color: darken(@base-theme-color, 5%);
+    }
+
+    &:focus{
+        outline:none;
+        box-shadow:none;
+        color: darken(@base-theme-color, 5%);
+
+        background-color: transparent;
+        background-image: none;
+        border-color: transparent;
+        box-shadow: none;
+    }
+}
+
+// json-editor
+div[data-schemaid=root] {
+    /* because JSONEditor creates empty headers */
+    > h3 { display: none;}
+    h3 { margin: 0;}
+
+    .selectize-control {
+        margin-bottom: -5px;
+    }
+}
+
+.jsoneditor-block{
+    &:first-of-type {
+        margin-top: 5px;
+    }
+    .form-horizontal:last-of-type {
+        margin-bottom: 60px;
+    }
+    &:last-of-type .form-horizontal:last-of-type {
+        margin-bottom: 0;
+    }
+
+    // A Bootstrap override for the toggle
+    .form-inline .checkbox input[type="checkbox"][data-json-editor-toggle] {
+        margin-left: -20px;
+        position: absolute;
+    }
+}
+
+
+.btn-toolbar.page-toolbar {
+    border-top: 1px solid #ddd;
+    padding: 10px;
+    margin-top: 0;
+
+    ul.btn-group {
+        margin-bottom: 0;
+    }
+}
+
+.dragged {
+    position: absolute;
+    z-index: 2000;
+}
+
+.grid-list{
+    padding-top:15px;
+}
+
+.realm-card-location{
+    padding-top:8px;
+}
+
+.am-text-lines-one {
+   height: 20px;
+}
+
+.am-text-lines-two {
+   height: 35px;
+}
+
+.am-text-lines-three {
+   height: 60px;
+}
+
+.am-text-lines-four {
+   height: 80px;
+}
+
+.realm-card-aliases {
+    color:#666;
+    margin-top: 8px;
+ }
+
+
+#commonTasksBtn {
+    cursor:pointer;
+    color: @base-theme-color;
+    &:hover, &:focus {
+        color: darken(@base-theme-color, 5%);
+    }
+}
+
+
+// Popovers
+a[data-toggle="popover"] {
+    &:hover, &:focus{
+        box-shadow:none;
+        text-decoration:none;
+        cursor: pointer;
+        outline:none;
+        color: darken(@base-theme-color,5%);
+    }
+}
+.popover {
+    max-width: 500px;
+    .popover-title {
+        background-color: #fff;
+        border-bottom: 1px solid #ccc;
+        color: inherit;
+        font-weight: normal;
+    }
+}
+
+
+.full-screen-bar {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    z-index: 1001;
+    background-color: @background-color;
+}
+
+.CodeMirror-fullscreen {
+    top: 34px;
+    z-index: 1001;
+}
+
+.call-to-action-block {
+
+    text-align: center;
+    border: 1px solid #ccc;
+    padding: 35px;
+
+    h2 {
+        font-size: 21px;
+        color: @base-theme-color;
+        display: inline-block;
+        margin: 0 10px 10px;
+        font-weight: normal;
+    }
+
+    h3 {
+        font-size: 13px;
+        color: #666;
+        text-transform: uppercase;
+        display: inline-block;
+        margin: 0 10px;
+    }
+}
+
+.am-btn-single-icon {
+    width: 34px;
+    height: 34px;
+}
+
+.panel-heading {
+    .media {
+        color: @base-theme-color;
+
+        &:hover {
+            cursor: pointer;
+            color: darken(@base-theme-color, 5%);
+        }
+
+        h4.media-heading {
+            letter-spacing: normal;
+            font-size: 16px;
+            line-height: 28px;
+            margin: 0;
+        }
+
+        .media-left {
+            >div {
+                .icon-circle(28px);
+            }
+        }
+
+        .media-right {
+            .fa {
+                color: #777;
+                font-size: 14px;
+            }
+        }
+    }
+}
+
+.am-badge-group {
+    .badge:not(:last-of-type) {
+        margin-right: 5px;
+    }
+}
+
+.am-masonry-grid-2 {
+    -webkit-column-count: 2;
+    -moz-column-count: 2;
+    column-count: 2;
+}
+
+.am-masonry-item {
+    display: inline-block;
+    width: 100%
+}
+
+.am-summary-section {
+    .am-empty-section {
+        text-align: center;
+    }
+
+    .am-text-preformatted {
+        background-color: transparent;
+        border: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .am-summary-sub-section {
+        &:first-of-type {
+            margin-top: -15px;
+        }
+
+        &:not(:first-of-type) {
+            border-top: 1px solid #ddd;
+        }
+
+        &:last-of-type {
+            margin-bottom: -15px;
+        }
+
+        padding: 15px;
+
+        h5 {
+            font-weight: normal;
+            margin: 0 0 5px;
+        }
+    }
+}
+
+
+.checkbox-slider--b {
+    margin: 0;
+}
+
+.form-horizontal {
+    .checkbox-slider--b {
+        margin-top: 7px;
+    }
+}
+
+.form-group {
+    margin-bottom: 30px;
+
+    .am-error-detail {
+        padding: 0;
+        margin: 0;
+    }
+}
+
+.form-horizontal .form-group {
+    margin-bottom: 15px;
+}
+
+.am-iframe-overflow-scroll {
+    overflow: scroll;
+    margin-bottom: -5px;
+}
+
+.am-iframe-full-width {
+    width: 100%;
+    border: none;
+}
+
+.am-tree {
+    .am-tree-node-children {
+        margin-left: 22px;
+    }
+
+    .am-tree-node-children-hidden {
+        display: none;
+    }
+
+    a.am-tree-node, a.am-tree-node-leaf {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 14px;
+        padding-bottom: 0;
+    }
+
+    a.am-tree-node-leaf {
+        margin-left: 15px;
+    }
+}
+
+.loading {
+    text-align: center;
+    margin: 20px;
+    > span {
+        text-transform: uppercase;
+        margin: 5px 5px 0;
+        display: inline-block;
+        vertical-align: top;
+    }
+}
+
+.fullscreen {
+    position: fixed;
+    right: 0;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 1000;
+    width: 100%;
+    background: #f7f7f7;
+}
+
+.grabbed {
+    cursor: grabbing;
+    cursor: -moz-grabbing;
+    cursor: -webkit-grabbing;
+}
+
+.grabbable {
+    cursor: move;
+    cursor: grab;
+    cursor: -moz-grab;
+    cursor: -webkit-grab;
+
+    &:active {
+        .grabbed();
+    }
+}
+
+@media (min-width: 992px) {
+    .container {
+        width: 980px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .container {
+        width: 1180px;
+    }
+}

@@ -1,0 +1,68 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2017 ForgeRock AS.
+ */
+
+.script-area {
+    margin: 15px 0;
+}
+
+.script-validation-message {
+    margin: 15px 0 0 0;
+
+    .fa-times {
+        vertical-align: top;
+        font-size: 14px;
+        margin: 3px 0 0;
+    }
+
+    .validation-error {
+        color: #2a2f32;
+        white-space: pre-line;
+        padding: 0 10px;
+        margin: 10px 0 0 0;
+        border: 0;
+
+        .validation-key {
+            color: @failure-color;
+        }
+    }
+
+    .alert {
+        margin-bottom: 15px;
+    }
+}
+
+.script-context {
+    position: relative;
+
+    .btn {
+        position: absolute;
+        top: 0;
+        right: 15px;
+        border-radius: 0 4px 4px 0;
+    }
+}
+
+.script-change-context {
+    .alert {
+        box-shadow: none;
+        -webkit-box-shadow: none;
+        border: 1px solid #e5e5e5;
+    }
+}
+
+.script-upload {
+    display: none;
+}

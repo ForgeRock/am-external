@@ -1,0 +1,58 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+}}
+<div class="col-sm-6 col-md-3">
+    <div class="panel-default panel am-panel-card" data-realm-path="{{path}}">
+        <div class="btn-group card-menu">
+            <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                <i class="fa fa-ellipsis-v fa-lg"></i>
+            </button>
+            <ul class="dropdown-menu pull-left" role="menu">
+                <li><a href="{{routeTo 'realmEdit' path}}"><i class="fa fa-pencil"></i> {{t "common.form.edit"}}</a></li>
+                {{#if active}}
+                    <li {{#if isTopLevelRealm}} class="disabled" {{/if}}><a href="#" data-toggle-realm><i class="fa fa-ban"></i> {{t "common.form.deactivate"}}</a></li>
+                {{else}}
+                    <li {{#if isTopLevelRealm}} class="disabled" {{/if}}><a href="#" data-toggle-realm><i class="fa fa-check"></i> {{t "common.form.activate"}}</a></li>
+                {{/if}}
+                <li class="divider"></li>
+                <li {{#if isTopLevelRealm}} class="disabled" {{/if}}><a href="#" data-delete-realm ><i class="fa fa-times"></i> {{t "common.form.delete"}}</a></li>
+            </ul>
+        </div>
+        <a href="{{routeTo 'realmDefault' path}}">
+            <div class="card-body card-body-with-menu">
+                <div class="card-icon-circle bg-primary">
+                    <i class="fa fa-cloud"></i>
+                </div>
+                <h3 class="card-name am-text-lines-one text-primary" data-toggle="popover" data-trigger="hover" data-placement="bottom" data-content="{{name}}">{{name}}</h3>
+                <div class="card-subtext">
+                    <div class="realm-card-path">{{path}}</div>
+                    <div class="realm-card-aliases am-text-lines-two small">
+                    {{#if aliases}}
+                        {{aliases.[0]}}
+                        {{#if aliases.[1]}}
+                            {{#each aliases}}
+                            {{#if @last}}<br><em>{{@index}} {{t 'common.form.more'}}</em>{{/if}}
+                            {{/each}}
+                        {{/if}}
+                    {{/if}}
+                </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                {{> util/_Status active=active }}
+            </div>
+        </a>
+    </div>
+</div>

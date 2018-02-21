@@ -1,0 +1,139 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2017 ForgeRock AS.
+ */
+.table-container {
+    /* Prevents tables from overflowing when the container is too thin. This can and does happen. */
+    overflow: auto;
+}
+
+.table {
+    /* Specificity must match Bootstrap's to override */
+    > tbody > tr > td,
+    > thead > tr > th {
+        max-width: 250px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        outline: 0;
+
+        &.select-all-header-cell,
+        &.select-row-cell {
+            width: 13px;
+            text-align: center;
+        }
+
+        &[class^='fr-col-btn-'], &[class*=' fr-col-btn-'] {
+            text-align: center;
+
+            .btn-link {
+                padding: 1px 6px;
+                border: none;
+                line-height: 1;
+            }
+        }
+
+        &.fr-col-btn-1 {
+            width: 48px;
+            min-width: 48px;
+        }
+
+        &.fr-col-btn-2 {
+            width: 73px;
+            min-width: 73px;
+        }
+
+        &.fr-col-btn-3 {
+            width: 95px;
+            min-width: 95px;
+        }
+    }
+
+    > tbody > tr > td {
+        vertical-align: middle;
+    }
+
+    > thead > tr > th {
+        a {
+            text-decoration: none;
+            white-space: nowrap;
+            cursor: pointer;
+            display: block;
+        }
+    }
+
+    .sort-caret {
+        display: inline-block;
+        width: 0;
+        height: 0;
+        margin-left: .3em;
+        border: 0;
+        content: "";
+    }
+
+    .ascending .sort-caret {
+        vertical-align: baseline;
+        border-top: 0;
+        border-right: 4px solid transparent;
+        border-bottom: 4px solid #000;
+        border-left: 4px solid transparent
+    }
+
+    .descending .sort-caret {
+        vertical-align: super;
+        border-top: 4px solid #000;
+        border-right: 4px solid transparent;
+        border-bottom: 0;
+        border-left: 4px solid transparent
+    }
+
+    &.table-hover > tbody > tr {
+        cursor: pointer;
+    }
+
+    /* Reapplying the default bootstrap styles after we've previously overwritten them */
+    &.table-condensed {
+        > tbody > tr > td,
+        > thead > tr > th,
+        > tfoot > tr > td {
+            padding: 5px;
+        }
+    }
+}
+
+.am-inline-edit-table {
+    margin-bottom: 20px;
+
+    .table {
+        margin-bottom: 10px;
+
+        .am-inline-edit-table-row {
+            .form-group {
+                padding: 1px 2px;
+
+                .form-control {
+                    height: 32px;
+                }
+            }
+
+            .fr-col-btn-2 {
+                text-align: left;
+            }
+
+            &:last-child td {
+                border-bottom: 1px solid #ddd;
+            }
+        }
+    }
+}

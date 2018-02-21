@@ -1,0 +1,272 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2014-2017 ForgeRock AS.
+ */
+
+ /* should come to toolbar.less from common*/
+ .toolbar-lg {
+     margin-bottom: 30px;
+     padding: 20px 0 35px;
+ }
+
+ .tool-group-left {
+     float: left;
+     margin-right: 20px;
+ }
+ /* ENF should come to toolbar.less from common */
+
+ /* Candidate for Commons */
+#login-base {
+    padding-bottom: 50px;
+}
+
+.float-right {
+    float:right;
+}
+
+ .dropdown-menu li .fa {
+     width:20px;
+     text-align: center;
+ }
+
+.table-with-border-bottom {
+    tbody>tr:last-of-type>td {
+        border-bottom: 1px solid #eee;
+    }
+}
+
+.page-toolbar, .panel-toolbar {
+    border-bottom: 1px solid #ddd; //FIXME: Needs to go into Bootstrap
+    border-top: 1px solid #ddd; //FIXME: Needs to go into Bootstrap
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding: 10px;
+}
+
+/* END of Candidate for Commons */
+
+.remember-forgot {
+    padding: 0 0 0;
+    .pull-right, .pull-left, .checkbox {
+        margin-top: 0;
+    }
+}
+
+#login-base, .bootstrap-dialog.login-dialog {
+    .btn-group-justified {
+        padding-top: 5px;
+    }
+
+    .btn-block+.btn-block {
+        margin-top: 15px;
+    }
+
+     .btn-default.active {
+        cursor:auto;
+    }
+
+    .am-btn-link-no-padding {
+        padding: 0;
+        margin-top:-3px;
+    }
+}
+
+#dialogs .validationRules {
+    margin-left: 0;
+}
+
+
+
+.bootstrap-dialog.login-dialog {
+    form.form {
+        width: 100%;
+        margin: 0;
+    }
+
+    .container {
+        width: auto;
+    }
+}
+
+/*
+ * Enable point events as they are disabled in Bootstrap 3.3+
+ * @see https://github.com/twbs/bootstrap/pull/14104
+*/
+.enable-pointer .form-control-feedback {
+    pointer-events: auto;
+}
+
+/* XUI Overrides */
+body, .modal-open {
+    /* This will prevent to sudden shift of content which can sometimes occur
+    * when navigating between them long views which require a scroll bar and
+    * short ones which do not.
+    */
+    overflow-y: scroll;
+
+
+    // To remove the empty space at the bottom of the footer which causes the
+    // scroll bar to always be present.
+    .footer .container {
+        padding-bottom: 0;
+    }
+}
+
+// removes extra space below control
+.selectize-control {
+    &.multi {
+        font-size: 0;
+        .selectize-dropdown, div {
+            font-size: 14px;
+        }
+    }
+
+    .selectize-input.disabled {
+        background-color: #eee;
+        cursor: not-allowed!important; // library's style is thoughtfully written as "cursor: default!important"
+        opacity: inherit;
+
+        &:after {
+            opacity: 0.5;
+        }
+
+        .item {
+            color: #555;
+        }
+    }
+}
+
+.multiple-panels {
+    border: 1px solid #ddd;
+
+    .panel-default {
+        margin-bottom: 0;
+        border: none;
+        border-radius: 0;
+        border-bottom: 1px solid #ddd;
+        border-collapse: collapse;
+
+        &:first-of-type {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+
+        &:last-of-type {
+            border-bottom: none;
+        }
+    }
+
+    .panel-footer {
+        border-top: none;
+    }
+}
+
+
+/* Candidate for Commons, copied from OpenIDM */
+.panel-collapse {
+    h4.panel-title {
+        font-size: 18px;
+        text-transform: none;
+        letter-spacing: 0;
+        font-weight: 600;
+    }
+
+    .panel-title > a {
+        color: @base-theme-color;
+
+        &.no-caret {
+            &:before, &:after {
+                display:none;
+            }
+        }
+    }
+}
+
+#sidePageContent {
+    margin-top:-6px;
+}
+
+.tree-view-container {
+    margin-top: 40px;
+}
+
+.open > .dropdown-toggle.btn-default {
+    color: #333;
+    background-color: #e6e6e6;
+    border-color: #adadad;
+}
+
+.am-panel-heading-hover {
+
+    &:hover {
+        cursor:pointer;
+    }
+
+    .fa-angle-down {
+        transition: all 0.3s ease-out;
+    }
+
+    &.expanded {
+        .fa-angle-down {
+            -webkit-transform: rotateX(180deg);
+            -moz-transform: rotateX(180deg);
+            -o-transform: rotateX(180deg);
+            -ms-transform: rotateX(180deg);
+            transform: rotateX(180deg);
+        }
+    }
+}
+
+.cell-model-icon {
+    display: table-cell;
+    vertical-align: top;
+    padding-right: 10px;
+
+    span {
+        background-color: @base-theme-color;
+        color: #fff;
+        margin: 0 auto;
+        .icon-circle(28px);
+    }
+}
+
+.cell-model-name {
+    display: table-cell;
+    vertical-align: middle;
+
+    &:hover, &:focus {
+      color: @base-theme-color;
+    }
+}
+
+.am-selectize-search.selectize-control.single, select.am-selectize-search {
+    width: 250px;
+    .selectize-input {
+        border-color: @base-theme-color;
+
+        &:after {
+            display: block;
+            position: absolute;
+            top: 50%;
+            right: 17px;
+            margin: -9px 3px 0 0;
+            width: 0;
+            height: 0;
+            border: none;
+            content: '\f002';
+            font-family: fontawesome;
+            color: @base-theme-color;
+        }
+    }
+}

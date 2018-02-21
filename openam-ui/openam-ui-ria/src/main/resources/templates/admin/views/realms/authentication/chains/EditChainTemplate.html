@@ -1,0 +1,128 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+{{> headers/_TitleWithSubAndIcon title=form.chainData._id type="console.authentication.editChains.chains" icon="link" }}
+
+<p class="page-description">{{t 'console.authentication.editChains.moduleHelp'}}</p>
+
+<div class="tab-menu">
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="active"><a href="#chains" role="tab"  data-toggle="tab" aria-expanded="true"> {{t 'console.authentication.editChains.editChain'}}</a></li>
+        <li><a href="#settings" role="tab" data-toggle="tab" aria-expanded="true"> {{t 'common.form.settings'}}</a></li>
+    </ul>
+</div>
+
+<div class="panel panel-default fr-panel-tab">
+
+    <div class="tab-content" id="editChainView">
+
+        <div role="tabpanel" class="tab-pane active" id="chains">
+
+            <div class="panel-body">
+                <div class="btn-toolbar hidden">
+                    <button type="button" class="btn btn-primary" data-add-new-module>
+                        <i class="fa fa-plus"></i> {{t 'console.authentication.editChains.addModule'}}
+                    </button>
+                    <div class="pull-right text-valign-middle auth-chains-legend">
+                        {{t 'console.authentication.editChains.legend.0'}}
+                        <span class="badge badge-success"><i class="fa fa-flag"></i></span>
+                        {{t 'console.authentication.editChains.legend.1'}}
+                        <span class="badge badge-danger"><i class="fa fa-flag"></i> </span>
+                        {{t 'console.authentication.editChains.legend.2'}}
+                    </div>
+                </div>
+
+                <div id="sortableContainer">
+                    <ol id="sortableAuthChain" class="list-unstyled hidden"></ol>
+                </div>
+                <div class="call-to-action-block hidden">
+                    <h3>{{t 'console.authentication.editChains.callToAction'}}</h3>
+                    <button type="button" class="btn btn-primary" data-add-new-module>
+                        <i class="fa fa-plus"></i> {{t 'console.authentication.editChains.addModule'}}
+                    </button>
+                </div>
+
+                <div id="lowerAuthChainsLegend" class="hidden">
+                    <div class="panel panel-default">
+                        <div class="panel-body">
+                            <div class="text-center auth-chains-legend">
+                                {{t 'console.authentication.editChains.legend.0'}}
+                                <span class="badge badge-success"><i class="fa fa-flag"></i></span>
+                                {{t 'console.authentication.editChains.legend.1'}}
+                                <span class="badge badge-danger"><i class="fa fa-flag"></i> </span>
+                                {{t 'console.authentication.editChains.legend.2'}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="alertContainer"></div>
+            </div>
+
+            <div class="panel-footer clearfix">
+                <div class="pull-right">
+                    {{!-- TODO: change to data-save after refactoring of the save logic --}}
+                    <button data-save-chain class="btn btn-primary" type="button" disabled>
+                        <span>{{t "common.form.saveChanges"}}</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <div role="tabpanel" class="tab-pane" id="settings">
+
+            <div class="panel-body">
+
+                <div class="block clearfix">
+                    <h3 class="block-header">{{t 'console.authentication.editChains.redirectUrls'}}</h3>
+                    <p class="panel-description">{{t 'console.authentication.editChains.redirectUrlsHelp'}}</p>
+                    <div class="form-horizontal">
+                        <div class="form-group">
+                            <label for="loginSuccessUrl" class="control-label col-sm-4">{{t 'console.authentication.editChains.successUrl'}}</label>
+                            <div class="col-sm-6">
+                                <input id="loginSuccessUrl" type="text" class="form-control input-btn" placeholder="{{t 'console.authentication.editChains.addUrl'}}"  value="{{form.chainData.loginSuccessUrl.[0]}}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginFailureUrl" class="control-label col-sm-4">{{t 'console.authentication.editChains.failUrl'}}</label>
+                            <div class="col-sm-6">
+                                <input id="loginFailureUrl" type="text" class="form-control input-btn" placeholder="{{t 'console.authentication.editChains.addUrl'}}" value="{{form.chainData.loginFailureUrl.[0]}}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="block clearfix">
+                    <h3 class="block-header">{{t 'console.authentication.editChains.processingClass.title'}}</h3>
+                    <p class="panel-description">{{t 'console.authentication.editChains.processingClass.help'}}</p>
+                    <table class="table" id="postProcessView"></table>
+                </div>
+
+                <div class="panel-footer clearfix">
+                    <div class="pull-right">
+                        {{!-- TODO: change to data-save after refactoring of the save logic --}}
+                        <button data-save-settings class="btn btn-primary" type="button">
+                            <span>{{t "common.form.saveChanges"}}</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>

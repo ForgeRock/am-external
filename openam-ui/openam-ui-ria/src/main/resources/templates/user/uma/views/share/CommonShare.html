@@ -1,0 +1,69 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+<div class="page-header page-header-no-border clearfix">
+    <span id="umaShareImage" class="header-icon pull-left fa bg-primary">
+        {{#if icon}}
+        <img title="{{ name }}" src="{{ icon }}"/>
+        {{else}}
+        <i class="fa fa-share"></i>
+        {{/if}}
+    </span>
+    <h4 class="page-type">{{t 'uma.share.share' }}</h4>
+    <h1>{{ name }}</h1>
+</div>
+
+<div class="panel panel-default">
+    <div class="panel-body" >
+
+        <div id="shareCounterContainer" class="alert alert-info" role="alert">
+            <div class="media" id="shareCounter">&nbsp;</div>
+        </div>
+
+        {{#if notFound}}
+        <div class="col-sm-12">
+            <div class="striped-list " id="resourceList">
+                <ul><li class="highlight-warning">{{t 'uma.share.notSpecifiedResource'}}</li></ul>
+            </div>
+        </div>
+        {{else}}
+
+        <div class="row" role="form">
+            <div id="selectUser" class="form-group col-sm-6">
+                <label>{{t 'uma.share.people'}}</label>
+                <select multiple class="selectize" placeholder="{{t 'common.form.startTypingToSearch'}}">
+                    <option disabled selected value>{{t 'common.form.pleaseSelect'}}</option>
+                    {{#each permissions}}
+                    <option value="{{subject}}">{{subject}}</option>
+                    {{/each}}
+                </select>
+            </div>
+            <div id="selectPermission" class="form-group col-sm-6">
+                <label>{{t 'uma.share.permission'}}</label>
+                <select multiple class="selectize">
+                    <option disabled selected value>{{t 'common.form.pleaseSelect'}}</option>
+                    {{#each scopes}}
+                    <option value="{{id}}">{{name}}</option>
+                    {{/each}}
+                </select>
+            </div>
+        </div>
+
+    <div class="clearfix pull-right">
+        <input type="button" value="{{t 'uma.share.share'}}" id="shareButton" class="btn btn-primary" disabled/>
+    </div>
+    {{/if}}
+
+</div>

@@ -1,0 +1,75 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+}}
+{{> headers/_Title title="console.services.list.title" }} 
+
+<p class="page-description">{{t "console.services.list.description"}}</p>
+{{#if this.services.length}}
+    <div class="btn-toolbar page-toolbar">
+        <button class="btn btn-primary" data-add-service>
+            <i class="fa fa-plus"></i> {{t "console.services.list.addService"}}
+        </button>
+        <button data-delete-services disabled class="btn btn-default" type="button"><i class="fa fa-times"></i> {{t 'common.form.delete'}}</button>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="select-all-header-cell"></th>
+                            <th>{{t "console.services.list.grid.header.0"}}</th>
+                            <th class="fr-col-btn-2"/>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#each this.services}}
+                            <tr data-service-id="{{_id}}">
+                                <td class="select-row-cell">
+                                    <input data-select-service type="checkbox"/>
+                                </td>
+                                <td class="wordwrap">
+                                    <a href="{{routeTo 'realmsServiceEdit' ../realmPath _id}}" title="{{t 'common.form.edit'}}">{{name}}</a>
+                                </td>
+                                <td class="fr-col-btn-2">
+                                    <div class="btn-group">
+                                        <a class="btn btn-link" href="{{routeTo 'realmsServiceEdit' ../realmPath _id}}" title="{{t 'common.form.edit'}}">
+                                            <i class="fa fa-pencil"/>
+                                        </a>
+                                        <button type="button" data-delete-service class="btn btn-link" title="{{t 'common.form.delete'}}">
+                                            <i class="fa fa-close"/>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{{else}}
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div class="call-to-action-block">
+                <h3>{{t "console.services.list.addServicePrompt"}}</h3>
+                <a class="btn btn-primary" href="{{routeTo 'realmsServiceNew' realmPath}}">
+                    <i class="fa fa-plus"></i> {{t "console.services.list.addService"}}
+                </a>
+            </div>
+        </div>
+    </div>
+{{/if}}

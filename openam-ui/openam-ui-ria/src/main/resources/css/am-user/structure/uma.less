@@ -1,0 +1,252 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2017 ForgeRock AS.
+ */
+
+.webkit-text-rendering-bugfix{
+    -webkit-transform: translateZ(0px);
+    -webkit-backface-visibility: hidden;
+}
+
+span.tooltips {
+    position: relative;
+    display: inline;
+
+    span {
+        position: absolute;
+        width: 0;
+        text-align: center;
+        visibility: hidden;
+        border-radius: 3px;
+        font-size: 13px;
+        padding: 6px 5px 10px;
+        box-shadow: 0 1px 3px #666;
+        bottom: 25px;
+        transition: bottom 200ms ease-out, opacity 100ms ease-in;
+        opacity: 0;
+
+        &:after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -8px;
+            width: 0;
+            height: 0;
+            border-top: 8px solid;
+            border-right: 8px solid transparent;
+            border-left: 8px solid transparent;
+        }
+    }
+
+    &:hover span, &:focus span {
+        width: 120px;
+        margin-left: -65px;
+        visibility: visible;
+        opacity: 0.9;
+        bottom: 30px;
+        left: 50%;
+        z-index: 999;
+    }
+}
+
+span.item-button-panel {
+    > span {
+        opacity:0.5;
+        .transition(opacity, 200ms, linear);
+
+        &.fa-check {
+            display: none;
+        }
+
+        &:hover, &:focus {
+            opacity: 1;
+            box-shadow: none;
+        }
+    }
+}
+
+
+.policy-header {
+    padding: 0 0 30px;
+    margin: 0 10px;
+
+    h1 {
+        font-weight: normal;
+        padding: 0 0 10px;
+        line-height: 32px;
+
+        span, a{
+            font-weight: bold;
+            text-decoration: none;
+        }
+    }
+
+    h2 {
+        font-weight: normal;
+        line-height: 18px;
+        font-style: italic;
+        font-size: 12px;
+
+        span {
+            font-weight: normal;
+        }
+
+        a {
+            font-weight: normal;
+            text-decoration: none;
+        }
+    }
+}
+
+#lastFSlash, select {
+    .transition(opacity, 300ms, linear);
+
+    &.fade{
+        opacity: 0;
+    }
+}
+
+#umaShareImage.header-icon {
+    display: block;
+    position: relative;
+    .transition(background-color, 200ms, linear);
+
+    // If this img fails to load the class no-image is added to #umaShareImage
+    img {
+        width: 64px;
+        height: 64px;
+        border-radius: 32px;
+        overflow: hidden;
+    }
+
+    &.no-image{
+        img {
+            display: none;
+        }
+    }
+}
+
+
+#uma {
+    input[type="text"]:invalid:required, input[type="text"].invalid {
+        .transition(background-color, 200ms, linear);
+    }
+
+    #resourceList {
+        margin-bottom: 30px;
+    }
+
+    .backgrid {
+        td.permissions-cell {
+            overflow: visible;
+
+            a:hover {
+                background-color: inherit;
+                color: inherit;
+            }
+        }
+
+        td a:hover {
+            text-decoration: none;
+        }
+
+        td:not(.uri-cell) a:hover {
+            // Adds the click event to the td so that the entire cell is clickable so underline not needed
+            text-decoration: underline;
+        }
+
+        td.fa-share {
+            font-size: 14px;
+            text-align: right;
+
+            &:hover {
+                cursor: pointer;
+            }
+        }
+
+        tbody tr.unsaved-changes {
+            .transition(background, 0.2s, linear);
+
+            #revoke {
+                display: none;
+            }
+
+            #save, #cancel {
+                display: block;
+            }
+        }
+    }
+
+    #save, #cancel {
+        display: none;
+    }
+
+    #advancedView {
+        overflow: hidden;
+        max-height: 0;
+        opacity: 0;
+        transition: opacity 500ms ease-in-out ;
+        border-bottom:none;
+    }
+
+    &.advanced-mode {
+        #shareCounter, #shareCounterContainer {
+            display: none;
+        }
+
+        #advancedView{
+            max-height: 500px;
+            opacity: 1;
+            transition: max-height 500ms ease-out, opacity 500ms ease-in-out ;
+        }
+    }
+
+    .selectize-control.multi .selectize-input.disabled {
+        background-color: transparent;
+        border-color: transparent;
+        box-shadow: none;
+        opacity: 1;
+
+        > div {
+            box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.4);
+        }
+
+        &:not(.has-options){
+            display: none;
+        }
+    }
+
+    .selectize-control.single .selectize-input.disabled {
+        background: none;
+        border: none;
+        box-shadow: none;
+    }
+
+    #labels{
+        margin-right: 85px;
+    }
+
+    #editLabels{
+        margin: 6px 0 0 -10px;
+
+        &:hover{
+            text-decoration: none;
+        }
+    }
+}
+
+#dialog-background.show {
+    opacity: 0.5;
+}
