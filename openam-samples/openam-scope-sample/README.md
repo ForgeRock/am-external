@@ -18,9 +18,3 @@ see <https://backstage.forgerock.com/docs/am/5/oauth2-guide#chap-oauth2-customiz
 Before building the sample scope validator plugin,
 update the `<openam.version>` property in the POM to match your OpenAM version.
 
-* * *
-Copyright 2013-2017 ForgeRock AS. All Rights Reserved
-
-Use of this code requires a commercial software license with ForgeRock AS.
-or with one of its affiliates. All use shall be exclusively subject
-to such license between the licensee and ForgeRock AS.
