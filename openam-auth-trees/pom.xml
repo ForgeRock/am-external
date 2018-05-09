@@ -24,7 +24,6 @@
     </properties>
 
     <modules>
-        <module>auth-trees-engine</module>
         <module>auth-nodes</module>
         <module>auth-node-api</module>
     </modules>
