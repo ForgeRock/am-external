@@ -75,5 +75,11 @@
             <artifactId>openam-core</artifactId>
         </dependency>
     </dependencies>
+    <repositories>
+        <repository>
+            <id>forgerock-private-releases</id>
+            <url>https://maven.forgerock.org/repo/private-releases</url>
+        </repository>
+    </repositories>
 </project>
 
