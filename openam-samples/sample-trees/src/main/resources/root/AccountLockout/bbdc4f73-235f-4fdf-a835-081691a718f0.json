@@ -1,0 +1,18 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "${project.version}",
+    "entityType" : "AccountLockout",
+    "entityId" : "bbdc4f73-235f-4fdf-a835-081691a718f0",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "bbdc4f73-235f-4fdf-a835-081691a718f0",
+    "lockAction" : "LOCK",
+    "_type" : {
+      "_id" : "AccountLockoutNode",
+      "name" : "Account Lockout",
+      "collection" : true
+    }
+  }
+}

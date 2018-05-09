@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2011-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Parent Project -->
+    <parent>
+        <groupId>org.forgerock.am</groupId>
+        <artifactId>openam-federation</artifactId>
+        <version>6.0.0</version>
+    </parent>
+
+    <!-- Component Definition -->
+    <name>OpenFM</name>
+    <description>OpenAM Federation</description>
+    <artifactId>OpenFM</artifactId>
+    <packaging>jar</packaging>
+
+    <!-- Build -->
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+                <excludes>
+                    <exclude>*_*/*</exclude>
+                </excludes>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources/de_DE</directory>
+                <includes>
+                    <include>*</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources/es_ES</directory>
+                <includes>
+                    <include>*</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources/fr_FR</directory>
+                <includes>
+                    <include>*</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources/ja_JP</directory>
+                <includes>
+                    <include>*</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources/ko_KR</directory>
+                <includes>
+                    <include>*</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources/zh_CN</directory>
+                <includes>
+                    <include>*</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources/zh_TW</directory>
+                <includes>
+                    <include>*</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-rest</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-entitlements</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-federation-library</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.santuario</groupId>
+            <artifactId>xmlsec</artifactId>
+        </dependency>
+    </dependencies>
+</project>
+

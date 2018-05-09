@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2011-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Parent Project -->
+    <parent>
+        <groupId>org.forgerock.am</groupId>
+        <artifactId>openam</artifactId>
+        <version>6.0.0</version>
+    </parent>
+
+    <!-- Component Definition -->
+    <name>OpenAM Authentication</name>
+    <description>OpenAM Authentication Modules</description>
+    <artifactId>openam-authentication</artifactId>
+    <packaging>pom</packaging>
+
+    <!-- Child Modules -->
+    <modules>
+        <module>openam-auth-common</module>
+        <module>openam-auth-ad</module>
+        <module>openam-auth-anonymous</module>
+        <module>openam-auth-adaptive</module>
+        <module>openam-auth-application</module>
+        <module>openam-auth-cert</module>
+        <module>openam-auth-datastore</module>
+        <module>openam-auth-hotp</module>
+        <module>openam-auth-httpbasic</module>
+        <module>openam-auth-jdbc</module>
+        <module>openam-auth-ldap</module>
+        <module>openam-auth-membership</module>
+        <module>openam-auth-msisdn</module>
+        <module>openam-auth-nt</module>
+        <module>openam-auth-oath</module>
+        <module>openam-auth-fr-oath</module>
+        <module>openam-auth-oauth2</module>
+        <module>openam-auth-radius</module>
+        <module>openam-auth-push</module>
+        <module>openam-auth-windowsdesktopsso</module>
+        <module>openam-auth-persistentcookie</module>
+        <module>openam-auth-oidc</module>
+        <module>openam-auth-scripted</module>
+        <module>openam-auth-device-id</module>
+        <module>openam-auth-saml2</module>
+        <module>openam-auth-amster</module>
+        <module>openam-auth-social</module>
+        <module>openam-auth-jwt-pop</module>
+    </modules>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <modules>
+                <module>openam-auth-securid</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>development</id>
+            <modules>
+                <module>openam-auth-securid</module>
+            </modules>
+        </profile>
+    </profiles>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-core</artifactId>
+        </dependency>
+    </dependencies>
+</project>
+

@@ -1,0 +1,45 @@
+{{!
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+{{#if entity.name}}
+    {{> headers/_TitleWithSubAndIcon title=entity.name type="console.authorization.common.resourceType" icon="cube" }}
+{{/if}}
+
+<p class="panel-description">{{entity.description}}</p>
+
+<div class="tab-menu">
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="active"><a href="#patterns" role="tab" data-toggle="tab" aria-expanded="false">{{t "console.authorization.common.patterns"}}</a></li>
+        <li><a href="#actions" role="tab" data-toggle="tab" aria-expanded="false">{{t "console.authorization.common.actions"}}</a></li>
+        <li><a href="#settings" role="tab" data-toggle="tab" aria-expanded="false">{{t "common.form.details"}}</a></li>
+    </ul>
+</div>
+
+<div class="panel panel-default fr-panel-tab">
+    <div class="panel-body tab-content">
+        <div role="tabpanel" class="tab-pane active" id="patterns">
+            <div class="form-inline">
+                <p class="panel-description">{{t "console.authorization.resourceTypes.edit.patternsDescription"}}</p>
+                <div id="resTypePatterns"></div>
+            </div>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="actions">
+            <div class="form-inline">
+                <p class="panel-description">{{t "console.authorization.resourceTypes.edit.actionsDescription"}}</p>
+                <div id="resTypeActions"></div>
+            </div>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="settings">
+            <div class="form-horizontal" id="resTypeSetting"></div>
+        </div>
+    </div>
+    <div class="panel-footer clearfix">
+        <div class="pull-right">
+            <button data-save class="btn btn-primary" type="button">{{t "common.form.saveChanges"}}</button>
+        </div>
+    </div>
+</div>

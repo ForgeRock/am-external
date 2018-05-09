@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>openam-authentication</artifactId>
+        <groupId>org.forgerock.am</groupId>
+        <version>6.0.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Component Definition -->
+    <name>OpenAM Push Authentication Module</name>
+    <description>OpenAM Auth AuthenticatorPush</description>
+    <artifactId>openam-auth-push</artifactId>
+    <packaging>jar</packaging>
+
+    <properties>
+        <checkstyleFailOnError>true</checkstyleFailOnError>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-auth-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.commons.guava</groupId>
+            <artifactId>forgerock-guava-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-push-notification</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-core-rest</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

@@ -1,0 +1,28 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+/* Medium devices (desktops, 768px and up)*/
+@media (min-width: @screen-sm) {
+
+    nav:not(.navbar-inverse){
+
+        .dropdown-menu>li>span {
+            display: block;
+            padding: 3px 20px;
+            clear: both;
+            font-weight: normal;
+            line-height: 1.42857143;
+            white-space: nowrap;
+            cursor:pointer;
+        }
+
+        .dropdown-menu .fa {
+            margin-right:5px;
+        }
+    }
+}

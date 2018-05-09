@@ -1,0 +1,23 @@
+{{!
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+{{> alerts/_Alert text="console.scripts.edit.dialog.warning"}}
+
+{{#each contexts}}
+<div class="radio">
+    <label>
+        <input type="radio" name="changeContext" id="{{_id}}" value="{{_id}}"
+        {{#if ../newScript}}
+            {{#equals ../../defaultContext _id}} checked {{/equals}}
+        {{else}}
+            {{#equals ../../entity.context _id}} checked {{/equals}}
+        {{/if}}
+        >
+        {{name}}
+    </label>
+</div>
+{{/each}}

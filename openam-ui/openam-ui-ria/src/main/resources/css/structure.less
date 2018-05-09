@@ -1,0 +1,35 @@
+/*
+ * Copyright 2014-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+@openam-version: "${version}";
+@verison: @openam-version;
+
+// CSS Basic Configuration
+@import "common/forgerock-variables.less";
+
+// Library CSS
+@import "~bootstrap-dialog/dist/less/bootstrap-dialog.less";
+
+@import "~font-awesome/less/font-awesome.less";
+@import "~font-awesome/less/variables.less";
+
+@import (less) "~selectize/dist/css/selectize.bootstrap3.css";
+
+@import "common/structure.less";
+
+// Specific CSS
+// TODO: Should these really be part of the theme CSS?
+@import "am-common/openam.less";
+@import "am-common/structure/sidenav.less";
+@import "am-common/structure/card.less";
+@import "am-common/structure/page-header.less";
+@import "am-common/structure/table.less";
+@import "am-common/structure/toggle-switch.less";
+@import "am-common/structure/selectize.less";
+@import "am-user/structure/dashboard";
+@import "am-user/structure/uma";

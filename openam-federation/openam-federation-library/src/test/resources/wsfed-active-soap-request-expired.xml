@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2017 ForgeRock AS. All Rights Reserved
+
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope"
+            xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
+            xmlns:saml="urn:oasis:names:tc:SAML:1.0:assertion" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy"
+            xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"
+            xmlns:wsa="http://www.w3.org/2005/08/addressing" xmlns:wssc="http://schemas.xmlsoap.org/ws/2005/02/sc"
+            xmlns:wst="http://schemas.xmlsoap.org/ws/2005/02/trust">
+    <s:Header>
+        <wsa:Action s:mustUnderstand="1">http://schemas.xmlsoap.org/ws/2005/02/trust/RST/Issue</wsa:Action>
+        <wsa:To s:mustUnderstand="1">http://openam.example.com:8080/am/WSFederationServlet/sts/metaAlias/idp</wsa:To>
+        <wsa:MessageID>1234567890</wsa:MessageID>
+        <ps:AuthInfo xmlns:ps="http://schemas.microsoft.com/Passport/SoapServices/PPCRL" Id="PPAuthInfo">
+            <ps:HostingApp>Lync Mobile</ps:HostingApp>
+            <ps:BinaryVersion>6</ps:BinaryVersion>
+            <ps:UIVersion>1</ps:UIVersion>
+            <ps:Cookies></ps:Cookies>
+            <ps:RequestParams>ABCDEFGHIJK</ps:RequestParams>
+        </ps:AuthInfo>
+        <wsse:Security>
+            <wsse:UsernameToken wsu:Id="user">
+                <wsse:Username>demo@example.com</wsse:Username>
+                <wsse:Password>password</wsse:Password>
+            </wsse:UsernameToken>
+            <wsu:Timestamp Id="Timestamp">
+                <wsu:Expires>1999-12-01T00:15:00Z</wsu:Expires>
+            </wsu:Timestamp>
+        </wsse:Security>
+    </s:Header>
+    <s:Body>
+        <wst:RequestSecurityToken Id="RST0">
+            <wst:RequestType>http://schemas.xmlsoap.org/ws/2005/02/trust/Issue</wst:RequestType>
+            <wsp:AppliesTo>
+                <wsa:EndpointReference>
+                    <wsa:Address>urn:federation:MicrosoftOnline</wsa:Address>
+                </wsa:EndpointReference>
+            </wsp:AppliesTo>
+            <wst:KeyType>http://schemas.xmlsoap.org/ws/2005/05/identity/NoProofKey</wst:KeyType>
+        </wst:RequestSecurityToken>
+    </s:Body>
+</s:Envelope>

@@ -1,0 +1,39 @@
+/*
+ * Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+.am-panel-card {
+
+    .card-menu {
+        button.btn-link{
+            color: @navbar-toggle-color;
+            &:hover, &:focus{
+                color: darken(@base-theme-color, 5%);
+            }
+        }
+    }
+
+    .card-body {
+        .card-subtext {
+            color: @navbar-toggle-color;
+        }
+    }
+
+    .card-footer {
+        border-top: 1px solid #ddd;
+        color: @navbar-toggle-color;
+        .text-success {
+            color: darken(@base-theme-color, 5%);
+        }
+    }
+
+    &:hover {
+        border: 1px solid @base-theme-color;
+        .card-icon-circle {
+            background-color: darken(@base-theme-color, 5%);
+        }
+    }
+}

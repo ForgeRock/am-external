@@ -1,0 +1,14 @@
+{{!
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+<label for="selection_{{id}}" data-title="{{title}}">{{t i18nKey}}</label>
+<select id="selection_{{id}}" class="placeholderText form-control" required>
+    <option value=""  disabled="">{{t "common.form.select"}}</option>
+    {{#each data.enum}}
+    <option value="{{this}}" {{#equals this ../selected}}selected=""{{/equals}} >{{this}}</option>
+    {{/each}}
+</select>

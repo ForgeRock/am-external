@@ -1,0 +1,85 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+.page-header {
+    h1 {
+        margin: 0;
+        word-wrap: break-word;
+        font-weight:300;
+        font-size: 40px;
+
+        .help-link {
+            font-size: 14px;
+            text-transform: capitalize;
+            margin-top: 25px;
+        }
+    }
+
+    // FIXME: Deprecated. This should be replaced with the .page-header-button-group
+        position: relative;
+        .page-header-right {
+            position: absolute;
+            right: 0;
+            bottom: 30px;
+        }
+    //
+
+    &.no-border {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    &.page-header-no-border {
+        border-bottom: none;
+    }
+
+    .row h1 {
+        margin-top: 0;
+    }
+
+    h4.page-type {
+        display: inline-block;
+        text-transform: uppercase;
+        font-size: 13px;
+        letter-spacing: 1px;
+        margin: 10px 0;
+        font-weight: 600;
+    }
+
+    .header-icon {
+        margin: 0 10px 0 0;
+        .icon-circle(76px);
+    }
+
+    .page-header-button-group {
+        float: right;
+        padding-top: 6px;
+    }
+
+    &.page-header-list-page {
+        border-bottom: none;
+    }
+
+    .page-header-detail {
+        margin-left: 5px;
+        padding-left: 10px;
+    }
+}
+
+#login-base .page-header {
+    border-bottom: none;
+}
+
+.modal-body .page-header {
+    border-bottom: none;
+}
+
+.page-description {
+    margin: 0 0 20px 2px;
+    clear: left;
+}

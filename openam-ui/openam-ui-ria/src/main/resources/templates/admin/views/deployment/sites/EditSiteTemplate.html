@@ -1,0 +1,23 @@
+{{!
+  Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+<nav id="backlink"></nav>
+<div class="container">
+    {{> headers/_TitleWithSubAndIcon title=name type="console.sites.edit.title" icon="bookmark-o" }}
+
+    <div class="panel panel-default">
+        <div class="panel-body">
+            <div data-json-form></div>
+        </div>
+        <div class="panel-footer clearfix">
+            <div class="pull-right">
+                <a class="btn btn-default" href="{{routeTo 'listSites'}}">{{t "common.form.cancel"}}</a>
+                <button data-save class="btn btn-primary" type="button" disabled>{{t "common.form.saveChanges"}}</button>
+            </div>
+        </div>
+    </div>
+</div>

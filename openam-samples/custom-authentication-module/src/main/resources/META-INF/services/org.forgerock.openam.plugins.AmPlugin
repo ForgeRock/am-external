@@ -1,0 +1,13 @@
+#
+# Copyright 2017 ForgeRock AS. All Rights Reserved
+#
+# Use of this code requires a commercial software license with ForgeRock AS.
+# or with one of its affiliates. All use shall be exclusively subject
+# to such license between the licensee and ForgeRock AS.
+#
+
+# This file is used by the service loader to find implementations of org.forgerock.openam.plugins.AmPlugin
+# In this case, we are providing our new plugin, which will then be picked up and executed by OpenAM.
+# For more information on service loading, see the javadoc for the ServiceLoader class.
+
+org.forgerock.openam.examples.SampleAuthPlugin

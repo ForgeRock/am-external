@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2018 ForgeRock AS. All Rights Reserved
+  ~
+  ~ Use of this code requires a commercial software license with ForgeRock AS.
+  ~ or with one of its affiliates. All use shall be exclusively subject
+  ~ to such license between the licensee and ForgeRock AS.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>openam-auth-trees</artifactId>
+        <groupId>org.forgerock.am</groupId>
+        <version>6.0.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>auth-node-api</artifactId>
+    <name>Authentication Node API</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.forgerock.commons</groupId>
+            <artifactId>forgerock-util</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.commons.guava</groupId>
+            <artifactId>forgerock-guava-all</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-plugin-framework</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.servicemix.bundles</groupId>
+            <artifactId>org.apache.servicemix.bundles.javax-inject</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-audit-core</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

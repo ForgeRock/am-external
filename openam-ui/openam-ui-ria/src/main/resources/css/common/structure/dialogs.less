@@ -1,0 +1,70 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+#dialogs {
+    position:absolute;
+    top:0;
+    left:0;
+    height:100%;
+    width:100%;
+    z-index:10001;
+    display:none;
+
+    .dialogCloseCross {
+        text-align:right;
+    }
+
+    .modal-body {
+        padding-top:0px;
+    }
+
+    .validationRules, .security-question {
+        margin-left:45px;
+    }
+}
+
+.dialogActions .btn {
+    margin-bottom:10px;
+    margin-right:10px;
+}
+
+#dialog-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    z-index: 1000;
+    background-color:@modal-background-color;
+    opacity: .4;
+    display:none;
+}
+
+.bootstrap-dialog {
+
+    .bootstrap-dialog-header .bootstrap-dialog-title {
+        .wordwrap;
+        color: inherit;
+    }
+
+    .bootstrap-dialog-title {
+        .wordwrap;
+        color: inherit;
+    }
+
+    .modal-title {
+        float:left;
+    }
+
+    .modal-header {
+        margin-bottom: 0;
+        padding-bottom: 5px;
+        // Overriding bootstrap-dialog's background-color.
+        background-color: transparent !important;
+    }
+}

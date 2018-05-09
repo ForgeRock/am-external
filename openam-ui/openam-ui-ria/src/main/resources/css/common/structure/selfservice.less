@@ -1,0 +1,95 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+.login {
+    .remember-forgot {
+        margin: 20px 0;
+        ul {
+            padding: 0;
+            margin: 0;
+            list-style-type: none;
+            li {
+                display: block;
+                margin-bottom: 10px;
+
+                @media (min-width: @screen-xs) {
+                    display: inline;
+                    margin-bottom: 0;
+                }
+
+                a {
+                    margin: 0 20px;
+                }
+            }
+        }
+    }
+
+    .toggle-login-register {
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .remember-forgot {
+        .forgot-password {
+            float: right;
+            padding: 0;
+        }
+
+        .checkbox {
+            margin: 0;
+        }
+    }
+}
+
+label.separator {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    font-size: 16px;
+    margin: 0 0 15px 0;
+    width: 100%;
+    height: auto;
+}
+label.separator:before {
+    content: "";
+    margin: 0 auto;
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: -1;
+}
+label.separator span {
+    padding: 0 10px;
+}
+
+/**
+ * label elements that accompany inputs have "sr-only" and "separator" classes applied to them to ensure that in IE9
+ * there are labels visible to the user due to "placeholder" attributes not rendering in IE9. The following rule turns
+ * these more prominent labels off in non-IE9 browsers that are able to correctly render "placeholder".
+ */
+body:not(.ie9) label.sr-only.separator {
+    height: 0;
+    position: fixed;
+    width: auto;
+
+    span {
+        font-size: 0;
+        padding: 0;
+    }
+}
+
+#processContent {
+    padding-bottom: 20px;
+
+    .alert {
+        overflow: auto;
+    }
+}

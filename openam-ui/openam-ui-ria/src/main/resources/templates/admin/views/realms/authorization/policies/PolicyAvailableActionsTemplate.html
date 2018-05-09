@@ -1,0 +1,19 @@
+{{!
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+<div class="btn-group">
+    <button type="button" class="btn btn-default dropdown-toggle" {{#unless items}}disabled{{/unless}}
+        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        {{t "console.authorization.policies.edit.addAction"}} <span class="caret"></span>
+    </button>
+
+    <ul class="dropdown-menu">
+        {{#each items}}
+            <li><a data-action-name="{{action}}" href="#">{{action}}</a></li>
+        {{/each}}
+    </ul>
+</div>

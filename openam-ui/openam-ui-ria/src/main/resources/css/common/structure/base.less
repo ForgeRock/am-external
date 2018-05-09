@@ -1,0 +1,31 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+/*
+  Base: All base HTML tags. No IDs or Classes should be included here.
+*/
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    background-position: right top;
+    background-repeat: no-repeat;
+    margin-bottom: @footer-height;
+    // Required to stop the fouc. Index.html has an inline style of display:none;
+    display: block !important;
+}
+
+body.footer-deep {
+    margin-bottom: @footer-deep-height;
+}
+
+table {
+    font-size: 14px;
+}

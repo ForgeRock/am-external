@@ -1,0 +1,10 @@
+{{!
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+<label for="selection_{{id}}" data-title="{{title}}">{{t i18nKey}}</label>
+<input required type="text" id="selection_{{id}}" name="selection_{{id}}" value="{{data}}" readonly=true
+       class="placeholderText form-control" {{#if pattern}}pattern="{{pattern}}"{{/if}}/>

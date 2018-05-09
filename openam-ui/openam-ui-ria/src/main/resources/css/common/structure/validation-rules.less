@@ -1,0 +1,31 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+.validationRules .has-error,
+.has-feedback.has-error .form-control-feedback {
+    .validation-icon {
+        .fa-icon();
+        &:before {
+            content: @fa-var-exclamation-circle;
+        }
+    }
+}
+
+.validationRules .has-success,
+.has-feedback.has-success .form-control-feedback {
+    .validation-icon {
+        .fa-icon();
+        &:before {
+            content:'';
+        }
+    }
+}
+
+.validationRules .has-success .validation-icon:before {
+    content: @fa-var-check;
+}

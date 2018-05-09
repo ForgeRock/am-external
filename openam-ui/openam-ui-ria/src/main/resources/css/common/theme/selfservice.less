@@ -1,0 +1,32 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+.login {
+    hr {
+        border-top: 1px solid #ddd;
+    }
+    @media (min-width: @screen-xs) {
+        .remember-forgot ul {
+            li + li:before {
+                content: "| ";
+                color: #ccc;
+            }
+        }
+    }
+}
+
+label.separator {
+    color: #666;
+    font-weight: 400;
+}
+label.separator:before {
+    border-top: 1px solid #ddd;
+}
+label.separator span {
+    background: #f7f7f7;
+}

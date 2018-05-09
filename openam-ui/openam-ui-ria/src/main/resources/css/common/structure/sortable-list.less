@@ -1,0 +1,204 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+.sortable-list ol {
+    margin: 0;
+}
+.sortable-list ul.sortable {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 20px;
+}
+.sortable-list .icon-handle {
+    display: block;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+.sortable-list .icon-handle-header {
+    display: block;
+    position: absolute;
+    top: 15px;
+    left: 20px;
+}
+.sortable-list ul.sortable li.ui-state-default {
+    padding-left: 92px;
+    border: none;
+}
+.sortable-list .list-header .icon-handle {
+    top: 15px;
+}
+.sortable-list ul li .ui-state-header {
+    padding-left: 60px;
+}
+.sortable-list ul li .ui-state-header:hover,
+.sortable-list ul li .ui-state-header:focus {
+    cursor: move;
+}
+.sortable-list ul li form {
+    padding-bottom: 20px;
+    padding-left: 15px;
+    padding-top: 10px;
+    padding-right: 15px;
+}
+.ui-state-default a.btn-info,
+.ui-state-default a.btn-info:link,
+.ui-state-default a.btn-info:visited,
+.ui-state-default a.btn-warning,
+.ui-state-default a.btn-warning:link,
+.ui-state-default a.btn-warning:visited,
+.ui-state-default a.btn-success,
+.ui-state-default a.btn-success:link,
+.ui-state-default a.btn-success:visited,
+.ui-state-default a.btn-primary,
+.ui-state-default a.btn-primary:link,
+.ui-state-default a.btn-primary:visited {
+    color: #fff;
+}
+.sortable-list .text-danger a {
+    color: @failure-color;
+}
+.sortable-list .text-danger a:hover,
+.sortable-list .text-danger a:focus {
+    text-decoration: underline;
+}
+.sortable-list .text-success a {
+    color: @success-color;
+}
+.sortable-list .text-success a:hover,
+.sortable-list .text-success a:focus {
+    text-decoration: underline;
+}
+.sortable-list .text-warning a {
+    color: @warning-color;
+}
+.sortable-list .text-info a {
+    color: @base-theme-color;
+}
+.sortable-list .text-info a:hover,
+.sortable-list .text-info a:focus {
+    text-decoration: underline;
+}
+.list-header-actions {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+.ui-state-group {
+    position: relative;
+}
+.sortable-list .text-warning a:hover,
+.sortable-list .text-warning a:focus {
+    text-decoration: underline;
+}
+.sortable-list .list-header,
+.sortable-list > .sortableGroups ul > li .list-header {
+    background-color: #fff;
+    padding: 15px;
+    position: relative;
+    display: block;
+    border-top: 1px solid #eee;
+}
+.sortable-list li .list-header a.header-action {
+    float: right;
+    font-weight: 500;
+
+}
+.sortable-list li .list-header .btn-collapse {
+
+}
+.sortable-list li .collapse .btn-advanced {
+    position: relative;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 15px;
+}
+.sortable-list li .collapse .btn-advanced:before {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 2px;
+    vertical-align: middle;
+    position: absolute;
+    left: 3px;
+    top: 5px;
+    border-left: 4px solid;
+    border-right: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+}
+.sortable-list li .collapse .btn-advanced[aria-expanded="true"]:before {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 2px;
+    vertical-align: middle;
+    position: absolute;
+    border-top: 4px solid;
+    border-right: 4px solid transparent;
+    border-left: 4px solid transparent;
+    top: 7px;
+    left: 0;
+}
+.sortable-list li .list-header .icon-handle.btn {
+    position: absolute;
+    left: 10px;
+    top: 14px;
+    font-size: 16px;
+    line-height: 18px;
+    cursor: ns-resize;
+}
+.sortable-list li .list-header .btn {
+    padding: 0 3px;
+    color: #777;
+}
+
+.sortable-list li .list-header .btn:hover {
+    color: @base-theme-color;
+}
+
+.sortable-list li .list-header .btn-collapse.collapsed {
+
+}
+.sortable-list li .list-header .btn-collapse.collapsed .caret {
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 4px 0 4px 4px;
+    border-color: transparent transparent transparent #000000;
+}
+.sortable-list li .list-header a.header-action:hover,
+.sortable-list li .list-header a.header-action:focus {
+    color: @base-theme-color;
+    text-decoration: underline;
+}
+.sortable-list > ul > li:last-child {
+    margin-bottom: 0;
+    border-bottom: 1px solid #eee;
+}
+.sortable-list > ul > li .list-header .btn-toolbar {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    float: none;
+    margin-top: 0;
+    border-bottom: none;
+}
+.sortable-list > ul > li .list-header .arrows .btn-toolbar {
+    position: absolute;
+    left: 0;
+    top: 15px;
+    float: none;
+    margin-top: 0;
+    border-bottom: none;
+}
+.sortable-list > ul > li .list-header .btn-toolbar .btn .fa {
+    width: auto;
+}

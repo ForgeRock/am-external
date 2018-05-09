@@ -1,0 +1,56 @@
+<!--
+  Copyright 2014-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+
+<!DOCTYPE propertysheet SYSTEM "propertysheet.dtd">
+
+<propertysheet>
+    <section name="realm" defaultValue="configure.social.authentication.section.realm">
+        <property required="true">
+            <label name="lblRealm" defaultValue="configure.social.authentication.label.realm" labelFor="tfRealm" />
+            <cc name="tfRealm" tagclass="com.sun.web.ui.taglib.html.CCDropDownMenuTag">
+            </cc>
+        </property>
+    </section>
+    <section name="socialAuth" defaultValue="configure.social.authentication.section.setup">
+        <property required="true">
+            <label name="lblClientId" defaultValue="configure.social.authentication.label.client.id"
+                   labelFor="tfClientId" />
+            <cc name="tfClientId" tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+                <attribute name="localizeDisplayFieldValue" value="false" />
+                <attribute name="size" value="75" />
+            </cc>
+            <fieldhelp name="helpClientId" defaultValue="configure.social.authentication.client.id.help.txt"/>
+        </property>
+        <property required="true">
+            <label name="lblClientSecret" defaultValue="configure.social.authentication.label.client.secret"
+                   labelFor="tfClientSecret" />
+            <cc name="tfClientSecret" tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+                <attribute name="localizeDisplayFieldValue" value="false" />
+                <attribute name="size" value="75" />
+            </cc>
+            <fieldhelp name="helpClientSecret" defaultValue="configure.social.authentication.client.secret.help.txt"/>
+        </property>
+        <property required="true">
+            <label name="lblConfirmSecret" defaultValue="configure.social.authentication.label.confirm.secret"
+                   labelFor="tfConfirmSecret" />
+            <cc name="tfConfirmSecret" tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+                <attribute name="localizeDisplayFieldValue" value="false" />
+                <attribute name="size" value="75" />
+            </cc>
+        </property>
+        <property required="true">
+            <label name="lblRedirectUrl" defaultValue="configure.social.authentication.label.redirect.url"
+                   labelFor="tfRedirectUrl" />
+            <cc name="tfRedirectUrl" tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+                <attribute name="localizeDisplayFieldValue" value="false" />
+                <attribute name="size" value="75" />
+            </cc>
+            <fieldhelp name="helpRedirectUrl" defaultValue="configure.social.authentication.redirect.url.help.txt"/>
+        </property>
+    </section>
+</propertysheet>

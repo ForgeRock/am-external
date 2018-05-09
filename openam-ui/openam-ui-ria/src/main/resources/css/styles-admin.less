@@ -1,0 +1,54 @@
+/*
+ * Copyright 2014-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+@openam-version: "${version}";
+@verison: @openam-version;
+
+// CSS Basic Configuration
+@import "common/forgerock-variables.less";
+// Library CSS
+@import "~bootstrap-dialog/dist/less/bootstrap-dialog.less";
+@import (less) "~clockpicker/dist/bootstrap-clockpicker.css";
+@import (less) "~eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.css";
+
+@import "~font-awesome/less/font-awesome.less";
+@import "~font-awesome/less/variables.less";
+
+@import (less) "~selectize/dist/css/selectize.bootstrap3.css";
+
+@import (less) "~codemirror/lib/codemirror.css";
+@import (less) "~codemirror/addon/display/fullscreen.css";
+
+@import (less) "am-common/lib/react-select-custom-1.0.0-rc.2.min.css";
+
+@import (less) "~react-bootstrap-table/dist/react-bootstrap-table.min.css";
+
+// Admin pages always use the supplied theme, so there is no need to distinguish between structure and theme.
+@import "common/structure.less";
+@import "common/theme.less";
+@import "common/list.less";
+
+// Specific CSS
+@import "am-common/openam.less";
+@import "am-common/structure/sidenav.less";
+@import "am-common/theme/sidenav.less";
+@import "am-common/structure/page-header.less";
+@import "am-common/theme/page-header.less";
+@import "am-common/structure/card.less";
+@import "am-common/theme/card.less";
+@import "am-common/structure/table.less";
+@import "am-common/structure/selectize.less";
+@import "am-common/structure/toggle-switch.less";
+@import "am-common/theme/table.less";
+@import "am-admin/console.less";
+@import "am-admin/policies.less";
+@import "am-admin/scripts.less";
+@import "am-admin/chains.less";
+@import "am-admin/breadcrumb.less";
+@import "am-admin/table.less";
+@import "am-admin/trees.less";

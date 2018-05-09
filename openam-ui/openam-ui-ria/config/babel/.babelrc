@@ -1,0 +1,30 @@
+/*
+ * Copyright 2017-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+{
+    "ignore": "libs/",
+    "presets": [
+        ["env", {
+            "targets": {
+                "android": "6",
+                "chrome": "62",
+                "edge": "25",
+                "firefox": "57",
+                "ie": "11",
+                "ios": "9",
+                "safari": "11"
+            },
+            "useBuiltIns": "usage"
+        }]
+    ],
+    "plugins": [
+        "syntax-dynamic-import",
+        "transform-object-rest-spread",
+        "webpack-chunkname"
+    ]
+}

@@ -1,0 +1,66 @@
+/*
+ * Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+.invalid-background(@bgcolor: #ffd4d4){
+    background-color: @bgcolor;
+    background-image: repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(60, 60, 60, 0.1) 35px, rgba(60, 60, 60, 0.1) 70px);
+}
+
+span.tooltips {
+    span {
+        color: #fff;
+        background-color: #000;
+        background-image: -webkit-linear-gradient(top, #555, #000);
+
+        &:after {
+            border-top-color: #000;
+        }
+    }
+}
+
+.policy-header {
+    h2 {
+        span {
+            color: #999;
+        }
+    }
+}
+
+#umaShareImage.header-icon {
+    background-color: transparent;
+
+    &.no-image{
+        background-color: @base-theme-color;
+    }
+}
+
+
+#uma {
+    input[type="text"]:invalid:required, input[type="text"].invalid {
+        .invalid-background;
+    }
+    
+    .backgrid {
+        td.permissions-cell {
+            a {
+                background-color: #f7f7f7;
+                color: #1f2223;
+            }
+        }
+
+        td.fa-share {
+            &:hover {
+                color: darken(@base-theme-color, 5%);
+            }
+        }
+
+        tbody tr.unsaved-changes {
+            background-color: #fff;
+        }
+    }
+}

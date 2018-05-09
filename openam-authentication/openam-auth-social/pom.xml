@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017 ForgeRock AS. All Rights Reserved
+  ~
+  ~ Use of this code requires a commercial software license with ForgeRock AS.
+  ~ or with one of its affiliates. All use shall be exclusively subject
+  ~ to such license between the licensee and ForgeRock AS.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>openam-authentication</artifactId>
+        <groupId>org.forgerock.am</groupId>
+        <version>6.0.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <name>Social Authentication Module</name>
+    <description>Social Authentication Module based on Commons OAuth Framework</description>
+    <artifactId>openam-auth-social</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-auth-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.commons</groupId>
+            <artifactId>oauth-oauth2-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.commons</groupId>
+            <artifactId>oauth-oidc-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.commons</groupId>
+            <artifactId>oauth-vk-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.commons</groupId>
+            <artifactId>oauth-wechat-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.commons</groupId>
+            <artifactId>oauth-instagram-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.commons</groupId>
+            <artifactId>oauth-twitter-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-auth-oauth2</artifactId>
+        </dependency>
+    </dependencies>
+</project>

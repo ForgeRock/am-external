@@ -1,0 +1,254 @@
+<!--
+  Copyright 2014-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+<!DOCTYPE ServicesConfiguration PUBLIC "=//iPlanet//Service Management Services (SMS) 1.0 DTD//EN"
+        "jar://com/sun/identity/sm/sms.dtd">
+
+<ServicesConfiguration>
+    <Service name="iPlanetAMAuthOpenIdConnectService" version="1.0">
+        <Schema
+                serviceHierarchy="/DSAMEConfig/authentication/iPlanetAMAuthOpenIdConnectService"
+                i18nFileName="amAuthOpenIdConnect" revisionNumber="10"
+                i18nKey="openidconnect-service-description"
+                resourceName="openidconnect">
+
+            <Organization>
+                <AttributeSchema name="RequiredValueValidator"
+                                 type="validator"
+                                 syntax="string">
+                    <DefaultValues>
+                        <Value>com.sun.identity.sm.RequiredValueValidator</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="openam-auth-openidconnect-header-name"
+                                 type="single" syntax="string" i18nKey="header_name" order="400"
+                                 validator="RequiredValueValidator"
+                                 resourceName="idTokenHeaderName">
+                    <DefaultValues>
+                        <Value>oidc_id_token</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="openam-auth-openidconnect-issuer-name"
+                                 type="single" syntax="string" i18nKey="issuer_name" order="500"
+                                 validator="RequiredValueValidator"
+                                 resourceName="idTokenIssuer">
+                    <DefaultValues>
+                        <Value>accounts.google.com</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="openam-auth-openidconnect-crypto-context-type"
+                                 type="single_choice" syntax="string" i18nKey="crypto_context_type" order="200"
+                                 validator="RequiredValueValidator"
+                                 resourceName="cryptoContextType">
+                    <ChoiceValues>
+                        <ChoiceValue>.well-known/openid-configuration_url</ChoiceValue>
+                        <ChoiceValue>jwk_url</ChoiceValue>
+                        <ChoiceValue>client_secret</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>.well-known/openid-configuration_url</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="openam-auth-openidconnect-crypto-context-value"
+                                 type="single" syntax="string" i18nKey="crypto_context_value" order="300"
+                                 resourceName="cryptoContextValue">
+                    <DefaultValues>
+                        <Value>https://accounts.google.com/.well-known/openid-configuration</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="iplanet-am-auth-oauth-client-secret"
+                                 type="single" syntax="password" i18nKey="client_secret" order="301"
+                                 resourceName="clientSecret">
+                </AttributeSchema>
+                <AttributeSchema name="openam-auth-openidconnect-account-provider-class"
+                                 type="single" syntax="string" i18nKey="account_provider_class" order="100"
+                                 validator="RequiredValueValidator"
+                                 resourceName="accountProviderClass">
+                    <DefaultValues>
+                        <Value>org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="openam-auth-openidconnect-principal-mapper-class"
+                                 type="single" syntax="string" i18nKey="principal_mapper_class" order="900"
+                                 validator="RequiredValueValidator"
+                                 resourceName="principalMapperClass">
+                    <DefaultValues>
+                        <Value>org.forgerock.openam.authentication.modules.oidc.JwtAttributeMapper</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <AttributeSchema name="openam-auth-openidconnect-jwt-to-local-attribute-mappings"
+                                 type="list"
+                                 syntax="string"
+                                 validator="RequiredValueValidator"
+                                 i18nKey="jwt_to_local_attr_mappings"
+                                 order="600"
+                                 resourceName="jwtToLdapAttributeMappings">
+                    <DefaultValues>
+                        <Value>sub=uid</Value>
+                        <Value>email=mail</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <AttributeSchema name="openam-auth-openidconnect-audience-name"
+                                 type="single"
+                                 syntax="string"
+                                 validator="RequiredValueValidator"
+                                 i18nKey="listed_audience_name"
+                                 order="700"
+                                 resourceName="audienceName">
+                    <DefaultValues>
+                        <Value>example</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <AttributeSchema name="openam-auth-openidconnect-accepted-authorized-parties"
+                                 type="list"
+                                 syntax="string"
+                                 validator="RequiredValueValidator"
+                                 i18nKey="listed_authorized_parties"
+                                 order="800"
+                                 resourceName="acceptedAuthorizedParties">
+                    <DefaultValues>
+                        <Value>AuthorizedPartyExample</Value>
+                        <Value>http://www.example.com/authorized/party</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <AttributeSchema name="useSubClaimIfNoMatch"
+                                 type="single" syntax="boolean"
+                                 i18nKey="useSubClaimIfNoMatch"
+                                 order="1000">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>false</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <SubSchema name="serverconfig" inheritance="multiple" resourceName="USE-PARENT">
+                    <AttributeSchema name="RequiredValueValidator"
+                                     type="validator"
+                                     syntax="string">
+                        <DefaultValues>
+                            <Value>com.sun.identity.sm.RequiredValueValidator</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="openam-auth-openidconnect-header-name"
+                                     type="single" syntax="string" i18nKey="header_name" order="400"
+                                     validator="RequiredValueValidator"
+                                     resourceName="idTokenHeaderName">
+                        <DefaultValues>
+                            <Value>oidc_id_token</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="openam-auth-openidconnect-issuer-name"
+                                     type="single" syntax="string" i18nKey="issuer_name" order="500"
+                                     validator="RequiredValueValidator"
+                                     resourceName="idTokenIssuer">
+                        <DefaultValues>
+                            <Value>accounts.google.com</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="openam-auth-openidconnect-crypto-context-type"
+                                     type="single_choice" syntax="string" i18nKey="crypto_context_type" order="200"
+                                     validator="RequiredValueValidator"
+                                     resourceName="cryptoContextType">
+                        <ChoiceValues>
+                            <ChoiceValue>.well-known/openid-configuration_url</ChoiceValue>
+                            <ChoiceValue>jwk_url</ChoiceValue>
+                            <ChoiceValue>client_secret</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>.well-known/openid-configuration_url</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="openam-auth-openidconnect-crypto-context-value"
+                                     type="single" syntax="string" i18nKey="crypto_context_value" order="300"
+                                     resourceName="cryptoContextValue">
+                        <DefaultValues>
+                            <Value>https://accounts.google.com/.well-known/openid-configuration</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-oauth-client-secret"
+                                     type="single" syntax="password" i18nKey="client_secret" order="301"
+                                     resourceName="clientSecret">
+                    </AttributeSchema>
+                    <AttributeSchema name="openam-auth-openidconnect-account-provider-class"
+                                     type="single" syntax="string" i18nKey="account_provider_class" order="100"
+                                     validator="RequiredValueValidator"
+                                     resourceName="accountProviderClass">
+                        <DefaultValues>
+                            <Value>org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="openam-auth-openidconnect-principal-mapper-class"
+                                     type="single" syntax="string" i18nKey="principal_mapper_class" order="900"
+                                     validator="RequiredValueValidator"
+                                     resourceName="principalMapperClass">
+                        <DefaultValues>
+                            <Value>org.forgerock.openam.authentication.modules.oidc.JwtAttributeMapper</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+
+                    <AttributeSchema name="openam-auth-openidconnect-jwt-to-local-attribute-mappings"
+                                     type="list"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="jwt_to_local_attr_mappings"
+                                     order="600"
+                                     resourceName="jwtToLdapAttributeMappings">
+                        <DefaultValues>
+                            <Value>sub=uid</Value>
+                            <Value>email=mail</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+
+                    <AttributeSchema name="openam-auth-openidconnect-audience-name"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="listed_audience_name"
+                                     order="700"
+                                     resourceName="audienceName">
+                        <DefaultValues>
+                            <Value>example</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+
+                    <AttributeSchema name="openam-auth-openidconnect-accepted-authorized-parties"
+                                     type="list"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="listed_authorized_parties"
+                                     order="800"
+                                     resourceName="acceptedAuthorizedParties">
+                        <DefaultValues>
+                            <Value>AuthorizedPartyExample</Value>
+                            <Value>http://www.example.com/authorized/party</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+
+                    <AttributeSchema name="useSubClaimIfNoMatch"
+                                     type="single" syntax="boolean"
+                                     i18nKey="useSubClaimIfNoMatch"
+                                     order="1000">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>false</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                </SubSchema>
+            </Organization>
+        </Schema>
+    </Service>
+</ServicesConfiguration>

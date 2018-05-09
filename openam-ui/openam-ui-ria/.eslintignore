@@ -1,0 +1,16 @@
+#
+# Copyright 2018 ForgeRock AS. All Rights Reserved
+#
+# Use of this code requires a commercial software license with ForgeRock AS.
+# or with one of its affiliates. All use shall be exclusively subject
+# to such license between the licensee and ForgeRock AS.
+#
+
+src/main/js/config/errorhandlers/CommonErrorHandlers.js
+src/main/js/config/messages/CommonMessages.js
+src/main/js/config/messages/UserMessages.js
+src/main/js/config/routes/CommonRoutesConfig.js
+src/main/js/config/routes/UserRoutesConfig.js
+src/main/js/config/validators/CommonValidators.js
+src/main/js/libs
+src/main/js/org/forgerock/commons

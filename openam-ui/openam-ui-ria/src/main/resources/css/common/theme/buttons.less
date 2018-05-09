@@ -1,0 +1,49 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+/*
+Buttons style
+*/
+
+.btn-primary.disabled, .btn-primary[disabled] {
+    background-color: @base-theme-color;
+    border-color: darken(@base-theme-color, 5%);
+}
+
+.btn-toolbar {
+    border-bottom: 1px solid #ddd;
+}
+
+/*
+  Dark secondary button style
+*/
+
+.fr-btn-secondary {
+    background-color:  #f7f7f7;
+    border-color: #ccc;
+    color: #333;
+
+    .fa {
+        color: #333;
+    }
+
+    &:focus, &.focus,
+    &:active, &.active,
+    &:hover {
+        color: #333;
+        background-color: #e6e6e6;
+        border-color: #adadad;
+    }
+}
+
+
+li.btn-group.active .fr-btn-secondary {
+    color: #333;
+    background-color: #e6e6e6;
+    border-color: #adadad;
+}

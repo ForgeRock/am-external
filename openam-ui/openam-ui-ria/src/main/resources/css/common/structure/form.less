@@ -1,0 +1,95 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+.field-rule {
+    margin-bottom: 5px;
+
+    .validation-icon {
+        margin-right: 5px;
+    }
+}
+
+
+.form-group {
+    input[type='password'],
+    input[type='text'] {
+        padding-right: 30px;
+    }
+
+    textarea{
+        width:100%;
+        resize: vertical;
+    }
+}
+
+.form-group.required .control-label:after {
+    content: "*";
+    color: @failure-color;
+}
+
+.form-section {
+    h3 {
+        margin-top: 10px;
+    }
+
+    .control-label {
+        text-transform: capitalize;
+    }
+}
+
+.form-text-header {
+    margin-bottom:15px;
+
+    h3{
+        margin-top:0;
+    }
+}
+
+
+.form-horizontal {
+    .has-feedback.no-right-padding .form-control-feedback {
+        right: 0;
+    }
+
+    .form-group-large.has-feedback .form-control-feedback {
+        right: 0;
+        line-height: 44px;
+    }
+
+    .form-group-header {
+        margin-left: 0;
+        margin-right: 0;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+
+        .control-label {
+            font-weight: 600;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .form-control {
+            display: inline-block;
+            margin-right: 5px;
+            max-width: 300px;
+            width: auto;
+        }
+
+        .help-block {
+            display: inline-block;
+            margin-right: 5px;
+        }
+    }
+}
+
+.form-control-feedback-lg {
+    width: 46px;
+    height: 46px;
+    line-height: 46px;
+}

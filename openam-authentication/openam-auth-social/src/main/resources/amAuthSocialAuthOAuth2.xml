@@ -1,0 +1,729 @@
+<?xml version='1.0' encoding="ISO-8859-1"?>
+
+<!--
+  ~ Copyright 2017 ForgeRock AS. All Rights Reserved
+  ~
+  ~ Use of this code requires a commercial software license with ForgeRock AS.
+  ~ or with one of its affiliates. All use shall be exclusively subject
+  ~ to such license between the licensee and ForgeRock AS.
+  -->
+
+<!DOCTYPE ServicesConfiguration
+        PUBLIC "=//forgerock//Service Management Services (SMS) 1.0 DTD//EN"
+        "jar://com/sun/identity/sm/sms.dtd">
+
+<ServicesConfiguration>
+    <Service name="iPlanetAMAuthSocialAuthOAuth2Service" version="1.0">
+        <Schema
+                serviceHierarchy="/DSAMEConfig/authentication/iPlanetAMAuthSocialAuthOAuth2Service"
+                i18nFileName="amAuthSocialAuth"
+                revisionNumber="1"
+                i18nKey="am.social.auth.oauth2.serviceTitle"
+                resourceName="authSocialOAuth2">
+
+            <Organization>
+                <AttributeSchema name="forgerock-am-auth-socialauthoauth2-auth-level"
+                                 type="single"
+                                 syntax="number_range"
+                                 rangeStart="0"
+                                 rangeEnd="2147483647"
+                                 i18nKey="am.social.auth.level"
+                                 order="100"
+                                 resourceName="authenticationLevel">
+                    <DefaultValues>
+                        <Value>0</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="provider"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.provider"
+                                 order="200">
+                    <ExampleValue>
+                        <Value>Google</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="clientId"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.clientId"
+                                 order="400">
+                </AttributeSchema>
+                <AttributeSchema name="clientSecret"
+                                 type="single"
+                                 syntax="password"
+                                 i18nKey="am.social.auth.clientSecret"
+                                 order="500">
+                </AttributeSchema>
+                <AttributeSchema name="authorizeEndpoint"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.authorizeEndpoint"
+                                 order="600">
+                    <ExampleValue>
+                        <Value>https://accounts.google.com/o/oauth2/v2/auth</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="tokenEndpoint"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.tokenEndpoint"
+                                 order="700">
+                    <ExampleValue>
+                        <Value>https://www.googleapis.com/oauth2/v4/token</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="userInfoEndpoint"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.userInfoEndpoint"
+                                 order="800">
+                    <ExampleValue>
+                        <Value>https://www.googleapis.com/oauth2/v3/userinfo</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="scope"
+                                 type="list"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.scope"
+                                 order="900">
+                    <ExampleValue>
+                        <Value>profile email</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="scopeDelimiter"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.scopeDelimiter"
+                                 order="1000">
+                </AttributeSchema>
+                <AttributeSchema name="subjectProperty"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.subjectProperty"
+                                 order="1100">
+                    <ExampleValue>
+                        <Value>sub</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="usesBasicAuth"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.usesBasicAuth"
+                                 order="1200">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>true</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="ssoProxyUrl"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.ssoProxyUrl"
+                                 order="1300">
+                    <DefaultValues>
+                        <Value>@SERVER_PROTO@://@SERVER_HOST@:@SERVER_PORT@/@SERVER_URI@/oauth2c/OAuthProxy.jsp</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="accountProviderClass"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.accountProviderClass"
+                                 order="1400">
+                    <DefaultValues>
+                        <Value>org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="accountMapperClass"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.accountMapperClass"
+                                 order="1500" >
+                    <ExampleValue>
+                        <Value>org.forgerock.openam.authentication.modules.common.mapping.JsonAttributeMapper|*|google-</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="accountMapperConfiguration"
+                                 type="list"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.accountMapperConfiguration"
+                                 order="1600">
+                    <ExampleValue>
+                        <Value>sub=uid</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="attributeMappingClasses"
+                                 type="list"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.attributeMappingClasses"
+                                 order="1700">
+                    <ExampleValue>
+                        <Value>org.forgerock.openam.authentication.modules.common.mapping.JsonAttributeMapper|uid|google-</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="attributeMapperConfiguration"
+                                 type="list"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.attributeMapperConfiguration"
+                                 order="1800">
+                    <ExampleValue>
+                        <Value>given_name=givenName family_name=sn name=cn email=mail sub=uid</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="createAccount"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.createAccount"
+                                 order="1360">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>true</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="promptPasswordFlag"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.promptPasswordFlag"
+                                 order="1905">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>false</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="emailAttribute"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.emailAttribute"
+                                 order="1910">
+                    <DefaultValues>
+                        <Value></Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="emailGateway"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.emailGateway"
+                                 order="1915">
+                    <DefaultValues>
+                        <Value>org.forgerock.openam.authentication.modules.oauth2.DefaultEmailGatewayImpl</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="smtpHost"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.smtpHost"
+                                 order="1920">
+                    <DefaultValues>
+                        <Value>localhost</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="smtpPort"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.smtpPort"
+                                 order="1925">
+                    <DefaultValues>
+                        <Value>25</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="smtpUsername"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.smtpUsername"
+                                 order="1930">
+                    <DefaultValues>
+                        <Value></Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="smtpPassword"
+                                 type="single"
+                                 syntax="password"
+                                 i18nKey="am.social.auth.smtpPassword"
+                                 order="1935">
+                </AttributeSchema>
+                <AttributeSchema name="smtpSslEnabled"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.smtpSslEnabled"
+                                 order="1940">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                </AttributeSchema>
+                <AttributeSchema name="smtpFromAddress"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.smtpFromAddress"
+                                 order="1945">
+                    <ExampleValue>
+                        <Value>info@forgerock.com</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="mapToAnonymousUser"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.mapToAnonymousUser"
+                                 order="2000">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>false</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="anonymousUserName"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.anonymousUserName"
+                                 order="2100">
+                    <DefaultValues>
+                        <Value>anonymous</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="logoutServiceUrl"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.logoutServiceUrl"
+                                 order="2150"
+                                 resourceName="logoutServiceUrl">
+                    <DefaultValues>
+                        <Value></Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="logoutBehaviour"
+                                 type="single_choice"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.logoutBehaviour"
+                                 order="2155"
+                                 resourceName="logoutBehaviour">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="prompt">prompt</ChoiceValue>
+                        <ChoiceValue i18nKey="logout">logout</ChoiceValue>
+                        <ChoiceValue i18nKey="donotlogout">donotlogout</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>prompt</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="enableRegistrationService"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.enableRegistrationService"
+                                 order="1350">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>false</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="saveAttributesInSession"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.saveAttributesInSession"
+                                 order="2400">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>true</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="issuerName"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.issuerName"
+                                 order="2500">
+                    <ExampleValue>
+                        <Value>https://accounts.google.com</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="mixUpMitigation"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.mixUpMitigation"
+                                 order="2600">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>false</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <SubSchema name="serverconfig" inheritance="multiple" resourceName="USE-PARENT">
+                    <AttributeSchema name="RequiredValueValidator" type="validator" syntax="string">
+                        <DefaultValues>
+                            <Value>com.sun.identity.sm.RequiredValueValidator</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+
+                    <AttributeSchema name="forgerock-am-auth-socialauthoauth2-auth-level"
+                                     type="single"
+                                     syntax="number_range"
+                                     rangeStart="0"
+                                     rangeEnd="2147483647"
+                                     i18nKey="am.social.auth.level"
+                                     order="100"
+                                     resourceName="authenticationLevel" >
+                        <DefaultValues>
+                            <Value>0</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="provider"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.provider"
+                                     order="200" >
+                        <ExampleValue>
+                            <Value>Google</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="clientId"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.clientId"
+                                     order="400">
+                    </AttributeSchema>
+                    <AttributeSchema name="clientSecret"
+                                     type="single"
+                                     syntax="password"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.clientSecret"
+                                     order="500">
+                    </AttributeSchema>
+                    <AttributeSchema name="authorizeEndpoint"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.authorizeEndpoint"
+                                     order="600">
+                        <ExampleValue>
+                            <Value>https://accounts.google.com/o/oauth2/v2/auth</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="tokenEndpoint"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.tokenEndpoint"
+                                     order="700">
+                        <ExampleValue>
+                            <Value>https://www.googleapis.com/oauth2/v4/token</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="userInfoEndpoint"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.userInfoEndpoint"
+                                     order="800">
+                        <ExampleValue>
+                            <Value>https://www.googleapis.com/oauth2/v3/userinfo</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="scope"
+                                     type="list"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.scope"
+                                     order="900">
+                        <ExampleValue>
+                            <Value>profile email</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="scopeDelimiter"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.scopeDelimiter"
+                                     order="1000">
+                    </AttributeSchema>
+                    <AttributeSchema name="subjectProperty"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.subjectProperty"
+                                     order="1100">
+                        <ExampleValue>
+                            <Value>sub</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="usesBasicAuth"
+                                     type="single"
+                                     syntax="boolean"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.usesBasicAuth"
+                                     order="1200">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>true</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="ssoProxyUrl"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.ssoProxyUrl"
+                                     order="1300">
+                        <DefaultValues>
+                            <Value>@SERVER_PROTO@://@SERVER_HOST@:@SERVER_PORT@/@SERVER_URI@/oauth2c/OAuthProxy.jsp</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="accountProviderClass"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.accountProviderClass"
+                                     order="1400">
+                        <DefaultValues>
+                            <Value>org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="accountMapperClass"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.accountMapperClass"
+                                     order="1500" >
+                        <ExampleValue>
+                            <Value>org.forgerock.openam.authentication.modules.common.mapping.JsonAttributeMapper|*|google-</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="accountMapperConfiguration"
+                                     type="list"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.accountMapperConfiguration"
+                                     order="1600">
+                        <ExampleValue>
+                            <Value>sub=uid</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="attributeMappingClasses"
+                                     type="list"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.attributeMappingClasses"
+                                     order="1700">
+                        <ExampleValue>
+                            <Value>org.forgerock.openam.authentication.modules.common.mapping.JsonAttributeMapper|uid|google-</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="attributeMapperConfiguration"
+                                     type="list"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.attributeMapperConfiguration"
+                                     order="1800">
+                        <ExampleValue>
+                            <Value>given_name=givenName family_name=sn name=cn email=mail sub=uid</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="createAccount"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="am.social.auth.createAccount"
+                                     order="1360">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>true</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="promptPasswordFlag"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="am.social.auth.promptPasswordFlag"
+                                     order="1905">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>false</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="emailAttribute"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.emailAttribute"
+                                     order="1910">
+                        <DefaultValues>
+                            <Value></Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="emailGateway"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.emailGateway"
+                                     order="1915">
+                        <DefaultValues>
+                            <Value>org.forgerock.openam.authentication.modules.oauth2.DefaultEmailGatewayImpl</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="smtpHost"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.smtpHost"
+                                     order="1920">
+                        <DefaultValues>
+                            <Value>localhost</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="smtpPort"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.smtpPort"
+                                     order="1925">
+                        <DefaultValues>
+                            <Value>25</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="smtpUsername"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.smtpUsername"
+                                     order="1930">
+                        <DefaultValues>
+                            <Value></Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="smtpPassword"
+                                     type="single"
+                                     syntax="password"
+                                     i18nKey="am.social.auth.smtpPassword"
+                                     order="1935">
+                    </AttributeSchema>
+                    <AttributeSchema name="smtpSslEnabled"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="am.social.auth.smtpSslEnabled"
+                                     order="1940">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="smtpFromAddress"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.smtpFromAddress"
+                                     order="1945">
+                        <ExampleValue>
+                            <Value>info@forgerock.com</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="mapToAnonymousUser"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="am.social.auth.mapToAnonymousUser"
+                                     order="2000">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>false</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="anonymousUserName"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.anonymousUserName"
+                                     order="2100">
+                        <DefaultValues>
+                            <Value>anonymous</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="logoutServiceUrl"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.logoutServiceUrl"
+                                     order="2150"
+                                     resourceName="logoutServiceUrl">
+                        <DefaultValues>
+                            <Value></Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="logoutBehaviour"
+                                     type="single_choice"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.logoutBehaviour"
+                                     order="2155"
+                                     resourceName="logoutBehaviour">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="prompt">prompt</ChoiceValue>
+                            <ChoiceValue i18nKey="logout">logout</ChoiceValue>
+                            <ChoiceValue i18nKey="donotlogout">donotlogout</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>prompt</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="enableRegistrationService"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="am.social.auth.enableRegistrationService"
+                                     order="1350">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>false</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="saveAttributesInSession"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="am.social.auth.saveAttributesInSession"
+                                     order="2400">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>true</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="issuerName"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.issuerName"
+                                     order="2500">
+                        <ExampleValue>
+                            <Value>https://accounts.google.com</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="mixUpMitigation"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="am.social.auth.mixUpMitigation"
+                                     order="2600">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>false</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                </SubSchema>
+            </Organization>
+        </Schema>
+    </Service>
+</ServicesConfiguration>

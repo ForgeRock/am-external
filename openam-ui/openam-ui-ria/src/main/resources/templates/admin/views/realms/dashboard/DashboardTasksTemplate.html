@@ -1,0 +1,38 @@
+{{!
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+<div class="panel-heading">
+    <h4 class="panel-title">
+        {{#if taskGroup.name}}
+            <span data-common-tasks id="commonTasksBtn">{{t 'console.dashboard.quickStart'}}</span>  <i class="fa fa-angle-right"></i> {{taskGroup.name}}
+        {{else}}
+            {{t 'console.dashboard.quickStart'}}
+        {{/if}}
+    </h4>
+</div>
+<div class="panel-body">
+    {{#if taskGroup.description}}
+    <div class="panel-description">{{taskGroup.description}}</div>
+    {{/if}}
+    <div class="grid-list">
+    {{#each taskGroup.tasks}}
+        <div class="col-sm-6 col-md-3">
+            <div data-panel-card class="panel-default panel am-panel-card">
+                <a href="{{#if link}}{{link}}{{else}}#{{_id}}{{/if}}" data-task-{{#if link}}link="{{link}}"{{else}}group="{{_id}}"{{/if}}>
+                    <div class="card-body">
+                        <div class="card-icon-circle card-icon-circle-sm bg-primary">
+                            <i class="fa fa-cog"></i>
+                        </div>
+                        <h3 class="card-name card-name-sm am-text-lines-three text-primary hidden-md">{{name}}</h3>
+                        <h3 class="card-name card-name-sm am-text-lines-four text-primary visible-md-block">{{name}}</h3>
+                    </div>
+                </a>
+            </div>
+        </div>
+    {{/each}}
+    </div>
+</div>

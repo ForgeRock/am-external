@@ -1,0 +1,21 @@
+<!--
+  Copyright 2018 ForgeRock AS. All Rights Reserved
+
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+<button data-save {{#if saveDisabled}}disabled{{/if}} class="btn btn-primary pull-right" type="button">
+    {{t "common.form.saveChanges"}}
+</button>
+
+<div class="form-inline pull-right load-datastore-schema">
+    <label class="control-label" for="loadSchema">
+        {{t "common.form.loadSchema"}}
+    </label>
+    
+    <label class="am-toggle-switch">
+        <input data-load-schema id="loadSchema" type="checkbox" />
+        <span />
+    </label>
+</div>

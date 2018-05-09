@@ -1,0 +1,40 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+.dropdown-menu>.active>a,
+.dropdown-menu>.active>a:hover,
+.dropdown-menu>.active>a:focus,
+.dropdown-menu>li>a:hover,
+.dropdown-menu>li>a:focus{
+    background-color: @base-theme-color;
+}
+
+
+/* Medium devices (desktops, 768px and up)*/
+@media (min-width: @screen-sm) {
+
+    nav:not(.navbar-inverse){
+
+        .dropdown-menu > li > span:hover,
+        .dropdown-menu > li > span:focus,
+        .dropdown-submenu:hover > span,
+        .dropdown-submenu:focus > span {
+            color: #fff;
+            background-color: @base-theme-color;
+        }
+
+
+        .dropdown-menu>li>span {
+            color: #333;
+        }
+
+        .dropdown-menu .fa {
+            margin-right:5px;
+        }
+    }
+}

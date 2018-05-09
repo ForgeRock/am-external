@@ -1,0 +1,22 @@
+{{!
+  Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+<p class="panel-description">{{t "openam.authDevices.devicesSettingDialog.description"}}</p>
+<div class="form-horizontal">
+    <div class="form-group">
+        <label class="control-label col-sm-4" for="oathStatus">{{t "openam.authDevices.devicesSettingDialog.authentication"}}</label>
+        <div class="col-sm-8">
+            <div class="control-group">
+                <label class="am-toggle-switch">
+                    <input id="oathStatus" {{#if authNeeded}} checked {{/if}} type="checkbox" />
+                    <span />
+                </label>
+                <span class="help-block">{{t "openam.authDevices.devicesSettingDialog.help"}}</span>
+            </div>
+        </div>
+    </div>
+</div>

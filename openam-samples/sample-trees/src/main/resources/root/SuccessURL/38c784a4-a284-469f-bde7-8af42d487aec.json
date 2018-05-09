@@ -1,0 +1,18 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "${project.version}",
+    "entityType" : "SuccessURL",
+    "entityId" : "38c784a4-a284-469f-bde7-8af42d487aec",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "38c784a4-a284-469f-bde7-8af42d487aec",
+    "successUrl" : "https://www.forgerock.com/",
+    "_type" : {
+      "_id" : "SetSuccessUrlNode",
+      "name" : "Success URL",
+      "collection" : true
+    }
+  }
+}

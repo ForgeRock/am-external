@@ -1,0 +1,30 @@
+<!--
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+<header class="page-header page-header-no-border clearfix">
+
+    {{#if icon}}
+    <span class="header-icon pull-left bg-primary"><i class="fa fa-{{icon}}"></i></span>
+    {{/if}}
+
+
+    <div class="deep-page-header-button-group button-group pull-right">
+        <div data-tab-search />
+        {{#each headerActions}}
+            {{partial actionPartial this}}
+        {{/each}}
+    </div>
+
+    <div class="pull-left">
+        <h4 class="page-type">{{t type}}</h4>
+        {{#if detail}}
+            <span class="page-header-detail {{detail.class}}">{{#if detail.icon}}<i class="fa {{detail.icon}}"></i> {{/if}} {{t detail.text safeString=false}}</span>
+        {{/if}}
+        <h1 class="wordwrap">{{t title safeString=false}}</h1>
+    </div>
+
+</header>

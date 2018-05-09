@@ -1,0 +1,58 @@
+<!--
+  Copyright 2012-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+<project default="fedlet">
+    <target name="fedlet">
+        <mkdir dir="built/dist/.zip"/>
+        <fail message="Source code is not compiled yet">
+            <condition>
+                <not>
+                    <available file="Fedlet/Fedlet/bin/Release/Fedlet.dll" />
+                </not>
+            </condition>
+        </fail>
+        <copy todir="built/dist/.zip" file="readme.txt" />
+        <copy todir="built/dist/.zip/bin" file="Fedlet/Fedlet/bin/Release/Fedlet.dll" />
+        <copy todir="built/dist/.zip/bin" file="Fedlet/Fedlet/bin/Release/Fedlet.pdb" />
+        <copy todir="built/dist/.zip/conf">
+            <fileset dir="Fedlet/Fedlet/conf">
+                <include name="*.cot-template"/>
+                <include name="*.xml-template"/>
+            </fileset>
+        </copy>
+        <copy todir="built/dist/.zip/SampleApp">
+            <fileset dir="Fedlet/SampleApp">
+                <include name="Web.config"/>
+                <include name="site.master"/>
+                <include name="App_Data/*" />
+                <include name="bin/*.dll" />
+                <include name="**/*.aspx"/>
+                <include name="**/*.png"/>
+                <include name="**/*.jpg"/>
+                <include name="**/*.gif"/>
+                <include name="**/*.css"/>
+                <include name="**/*.js"/>
+            </fileset>
+        </copy>
+        <zip destfile="built/dist/Fedlet-aspnet.zip">
+            <zipfileset dir="built/dist/.zip" prefix=""/>
+        </zip>
+        <delete dir="built/dist/.zip" />
+
+        <checksum file="built/dist/Fedlet-aspnet.zip" algorithm="SHA" fileext=".sha" />
+        <tstamp>
+            <format property="time.stamp" pattern="yyyyMMdd"/>
+        </tstamp>
+        <filter token="BUILD_DATE" value="${time.stamp}" />
+        <copy file="build_date.js.template"
+              tofile="built/dist/build_date.js" filtering="true"/>
+    </target>
+
+    <target name="clean">
+        <delete dir="built" />
+    </target>
+</project>

@@ -1,0 +1,29 @@
+{{!
+  Copyright 2014-2018 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+<div class="container" id="deviceMatch-container">
+    {{#if reqs.header}}
+    <div class="page-header">
+        <h1 class="text-center">{{reqs.header}}</h1>
+    </div>
+    {{/if}}
+
+    <form action="" method="post" class="form col-sm-6 col-sm-offset-3" autocomplete="off" data-stage="{{reqs.stage}}">
+        <fieldset>
+            <div class="panel panel-default">
+                <div class="panel-body text-center">
+                    <h4><i class="fa fa-circle-o-notch fa-spin text-primary"></i> {{t "templates.user.DeviceIdMatch2.verifyingDevice"}}</h4>
+                </div>
+            </div>
+            {{#each reqs.callbacks}}
+            <div class="form-group hidden">
+                {{callbackRender}}
+            </div>
+            {{/each}}
+        </fieldset>
+    </form>
+</div>

@@ -1,0 +1,12 @@
+{{!
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+{{#if attributes.active}}
+    <span class="text-success"><i class="fa fa-check-circle"></i> {{t "common.user.active"}}</span>
+{{else}}
+    <span class="text-warning"><i class="fa fa-ban"></i> {{t "common.user.inactive"}}</span>
+{{/if}}

@@ -1,0 +1,24 @@
+{{!
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+{{#if items.length}}
+    <div class="btn-toolbar" role="toolbar" aria-label="toolbar" data-grid-toolbar></div>
+{{/if}}
+
+<p class="panel-description">{{t "console.authorization.policies.list.description"}}</p>
+
+{{#if items.length}}
+    <div class="table-container"></div>
+    <div id="paginationContainer"></div>
+{{else}}
+    <div class="call-to-action-block">
+        <h3>{{t "console.authorization.policies.list.noPolicies"}}</h3>
+        <button type="button" class="btn btn-primary" data-add-entity>
+            <i class="fa fa-plus"></i> {{t "console.authorization.policies.list.addNew"}}
+        </button>
+    </div>
+{{/if}}

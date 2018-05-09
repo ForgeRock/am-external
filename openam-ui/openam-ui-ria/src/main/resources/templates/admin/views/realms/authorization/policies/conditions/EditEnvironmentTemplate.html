@@ -1,0 +1,37 @@
+{{!
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+<li class="rule clearfix invalid-rule" id="environment_{{itemID}}" tabindex="0">
+    <span class="item-button-panel edit-state">
+		<span tabindex="0" class="fa fa-check"></span>
+        <span tabindex="0" class="fa fa-times"></span>
+	</span>
+
+    <div class="item-data">
+        <div class="field-float-select data-obj type-selector-panel">
+            <div>
+                <label for="envSelection">{{t "console.common.type"}}</label>
+
+                <a class="btn info-button" tabindex="0" data-toggle="popover" data-placement="top">
+                    <i class="fa fa-info-circle"></i>
+                </a>
+            </div>
+
+            <select id="envSelection" class="form-control type-selection" data-type-selection>
+                <option value="" selected disabled>{{t "common.form.select"}}</option>
+                {{#conditions}}
+                <option value="{{title}}" {{#equals title 'Policy'}}hidden{{/equals}}>{{i18nKey}}</option>
+                {{/conditions}}
+            </select>
+        </div>
+    </div>
+
+    <span class="item-button-panel">
+		<span tabindex="0" class="fa fa-pencil"></span>
+		<span tabindex="0" class="fa fa-times"></span>
+	</span>
+</li>

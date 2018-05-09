@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  Copyright 2017 ForgeRock AS. All Rights Reserved
+
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+<Federation FederationID="external-wsfed-sp" xmlns="http://schemas.xmlsoap.org/ws/2006/12/federation">
+    <TokenIssuerName>external-wsfed-sp</TokenIssuerName>
+    <TokenIssuerEndpoint>
+        <ns1:Address xmlns:ns1="http://www.w3.org/2005/08/addressing">http://external.example.com:7070/am/WSFederationServlet/metaAlias/sp</ns1:Address>
+    </TokenIssuerEndpoint>
+    <SingleSignOutNotificationEndpoint>
+        <ns2:Address xmlns:ns2="http://www.w3.org/2005/08/addressing">http://external.example.com:7070/am/WSFederationServlet/metaAlias/sp</ns2:Address>
+    </SingleSignOutNotificationEndpoint>
+</Federation>

@@ -1,0 +1,30 @@
+{{!
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+{{#each this}}
+	{{#if this}}
+        {{#each this}}
+            {{#ifObject this}}
+                <div>
+                    <h3>{{t @key}}</h3>
+                    <span>{{stringify this}}</span>
+                </div>
+
+                {{else}}
+                <div>
+                    <h3>{{t @key}}</h3>
+                    <span>{{this}}</span>
+                </div>
+            {{/ifObject}}
+        {{/each}}
+	{{else}}
+		<div>
+			<h3>{{t "console.common.type"}}</h3>
+			<span>{{t "console.authorization.policies.edit.conditionTypes.nothingSelected"}}</span>
+		</div>
+	{{/if}}
+{{/each}}

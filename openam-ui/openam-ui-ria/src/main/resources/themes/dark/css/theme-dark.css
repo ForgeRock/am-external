@@ -1,0 +1,44 @@
+/*
+ * Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+.page-header, .page-header-min h3 {
+    border-bottom: 1px solid #2b2f31;
+}
+
+.am-panel-card:hover {
+    border-color: #486B64;
+}
+
+.am-panel-card:hover .card-icon-circle {
+    background-color: #7CCABA;
+}
+
+.dropdown-header {
+    font-size: inherit;
+}
+
+.btn-toolbar.page-toolbar {
+    border-color: #444;
+}
+
+label {
+    font-weight: normal;
+}
+
+.navbar-inverse {
+    background-image: -webkit-linear-gradient(top, #373c3e 0%, #1f2223 100%);
+    background-image: -o-linear-gradient(top, #373c3e 0%, #1f2223 100%);
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#373c3e), to(#1f2223));
+    background-image: linear-gradient(to bottom, #373c3e 0%, #1f2223 100%);
+    background-repeat: repeat-x;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff373c3e', endColorstr='#ff1f2223', GradientType=0);
+    filter: progid:DXImageTransform.Microsoft.gradient(enabled = false);
+}
+
+#loginContent > li > a {
+    margin: -3px 0 -4px;
+}

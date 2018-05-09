@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright 2017 ForgeRock AS. All Rights Reserved
+  ~
+  ~ Use of this code requires a commercial software license with ForgeRock AS.
+  ~ or with one of its affiliates. All use shall be exclusively subject
+  ~ to such license between the licensee and ForgeRock AS.
+  -->
+
+<!DOCTYPE ServicesConfiguration PUBLIC "=//iPlanet//Service Management Services (SMS) 1.0 DTD//EN"
+        "jar://com/sun/identity/sm/sms.dtd">
+
+<ServicesConfiguration>
+    <Service name="iPlanetAMAuthJwtProofOfPossessionService" version="1.0">
+        <Schema
+                serviceHierarchy="/DSAMEConfig/authentication/iPlanetAMAuthJwtProofOfPossessionService"
+                i18nFileName="amAuthJwtProofOfPossession"
+                revisionNumber="1"
+                i18nKey="jwt-pop-service-description"
+                resourceName="authJwtPoP">
+
+            <Organization>
+                <AttributeSchema name="subjectJwkSetAttr"
+                                 type="single" syntax="string"
+                                 i18nKey="subjectJwkSetAttr"
+                                 order="100">
+                </AttributeSchema>
+                <AttributeSchema name="challengeSigningKey"
+                                 type="single" syntax="string"
+                                 i18nKey="challengeSigningKey"
+                                 order="200">
+                </AttributeSchema>
+                <AttributeSchema name="responseEncryptionMethod"
+                                 type="single_choice" syntax="string"
+                                 i18nKey="responseEncryptionMethod"
+                                 order="300">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="ecdhe">ECDHE</ChoiceValue>
+                        <ChoiceValue i18nKey="psk">PSK</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>ECDHE</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="responseEncryptionCipher"
+                                 type="single_choice" syntax="string"
+                                 i18nKey="responseEncryptionCipher"
+                                 order="350">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="xchacha20">XC20-P1305</ChoiceValue>
+                        <ChoiceValue i18nKey="aes128gcm">A128GCM</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>A128GCM</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="enableTlsSessionBinding"
+                                 type="single" syntax="boolean"
+                                 i18nKey="enableTlsSessionBinding"
+                                 order="400">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>true</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="forgerock-am-auth-jwtproofofpossession-auth-level"
+                                 type="single"
+                                 syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+                                 i18nKey="authenticationLevel"
+                                 order="10000"
+                                 resourceName="authenticationLevel">
+                    <DefaultValues>
+                        <Value>0</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <SubSchema name="serverconfig" inheritance="multiple" resourceName="USE-PARENT">
+                    <AttributeSchema name="subjectJwkSetAttr"
+                                     type="single" syntax="string"
+                                     i18nKey="subjectJwkSetAttr"
+                                     order="100">
+                    </AttributeSchema>
+                    <AttributeSchema name="challengeSigningKey"
+                                     type="single" syntax="string"
+                                     i18nKey="challengeSigningKey"
+                                     order="200">
+                    </AttributeSchema>
+                    <AttributeSchema name="responseEncryptionMethod"
+                                     type="single_choice" syntax="string"
+                                     i18nKey="responseEncryptionMethod"
+                                     order="300">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="ecdhe">ECDHE</ChoiceValue>
+                            <ChoiceValue i18nKey="psk">PSK</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>ECDHE</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="responseEncryptionCipher"
+                                     type="single_choice" syntax="string"
+                                     i18nKey="responseEncryptionCipher"
+                                     order="350">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="xchacha20">XC20-P1305</ChoiceValue>
+                            <ChoiceValue i18nKey="aes128gcm">A128GCM</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>A128GCM</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="enableTlsSessionBinding"
+                                     type="single" syntax="boolean"
+                                     i18nKey="enableTlsSessionBinding"
+                                     order="400">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>true</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-am-auth-jwtproofofpossession-auth-level"
+                                     type="single"
+                                     syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+                                     i18nKey="authenticationLevel"
+                                     order="10000"
+                                     resourceName="authenticationLevel">
+                        <DefaultValues>
+                            <Value>0</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                </SubSchema>
+            </Organization>
+        </Schema>
+    </Service>
+</ServicesConfiguration>

@@ -1,0 +1,38 @@
+{{!
+  Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+<div class="table-container">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>{{t 'common.form.name'}}</th>
+                <th>{{t 'common.form.type'}}</th>
+                <th class="fr-col-btn-1"/>
+            </tr>
+        </thead>
+        <tbody>
+            {{#each instances}}
+                <tr data-subschema-id="{{_id}}" data-subschema-type="{{_type._id}}">
+                    <td class="wordwrap">
+                        <a href="{{routeTo 'globalServiceSubSubSchemaEdit' ../serviceType ../subSchemaType ../subSchemaInstanceId _type._id _id}}"
+                            title="{{t 'common.form.edit'}}">{{_id}}</a>
+                    </td>
+                    <td class="wordwrap">{{_type.name}}</td>
+                    <td class="fr-col-btn-1">
+                        <div class="btn-group">
+                            <a class="btn btn-link"
+                                href="{{routeTo 'globalServiceSubSubSchemaEdit' ../serviceType ../subSchemaType ../subSchemaInstanceId _type._id _id}}"
+                                title="{{t 'common.form.edit'}}">
+                                <i class="fa fa-pencil"/>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            {{/each}}
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,341 @@
+<?xml version='1.0' encoding="ISO-8859-1"?>
+
+<!--
+
+  DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+
+  Copyright 2012-2017 ForgeRock AS.
+
+  The contents of this file are subject to the terms
+  of the Common Development and Distribution License
+  (the License). You may not use this file except in
+  compliance with the License.
+
+  You can obtain a copy of the License at
+  http://forgerock.org/license/CDDLv1.0.html
+  See the License for the specific language governing
+  permission and limitations under the License.
+
+  When distributing Covered Code, include this CDDL
+  Header Notice in each file and include the License file
+  at http://forgerock.org/license/CDDLv1.0.html
+  If applicable, add the following below the CDDL Header,
+  with the fields enclosed by brackets [] replaced by
+  your own identifying information:
+  "Portions Copyrighted 2012 ForgeRock AS"
+
+-->
+
+
+<!DOCTYPE ServicesConfiguration
+        PUBLIC "=//iPlanet//Service Management Services (SMS) 1.0 DTD//EN"
+        "jar://com/sun/identity/sm/sms.dtd">
+
+<ServicesConfiguration>
+    <Service name="iPlanetAMAuthAuthenticatorOATHService" version="1.0">
+        <Schema
+                serviceHierarchy="/DSAMEConfig/authentication/iPlanetAMAuthAuthenticatorOATHService"
+                i18nFileName="amAuthAuthenticatorOATH"
+                revisionNumber="1"
+                i18nKey="iPlanetAMAuthAuthenticatorOATHServiceDescription"
+                resourceName="authenticatoroath">
+
+            <Organization>
+                <AttributeSchema name="RequiredValueValidator"
+                                 type="validator"
+                                 syntax="string">
+                    <DefaultValues>
+                        <Value>com.sun.identity.sm.RequiredValueValidator</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="CodeLengthValidator"
+                                 type="validator"
+                                 syntax="string">
+                    <DefaultValues>
+                        <Value>org.forgerock.openam.authentication.modules.fr.oath.validators.CodeLengthValidator</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="iplanet-am-auth-authenticatoroath-auth-level"
+                                 type="single"
+                                 syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+                                 validator="RequiredValueValidator"
+                                 i18nKey="a500"
+                                 order="100"
+                                 resourceName="authenticationLevel">
+                    <DefaultValues>
+                        <Value>0</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <AttributeSchema name="iplanet-am-auth-fr-oath-password-length"
+                                 type="single"
+                                 syntax="string"
+                                 validator="CodeLengthValidator"
+                                 i18nKey="a501"
+                                 order="200"
+                                 resourceName="passwordLength">
+                    <DefaultValues>
+                        <Value>6</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <AttributeSchema name="iplanet-am-auth-fr-oath-min-secret-key-length"
+                                 type="single"
+                                 syntax="number_range" rangeStart="16" rangeEnd="2147483647"
+                                 i18nKey="a502"
+                                 order="300"
+                                 resourceName="minimumSecretKeyLength">
+                    <DefaultValues>
+                        <Value>32</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="iplanet-am-auth-fr-oath-algorithm"
+                                 type="single_choice"
+                                 syntax="string"
+                                 validator="RequiredValueValidator"
+                                 i18nKey="a504"
+                                 order="400"
+                                 resourceName="oathAlgorithm">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="HOTP">HOTP</ChoiceValue>
+                        <ChoiceValue i18nKey="TOTP">TOTP</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>HOTP</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="iplanet-am-auth-fr-oath-hotp-window-size"
+                                 type="single"
+                                 syntax="number_range" rangeStart="1" rangeEnd="2147483647"
+                                 i18nKey="a505"
+                                 order="500"
+                                 resourceName="hotpWindowSize">
+                    <DefaultValues>
+                        <Value>100</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <AttributeSchema name="iplanet-am-auth-fr-oath-add-checksum"
+                                 type="single_choice"
+                                 syntax="string"
+                                 i18nKey="a507"
+                                 order="600"
+                                 resourceName="addChecksumToOtpEnabled">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="true">True</ChoiceValue>
+                        <ChoiceValue i18nKey="false">False</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>False</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="iplanet-am-auth-fr-oath-truncation-offset"
+                                 type="single"
+                                 syntax="number"
+                                 i18nKey="a508"
+                                 order="700"
+                                 resourceName="truncationOffset">
+                    <DefaultValues>
+                        <Value>-1</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="iplanet-am-auth-fr-oath-size-of-time-step"
+                                 type="single"
+                                 syntax="number_range" rangeStart="1" rangeEnd="2147483647"
+                                 i18nKey="a509"
+                                 order="800"
+                                 resourceName="totpTimeStepInterval">
+                    <DefaultValues>
+                        <Value>30</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="iplanet-am-auth-fr-oath-steps-in-window"
+                                 type="single"
+                                 syntax="number"
+                                 i18nKey="a510"
+                                 order="900"
+                                 resourceName="totpTimeStepsInWindow">
+                    <DefaultValues>
+                        <Value>2</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="openam-auth-fr-oath-maximum-clock-drift"
+                                 type="single"
+                                 syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+                                 i18nKey="a514"
+                                 order="1000"
+                                 resourceName="totpMaximumClockDrift">
+                    <DefaultValues>
+                        <Value>5</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="openam-auth-fr-oath-issuer-name"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="a515"
+                                 order="1100"
+                                 validator="RequiredValueValidator"
+                                 resourceName="oathIssuerName">
+                    <ExampleValue>
+                        <Value>ForgeRock</Value>
+                    </ExampleValue>
+                </AttributeSchema>
+                <AttributeSchema name="openam-auth-fr-oath-max-retry"
+                                 type="single"
+                                 syntax="number_range" rangeStart="1" rangeEnd="10"
+                                 i18nKey="a516"
+                                 resourceName="frOathOtpMaxRetry">
+                    <DefaultValues>
+                        <Value>3</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <SubSchema name="serverconfig" inheritance="multiple" resourceName="USE-PARENT">
+                    <AttributeSchema name="RequiredValueValidator"
+                                     type="validator"
+                                     syntax="string">
+                        <DefaultValues>
+                            <Value>com.sun.identity.sm.RequiredValueValidator</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="CodeLengthValidator"
+                                     type="validator"
+                                     syntax="string">
+                        <DefaultValues>
+                            <Value>org.forgerock.openam.authentication.modules.fr.oath.validators.CodeLengthValidator</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-authenticatoroath-auth-level"
+                                     type="single"
+                                     syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+                                     i18nKey="a500"
+                                     order="100"
+                                     resourceName="authenticationLevel">
+                        <DefaultValues>
+                            <Value>0</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-fr-oath-password-length"
+                                     type="single"
+                                     syntax="string"
+                                     validator="CodeLengthValidator"
+                                     i18nKey="a501"
+                                     order="200"
+                                     resourceName="passwordLength">
+                        <DefaultValues>
+                            <Value>6</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-fr-oath-min-secret-key-length"
+                                     type="single"
+                                     syntax="number_range" rangeStart="16" rangeEnd="2147483647"
+                                     i18nKey="a502"
+                                     order="300"
+                                     resourceName="minimumSecretKeyLength">
+                        <DefaultValues>
+                            <Value>32</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-fr-oath-algorithm"
+                                     type="single_choice"
+                                     syntax="string"
+                                     i18nKey="a504"
+                                     order="400"
+                                     resourceName="oathAlgorithm">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="HOTP">HOTP</ChoiceValue>
+                            <ChoiceValue i18nKey="TOTP">TOTP</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>HOTP</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-fr-oath-hotp-window-size"
+                                     type="single"
+                                     syntax="number_range" rangeStart="1" rangeEnd="2147483647"
+                                     i18nKey="a505"
+                                     order="500"
+                                     resourceName="hotpWindowSize">
+                        <DefaultValues>
+                            <Value>100</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+
+                    <AttributeSchema name="iplanet-am-auth-fr-oath-add-checksum"
+                                     type="single_choice"
+                                     syntax="string"
+                                     i18nKey="a507"
+                                     order="600"
+                                     resourceName="addChecksumToOtpEnabled">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="true">True</ChoiceValue>
+                            <ChoiceValue i18nKey="false">False</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>False</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-fr-oath-truncation-offset"
+                                     type="single"
+                                     syntax="number"
+                                     i18nKey="a508"
+                                     order="700"
+                                     resourceName="truncationOffset">
+                        <DefaultValues>
+                            <Value>-1</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-fr-oath-size-of-time-step"
+                                     type="single"
+                                     syntax="number_range" rangeStart="1" rangeEnd="2147483647"
+                                     i18nKey="a509"
+                                     order="800"
+                                     resourceName="totpTimeStepInterval">
+                        <DefaultValues>
+                            <Value>30</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-fr-oath-steps-in-window"
+                                     type="single"
+                                     syntax="number"
+                                     i18nKey="a510"
+                                     order="900"
+                                     resourceName="totpTimeStepsInWindow">
+                        <DefaultValues>
+                            <Value>2</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="openam-auth-fr-oath-maximum-clock-drift"
+                                    type="single"
+                                     syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+                                    i18nKey="a514"
+                                    order="1000"
+                                    resourceName="totpMaximumClockDrift">
+                        <DefaultValues>
+                            <Value>5</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="openam-auth-fr-oath-issuer-name"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="a515"
+                                     order="1100"
+                                     validator="RequiredValueValidator"
+                                     resourceName="oathIssuerName">
+                        <ExampleValue>
+                            <Value>ForgeRock</Value>
+                        </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="openam-auth-fr-oath-max-retry"
+                                     type="single"
+                                     syntax="number_range" rangeStart="1" rangeEnd="10"
+                                     i18nKey="a516"
+                                     resourceName="frOathOtpMaxRetry">
+                        <DefaultValues>
+                            <Value>3</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                </SubSchema>
+            </Organization>
+        </Schema>
+    </Service>
+</ServicesConfiguration>

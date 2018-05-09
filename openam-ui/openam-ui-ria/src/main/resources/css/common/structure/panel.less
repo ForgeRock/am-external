@@ -1,0 +1,74 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+.panel-title>a {
+    padding-left: 17px;
+}
+
+.panel-title {
+
+    .panel-title-icon {
+        display: inline-block;
+        margin-right: 5px;
+    }
+
+    > a {
+        position: relative;
+    }
+
+    a:before {
+       content: '';
+       display: inline-block;
+       width: 0;
+       height: 0;
+       margin-left: 2px;
+       vertical-align: middle;
+       position: absolute;
+       left: 3px;
+       top: 5px;
+       border-left: 4px solid;
+       border-right: 0;
+       border-top: 4px solid transparent;
+       border-bottom: 4px solid transparent;
+   }
+
+   a[aria-expanded="true"]:before {
+       content: '';
+       display: inline-block;
+       width: 0;
+       height: 0;
+       margin-left: 2px;
+       vertical-align: middle;
+       position: absolute;
+       border-top: 4px solid;
+       border-right: 4px solid transparent;
+       border-left: 4px solid transparent;
+       top: 7px;
+       left: 0;
+   }
+}
+
+.panel-description {
+    margin-bottom: 20px;
+}
+
+.fr-panel-heading-with-button {
+    .panel-title {
+        display: inline-block;
+    }
+
+    .dropdown, .button-group {
+        display: inline-block;
+
+        .btn-link {
+            padding: 0;
+            line-height: 14px;
+            border: none;
+        }
+    }
+}

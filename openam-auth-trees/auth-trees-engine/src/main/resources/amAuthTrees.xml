@@ -1,0 +1,66 @@
+<?xml version='1.0' encoding="UTF-8"?>
+
+<!--
+  Copyright 2017 ForgeRock AS. All Rights Reserved
+
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+
+<!DOCTYPE ServicesConfiguration
+        PUBLIC "=//forgerock//Service Management Services (SMS) 1.0 DTD//EN"
+        "jar://com/sun/identity/sm/sms.dtd">
+
+<ServicesConfiguration>
+    <Service name="authenticationTreesService" version="1.0">
+        <Schema
+                serviceHierarchy="/DSAMEConfig/authenticationTreesService"
+                i18nFileName="amAuthTrees"
+                revisionNumber="1"
+                i18nKey="serviceDescription"
+                resourceName="EMPTY">
+
+            <Organization>
+                <SubSchema name="treesContainer" resourceName="USE-PARENT">
+                    <SubSchema name="tree" inheritance="multiple" resourceName="trees">
+                        <AttributeSchema name="entryNodeId" type="single" syntax="string" i18nKey="entryNodeId"/>
+                        <SubSchema name="node" inheritance="multiple" resourceName="nodes"
+                                validator="org.forgerock.openam.auth.nodes.framework.validators.NodeConfigValidator">
+                            <AttributeSchema name="RequiredValueValidator"
+                                             type="validator"
+                                             syntax="string">
+                                <DefaultValues>
+                                    <Value>com.sun.identity.sm.RequiredValueValidator</Value>
+                                </DefaultValues>
+                            </AttributeSchema>
+                            <AttributeSchema name="nodeType" type="single" syntax="string"
+                                             i18nKey="nodeType" order="100"
+                                             validator="RequiredValueValidator"/>
+                            <AttributeSchema name="displayName" type="single" syntax="string"
+                                             i18nKey="displayName" order="200"
+                                             validator="RequiredValueValidator"/>
+                            <SubSchema name="outcome" inheritance="multiple" resourceName="outcomes">
+                                <AttributeSchema name="RequiredValueValidator"
+                                                 type="validator"
+                                                 syntax="string">
+                                    <DefaultValues>
+                                        <Value>com.sun.identity.sm.RequiredValueValidator</Value>
+                                    </DefaultValues>
+                                </AttributeSchema>
+                                <AttributeSchema name="destinationNodeId" type="single" syntax="string"
+                                                 i18nKey="destinationNodeId"
+                                                 validator="RequiredValueValidator" />
+                            </SubSchema>
+                        </SubSchema>
+                    </SubSchema>
+                </SubSchema>
+            </Organization>
+        </Schema>
+        <Configuration>
+            <OrganizationConfiguration name="/">
+                <SubConfiguration name="treesContainer" />
+            </OrganizationConfiguration>
+        </Configuration>
+    </Service>
+</ServicesConfiguration>

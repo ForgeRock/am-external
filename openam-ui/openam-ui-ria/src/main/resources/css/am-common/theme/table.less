@@ -1,0 +1,54 @@
+/*
+ * Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+.table {
+    @import "../lib/awesome-bootstrap-checkbox-0.3.7-custom.less";
+
+    thead th > a {
+        color: #000000;
+    }
+
+    > thead > tr > th {
+        font-size: 12px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        border-bottom: 2px solid #eee;
+    }
+
+    > tbody > tr > td,
+    > thead > tr > th {
+        padding: 12px;
+        border-top: 1px solid #eee;
+    }
+
+    tr.selected {
+        /* TODO: Use bootstrap variable */
+        background-color: #f7f7f7;
+    }
+
+    tr.am-inline-edit-table-row {
+        background-color: @background-color;
+    }
+
+    &.table-hover > tbody > tr:hover.selected {
+        background-color: #e8e8e8;
+    }
+
+    [class^='fr-col-btn-'], [class*=' fr-col-btn-'] {
+        .btn-link {
+            color: #777;
+
+            &:disabled {
+                opacity: 0.3;
+            }
+
+            &:hover, &:focus {
+                color: @base-theme-color;
+            }
+        }
+    }
+}

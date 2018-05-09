@@ -1,0 +1,19 @@
+{{!
+  Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+}}
+<div class="container">
+    {{> headers/_Title title="console.servers.list.title" }}
+    <p class="page-description">{{t 'console.servers.list.description'}}</p>
+    <div id="toggleCardList">
+        <div class="call-to-action-block panel hidden">
+            <h3>{{t 'console.servers.list.empty'}}</h3>
+            <a href="{{routeTo 'newServer'}}" class="btn btn-primary">
+                <i class="fa fa-plus"></i> {{t 'console.sites.list.new'}}
+            </a>
+        </div>
+    </div>
+</div>

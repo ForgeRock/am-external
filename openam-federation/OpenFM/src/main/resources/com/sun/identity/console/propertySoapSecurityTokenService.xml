@@ -1,0 +1,750 @@
+<!--
+  Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ 
+  Use of this code requires a commercial software license with ForgeRock AS.
+  or with one of its affiliates. All use shall be exclusively subject
+  to such license between the licensee and ForgeRock AS.
+-->
+
+<!DOCTYPE propertysheet SYSTEM "propertysheet.dtd">
+<propertysheet>
+    <section name="General" defaultValue="rest.sts.general.section.title">
+        <property>
+            <label name="lblPersistIssuedTokensInCTS"
+                   defaultValue="sts.persist.issued.tokens.in.cts"
+                   labelFor="persist-issued-tokens-in-cts"/>
+            <cc name="persist-issued-tokens-in-cts"
+                tagclass="com.sun.web.ui.taglib.html.CCCheckBoxTag">
+            </cc>
+            <fieldhelp name="helpPersistIssuedTokensInCTS" defaultValue="sts.persist.issued.tokens.in.cts.help" />
+        </property>
+        <property>
+            <label name="lblIssuedTokenTypes"
+                   defaultValue="soap.sts.issued.token.types"
+                   labelFor="issued-token-types"/>
+            <cc name="issued-token-types"
+                tagclass="com.sun.web.ui.taglib.html.CCSelectableListTag">
+                <option label="soap.sts.issued.token.saml2" value="SAML2"/>
+                <option label="soap.sts.issued.token.oidc" value="OPENIDCONNECT"/>
+                <attribute name="multiple" value="true" />
+            </cc>
+            <fieldhelp name="helpIssuedTokenTypes" defaultValue="soap.sts.issued.token.help" />
+        </property>
+        <!--
+        Note that the out-of-the-box .wsdl files deployed with the soap-sts .war file support only a single SecurityPolicy
+        binding. However, in order to support customers who wish to deploy a custom wsdl file in which the SecurityPolicy
+        references a choice of bindings, the selection of multiple validated token config must be supported, as these
+        definitions trigger the plugging in of wss4j Validator instances into the wss4j SecurityPolicy enforcement runtime.
+        -->
+        <property>
+            <label name="lblSecurityPolicyValidatedTokenConfig"
+                   defaultValue="soap.sts.security.policy.validated.token.config"
+                   labelFor="security-policy-validated-token-config"/>
+            <cc name="security-policy-validated-token-config"
+                tagclass="com.sun.web.ui.taglib.html.CCSelectableListTag">
+                <option label="soap.sts.security.policy.validated.token.config.unt.true" value="USERNAME|true"/>
+                <option label="soap.sts.security.policy.validated.token.config.unt.false" value="USERNAME|false"/>
+                <option label="soap.sts.security.policy.validated.token.config.openam.true" value="OPENAM|true"/>
+                <option label="soap.sts.security.policy.validated.token.config.openam.false" value="OPENAM|false"/>
+                <option label="soap.sts.security.policy.validated.token.config.x509.true" value="X509|true"/>
+                <option label="soap.sts.security.policy.validated.token.config.x509.false" value="X509|false"/>
+                <attribute name="multiple" value="true" />
+            </cc>
+            <fieldhelp name="helpSecurityPolicyValidatedTokenConfig" defaultValue="soap.sts.security.policy.validated.token.config.help" />
+        </property>
+    </section>
+
+    <section name="Deployment" defaultValue="soap.sts.deployment.section.title">
+        <property>
+            <label name="lblDeploymentUrlElement"
+                   defaultValue="soap.sts.deployment.url.element"
+                   labelFor="deployment-url-element"/>
+            <cc name="deployment-url-element"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpDeploymentUrlElement" defaultValue="soap.sts.deployment.url.element.help" />
+        </property>
+
+        <property>
+            <label name="lblAuthTargetMappings"
+                   defaultValue="soap.sts.deployment.auth.target.mappings"
+                   labelFor="deployment-auth-target-mappings"/>
+            <cc name="deployment-auth-target-mappings"
+                tagclass="com.sun.web.ui.taglib.editablelist.CCEditableListTag">
+                <attribute name="name" value="list" />
+                <attribute name="listboxLabel" value="label.current.value" />
+                <attribute name="textboxLabel" value="label.new.value" />
+            </cc>
+            <fieldhelp name="helpAuthTargetMappings" defaultValue="soap.sts.deployment.auth.target.mappings.help" />
+        </property>
+
+        <property>
+            <label name="lblDeploymentAMUrl"
+                   defaultValue="soap.sts.deployment.am.url"
+                   labelFor="deployment-am-url"/>
+            <cc name="deployment-am-url"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpDeploymentAMUrl" defaultValue="soap.sts.deployment.am.url.help" />
+        </property>
+
+        <property>
+            <label name="lblDeploymentWsdlLocation"
+                   defaultValue="soap.sts.deployment.wsdl.location"
+                   labelFor="deployment-wsdl-location"/>
+            <cc name="deployment-wsdl-location"
+                tagclass="com.sun.web.ui.taglib.html.CCSelectableListTag">
+                <option label="soap.sts.deployment.wsdl.location.ut.transport" value="sts_ut_transport.wsdl"/>
+                <option label="soap.sts.deployment.wsdl.location.ut.symmetric" value="sts_ut_symmetric.wsdl"/>
+                <option label="soap.sts.deployment.wsdl.location.ut.asymmetric" value="sts_ut_asymmetric.wsdl"/>
+                <option label="soap.sts.deployment.wsdl.location.am.bare" value="sts_am_bare.wsdl"/>
+                <option label="soap.sts.deployment.wsdl.location.am.transport" value="sts_am_transport.wsdl"/>
+                <option label="soap.sts.deployment.wsdl.location.x509.symmetric" value="sts_x509_symmetric.wsdl"/>
+                <option label="soap.sts.deployment.wsdl.location.x509.asymmetric" value="sts_x509_asymmetric.wsdl"/>
+                <option label="soap.sts.deployment.wsdl.location.custom" value="custom_wsdl_file"/>
+                <attribute name="multiple" value="false" />
+            </cc>
+            <fieldhelp name="helpDeploymentWsdlLocation" defaultValue="soap.sts.deployment.wsdl.location.help" />
+        </property>
+
+
+        <property>
+            <label name="lblDeploymentCustomWsdlLocation"
+                   defaultValue="soap.sts.deployment.custom.wsdl.location"
+                   labelFor="deployment-custom-wsdl-location"/>
+            <cc name="deployment-custom-wsdl-location"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpDeploymentCustomWsdlLocation" defaultValue="soap.sts.deployment.custom.wsdl.location.help" />
+        </property>
+
+        <property>
+            <label name="lblDeploymentCustomServiceName"
+                   defaultValue="soap.sts.deployment.custom.service.name"
+                   labelFor="deployment-custom-service-name"/>
+            <cc name="deployment-custom-service-name"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpDeploymentCustomServiceName" defaultValue="soap.sts.deployment.custom.service.name.help" />
+        </property>
+
+        <property>
+            <label name="lblDeploymentCustomServicePort"
+                   defaultValue="soap.sts.deployment.custom.port.name"
+                   labelFor="deployment-custom-service-port"/>
+            <cc name="deployment-custom-service-port"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpDeploymentCustomServicePort" defaultValue="soap.sts.deployment.custom.port.name.help" />
+        </property>
+
+        <property>
+            <label name="lblDelegationRelationshipSupported"
+                   defaultValue="soap.sts.delegation.relationship.supported"
+                   labelFor="delegation-relationship-supported"/>
+            <cc name="delegation-relationship-supported"
+                tagclass="com.sun.web.ui.taglib.html.CCCheckBoxTag">
+            </cc>
+            <fieldhelp name="helpDeploymentDelegationRelationshipSupported" defaultValue="soap.sts.delegation.relationship.supported.help" />
+        </property>
+
+        <property>
+            <label name="lblDeploymentValidatedDelegatedTokenConfig"
+                   defaultValue="soap.sts.delegation.validated.token.config"
+                   labelFor="delegation-validated-token-types"/>
+            <cc name="delegation-validated-token-types"
+                tagclass="com.sun.web.ui.taglib.html.CCSelectableListTag">
+                <option label="soap.sts.delegation.validated.token.config.unt.true" value="USERNAME|true"/>
+                <option label="soap.sts.delegation.validated.token.config.unt.false" value="USERNAME|false"/>
+                <option label="soap.sts.delegation.validated.token.config.openam.true" value="OPENAM|true"/>
+                <option label="soap.sts.delegation.validated.token.config.openam.false" value="OPENAM|false"/>
+                <attribute name="multiple" value="true" />
+            </cc>
+            <fieldhelp name="helpDeploymentValidatedDelegatedTokenConfig" defaultValue="soap.sts.delegation.validated.token.config.help" />
+        </property>
+
+        <property>
+            <label name="lblDelegationCustomTokenHandlers"
+                   defaultValue="soap.sts.delgation.custom.token.handlers"
+                   labelFor="delegation-custom-token-handlers"/>
+            <cc name="delegation-custom-token-handlers"
+                tagclass="com.sun.web.ui.taglib.editablelist.CCEditableListTag">
+                <attribute name="name" value="list" />
+                <attribute name="listboxLabel" value="label.current.value" />
+                <attribute name="textboxLabel" value="label.new.value" />
+            </cc>
+            <fieldhelp name="helpDelegationCustomTokenHandlers" defaultValue="soap.sts.delgation.custom.token.handlers.help" />
+        </property>
+
+    </section>
+
+    <section name="SOAP Keystore" defaultValue="soap.sts.keystore.section.title">
+        <property>
+            <label name="lblSoapKeystoreFilename"
+                   defaultValue="soap.sts.keystore.filename"
+                   labelFor="soap-keystore-filename"/>
+            <cc name="soap-keystore-filename"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSoapKeystoreFilename" defaultValue="soap.sts.keystore.filename.help" />
+        </property>
+
+        <property>
+            <label name="lblSoapKeystorePassword"
+                   defaultValue="soap.sts.keystore.password"
+                   labelFor="soap-keystore-password"/>
+            <cc name="soap-keystore-password"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+        <!--
+            note that the name of the password confirmation field must be the name of the password field + _confirm.
+            See AMPropertySheet.getAttributeValues for details.
+        -->
+        <property>
+            <label name="lblSoapKeystorePasswordConfirm"
+                   defaultValue="soap.sts.keystore.password.confirm"
+                   labelFor="soap-keystore-password_confirm"/>
+            <cc name="soap-keystore-password_confirm"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblSoapKeystoreSignatureKeyAlias"
+                   defaultValue="soap.sts.keystore.signature.key.alias"
+                   labelFor="soap-signature-key-alias"/>
+            <cc name="soap-signature-key-alias"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSoapKeystoreSignatureKeyAlias" defaultValue="soap.sts.keystore.signature.key.alias.help" />
+        </property>
+
+        <property>
+            <label name="lblSoapKeystoreSignatureKeyPassword"
+                   defaultValue="soap.sts.keystore.signature.key.password"
+                   labelFor="soap-signature-key-password"/>
+            <cc name="soap-signature-key-password"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+
+        <!--
+            note that the name of the password confirmation field must be the name of the password field + _confirm.
+            See AMPropertySheet.getAttributeValues for details.
+        -->
+        <property>
+            <label name="lblSoapKeystoreSignatureKeyPasswordConfirm"
+                   defaultValue="soap.sts.keystore.signature.key.password.confirm"
+                   labelFor="soap-signature-key-password_confirm"/>
+            <cc name="soap-signature-key-password_confirm"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblSoapKeystoreEncryptionKeyAlias"
+                   defaultValue="soap.sts.keystore.encryption.key.alias"
+                   labelFor="soap-encryption-key-alias"/>
+            <cc name="soap-encryption-key-alias"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSoapKeystoreEncryptionKeyAlias" defaultValue="soap.sts.keystore.encryption.key.alias.help" />
+        </property>
+
+        <property>
+            <label name="lblSoapKeystoreEncryptionKeyPassword"
+                   defaultValue="soap.sts.keystore.encryption.key.password"
+                   labelFor="soap-encryption-key-password"/>
+            <cc name="soap-encryption-key-password"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+
+        <!--
+            note that the name of the password confirmation field must be the name of the password field + _confirm.
+            See AMPropertySheet.getAttributeValues for details.
+        -->
+        <property>
+            <label name="lblSoapKeystoreEncryptionKeyPasswordConfirm"
+                   defaultValue="soap.sts.keystore.encryption.key.password.confirm"
+                   labelFor="soap-encryption-key-password_confirm"/>
+            <cc name="soap-encryption-key-password_confirm"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+    </section>
+
+    <section name="SAML2" defaultValue="sts.saml2.section.title">
+        <property>
+            <label name="lblSAML2IssuerName"
+                   defaultValue="sts.saml2.issuerName"
+                   labelFor="issuer-name"/>
+            <cc name="issuer-name"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblSAML2ServiceProviderEntityId"
+                   defaultValue="sts.saml2.ServiceProviderEntityId"
+                   labelFor="saml2-sp-entity-id"/>
+            <cc name="saml2-sp-entity-id"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2ServiceProviderEntityId"
+                       defaultValue="sts.saml2.ServiceProviderEntityId.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2ServiceProviderAssertionConsumerServiceUrl"
+                   defaultValue="sts.saml2.ServiceProviderAssertionConsumerServiceUrl"
+                   labelFor="saml2-sp-acs-url"/>
+            <cc name="saml2-sp-acs-url"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2ServiceProviderAssertionConsumerServiceUrl"
+                       defaultValue="sts.saml2.ServiceProviderAssertionConsumerServiceUrl.help" />
+        </property>
+        <property>
+            <label name="lblSAML2NameIdFormat"
+                   defaultValue="sts.saml2.NameIdFormat"
+                   labelFor="saml2-name-id-format"/>
+            <cc name="saml2-name-id-format"
+                tagclass="com.sun.web.ui.taglib.html.CCDropDownMenuTag">
+                <option label="sts.saml2.nameidformat.unspecified" value="urn:oasis:names:tc:SAML:1.0:nameid-format:unspecified"/>
+                <option label="sts.saml2.nameidformat.entity" value="urn:oasis:names:tc:SAML:2.0:nameid-format:entity"/>
+                <option label="sts.saml2.nameidformat.email" value="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"/>
+                <option label="sts.saml2.nameidformat.encrypted" value="urn:oasis:names:tc:SAML:2.0:nameid-format:encrypted"/>
+                <option label="sts.saml2.nameidformat.persistent" value="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"/>
+                <option label="sts.saml2.nameidformat.transient" value="urn:oasis:names:tc:SAML:2.0:nameid-format:transient"/>
+                <option label="sts.saml2.nameidformat.x509" value="urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName"/>
+                <option label="sts.saml2.nameidformat.windowsdomain" value="urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName"/>
+                <option label="sts.saml2.nameidformat.kerberos" value="urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos"/>
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblSAML2TokenLifetime"
+                   defaultValue="sts.saml2.TokenLifetime"
+                   labelFor="saml2-token-lifetime-seconds"/>
+            <cc name="saml2-token-lifetime-seconds"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblSAML2CustomConditionsProviderClassName"
+                   defaultValue="sts.saml2.CustomConditionsProviderClassName"
+                   labelFor="saml2-custom-conditions-provider-class-name"/>
+            <cc name="saml2-custom-conditions-provider-class-name"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2CustomConditionsProviderClassName" defaultValue="sts.saml2.CustomConditionsProviderClassName.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2CustomSubjectProviderClassName"
+                   defaultValue="sts.saml2.CustomSubjectProviderClassName"
+                   labelFor="saml2-custom-subject-provider-class-name"/>
+            <cc name="saml2-custom-subject-provider-class-name"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2CustomSubjectProviderClassName" defaultValue="sts.saml2.CustomSubjectProviderClassName.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2CustomAuthenticationStatementsClassName"
+                   defaultValue="sts.saml2.CustomAuthenticationStatementsClassName"
+                   labelFor="saml2-custom-authentication-statements-provider-class-name"/>
+            <cc name="saml2-custom-authentication-statements-provider-class-name"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2CustomAuthenticationStatementsClassName" defaultValue="sts.saml2.CustomAuthenticationStatementsClassName.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2CustomAttributeStatementsClassName"
+                   defaultValue="sts.saml2.CustomAttributeStatementsClassName"
+                   labelFor="saml2-custom-attribute-statements-provider-class-name"/>
+            <cc name="saml2-custom-attribute-statements-provider-class-name"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2CustomAttributeStatementsClassName" defaultValue="sts.saml2.CustomAttributeStatementsClassName.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2CustomAuthorizationDecisionStatementsClassName"
+                   defaultValue="sts.saml2.CustomAuthorizationDecisionStatementsClassName"
+                   labelFor="saml2-custom-authz-decision-statements-provider-class-name"/>
+            <cc name="saml2-custom-authz-decision-statements-provider-class-name"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2CustomAuthorizationDecisionStatementsClassName" defaultValue="sts.saml2.CustomAuthorizationDecisionStatementsClassName.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2CustomAttributeMapperClassName"
+                   defaultValue="sts.saml2.CustomAttributeMapperClassName"
+                   labelFor="saml2-custom-attribute-mapper-class-name"/>
+            <cc name="saml2-custom-attribute-mapper-class-name"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2CustomAttributeMapperClassName" defaultValue="sts.saml2.CustomAttributeMapperClassName.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2CustomAuthenticationContextMapperClassName"
+                   defaultValue="sts.saml2.CustomAuthenticationContextMapperClassName"
+                   labelFor="saml2-custom-authn-context-mapper-class-name"/>
+            <cc name="saml2-custom-authn-context-mapper-class-name"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2CustomAuthenticationContextMapperClassName"
+                       defaultValue="sts.saml2.CustomSoapAuthenticationContextMapperClassName.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2AttributeMap"
+                   defaultValue="sts.saml2.AttributeMap"
+                   labelFor="saml2-attribute-map"/>
+            <cc name="saml2-attribute-map"
+                tagclass="com.sun.web.ui.taglib.editablelist.CCEditableListTag">
+                <attribute name="name" value="list" />
+                <attribute name="listboxLabel" value="label.current.value" />
+                <attribute name="textboxLabel" value="label.new.value" />
+            </cc>
+            <fieldhelp name="helpSAML2AttributeMap" defaultValue="sts.saml2.AttributeMap.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2SignAssertion"
+                   defaultValue="sts.saml2.SignAssertion"
+                   labelFor="saml2-sign-assertion"/>
+            <cc name="saml2-sign-assertion"
+                tagclass="com.sun.web.ui.taglib.html.CCCheckBoxTag">
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblSAML2EncryptAssertion"
+                   defaultValue="sts.saml2.EncryptAssertion"
+                   labelFor="saml2-encrypt-assertion"/>
+            <cc name="saml2-encrypt-assertion"
+                tagclass="com.sun.web.ui.taglib.html.CCCheckBoxTag">
+            </cc>
+            <fieldhelp name="helpSAML2EncryptAssertion" defaultValue="sts.saml2.EncryptAssertion.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2EncryptAttributes"
+                   defaultValue="sts.saml2.EncryptAttributes"
+                   labelFor="saml2-encrypt-attributes"/>
+            <cc name="saml2-encrypt-attributes"
+                tagclass="com.sun.web.ui.taglib.html.CCCheckBoxTag">
+            </cc>
+            <fieldhelp name="helpSAML2EncryptAttributes" defaultValue="sts.saml2.EncryptAttributes.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2EncryptNameID"
+                   defaultValue="sts.saml2.EncryptNameID"
+                   labelFor="saml2-encrypt-nameid"/>
+            <cc name="saml2-encrypt-nameid"
+                tagclass="com.sun.web.ui.taglib.html.CCCheckBoxTag">
+            </cc>
+            <fieldhelp name="helpSAML2EncryptNameID" defaultValue="sts.saml2.EncryptNameID.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2EncryptionAlgorithm"
+                   defaultValue="sts.saml2.EncryptionAlgorithm"
+                   labelFor="saml2-encryption-algorithm"/>
+            <cc name="saml2-encryption-algorithm"
+                tagclass="com.sun.web.ui.taglib.html.CCSelectableListTag">
+                <option label="http://www.w3.org/2001/04/xmlenc#aes128-cbc" value="http://www.w3.org/2001/04/xmlenc#aes128-cbc"/>
+                <option label="http://www.w3.org/2001/04/xmlenc#aes192-cbc" value="http://www.w3.org/2001/04/xmlenc#aes192-cbc"/>
+                <option label="http://www.w3.org/2001/04/xmlenc#aes256-cbc" value="http://www.w3.org/2001/04/xmlenc#aes256-cbc"/>
+                <attribute name="multiple" value="false" />
+            </cc>
+            <fieldhelp name="helpSAML2EncryptionAlgorithm" defaultValue="sts.saml2.EncryptionAlgorithm.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2KeystoreFilename"
+                   defaultValue="sts.saml2.keystore.filename"
+                   labelFor="saml2-keystore-filename"/>
+            <cc name="saml2-keystore-filename"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2KeystoreFilename" defaultValue="sts.saml2.keystore.filename.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2KeystorePassword"
+                   defaultValue="sts.saml2.keystore.password"
+                   labelFor="saml2-keystore-password"/>
+            <cc name="saml2-keystore-password"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+        <!--
+            note that the name of the password confirmation field must be the name of the password field + _confirm.
+            See AMPropertySheet.getAttributeValues for details.
+        -->
+        <property>
+            <label name="lblSAML2KeystorePasswordConfirm"
+                   defaultValue="sts.saml2.keystore.password.confirm"
+                   labelFor="saml2-keystore-password_confirm"/>
+            <cc name="saml2-keystore-password_confirm"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblSAML2KeystoreEncryptionKeyAlias"
+                   defaultValue="sts.saml2.keystore.EncryptionKeyAlias"
+                   labelFor="saml2-encryption-key-alias"/>
+            <cc name="saml2-encryption-key-alias"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2KeystoreEncryptionKeyAlias" defaultValue="sts.saml2.keystore.EncryptionKeyAlias.help" />
+        </property>
+
+        <property>
+            <label name="lblSAML2KeystoreSignatureKeyAlias"
+                   defaultValue="sts.saml2.keystore.SignatureKeyAlias"
+                   labelFor="saml2-signature-key-alias"/>
+            <cc name="saml2-signature-key-alias"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpSAML2KeystoreSignatureKeyAlias" defaultValue="sts.saml2.keystore.SignatureKeyAlias.help" />
+        </property>
+
+        <property>
+            <label name="lblKeystoreSignatureKeyPassword"
+                   defaultValue="sts.saml2.keystore.SignatureKeyPassword"
+                   labelFor="saml2-signature-key-password"/>
+            <cc name="saml2-signature-key-password"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+
+        <!--
+            note that the name of the password confirmation field must be the name of the password field + _confirm.
+            See AMPropertySheet.getAttributeValues for details.
+        -->
+        <property>
+            <label name="lblKeystoreSignatureKeyPasswordConfirm"
+                   defaultValue="sts.saml2.keystore.SignatureKeyPassword.confirm"
+                   labelFor="saml2-signature-key-password_confirm"/>
+            <cc name="saml2-signature-key-password_confirm"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+    </section>
+    <section name="OPENIDCONNECT" defaultValue="sts.oidc.section.title">
+        <property>
+            <label name="lblOIDCIssuerName"
+                   defaultValue="sts.oidc.issuerName"
+                   labelFor="oidc-issuer"/>
+            <cc name="oidc-issuer"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblOIDCTokenLifetime"
+                   defaultValue="sts.oidc.token.lifetime"
+                   labelFor="oidc-token-lifetime-seconds"/>
+            <cc name="oidc-token-lifetime-seconds"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblOIDCSignatureAlgorithm"
+                   defaultValue="sts.oidc.signature.algorithm"
+                   labelFor="oidc-signature-algorithm"/>
+            <cc name="oidc-signature-algorithm"
+                tagclass="com.sun.web.ui.taglib.html.CCSelectableListTag">
+                <option label="sts.oidc.signature.algorithm.hmac.sha.256" value="HS256"/>
+                <option label="sts.oidc.signature.algorithm.hmac.sha.384" value="HS384"/>
+                <option label="sts.oidc.signature.algorithm.hmac.sha.512" value="HS512"/>
+                <option label="sts.oidc.signature.algorithm.rsa.sha.256" value="RS256"/>
+                <option label="sts.oidc.signature.algorithm.rsa.sha.384" value="RS384"/>
+                <option label="sts.oidc.signature.algorithm.rsa.sha.512" value="RS512"/>
+                <option label="sts.oidc.signature.algorithm.rsa.sha.ps.256" value="PS256"/>
+                <option label="sts.oidc.signature.algorithm.rsa.sha.ps.384" value="PS384"/>
+                <option label="sts.oidc.signature.algorithm.rsa.sha.ps.512" value="PS512"/>
+                <attribute name="multiple" value="false" />
+            </cc>
+            <fieldhelp name="helpOIDCSignatureAlgorithm" defaultValue="sts.oidc.signature.algorithm.help" />
+        </property>
+
+        <property>
+            <label name="lblOIDCPublicKeyReferenceType"
+                   defaultValue="sts.oidc.public.key.reference.type"
+                   labelFor="oidc-public-key-reference-type"/>
+            <cc name="oidc-public-key-reference-type"
+                tagclass="com.sun.web.ui.taglib.html.CCSelectableListTag">
+                <option label="sts.oidc.public.key.reference.type.none" value="NONE"/>
+                <option label="sts.oidc.public.key.reference.type.jwk" value="JWK"/>
+                <attribute name="multiple" value="false" />
+            </cc>
+            <fieldhelp name="helpOIDCPublicKeyReferenceType" defaultValue="sts.oidc.public.key.reference.type.help" />
+        </property>
+
+        <property>
+            <label name="lblOIDCKeystoreLocation"
+                   defaultValue="sts.oidc.keystore.location"
+                   labelFor="oidc-keystore-location"/>
+            <cc name="oidc-keystore-location"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpOIDCKeystoreLocation" defaultValue="sts.oidc.keystore.location.help" />
+        </property>
+
+        <property>
+            <label name="lblOIDCKeystorePassword"
+                   defaultValue="sts.oidc.keystore.password"
+                   labelFor="oidc-keystore-password"/>
+            <cc name="oidc-keystore-password"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+        <!--
+            note that the name of the password confirmation field must be the name of the password field + _confirm.
+            See AMPropertySheet.getAttributeValues for details.
+        -->
+        <property>
+            <label name="lblOIDCKeystorePasswordConfirm"
+                   defaultValue="sts.oidc.keystore.password.confirm"
+                   labelFor="oidc-keystore-password_confirm"/>
+            <cc name="oidc-keystore-password_confirm"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblOIDCKeystoreSignatureKeyAlias"
+                   defaultValue="sts.oidc.keystore.signature.key.alias"
+                   labelFor="oidc-signature-key-alias"/>
+            <cc name="oidc-signature-key-alias"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpOIDCKeystoreSignatureKeyAlias" defaultValue="sts.oidc.keystore.signature.key.alias.help" />
+        </property>
+
+        <property>
+            <label name="lblOIDCKeystoreSignatureKeyPassword"
+                   defaultValue="sts.oidc.keystore.signature.key.password"
+                   labelFor="oidc-signature-key-password"/>
+            <cc name="oidc-signature-key-password"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+
+        <!--
+            note that the name of the password confirmation field must be the name of the password field + _confirm.
+            See AMPropertySheet.getAttributeValues for details.
+        -->
+        <property>
+            <label name="lblOIDCKeystoreSignatureKeyPasswordConfirm"
+                   defaultValue="sts.oidc.keystore.signature.key.password.confirm"
+                   labelFor="oidc-signature-key-password_confirm"/>
+            <cc name="oidc-signature-key-password_confirm"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblOIDCClientSecret"
+                   defaultValue="sts.oidc.client.secret"
+                   labelFor="oidc-client-secret"/>
+            <cc name="oidc-client-secret"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+            <fieldhelp name="helpOIDCClientSecret" defaultValue="sts.oidc.client.secret.help" />
+        </property>
+
+        <!--
+            note that the name of the password confirmation field must be the name of the password field + _confirm.
+            See AMPropertySheet.getAttributeValues for details.
+        -->
+        <property>
+            <label name="lblOIDCClientSecret"
+                   defaultValue="sts.oidc.client.secret.confirm"
+                   labelFor="oidc-client-secret_confirm"/>
+            <cc name="oidc-client-secret_confirm"
+                tagclass="com.sun.web.ui.taglib.html.CCPasswordTag">
+            </cc>
+        </property>
+
+        <property>
+            <label name="lblOIDCAudience"
+                   defaultValue="sts.oidc.audience"
+                   labelFor="oidc-audience"/>
+            <cc name="oidc-audience"
+                tagclass="com.sun.web.ui.taglib.editablelist.CCEditableListTag">
+                <attribute name="name" value="list" />
+                <attribute name="listboxLabel" value="label.current.value" />
+                <attribute name="textboxLabel" value="label.new.value" />
+            </cc>
+            <fieldhelp name="helpOIDCAudience" defaultValue="sts.oidc.audience.help" />
+        </property>
+
+        <property>
+            <label name="lblOIDCAuthorizedParty"
+                   defaultValue="sts.oidc.authorized.party"
+                   labelFor="oidc-authorized-party"/>
+            <cc name="oidc-authorized-party"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpOIDCAuthorizedParty" defaultValue="sts.oidc.authorized.party.help" />
+        </property>
+
+        <property>
+            <label name="lblOIDCClaimMap"
+                   defaultValue="sts.oidc.claim.map"
+                   labelFor="oidc-claim-map"/>
+            <cc name="oidc-claim-map"
+                tagclass="com.sun.web.ui.taglib.editablelist.CCEditableListTag">
+                <attribute name="name" value="list" />
+                <attribute name="listboxLabel" value="label.current.value" />
+                <attribute name="textboxLabel" value="label.new.value" />
+            </cc>
+            <fieldhelp name="helpSAML2AttributeMap" defaultValue="sts.oidc.claim.map.help" />
+        </property>
+
+        <property>
+            <label name="lblOIDCCustomClaimMapperClass"
+                   defaultValue="sts.oidc.custom.claim.mapper.class"
+                   labelFor="oidc-custom-claim-mapper-class"/>
+            <cc name="oidc-custom-claim-mapper-class"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpOIDCCustomClaimMapperClass" defaultValue="sts.oidc.custom.claim.mapper.class.help" />
+        </property>
+
+        <property>
+            <label name="lblOIDCCustomAuthenticationContextMapperClass"
+                   defaultValue="sts.oidc.custom.authentication.context.mapper.class"
+                   labelFor="oidc-custom-authn-context-mapper-class"/>
+            <cc name="oidc-custom-authn-context-mapper-class"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpOIDCCustomAuthenticationContextMapperClass" defaultValue="sts.oidc.custom.authentication.context.mapper.class.help" />
+        </property>
+
+        <property>
+            <label name="lblOIDCCustomAuthenticationMethodsReferencesMapperClass"
+                   defaultValue="sts.oidc.custom.authentication.methods.references.mapper.class"
+                   labelFor="oidc-custom-authn-method-references-mapper-class"/>
+            <cc name="oidc-custom-authn-method-references-mapper-class"
+                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag">
+            </cc>
+            <fieldhelp name="helpOIDCCustomAuthenticationMethodsReferencesMapperClass" defaultValue="sts.oidc.custom.authentication.methods.references.mapper.class.help" />
+        </property>
+    </section>
+</propertysheet>

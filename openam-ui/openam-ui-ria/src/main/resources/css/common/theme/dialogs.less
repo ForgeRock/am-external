@@ -1,0 +1,36 @@
+/*
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ *
+ * Use of this code requires a commercial software license with ForgeRock AS.
+ * or with one of its affiliates. All use shall be exclusively subject
+ * to such license between the licensee and ForgeRock AS.
+ */
+
+.bootstrap-dialog {
+
+    .bootstrap-dialog-title {
+        font-weight: 600;
+    }
+
+    .modal-header {
+        border-color: transparent;
+    }
+
+    &.type-primary .modal-header, &.type-default .modal-header {
+        color: @base-theme-color;
+    }
+
+    &.type-danger .modal-header {
+        color: @failure-color;
+    }
+
+    &.type-danger .btn-default{
+        color: @failure-color;
+        border-color: @failure-color;
+    }
+
+    // IDM only - AM is using the inherited color which in this case is text-default
+    &.type-default .bootstrap-dialog-title {
+        color: @base-theme-color;
+    }
+}
