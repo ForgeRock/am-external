@@ -33,6 +33,7 @@
         <module>openam-authentication</module>
         <module>openam-samples</module>
         <module>openam-auth-trees</module>
+        <module>openam-push-notification</module>
     </modules>
 
     <repositories>
