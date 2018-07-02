@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018 ForgeRock AS. All Rights Reserved
 -->
 # OpenAM Sample Trees
 
@@ -25,3 +25,9 @@ They can be installed in a OpenAM server using Amster. The Amster command to imp
 ```
 import-config --path /path/to/sample-trees/root
 ```
+* * *
+Copyright 2018 ForgeRock AS. All Rights Reserved
+
+Use of this code requires a commercial software license with ForgeRock AS.
+or with one of its affiliates. All use shall be exclusively subject
+to such license between the licensee and ForgeRock AS.
