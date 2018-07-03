@@ -22,7 +22,7 @@
         "nodeType" : "ProvisionIdmAccountNode",
         "displayName" : "Provision IDM Account",
         "connections" : {
-          "true" : "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
+          "outcome" : "70e691a5-1e33-4ac3-a356-e7b6d60d92e0"
         }
       }
     }

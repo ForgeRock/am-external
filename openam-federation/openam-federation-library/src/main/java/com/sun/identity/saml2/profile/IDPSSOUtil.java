@@ -24,7 +24,7 @@
  *
  * $Id: IDPSSOUtil.java,v 1.56 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2018 ForgeRock AS.
  * Portions Copyrighted 2013 Nomura Research Institute, Ltd
  */
 
@@ -2714,12 +2714,12 @@ public class IDPSSOUtil {
             if (idpEntityCfg != null) {
                 idpConfigAttrsMap = SAML2MetaUtils.getAttributes(idpEntityCfg);
             }
-            if ((idpConfigAttrsMap == null) || (idpConfigAttrsMap.size() == 0)) {
+            if (CollectionUtils.isEmpty(idpConfigAttrsMap)) {
                 return null;
             }
             List idpCOTList =
                     (List) idpConfigAttrsMap.get(SAML2Constants.COT_LIST);
-            if ((idpCOTList == null) || (idpCOTList.size() == 0)) {
+            if (CollectionUtils.isEmpty(idpCOTList)) {
                 return null;
             }
 
@@ -2730,23 +2730,21 @@ public class IDPSSOUtil {
             if (spEntityCfg != null) {
                 spConfigAttrsMap = SAML2MetaUtils.getAttributes(spEntityCfg);
             }
-            if ((spConfigAttrsMap == null) || (spConfigAttrsMap.size() == 0)) {
+            if (CollectionUtils.isEmpty(spConfigAttrsMap)) {
                 return null;
             }
             List spCOTList = (List) spConfigAttrsMap.get(SAML2Constants.COT_LIST);
-            if ((spCOTList == null) || (spCOTList.size() == 0)) {
+            if (CollectionUtils.isEmpty(spCOTList)) {
                 return null;
             }
 
-            // retain in the idpCOTList the intersection of two lists
-            idpCOTList.retainAll(spCOTList);
-            for (int i = 0; i < idpCOTList.size(); i++) {
-                String cotName = (String) idpCOTList.get(i);
-
+            List<String> idpCOTListCopy = new ArrayList<>(idpCOTList);
+            idpCOTListCopy.retainAll(spCOTList);
+            for (String cotName : idpCOTListCopy) {
                 CircleOfTrustDescriptor cotDescriptor =
                         cotManager.getCircleOfTrust(realm, cotName);
                 writerURL = cotDescriptor.getSAML2WriterServiceURL();
-                if ((writerURL != null) && (writerURL.trim().length() != 0)) {
+                if (StringUtils.isNotEmpty(writerURL)) {
                     break;
                 }
             }
