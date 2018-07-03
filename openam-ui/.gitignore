@@ -14,7 +14,6 @@
 # Copyright 2015-2018 ForgeRock AS.
 #
 build/
-node/
 node_modules/
 
 npm-debug.log

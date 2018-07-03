@@ -24,7 +24,7 @@
  *
  * $Id: IDPSingleLogout.java,v 1.28 2009/11/25 01:20:47 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2016 ForgeRock AS.
+ * Portions Copyrighted 2010-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -815,7 +815,7 @@ public class IDPSingleLogout {
             if (logoutResp != null && location != null &&
                 spEntity != null && idpEntity !=null) {
                 LogoutUtil.sendSLOResponse(response, request, logoutResp, location,
-                    relayState, "/", spEntity, SAML2Constants.SP_ROLE,
+                    relayState, realm, spEntity, SAML2Constants.SP_ROLE,
                     idpEntity, binding);
                 return true;
             }

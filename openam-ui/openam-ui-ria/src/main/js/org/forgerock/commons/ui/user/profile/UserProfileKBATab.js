@@ -25,20 +25,20 @@ define([
     "org/forgerock/commons/ui/common/util/UIUtils",
     "org/forgerock/commons/ui/common/main/ValidatorsManager",
     "partials/profile/_kbaItem"
-], function($, _, form2js, js2form,
+], ($, _, form2js, js2form,
     AbstractUserProfileTab,
     Configuration,
     KBADelegate,
     UIUtils,
     ValidatorsManager,
-    KBAItemPartial) {
+    KBAItemPartial) => {
 
     /**
      * An instance of AbstractUserProfileTab, to be used with the UserProfileView when
      * KBA management is available for the end-user.
      * @exports org/forgerock/commons/ui/user/profile/AbstractUserProfileTab
      */
-    var UserProfileKBATab = AbstractUserProfileTab.extend({
+    const UserProfileKBATab = AbstractUserProfileTab.extend({
         template : "user/UserProfileKBATab",
         events: _.extend({
             "change .kba-pair :input": "checkChanges",
@@ -235,47 +235,47 @@ define([
          * kba property. Relies upon the DOM structure in the template to determine which field
          * contains the kba list; by default, it's called "kbaInfo".
          */
-        reloadFormData: function () {
+        reloadFormData () {
             var form;
 
-            this.parentRender();
+            this.parentRender(() => {
+                form = this.$el.find("form")[0];
+                js2form(form,
+                    // use the form structure to find out which fields are defined for the kba form...
+                    _(form2js(form, ".", false))
+                    .map(function (value, key) {
+                        // omit the "answer" property from any array found there...
+                        if (_.isArray(this.data.user[key])) {
+                            return [
+                                key,
+                                _.map(this.data.user[key], function (kbaPair) {
+                                    return _.omit(kbaPair, "answer");
+                                })
+                            ];
+                        } else {
+                            return [key, this.data.user[key]];
+                        }
+                    }, this)
+                    .object()
+                    .value()
+                );
 
-            form = this.$el.find("form")[0];
-            js2form(form,
-                // use the form structure to find out which fields are defined for the kba form...
-                _(form2js(form, ".", false))
-                 .map(function (value, key) {
-                     // omit the "answer" property from any array found there...
-                     if (_.isArray(this.data.user[key])) {
-                         return [
-                             key,
-                             _.map(this.data.user[key], function (kbaPair) {
-                                 return _.omit(kbaPair, "answer");
-                             })
-                         ];
-                     } else {
-                         return [key, this.data.user[key]];
-                     }
-                 }, this)
-                 .object()
-                 .value()
-            );
+                _.each($(".kba-questions", form), function (kbaSelect) {
+                    var customQuestionContainer = $(kbaSelect).closest(".kba-pair").find(".custom-question"),
+                        customQuestionValue = customQuestionContainer.find(":input").val();
+                    if (customQuestionValue !== "") {
+                        $(kbaSelect).val("custom");
+                        customQuestionContainer.removeClass("hidden");
+                    } else {
+                        customQuestionContainer.toggleClass("hidden", true);
+                    }
+                });
 
-            _.each($(".kba-questions", form), function (kbaSelect) {
-                var customQuestionContainer = $(kbaSelect).closest(".kba-pair").find(".custom-question"),
-                    customQuestionValue = customQuestionContainer.find(":input").val();
-                if (customQuestionValue !== "") {
-                    $(kbaSelect).val("custom");
-                    customQuestionContainer.toggleClass("hidden", false);
-                } else {
-                    customQuestionContainer.toggleClass("hidden", true);
-                }
+                this.initializeChangesPending();
+                $(form).find("input[type='reset']").prop("disabled", true);
+                $(form).find("input[type='submit']").prop("disabled", true);
+
             });
-
-            this.initializeChangesPending();
-            $(form).find("input[type='reset']").prop("disabled", true);
-            $(form).find("input[type='submit']").prop("disabled", true);
-
         }
     });
 

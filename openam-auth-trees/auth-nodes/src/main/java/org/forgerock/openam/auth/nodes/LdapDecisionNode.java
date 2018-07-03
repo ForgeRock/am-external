@@ -285,7 +285,10 @@ public class LdapDecisionNode implements Node {
                 ldapUtil.setDynamicProfileCreationEnabled(true);
                 ldapUtil.setUserAttributes(ImmutableSet.of(USER_STATUS_ATTRIBUTE));
                 ldapUtil.authenticateUser(userName, userPassword);
-                String userStatus = ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE).iterator().next();
+                String userStatus = "Active";
+                if (ldapUtil.getUserAttributeValues().containsKey(USER_STATUS_ATTRIBUTE)) {
+                    userStatus = ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE).iterator().next();
+                }
                 String username = getUserNameFromIdentity(ldapUtil.getUserId());
                 newState.put(USERNAME, username);
                 if (userStatus.equals(USER_STATUS_INACTIVE)) {
