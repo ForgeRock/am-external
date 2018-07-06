@@ -23,7 +23,7 @@ the [Forgerock Identity Platform](https://www.forgerock.com/platform/) 5.1.1 (AK
 
 ## About 
 
-These samples are intended to support and demonstrate the ['Using OpenID Connect 1.0'](https://backstage.forgerock.com/docs/am/5.1/oidc1-guide/#chap-oidc1-usage) chapter of the AM [OpenID Connect 1.0 Guide](https://backstage.forgerock.com/docs/am/5/oidc1-guide/). 
+These samples are intended to support and demonstrate the ['Using OpenID Connect 1.0'](https://backstage.forgerock.com/docs/am/5.1/oidc1-guide/#chap-oidc1-usage) chapter of the AM [OpenID Connect 1.0 Guide](https://backstage.forgerock.com/docs/am/5.1/oidc1-guide/). 
 
 1.   Clone the project for deployment in your container alongside OpenAM.
      For example, with OpenAM in `/path/to/tomcat/webapps/openam`,

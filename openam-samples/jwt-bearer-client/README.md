@@ -2,7 +2,7 @@
 
 ### For AM 5.1.1 (OpenAM 14.1.1)
 
-This sample client performs a POST with an JWT that it has signed. You can read more about this sample and how it works in the [JWT Bearer Profile](https://backstage.forgerock.com/docs/am/5/oauth2-guide/#oauth2-jwt-bearer) chapter of the AM OAuth2 Guide.
+This sample client performs a POST with an JWT that it has signed. You can read more about this sample and how it works in the [JWT Bearer Profile](https://backstage.forgerock.com/docs/am/5.1/oauth2-guide/#oauth2-jwt-bearer) chapter of the AM OAuth2 Guide.
 
 ## Building the client
 The binary dependencies of the project are held in the ForgeRock artifactory repository. In order to authenticate to that repository it is necessary to have a forgerock subscription. To set up maven to authenticate to the ForgeRock repository please follow the instructions in the following ForgeRock Knowledge Base article;

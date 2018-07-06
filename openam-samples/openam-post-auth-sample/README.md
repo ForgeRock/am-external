@@ -23,7 +23,7 @@
 *An OpenAM 14.1.1 Sample Post Authentication Plugin*
 
 For instructions on using this sample authentication module,
-see <https://backstage.forgerock.com/docs/am/5/authentication-guide#sec-post-auth>.
+see <https://backstage.forgerock.com/docs/am/5.1/authentication-guide#sec-post-auth>.
 
 ## Building this project
 

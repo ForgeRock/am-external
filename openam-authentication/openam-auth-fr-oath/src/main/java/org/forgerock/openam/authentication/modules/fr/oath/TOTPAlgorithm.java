@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2018 ForgeRock AS.
  */
 /**
  Copyright (c) 2011 IETF Trust and the persons identified as

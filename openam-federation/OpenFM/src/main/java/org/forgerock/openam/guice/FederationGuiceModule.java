@@ -1,0 +1,54 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2016-2017 ForgeRock AS.
+ */
+package org.forgerock.openam.guice;
+
+import java.util.concurrent.ScheduledExecutorService;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
+import org.forgerock.guice.core.GuiceModule;
+import org.forgerock.openam.audit.context.AMExecutorServiceFactory;
+
+import com.google.inject.Exposed;
+import com.google.inject.PrivateModule;
+import com.google.inject.Provides;
+
+/**
+ * Responsible for declaring the bindings required for the federation code base.
+ */
+@GuiceModule
+public class FederationGuiceModule extends PrivateModule {
+
+    /**
+     * Tag for all operations for use within the federation session management code. e.g. Thread names, Debugger etc.
+     */
+    public static final String FEDERATION_SESSION_MANAGEMENT = "FederationSessionManagement";
+
+    @Override
+    protected void configure() {
+    }
+
+    @Provides
+    @Singleton
+    @Inject
+    @Exposed
+    @Named(FEDERATION_SESSION_MANAGEMENT)
+    public ScheduledExecutorService getFederationScheduledService(AMExecutorServiceFactory esf) {
+        return esf.createCancellableScheduledService(1, FEDERATION_SESSION_MANAGEMENT);
+    }
+}

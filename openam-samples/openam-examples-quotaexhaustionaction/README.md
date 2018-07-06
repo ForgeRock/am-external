@@ -19,10 +19,10 @@
 
 ## About
 
-An OpenAM 14.1.1 Sample Project that demonstrates how to simply implement a quota exhaustion action.
+An AM 5.1.1 (aka OpenAM 14.1.1) Sample Project that demonstrates how to simply implement a quota exhaustion action.
 
 For instructions on using this sample authentication module, see  
- <https://backstage.forgerock.com/docs/am/5/authentication-guide#create-custom-quota-exhaustion-action>
+ <https://backstage.forgerock.com/docs/am/5.1/authentication-guide#create-custom-quota-exhaustion-action>
 
 ## Building this Project
 
