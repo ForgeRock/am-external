@@ -1,5 +1,4 @@
-<!--  
-/*
+<!--
  * The contents of this file are subject to the terms of the Common Development and
  * Distribution License (the License). You may not use this file except in compliance with the
  * License.
@@ -12,10 +11,8 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
- */
+ * Copyright 2018 ForgeRock AS.
 -->
-
 # openam-scope-sample
 
 This is one of the ForgeRock Community Projects.
@@ -36,6 +33,3 @@ see <https://backstage.forgerock.com/docs/am/5/oauth2-guide#chap-oauth2-customiz
 Before building the sample scope validator plugin,
 update the `<openam.version>` property in the POM to match your OpenAM version.
 
-* * *
-
-The files in this project are licensed under the [CDDL License](https://forum.forgerock.com/cddlv1-0/) and as such may be used as a basis for your own projects.
