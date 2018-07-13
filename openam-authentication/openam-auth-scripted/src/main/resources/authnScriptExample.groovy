@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS. All Rights Reserved
+ * Copyright 2014-2017 ForgeRock AS.
  */
 START_TIME = 9   // 9am
 END_TIME   = 17  // 5pm

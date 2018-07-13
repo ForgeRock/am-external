@@ -22,9 +22,9 @@
     <name>OpenAM External</name>
     <description>OpenAM Extension Points and Samples</description>
 
-    <groupId>org.forgerock.openam</groupId>
+    <groupId>org.forgerock.am</groupId>
     <artifactId>openam-external</artifactId>
-    <version>14.0.0</version>
+<version>14.0.0</version>    
     <packaging>pom</packaging>
 
     <!-- Child Modules -->
@@ -32,6 +32,7 @@
         <module>openam-ui</module>
         <module>openam-authentication</module>
         <module>openam-samples</module>
+        <module>openam-radius</module>
     </modules>
 
     <repositories>
@@ -45,3 +46,4 @@
         </repository>
     </repositories>    
 </project>
+

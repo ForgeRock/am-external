@@ -33,13 +33,6 @@ For instructions on using this sample policy evaluation
 plugin with OpenAM, see the section
 *[Customizing Policy Evaluation With a Plug-In](https://backstage.forgerock.com/docs/am/5/authorization-guide/#sec-policy-spi)* in the *AM 5 Authorization Guide*.
 
-## Building the Sample
-
-The binary dependencies of the project are held in the ForgeRock artifactory repository. In order to authenticate to that repository it is necessary to have a forgerock subscription. To set up maven to authenticate to the ForgeRock repository please follow the instructions in the following ForgeRock Knowledge Base article; <https://backstage.forgerock.com/knowledge/kb/article/a74096897>
-
-Further info may be found in the following ForgeRock Knowledge Base article;
-<https://backstage.forgerock.com/knowledge/kb/article/a47487197>
-
 * * * 
 
 The code in this repository is licensed under the [CDDL license](https://forum.forgerock.com/cddlv1-0/) and may be used as the basis for your own projects. Enjoy!

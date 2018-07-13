@@ -24,14 +24,10 @@ An OpenAM 14.0.0 Sample Project that demonstrates how to simply implement a quot
 For instructions on using this sample authentication module, see  
  <https://backstage.forgerock.com/docs/am/5/authentication-guide#create-custom-quota-exhaustion-action>
 
-## Building the Sample
+## Building this Project
 
-The binary dependencies of the project are held in the ForgeRock artifactory repository. In order to authenticate to that repository it is necessary to have a forgerock subscription. To set up maven to authenticate to the ForgeRock repository please follow the instructions in the following ForgeRock Knowledge Base article; <https://backstage.forgerock.com/knowledge/kb/article/a74096897>
-
-Further info may be found in the following ForgeRock Knowledge Base article;
-<https://backstage.forgerock.com/knowledge/kb/article/a47487197>
-
-## About
+The binary dependencies of the project are held in the ForgeRock artifactory repository. In order to authenticate to that repository it is necessary to have a forgerock subscription. To set up maven to authenticate to the ForgeRock repository please follow the instructions in the following ForgeRock Knowledge Base article;  
+ <https://backstage.forgerock.com/knowledge/kb/article/a74096897>
 
 For more information on this example quota exhaustion action check out this blog entry:
 http://blogs.forgerock.org/petermajor/2013/01/session-quota-basics/

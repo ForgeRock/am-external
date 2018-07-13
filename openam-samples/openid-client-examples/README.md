@@ -38,13 +38,6 @@ showing how to register with OpenID Connect Dynamic Client Registration,
 and showing OpenAM as OP and Authenticator for GSMA Mobile Connect.
 (Mobile Connect support requires OpenAM 12 or later.)
 
-## Building the Sample
-
-The binary dependencies of the project are held in the ForgeRock artifactory repository. In order to authenticate to that repository it is necessary to have a forgerock subscription. To set up maven to authenticate to the ForgeRock repository please follow the instructions in the following ForgeRock Knowledge Base article; <https://backstage.forgerock.com/knowledge/kb/article/a74096897>
-
-Further info may be found in the following ForgeRock Knowledge Base article;
-<https://backstage.forgerock.com/knowledge/kb/article/a47487197>
-
 ## Licensing
 
 The he files in this project are licensed under the [CDDL License](https://forum.forgerock.com/cddlv1-0/) and as such may be used as a basis for your own projects.
