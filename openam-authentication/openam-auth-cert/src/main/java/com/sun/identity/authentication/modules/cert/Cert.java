@@ -183,18 +183,6 @@ public class Cert extends AMLoginModule {
     private void initAuthConfig() throws AuthLoginException {
         if (options != null) {
             debug.message("Certificate: getting attributes."); 
-            // init auth level
-            String authLevel = CollectionHelper.getMapAttr(
-                options, "iplanet-am-auth-cert-auth-level");
-            if (authLevel != null) {
-                try {
-                    int tmp = Integer.parseInt(authLevel);
-                    setAuthLevel(tmp);
-                } catch (Exception e) {
-                    // invalid auth level
-                    debug.error("Invalid auth level " + authLevel, e);
-                }
-            } 
             // will need access control to ldap server; passwd and user name
             // will also need to yank out the user profile based on cn or dn
             //  out of "profile server"
@@ -347,7 +335,6 @@ public class Cert extends AMLoginModule {
                     .append("\n\tstartSearchLoc=").append(amAuthCert_startSearchLoc)
                     .append("\n\tsecurityType=").append(amAuthCert_securityType)
                     .append("\n\tprincipleUser=").append(amAuthCert_principleUser)
-                    .append("\n\tauthLevel=").append(authLevel)
                     .append("\n\tuseSSL=").append(amAuthCert_useSSL)
                     .append("\n\tocspEnable=").append(ocspEnabled)
                     .append("\n\tuserProfileMapper=").append(amAuthCert_userProfileMapper)

@@ -115,7 +115,7 @@ public class SAML2ConfigService implements ConfigurationListener {
             Map newAttributes = new HashMap();
             if (attrMap != null) {
                 if (debug.messageEnabled()) {
-                    debug.message("The updated configuration: " + attrMap);
+                    debug.message("Configuration updated");
                 }
                 Set values = (Set)attrMap.get(SAML2_FAILOVER_ATTR);
                 String value = "false" ;

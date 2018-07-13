@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -29,15 +29,15 @@
 
 package com.sun.liberty;
 
-import java.security.cert.X509Certificate;
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
+
 import java.util.Iterator;
+import java.util.Random;
 import java.util.Set;
 import java.util.Map;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Enumeration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -45,13 +45,10 @@ import javax.servlet.http.HttpSession;
 import javax.xml.soap.SOAPMessage;
 
 import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.shared.encode.URLEncDec;
 
 import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.cot.CircleOfTrustDescriptor;
 import com.sun.identity.cot.COTException;
-import com.sun.identity.cot.COTConstants;
-
 import com.sun.identity.federation.accountmgmt.FSAccountFedInfo;
 import com.sun.identity.federation.accountmgmt.FSAccountManager;
 import com.sun.identity.federation.accountmgmt.FSAccountMgmtException;
@@ -1403,11 +1400,11 @@ public class LibertyManager {
                 String paramValue = request.getParameter(paramKey);
                 if (returnString == null || returnString.length() < 1) {
                     returnString =  paramKey + "="
-                        + URLEncDec.encode(paramValue);
+                        + urlEncodeQueryParameterNameOrValue(paramValue);
                 } else {
                     returnString = returnString + "&amp;"
                         +  paramKey + "="
-                        + URLEncDec.encode(paramValue);
+                        + urlEncodeQueryParameterNameOrValue(paramValue);
                 }
             }
         }

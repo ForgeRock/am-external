@@ -224,8 +224,16 @@ define([
         return _.get(auth, "urlParams.authIndexType") !== _.get(knownAuth, "urlParams.authIndexType") ||
             _.get(auth, "urlParams.authIndexValue") !== _.get(knownAuth, "urlParams.authIndexValue");
     }
+    /**
+     * Checks if a RedirectCallback is present in the "callbacks" object of the provided requirementList.
+     * @param {Array.<Object>} requirementList list of requirements to check.
+     * @returns {Boolean} if a RedirectCallback is present in the last requirement callbacks.
+     */
+    function hasRedirectCallback (requirementList) {
+        return requirementList.length !== 0 && _.some(_.last(requirementList).callbacks, "type", "RedirectCallback");
+    }
     obj.getRequirements = function (args) {
-        if (AuthenticationToken.get()) {
+        if (AuthenticationToken.get() && !hasRedirectCallback(requirementList)) {
             return obj.submitRequirements(_.extend({ authId: AuthenticationToken.get() },
                 Configuration.globalData.auth.urlParams)).done(() => {
                     knownAuth = _.clone(Configuration.globalData.auth);

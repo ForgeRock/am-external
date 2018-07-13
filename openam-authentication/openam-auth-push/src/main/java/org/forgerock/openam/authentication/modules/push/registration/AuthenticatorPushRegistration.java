@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016 ForgeRock AS.
+ * Copyright 2016-2017 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.push.registration;
 
@@ -33,6 +33,7 @@ import com.sun.identity.sm.DNMapper;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -125,19 +126,11 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
 
     private RecoveryCodeGenerator recoveryCodeGenerator = InjectorHolder.getInstance(RecoveryCodeGenerator.class);
 
+    private Set<String> userSearchAttributes = Collections.emptySet();
+
     @Override
     public void init(final Subject subject, final Map sharedState, final Map options) {
         DEBUG.message("{}::init", AM_AUTH_AUTHENTICATOR_PUSH_REGISTRATION);
-
-        final String authLevel = CollectionHelper.getMapAttr(options, AUTHLEVEL);
-        if (authLevel != null) {
-            try {
-                setAuthLevel(Integer.parseInt(authLevel));
-            } catch (Exception e) {
-                DEBUG.error("{} :: init() : Unable to set auth level {}", AM_AUTH_AUTHENTICATOR_PUSH_REGISTRATION,
-                        authLevel, e);
-            }
-        }
 
         this.timeout = Long.valueOf(CollectionHelper.getMapAttr(options, DEVICE_PUSH_WAIT_TIMEOUT));
         this.issuer = CollectionHelper.getMapAttr(options, ISSUER_OPTION_KEY);
@@ -150,6 +143,11 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
             bgColour = bgColour.substring(1);
         }
 
+        try {
+            userSearchAttributes = getUserAliasList();
+        } catch (final AuthLoginException ale) {
+            DEBUG.warning("AuthenticatorPush :: init() : Unable to retrieve search attributes", ale);
+        }
         try {
             lbCookieValue = sessionCookies.getLBCookie(getSessionId());
         } catch (SessionException e) {
@@ -182,7 +180,7 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
     private AMIdentity establishPreauthenticatedUser(final Map sharedState) {
         final String subjectName = (String) sharedState.get(getUserKey());
         final String realm = DNMapper.orgNameToRealmName(getRequestOrg());
-        return IdUtils.getIdentity(subjectName, realm);
+        return IdUtils.getIdentity(subjectName, realm, userSearchAttributes);
     }
 
     @Override

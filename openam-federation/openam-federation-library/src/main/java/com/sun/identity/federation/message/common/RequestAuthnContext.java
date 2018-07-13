@@ -28,10 +28,11 @@
 
 package com.sun.identity.federation.message.common;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
+
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.federation.common.IFSConstants;
 import com.sun.identity.saml.common.SAMLConstants;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -469,7 +470,7 @@ public class RequestAuthnContext {
            }
 
            urlEncodedAuthnReq.append("AuthnContextClassRef=").
-                    append(URLEncDec.encode(strEncodedString.toString())).
+                    append(urlEncodeQueryParameterNameOrValue(strEncodedString.toString())).
                     append(IFSConstants.AMPERSAND);
         }
        
@@ -485,14 +486,14 @@ public class RequestAuthnContext {
             }
 
             urlEncodedAuthnReq.append("AuthnContextClassRef=").
-                   append(URLEncDec.encode(strEncodedString.toString())).
+                   append(urlEncodeQueryParameterNameOrValue(strEncodedString.toString())).
                    append(IFSConstants.AMPERSAND);
         }
 
         if(minorVersion == IFSConstants.FF_12_PROTOCOL_MINOR_VERSION) {
             if(authnContextComparison != null) {
                    urlEncodedAuthnReq.append("AuthnContextComparison=").
-                   append(URLEncDec.encode(authnContextComparison)).
+                   append(urlEncodeQueryParameterNameOrValue(authnContextComparison)).
                    append(IFSConstants.AMPERSAND);
             }
         }

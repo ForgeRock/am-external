@@ -29,7 +29,7 @@
 
 package com.sun.identity.federation.message;
 
-
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.federation.common.FSUtils;
@@ -44,7 +44,6 @@ import com.sun.identity.saml.protocol.AbstractRequest;
 import com.sun.identity.saml.xmlsig.XMLSignatureManager;
 import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.DateUtils;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -603,7 +602,7 @@ public class FSFederationTerminationNotification extends AbstractRequest {
         StringBuffer urlEncodedAuthnReq = new StringBuffer(300);
         urlEncodedAuthnReq.append(IFSConstants.REQUEST_ID)
         .append(IFSConstants.EQUAL_TO)
-        .append(URLEncDec.encode(requestID))
+        .append(urlEncodeQueryParameterNameOrValue(requestID))
         .append(IFSConstants.AMPERSAND);
         urlEncodedAuthnReq.append(IFSConstants.MAJOR_VERSION)
         .append(IFSConstants.EQUAL_TO)
@@ -615,7 +614,7 @@ public class FSFederationTerminationNotification extends AbstractRequest {
         if(issueInstant != null){
             urlEncodedAuthnReq.append(IFSConstants.ISSUE_INSTANT)
             .append(IFSConstants.EQUAL_TO)
-            .append(URLEncDec.encode(DateUtils.toUTCDateFormat(issueInstant)))
+            .append(urlEncodeQueryParameterNameOrValue(DateUtils.toUTCDateFormat(issueInstant)))
             .append(IFSConstants.AMPERSAND);
         } else {
             FSUtils.debug.error("FSFederationTerminationNotification."
@@ -626,7 +625,7 @@ public class FSFederationTerminationNotification extends AbstractRequest {
         if (providerId != null && providerId.length() != 0) {
             urlEncodedAuthnReq.append(IFSConstants.PROVIDER_ID)
             .append(IFSConstants.EQUAL_TO)
-            .append(URLEncDec.encode(providerId))
+            .append(urlEncodeQueryParameterNameOrValue(providerId))
             .append(IFSConstants.AMPERSAND);
         }
         
@@ -635,12 +634,12 @@ public class FSFederationTerminationNotification extends AbstractRequest {
                     nameIdentifier.getName().length() != 0) {
                 urlEncodedAuthnReq.append(IFSConstants.NAME)
                 .append(IFSConstants.EQUAL_TO)
-                .append(URLEncDec.encode(
+                .append(urlEncodeQueryParameterNameOrValue(
                         nameIdentifier.getName()))
                         .append(IFSConstants.AMPERSAND)
                         .append(IFSConstants.NAME_IDENTIFIER)
                         .append(IFSConstants.EQUAL_TO)
-                        .append(URLEncDec.encode(
+                        .append(urlEncodeQueryParameterNameOrValue(
                         nameIdentifier.getName()))
                         .append(IFSConstants.AMPERSAND);
             }
@@ -648,7 +647,7 @@ public class FSFederationTerminationNotification extends AbstractRequest {
                     nameIdentifier.getNameQualifier().length() != 0) {
                 urlEncodedAuthnReq.append(IFSConstants.NAME_QUALIFIER)
                 .append(IFSConstants.EQUAL_TO)
-                .append(URLEncDec.encode(
+                .append(urlEncodeQueryParameterNameOrValue(
                         nameIdentifier.getNameQualifier()))
                         .append(IFSConstants.AMPERSAND);
             }
@@ -656,7 +655,7 @@ public class FSFederationTerminationNotification extends AbstractRequest {
                     nameIdentifier.getFormat().length() != 0) {
                 urlEncodedAuthnReq.append(IFSConstants.NAME_FORMAT)
                 .append(IFSConstants.EQUAL_TO)
-                .append(URLEncDec.encode(
+                .append(urlEncodeQueryParameterNameOrValue(
                         nameIdentifier.getFormat()))
                         .append(IFSConstants.AMPERSAND);
             }
@@ -665,7 +664,7 @@ public class FSFederationTerminationNotification extends AbstractRequest {
         if (relayState != null) {
             urlEncodedAuthnReq.append(IFSConstants.RELAY_STATE)
             .append(IFSConstants.EQUAL_TO)
-            .append(URLEncDec.encode(relayState))
+            .append(urlEncodeQueryParameterNameOrValue(relayState))
             .append(IFSConstants.AMPERSAND);
         }
         return urlEncodedAuthnReq.toString();

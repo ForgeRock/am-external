@@ -84,7 +84,6 @@ public class OATH extends AMLoginModule {
     private ResourceBundle bundle = null;
 
     // static attribute names
-    private static final String AUTHLEVEL = "iplanet-am-auth-oath-auth-level";
     private static final String PASSWORD_LENGTH = "iplanet-am-auth-oath-password-length";
     private static final String SECRET_KEY_ATTRIBUTE_NAME = "iplanet-am-auth-oath-secret-key-attribute";
     private static final String WINDOW_SIZE = "iplanet-am-auth-oath-hotp-window-size";
@@ -99,13 +98,13 @@ public class OATH extends AMLoginModule {
     private static final String SHARED_SECRET_IMPLEMENTATION_CLASS = "forgerock-oath-sharedsecret-implementation-class";
     private static final String MAXIMUM_CLOCK_DRIFT = "forgerock-oath-maximum-clock-drift";
     private static final String OBSERVED_CLOCK_DRIFT_ATTRIBUTE_NAME = "forgerock-oath-observed-clock-drift-attribute-name";
+    private static final String AUTH_RETRY = "forgerock-oath-max-retry";
 
     private int passLen = 0;
     private int minSecretKeyLength = 0;
     private String secretKeyAttrName = null;
     private int windowSize = 0;
     private String counterAttrName = null;
-    private String authLevel = null;
     private int truncationOffset = -1;
     private boolean checksum = false;
     private int totpTimeStep = 0;
@@ -115,6 +114,8 @@ public class OATH extends AMLoginModule {
     private String loginTimeAttrName = null;
     private boolean clockDriftCheckEnabled = false;
     private String observedClockDriftAttrName = null;
+    private int attempt = 0;
+    private static int totalAttempts = 0;
 
     private static final int HOTP = 0;
     private static final int TOTP = 1;
@@ -178,7 +179,6 @@ public class OATH extends AMLoginModule {
 
         //get module attributes
         try {
-            this.authLevel = CollectionHelper.getMapAttr(options, AUTHLEVEL);
             try {
                 this.passLen = Integer.parseInt(CollectionHelper.getMapAttr(options, PASSWORD_LENGTH));
             } catch (NumberFormatException e) {
@@ -199,6 +199,7 @@ public class OATH extends AMLoginModule {
             this.sharedSecretImplClass = CollectionHelper.getMapAttr(options, SHARED_SECRET_IMPLEMENTATION_CLASS);
             this.totpMaxClockDrift = CollectionHelper.getIntMapAttr(options, MAXIMUM_CLOCK_DRIFT, -1, debug);
             this.observedClockDriftAttrName = CollectionHelper.getMapAttr(options, OBSERVED_CLOCK_DRIFT_ATTRIBUTE_NAME);
+            this.totalAttempts = CollectionHelper.getIntMapAttr(options, AUTH_RETRY, 3, debug);
 
             String algorithm = CollectionHelper.getMapAttr(options, ALGORITHM);
             if (algorithm.equalsIgnoreCase("HOTP")) {
@@ -212,15 +213,6 @@ public class OATH extends AMLoginModule {
 
             String checksumVal = CollectionHelper.getMapAttr(options, CHECKSUM);
             checksum = Boolean.parseBoolean(checksumVal);
-
-            // set authentication level
-            if (authLevel != null) {
-                try {
-                    setAuthLevel(Integer.parseInt(authLevel));
-                } catch (Exception e) {
-                    debug.error("OATH.init(): Unable to set auth level " + authLevel, e);
-                }
-            }
         } catch (Exception e) {
             debug.error("OATH.init(): Unable to get module attributes", e);
         }
@@ -292,9 +284,13 @@ public class OATH extends AMLoginModule {
                     // get OTP
                     String OTP = String.valueOf(((PasswordCallback) callbacks[0]).getPassword());
                     if (StringUtils.isEmpty(OTP)) {
-                        debug.error("OATH.process(): invalid OTP code");
-                        setFailureID(userName);
-                        throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
+                        if (++attempt >= totalAttempts) {
+                            debug.error("OATH.process(): invalid OTP code");
+                            setFailureID(userName);
+                            throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
+                        }
+                        substituteHeader(state, "OATH Attempt " + (attempt + 1) + " of " + totalAttempts);
+                        return state;
                     }
 
                     if (minSecretKeyLength <= 0) {
@@ -313,9 +309,13 @@ public class OATH extends AMLoginModule {
                     if (checkOTP(OTP)) {
                         return ISAuthConstants.LOGIN_SUCCEED;
                     } else {
-                        // the OTP is out of the window or incorrect
-                        setFailureID(userName);
-                        throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
+                        //the OTP is out of the window or incorrect
+                        if (++attempt >= totalAttempts) {
+                            setFailureID(userName);
+                            throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
+                        }
+                        substituteHeader(state, "OATH Attempt " + (attempt + 1) + " of " + totalAttempts);
+                        return state;
                     }
             }
         } catch (SSOException e) {
@@ -344,7 +344,6 @@ public class OATH extends AMLoginModule {
         bundle = null;
         secretKeyAttrName = null;
         counterAttrName = null;
-        authLevel = null;
         amAuthOATH = null;
         loginTimeAttrName = null;
         userSearchAttributes = Collections.emptySet();

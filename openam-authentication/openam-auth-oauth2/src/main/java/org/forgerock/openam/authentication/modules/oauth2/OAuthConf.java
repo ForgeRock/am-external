@@ -85,7 +85,6 @@ public class OAuthConf {
     private String smtpUserPassword = null;
     private String smtpSSLEnabled = "false";
     private String emailFrom = null;
-    private String authLevel = "0";
 
     OAuthConf() {
     }
@@ -129,20 +128,6 @@ public class OAuthConf {
         smtpSSLEnabled = CollectionHelper.getMapAttr(config, KEY_SMTP_SSL_ENABLED);
         emailFrom = CollectionHelper.getMapAttr(config, KEY_EMAIL_FROM);
         mixUpMitigationEnabled = CollectionHelper.getBooleanMapAttr(config, KEY_MIX_UP_MITIGATION_ENABLED, false);
-        authLevel = CollectionHelper.getMapAttr(config, KEY_AUTH_LEVEL);
-    }
-
-    public int getAuthnLevel() {
-        int authLevelInt = 0;
-        if (authLevel != null) {
-            try {
-                authLevelInt = Integer.parseInt(authLevel);
-            } catch (Exception e) {
-                OAuthUtil.debugError("Unable to find a valid auth level " + authLevel
-                        + ", defaulting to 0", e);
-            }
-        }
-        return authLevelInt;
     }
 
     public String getGatewayImplClass()
@@ -284,7 +269,9 @@ public class OAuthConf {
             postParameters.put(PARAM_REDIRECT_URI, OAuthUtil.oAuthEncode(authServiceURL));
             postParameters.put(PARAM_CLIENT_SECRET, clientSecret);
             postParameters.put(PARAM_CODE, OAuthUtil.oAuthEncode(code));
-            postParameters.put(PARAM_STATE, csrfState);
+            if (isMixUpMitigationEnabled()) {
+                postParameters.put(PARAM_STATE, csrfState);
+            }
             postParameters.put(PARAM_GRANT_TYPE, OAuth2Constants.TokenEndpoint.AUTHORIZATION_CODE);
 
         } catch (UnsupportedEncodingException ex) {

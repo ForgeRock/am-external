@@ -24,7 +24,7 @@
  *
  * $Id: AttributeQueryUtil.java,v 1.11 2009/07/24 22:51:48 madan_ranganath Exp $
  *
- * Portions copyright 2010-2016 ForgeRock AS.
+ * Portions copyright 2010-2017 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -787,7 +787,7 @@ public class AttributeQueryUtil {
         int notBeforeSkewTime = IDPSSOUtil.getNotBeforeSkewTime(realm,
             attrAuthorityEntityID);
         Conditions conditions = IDPSSOUtil.getConditions(requesterEntityID, 
-            notBeforeSkewTime, effectiveTime);
+            notBeforeSkewTime, effectiveTime, realm);
         assertion.setConditions(conditions);
 
         return assertion;

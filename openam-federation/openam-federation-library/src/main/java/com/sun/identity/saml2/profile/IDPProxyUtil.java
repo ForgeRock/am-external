@@ -24,11 +24,12 @@
  *
  * $Id: IDPProxyUtil.java,v 1.18 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2010-2016 ForgeRock AS.
+ * Portions Copyrighted 2010-2017 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import java.io.ByteArrayOutputStream;
@@ -42,7 +43,6 @@ import com.sun.identity.saml2.protocol.RequesterID;
 import com.sun.identity.saml2.protocol.impl.RequesterIDImpl;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.datastruct.OrderedSet;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml2.assertion.Assertion;
@@ -58,6 +58,8 @@ import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.SingleLogoutServiceElement;
+import com.sun.identity.saml2.jaxb.metadata.SSODescriptorType;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
@@ -73,7 +75,6 @@ import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.Scoping;
 import java.io.IOException;
 import java.security.PrivateKey;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
@@ -259,7 +260,7 @@ public class IDPProxyUtil {
             if (relayStateID != null && relayStateID.length() > 0) {
                 queryString.append("&").append(SAML2Constants.RELAY_STATE)
                         .append("=")
-                        .append(URLEncDec.encode(relayStateID));
+                        .append(urlEncodeQueryParameterNameOrValue(relayStateID));
             }
 
             StringBuffer redirectURL =
@@ -740,15 +741,10 @@ public class IDPProxyUtil {
             paramsMap.put("spMetaAlias", metaAlias);
             paramsMap.put("idpEntityID", partner);
             paramsMap.put(SAML2Constants.ROLE, SAML2Constants.SP_ROLE);
-            paramsMap.put(SAML2Constants.BINDING, binding); 
-            String dest = getLocation(realm, partner, binding); 
-            if (dest != null && !dest.equals("")) {
-                paramsMap.put("Destination", dest);  
-            } else {
-                throw new SAML2Exception(
-                    SAML2Utils.bundle.getString(
-                    "sloResponseServiceLocationNotfound"));
-            }
+            SingleLogoutServiceElement endpoint = getSLOElement(realm, partner, binding, SAML2Constants.IDP_ROLE);
+            binding = endpoint.getBinding();
+            paramsMap.put("Destination", endpoint.getLocation());  
+            paramsMap.put(SAML2Constants.BINDING, binding);
             paramsMap.put("Consent", request.getParameter("Consent"));
             paramsMap.put("Extension", request.getParameter("Extension"));
             if (relayState != null) {
@@ -826,6 +822,55 @@ public class IDPProxyUtil {
         } catch (SAML2Exception se) {
             return null; 
         } 
+    }     
+    
+    /**
+     * Gets the SLO response service element of the Entity 
+     * @param realm Realm
+     * @param entityID Authenticating Identity Provider. 
+     * @param binding Binding type. 
+     * @param role Identity Provider role. 
+     * @return SingleLogoutServiceElement of the SLO response service 
+     * throws SAML2Exception for any SAML2 failure.
+     */ 
+    public static SingleLogoutServiceElement getSLOElement(String realm, String entityID, String binding, String role) 
+        throws SAML2Exception 
+    {
+
+        String classMethod = "IDPProxyUtil.getSLOElement:";
+        SSODescriptorType descriptor;
+
+        if (SAML2Constants.SP_ROLE.equals(role)) {
+            descriptor = sm.getSPSSODescriptor(realm, entityID);
+        } else if (SAML2Constants.IDP_ROLE.equals(role)) {
+            descriptor = sm.getIDPSSODescriptor(realm, entityID);
+        } else {
+            SAML2Utils.debug.error("{} Requested role type for entityID {} is invalid.", classMethod, entityID);
+            throw new SAML2Exception(SAML2Utils.bundle.getString("metaDataError"));
+        } 
+
+        if (descriptor == null) {
+            SAML2Utils.debug.error("{} Unable to retrieve metadata in realm {} with entityID {} and role {}", 
+                classMethod, realm, entityID, role);
+            throw new SAML2Exception(SAML2Utils.bundle.getString("metaDataError"));
+        }
+
+        List<SingleLogoutServiceElement> sloEndpoints = descriptor.getSingleLogoutService();
+
+        if (sloEndpoints == null) {
+            SAML2Utils.debug.error("{} SLO List from entityID {} is NULL.", classMethod, entityID);
+            throw new SAML2Exception( SAML2Utils.bundle.getString("sloServiceListNotfound"));
+        }
+        SingleLogoutServiceElement sloeElement = LogoutUtil.getMostAppropriateSLOServiceLocation(sloEndpoints, binding);
+        if (sloeElement == null) {
+            SAML2Utils.debug.error("{} SingleLogoutServiceElement from entityID {} is NULL.", classMethod, entityID);
+            throw new SAML2Exception(SAML2Utils.bundle.getString("sloServiceNotfound"));
+        }
+        if (StringUtils.isEmpty(sloeElement.getLocation())) {
+            SAML2Utils.debug.error("{} SLO Element from entityID {} has NULL Location.", classMethod, entityID);
+            throw new SAML2Exception(SAML2Utils.bundle.getString("sloServiceNotfound"));
+        }
+        return sloeElement;
     }     
     
     public static List getSessionPartners(HttpServletRequest request) 
@@ -932,7 +977,12 @@ public class IDPProxyUtil {
        }
        LogoutResponse logoutRes = LogoutUtil.generateResponse(null, originatingRequestID,
                SAML2Utils.createIssuer(entityID), realm, SAML2Constants.IDP_ROLE, remoteEntity);
-       String location = IDPSingleLogout.getSingleLogoutLocation(remoteEntity, realm, SAML2Constants.HTTP_REDIRECT);
+
+       SingleLogoutServiceElement endpoint = getSLOElement(realm, remoteEntity, binding, SAML2Constants.SP_ROLE);
+       binding = endpoint.getBinding();
+
+       String location = endpoint.getLocation();
+
        if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message("Proxy to: " + location);
        }

@@ -24,16 +24,16 @@
  *
  * $Id: FSLogoutNotification.java,v 1.4 2008/06/25 05:46:44 qcheng Exp $
  *
- * Portions Copyrighted 2014-2016 ForgeRock AS.
+ * Portions Copyrighted 2014-2017 ForgeRock AS.
  */
 
 package com.sun.identity.federation.message;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.DateUtils;
 import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.saml.common.SAMLUtils;
@@ -651,7 +651,7 @@ public class FSLogoutNotification extends AbstractRequest {
         StringBuffer urlEncodedAuthnReq = new StringBuffer(300);
         urlEncodedAuthnReq.append(IFSConstants.REQUEST_ID)
         .append(IFSConstants.EQUAL_TO)
-        .append(URLEncDec.encode(requestID))
+        .append(urlEncodeQueryParameterNameOrValue(requestID))
         .append(IFSConstants.AMPERSAND)
         .append(IFSConstants.MAJOR_VERSION)
         .append(IFSConstants.EQUAL_TO)
@@ -665,7 +665,7 @@ public class FSLogoutNotification extends AbstractRequest {
         if(issueInstant != null){
             urlEncodedAuthnReq.append(IFSConstants.ISSUE_INSTANT)
             .append(IFSConstants.EQUAL_TO)
-            .append(URLEncDec.encode(
+            .append(urlEncodeQueryParameterNameOrValue(
                     DateUtils.toUTCDateFormat(issueInstant)))
                     .append(IFSConstants.AMPERSAND);
             
@@ -674,7 +674,7 @@ public class FSLogoutNotification extends AbstractRequest {
                         IFSConstants.ASSERTION_TIMEOUT_ALLOWED_DIFFERENCE);
                 urlEncodedAuthnReq.append(IFSConstants.NOT_ON_OR_AFTER)
                 .append(IFSConstants.EQUAL_TO)
-                .append(URLEncDec.encode(
+                .append(urlEncodeQueryParameterNameOrValue(
                         DateUtils.toUTCDateFormat(notOnOrAfter)))
                         .append(IFSConstants.AMPERSAND);
             }
@@ -687,21 +687,21 @@ public class FSLogoutNotification extends AbstractRequest {
         if (providerId != null && providerId.length() != 0) {
             urlEncodedAuthnReq.append(IFSConstants.PROVIDER_ID)
             .append(IFSConstants.EQUAL_TO)
-            .append(URLEncDec.encode(providerId))
+            .append(urlEncodeQueryParameterNameOrValue(providerId))
             .append(IFSConstants.AMPERSAND);
         }
         
         if (sessionIndex != null && sessionIndex.length() != 0) {
             urlEncodedAuthnReq.append(IFSConstants.SESSION_INDEX)
             .append(IFSConstants.EQUAL_TO)
-            .append(URLEncDec.encode(sessionIndex))
+            .append(urlEncodeQueryParameterNameOrValue(sessionIndex))
             .append(IFSConstants.AMPERSAND);
         }
         
         if (relayState != null && relayState.length() != 0) {
             urlEncodedAuthnReq.append(IFSConstants.RELAY_STATE)
             .append(IFSConstants.EQUAL_TO)
-            .append(URLEncDec.encode(relayState))
+            .append(urlEncodeQueryParameterNameOrValue(relayState))
             .append(IFSConstants.AMPERSAND);
         }
         
@@ -710,12 +710,12 @@ public class FSLogoutNotification extends AbstractRequest {
                     nameIdentifier.getName().length() != 0) {
                 urlEncodedAuthnReq.append(IFSConstants.NAME)
                 .append(IFSConstants.EQUAL_TO)
-                .append(URLEncDec.encode(
+                .append(urlEncodeQueryParameterNameOrValue(
                         nameIdentifier.getName()))
                         .append(IFSConstants.AMPERSAND)
                         .append(IFSConstants.NAME_IDENTIFIER)
                         .append(IFSConstants.EQUAL_TO)
-                        .append(URLEncDec.encode(
+                        .append(urlEncodeQueryParameterNameOrValue(
                         nameIdentifier.getName()))
                         .append(IFSConstants.AMPERSAND);
             }
@@ -723,7 +723,7 @@ public class FSLogoutNotification extends AbstractRequest {
                     nameIdentifier.getNameQualifier().length() != 0) {
                 urlEncodedAuthnReq.append(IFSConstants.NAME_QUALIFIER)
                 .append(IFSConstants.EQUAL_TO)
-                .append(URLEncDec.encode(
+                .append(urlEncodeQueryParameterNameOrValue(
                         nameIdentifier.getNameQualifier()))
                         .append(IFSConstants.AMPERSAND);
             }
@@ -731,7 +731,7 @@ public class FSLogoutNotification extends AbstractRequest {
                     nameIdentifier.getFormat().length() != 0) {
                 urlEncodedAuthnReq.append(IFSConstants.NAME_FORMAT)
                 .append(IFSConstants.EQUAL_TO)
-                .append(URLEncDec.encode(
+                .append(urlEncodeQueryParameterNameOrValue(
                         nameIdentifier.getFormat()))
                         .append(IFSConstants.AMPERSAND);
             }

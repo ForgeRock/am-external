@@ -24,10 +24,12 @@
  *
  * $Id: IPSigninRequest.java,v 1.8 2009/10/28 23:59:00 exu Exp $
  *
- * Portions Copyrighted 2014-2016 ForgeRock AS.
+ * Portions Copyrighted 2014-2017 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.servlet;
+
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionProvider;
@@ -35,7 +37,6 @@ import com.sun.identity.multiprotocol.MultiProtocolUtils;
 import com.sun.identity.multiprotocol.SingleLogoutManager;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.wsfederation.common.WSFederationConstants;
 import com.sun.identity.wsfederation.common.WSFederationException;
 import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
@@ -231,7 +232,7 @@ public class IPSigninRequest extends WSFederationAction {
             debug.message(classMethod +
                 "Target to get back here: " + target.toString());
         }
-        newURL.append(URLEncDec.encode(target.toString()));
+        newURL.append(urlEncodeQueryParameterNameOrValue(target.toString()));
         if (debug.messageEnabled()) {
             debug.message(classMethod +
                 "New URL for authentication: " + newURL.toString());

@@ -698,7 +698,7 @@ public final class FMEncProvider implements EncProvider {
     private Key getEncryptionKey(XMLCipher cipher, Set<PrivateKey> privateKeys, EncryptedKey encryptedKey,
             String algorithm) throws SAML2Exception {
         final String classMethod = "FMEncProvider.getEncryptionKey";
-        SAML2SDKUtils.debug.error("{} : algorithm '{}'", classMethod, algorithm);
+        SAML2SDKUtils.debug.message("{} : algorithm '{}'", classMethod, algorithm);
 
         String firstErrorCode = null;
         for (Key privateKey : privateKeys) {

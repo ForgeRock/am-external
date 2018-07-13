@@ -24,6 +24,7 @@
  *
  * $Id: WindowsDesktopSSOConfig.java,v 1.3 2009/04/07 22:55:13 beomsuk Exp $
  *
+ * Portions Copyrighted 2017 ForgeRock AS.
  */
 
 
@@ -34,9 +35,10 @@ import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 
 import com.iplanet.am.util.SystemProperties;
+import com.sun.identity.authentication.config.AMConfiguration;
 import com.sun.identity.shared.Constants;
 
-public class WindowsDesktopSSOConfig extends Configuration {
+public class WindowsDesktopSSOConfig extends AMConfiguration {
     public static final String defaultAppName = 
         "com.sun.identity.authentication.windowsdesktopsso";
     private static final String kerberosModuleName = 
@@ -56,6 +58,7 @@ public class WindowsDesktopSSOConfig extends Configuration {
      * @param config
      */
     public WindowsDesktopSSOConfig(Configuration config) {
+        super(config);
         this.config = config;
     }
 

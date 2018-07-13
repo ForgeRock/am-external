@@ -96,7 +96,6 @@ import org.forgerock.openam.utils.ValidateIPaddress;
 public class Adaptive extends AMLoginModule implements AMPostAuthProcessInterface {
 
     private static final String ADAPTIVE = "amAuthAdaptive";
-    private static final String AUTHLEVEL = "openam-auth-adaptive-auth-level";
     private static final String ADAPTIVETHRESHOLD = "openam-auth-adaptive-auth-threshold";
     private static final String AUTH_FAILURE_CHECK = "openam-auth-adaptive-failure-check";
     private static final String AUTH_FAILURE_SCORE = "openam-auth-adaptive-failure-score";
@@ -218,15 +217,6 @@ public class Adaptive extends AMLoginModule implements AMPostAuthProcessInterfac
     @Override
     public void init(Subject subject, Map sharedState, Map options) {
         postAuthNMap = new HashMap<String, String>();
-        String authLevel = CollectionHelper.getMapAttr(options, AUTHLEVEL);
-
-        if (authLevel != null) {
-            try {
-                setAuthLevel(Integer.parseInt(authLevel));
-            } catch (Exception e) {
-                debug.error("{}.init : Unable to set auth level {}", ADAPTIVE, authLevel, e);
-            }
-        }
         Locale locale = getLoginLocale();
         initParams(options);
 

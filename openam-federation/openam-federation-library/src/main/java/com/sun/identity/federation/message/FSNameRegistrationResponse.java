@@ -29,6 +29,7 @@
 
 package com.sun.identity.federation.message;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.federation.common.FSUtils;
@@ -44,7 +45,6 @@ import com.sun.identity.saml.protocol.StatusCode;
 import com.sun.identity.saml.xmlsig.XMLSignatureManager;
 import com.sun.identity.shared.DateUtils;
 import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
 import java.text.ParseException;
 import java.util.Date;
@@ -726,19 +726,19 @@ public class FSNameRegistrationResponse extends AbstractResponse {
         }
         StringBuffer urlEncodedAuthnReq = new StringBuffer(300);
         urlEncodedAuthnReq.append("ResponseID=").
-                append(URLEncDec.encode(responseID)).
+                append(urlEncodeQueryParameterNameOrValue(responseID)).
                 append(IFSConstants.AMPERSAND);
         urlEncodedAuthnReq.append("MajorVersion=").
                 append(majorVersion).append(IFSConstants.AMPERSAND);
         urlEncodedAuthnReq.append("MinorVersion=").
                 append(minorVersion).append(IFSConstants.AMPERSAND);
         urlEncodedAuthnReq.append("InResponseTo=").
-                append(URLEncDec.encode(inResponseTo)).
+                append(urlEncodeQueryParameterNameOrValue(inResponseTo)).
                 append(IFSConstants.AMPERSAND);
         
         if (issueInstant != null){
             urlEncodedAuthnReq.append("IssueInstant=")
-            .append(URLEncDec.encode(
+            .append(urlEncodeQueryParameterNameOrValue(
                     DateUtils.toUTCDateFormat(issueInstant)))
                     .append(IFSConstants.AMPERSAND);
         } else {
@@ -749,20 +749,20 @@ public class FSNameRegistrationResponse extends AbstractResponse {
         }
         if (providerId != null && !providerId.equals("")) {
             urlEncodedAuthnReq.append("ProviderID=").
-                    append(URLEncDec.encode(providerId)).
+                    append(urlEncodeQueryParameterNameOrValue(providerId)).
                     append(IFSConstants.AMPERSAND);
         }
         
         if (relayState != null && relayState.length() > 0) {
             urlEncodedAuthnReq.append("RelayState=").
-                    append(URLEncDec.encode(relayState)).
+                    append(urlEncodeQueryParameterNameOrValue(relayState)).
                     append(IFSConstants.AMPERSAND);
         }
         
         if (status != null) {
             urlEncodedAuthnReq.append("Value=");
             urlEncodedAuthnReq.append(
-                    URLEncDec.encode(status.getStatusCode().getValue())).
+                    urlEncodeQueryParameterNameOrValue(status.getStatusCode().getValue())).
                     append(IFSConstants.AMPERSAND);
         }
         

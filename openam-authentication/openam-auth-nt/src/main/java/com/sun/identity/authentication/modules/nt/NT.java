@@ -97,15 +97,6 @@ public class NT extends AMLoginModule {
                 options, "iplanet-am-auth-nt-domain");
             smbConfFileName = CollectionHelper.getServerMapAttr(
                 options, "iplanet-am-auth-samba-config-file-name");
-            String authLevel = CollectionHelper.getMapAttr(
-                options, "iplanet-am-auth-nt-auth-level");
-            if (authLevel != null) {
-                 try {
-                      setAuthLevel(Integer.parseInt(authLevel));
-                 } catch (Exception e) {
-                      debug.error("Unable to set auth level " + authLevel);
-                 }
-            }
         }
     }
 

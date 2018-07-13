@@ -22,8 +22,9 @@ define([
     "org/forgerock/commons/ui/common/util/UIUtils",
     "org/forgerock/openam/ui/common/util/Promise",
     "org/forgerock/openam/ui/common/views/jsonSchema/FlatJSONSchemaView",
-    "org/forgerock/openam/ui/common/views/jsonSchema/GroupedJSONSchemaView"
-], (_, Backbone, Messages, Router, UIUtils, Promise, FlatJSONSchemaView, GroupedJSONSchemaView) =>
+    "org/forgerock/openam/ui/common/views/jsonSchema/GroupedJSONSchemaView",
+    "org/forgerock/openam/ui/common/models/JSONValues"
+], (_, Backbone, Messages, Router, UIUtils, Promise, FlatJSONSchemaView, GroupedJSONSchemaView, JSONValues) =>
     Backbone.View.extend({
         events: {
             "click [data-save]": "onSave",
@@ -64,13 +65,14 @@ define([
 
         render () {
             this.getInitialState().then((response) => {
+                this.schema = response.schema;
                 const options = {
-                    schema: response.schema,
+                    schema: this.schema,
                     values: response.values,
                     showOnlyRequiredAndEmpty: true
                 };
 
-                if (response.schema.isCollection()) {
+                if (this.schema.isCollection()) {
                     this.jsonSchemaView = new GroupedJSONSchemaView(options);
                 } else {
                     this.jsonSchemaView = new FlatJSONSchemaView(options);
@@ -90,8 +92,10 @@ define([
             const instanceId = this.$el.find("[data-instance-id]").val();
 
             formData["_id"] = instanceId;
+            const values = new JSONValues(formData);
+            const valuesWithoutNullPasswords = values.removeNullPasswords(this.schema);
 
-            this.createInstance(formData).then(() => {
+            this.createInstance(valuesWithoutNullPasswords.raw).then(() => {
                 Router.routeTo(this.editRoute, {
                     args: this.editRouteArgs(encodeURIComponent(instanceId)),
                     trigger: true

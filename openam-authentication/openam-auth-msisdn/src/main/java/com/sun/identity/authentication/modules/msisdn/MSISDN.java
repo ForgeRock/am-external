@@ -94,8 +94,6 @@ public class MSISDN extends AMLoginModule {
         ISAuthConstants.AUTH_ATTR_PREFIX_NEW + "MSISDNTrustedGatewayList";
     private static final String MSISDN_PARAMETER_NAME =
         ISAuthConstants.AUTH_ATTR_PREFIX_NEW + "MSISDNParameterNameList";
-    private static final String MSISDN_AUTH_LEVEL =
-        ISAuthConstants.AUTH_ATTR_PREFIX_NEW + "MSISDNAuthLevel";
     private static final String MSISDN_HEADER_SEARCH = 
         ISAuthConstants.AUTH_ATTR_PREFIX_NEW + "MSISDNHeaderSearch";
 
@@ -156,7 +154,6 @@ public class MSISDN extends AMLoginModule {
                         debug.message("searchAllHeaders :" + searchAllHeaders);
                     }
                 }
-                setMSISDNAuthLevel();
             }
         } else {
             debug.error("options is null");
@@ -266,23 +263,6 @@ public class MSISDN extends AMLoginModule {
             }
         }
         return map;
-    }
-
-    /** Sets the auth level */
-    private void setMSISDNAuthLevel()  {
-        String tmp = CollectionHelper.getMapAttr(options,MSISDN_AUTH_LEVEL);
-        int authLevel = DEFAULT_MSISDN_AUTH_LEVEL;
-        if (tmp != null && tmp.length() > 0) {
-            try {
-                authLevel = Integer.parseInt(tmp);
-            } catch (Exception e) {
-                debug.error("Invalid auth level " + tmp);
-            }
-        }
-        if (debug.messageEnabled()) {
-            debug.message("Set auth level to " + authLevel);
-        }
-        setAuthLevel(authLevel);
     }
 
 

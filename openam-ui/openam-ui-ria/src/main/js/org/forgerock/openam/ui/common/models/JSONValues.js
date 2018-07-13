@@ -70,6 +70,10 @@ define([
         return values;
     }
 
+    function isCollection (schema, key) {
+        return _.has(schema.properties[key], "properties");
+    }
+
     return class JSONValues {
         constructor (values) {
             const hasDefaults = _.has(values, "defaults");
@@ -138,6 +142,41 @@ define([
         removeInheritance () {
             return new JSONValues(_.mapValues(this.raw, "value"));
         }
+        removeNullPasswords (jsonSchema) {
+            const isNullPassword = (value, schema, path) => _.isNull(value) && _.get(schema, path) === "password";
+            const omitNullPasswords = (values, schema) => {
+                return _.reduce(values, (result, value, key) => {
+                    if (jsonSchema.hasInheritance(schema.properties[key])) {
+                        result[key] = isNullPassword(value.value, schema.properties[key], "properties.value.format")
+                            ? { inherited: value.inherited } // return only the inheritance flag
+                            : value;
+                    } else if (isCollection(schema, key)) {
+                        result[key] = omitNullPasswords(value, schema.properties[key]);
+                    } else if (isNullPassword(value, schema.properties[key], "format")) {
+                        // We explicitly do not include null passwords
+                    } else {
+                        result[key] = value;
+                    }
+                    return result;
+                }, {});
+            };
+
+            return new JSONValues(omitNullPasswords(this.raw, jsonSchema.raw));
+        }
+
+        /**
+         * Returns a new JSONValues object with all it's empty passwords set to null.
+         *
+         * @param   {string[]} passwords An array of password property keys
+         * @returns {JSONValues} a new JSONValues Object with any empty passwords set to null
+         */
+        nullifyEmptyPasswords (passwords) {
+            return new JSONValues(_.mapValues(this.raw, (value, key) => {
+                const isEmptyPassword = passwords.indexOf(key) !== -1 && _.isEmpty(value);
+                return isEmptyPassword ? null : value;
+            }));
+        }
+
         toJSON () {
             let json = _.clone(this.raw);
 

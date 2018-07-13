@@ -24,19 +24,18 @@
  *
  * $Id: DoManageNameID.java,v 1.26 2009/11/24 21:53:27 madan_ranganath Exp $
  *
- * Portions copyright 2013-2016 ForgeRock AS.
+ * Portions copyright 2013-2017 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.security.Key;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -95,7 +94,6 @@ import com.sun.identity.saml2.protocol.NewID;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.Status;
 import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.xml.XMLUtils;
 
@@ -1263,7 +1261,7 @@ public class DoManageNameID {
             if (relayState != null && relayState.length() > 0 
                 && relayState.getBytes("UTF-8").length <= 80) {
                 queryString.append("&").append(SAML2Constants.RELAY_STATE)
-                           .append("=").append(URLEncDec.encode(relayState));
+                           .append("=").append(urlEncodeQueryParameterNameOrValue(relayState));
             }
             if (debug.messageEnabled()) {
                 debug.message(method + "MNI Response is : " +
@@ -1413,10 +1411,9 @@ public class DoManageNameID {
                 new StringBuffer().append(SAML2Constants.SAML_REQUEST)
                                   .append(SAML2Constants.EQUAL)
                                   .append(encodedXML);
-        if (relayState != null && relayState.length() > 0 
-                         && relayState.getBytes("UTF-8").length <= 80) {
+        if (relayState != null && relayState.length() > 0 && relayState.getBytes("UTF-8").length <= 80) {
             queryString.append("&").append(SAML2Constants.RELAY_STATE)
-                           .append("=").append(URLEncDec.encode(relayState));
+                       .append("=").append(urlEncodeQueryParameterNameOrValue(relayState));
          }
         
         boolean needToSign = false; 

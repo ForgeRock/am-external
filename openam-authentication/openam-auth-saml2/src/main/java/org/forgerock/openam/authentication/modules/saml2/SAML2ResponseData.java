@@ -41,12 +41,13 @@ public class SAML2ResponseData {
      * Combine a new set of SAML2 response data as a single object.
      *
      * @param sessionIndex Session index used for this authentication.
+     *                     SAML2 specs allow it to be optional (null).
      * @param subject Subject about whom this authentication provides information.
      * @param assertion Assertion for this subject's authentication.
      * @param responseInfo Response Information pertaining to the authentication.
      */
     public SAML2ResponseData(String sessionIndex, Subject subject, Assertion assertion, ResponseInfo responseInfo) {
-        Reject.ifNull(sessionIndex, subject, assertion, responseInfo);
+        Reject.ifNull(subject, assertion, responseInfo);
 
         this.subject = subject;
         this.assertion = assertion;

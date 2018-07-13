@@ -24,7 +24,7 @@
  *
  * $Id: SAML2Constants.java,v 1.44 2009/11/24 21:53:02 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2016 ForgeRock AS.
+ * Portions Copyrighted 2010-2017 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -1653,4 +1653,9 @@ public interface SAML2Constants {
      * Default Value for the SAML2 Server Port
      */
     int DEFAULT_SERVER_PORT = 18080;
+
+    /**
+     * Attribute to be configured in SPSSOConfig for Audience elements.
+     */
+    public String AUDIENCE_URI = "audienceUri";
 }

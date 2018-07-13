@@ -29,6 +29,7 @@
 
 package com.sun.identity.federation.message;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.federation.common.FSUtils;
@@ -45,7 +46,6 @@ import com.sun.identity.saml.protocol.AbstractRequest;
 import com.sun.identity.saml.xmlsig.XMLSignatureManager;
 import com.sun.identity.shared.DateUtils;
 import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -748,7 +748,7 @@ public class FSNameRegistrationRequest extends AbstractRequest {
          }
          StringBuffer urlEncodedAuthnReq = new StringBuffer(300);
          urlEncodedAuthnReq.append("RequestID=").
-                 append(URLEncDec.encode(requestID)).
+                 append(urlEncodeQueryParameterNameOrValue(requestID)).
                  append(IFSConstants.AMPERSAND);
          urlEncodedAuthnReq.append("MajorVersion=").
                  append(majorVersion).
@@ -757,12 +757,12 @@ public class FSNameRegistrationRequest extends AbstractRequest {
                  append(minorVersion).
                  append(IFSConstants.AMPERSAND);
          urlEncodedAuthnReq.append("RelayState=").
-                 append(URLEncDec.encode(relayState)).
+                 append(urlEncodeQueryParameterNameOrValue(relayState)).
                  append(IFSConstants.AMPERSAND);
          
          if (issueInstant != null){
              urlEncodedAuthnReq.append("IssueInstant=")
-                               .append(URLEncDec.encode(
+                               .append(urlEncodeQueryParameterNameOrValue(
                                       DateUtils.toUTCDateFormat(issueInstant)))
                                .append(IFSConstants.AMPERSAND);
          } else {
@@ -773,7 +773,7 @@ public class FSNameRegistrationRequest extends AbstractRequest {
          }
          if (providerId != null && providerId.length() > 0) {
              urlEncodedAuthnReq.append("ProviderID=").
-                     append(URLEncDec.encode(providerId)).
+                     append(urlEncodeQueryParameterNameOrValue(providerId)).
                      append(IFSConstants.AMPERSAND);
          }
     
@@ -781,7 +781,7 @@ public class FSNameRegistrationRequest extends AbstractRequest {
              if (spProvidedNameIdentifier.getName() != null &&
                      spProvidedNameIdentifier.getName().length() != 0) {
                  urlEncodedAuthnReq.append("SPProvidedNameIdentifier=").
-                         append(URLEncDec.encode(
+                         append(urlEncodeQueryParameterNameOrValue(
                          spProvidedNameIdentifier.getName())).
                          append(IFSConstants.AMPERSAND);
              }
@@ -789,14 +789,14 @@ public class FSNameRegistrationRequest extends AbstractRequest {
              if(spProvidedNameIdentifier.getNameQualifier() != null &&
                     spProvidedNameIdentifier.getNameQualifier().length() != 0) {
                  urlEncodedAuthnReq.append("SPNameQualifier=").
-                         append(URLEncDec.encode(
+                         append(urlEncodeQueryParameterNameOrValue(
                          spProvidedNameIdentifier.getNameQualifier())).
                          append(IFSConstants.AMPERSAND);
              }
               if (spProvidedNameIdentifier.getFormat() != null && 
                  spProvidedNameIdentifier.getFormat().length() != 0) {
                  urlEncodedAuthnReq.append("SPNameFormat=").
-                                    append(URLEncDec.encode(
+                                    append(urlEncodeQueryParameterNameOrValue(
                                          spProvidedNameIdentifier.getFormat())).
                                     append(IFSConstants.AMPERSAND); 
               }
@@ -806,21 +806,21 @@ public class FSNameRegistrationRequest extends AbstractRequest {
             if (oldProvidedNameIdentifier.getName() != null && 
                oldProvidedNameIdentifier.getName().length() != 0) {
                urlEncodedAuthnReq.append("OldProvidedNameIdentifier=").
-                                  append(URLEncDec.encode(
+                                  append(urlEncodeQueryParameterNameOrValue(
                                       oldProvidedNameIdentifier.getName())).
                                   append(IFSConstants.AMPERSAND);
             }
             if (oldProvidedNameIdentifier.getNameQualifier() != null && 
                 oldProvidedNameIdentifier.getNameQualifier().length() != 0) { 
                 urlEncodedAuthnReq.append("OldNameQualifier=").
-                                   append(URLEncDec.encode(
+                                   append(urlEncodeQueryParameterNameOrValue(
                                  oldProvidedNameIdentifier.getNameQualifier())).
                                    append(IFSConstants.AMPERSAND);  
             }
             if (oldProvidedNameIdentifier.getFormat() != null&& 
                          oldProvidedNameIdentifier.getFormat().length() != 0) {
                 urlEncodedAuthnReq.append("OldNameFormat=").
-                                   append(URLEncDec.encode(
+                                   append(urlEncodeQueryParameterNameOrValue(
                                         oldProvidedNameIdentifier.getFormat())).
                                    append(IFSConstants.AMPERSAND); 
             }
@@ -830,21 +830,21 @@ public class FSNameRegistrationRequest extends AbstractRequest {
             if (idpProvidedNameIdentifier.getName() != null && 
                 idpProvidedNameIdentifier.getName().length() != 0){
                 urlEncodedAuthnReq.append("IDPProvidedNameIdentifier=").
-                                   append(URLEncDec.encode(
+                                   append(urlEncodeQueryParameterNameOrValue(
                                          idpProvidedNameIdentifier.getName())).
                                    append(IFSConstants.AMPERSAND);
             }
             if (idpProvidedNameIdentifier.getNameQualifier() != null && 
                 idpProvidedNameIdentifier.getNameQualifier().length() != 0) {
                 urlEncodedAuthnReq.append("IDPNameQualifier=").
-                                   append(URLEncDec.encode(
+                                   append(urlEncodeQueryParameterNameOrValue(
                                 idpProvidedNameIdentifier.getNameQualifier())).
                                    append(IFSConstants.AMPERSAND);  
             }
             if(idpProvidedNameIdentifier.getFormat() != null&& 
                 idpProvidedNameIdentifier.getFormat().length() != 0) {
                 urlEncodedAuthnReq.append("IDPNameFormat=").
-                                   append(URLEncDec.encode(
+                                   append(urlEncodeQueryParameterNameOrValue(
                                         idpProvidedNameIdentifier.getFormat())).
                                    append(IFSConstants.AMPERSAND); 
             }

@@ -16,12 +16,13 @@
 package org.forgerock.openam.authentication.modules.saml2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.forgerock.http.util.Uris.urlDecodeQueryParameterNameOrValue;
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.authentication.modules.saml2.Constants.AM_LOCATION_COOKIE;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.xml.bind.StringInputStream;
 
 import javax.servlet.http.Cookie;
@@ -83,13 +84,13 @@ public class SAML2ProxyTest {
         String malicious = "\"><script>alert('Bad thing);</script><form ";
 
         //when
-        final String formHtml = SAML2Proxy.getAutoSubmittingFormHtml(URLEncDec.encode(malicious));
+        final String formHtml = SAML2Proxy.getAutoSubmittingFormHtml(urlEncodeQueryParameterNameOrValue(malicious));
 
         //then
         // The malicious code should not be present
         assertThat(formHtml).doesNotContain(malicious);
         // However, it should be preserved when parsed again
-        assertThat(URLEncDec.decode(getFormAction(formHtml))).contains(malicious);
+        assertThat(urlDecodeQueryParameterNameOrValue(getFormAction(formHtml))).contains(malicious);
     }
 
     private String getFormAction(String html) {
@@ -134,7 +135,7 @@ public class SAML2ProxyTest {
         String response = SAML2Proxy.getUrlWithError(mockRequest, errorType);
 
         //then
-        assertThat(response).contains(URLEncDec.encode(SAML2Proxy.DEFAULT_ERROR_MESSAGE));
+        assertThat(response).contains(urlEncodeQueryParameterNameOrValue(SAML2Proxy.DEFAULT_ERROR_MESSAGE));
     }
 
     @Test
@@ -149,7 +150,7 @@ public class SAML2ProxyTest {
         String url = SAML2Proxy.getUrlWithError(mockRequest, errorType);
 
         //then
-        assertThat(url).contains(URLEncDec.encode(SAML2Proxy.DEFAULT_ERROR_MESSAGE));
+        assertThat(url).contains(urlEncodeQueryParameterNameOrValue(SAML2Proxy.DEFAULT_ERROR_MESSAGE));
     }
 
     @Test

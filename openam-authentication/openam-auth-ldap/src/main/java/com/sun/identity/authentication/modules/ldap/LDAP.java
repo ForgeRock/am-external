@@ -212,16 +212,6 @@ public class LDAP extends AMLoginModule {
             String tmp = CollectionHelper.getMapAttr(currentConfig,
                 "iplanet-am-auth-ldap-search-scope", "SUBTREE");
 
-            String authLevel = CollectionHelper.getMapAttr(currentConfig,
-                "iplanet-am-auth-ldap-auth-level");
-            if (authLevel != null) {
-                try {
-                    setAuthLevel(Integer.parseInt(authLevel));
-                } catch (Exception e) {
-                    debug.error("Unable to set auth level " + authLevel);
-                }
-            }
-
             SearchScope searchScope = SearchScope.WHOLE_SUBTREE;
 
             if (tmp.equalsIgnoreCase("OBJECT")) {
@@ -281,7 +271,6 @@ public class LDAP extends AMLoginModule {
                         + "\nisSecure-> " + isSecure
                         + "\nuseStartTLS-> " + useStartTLS
                         + "\ntrustAll-> " + sslTrustAll
-                        + "\nauthLevel-> " + authLevel
                         + "\nbeheraEnabled->" + beheraEnabled
                         + "\nprimaryServers-> " + primaryServers
                         + "\nsecondaryServers-> " + secondaryServers
