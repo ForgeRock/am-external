@@ -33,11 +33,7 @@
     <repositories>
         <repository>
             <id>forgerock-private-releases</id>
-            <name>ForgeRock Private Release Repository</name>
-            <url>http://maven.forgerock.org/repo/private-releases</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
+            <url>https://maven.forgerock.org/repo/private-releases</url>
         </repository>
-    </repositories>  
+    </repositories>
 </project>
