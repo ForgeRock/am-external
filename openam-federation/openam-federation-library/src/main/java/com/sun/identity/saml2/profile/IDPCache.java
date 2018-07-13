@@ -24,7 +24,7 @@
  *
  * $Id: IDPCache.java,v 1.18 2009/05/14 17:23:45 exu Exp $
  *
- * Portions Copyrighted 2010-2015 ForgeRock AS.
+ * Portions Copyrighted 2010-2016 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -225,8 +225,16 @@ public class IDPCache {
       */
     public static PeriodicCleanUpMap proxySPLogoutReqCache =
         new PeriodicCleanUpMap(
-        SPCache.interval * 1000, SPCache.interval * 1000); 
-    
+        SPCache.interval * 1000, SPCache.interval * 1000);
+
+    /**
+     * Cache to save LogoutRequests by their ID for later retrieval.
+     * key: ID attribute value of the LogoutRequest as String.
+     * value: LogoutRequest
+     */
+    public static PeriodicCleanUpMap logoutRequestById = new PeriodicCleanUpMap(SPCache.interval * 1000,
+            SPCache.interval * 1000);
+
     /** 
       * Cache saves the SOAPMessage created by proxy IDP to the original SP
       * key   : requestID (String) 
@@ -235,7 +243,7 @@ public class IDPCache {
     public static PeriodicCleanUpMap SOAPMessageByLogoutRequestID =
          new PeriodicCleanUpMap(
          SPCache.interval * 1000, SPCache.interval * 1000); 
-    
+
     /**
       * Cache saves the SAML2 Session Partner's providerID 
       * key   : sessionId (String)
@@ -259,7 +267,7 @@ public class IDPCache {
      * value: Map containing AuthnContext class ref as Key and 
      *            Set of auth schemes as value.
      */
-    public static Hashtable classRefSchemesHash = new Hashtable();
+    public static Hashtable<String, Map<String, Set<String>>> classRefSchemesHash = new Hashtable<>();
 
     /**
      * Hashtable saves AuthnContextClassRef to AuthLevel mapping
@@ -267,14 +275,14 @@ public class IDPCache {
      * value: Map containing AuthnContext class ref as Key and 
      *            authLevel as value.
      */
-    public static Hashtable classRefLevelHash = new Hashtable();
+    public static Hashtable<String, Map<String, Integer>> classRefLevelHash = new Hashtable<>();
 
     /**
      * Hashtable saves AuthLevel to AuthnContextClassRef mapping
      * key  : hostEntityID + "|" + realmName
      * value: String default AuthnContext Class Ref.
      */
-    public static Hashtable defaultClassRefHash = new Hashtable();
+    public static Hashtable<String, String> defaultClassRefHash = new Hashtable<>();
 
     /**
      * Hashtable saves NameID format to user profile attribute mapping

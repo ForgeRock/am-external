@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2016 ForgeRock AS.
+ * Copyright 2011-2017 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -27,7 +27,9 @@
 package org.forgerock.openam.authentication.modules.oauth2;
 
 import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.*;
+import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
+import com.iplanet.am.util.SystemProperties;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.client.AuthClientUtils;
 import com.sun.identity.authentication.service.AuthUtils;
@@ -42,6 +44,7 @@ import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.encode.CookieUtils;
 import com.sun.identity.shared.encode.URLEncDec;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,12 +56,10 @@ import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -66,11 +67,14 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.TimeUnit;
+
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.forgerock.guice.core.InjectorHolder;
@@ -88,8 +92,8 @@ import org.forgerock.openam.tokens.CoreTokenField;
 import org.forgerock.openam.tokens.TokenType;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.JsonValueBuilder;
+import org.forgerock.openam.utils.TimeUtils;
 import org.forgerock.openam.xui.XUIState;
-import org.forgerock.util.encode.Base64url;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.owasp.esapi.ESAPI;
@@ -110,6 +114,10 @@ public class OAuth extends AMLoginModule {
     String userPassword = "";
     String proxyURL = "";
     private final CTSPersistentStore ctsStore;
+
+    /* default idle time for invalid sessions */
+    private static final long maxDefaultIdleTime =
+            SystemProperties.getAsLong("com.iplanet.am.session.invalidsessionmaxtime", 3);
 
     public OAuth() {
         OAuthUtil.debugMessage("OAuth()");
@@ -198,6 +206,10 @@ public class OAuth extends AMLoginModule {
                 Token csrfStateToken = new Token(csrfStateTokenId, TokenType.GENERIC);
                 csrfStateToken.setAttribute(CoreTokenField.STRING_ONE, csrfState);
 
+                long expiryTime = currentTimeMillis() + TimeUnit.MINUTES.toMillis(maxDefaultIdleTime);
+                Calendar expiryTimeStamp = TimeUtils.fromUnixTime(expiryTime, TimeUnit.MILLISECONDS);
+                csrfStateToken.setExpiryTimestamp(expiryTimeStamp);
+
                 try {
                     ctsStore.create(csrfStateToken);
                 } catch (CoreTokenException e) {
@@ -227,9 +239,6 @@ public class OAuth extends AMLoginModule {
 
                 // The Proxy is used to return with a POST to the module
                 setUserSessionProperty(ISAuthConstants.FULL_LOGIN_URL, originalUrl.toString());
-
-                setUserSessionProperty(SESSION_LOGOUT_BEHAVIOUR,
-                        config.getLogoutBhaviour());
 
                 String authServiceUrl = config.getAuthServiceUrl(proxyURL, csrfState);
                 OAuthUtil.debugMessage("OAuth.process(): New RedirectURL=" + authServiceUrl);
@@ -265,6 +274,21 @@ public class OAuth extends AMLoginModule {
                     throw new AuthLoginException(BUNDLE_NAME, "noState", null);
                 }
 
+                if (config.isMixUpMitigationEnabled()) {
+                    String clientId = request.getParameter("client_id");
+                    if (!config.getClientId().equals(clientId)) {
+                        debug.warning("OAuth 2.0 mix-up mitigation is enabled, but the provided client_id '{}' does "
+                                + "not belong to this client '{}'", clientId, config.getClientId());
+                        throw new AuthLoginException(BUNDLE_NAME, "incorrectClientId", null);
+                    }
+                    String issuer = request.getParameter("iss");
+                    if (issuer == null || !issuer.equals(jwtHandlerConfig.getConfiguredIssuer())) {
+                        debug.warning("OAuth 2.0 mix-up mitigation is enabled, but the provided iss '{}' does "
+                                + "not match the issuer in the client configuration", issuer);
+                        throw new AuthLoginException(BUNDLE_NAME, "incorrectIssuer", null);
+                    }
+                }
+
                 try {
                     Token csrfStateToken = ctsStore.read(OAuthUtil.findCookie(request, NONCE_TOKEN_ID));
                     ctsStore.deleteAsync(csrfStateToken);
@@ -286,7 +310,7 @@ public class OAuth extends AMLoginModule {
                     OAuthUtil.debugMessage("OAuth.process(): code parameter: " + code);
 
                     String tokenSvcResponse = getContentUsingPOST(config.getTokenServiceUrl(), null, null,
-                            config.getTokenServicePOSTparameters(code, proxyURL));
+                            config.getTokenServicePOSTparameters(code, proxyURL, csrfState));
                     OAuthUtil.debugMessage("OAuth.process(): token=" + tokenSvcResponse);
 
                     JwtClaimsSet jwtClaims = null;
@@ -322,6 +346,9 @@ public class OAuth extends AMLoginModule {
                     if (realm == null) {
                         realm = "/";
                     }
+
+                    setUserSessionProperty(SESSION_LOGOUT_BEHAVIOUR,
+                            config.getLogoutBhaviour());
 
                     AccountProvider accountProvider = instantiateAccountProvider();
                     AttributeMapper accountAttributeMapper = instantiateAccountMapper();
@@ -778,7 +805,7 @@ public class OAuth extends AMLoginModule {
         try {
             OAuthUtil.debugMessage("OAuth.getContentStreamByPOST: URL = " + serviceUrl);
             OAuthUtil.debugMessage("OAuth.getContentStreamByPOST: GET parameters = " + getParameters);
-            OAuthUtil.debugMessage("OAuth.getContentStreamByPOST: POST parameters = " + postParameters);
+            OAuthUtil.debugMessage("OAuth.getContentStreamByPOST: POST parameters = " + stripClientSecretFromParams(postParameters));
 
             if (!CollectionUtils.isEmpty(getParameters)) {
                 if (!serviceUrl.contains("?")) {
@@ -911,6 +938,19 @@ public class OAuth extends AMLoginModule {
         }
 
         return result.toString();
+    }
+
+    private Map<String, String> stripClientSecretFromParams(Map<String, String> params) {
+        Map<String, String> resultMap = new HashMap<String, String>();
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            String key = entry.getKey();
+            if (key.equals(OAuth2Constants.Params.CLIENT_SECRET)) {
+                resultMap.put(key, "CLIENT_SECRET");
+            } else {
+                resultMap.put(key, entry.getValue());
+            }
+        }
+        return resultMap;
     }
 
 }

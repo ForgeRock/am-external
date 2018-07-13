@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Portions copyright 2011-2016 ForgeRock AS.
+ * Portions copyright 2011-2017 ForgeRock AS.
  */
 define([
     "jquery",
@@ -24,39 +24,34 @@ define([
     "org/forgerock/openam/ui/common/util/RealmHelper",
     "org/forgerock/commons/ui/common/util/URIUtils",
     "org/forgerock/openam/ui/user/login/tokens/SessionToken",
-    "org/forgerock/openam/ui/user/login/tokens/AuthenticationToken"
+    "org/forgerock/openam/ui/user/login/tokens/AuthenticationToken",
+    "org/forgerock/openam/ui/common/util/uri/query"
 ], ($, _, AbstractDelegate, Configuration, Constants, EventManager, Messages, RealmHelper, URIUtils,
-    SessionToken, AuthenticationToken) => {
+    SessionToken, AuthenticationToken, query) => {
     const obj = new AbstractDelegate(`${Constants.host}/${Constants.context}/json/`);
     let requirementList = [];
     // to be used to keep track of the attributes associated with whatever requirementList contains
     let knownAuth = {};
-    function getURLParameters () {
-        const query = URIUtils.getCurrentCompositeQueryString();
-        const urlParams = _.object(_.map(query.split("&"), (pair) => pair.split("=", 2)));
+
+    function handleFragmentParameters (params) {
 
         if (Configuration.globalData.auth.urlParams) {
-            _.extend(urlParams, Configuration.globalData.auth.urlParams);
+            _.extend(params, Configuration.globalData.auth.urlParams);
         }
 
         if (RealmHelper.getOverrideRealm()) {
-            urlParams.realm = RealmHelper.getOverrideRealm();
+            params.realm = RealmHelper.getOverrideRealm();
         }
 
         // In case user has logged in already update session
         const sessionToken = SessionToken.get();
         if (sessionToken) {
-            urlParams.sessionUpgradeSSOTokenId = sessionToken;
+            params.sessionUpgradeSSOTokenId = sessionToken;
         }
 
-        return urlParams;
+        return params;
     }
-    function urlParamsFromObject (params) {
-        if (_.isEmpty(params)) {
-            return "";
-        }
-        return _.map(params, (value, key) => `${key}=${value}`).join("&");
-    }
+
     function addQueryStringToUrl (url, queryString) {
         if (_.isEmpty(queryString)) {
             return url;
@@ -67,10 +62,11 @@ define([
     }
     obj.begin = function (options) {
         knownAuth = _.clone(Configuration.globalData.auth);
+        const fragmentParams = URIUtils.getCurrentFragmentQueryString();
         const urlAndParams = addQueryStringToUrl(
             RealmHelper.decorateURIWithSubRealm("__subrealm__/authenticate"),
-            urlParamsFromObject(getURLParameters()
-        ));
+            query.urlParamsFromObject(handleFragmentParameters(query.parseParameters(fragmentParams)))
+        );
         const serviceCall = {
             type: "POST",
             headers: { "Accept-API-Version": "protocol=1.0,resource=2.0" },
@@ -138,10 +134,11 @@ define([
                 window.location.href = errorBody.detail.failureUrl;
             }
         };
+        const fragmentParams = URIUtils.getCurrentFragmentQueryString();
         const urlAndParams = addQueryStringToUrl(
             RealmHelper.decorateURIWithRealm("__subrealm__/authenticate"),
-            urlParamsFromObject(getURLParameters()
-        ));
+            query.urlParamsFromObject(handleFragmentParameters(query.parseParameters(fragmentParams)))
+        );
         const serviceCall = {
             type: "POST",
             headers: { "Accept-API-Version": "protocol=1.0,resource=2.0" },
@@ -244,16 +241,6 @@ define([
         } else {
             return $.Deferred().resolve(requirementList[requirementList.length - 1]);
         }
-    };
-    obj.setGoToUrl = function (tokenId, urlGoTo) {
-        return obj.serviceCall({
-            type: "POST",
-            headers: { "Accept-API-Version": "protocol=1.0,resource=2.0" },
-            data: JSON.stringify({ "goto": urlGoTo }),
-            url: "",
-            serviceUrl: `${Constants.host}/${Constants.context}/json/users?_action=validateGoto`,
-            errorsHandlers: { "Bad Request": { status: "400" } }
-        });
     };
     return obj;
 });

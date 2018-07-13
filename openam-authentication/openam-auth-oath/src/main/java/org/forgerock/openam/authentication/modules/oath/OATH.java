@@ -20,6 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  *
+ * Copyright 2012-2017 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 
@@ -39,6 +40,7 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdSearchControl;
+import com.sun.identity.idm.IdSearchOpModifier;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdSearchResults;
 import com.sun.identity.idm.IdType;
@@ -124,6 +126,9 @@ public class OATH extends AMLoginModule {
 
     protected String amAuthOATH = null;
     private final int START_STATE = 2;
+
+    // support for search with alias name
+    private Set<String> userSearchAttributes = Collections.emptySet();
 
     /**
      * Standard constructor sets-up the debug logging module.
@@ -225,6 +230,12 @@ public class OATH extends AMLoginModule {
             userName = (String) sharedState.get(getUserKey());
         } catch (Exception e) {
             debug.error("OATH.init(): Unable to get username: ", e);
+        }
+
+        try {
+            userSearchAttributes = getUserAliasList();
+        } catch (final AuthLoginException ale) {
+            debug.warning("OATH.init(): unable to retrieve search attributes", ale);
         }
     }
 
@@ -336,6 +347,7 @@ public class OATH extends AMLoginModule {
         authLevel = null;
         amAuthOATH = null;
         loginTimeAttrName = null;
+        userSearchAttributes = Collections.emptySet();
     }
 
     /**
@@ -642,6 +654,16 @@ public class OATH extends AMLoginModule {
         try {
             idsc.setMaxResults(0);
             IdSearchResults searchResults = amIdRepo.searchIdentities(IdType.USER, uName, idsc);
+
+            if (searchResults.getSearchResults().isEmpty() && !userSearchAttributes.isEmpty()) {
+                debug.message("OATH.getIdentity: searching user identity with alternative attributes {} ",
+                        userSearchAttributes);
+                final Map<String, Set<String>> searchAVP = CollectionUtils.toAvPairMap(userSearchAttributes, userName);
+                idsc.setSearchModifiers(IdSearchOpModifier.OR, searchAVP);
+                //workaround as data store always adds 'user-naming-attribute' to searchfilter
+                searchResults = amIdRepo.searchIdentities(IdType.USER, "*", idsc);
+            }
+
             if (searchResults != null) {
                 results = searchResults.getSearchResults();
             }
