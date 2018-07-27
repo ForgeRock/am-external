@@ -25,7 +25,6 @@ define([
     "org/forgerock/commons/ui/common/main/Router",
     "org/forgerock/commons/ui/common/util/URIUtils",
     "org/forgerock/commons/ui/common/main/ValidatorsManager",
-    "templates/user/AnonymousProcessBaseTemplate",
     "templates/user/AnonymousProcessWrapper"
 ], function($, _, form2js,
     AbstractView,
@@ -35,7 +34,6 @@ define([
     Router,
     URIUtils,
     ValidatorsManager,
-    AnonymousProcessBaseTemplate,
     AnonymousProcessWrapper) {
 
     function getCurrentFragmentParamString () {
@@ -94,7 +92,7 @@ define([
      */
 
     var AnonymousProcessView = AbstractView.extend({
-        baseTemplate: AnonymousProcessBaseTemplate,
+        baseTemplate: "user/AnonymousProcessBaseTemplate",
         template: AnonymousProcessWrapper,
         events: {
             "submit form": "formSubmit",

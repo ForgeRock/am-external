@@ -21,15 +21,14 @@ define([
     "org/forgerock/commons/ui/common/main/EventManager",
     "org/forgerock/openam/ui/user/login/RESTLoginHelper",
     "org/forgerock/openam/ui/user/login/removeOAuth2Goto",
-    "org/forgerock/openam/ui/user/login/navigateThenRefresh",
-    "templates/common/LoginBaseTemplate"
+    "org/forgerock/openam/ui/user/login/navigateThenRefresh"
 ], (i18next, AbstractView, Constants, EventManager, RESTLoginHelper, removeOAuth2Goto,
-    navigateThenRefresh, LoginBaseTemplate) => {
+    navigateThenRefresh) => {
     removeOAuth2Goto = removeOAuth2Goto.default;
 
     const SessionExpiredView = AbstractView.extend({
         template: "openam/ReturnToLoginTemplate",
-        baseTemplate: LoginBaseTemplate,
+        baseTemplate: "common/LoginBaseTemplate",
         data: {},
         events: {
             "click [data-return-to-login-page]" : navigateThenRefresh

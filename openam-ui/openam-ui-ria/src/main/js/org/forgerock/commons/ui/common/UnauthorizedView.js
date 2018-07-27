@@ -18,12 +18,11 @@ define([
     "org/forgerock/commons/ui/common/main/AbstractView",
     "org/forgerock/commons/ui/common/main/Configuration",
     "org/forgerock/commons/ui/common/util/URIUtils",
-    "templates/common/UnauthorizedTemplate",
-    "templates/common/LoginBaseTemplate"
-], function(AbstractView, Configuration, URIUtils, UnauthorizedTemplate, LoginBaseTemplate) {
+    "templates/common/UnauthorizedTemplate"
+], function(AbstractView, Configuration, URIUtils, UnauthorizedTemplate) {
     var UnauthorizedView = AbstractView.extend({
         template: UnauthorizedTemplate,
-        baseTemplate: LoginBaseTemplate,
+        baseTemplate: "common/LoginBaseTemplate",
         events: {
             "click #goBack": function() {
                 window.history.go(-1);

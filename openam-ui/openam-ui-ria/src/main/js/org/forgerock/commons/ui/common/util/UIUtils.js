@@ -22,14 +22,15 @@ define([
     "bootstrap-dialog",
     "ThemeManager",
     "org/forgerock/commons/ui/common/main/Router",
-    "org/forgerock/openam/ui/common/util/ExternalLinks",
-], ($, _, Handlebars, i18next, BootstrapDialog, ThemeManager, Router, ExternalLinks) => {
+    "org/forgerock/openam/ui/common/util/es6/unwrapDefaultExport",
+    "org/forgerock/openam/ui/common/util/ExternalLinks"
+], ($, _, Handlebars, i18next, BootstrapDialog, ThemeManager, Router, unwrapDefaultExport, ExternalLinks) => {
     /**
      * @exports org/forgerock/commons/ui/common/util/UIUtils
      */
     const obj = {
         configuration: {
-            partialUrls: {
+            partialPaths: {
                 "form/_JSONSchemaFooter": "form/_JSONSchemaFooter",
                 "form/_AutoCompleteOffFix": "form/_AutoCompleteOffFix",
                 "form/_Button": "form/_Button",
@@ -87,20 +88,24 @@ define([
     };
 
     /**
-     * Loads all the Handlebars partials defined in the "partialUrls" attribute of this module's configuration
+     * Loads all the Handlebars partials defined in the "partialPaths" attribute of this module's configuration
      */
     obj.preloadInitialPartials = function () {
         ThemeManager.getTheme().then((theme) => {
-            _.each(obj.configuration.partialUrls, (partialUrl, name) => {
+            _.each(obj.configuration.partialPaths, (partialPath, name) => {
                 const registerPartial = (partial) => Handlebars.registerPartial(name, partial);
-                const importDefaultPartial = (url) => import(`partials/${url}.html`);
-
+                const importDefaultPartial = (path) =>
+                    import(`partials/${path}`).then(unwrapDefaultExport.default);
+                const importThemePartial = (themePath, partialPath) =>
+                    import(`themes/${themePath}partials/${partialPath}`).then(unwrapDefaultExport.default);
+    
                 if (theme.path.length > 0) {
-                    import(`themes/${theme.path}partials/${partialUrl}.html`).then(registerPartial, () => {
-                        importDefaultPartial(partialUrl).then(registerPartial);
+                    return importThemePartial(theme.path, partialPath).then(registerPartial, () => {
+                        console.log(`Loading custom partial "${partialPath}" failed. Falling back to default.`);
+                        importDefaultPartial(partialPath).then(registerPartial);
                     });
                 } else {
-                    importDefaultPartial(partialUrl).then(registerPartial);
+                    importDefaultPartial(partialPath).then(registerPartial);
                 }
             });
         });

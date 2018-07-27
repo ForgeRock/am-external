@@ -16,12 +16,11 @@
 
 define([
     "org/forgerock/commons/ui/common/main/AbstractView",
-    "org/forgerock/openam/ui/user/uma/views/share/CommonShare",
-    "templates/common/DefaultBaseTemplate"
-], (AbstractView, CommonShare, DefaultBaseTemplate) => {
+    "org/forgerock/openam/ui/user/uma/views/share/CommonShare"
+], (AbstractView, CommonShare) => {
     var BaseShare = AbstractView.extend({
         template: "user/uma/views/share/BaseShare",
-        baseTemplate: DefaultBaseTemplate,
+        baseTemplate: "common/DefaultBaseTemplate",
         render (args, callback) {
             var self = this;
             self.shareView = new CommonShare();

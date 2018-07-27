@@ -16,12 +16,11 @@
 
 define([
     "org/forgerock/commons/ui/common/main/AbstractView",
-    "templates/common/404",
-    "templates/common/LoginBaseTemplate"
-], (AbstractView, FourZeroFour, LoginBaseTemplate) => {
+    "templates/common/404"
+], (AbstractView, FourZeroFour) => {
     const NotFoundView = AbstractView.extend({
         template: FourZeroFour,
-        baseTemplate: LoginBaseTemplate
+        baseTemplate: "common/LoginBaseTemplate",
     });
 
     return new NotFoundView();

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
 
 /**
@@ -19,16 +19,17 @@
   */
 import AbstractDelegate from "org/forgerock/commons/ui/common/main/AbstractDelegate";
 import Constants from "org/forgerock/commons/ui/common/util/Constants";
+import fetchUrl from "org/forgerock/openam/ui/common/services/fetchUrl";
 
-const obj = new AbstractDelegate(`${Constants.host}${Constants.context}/json/users`);
+const obj = new AbstractDelegate(`${Constants.host}${Constants.context}/json`);
 
 const validateGotoService = (goto) => {
     return obj.serviceCall({
         type: "POST",
         headers: { "Accept-API-Version": "protocol=1.0,resource=2.0" },
         data: JSON.stringify({ "goto": decodeURIComponent(goto) }),
-        url: "?_action=validateGoto",
-        errorsHandlers: { "Bad Request": { status: 400 }, "Unauthorized" : { status: 401 } }
+        url: fetchUrl("/users?_action=validateGoto"),
+        errorsHandlers: { "Bad Request": { status: 400 } }
     });
 };
 

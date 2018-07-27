@@ -1428,9 +1428,9 @@
         "sessions": {
             "search": {
                 "intro": "Find sessions by entering a username.",
-                "noResults": "No users found",
                 "placeholder": "Username",
                 "searchPrompt": "Type to search",
+                "searchForPrompt": "Search for \"__label__\"",
                 "title": "Username"
             },
             "table": {

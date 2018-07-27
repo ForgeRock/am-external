@@ -25,10 +25,9 @@ define([
     "org/forgerock/openam/ui/common/util/uri/getCurrentFragmentParamString",
     "org/forgerock/openam/ui/user/login/logout",
     "org/forgerock/openam/ui/user/services/SessionService",
-    "templates/common/LoginBaseTemplate",
     "partials/alerts/_Alert"
 ], (i18next, AbstractView, EventManager, Configuration, Router, Constants, isRealmChanged,
-    getCurrentFragmentParamString, logout, SessionService, LoginBaseTemplate, AlertPartial) => {
+    getCurrentFragmentParamString, logout, SessionService, AlertPartial) => {
     isRealmChanged = isRealmChanged.default;
     logout = logout.default;
     getCurrentFragmentParamString = getCurrentFragmentParamString.default;
@@ -47,7 +46,7 @@ define([
 
     const SwitchRealmView = AbstractView.extend({
         template: "openam/SwitchRealmsTemplate",
-        baseTemplate: LoginBaseTemplate,
+        baseTemplate: "common/LoginBaseTemplate",
         data: {},
         events: {
             "click [data-switch-realms]" : "onSwitchRealmsHandler"

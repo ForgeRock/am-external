@@ -21,11 +21,11 @@ define([
     "react",
     "org/forgerock/commons/ui/common/main/AbstractView",
     "org/forgerock/commons/ui/common/util/URIUtils",
-    "org/forgerock/openam/ui/common/util/es6/normaliseModule",
+    "org/forgerock/openam/ui/common/util/es6/unwrapDefaultExport",
     "templates/admin/views/common/navigation/TreeNavigationTemplate",
     "partials/breadcrumb/_BreadcrumbTitle",
     "templates/admin/views/common/navigation/_TreeNavigationLeaf"
-], ($, _, ReactDOM, React, AbstractView, URIUtils, normaliseModule, TreeNavigationTemplate, BreadcrumbTitlePartial,
+], ($, _, ReactDOM, React, AbstractView, URIUtils, unwrapDefaultExport, TreeNavigationTemplate, BreadcrumbTitlePartial,
     TreeNavigationLeafPartial) => {
     const contentElementId = "#sidePageContent";
     const isBackbonePage = (view) => view.prototype instanceof AbstractView;
@@ -102,7 +102,7 @@ define([
             }
         },
         renderPage (Module, args, callback) {
-            Module = normaliseModule.default(Module);
+            Module = unwrapDefaultExport.default(Module);
 
             if (isBackbonePage(Module)) {
                 const page = new Module();

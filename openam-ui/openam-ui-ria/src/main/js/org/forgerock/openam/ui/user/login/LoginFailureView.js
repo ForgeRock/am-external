@@ -18,12 +18,11 @@ define([
     "jquery",
     "org/forgerock/commons/ui/common/main/AbstractView",
     "org/forgerock/commons/ui/common/util/URIUtils",
-    "org/forgerock/openam/ui/user/login/tokens/AuthenticationToken",
-    "templates/common/LoginBaseTemplate"
-], ($, AbstractView, URIUtils, AuthenticationToken, LoginBaseTemplate) => {
+    "org/forgerock/openam/ui/user/login/tokens/AuthenticationToken"
+], ($, AbstractView, URIUtils, AuthenticationToken) => {
     const LoginFailureView = AbstractView.extend({
         template: "openam/ReturnToLoginTemplate",
-        baseTemplate: LoginBaseTemplate,
+        baseTemplate: "common/LoginBaseTemplate",
         data: {},
         render () {
             AuthenticationToken.remove();

@@ -17,15 +17,14 @@
 define([
     "org/forgerock/commons/ui/common/main/AbstractView",
     "org/forgerock/commons/ui/common/main/Configuration",
-    "templates/common/error/403",
-    "templates/common/LoginBaseTemplate"
-], (AbstractView, Configuration, ForbiddenErrorTemplate, LoginBaseTemplate) => {
+    "templates/common/error/403"
+], (AbstractView, Configuration, ForbiddenErrorTemplate) => {
     var ForbiddenView = AbstractView.extend({
         template: ForbiddenErrorTemplate,
         data: {},
         render () {
             if (!Configuration.loggedUser) {
-                this.baseTemplate = LoginBaseTemplate;
+                this.baseTemplate = "common/LoginBaseTemplate";
             }
             this.parentRender();
         }

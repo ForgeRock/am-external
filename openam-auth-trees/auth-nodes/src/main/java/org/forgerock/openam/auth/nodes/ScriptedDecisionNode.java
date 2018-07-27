@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import javax.inject.Named;
@@ -167,9 +168,9 @@ public class ScriptedDecisionNode implements Node {
      * @return the headers in modifiable collections.
      */
     private Map<String, List<String>> convertHeadersToModifiableObjects(ListMultimap<String, String> input) {
-        Map<String, List<String>> mapCopy = new HashMap<>();
+        Map<String, List<String>> mapCopy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         for (String key : input.keySet()) {
-            mapCopy.put(key, new ArrayList(input.get(key)));
+            mapCopy.put(key, new ArrayList<>(input.get(key)));
         }
         return mapCopy;
     }

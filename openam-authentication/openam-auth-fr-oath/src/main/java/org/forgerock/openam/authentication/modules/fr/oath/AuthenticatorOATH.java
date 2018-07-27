@@ -390,8 +390,13 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
                     return LOGIN_NO_DEVICE;
                 }
             } else {
-                replaceHeader(LOGIN_SAVED_DEVICE, MODULE_NAME);
-                return LOGIN_SAVED_DEVICE;
+                if (isSkippable) {
+                    replaceHeader(LOGIN_OPT_DEVICE, MODULE_NAME);
+                    return LOGIN_OPT_DEVICE;
+                } else {
+                    replaceHeader(LOGIN_SAVED_DEVICE, MODULE_NAME);
+                    return LOGIN_SAVED_DEVICE;
+                }
             }
         }
     }

@@ -26,9 +26,10 @@ define([
     "org/forgerock/commons/ui/common/util/UIUtils",
     "org/forgerock/commons/ui/common/main/ValidatorsManager",
     "templates/common/DefaultBaseTemplate",
-    "handlebars-template-loader/runtime"
-], function($, _, Backbone, Configuration, Constants, EventManager, Router, ThemeManager, UIUtils,
-            ValidatorsManager, DefaultBaseTemplate, Handlebars) {
+    "handlebars-template-loader/runtime",
+    "org/forgerock/openam/ui/common/util/es6/unwrapDefaultExport"
+], ($, _, Backbone, Configuration, Constants, EventManager, Router, ThemeManager, UIUtils,
+    ValidatorsManager, DefaultBaseTemplate, Handlebars, unwrapDefaultExport) => {
     /**
      * @exports org/forgerock/commons/ui/common/main/AbstractView
      */
@@ -91,27 +92,36 @@ define([
         parentRender: function(callback) {
             this.callback = callback;
 
-            var _this = this,
-                needsNewBaseTemplate = function () {
-                    return (Configuration.baseTemplate !== _this.baseTemplate && !_this.noBaseTemplate);
-                };
-            EventManager.registerListener(Constants.EVENT_REQUEST_RESEND_REQUIRED, function () {
-                _this.unlock();
+            const needsNewBaseTemplate = () => {
+                return (Configuration.baseTemplate !== this.baseTemplate && !this.noBaseTemplate);
+            };
+            EventManager.registerListener(Constants.EVENT_REQUEST_RESEND_REQUIRED, () => {
+                this.unlock();
             });
-
-            ThemeManager.getTheme().then(function(theme){
-                _this.data.theme = theme;
-
+    
+            ThemeManager.getTheme().then((theme) => {
+                this.data.theme = theme;
+    
                 if (needsNewBaseTemplate()) {
-                    UIUtils.renderTemplate(
-                        _this.baseTemplate,
-                        $("#wrapper"),
-                        _.extend({}, Configuration.globalData, _this.data),
-                        _.bind(_this.loadTemplate, _this),
-                        "replace",
-                        needsNewBaseTemplate);
+                    const renderBaseTemplate = (baseTemplate) => {
+                        UIUtils.renderTemplate(
+                            baseTemplate,
+                            $("#wrapper"),
+                            _.extend({}, Configuration.globalData, this.data),
+                            _.bind(this.loadTemplate, this),
+                            "replace",
+                            needsNewBaseTemplate);
+                    };
+
+                    this.baseTemplate = unwrapDefaultExport.default(this.baseTemplate);
+
+                    if (_.isFunction(this.baseTemplate)) {
+                        renderBaseTemplate(this.baseTemplate);
+                    } else {
+                        this.loadThemedTemplate(this.baseTemplate).then(renderBaseTemplate);
+                    }
                 } else {
-                    _this.loadTemplate();
+                    this.loadTemplate();
                 }
             });
         },
@@ -170,12 +180,16 @@ define([
             }
         },
 
-        loadThemedTemplate: function(path) {
+        loadThemedTemplate (path) {
             return ThemeManager.getTheme().then((theme) => {
-                const importDefaultTemplate = (url) => import(`templates/${url}`);
+                const importDefaultTemplate = (path) =>
+                    import(`templates/${path}`).then(unwrapDefaultExport.default);
+                const importThemeTemplate = (themePath, templatePath) =>
+                    import(`themes/${themePath}templates/${templatePath}`).then(unwrapDefaultExport.default);
 
                 if (theme.path.length > 0) {
-                    return import(`themes/${theme.path}templates/${path}`).catch(() => {
+                    return importThemeTemplate(theme.path, path).catch(() => {
+                        console.log(`Loading custom template "${path}" failed. Falling back to default.`);
                         return importDefaultTemplate(path);
                     });
                 } else {

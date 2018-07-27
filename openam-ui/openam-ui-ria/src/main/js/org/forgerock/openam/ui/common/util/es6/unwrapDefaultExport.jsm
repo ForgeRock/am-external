@@ -11,25 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2018 ForgeRock AS.
  */
 
-define([
-    "org/forgerock/commons/ui/common/main/AbstractView",
-    "org/forgerock/commons/ui/common/util/CookieHelper",
-    "templates/common/EnableCookiesTemplate"
-], (AbstractView, cookieHelper, EnableCookiesTemplate) => {
-    const EnableCookiesView = AbstractView.extend({
-        template: EnableCookiesTemplate,
-        baseTemplate: "common/LoginBaseTemplate",
-        render () {
-            if (cookieHelper.cookiesEnabled()) {
-                location.href = "#login/";
-            } else {
-                this.parentRender();
-            }
-        }
-    });
+/**
+ * Unwraps a ES6 module, returning the default export, if it existed.
+ * @param {Object} module Module to unwrap
+ * @returns {Object} Module, possibly unwrapped
+ */
+export default function unwrapDefaultExport (module) {
+    if (module && module.default) {
+        module = module.default;
+    }
 
-    return new EnableCookiesView();
-});
+    return module;
+}

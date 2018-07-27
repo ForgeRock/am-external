@@ -36,12 +36,11 @@ define([
     "org/forgerock/openam/ui/common/util/uri/getCurrentFragmentParamString",
     "org/forgerock/openam/ui/common/util/uri/query",
     "org/forgerock/openam/ui/user/login/gotoUrl",
-    "templates/common/LoginBaseTemplate",
     "i18next",
     "config/process/processLoginRequest"
 ], ($, _, AbstractView, AuthNService, BootstrapDialog, Configuration, Constants, CookieHelper, EventManager, Form2js,
     Handlebars, Messages, RESTLoginHelper, isRealmChanged, Router, UIUtils, URIUtils, logout,
-    getCurrentFragmentParamString, query, gotoUrl, LoginBaseTemplate, i18next, processLoginRequest) => {
+    getCurrentFragmentParamString, query, gotoUrl, i18next, processLoginRequest) => {
     isRealmChanged = isRealmChanged.default;
     getCurrentFragmentParamString = getCurrentFragmentParamString.default;
 
@@ -114,7 +113,7 @@ define([
 
     const LoginView = AbstractView.extend({
         template: "openam/RESTLoginTemplate",
-        baseTemplate: LoginBaseTemplate,
+        baseTemplate: "common/LoginBaseTemplate",
         data: {},
         events: {
             "click input[type=submit]": "formSubmit"
