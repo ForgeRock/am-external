@@ -17,36 +17,41 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    
+    <!-- Parent Project -->
+    <parent>
+        <groupId>org.forgerock.am</groupId>
+        <artifactId>openam</artifactId>
+        <version>6.0.0.1</version>
+    </parent>
 
-    <!-- Component Definition -->
-    <name>OpenAM External</name>
-    <description>OpenAM Extension Points and Samples</description>
+    <artifactId>openam-datastore</artifactId>
+    <packaging>jar</packaging>
+    <name>OpenAM User Data Store</name>
+    <description>OpenAM User Data Store</description>
 
-    <groupId>org.forgerock.am</groupId>
-    <artifactId>openam-external</artifactId>
-<version>6.0.0.1</version>    
-    <packaging>pom</packaging>
-
-    <!-- Child Modules -->
-    <modules>
-        <module>openam-ui</module>
-        <module>openam-authentication</module>
-        <module>openam-samples</module>
-        <module>openam-auth-trees</module>
-        <module>openam-push-notification</module>
-        <module>openam-radius</module>
-        <module>openam-datastore</module>
-    </modules>
-
+    <dependencies>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-ldap-utils</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-api-mockito2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-module-testng</artifactId>
+        </dependency>
+    </dependencies>
     <repositories>
         <repository>
             <id>forgerock-private-releases</id>
-            <name>ForgeRock Private Release Repository</name>
-            <url>http://maven.forgerock.org/repo/private-releases</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
+            <url>https://maven.forgerock.org/repo/private-releases</url>
         </repository>
-    </repositories>    
+    </repositories>
 </project>
-
