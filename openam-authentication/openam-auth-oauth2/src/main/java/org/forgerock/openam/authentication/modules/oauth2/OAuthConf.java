@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2016 ForgeRock AS.
+ * Copyright 2011-2017 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -55,6 +55,7 @@ public class OAuthConf {
 
     static final String CLIENT = "genericHTML";
     private boolean openIDConnect;
+    private boolean mixUpMitigationEnabled;
     private String accountProvider;
     // private static Debug debug = Debug.getInstance("amAuth");
     private String clientId = null;
@@ -127,6 +128,7 @@ public class OAuthConf {
         smtpUserPassword = CollectionHelper.getMapAttr(config, KEY_SMTP_PASSWORD);
         smtpSSLEnabled = CollectionHelper.getMapAttr(config, KEY_SMTP_SSL_ENABLED);
         emailFrom = CollectionHelper.getMapAttr(config, KEY_EMAIL_FROM);
+        mixUpMitigationEnabled = CollectionHelper.getBooleanMapAttr(config, KEY_MIX_UP_MITIGATION_ENABLED, false);
         authLevel = CollectionHelper.getMapAttr(config, KEY_AUTH_LEVEL);
     }
 
@@ -267,7 +269,7 @@ public class OAuthConf {
         return tokenServiceUrl;
     }
 
-    public Map<String, String> getTokenServicePOSTparameters(String code, String authServiceURL)
+    public Map<String, String> getTokenServicePOSTparameters(String code, String authServiceURL, String csrfState)
             throws AuthLoginException {
 
         Map<String, String> postParameters = new HashMap<String, String>();
@@ -282,6 +284,7 @@ public class OAuthConf {
             postParameters.put(PARAM_REDIRECT_URI, OAuthUtil.oAuthEncode(authServiceURL));
             postParameters.put(PARAM_CLIENT_SECRET, clientSecret);
             postParameters.put(PARAM_CODE, OAuthUtil.oAuthEncode(code));
+            postParameters.put(PARAM_STATE, csrfState);
             postParameters.put(PARAM_GRANT_TYPE, OAuth2Constants.TokenEndpoint.AUTHORIZATION_CODE);
 
         } catch (UnsupportedEncodingException ex) {
@@ -349,4 +352,7 @@ public class OAuthConf {
         return openIDConnect;
     }
 
+    public boolean isMixUpMitigationEnabled() {
+        return mixUpMitigationEnabled;
+    }
 }

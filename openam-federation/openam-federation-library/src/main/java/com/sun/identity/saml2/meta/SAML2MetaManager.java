@@ -1128,8 +1128,7 @@ public class SAML2MetaManager {
      *                 configuration will be deleted.
      * @throws SAML2MetaException if unable to delete the entity descriptor.
      */
-    public void deleteEntityConfig(String realm, String entityId)
-        throws SAML2MetaException {
+    public void deleteEntityConfig(String realm, String entityId) throws SAML2MetaException {
 
         if (entityId == null) {
             return;
@@ -1173,48 +1172,36 @@ public class SAML2MetaManager {
     } 
 
     private void removeFromCircleOfTrust(String realm, String entityId) {
+        String classMethod = "SAML2MetaManager.removeFromCircleOfTrust:";
         try {
             EntityConfigElement eConfig = getEntityConfig(realm, entityId);
-            boolean isAffiliation = false;
-            if (getAffiliationDescriptor(realm, entityId) != null) {
-                isAffiliation = true;
-            }
+            boolean isAffiliation = getAffiliationDescriptor(realm, entityId) != null;
             if (debug.messageEnabled()) {
-                debug.message("SAML2MetaManager.removeFromCircleOfTrust is " 
-                    + entityId + " in realm " + realm 
-                    + " an affiliation? " + isAffiliation);
+                debug.message("{} is {} in realm {} an affiliation? {}", classMethod, entityId, realm, isAffiliation);
             }
 
             if (eConfig != null) {
-                List elist = null; 
+                BaseConfigType config;
                 if (isAffiliation) {
-                    AffiliationConfigElement affiliationCfgElm =
-                        getAffiliationConfig(realm, entityId);
-                    elist = new ArrayList();
-                    elist.add(affiliationCfgElm);
+                    config = getAffiliationConfig(realm, entityId);
                 } else {
-                    elist = eConfig.
-                        getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+                    // use first one to delete the entity from COT
+                    config = (BaseConfigType) eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig().get(0);
                 }
-
-                // use first one to delete the entity from COT
-                BaseConfigType config = (BaseConfigType)elist.iterator().next();
-                Map attr = SAML2MetaUtils.getAttributes(config);
-                List cotAttr = (List) attr.get(SAML2Constants.COT_LIST);
-                List cotList = new ArrayList(cotAttr);
-                if ((cotList != null) && !cotList.isEmpty()) {
-                    for (Iterator iter = cotList.iterator(); iter.hasNext();) {
-                        String cotName = ((String) iter.next()).trim();
-                        if ((cotName != null) && (!cotName.equals(""))) { 
-                            cotm.removeCircleOfTrustMember(realm, 
-                            cotName, COTConstants.SAML2, entityId, false);
-                        } 
-                    }               
+                List<String> cots = SAML2MetaUtils.getAttributes(config).get(SAML2Constants.COT_LIST);
+                for (String cot : cots) {
+                    if (StringUtils.isNotEmpty(cot)) {
+                        try {
+                            cotm.removeCircleOfTrustMember(realm, cot, COTConstants.SAML2, entityId, false);
+                        } catch (COTException e) {
+                            // Don't fail on invalid COTs in the extended metadata to avoid floating entities in the COT.
+                            debug.warning("{} Error while removing entity {} from COT {}.", classMethod, entityId, cot, e);
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
-            debug.error("SAML2MetaManager.removeFromCircleOfTrust:" +
-                "Error while removing entity" + entityId + "from COT.",e);
+            debug.error("{} Error while removing entity {} from COT.", classMethod, entityId, e);
         }
     }
 

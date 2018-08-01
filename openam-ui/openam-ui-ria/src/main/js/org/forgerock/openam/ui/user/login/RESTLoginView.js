@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Portions copyright 2011-2016 ForgeRock AS.
+ * Portions copyright 2011-2017 ForgeRock AS.
  */
 
 define([
@@ -31,16 +31,25 @@ define([
     "org/forgerock/openam/ui/user/login/RESTLoginHelper",
     "org/forgerock/openam/ui/common/util/RealmHelper",
     "org/forgerock/commons/ui/common/main/Router",
-    "org/forgerock/commons/ui/common/main/SessionManager",
     "org/forgerock/commons/ui/common/util/UIUtils",
-    "org/forgerock/commons/ui/common/util/URIUtils"
+    "org/forgerock/commons/ui/common/util/URIUtils",
+    "org/forgerock/openam/ui/common/util/uri/query",
+    "org/forgerock/openam/ui/user/login/gotoUrl"
+
 ], ($, _, AbstractView, AuthNService, BootstrapDialog, Configuration, Constants, CookieHelper, EventManager,
-            Form2js, Handlebars, i18nManager, Messages, RESTLoginHelper, RealmHelper, Router, SessionManager, UIUtils,
-            URIUtils) => {
+        Form2js, Handlebars, i18nManager, Messages, RESTLoginHelper, RealmHelper, Router, UIUtils,
+        URIUtils, query, gotoUrl) => {
+
+    function hasSsoRedirectOrPost (goto) {
+        let decodedGoto;
+        if (goto) {
+            decodedGoto = decodeURIComponent(goto);
+        }
+        return goto && (_.startsWith(decodedGoto, "/SSORedirect") || _.startsWith(decodedGoto, "/SSOPOST"));
+    }
 
     function populateTemplate () {
-        var self = this,
-            firstUserNamePassStage = Configuration.globalData.auth.currentStage === 1 && this.userNamePasswordStage;
+        var firstUserNamePassStage = Configuration.globalData.auth.currentStage === 1 && this.userNamePasswordStage;
 
         // self-service links should be shown only on the first stage of the username/password stages
         this.data.showForgotPassword = firstUserNamePassStage && Configuration.globalData.forgotPassword === "true";
@@ -76,7 +85,7 @@ define([
         }
     }
 
-    function routeToLoginUnavailable (urlParams) {
+    function routeToLoginUnavailable (fragmentParams) {
 
         // FIXME: If there has been a previous successful login, the global configuration and login defaults are
         // populated with the realm and subrealm. These are not being removed when the session ends, and so cause
@@ -90,7 +99,7 @@ define([
         // these are not always correct if there has been a previous successful login request.
         // FIXME: Remove any session specific properties from the UI upon session end.
         Router.routeTo(Router.configuration.routes.loginFailure, {
-            args: [urlParams],
+            args: [fragmentParams],
             trigger: true
         });
     }
@@ -113,6 +122,11 @@ define([
         return _.some(requirements.callbacks, "type", "ConfirmationCallback");
     }
 
+    function getFragmentParamString () {
+        const params = URIUtils.getCurrentFragmentQueryString();
+        return _.isEmpty(params) ? "" : `&${params}`;
+    }
+
     var LoginView = AbstractView.extend({
         template: "templates/openam/RESTLoginTemplate.html",
         genericTemplate: "templates/openam/RESTLoginTemplate.html",
@@ -125,38 +139,43 @@ define([
 
         handleExistingSession (requirements) {
 
+            const element = this.$el;
             const auth = Configuration.globalData.auth;
             // Set a variable for the realm passed into the browser so there can be a
             // check to make sure it is the same as the current user's realm
             auth.passedInRealm = RealmHelper.getRealm();
             // If we have a token, let's see who we are logged in as....
-            SessionManager.getLoggedUser((user) => {
+            RESTLoginHelper.getLoggedUser((user) => {
 
-                if (String(auth.passedInRealm).toLowerCase() === auth.subRealm.toLowerCase()) {
+                if (String(Configuration.globalData.realm).toLowerCase() ===
+                                            auth.sessionAbsoluteRealm.toLowerCase()) {
                     Configuration.setProperty("loggedUser", user);
                     delete auth.passedInRealm;
 
-                    RESTLoginHelper.setSuccessURL(requirements.tokenId, requirements.successUrl).then(() => {
+                    if (gotoUrl.isNotDefaultPath(requirements.successUrl)) {
+                        gotoUrl.setValidated(requirements.successUrl);
+                        window.location.href = gotoUrl.toHref();
+                        // This happens after we have already changed the href for situations where the goto url is
+                        // taking a while to load, and so removes the login page from view.
+                        element.empty();
+                        return false;
+                    } else {
+                        gotoUrl.remove();
+                    }
 
-                        if (auth.urlParams && auth.urlParams.goto) {
-                            window.location.href = auth.urlParams.goto;
-                            $("body").empty();
-                            return false;
-                        }
-                        EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, {
-                            anonymousMode: false
-                        });
-
-                        // Copied from EVENT_LOGIN_REQUEST handler
-                        if (Configuration.gotoURL &&
-                            _.indexOf(["#", "", "#/", "/#"], Configuration.gotoURL) === -1) {
-                            console.log(`Auto redirect to ${Configuration.gotoURL}`);
-                            Router.navigate(Configuration.gotoURL, { trigger: true });
-                            delete Configuration.gotoURL;
-                        } else {
-                            Router.navigate("", { trigger: true });
-                        }
+                    EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, {
+                        anonymousMode: false
                     });
+
+                    // Copied from EVENT_LOGIN_REQUEST handler
+                    if (Configuration.gotoURL &&
+                        _.indexOf(["#", "", "#/", "/#"], Configuration.gotoURL) === -1) {
+                        console.log(`Auto redirect to ${Configuration.gotoURL}`);
+                        Router.navigate(Configuration.gotoURL, { trigger: true });
+                        delete Configuration.gotoURL;
+                    } else {
+                        Router.navigate("", { trigger: true });
+                    }
                 } else {
                     location.href = "#confirmLogin/";
                 }
@@ -228,33 +247,35 @@ define([
                     // enabled the login button if login failure
                     $(e.currentTarget).prop("disabled", false);
                     // If its not the first stage then render the Login Unavailable view with link back to login screen.
-                    var urlParams;
                     if (Configuration.globalData.auth.currentStage > 1) {
-                        urlParams = URIUtils.getCurrentFragmentQueryString();
-                        if (urlParams) {
-                            urlParams = `&${urlParams}`;
+                        let fragmentParams = URIUtils.getCurrentFragmentQueryString();
+                        if (fragmentParams) {
+                            fragmentParams = `&${fragmentParams}`;
                         }
-                        // Go to the Login Unavailable view with all the original url params.
-                        routeToLoginUnavailable(urlParams);
+                        // Go to the Login Unavailable view with all the original fragment parameters.
+                        routeToLoginUnavailable(fragmentParams);
                     }
                 }
             });
         },
 
         render (args) {
-            let urlParams = {}; // Deserialized querystring params
+            const addtionalArguments = args ? args[1] : undefined;
+            let params = {};
             const auth = Configuration.globalData.auth;
 
-            if (args && args.length) {
-                auth.additional = args[1]; // May be "undefined"
-                auth.urlParams = urlParams;
+            // TODO: The first undefined argument is the deprecated realm which is defined in the
+            // CommonRoutesConfig login route. This needs to be removed as part of AME-11109.
+            this.data.args = [undefined, getFragmentParamString()];
 
-                if (args[1]) {
-                    urlParams = this.handleUrlParams();
-                }
+
+            if (args) {
+                auth.additional = addtionalArguments;
+                auth.urlParams = {};
+                params = this.handleParams();
 
                 // If there are IDTokens try to login with the provided credentials
-                if (urlParams.IDToken1 && this.isZeroPageLoginAllowed() && !auth.autoLoginAttempts) {
+                if (params.IDToken1 && this.isZeroPageLoginAllowed() && !auth.autoLoginAttempts) {
                     this.autoLogin();
                 }
             }
@@ -262,7 +283,7 @@ define([
             AuthNService.getRequirements().then(_.bind(function (reqs) {
 
                 // Clear out existing session if instructed
-                if (reqs.hasOwnProperty("tokenId") && urlParams.arg === "newsession") {
+                if (reqs.hasOwnProperty("tokenId") && params.arg === "newsession") {
                     RESTLoginHelper.removeSession();
                     Configuration.setProperty("loggedUser", null);
                 }
@@ -272,19 +293,16 @@ define([
                 if (reqs.hasOwnProperty("tokenId")) {
                     this.handleExistingSession(reqs);
                 } else { // We aren't logged in yet, so render a form...
-                    this.renderForm(reqs, urlParams);
+                    this.renderForm(reqs, params);
 
                     if (CookieHelper.getCookie("invalidRealm")) {
                         CookieHelper.deleteCookie("invalidRealm");
                         EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "invalidRealm");
                     }
                 }
-            }, this), _.bind(function (error) {
+            }, this), _.bind((error) => {
                 if (error) {
-                    Messages.addMessage({
-                        type: Messages.TYPE_DANGER,
-                        message: error.message
-                    });
+                    Messages.addMessage({ type: Messages.TYPE_DANGER, message: error.message });
                 }
 
                 /**
@@ -294,14 +312,9 @@ define([
                  * function to only return the params we which to save. The authIndexType and authIndexValue
                  * would normally only be applied when the user has logged in, so they should not contain invalid values
                  */
+                const fragmentParamString = URIUtils.getCurrentFragmentQueryString();
+                routeToLoginUnavailable(RESTLoginHelper.filterUrlParams(query.parseParameters(fragmentParamString)));
 
-                routeToLoginUnavailable(
-                    RESTLoginHelper.filterUrlParams (
-                        URIUtils.parseQueryString (
-                            URIUtils.getCurrentCompositeQueryString()
-                        )
-                    )
-                );
             }, this));
         },
 
@@ -414,33 +427,36 @@ define([
             }
         },
 
-        handleUrlParams () {
-            var urlParams = URIUtils.parseQueryString(URIUtils.getCurrentCompositeQueryString());
+        handleParams () {
+            // TODO: Remove support for fragment params and change to URIUtils.getCurrentQueryString()
+            // as currently we are checking both the framgent and query with framgent over-riding.
+            const paramString = URIUtils.getCurrentCompositeQueryString();
+            const params = query.parseParameters(paramString);
 
             // Rest does not accept the params listed in the array below as is
             // they must be transformed into the "authIndexType" and "authIndexValue" params
             // but if composite_advice set that must be adhered to
-            if (!urlParams.authIndexType || urlParams.authIndexType !== "composite_advice") {
+            if (!params.authIndexType || params.authIndexType !== "composite_advice") {
+
                 _.each(["authlevel", "module", "service", "user", "resource"], function (param) {
-                    if (urlParams[param]) {
-                        urlParams.authIndexType = ((param === "authlevel") ? "level" : param);
-                        urlParams.authIndexValue = urlParams[param];
+                    if (params[param]) {
+                        params.authIndexType = ((param === "authlevel") ? "level" : param);
+                        params.authIndexValue = params[param];
                         //*** Note special case for authLevel
                         Configuration.globalData.auth.additional += `&authIndexType=${
                             ((param === "authlevel") ? "level" : param)
-                            }&authIndexValue=${urlParams[param]}`;
+                            }&authIndexValue=${params[param]}`;
                     }
                 });
             }
-
-            // Special case for SSORedirect
-            if (urlParams.goto && urlParams.goto.indexOf("/SSORedirect") === 0) {
-                urlParams.goto = `/${Constants.context}${urlParams.goto}`;
+            // Special case for SSORedirect and SSOPOST
+            if (hasSsoRedirectOrPost(params.goto)) {
+                params.goto = `/${Constants.context}${params.goto}`;
                 Configuration.globalData.auth.additional.replace("&goto=", `&goto=/${Constants.context}`);
             }
 
-            Configuration.globalData.auth.urlParams = urlParams;
-            return urlParams;
+            Configuration.globalData.auth.urlParams = params;
+            return params;
         }
     });
 
@@ -535,17 +551,16 @@ define([
 
     Handlebars.registerHelper("decorateWithRealm", function (uri) {
         uri = RealmHelper.decorateURLWithOverrideRealm(uri);
-        if (uri.slice(-1) !== "/") {
-            uri += "/";
+        if (uri.indexOf("realm=") === -1) {
+            uri = `${uri}&realm=/${RealmHelper.getSubRealm()}`;
         }
-        return uri + RealmHelper.getSubRealm();
+        return uri;
     });
 
-    Handlebars.registerHelper("gotoParameter", function () {
-        return _.has(Configuration, "globalData.auth.urlParams.goto")
-            ? `&goto=${encodeURIComponent(Configuration.globalData.auth.urlParams.goto)}`
-            : "";
+    Handlebars.registerHelper("gotoParameter", () => {
+        return gotoUrl.exists() ? `&goto=${gotoUrl.get()}` : "";
     });
+
 
     return new LoginView();
 });

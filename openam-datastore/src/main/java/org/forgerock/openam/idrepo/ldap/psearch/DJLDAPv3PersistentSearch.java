@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2015 ForgeRock AS.
+ * Copyright 2013-2017 ForgeRock AS.
  */
 
 package org.forgerock.openam.idrepo.ldap.psearch;
@@ -90,6 +90,16 @@ public class DJLDAPv3PersistentSearch extends LDAPv3PersistentSearch<IdRepoListe
         for (IdRepoListener idRepoListener : getListeners().keySet()) {
             idRepoListener.allObjectsChanged();
         }
+    }
+
+    @Override
+    protected void connectionLost() {
+        //this section intentionally left blank
+    }
+
+    @Override
+    protected void connectionReestablished() {
+        //this section intentionally left blank
     }
 
     @Override

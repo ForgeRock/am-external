@@ -22,8 +22,6 @@ import static org.forgerock.openam.services.push.PushNotificationConstants.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.iplanet.dpro.session.SessionException;
-import com.iplanet.services.naming.ServerEntryNotFoundException;
-import com.iplanet.services.naming.WebtopNaming;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.AMIdentity;
@@ -33,20 +31,22 @@ import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.sm.DNMapper;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.TextOutputCallback;
 import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
+
+import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
@@ -54,13 +54,17 @@ import org.forgerock.openam.authentication.callbacks.helpers.PollingWaitAssistan
 import org.forgerock.openam.authentication.callbacks.helpers.QRCallbackBuilder;
 import org.forgerock.openam.authentication.modules.push.AbstractPushModule;
 import org.forgerock.openam.authentication.modules.push.AuthenticatorPushPrincipal;
-import org.forgerock.openam.core.rest.devices.DeviceSettings;
 import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.cts.exceptions.CoreTokenException;
+import org.forgerock.openam.services.baseurl.BaseURLProvider;
+import org.forgerock.openam.services.baseurl.BaseURLProviderFactory;
 import org.forgerock.openam.services.push.PushNotificationException;
 import org.forgerock.openam.services.push.dispatch.Predicate;
 import org.forgerock.openam.services.push.dispatch.PushMessageChallengeResponsePredicate;
 import org.forgerock.openam.services.push.dispatch.SignedJwtVerificationPredicate;
+import org.forgerock.openam.utils.Alphabet;
+import org.forgerock.openam.utils.CodeException;
+import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.forgerock.util.encode.Base64;
 import org.forgerock.util.encode.Base64url;
 import org.forgerock.util.promise.Promise;
@@ -115,6 +119,11 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
 
     private String lbCookieValue;
     private String realm;
+
+    private final BaseURLProviderFactory baseUrlProviderFactory =
+            InjectorHolder.getInstance(BaseURLProviderFactory.class);
+
+    private RecoveryCodeGenerator recoveryCodeGenerator = InjectorHolder.getInstance(RecoveryCodeGenerator.class);
 
     @Override
     public void init(final Subject subject, final Map sharedState, final Map options) {
@@ -340,7 +349,13 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
             throw failedAsLoginException();
         }
 
-        newDeviceRegistrationProfile.setRecoveryCodes(DeviceSettings.generateRecoveryCodes(NUM_RECOVERY_CODES));
+        try {
+            newDeviceRegistrationProfile.setRecoveryCodes(
+                    recoveryCodeGenerator.generateCodes(NUM_RECOVERY_CODES, Alphabet.ALPHANUMERIC, false));
+        } catch (CodeException e) {
+            DEBUG.error("Insufficient recovery code generation occurred.");
+            throw failedAsLoginException();
+        }
         newDeviceRegistrationProfile.setIssuer(issuer);
 
         userPushDeviceProfileManager.saveDeviceProfile(
@@ -385,23 +400,14 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
         } catch (PushNotificationException e) {
             DEBUG.error("Unable to read service addresses for Push Notification Service.");
             throw failedAsLoginException();
-        } catch (ServerEntryNotFoundException e) {
-            DEBUG.error("Unable to read site address for Push Notification Service.");
-            throw failedAsLoginException();
         }
     }
 
-    private String getMessageResponseUrl(String component) throws ServerEntryNotFoundException {
-        URL url;
-        try {
-            String serverId = WebtopNaming.getAMServerID();
-            String serverOrSiteID = WebtopNaming.getSiteID(serverId);
-            url = new URL(WebtopNaming.getServerFromID(serverOrSiteID));
-        } catch (MalformedURLException e) {
-            throw new ServerEntryNotFoundException(e);
-        }
-        String localServerURL = url.toString() + "/json";
-        return Base64url.encode((localServerURL + component).getBytes());
+    private String getMessageResponseUrl(String component) {
+        final BaseURLProvider baseUrlProvider = baseUrlProviderFactory.get(getRequestOrg());
+
+        return Base64url.encode((baseUrlProvider.getRootURL(getHttpServletRequest()) + "/json" + component)
+                .getBytes(StandardCharsets.UTF_8));
     }
 
     private AuthLoginException failedAsLoginException() throws AuthLoginException {

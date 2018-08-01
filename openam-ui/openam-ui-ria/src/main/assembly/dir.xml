@@ -12,7 +12,7 @@
 * Header, with the fields enclosed by brackets [] replaced by your own identifying
 * information: "Portions copyright [year] [name of copyright owner]".
 *
-* Portions copyright 2011-2015 ForgeRock AS.
+* Portions copyright 2011-2017 ForgeRock AS.
   -->
 <assembly
         xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
@@ -26,7 +26,7 @@
     <fileSets>
         <fileSet>
             <directory>${project.build.directory}/codemirror-${codemirror.version}</directory>
-            <outputDirectory>/libs/codemirror</outputDirectory>
+            <outputDirectory>./libs/codemirror</outputDirectory>
             <includes>
                 <include>lib/codemirror.js</include>
                 <include>mode/javascript/javascript.js</include>
@@ -36,7 +36,7 @@
         </fileSet>
         <fileSet>
             <directory>${project.build.directory}/codemirror-${codemirror.version}</directory>
-            <outputDirectory>/css/codemirror</outputDirectory>
+            <outputDirectory>./css/codemirror</outputDirectory>
             <includes>
                 <include>lib/codemirror.css</include>
                 <include>addon/display/fullscreen.css</include>
@@ -51,13 +51,13 @@
             <excludes>
                 <exclude>org.forgerock.commons.ui.libs:CodeMirror</exclude>
             </excludes>
-            <outputDirectory>/libs</outputDirectory>
+            <outputDirectory>./libs</outputDirectory>
         </dependencySet>
         <dependencySet>
             <includes>
                 <include>org.forgerock.commons.ui.libs:*:css</include>
             </includes>
-            <outputDirectory>/css</outputDirectory>
+            <outputDirectory>./css</outputDirectory>
         </dependencySet>
     </dependencySets>
 </assembly>

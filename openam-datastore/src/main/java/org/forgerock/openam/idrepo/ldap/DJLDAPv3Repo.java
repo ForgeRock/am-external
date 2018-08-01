@@ -11,12 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2016 ForgeRock AS.
+ * Copyright 2013-2017 ForgeRock AS.
  * Portions Copyright 2016 Nomura Research Institute, Ltd.
  */
 package org.forgerock.openam.idrepo.ldap;
 
 import static org.forgerock.openam.ldap.LDAPConstants.*;
+import static org.forgerock.openam.ldap.LDAPUtils.partiallyEscapeAssertionValue;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
 import static org.forgerock.opendj.ldap.LDAPConnectionFactory.*;
 
@@ -47,7 +48,6 @@ import com.sun.identity.shared.jaxrpc.SOAPClient;
 import com.sun.identity.sm.SchemaType;
 
 import java.nio.charset.Charset;
-import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -75,7 +75,13 @@ import org.forgerock.opendj.ldap.Attribute;
 import org.forgerock.opendj.ldap.ByteString;
 import org.forgerock.opendj.ldap.Connection;
 import org.forgerock.opendj.ldap.ConnectionFactory;
+import org.forgerock.opendj.ldap.controls.PasswordPolicyErrorType;
+import org.forgerock.opendj.ldap.controls.PasswordPolicyRequestControl;
+import org.forgerock.opendj.ldap.controls.PasswordPolicyResponseControl;
+import org.forgerock.opendj.ldap.controls.PasswordPolicyRequestControl;
 import org.forgerock.opendj.ldap.DN;
+import org.forgerock.opendj.ldap.DecodeOptions;
+import org.forgerock.opendj.ldap.DecodeException;
 import org.forgerock.opendj.ldap.Entry;
 import org.forgerock.opendj.ldap.Filter;
 import org.forgerock.opendj.ldap.LDAPUrl;
@@ -85,13 +91,14 @@ import org.forgerock.opendj.ldap.LinkedHashMapEntry;
 import org.forgerock.opendj.ldap.Modification;
 import org.forgerock.opendj.ldap.ModificationType;
 import org.forgerock.opendj.ldap.ResultCode;
-import org.forgerock.opendj.ldap.SSLContextBuilder;
 import org.forgerock.opendj.ldap.SearchResultReferenceIOException;
 import org.forgerock.opendj.ldap.SearchScope;
 import org.forgerock.opendj.ldap.requests.BindRequest;
 import org.forgerock.opendj.ldap.requests.ModifyRequest;
+import org.forgerock.opendj.ldap.requests.Request;
 import org.forgerock.opendj.ldap.requests.SearchRequest;
 import org.forgerock.opendj.ldap.responses.BindResult;
+import org.forgerock.opendj.ldap.responses.Result;
 import org.forgerock.opendj.ldap.responses.SearchResultEntry;
 import org.forgerock.opendj.ldap.schema.AttributeType;
 import org.forgerock.opendj.ldap.schema.ObjectClass;
@@ -180,7 +187,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
 
     private boolean isSecure = false;
     private boolean useStartTLS = false;
-    private String protocolVersion;
+    private boolean beheraSupportEnabled = false;
 
     /**
      * Initializes the IdRepo instance, basically within this method we process
@@ -225,8 +232,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
 
         String connectionMode = CollectionHelper.getMapAttr(configParams, LDAP_CONNECTION_MODE);
         useStartTLS = LDAP_CONNECTION_MODE_STARTTLS.equalsIgnoreCase(connectionMode);
-        isSecure = LDAP_CONNECTION_MODE_LDAPS.equalsIgnoreCase(connectionMode) || useStartTLS;
-        protocolVersion = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_SECURE_PROTOCOL_VERSION, "TLSv1");
+        isSecure = LDAP_CONNECTION_MODE_LDAPS.equalsIgnoreCase(connectionMode);
+        beheraSupportEnabled = CollectionHelper.getBooleanMapAttr(configMap, BEHERA_SUPPORT_ENABLED, false);
         bindConnectionFactory = createConnectionFactory(null, null, maxPoolSize);
         connectionFactory = createConnectionFactory(username, password, maxPoolSize);
 
@@ -313,25 +320,13 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     protected ConnectionFactory createConnectionFactory(String username, char[] password, int maxPoolSize) {
         Options ldapOptions = Options.defaultOptions()
                 .set(REQUEST_TIMEOUT, new Duration((long) defaultTimeLimit, TimeUnit.SECONDS));
-
-        if (isSecure) {
-            try {
-                ldapOptions = ldapOptions.set(SSL_CONTEXT,
-                        new SSLContextBuilder().setProtocol(protocolVersion).getSSLContext());
-
-                if (useStartTLS) {
-                    ldapOptions = ldapOptions.set(SSL_USE_STARTTLS, true);
-                }
-            } catch (GeneralSecurityException gse) {
-                DEBUG.error("An error occurred while setting the SSLContext", gse);
-            }
-        }
         if (maxPoolSize == 1) {
-            return LDAPUtils.newFailoverConnectionFactory(ldapServers, username, password, heartBeatInterval,
-                    heartBeatTimeUnit, ldapOptions);
+            return LDAPUtils.newFailoverConnectionFactory(LDAPUtils.getLdapUrls(ldapServers, isSecure),
+                    username, password, heartBeatInterval, heartBeatTimeUnit, useStartTLS, false, ldapOptions);
         } else {
-            return LDAPUtils.newFailoverConnectionPool(ldapServers, username, password, maxPoolSize, heartBeatInterval,
-                    heartBeatTimeUnit, ldapOptions);
+            return LDAPUtils.newFailoverConnectionPool(LDAPUtils.getLdapUrls(ldapServers, isSecure),
+                    username, password, maxPoolSize, heartBeatInterval, heartBeatTimeUnit, useStartTLS,
+                    false, ldapOptions);
         }
     }
 
@@ -428,7 +423,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         }
         String dn = getDN(type, name);
         BindRequest bindRequest = LDAPRequests.newSimpleBindRequest(dn, oldPassword.toCharArray());
-        ModifyRequest modifyRequest = LDAPRequests.newModifyRequest(dn);
+        ModifyRequest modifyRequest = addBeheraControl(LDAPRequests.newModifyRequest(dn));
 
         byte[] encodedOldPwd = helper.encodePassword(oldPassword);
         byte[] encodedNewPwd = helper.encodePassword(newPassword);
@@ -669,7 +664,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         Connection conn = null;
         try {
             conn = connectionFactory.getConnection();
-            conn.add(LDAPRequests.newAddRequest(entry));
+            conn.add(addBeheraControl(LDAPRequests.newAddRequest(entry)));
             if (type.equals(IdType.GROUP) && defaultGroupMember != null) {
                 if (memberOfAttr != null) {
                     ModifyRequest modifyRequest = LDAPRequests.newModifyRequest(defaultGroupMember);
@@ -813,7 +808,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                     continue;
                 }
                 result.put(attribute.getAttributeDescriptionAsString(), function.apply(attribute));
-                if (attrName.equalsIgnoreCase(userStatusAttr) && attrs.contains(DEFAULT_USER_STATUS_ATTR)) {
+                if (attrName.equalsIgnoreCase(userStatusAttr)) {
+                    // Always include the DEFAULT_USER_STATUS_ATTR to cover any mapped isActive logic in envs like AD.
                     String converted = helper.convertToInetUserStatus(attribute.firstValueAsString(), activeValue);
                     result.put(DEFAULT_USER_STATUS_ATTR,
                             function.apply(new LinkedAttribute(DEFAULT_USER_STATUS_ATTR, converted)));
@@ -932,7 +928,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
      */
     private void setAttributes(SSOToken token, IdType type, String name, Map attributes,
             boolean isAdd, boolean isString, boolean changeOCs) throws IdRepoException {
-        ModifyRequest modifyRequest = LDAPRequests.newModifyRequest(getDN(type, name));
+        ModifyRequest modifyRequest = addBeheraControl(LDAPRequests.newModifyRequest(getDN(type, name)));
         attributes = removeUndefinedAttributes(type, attributes);
 
         if (type.equals(IdType.USER)) {
@@ -1055,6 +1051,16 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     }
 
     /**
+     * Adds Behera Control to the LDAPRequest
+     */
+    private <T extends Request> T addBeheraControl(T request) {
+        if (beheraSupportEnabled) {
+            return (T) request.addControl(PasswordPolicyRequestControl.newControl(true));
+        }
+        return request;
+    }
+
+    /**
      * Removes the specified attributes from the identity.
      *
      * @param token Not used.
@@ -1141,7 +1147,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         Filter first;
 
         if (crestQuery.hasQueryId()) {
-            first = Filter.valueOf(searchAttr + "=" + crestQuery.getQueryId());
+            first = Filter.valueOf(searchAttr + "=" + partiallyEscapeAssertionValue(crestQuery.getQueryId()));
         } else {
             first = crestQuery.getQueryFilter().accept(new LdapFromJsonQueryFilterVisitor(), null);
         }
@@ -2176,7 +2182,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     /**
      * This method constructs a persistent search "key", which will be used to
      * figure out whether there is an existing persistent search for the same
-     * ldap server, secureProtocolVersion, base DN, filter, scope combination. By doing this we can
+     * ldap server, base DN, filter, scope combination. By doing this we can
      * "reuse" the results of other datastore implementations without the need
      * of two or more persistent search connections with the same parameters.
      *
@@ -2187,13 +2193,11 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         String psearchBase = CollectionHelper.getMapAttr(configMap, LDAP_PERSISTENT_SEARCH_BASE_DN);
         String pfilter = CollectionHelper.getMapAttr(configMap, LDAP_PERSISTENT_SEARCH_FILTER);
         String scope = CollectionHelper.getMapAttr(configMap, LDAP_PERSISTENT_SEARCH_SCOPE);
-        String secureProtocolVersion = CollectionHelper.getMapAttr(configMap, LDAP_SERVER_SECURE_PROTOCOL_VERSION);
         //creating a natural order of the ldap servers, so the "key" should be always the same regardless of the server
         //order in the configuration.
         LDAPURL[] servers = ldapServers.toArray(new LDAPURL[ldapServers.size()]);
         Arrays.sort(servers);
-        String psIdKey = Arrays.toString(servers) + secureProtocolVersion + psearchBase + pfilter + scope +
-                userSearchAttr;
+        String psIdKey = Arrays.toString(servers) + psearchBase + pfilter + scope + userSearchAttr;
         return psIdKey;
     }
 
@@ -2243,7 +2247,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
 
         Map filteredMap = new CaseInsensitiveHashMap(attributes);
         for (String key : (Set<String>) attributes.keySet()) {
-            if (!predefinedAttrs.contains(key)) {
+            // Always allow the DEFAULT_USER_STATUS_ATTR to cover any mapped isActive logic in envs like AD.
+            if (!predefinedAttrs.contains(key) && !DEFAULT_USER_STATUS_ATTR.equalsIgnoreCase(key)) {
                 filteredMap.remove(key);
             }
         }
@@ -2452,26 +2457,6 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         return filter;
     }
 
-    /**
-     * Escapes the provided assertion value according to the LDAP standard. As a special case this method does not
-     * escape the '*' character, in order to be able to use wildcards in filters.
-     *
-     * @param assertionValue The filter assertionValue that needs to be escaped.
-     * @return The escaped assertionValue.
-     */
-    private String partiallyEscapeAssertionValue(String assertionValue) {
-        StringBuilder sb = new StringBuilder(assertionValue.length());
-        for (int j = 0; j < assertionValue.length(); j++) {
-            char c = assertionValue.charAt(j);
-            if (c == '*') {
-                sb.append(c);
-            } else {
-                sb.append(Filter.escapeAssertionValue(String.valueOf(c)));
-            }
-        }
-        return sb.toString();
-    }
-
     protected Schema getSchema() throws IdRepoException {
         if (schema == null) {
             synchronized (this) {
@@ -2494,20 +2479,78 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
 
     private void handleErrorResult(LdapException ere) throws IdRepoException {
         ResultCode resultCode = ere.getResult().getResultCode();
-        if (ResultCode.CONSTRAINT_VIOLATION.equals(resultCode)) {
-            throw new IdRepoFatalException(IdRepoBundle.BUNDLE_NAME, IdRepoErrorCode.LDAP_EXCEPTION, ResultCode.CONSTRAINT_VIOLATION,
-                    new Object[]{CLASS_NAME, resultCode.intValue(), ere.getResult().getDiagnosticMessage()});
-        } else if (ResultCode.NO_SUCH_OBJECT.equals(resultCode)) {
-            throw new IdentityNotFoundException(IdRepoBundle.BUNDLE_NAME, IdRepoErrorCode.UNABLE_FIND_ENTRY, ResultCode.NO_SUCH_OBJECT,
-                    new Object[]{CLASS_NAME, ere.getResult().getDiagnosticMessage()});
-        } else if (resultCode.equals(ResultCode.SIZE_LIMIT_EXCEEDED)) {
-            DEBUG.warning("Size limit exceeded.", ere);
-        } else if (resultCode.equals(ResultCode.TIME_LIMIT_EXCEEDED)) {
-            DEBUG.warning("Time limit exceeded.", ere);
-        } else {
-            throw newIdRepoException(resultCode, IdRepoErrorCode.LDAP_EXCEPTION_OCCURRED,
-                    CLASS_NAME, resultCode.intValue());
+        if (beheraSupportEnabled) {
+            String passwordPolicyErrorCode = getPasswordPolicyErrorCode(ere.getResult());
+            if (passwordPolicyErrorCode != null) {
+                throw new PasswordPolicyException(resultCode, passwordPolicyErrorCode, null);
+            }
         }
+        switch (resultCode.asEnum()) {
+            case CONSTRAINT_VIOLATION:
+                throw new IdRepoFatalException(IdRepoBundle.BUNDLE_NAME, IdRepoErrorCode.LDAP_EXCEPTION,
+                        ResultCode.CONSTRAINT_VIOLATION, new Object[]{CLASS_NAME, resultCode.intValue(),
+                        ere.getResult().getDiagnosticMessage()});
+            case NO_SUCH_OBJECT:
+                throw new IdentityNotFoundException(IdRepoBundle.BUNDLE_NAME, IdRepoErrorCode.UNABLE_FIND_ENTRY,
+                        ResultCode.NO_SUCH_OBJECT, new Object[]{CLASS_NAME, ere.getResult().getDiagnosticMessage()});
+            case SIZE_LIMIT_EXCEEDED:
+                DEBUG.warning("Size limit exceeded.", ere);
+                break;
+            case TIME_LIMIT_EXCEEDED:
+                DEBUG.warning("Time limit exceeded.", ere);
+                break;
+            default:
+                throw newIdRepoException(resultCode, IdRepoErrorCode.LDAP_EXCEPTION_OCCURRED, CLASS_NAME,
+                        resultCode.intValue());
+        }
+    }
+
+    private String getPasswordPolicyErrorCode(Result result) {
+        String policyErrorCode = null;
+        try {
+            PasswordPolicyResponseControl control =
+                    result.getControl(PasswordPolicyResponseControl.DECODER, new DecodeOptions());
+            if (control != null) {
+                PasswordPolicyErrorType policyErrorType = control.getErrorType();
+                if (policyErrorType != null) {
+                    if (DEBUG.messageEnabled()) {
+                        DEBUG.message("PolicyErrorType : " + policyErrorType.toString());
+                    }
+                    switch (policyErrorType) {
+                        case PASSWORD_EXPIRED:
+                            policyErrorCode = IdRepoErrorCode.PASSWORD_EXPIRED;
+                            break;
+                        case ACCOUNT_LOCKED:
+                            policyErrorCode = IdRepoErrorCode.ACCOUNT_LOCKED;
+                            break;
+                        case CHANGE_AFTER_RESET:
+                            policyErrorCode = IdRepoErrorCode.CHANGE_AFTER_RESET;
+                            break;
+                        case PASSWORD_MOD_NOT_ALLOWED:
+                            policyErrorCode = IdRepoErrorCode.PASSWORD_MOD_NOT_ALLOWED;
+                            break;
+                        case MUST_SUPPLY_OLD_PASSWORD:
+                            policyErrorCode = IdRepoErrorCode.MUST_SUPPLY_OLD_PASSWORD;
+                            break;
+                        case INSUFFICIENT_PASSWORD_QUALITY:
+                            policyErrorCode = IdRepoErrorCode.INSUFFICIENT_PASSWORD_QUALITY;
+                            break;
+                        case PASSWORD_TOO_SHORT:
+                            policyErrorCode = IdRepoErrorCode.PASSWORD_TOO_SHORT;
+                            break;
+                        case PASSWORD_TOO_YOUNG:
+                            policyErrorCode = IdRepoErrorCode.PASSWORD_TOO_YOUNG;
+                            break;
+                        case PASSWORD_IN_HISTORY:
+                            policyErrorCode = IdRepoErrorCode.PASSWORD_IN_HISTORY;
+                            break;
+                    }
+                }
+            }
+        } catch (DecodeException de) {
+            DEBUG.error("Unable to decode PasswordPolicyResponseControl", de);
+        }
+        return policyErrorCode;
     }
 
     private IdRepoException newIdRepoException(String key, Object... args) {

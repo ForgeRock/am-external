@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2016 ForgeRock AS.
+ * Copyright 2011-2017 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -62,6 +62,7 @@ public class OAuthParam {
     static final String KEY_SMTP_PASSWORD = "org-forgerock-auth-oauth-smtp-password";
     static final String KEY_SMTP_SSL_ENABLED = "org-forgerock-auth-oauth-smtp-ssl_enabled";
     static final String KEY_EMAIL_FROM = "org-forgerock-auth-oauth-smtp-email-from";
+    public static final String KEY_MIX_UP_MITIGATION_ENABLED = "openam-auth-oauth-mix-up-mitigation-enabled";
 
     public final static String CODE_CHALLENGE_METHOD = "org-forgerock-auth-oauth-code-challenge-method-algorithm";
 
@@ -78,6 +79,7 @@ public class OAuthParam {
     public final static String PARAM_CLIENT_ID = "client_id";
     public final static String PARAM_ACCESS_TOKEN =  "access_token";
     public final static String PARAM_GRANT_TYPE = "grant_type";
+    public static final String PARAM_STATE = "state";
 
     // oauthproxy parameters
     public final static String PARAM_ACTIVATION = "activation";
@@ -110,6 +112,7 @@ public class OAuthParam {
     public final static String PARAM_LOGGEDOUT = "loggedout";
     public final static String PARAM_LOGOUT_URL = "logoutURL"; 
     public final static String LOGOUT_FORM = "logoutForm";
+    public final static String PARAM_LOGOUT_REALM = "OAuth2logoutRealm";
 
     //OpenID Connect
     public final static String ID_TOKEN = "id_token";

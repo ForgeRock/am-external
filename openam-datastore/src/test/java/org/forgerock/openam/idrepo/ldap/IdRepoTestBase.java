@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2015 ForgeRock AS.
+ * Copyright 2013-2017 ForgeRock AS.
  */
 package org.forgerock.openam.idrepo.ldap;
 
@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.forgerock.util.promise.Promise;
+import org.forgerock.util.thread.listener.ShutdownManager;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.testng.PowerMockTestCase;
@@ -90,6 +91,7 @@ public abstract class IdRepoTestBase extends PowerMockTestCase {
 
         @Override
         protected void configure() {
+            bind(ShutdownManager.class).toInstance(mock(ShutdownManager.class));
             bind(ConfigAuditorFactory.class).toInstance(new ConfigAuditorFactory() {
                 @Override
                 public SMSAuditor create(SSOToken runAs, @Assisted("realm") @Nullable String realm, @Assisted("objectId") String objectId, Map initialState) {

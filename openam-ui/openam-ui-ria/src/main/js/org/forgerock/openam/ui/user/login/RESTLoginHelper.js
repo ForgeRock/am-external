@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Portions copyright 2011-2016 ForgeRock AS.
+ * Portions copyright 2011-2017 ForgeRock AS.
  */
 
 define([
@@ -25,13 +25,15 @@ define([
     "org/forgerock/openam/ui/user/services/SessionService",
     "org/forgerock/commons/ui/common/util/URIUtils",
     "org/forgerock/openam/ui/user/UserModel",
-    "org/forgerock/commons/ui/common/main/ViewManager"
+    "org/forgerock/commons/ui/common/main/ViewManager",
+    "org/forgerock/openam/ui/common/util/uri/query",
+    "org/forgerock/openam/ui/user/login/gotoUrl"
+
 ], function ($, _, AbstractConfigurationAware, AuthNService, CookieHelper, Configuration, Constants, SessionService,
-             URIUtils, UserModel, ViewManager) {
+             URIUtils, UserModel, ViewManager, query, gotoUrl) {
     var obj = new AbstractConfigurationAware();
 
     obj.login = function (params, successCallback, errorCallback) {
-        var self = this;
         AuthNService.getRequirements(params).then(function (requirements) {
             // populate the current set of requirements with the values we have from params
             var populatedRequirements = _.clone(requirements);
@@ -45,10 +47,13 @@ define([
                 if (result.hasOwnProperty("tokenId")) {
                     obj.getLoggedUser(function (user) {
                         Configuration.setProperty("loggedUser", user);
-                        self.setSuccessURL(result.tokenId, result.successUrl).then(function () {
-                            successCallback(user);
-                            AuthNService.resetProcess();
-                        });
+                        if (gotoUrl.isNotDefaultPath(result.successUrl)) {
+                            gotoUrl.setValidated(result.successUrl);
+                        } else {
+                            gotoUrl.remove();
+                        }
+                        successCallback(user);
+                        AuthNService.resetProcess();
                     }, errorCallback);
                 } else if (result.hasOwnProperty("authId")) {
                     // re-render login form for next set of required inputs
@@ -89,43 +94,12 @@ define([
     };
 
     obj.getSuccessfulLoginUrlParams = function () {
-        // The successfulLoginURL is populated by the server (not from window.location of the browser), upon successful
-        // authentication.
-        var successfulLoginURL = Configuration.globalData.auth.fullLoginURL,
-            successfulLoginURLParams = successfulLoginURL
-                ? successfulLoginURL.substring(successfulLoginURL.indexOf("?") + 1) : "";
+        // The successfulLoginURL is populated by the server upon successful authentication,
+        // not from window.location of the browser.
+        const fullLoginURL = Configuration.globalData.auth.fullLoginURL;
+        const paramString = fullLoginURL ? fullLoginURL.substring(fullLoginURL.indexOf("?") + 1) : "";
+        return query.parseParameters(paramString);
 
-        return URIUtils.parseQueryString(successfulLoginURLParams);
-    };
-
-    obj.setSuccessURL = function (tokenId, newSuccessUrl) {
-        var promise = $.Deferred(),
-            urlParams = URIUtils.parseQueryString(URIUtils.getCurrentCompositeQueryString()),
-            url = newSuccessUrl ? newSuccessUrl : Configuration.globalData.auth.successURL,
-            context = "";
-        if (urlParams && urlParams.goto) {
-            AuthNService.setGoToUrl(tokenId, urlParams.goto).then(function (data) {
-                if (data.successURL.indexOf("/") === 0 &&
-                    data.successURL.indexOf(`/${Constants.context}`) !== 0) {
-                    context = `/${Constants.context}`;
-                }
-                Configuration.globalData.auth.urlParams.goto = context + data.successURL;
-                promise.resolve();
-            }, function () {
-                promise.reject();
-            });
-        } else {
-            if (url !== Constants.CONSOLE_PATH) {
-                if (!Configuration.globalData.auth.urlParams) {
-                    Configuration.globalData.auth.urlParams = {};
-                }
-                if (!Configuration.globalData.auth.urlParams.goto) {
-                    Configuration.globalData.auth.urlParams.goto = url;
-                }
-            }
-            promise.resolve();
-        }
-        return promise;
     };
 
     obj.filterUrlParams = function (params) {

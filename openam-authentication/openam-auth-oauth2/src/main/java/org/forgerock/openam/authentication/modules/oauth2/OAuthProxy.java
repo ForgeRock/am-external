@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2016 ForgeRock AS.
+ * Copyright 2011-2017 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -25,17 +25,23 @@
  */
 package org.forgerock.openam.authentication.modules.oauth2;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import static org.forgerock.guava.common.collect.Sets.intersection;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.*;
+import static org.forgerock.openam.utils.CollectionUtils.asSet;
+
 import java.io.PrintWriter;
 import java.util.Map;
+import java.util.Set;
 
-import com.sun.identity.authentication.client.AuthClientUtils;
-import com.sun.identity.shared.encode.CookieUtils;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.xui.XUIState;
 import org.owasp.esapi.ESAPI;
-import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.*;
+
+import com.sun.identity.authentication.client.AuthClientUtils;
+import com.sun.identity.shared.encode.CookieUtils;
 
 /*
  * OAuth module specific Get2Post gateway. 
@@ -50,12 +56,20 @@ import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.*;
  */
 public class OAuthProxy  {
 
+    /*
+     * These query string parameters are part of the ORIG_URI (The value set in the Cookie)
+     * and hence should not be part of the request (coming from authorization server) to the redirect uri.
+     */
+    private static Set<String> RESERVED_QUERY_PARAMS = asSet("service", "module", "realm", "authIndexType",
+            "authIndexValue", "user", "role", "authlevel", "sunamcompositeadvice");
+
     public static void continueAuthentication(HttpServletRequest req, HttpServletResponse res, PrintWriter out) {
         OAuthUtil.debugMessage("toPostForm: started");
 
         String action = OAuthUtil.findCookie(req, COOKIE_ORIG_URL);
         
         if (OAuthUtil.isEmpty(action)) {
+            OAuthUtil.debugError("OAuthProxy.toPostForm: Original Url Cookie is empty");
             out.println(getError("Request not valid !"));
             return;
         }
@@ -81,6 +95,14 @@ public class OAuthProxy  {
                     return;
                 }
             }
+
+            if (hasReservedParameters(req)) {
+                OAuthUtil.debugError("OAuthProxy.toPostForm: Request has reserved parameters in the query string. " +
+                        "Parameters: " + req.getParameterMap().keySet());
+                out.println(getError("Request not valid !"));
+                return;
+            }
+
             if (action.contains("?")) {
                 action += "&" + req.getQueryString();
             } else {
@@ -137,7 +159,11 @@ public class OAuthProxy  {
         }
         out.println(html.toString());
     }
-   
+
+    private static boolean hasReservedParameters(HttpServletRequest req) {
+        return !intersection(req.getParameterMap().keySet(), RESERVED_QUERY_PARAMS).isEmpty();
+    }
+
     private static StringBuilder input(String name, String value) {
         return new StringBuilder()
             .append("<input type=\"hidden\" name=\"")
