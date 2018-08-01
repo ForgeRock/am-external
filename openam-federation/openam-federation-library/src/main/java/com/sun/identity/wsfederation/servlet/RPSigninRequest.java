@@ -24,22 +24,23 @@
  *
  * $Id: RPSigninRequest.java,v 1.9 2009/11/03 00:48:54 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015-2016 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.servlet;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.shared.DateUtils;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.encode.CookieUtils;
+import com.sun.identity.shared.encode.URLEncDec;
 
 import com.sun.identity.wsfederation.common.WSFederationConstants;
 import com.sun.identity.wsfederation.common.WSFederationException;
 import java.io.IOException;
+import java.util.Date;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -266,10 +267,10 @@ public class RPSigninRequest extends WSFederationAction {
         if (idp == null) {
             StringBuffer url = new StringBuffer(homeRealmDiscoveryService);
             url.append("?wreply=");
-            url.append(urlEncodeQueryParameterNameOrValue(request.getRequestURL().toString()));
+            url.append(URLEncDec.encode(request.getRequestURL().toString()));
             if (wctx != null) {
                 url.append("&wctx=");
-                url.append(urlEncodeQueryParameterNameOrValue(wctx));
+                url.append(URLEncDec.encode(wctx));
             }
             if (debug.messageEnabled()) {
                 debug.message(classMethod + 
@@ -294,18 +295,18 @@ public class RPSigninRequest extends WSFederationAction {
         }
         StringBuffer url = new StringBuffer(endpoint);
         url.append("?wa=");
-        url.append(urlEncodeQueryParameterNameOrValue(WSFederationConstants.WSIGNIN10));
+        url.append(URLEncDec.encode(WSFederationConstants.WSIGNIN10));
         if ( wctx != null )
         {
             url.append("&wctx=");
-            url.append(urlEncodeQueryParameterNameOrValue(wctx));
+            url.append(URLEncDec.encode(wctx));
         }
         url.append("&wreply=");
-        url.append(urlEncodeQueryParameterNameOrValue(replyURL));
+        url.append(URLEncDec.encode(replyURL));
         url.append("&wct=");
-        url.append(urlEncodeQueryParameterNameOrValue(DateUtils.toUTCDateFormat(newDate())));
+        url.append(URLEncDec.encode(DateUtils.toUTCDateFormat(newDate())));
         url.append("&wtrealm=");
-        url.append(urlEncodeQueryParameterNameOrValue(spIssuerName));
+        url.append(URLEncDec.encode(spIssuerName));
         if (debug.messageEnabled()) {
             debug.message(classMethod+"Redirecting to:" + url);
         }

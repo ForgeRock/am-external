@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Portions copyright 2011-2017 ForgeRock AS.
+ * Portions copyright 2011-2016 ForgeRock AS.
  */
 define([
     "jquery",
@@ -24,34 +24,39 @@ define([
     "org/forgerock/openam/ui/common/util/RealmHelper",
     "org/forgerock/commons/ui/common/util/URIUtils",
     "org/forgerock/openam/ui/user/login/tokens/SessionToken",
-    "org/forgerock/openam/ui/user/login/tokens/AuthenticationToken",
-    "org/forgerock/openam/ui/common/util/uri/query"
+    "org/forgerock/openam/ui/user/login/tokens/AuthenticationToken"
 ], ($, _, AbstractDelegate, Configuration, Constants, EventManager, Messages, RealmHelper, URIUtils,
-    SessionToken, AuthenticationToken, query) => {
+    SessionToken, AuthenticationToken) => {
     const obj = new AbstractDelegate(`${Constants.host}/${Constants.context}/json/`);
     let requirementList = [];
     // to be used to keep track of the attributes associated with whatever requirementList contains
     let knownAuth = {};
-
-    function handleFragmentParameters (params) {
+    function getURLParameters () {
+        const query = URIUtils.getCurrentCompositeQueryString();
+        const urlParams = _.object(_.map(query.split("&"), (pair) => pair.split("=", 2)));
 
         if (Configuration.globalData.auth.urlParams) {
-            _.extend(params, Configuration.globalData.auth.urlParams);
+            _.extend(urlParams, Configuration.globalData.auth.urlParams);
         }
 
         if (RealmHelper.getOverrideRealm()) {
-            params.realm = RealmHelper.getOverrideRealm();
+            urlParams.realm = RealmHelper.getOverrideRealm();
         }
 
         // In case user has logged in already update session
         const sessionToken = SessionToken.get();
         if (sessionToken) {
-            params.sessionUpgradeSSOTokenId = sessionToken;
+            urlParams.sessionUpgradeSSOTokenId = sessionToken;
         }
 
-        return params;
+        return urlParams;
     }
-
+    function urlParamsFromObject (params) {
+        if (_.isEmpty(params)) {
+            return "";
+        }
+        return _.map(params, (value, key) => `${key}=${value}`).join("&");
+    }
     function addQueryStringToUrl (url, queryString) {
         if (_.isEmpty(queryString)) {
             return url;
@@ -62,11 +67,10 @@ define([
     }
     obj.begin = function (options) {
         knownAuth = _.clone(Configuration.globalData.auth);
-        const fragmentParams = URIUtils.getCurrentFragmentQueryString();
         const urlAndParams = addQueryStringToUrl(
             RealmHelper.decorateURIWithSubRealm("__subrealm__/authenticate"),
-            query.urlParamsFromObject(handleFragmentParameters(query.parseParameters(fragmentParams)))
-        );
+            urlParamsFromObject(getURLParameters()
+        ));
         const serviceCall = {
             type: "POST",
             headers: { "Accept-API-Version": "protocol=1.0,resource=2.0" },
@@ -134,11 +138,10 @@ define([
                 window.location.href = errorBody.detail.failureUrl;
             }
         };
-        const fragmentParams = URIUtils.getCurrentFragmentQueryString();
         const urlAndParams = addQueryStringToUrl(
             RealmHelper.decorateURIWithRealm("__subrealm__/authenticate"),
-            query.urlParamsFromObject(handleFragmentParameters(query.parseParameters(fragmentParams)))
-        );
+            urlParamsFromObject(getURLParameters()
+        ));
         const serviceCall = {
             type: "POST",
             headers: { "Accept-API-Version": "protocol=1.0,resource=2.0" },
@@ -224,16 +227,8 @@ define([
         return _.get(auth, "urlParams.authIndexType") !== _.get(knownAuth, "urlParams.authIndexType") ||
             _.get(auth, "urlParams.authIndexValue") !== _.get(knownAuth, "urlParams.authIndexValue");
     }
-    /**
-     * Checks if a RedirectCallback is present in the "callbacks" object of the provided requirementList.
-     * @param {Array.<Object>} requirementList list of requirements to check.
-     * @returns {Boolean} if a RedirectCallback is present in the last requirement callbacks.
-     */
-    function hasRedirectCallback (requirementList) {
-        return requirementList.length !== 0 && _.some(_.last(requirementList).callbacks, "type", "RedirectCallback");
-    }
     obj.getRequirements = function (args) {
-        if (AuthenticationToken.get() && !hasRedirectCallback(requirementList)) {
+        if (AuthenticationToken.get()) {
             return obj.submitRequirements(_.extend({ authId: AuthenticationToken.get() },
                 Configuration.globalData.auth.urlParams)).done(() => {
                     knownAuth = _.clone(Configuration.globalData.auth);
@@ -249,6 +244,16 @@ define([
         } else {
             return $.Deferred().resolve(requirementList[requirementList.length - 1]);
         }
+    };
+    obj.setGoToUrl = function (tokenId, urlGoTo) {
+        return obj.serviceCall({
+            type: "POST",
+            headers: { "Accept-API-Version": "protocol=1.0,resource=2.0" },
+            data: JSON.stringify({ "goto": urlGoTo }),
+            url: "",
+            serviceUrl: `${Constants.host}/${Constants.context}/json/users?_action=validateGoto`,
+            errorsHandlers: { "Bad Request": { status: "400" } }
+        });
     };
     return obj;
 });

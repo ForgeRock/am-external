@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2017 ForgeRock AS.
+ * Copyright 2013-2016 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
@@ -32,6 +32,7 @@ import javax.security.auth.message.MessageInfo;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.StringUtils;
 import org.forgerock.caf.authentication.framework.AuthenticationFramework;
 import org.forgerock.jaspi.modules.session.jwt.JwtSessionModule;
 import org.forgerock.jaspi.modules.session.jwt.ServletJwtSessionModule;
@@ -40,7 +41,6 @@ import org.forgerock.openam.authentication.modules.common.JaspiAuthModuleWrapper
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.utils.AMKeyProvider;
 import org.forgerock.openam.utils.ClientUtils;
-import org.forgerock.openam.utils.StringUtils;
 
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
@@ -81,6 +81,7 @@ public class PersistentCookieAuthModule extends JaspiAuthModuleWrapper<ServletJw
 
     private static final String OPENAM_USER_CLAIM_KEY = "openam.usr";
     private static final String OPENAM_AUTH_TYPE_CLAIM_KEY = "openam.aty";
+    private static final String OPENAM_SESSION_ID_CLAIM_KEY = "openam.sid";
     private static final String OPENAM_REALM_CLAIM_KEY = "openam.rlm";
     private static final String OPENAM_CLIENT_IP_CLAIM_KEY = "openam.clientip";
 
@@ -133,6 +134,7 @@ public class PersistentCookieAuthModule extends JaspiAuthModuleWrapper<ServletJw
      */
     @Override
     protected Map<String, Object> initialize(Subject subject, Map sharedState, Map options) {
+
         String idleTimeString = CollectionHelper.getMapAttr(options, COOKIE_IDLE_TIMEOUT_SETTING_KEY);
         String maxLifeString = CollectionHelper.getMapAttr(options, COOKIE_MAX_LIFE_SETTING_KEY);
         if (StringUtils.isEmpty(idleTimeString)) {
@@ -166,7 +168,6 @@ public class PersistentCookieAuthModule extends JaspiAuthModuleWrapper<ServletJw
             DEBUG.error("Error initialising Authentication Module", e);
             return null;
         }
-
     }
 
     /**
@@ -228,18 +229,13 @@ public class PersistentCookieAuthModule extends JaspiAuthModuleWrapper<ServletJw
             }
             String cookieDomainsString = "";
             for (String cookieDomain : cookieDomains) {
-                if (StringUtils.isNotEmpty(cookieDomain)) {
-                    cookieDomainsString += cookieDomain + ",";
-                }
+                cookieDomainsString += cookieDomain + ",";
             }
             setUserSessionProperty(COOKIE_DOMAINS_KEY, cookieDomainsString);
             setUserSessionProperty(HMAC_KEY, encryptedHmacKey);
             final Subject clientSubject = new Subject();
             MessageInfo messageInfo = prepareMessageInfo(getHttpServletRequest(), getHttpServletResponse());
             if (process(messageInfo, clientSubject, callbacks)) {
-                if (principal != null) {
-                    setAuthenticatingUserName(principal.getName());
-                }
                 return ISAuthConstants.LOGIN_SUCCEED;
             }
             throw new AuthLoginException(AUTH_RESOURCE_BUNDLE_NAME, "cookieNotValid", null);
@@ -396,6 +392,7 @@ public class PersistentCookieAuthModule extends JaspiAuthModuleWrapper<ServletJw
 
             contextMap.put(OPENAM_USER_CLAIM_KEY, ssoToken.getPrincipal().getName());
             contextMap.put(OPENAM_AUTH_TYPE_CLAIM_KEY, ssoToken.getAuthType());
+            contextMap.put(OPENAM_SESSION_ID_CLAIM_KEY, ssoToken.getTokenID().toString());
             contextMap.put(OPENAM_REALM_CLAIM_KEY, ssoToken.getProperty(SSO_TOKEN_ORGANIZATION_PROPERTY_KEY));
             contextMap.put(OPENAM_CLIENT_IP_CLAIM_KEY, ClientUtils.getClientIPAddress(request));
 

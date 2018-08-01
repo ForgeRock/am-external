@@ -57,8 +57,7 @@ define([
                     if (_.has(this.changed, "password")) {
                         // password changes have to occur via a special rest call
                         return ServiceInvoker.restCall({
-                            url: RealmHelper.decorateURIWithRealm(
-                                `${baseUrl}/${encodeURIComponent(this.id)}?_action=changePassword`),
+                            url: RealmHelper.decorateURIWithRealm(`${baseUrl}/${this.id}?_action=changePassword`),
                             headers: { "Accept-API-Version": "protocol=1.0,resource=2.0" },
                             type: "POST",
                             suppressEvents: true,
@@ -90,7 +89,7 @@ define([
                                         .value()
                                 ),
                                 suppressEvents: true,
-                                url: RealmHelper.decorateURIWithRealm(`${baseUrl}/${encodeURIComponent(this.id)}`),
+                                url: RealmHelper.decorateURIWithRealm(`${baseUrl}/${this.id}`),
                                 headers: {
                                     "If-Match": this.getMVCCRev(),
                                     "Accept-API-Version": "protocol=1.0,resource=2.0",
@@ -104,7 +103,7 @@ define([
                     // The only other supported operation is read
                     return ServiceInvoker.restCall(_.extend(
                         {
-                            "url" : RealmHelper.decorateURIWithRealm(`${baseUrl}/${encodeURIComponent(this.id)}`),
+                            "url" : RealmHelper.decorateURIWithRealm(`${baseUrl}/${this.id}`),
                             "headers": { "Accept-API-Version": "protocol=1.0,resource=2.0" },
                             "type": "GET"
                         },
@@ -166,7 +165,6 @@ define([
                         Configuration.globalData.auth.successURL = data.successURL;
                         Configuration.globalData.auth.fullLoginURL = data.fullLoginURL;
                         Configuration.globalData.auth.subRealm = data.realm.slice(1);
-                        Configuration.globalData.auth.sessionAbsoluteRealm = data.absoluteRealm;
 
                         // keep track of the current realm as a future default value, following logout:
                         Router.configuration.routes.login.defaults[0] = data.realm;

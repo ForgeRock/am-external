@@ -24,7 +24,7 @@
  *
  * $Id: WindowsDesktopSSO.java,v 1.7 2009/07/28 19:40:45 beomsuk Exp $
  *
- * Portions Copyrighted 2011-2017 ForgeRock AS.
+ * Portions Copyrighted 2011-2016 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.windowsdesktopsso;
@@ -72,13 +72,24 @@ public class WindowsDesktopSSO extends AMLoginModule {
     private static final String amAuthWindowsDesktopSSO = 
         "amAuthWindowsDesktopSSO";
 
-    private static final String PRINCIPAL = ISAuthConstants.AUTH_ATTR_PREFIX + "windowsdesktopsso-principal-name";
-    private static final String KEYTAB    = ISAuthConstants.AUTH_ATTR_PREFIX + "windowsdesktopsso-keytab-file";
-    private static final String REALM     = ISAuthConstants.AUTH_ATTR_PREFIX + "windowsdesktopsso-kerberos-realm";
-    private static final String KDC       = ISAuthConstants.AUTH_ATTR_PREFIX + "windowsdesktopsso-kdc";
-    private static final String RETURNREALM = ISAuthConstants.AUTH_ATTR_PREFIX + "windowsdesktopsso-returnRealm";
-    private static final String LOOKUPUSER = ISAuthConstants.AUTH_ATTR_PREFIX + "windowsdesktopsso-lookupUserInRealm";
-    private static final String SUBJECT   = "serviceSubject";
+    private static final String[] configAttributes = {
+        "iplanet-am-auth-windowsdesktopsso-principal-name",
+        "iplanet-am-auth-windowsdesktopsso-keytab-file",
+        "iplanet-am-auth-windowsdesktopsso-kerberos-realm",
+        "iplanet-am-auth-windowsdesktopsso-kdc",
+        "iplanet-am-auth-windowsdesktopsso-returnRealm",
+        "iplanet-am-auth-windowsdesktopsso-lookupUserInRealm",
+        "iplanet-am-auth-windowsdesktopsso-auth-level",
+        "serviceSubject" };
+
+    private static final int PRINCIPAL = 0;
+    private static final int KEYTAB    = 1;
+    private static final int REALM     = 2;
+    private static final int KDC       = 3;
+    private static final int RETURNREALM = 4;
+    private static final int LOOKUPUSER = 5;
+    private static final int AUTHLEVEL = 6;
+    private static final int SUBJECT   = 7;
     
     private static final String ACCEPTED_REALMS_ATTR = ISAuthConstants.AUTH_ATTR_PREFIX 
             + "windowsdesktopsso-kerberos-realms-trusted";
@@ -91,6 +102,7 @@ public class WindowsDesktopSSO extends AMLoginModule {
     private String kdcRealm   = null;
     private String kdcServer  = null;
     private boolean returnRealm = false;
+    private String authLevel  = null;
     private Map    options    = null;
     private String confIndex  = null;
     private boolean lookupUserInRealm = false;
@@ -347,6 +359,7 @@ public class WindowsDesktopSSO extends AMLoginModule {
         keyTabFile = null;
         kdcRealm = null;
         kdcServer = null;
+        authLevel = null;
         options = null;
         confIndex = null;
         trustedKerberosRealms = Collections.EMPTY_SET;
@@ -509,12 +522,15 @@ public class WindowsDesktopSSO extends AMLoginModule {
 
     private boolean getConfigParams() {
         // KDC realm in service principal must be uppercase.
-        servicePrincipalName = CollectionHelper.getMapAttr(options, PRINCIPAL);
-        keyTabFile = CollectionHelper.getMapAttr(options, KEYTAB);
-        kdcRealm = CollectionHelper.getMapAttr(options, REALM);
-        kdcServer = CollectionHelper.getMapAttr(options, KDC);
-        returnRealm = CollectionHelper.getBooleanMapAttr(options, RETURNREALM, false);
-        lookupUserInRealm = CollectionHelper.getBooleanMapAttr(options, LOOKUPUSER, false);
+        servicePrincipalName = getMapAttr(options, PRINCIPAL);
+        keyTabFile = getMapAttr(options, KEYTAB);
+        kdcRealm = getMapAttr(options, REALM);
+        kdcServer = getMapAttr(options, KDC);
+        authLevel = getMapAttr(options, AUTHLEVEL);
+        returnRealm = 
+            Boolean.valueOf(getMapAttr(options,RETURNREALM)).booleanValue();
+        lookupUserInRealm = 
+            Boolean.valueOf(getMapAttr(options,LOOKUPUSER)).booleanValue();
         trustedKerberosRealms = getAcceptedKerberosRealms(options);
 
         if (debug.messageEnabled()){
@@ -525,7 +541,8 @@ public class WindowsDesktopSSO extends AMLoginModule {
                 "\nkdc server: " + kdcServer +
                 "\ndomain principal: " + returnRealm +
                 "\nLookup user in realm:" + lookupUserInRealm +
-                "\nAccepted Kerberos realms: " + trustedKerberosRealms);
+                "\nAccepted Kerberos realms: " + trustedKerberosRealms +    
+                "\nauth level: " + authLevel);
         }
 
         confIndex = getRequestOrg() + "/" +
@@ -536,10 +553,11 @@ public class WindowsDesktopSSO extends AMLoginModule {
         }
         
 
-        String principalName = (String)configMap.get(PRINCIPAL);
-        String tabFile = (String)configMap.get(KEYTAB);
-        String realm = (String)configMap.get(REALM);
-        String kdc = (String)configMap.get(KDC);
+        String principalName = 
+            (String)configMap.get(configAttributes[PRINCIPAL]);
+        String tabFile = (String)configMap.get(configAttributes[KEYTAB]);
+        String realm = (String)configMap.get(configAttributes[REALM]);
+        String kdc = (String)configMap.get(configAttributes[KDC]);
 
         if (principalName == null || tabFile == null || 
             realm == null || kdc == null ||
@@ -550,7 +568,7 @@ public class WindowsDesktopSSO extends AMLoginModule {
             return false;
         }
 
-        serviceSubject = (Subject)configMap.get(SUBJECT);
+        serviceSubject = (Subject)configMap.get(configAttributes[SUBJECT]);
         if (serviceSubject == null) {
             return false;
         }
@@ -576,11 +594,11 @@ public class WindowsDesktopSSO extends AMLoginModule {
             configMap = new HashMap();
         }
 
-        configMap.put(SUBJECT, serviceSubject);
-        configMap.put(PRINCIPAL, servicePrincipalName);
-        configMap.put(KEYTAB, keyTabFile);
-        configMap.put(REALM, kdcRealm);
-        configMap.put(KDC, kdcServer);
+        configMap.put(configAttributes[SUBJECT], serviceSubject);
+        configMap.put(configAttributes[PRINCIPAL], servicePrincipalName);
+        configMap.put(configAttributes[KEYTAB], keyTabFile);
+        configMap.put(configAttributes[REALM], kdcRealm);
+        configMap.put(configAttributes[KDC], kdcServer);
 
         configTable.put(confIndex, configMap);
     }
@@ -625,6 +643,10 @@ public class WindowsDesktopSSO extends AMLoginModule {
         }
     }        
 
+    private String getMapAttr(Map options, int index) {
+        return CollectionHelper.getMapAttr(options, configAttributes[index]);
+    }
+
     private void verifyAttributes() throws AuthLoginException {
         if (servicePrincipalName == null || servicePrincipalName.length() == 0){
             throw new AuthLoginException(amAuthWindowsDesktopSSO, 
@@ -642,6 +664,10 @@ public class WindowsDesktopSSO extends AMLoginModule {
             throw new AuthLoginException(amAuthWindowsDesktopSSO,
                 "nullkdc", null);
         }
+        if (authLevel == null || authLevel.length() == 0){
+            throw new AuthLoginException(amAuthWindowsDesktopSSO, 
+                "nullauthlevel", null);
+        }
 
         if (!(new File(keyTabFile)).exists()) {
             // ibm jdk needs to skip "file://" part in parameter
@@ -649,6 +675,13 @@ public class WindowsDesktopSSO extends AMLoginModule {
                 throw new AuthLoginException(amAuthWindowsDesktopSSO, 
                 "nokeytab", null);
             }
+        }
+        
+        try {
+            setAuthLevel(Integer.parseInt(authLevel));
+        } catch (Exception e) {
+            throw new AuthLoginException(amAuthWindowsDesktopSSO, 
+                "authlevel", null, e);
         }
     }
 

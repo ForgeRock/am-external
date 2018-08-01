@@ -29,7 +29,7 @@ define([
         render () {
             RESTLoginHelper.removeSessionCookie();
             RESTLoginHelper.removeAuthCookie();
-            const params = URIUtils.getCurrentFragmentQueryString();
+            const params = URIUtils.getCurrentCompositeQueryString();
             this.data.params = params ? `&${params}` : "";
             this.data.title = $.t("openam.authentication.unavailable");
             this.parentRender();

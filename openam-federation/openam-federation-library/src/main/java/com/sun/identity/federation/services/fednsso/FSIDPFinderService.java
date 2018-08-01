@@ -24,17 +24,15 @@
  *
  * $Id: FSIDPFinderService.java,v 1.4 2008/06/25 05:46:58 qcheng Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
  */
 
 
 package com.sun.identity.federation.services.fednsso;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-
 import com.sun.identity.cot.CircleOfTrustDescriptor;
 import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.cot.COTException;
+import com.sun.identity.cot.COTConstants;
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.federation.common.FSException;
 import com.sun.identity.federation.common.FSRedirectException;
@@ -50,6 +48,7 @@ import com.sun.identity.federation.services.FSAuthnDecisionHandler;
 import com.sun.identity.federation.services.FSAuthContextResult;
 import com.sun.identity.liberty.ws.meta.jaxb.IDPDescriptorType;
 import com.sun.identity.liberty.ws.meta.jaxb.SPDescriptorType;
+import com.sun.identity.shared.encode.URLEncDec;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -64,6 +63,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Collections;
 import java.util.List;
+import java.util.ArrayList;
 
 
 /**
@@ -296,15 +296,15 @@ public class FSIDPFinderService extends HttpServlet {
                StringBuffer returnURL = new StringBuffer(300); 
                returnURL.append(baseURL).append(IFSConstants.IDP_FINDER_URL)
                    .append("?").append("RequestID")
-                   .append("=").append(urlEncodeQueryParameterNameOrValue(requestID))
+                   .append("=").append(URLEncDec.encode(requestID))
                    .append("&").append("Realm=")
-                   .append(urlEncodeQueryParameterNameOrValue(realm))
+                   .append(URLEncDec.encode(realm))
                    .append("&").append("ProviderID=")
-                   .append(urlEncodeQueryParameterNameOrValue(entityID));
+                   .append(URLEncDec.encode(entityID));
                StringBuffer redirectURL = new StringBuffer(300);
                redirectURL.append(readerServiceURL).append("?")
                    .append(IFSConstants.LRURL).append("=")
-                   .append(urlEncodeQueryParameterNameOrValue(returnURL.toString()));
+                   .append(URLEncDec.encode(returnURL.toString()));
                String url = redirectURL.toString();
                if (FSUtils.debug.messageEnabled()) {
                    FSUtils.debug.message(
@@ -403,19 +403,20 @@ public class FSIDPFinderService extends HttpServlet {
                     .append("=").append(IFSConstants.AUTHN_INDICATOR_VALUE)
                     .append("&")
                     .append(IFSConstants.AUTHN_CONTEXT)
-                    .append("=").append(urlEncodeQueryParameterNameOrValue(authnContext))
+                    .append("=").append(URLEncDec.encode(authnContext))
                     .append("&")
                     .append(IFSConstants.REALM)
-                    .append("=").append(urlEncodeQueryParameterNameOrValue(realm))
+                    .append("=").append(URLEncDec.encode(realm))
                     .append("&")
                     .append(IFSConstants.PROVIDER_ID_KEY)
-                    .append("=").append(urlEncodeQueryParameterNameOrValue(hostProviderID))
+                    .append("=").append(URLEncDec.encode(hostProviderID))
                     .append("&")
                     .append(IFSConstants.META_ALIAS)
-                    .append("=").append(urlEncodeQueryParameterNameOrValue(metaAlias))
+                    .append("=").append(URLEncDec.encode(metaAlias))
                     .append("&")
                     .append(IFSConstants.AUTH_REQUEST_ID)
-                    .append("=").append(urlEncodeQueryParameterNameOrValue(authnRequest.getRequestID()));
+                    .append("=").append(URLEncDec.encode(
+                     authnRequest.getRequestID()));
 
             //create goto url
             String postLoginUrl = FSServiceUtils.getBaseURL(httpRequest)
@@ -427,7 +428,7 @@ public class FSIDPFinderService extends HttpServlet {
                 gotoUrl.append("&");
             }
             gotoUrl.append(IFSConstants.LRURL).append("=")
-                .append(urlEncodeQueryParameterNameOrValue(returnUrl.toString()))
+                .append(URLEncDec.encode(returnUrl.toString()))
                 .append("&").append(IFSConstants.SSOKEY).append("=")
                 .append(IFSConstants.SSOVALUE).append("&")
                 .append(IFSConstants.META_ALIAS).append("=").append(metaAlias);
@@ -441,11 +442,11 @@ public class FSIDPFinderService extends HttpServlet {
                 redirectUrl.append("&");
             }
             redirectUrl.append(IFSConstants.GOTO_URL_PARAM).append("=")
-                .append(urlEncodeQueryParameterNameOrValue(gotoUrl.toString()));
+                .append(URLEncDec.encode(gotoUrl.toString()));
 
             if (realm != null && realm.length() != 0) {
                 redirectUrl.append("&").append(IFSConstants.ORGKEY).append("=")
-                    .append(urlEncodeQueryParameterNameOrValue(realm));
+                    .append(URLEncDec.encode(realm));
             }
             int len = redirectUrl.length() - 1;
             if (redirectUrl.charAt(len) == '&') {

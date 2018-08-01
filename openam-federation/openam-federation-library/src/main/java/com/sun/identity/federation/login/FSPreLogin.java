@@ -24,14 +24,13 @@
  *
  * $Id: FSPreLogin.java,v 1.6 2008/08/19 19:11:04 veiming Exp $
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015 ForgeRock AS.
  */
 
 package com.sun.identity.federation.login;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-
 import java.util.Map;
+import java.util.Set;
 import java.util.HashMap;
 import java.util.Enumeration;
 import java.util.Iterator;
@@ -52,6 +51,7 @@ import com.sun.identity.federation.services.util.FSServiceUtils;
 import com.sun.identity.federation.services.FSLoginHelper;
 import com.sun.identity.federation.services.FSLoginHelperException;
 import com.sun.identity.shared.encode.CookieUtils;
+import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionProvider;
@@ -205,7 +205,7 @@ public class FSPreLogin {
             FSUtils.debug.message("FSPreLogin::getQueryString.gotoURL ="
                 + gotoURL);
         }
-        gotoURL = urlEncodeQueryParameterNameOrValue(gotoURL);
+        gotoURL = URLEncDec.encode(gotoURL);
         StringBuffer returnURLBuf =
             new StringBuffer().append(IFSConstants.ORGKEY)
                 .append(IFSConstants.EQUAL_TO)
@@ -499,7 +499,7 @@ public class FSPreLogin {
                     .append(IFSConstants.AMPERSAND)
                     .append(IFSConstants.AUTH_REQUEST_ID)
                     .append(IFSConstants.EQUAL_TO)
-                    .append(urlEncodeQueryParameterNameOrValue(requestID))
+                    .append(URLEncDec.encode(requestID))
                     .append(IFSConstants.AMPERSAND)
                     .append(IFSConstants.META_ALIAS)
                     .append(IFSConstants.EQUAL_TO)

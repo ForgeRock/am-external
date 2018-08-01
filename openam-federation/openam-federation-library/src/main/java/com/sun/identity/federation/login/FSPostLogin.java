@@ -1,4 +1,4 @@
-/*
+/**
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,12 +24,9 @@
  *
  * $Id: FSPostLogin.java,v 1.6 2008/07/31 00:55:33 exu Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
  */
 
 package com.sun.identity.federation.login;
-
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import java.util.Map;
 import java.util.HashMap;
@@ -41,6 +38,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import com.sun.identity.cot.COTConstants;
 import com.sun.identity.cot.CircleOfTrustDescriptor;
 import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.cot.COTException;
@@ -63,6 +61,8 @@ import com.sun.identity.federation.services.logout.FSTokenListener;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionProvider;
+
+import com.sun.identity.shared.encode.URLEncDec;
 
 import com.sun.liberty.LibertyManager;
 
@@ -154,7 +154,7 @@ public class FSPostLogin {
                             .append(IFSConstants.AMPERSAND)
                             .append(IFSConstants.LRURL)
                             .append(IFSConstants.EQUAL_TO)
-                            .append(urlEncodeQueryParameterNameOrValue(lrURL)).toString();
+                            .append(URLEncDec.encode(lrURL)).toString();
                     }
                 } else {
                     if (FSUtils.debug.messageEnabled())  {
@@ -182,7 +182,7 @@ public class FSPostLogin {
                     .append(request.getQueryString()).toString();
                 String preLoginURL = LibertyManager.getLoginURL(request);
                 sendResponse(request, response, preLoginURL + "&goto=" +
-                        urlEncodeQueryParameterNameOrValue(gotoUrl));
+                    URLEncDec.encode(gotoUrl));
                 return;
             }
             Set providerSet = LibertyManager.getProvidersToFederate(
@@ -201,7 +201,7 @@ public class FSPostLogin {
                         .append(metaAlias).append(IFSConstants.AMPERSAND)
                         .append(IFSConstants.LRURL)
                         .append(IFSConstants.EQUAL_TO)
-                        .append(urlEncodeQueryParameterNameOrValue(lrURL)).toString();
+                        .append(URLEncDec.encode(lrURL)).toString();
             } else {
                 if (FSUtils.debug.messageEnabled()) {
                     FSUtils.debug.message("FSPostLogin::doPostLogin: No "
@@ -398,11 +398,11 @@ public class FSPostLogin {
             redirectURL =  new StringBuffer().append(tldURL)
                 .append(IFSConstants.QUESTION_MARK)
                 .append(IFSConstants.LRURL).append(IFSConstants.EQUAL_TO)
-                .append(urlEncodeQueryParameterNameOrValue(targetURL))
+                .append(URLEncDec.encode(targetURL))
                 .append(IFSConstants.AMPERSAND)
                 .append(IFSConstants.PROVIDER_ID_KEY)
                 .append(IFSConstants.EQUAL_TO)
-                .append(urlEncodeQueryParameterNameOrValue(entityID)).toString();
+                .append(URLEncDec.encode(entityID)).toString();
         }
         if (FSUtils.debug.messageEnabled()) {
             FSUtils.debug.message("FSPostLogin::doConsentToIntro return url"

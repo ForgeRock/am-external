@@ -29,7 +29,6 @@
 
 package com.sun.identity.saml.common;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import java.util.Collections;
@@ -65,8 +64,8 @@ import com.sun.identity.common.SystemConfigurationException;
 import com.sun.identity.common.SystemTimerPool;
 import com.sun.identity.common.TaskRunnable;
 import com.sun.identity.common.TimerPool;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
+import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.encode.Base64;
 
 import javax.servlet.ServletException;
@@ -752,7 +751,7 @@ public class SAMLUtils  extends SAMLUtilsCommon {
                 out.println("<INPUT TYPE=\"HIDDEN\" NAME=\""+
                 SAMLConstants.POST_ASSERTION_NAME + "\"");
                 out.println("VALUE=\"" +
-                URLEncDec.encode((String)it.next()) + "\">");
+                    URLEncDec.encode((String)it.next()) + "\">");
             }
         }
         if (attrMap != null && !attrMap.isEmpty()) {
@@ -1477,9 +1476,11 @@ public class SAMLUtils  extends SAMLUtilsCommon {
             req.getServerPort() + req.getContextPath();
         String redirectUrl = null;
         if (key == null || key.equals("")) {
-            redirectUrl = reqUrl + "/UI/Login?goto=" + urlEncodeQueryParameterNameOrValue(gotoUrl);
+            redirectUrl = reqUrl +"/UI/Login?goto=" +  
+                URLEncDec.encode(gotoUrl);
         } else {
-            redirectUrl = reqUrl +"/UI/Login?" + key + "&goto=" + urlEncodeQueryParameterNameOrValue(gotoUrl);
+            redirectUrl = reqUrl +"/UI/Login?" + key + "&goto="+ 
+                URLEncDec.encode(gotoUrl);
         }
         if (SAMLUtils.debug.messageEnabled()) {
             SAMLUtils.debug.message("Redirect to auth login via:" +
@@ -1761,7 +1762,7 @@ public class SAMLUtils  extends SAMLUtilsCommon {
                   + SAMLConstants.ERROR_CODE + "=" + errorCode + "&"
                   + SAMLConstants.HTTP_STATUS_CODE + "=" + httpStatusCode
                   + "&" + SAMLConstants.ERROR_MESSAGE + "="
-                  + urlEncodeQueryParameterNameOrValue(errorMsg);
+                  + URLEncDec.encode(errorMsg);
 
              forwardRequest(newUrl, request, response);
          } else {
@@ -1778,7 +1779,7 @@ public class SAMLUtils  extends SAMLUtilsCommon {
                    + SAMLConstants.ERROR_CODE + "=" + errorCode + "&"
                    + SAMLConstants.HTTP_STATUS_CODE + "=" + httpStatusCode
                    + "&" + SAMLConstants.ERROR_MESSAGE + "="
-                   + urlEncodeQueryParameterNameOrValue(errorMsg);
+                   + URLEncDec.encode(errorMsg);
 
               FSUtils.forwardRequest(request, response, newUrl) ;
            } else {
@@ -1787,7 +1788,7 @@ public class SAMLUtils  extends SAMLUtilsCommon {
                request.setAttribute("ERROR_CODE_NAME", SAMLConstants.ERROR_CODE);
                request.setAttribute("ERROR_CODE", errorCode);
                request.setAttribute("ERROR_MESSAGE_NAME", SAMLConstants.ERROR_MESSAGE);
-               request.setAttribute("ERROR_MESSAGE", urlEncodeQueryParameterNameOrValue(errorMsg));
+               request.setAttribute("ERROR_MESSAGE", URLEncDec.encode(errorMsg));
                request.setAttribute("HTTP_STATUS_CODE_NAME", SAMLConstants.HTTP_STATUS_CODE);
                request.setAttribute("HTTP_STATUS_CODE", httpStatusCode);
                request.setAttribute("SAML_ERROR_KEY", bundle.getString("samlErrorKey"));

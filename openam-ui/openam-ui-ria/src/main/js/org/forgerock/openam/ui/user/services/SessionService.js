@@ -25,9 +25,8 @@
 define([
     "lodash",
     "org/forgerock/commons/ui/common/main/AbstractDelegate",
-    "org/forgerock/commons/ui/common/util/Constants",
-    "org/forgerock/openam/ui/user/login/gotoUrl"
-], function (_, AbstractDelegate, Constants, gotoUrl) {
+    "org/forgerock/commons/ui/common/util/Constants"
+], function (_, AbstractDelegate, Constants) {
     var obj = new AbstractDelegate(`${Constants.host}/${Constants.context}/json/sessions`);
 
     function performServiceCall (options) {
@@ -60,9 +59,8 @@ define([
     };
 
     obj.logout = function (token) {
-        const paramString = gotoUrl.exists() ? `&goto=${gotoUrl.get()}` : "";
         return performServiceCall({
-            url: `/${token}?_action=logout${paramString}`
+            url: `/${token}?_action=logout`
         });
     };
 

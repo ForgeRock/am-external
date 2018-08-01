@@ -24,15 +24,13 @@
  *
  * $Id: IDPList.java,v 1.2 2008/06/25 05:47:56 qcheng Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.protocol.impl.IDPListImpl;
+import org.w3c.dom.Element;
 import java.util.List;
 
 
@@ -43,8 +41,6 @@ import java.util.List;
  * @supported.all.api
  */
 
-@JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
-        defaultImpl = IDPListImpl.class)
 public interface IDPList {
     
     /** 

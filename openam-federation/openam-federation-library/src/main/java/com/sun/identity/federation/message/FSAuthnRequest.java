@@ -29,7 +29,6 @@
 
 package com.sun.identity.federation.message;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.federation.common.FSUtils;
@@ -45,6 +44,7 @@ import com.sun.identity.saml.protocol.AbstractRequest;
 import com.sun.identity.saml.xmlsig.XMLSignatureManager;
 import com.sun.identity.shared.DateUtils;
 import com.sun.identity.shared.encode.Base64;
+import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -1196,7 +1196,7 @@ public class FSAuthnRequest extends AbstractRequest {
         
         urlEncodedAuthnReq.append(IFSConstants.AUTH_REQUEST_ID)
                           .append(IFSConstants.EQUAL_TO)
-                          .append(urlEncodeQueryParameterNameOrValue(requestID))
+                          .append(URLEncDec.encode(requestID))
                           .append(IFSConstants.AMPERSAND)
                           .append(IFSConstants.MAJOR_VERSION)
                           .append(IFSConstants.EQUAL_TO)
@@ -1223,27 +1223,28 @@ public class FSAuthnRequest extends AbstractRequest {
 
         urlEncodedAuthnReq.append(IFSConstants.PROVIDER_ID)
                           .append(IFSConstants.EQUAL_TO)
-                          .append(urlEncodeQueryParameterNameOrValue(providerId))
+                          .append(URLEncDec.encode(providerId))
                           .append(IFSConstants.AMPERSAND);
 
         if (consentURI != null) {
             urlEncodedAuthnReq.append(IFSConstants.CONSENT)
                               .append(IFSConstants.EQUAL_TO)
-                              .append(urlEncodeQueryParameterNameOrValue(consentURI))
+                              .append(URLEncDec.encode(consentURI))
                               .append(IFSConstants.AMPERSAND);
         }
 
         if(affiliationID != null) {
             urlEncodedAuthnReq.append(IFSConstants.AFFILIATIONID)
                               .append(IFSConstants.EQUAL_TO)
-                              .append(urlEncodeQueryParameterNameOrValue(affiliationID))
+                              .append(URLEncDec.encode(affiliationID))
                               .append(IFSConstants.AMPERSAND);
         }
         
         if (issueInstant != null){
             urlEncodedAuthnReq.append(IFSConstants.ISSUE_INSTANT)
                               .append(IFSConstants.EQUAL_TO)
-                              .append(urlEncodeQueryParameterNameOrValue(DateUtils.toUTCDateFormat(issueInstant)))
+                              .append(URLEncDec.encode(
+                                  DateUtils.toUTCDateFormat(issueInstant)))
                               .append(IFSConstants.AMPERSAND);
         } else {
             FSUtils.debug.error("FSAuthnRequest.toURLEncodedQueryString: "
@@ -1298,7 +1299,7 @@ public class FSAuthnRequest extends AbstractRequest {
         if (protocolProfile != null && protocolProfile.length() != 0) {
             urlEncodedAuthnReq.append(IFSConstants.PROTOCOL_PROFILE)
                               .append(IFSConstants.EQUAL_TO)
-                              .append(urlEncodeQueryParameterNameOrValue(protocolProfile))
+                              .append(URLEncDec.encode(protocolProfile))
                               .append(IFSConstants.AMPERSAND);
         }
         
@@ -1310,7 +1311,7 @@ public class FSAuthnRequest extends AbstractRequest {
         if (relayState != null && relayState.length() != 0) {
             urlEncodedAuthnReq.append(IFSConstants.RELAY_STATE)
                               .append(IFSConstants.EQUAL_TO)
-                              .append(urlEncodeQueryParameterNameOrValue(relayState))
+                              .append(URLEncDec.encode(relayState))
                               .append(IFSConstants.AMPERSAND);
         }
         
@@ -1323,7 +1324,7 @@ public class FSAuthnRequest extends AbstractRequest {
                        && authContextCompType.length() != 0) {
                 urlEncodedAuthnReq.append(IFSConstants.AUTHN_CONTEXT_COMPARISON)
                                   .append(IFSConstants.EQUAL_TO)
-                                  .append(urlEncodeQueryParameterNameOrValue(authContextCompType))
+                                  .append(URLEncDec.encode(authContextCompType))
                                   .append(IFSConstants.AMPERSAND);
             }
         }

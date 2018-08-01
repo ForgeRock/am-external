@@ -1,4 +1,4 @@
-/*
+/**
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,12 +24,10 @@
  *
  * $Id: FSSSOLECPProfileHandler.java,v 1.3 2008/06/25 05:46:59 qcheng Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
  */
 
-package com.sun.identity.federation.services.fednsso;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
+package com.sun.identity.federation.services.fednsso;
 
 import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.federation.common.FSUtils;
@@ -47,6 +45,7 @@ import com.sun.identity.liberty.ws.meta.jaxb.SPDescriptorType;
 import com.sun.identity.saml.assertion.NameIdentifier;
 import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.saml.xmlsig.XMLSignatureManager;
+import com.sun.identity.shared.encode.URLEncDec;
 import javax.xml.soap.*;
 
 
@@ -140,21 +139,21 @@ public class FSSSOLECPProfileHandler extends FSSSOAndFedHandler {
             {
                 returnUrl.append(IFSConstants.AUTHN_CONTEXT)
                     .append("=")
-                    .append(urlEncodeQueryParameterNameOrValue(authnContext))
+                    .append(URLEncDec.encode(authnContext))
                     .append("&");
             }
             returnUrl.append(IFSConstants.PROVIDER_ID_KEY)
                 .append("=")
-                .append(urlEncodeQueryParameterNameOrValue(hostedEntityId))
+                .append(URLEncDec.encode(hostedEntityId))
                 .append("&").append(IFSConstants.REALM)
                 .append("=")
-                .append(urlEncodeQueryParameterNameOrValue(realm))
+                .append(URLEncDec.encode(realm))
                 .append("&").append(IFSConstants.META_ALIAS)
                 .append("=")
-                .append(urlEncodeQueryParameterNameOrValue(metaAlias))
+                .append(URLEncDec.encode(metaAlias))
                 .append("&").append(IFSConstants.AUTH_REQUEST_ID)
                 .append("=")
-                .append(urlEncodeQueryParameterNameOrValue(authnRequest.getRequestID()));
+                .append(URLEncDec.encode(authnRequest.getRequestID()));
             
             //create goto url
             StringBuffer gotoUrl = 
@@ -168,7 +167,7 @@ public class FSSSOLECPProfileHandler extends FSSSOAndFedHandler {
             sessMgr.setRelayState(id, returnUrl.toString());
 
             gotoUrl.append(IFSConstants.LRURL).append("/")
-                .append(urlEncodeQueryParameterNameOrValue(id))
+                .append(URLEncDec.encode(id))
                 .append("/").append(IFSConstants.SSOKEY).append("/")
                 .append(IFSConstants.SSOVALUE);
             
@@ -181,13 +180,13 @@ public class FSSSOLECPProfileHandler extends FSSSOAndFedHandler {
                 redirectUrl.append("&");
             }
             redirectUrl.append(IFSConstants.GOTO_URL_PARAM).append("=");
-            redirectUrl.append(urlEncodeQueryParameterNameOrValue(
+            redirectUrl.append(URLEncDec.encode(
                 gotoUrl.toString())).append("&");
 
             String authUrl = FSUtils.getAuthDomainURL(realm);
             if (authUrl != null && authUrl.length() != 0){
                 redirectUrl.append(IFSConstants.ORGKEY).append("=").
-                    append(urlEncodeQueryParameterNameOrValue(authUrl)).append("&");
+                    append(URLEncDec.encode(authUrl)).append("&");
             }
             int len = redirectUrl.length() - 1;
             if (redirectUrl.charAt(len) == '&') {

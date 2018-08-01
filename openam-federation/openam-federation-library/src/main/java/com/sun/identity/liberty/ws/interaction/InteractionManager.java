@@ -24,18 +24,19 @@
  *
  * $Id: InteractionManager.java,v 1.5 2008/08/06 17:28:10 exu Exp $
  *
- * Portions Copyrighted 2016-2017 ForgeRock AS.
+ * Portions Copyrighted 2016 ForgeRock AS.
  */
 
 package com.sun.identity.liberty.ws.interaction;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.common.PeriodicCleanUpMap;
 import com.sun.identity.common.SystemTimerPool;
 import com.sun.identity.common.TaskRunnable;
+import com.sun.identity.common.TimerPool;
 import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.liberty.ws.common.LogUtil;
 import com.sun.identity.liberty.ws.interaction.jaxb.InquiryElement;
 import com.sun.identity.liberty.ws.interaction.jaxb.InteractionResponseElement;
@@ -59,11 +60,15 @@ import java.net.MalformedURLException;
 import java.net.UnknownHostException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.List;
+import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBException;
@@ -575,7 +580,7 @@ public class InteractionManager {
 
         returnToURL = returnToURL + "?" + REQUEST_ID + "=" + requestID;
         redirectURL = redirectURL +"&"+ RETURN_TO_URL + "="
-                + urlEncodeQueryParameterNameOrValue(returnToURL);
+                + URLEncDec.encode(returnToURL);
         if (debug.messageEnabled()) {
             debug.message("InteractionManager.handleRedirectRequest():"
                     + "redirecting user agent to redirectURL= "

@@ -22,12 +22,11 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2016 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.common;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.common.HttpURLConnectionManager;
@@ -598,7 +597,6 @@ public class SAML2Utils extends SAML2SDKUtils {
                 checkAudience(assertion.getConditions(),
                         hostEntityId,
                         assertionID);
-                checkConditions(assertion.getConditions(), hostEntityId, assertionID);
                 if (smap == null) {
                     smap = fillMap(authnStmts,
                             subject,
@@ -869,41 +867,6 @@ public class SAML2Utils extends SAML2SDKUtils {
                     null);
 
             throw new SAML2Exception(bundle.getString("audienceNotMatch"));
-        }
-    }
-
-    private static void checkConditions(Conditions conditions, String hostEntityId, String assertionID) throws SAML2Exception {
-        String method = "SAML2Utils.checkConditions: ";
-        if (conditions == null) {
-            debug.message("{}Conditions is missing from Assertion", method);
-            String[] data = {assertionID};
-            LogUtil.error(Level.INFO, LogUtil.MISSING_CONDITIONS, data, null);
-            throw new SAML2Exception(bundle.getString("missingConditions"));
-        }
-
-        Date notOnOrAfter = conditions.getNotOnOrAfter();
-        if (debug.messageEnabled()) {
-            if (notOnOrAfter == null) {
-                debug.message("{}No NotOnOrAfter Condition.", method);
-            } else {
-                debug.message("{}NotOnOrAfter Condition = {}", method, notOnOrAfter);
-            }
-        }
-
-        Date notBefore = conditions.getNotBefore();
-        if (debug.messageEnabled()) {
-            if (notBefore == null) {
-                debug.message("{}No NotBefore Condition.", method);
-            } else {
-                debug.message("{}NotBefore Condition = {}", method, notBefore);
-            }
-        }
-        
-        if (!conditions.checkDateValidity(currentTimeMillis())) {
-            debug.message("{}The assertion does not meet NotOnOrAfter or NotBefore condition.", method);
-            String[] data = {assertionID};
-            LogUtil.error(Level.INFO, LogUtil.DATE_CONDITION_NOT_MET, data, null);
-            throw new SAML2Exception(bundle.getString("checkDateValidityNotMatch"));
         }
     }
 
@@ -1266,7 +1229,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             IOUtils.closeIfNotNull(deflaterOutputStream);
         }
 
-        String encoded = urlEncodeQueryParameterNameOrValue(Base64.encode(out.toByteArray()));
+        String encoded = URLEncDec.encode(Base64.encode(out.toByteArray()));
         if (debug.messageEnabled()) {
             debug.message(classMethod + "out string length : " + encoded.length());
             debug.message(classMethod + "out string is ===>" + encoded + "<===");
@@ -2312,7 +2275,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             authUrl += "&goto=";
         }
 
-        authUrl += urlEncodeQueryParameterNameOrValue(request.getRequestURL().toString()
+        authUrl += URLEncDec.encode(request.getRequestURL().toString()
                 + "?" + request.getQueryString());
         if (debug.messageEnabled()) {
             debug.message(method + "New URL for authentication: " + authUrl);
@@ -2755,7 +2718,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             returnURLBuilder.append("&");
         }
         returnURLBuilder.append("requestID=").append(requestID);
-        String returnURLString = urlEncodeQueryParameterNameOrValue(returnURLBuilder.toString());
+        String returnURLString = URLEncDec.encode(returnURLBuilder.toString());
         redirectURLBuilder.append(returnURLString);
 
         return redirectURLBuilder.toString();

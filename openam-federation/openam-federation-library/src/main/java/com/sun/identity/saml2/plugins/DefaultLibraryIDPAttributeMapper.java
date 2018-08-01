@@ -105,7 +105,8 @@ import com.sun.identity.saml2.assertion.Attribute;
  * will map the local binary attribute called objectGUID onto a SAML attribute called objectGUID Base64 encoded with a
  * name format of urn:oasis:names:tc:SAML:2.0:attrname-format:uri.
  */
-public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper implements IDPAttributeMapper {
+public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper 
+    implements IDPAttributeMapper {
 
     /**
      * Constructor
@@ -138,35 +139,45 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
             throw new SAML2Exception(bundle.getString("nullSSOToken"));
         }
 
-        String debugMethod = "DefaultLibraryIDPAttributeMapper.getAttributes: ";
-
         try {
             if (!SessionManager.getProvider().isValid(session)) {
-                debug.warning(debugMethod + "Invalid session.");
+                if (debug.warningEnabled()) {
+                    debug.warning("DefaultLibraryIDPAttributeMapper." +
+                        "getAttributes: Invalid session");
+                }
                 return null;
             }
 
             Map<String, String> configMap = getConfigAttributeMap(realm, remoteEntityID, SP);
-            debug.message(debugMethod + "Remote SP attribute map = {}", configMap);
-            if (CollectionUtils.isEmpty(configMap)) {
+            if (debug.messageEnabled()) {
+                debug.message("DefaultLibraryIDPAttributeMapper." +
+                    "getAttributes: remote SP attribute map = " + configMap);
+            }
+            if (configMap == null || configMap.isEmpty()) {
                 configMap = getConfigAttributeMap(realm, hostEntityID, IDP);
-                if (CollectionUtils.isEmpty(configMap)) {
-                    debug.message(debugMethod + "Configuration map is not defined.");
+                if (configMap == null || configMap.isEmpty()) {
+                    if (debug.messageEnabled()) {
+                        debug.message("DefaultLibraryIDPAttributeMapper." +
+                            "getAttributes: Configuration map is not defined.");
+                    }
                     return null;
                 }
-                debug.message(debugMethod + "Hosted IDP attribute map = {}", configMap);
+                if (debug.messageEnabled()) {
+                    debug.message("DefaultLibraryIDPAttributeMapper." +
+                        "getAttributes: hosted IDP attribute map=" + configMap);
+                }
             }
 
-            List<Attribute> attributes = new ArrayList<>();
+            List<Attribute> attributes = new ArrayList<Attribute>();
+
             Map<String, Set<String>> stringValueMap = null;
             Map<String, byte[][]> binaryValueMap = null;
 
-            // Don't try to read the attributes from the datastore if the ignored profile is enabled in this realm.
-            if (!isIgnoredProfile(session, realm)) {
+            if (!isDynamicalOrIgnoredProfile(realm)) {
                 try {
                     // Resolve attributes to be read from the datastore.
-                    Set<String> stringAttributes = new HashSet<>(configMap.size());
-                    Set<String> binaryAttributes = new HashSet<>(configMap.size());
+                    Set<String> stringAttributes = new HashSet<String>(configMap.size());
+                    Set<String> binaryAttributes = new HashSet<String>(configMap.size());
                     for (String localAttribute : configMap.values()) {
                         if (isStaticAttribute(localAttribute)) {
                             // skip over, handled directly in next step
@@ -186,12 +197,16 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
                                 SessionManager.getProvider().getPrincipalName(session), binaryAttributes);
                     }
                 } catch (DataStoreProviderException dse) {
-                    debug.warning(debugMethod + "Error accessing the datastore.", dse);
+                    if (debug.warningEnabled()) {
+                        debug.warning("DefaultLibraryIDPAttributeMapper." +
+                            "getAttributes:", dse);
+                    }
                     //continue to check in ssotoken.
                 }
             }
 
             for (Map.Entry<String, String> entry : configMap.entrySet()) {
+
                 String samlAttribute =  entry.getKey();
                 String localAttribute = entry.getValue();
                 String nameFormat = null;
@@ -207,8 +222,12 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
                     localAttribute = removeStaticAttributeFlag(localAttribute);
                     // Remove the static flag before using it as the static value
                     attributeValues = CollectionUtils.asSet(localAttribute);
-                    debug.message(debugMethod + "Adding static value {} for attribute named {}",
-                            localAttribute, samlAttribute);
+                    if (debug.messageEnabled()) {
+                        debug.message("DefaultLibraryIDPAttributeMapper." +
+                                "getAttribute: adding static " +
+                                "value " + localAttribute +
+                                " for attribute named " + samlAttribute);
+                    }
                 } else {
                     if (isBinaryAttribute(localAttribute)) {
                         // Remove the flag as not used for lookup
@@ -218,20 +237,30 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
                         if (stringValueMap != null && !stringValueMap.isEmpty()) {
                             attributeValues = stringValueMap.get(localAttribute);
                         } else {
-                            debug.message(debugMethod + "{} string value map was empty or null.", localAttribute);
+                            if (debug.messageEnabled()) {
+                                debug.message("DefaultLibraryIDPAttributeMapper." +
+                                        "getAttribute: " + localAttribute +
+                                        " string value map was empty or null");
+                            }
                         }
                     }
 
                     // If all else fails, try to get the value from the users ssoToken
-                    if (CollectionUtils.isEmpty(attributeValues)) {
-                        debug.message(debugMethod + "User profile does not have value for {}, checking SSOToken.",
-                                localAttribute);
+                    if (attributeValues == null || attributeValues.isEmpty()) {
+                        if (debug.messageEnabled()) {
+                            debug.message("DefaultLibraryIDPAttributeMapper." +
+                                    "getAttribute: user profile does not have " +
+                                    "value for " + localAttribute + ", checking SSOToken");
+                        }
                         attributeValues =
                                CollectionUtils.asSet(SessionManager.getProvider().getProperty(session, localAttribute));
                     }
                 }
-                if (CollectionUtils.isEmpty(attributeValues)) {
-                    debug.message(debugMethod + "{} not found in user profile or SSOToken.", localAttribute);
+                if (attributeValues == null || attributeValues.isEmpty()) {
+                    if (debug.messageEnabled()) {
+                        debug.message("DefaultLibraryIDPAttributeMapper.getAttribute: " +
+                                "user profile does not have a value for " + localAttribute);
+                    }
                 } else {
                     attributes.add(getSAMLAttribute(samlAttribute, nameFormat,
                             attributeValues, hostEntityID, remoteEntityID, realm));
@@ -241,7 +270,7 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
             return attributes;      
 
         } catch (SessionException se) {
-            debug.error(debugMethod + "Error with the user's session.", se);
+            debug.error("DefaultLibraryIDPAttribute.getAttributes: ", se);
             throw new SAML2Exception(se);
         }
     }
@@ -302,13 +331,12 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
     }
 
     /**
-     * Return true if ignore profile is enabled for this realm.
-     *
-     * @param session SSOToken to check the profile creation attributes.
-     * @param realm realm to check the profile creation attributes.
-     * @return true in all cases in this implementation.
+     * Checks if dynamical profile creation or ignore profile is enabled.
+     * @param realm realm to check the dynamical profile creation attributes.
+     * @return true if dynamical profile creation or ignore profile is enabled,
+     * false otherwise.
      */
-    protected boolean isIgnoredProfile(Object session, String realm) {
+    protected boolean isDynamicalOrIgnoredProfile(String realm) {
         return true;
     }
 
@@ -323,7 +351,6 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
                                                  Map<String, byte[][]> binaryValueMap) {
 
         Set<String> result = null;
-        String debugMethod = "DefaultLibraryIDPAttributeMapper.getBinaryAttributeValues: ";
 
         // Expect to find the value in the binary Map
         if (binaryValueMap != null && !binaryValueMap.isEmpty()) {
@@ -334,15 +361,24 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
                 for (byte[] value : values) {
                     result.add(Base64.encode(value));
                 }
-                debug.message(debugMethod + "adding {} as a binary for attribute named {}",
-                        localAttribute, samlAttribute);
+                if (debug.messageEnabled()) {
+                    debug.message("DefaultLibraryIDPAttributeMapper." +
+                            "getBinaryAttributeValues: adding " + localAttribute +
+                            " as binary for attribute named " + samlAttribute);
+                }
             } else {
-                debug.message(debugMethod + "{} was flagged as a binary but no value was found",
-                        localAttribute);
+                if (debug.messageEnabled()) {
+                    debug.message("DefaultLibraryIDPAttributeMapper." +
+                            "getBinaryAttributeValues: " + localAttribute +
+                            " was flagged as binary but no value was found");
+                }
             }
         } else {
-            debug.message(debugMethod + "{} was flagged as a binary but binary value map was empty or null",
-                    localAttribute);
+            if (debug.messageEnabled()) {
+                debug.message("DefaultLibraryIDPAttributeMapper." +
+                        "getBinaryAttributeValues: " + localAttribute +
+                        " was flagged as binary but binary value map was empty or null");
+            }
         }
 
         return result;

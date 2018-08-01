@@ -1,4 +1,4 @@
-/*
+/**
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
@@ -24,8 +24,10 @@
  *
  * $Id: DefaultIDPAttributeMapper.java,v 1.4 2008/08/29 02:29:17 superpat7 Exp $
  *
- * Portions Copyrighted 2016-2017 ForgeRock AS.
+ * Portions Copyrighted 2016 ForgeRock AS.
  */
+
+
 package com.sun.identity.wsfederation.plugins;
 
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
@@ -48,8 +50,6 @@ import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.wsfederation.common.WSFederationConstants;
-
-import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.encode.Base64;
 import org.w3c.dom.Element;
 
@@ -71,57 +71,58 @@ public class DefaultIDPAttributeMapper extends DefaultAttributeMapper implements
      */
     public DefaultIDPAttributeMapper() {
         debug.message("DefaultIDPAttributeMapper.Constructor");
+        role = IDP;
     }
 
     /**
      * Returns list of SAML <code>Attribute</code> objects for the 
-     * IDP framework to insert into the generated <code>Assertion</code>.
-     * Will return null if the user session is invalid.
+     * IDP framework to insert into the generated <code>Assertion</code>. 
      * @param session Single sign-on session.
      * @param hostEntityID <code>EntityID</code> of the hosted entity.
      * @param remoteEntityID <code>EntityID</code> of the remote entity.
      * @param realm name of the realm.
-     * @throws WSFederationException for any failures.
+     * @exception WSFederationException if any failure.
      */
-    public List<Attribute> getAttributes(
+    public List getAttributes(
         Object session,
         String hostEntityID,
         String remoteEntityID,
         String realm 
     ) throws WSFederationException {
  
-        if (hostEntityID == null) {
-           throw new WSFederationException(bundle.getString("nullHostEntityID"));
+        if(hostEntityID == null) {
+           throw new WSFederationException(bundle.getString(
+                 "nullHostEntityID"));
         }
 
-        if (realm == null) {
-           throw new WSFederationException(bundle.getString("nullRealm"));
+        if(realm == null) {
+           throw new WSFederationException(bundle.getString(
+                 "nullRealm"));
         }
        
-        if (session == null) {
-           throw new WSFederationException(bundle.getString("nullSSOToken"));
+        if(session == null) {
+           throw new WSFederationException(bundle.getString(
+                 "nullSSOToken"));
         }
 
-        final String debugClass = "DefaultIDPAttributeMapper.getAttributes:";
         try {
             if (!SessionManager.getProvider().isValid(session)) {
-                debug.warning("{} Invalid session", debugClass);
-                return null;
+               if (debug.warningEnabled()) {
+                  debug.warning("DefaultIDPAttributeMapper.getAttributes: Invalid session");
+               }
+               return null;
             }
 
-            // Use the SP mapping if one is defined otherwise use the one defined in the IDP.
-            Map<String, String> configMap = getConfigAttributeMap(realm, remoteEntityID, SP);
-            debug.message("{} Remote SP attribute map = {}", debugClass, configMap);
-            if (CollectionUtils.isEmpty(configMap)) {
-                configMap = getConfigAttributeMap(realm, hostEntityID, IDP);
-                if (CollectionUtils.isEmpty(configMap)) {
-                    debug.message("{} IDP Configuration map is not defined.", debugClass);
-                    return null;
-                }
-                debug.message("{} Hosted IDP attribute map = {}", debugClass, configMap);
+            Map<String, String> configMap = getConfigAttributeMap(realm, hostEntityID);
+            if (isEmpty(configMap)) {
+               if (debug.messageEnabled()) {
+                  debug.message("DefaultIDPAttributeMapper.getAttributes: Configuration map is not defined.");
+               }
+               return null;
             }
 
             List<Attribute> attributes = new ArrayList<>();
+
             Map<String, Set<String>> stringValueMap = null;
             Map<String, byte[][]> binaryValueMap = null;
 
@@ -146,11 +147,14 @@ public class DefaultIDPAttributeMapper extends DefaultAttributeMapper implements
                             SessionManager.getProvider().getPrincipalName(session), binaryAttributes);
                 }
             } catch (DataStoreProviderException dse) {
-                debug.warning("{} Datastore exception", debugClass, dse);
+                if (debug.warningEnabled()) {
+                    debug.warning("DefaultIDPAttributeMapper.getAttributes: Datastore exception", dse);
+                }
                 //continue to check in ssotoken.
             }
 
             for (Map.Entry<String, String> entry : configMap.entrySet()) {
+
                 String namespace = null;
                 String samlAttribute = entry.getKey();
                 StringTokenizer tokenizer = new StringTokenizer(samlAttribute, "|");
@@ -169,18 +173,26 @@ public class DefaultIDPAttributeMapper extends DefaultAttributeMapper implements
                     if (isNotEmpty(stringValueMap)) {
                         attributeValues = stringValueMap.get(localAttribute);
                     } else {
-                        debug.message("{} {} string value map was empty or null", debugClass, localAttribute);
+                        if (debug.messageEnabled()) {
+                            debug.message("DefaultIDPAttributeMapper.getAttribute: "
+                                    + localAttribute + " string value map was empty or null");
+                        }
                     }
                 }
                 // If all else fails, try to get the value from the users ssoToken
                 if (isEmpty(attributeValues)) {
-                    debug.message("{} user profile does not have value for {} but is going to check ssotoken:",
-                                  debugClass, localAttribute);
+                    if (debug.messageEnabled()) {
+                        debug.message("DefaultIDPAttributeMapper.getAttribute:"
+                                + " user profile does not have value for "
+                                + localAttribute + " but is going to check ssotoken:");
+                    }
                     attributeValues = asSet(SessionManager.getProvider().getProperty(session, localAttribute));
                 }
 
                 if (isEmpty(attributeValues)) {
-                    debug.message("{} user does not have {}", debugClass, localAttribute);
+                    if (debug.messageEnabled()) {
+                        debug.message("DefaultIDPAttributeMapper.getAttribute: user does not have " + localAttribute);
+                    }
                 } else {
                     attributes.add(getSAMLAttribute(namespace, samlAttribute, attributeValues));
                 }
@@ -188,11 +200,11 @@ public class DefaultIDPAttributeMapper extends DefaultAttributeMapper implements
 
             return attributes;
         } catch (WSFederationException sme) {
-            debug.error("{} SAML Exception", debugClass, sme);
+            debug.error("DefaultIDPAttributeMapper.getAttributes: SAML Exception", sme);
             throw new WSFederationException(sme);
 
         } catch (SessionException se) {
-            debug.error("{} SessionException", debugClass, se);
+            debug.error("DefaultIDPAttributeMapper.getAttributes: SessionException", se);
             throw new WSFederationException(se);
         }
     }
@@ -248,8 +260,6 @@ public class DefaultIDPAttributeMapper extends DefaultAttributeMapper implements
 
         Set<String> result = null;
 
-        final String debugClass = "DefaultIDPAttributeMapper.getBinaryAttributeValues:";
-
         // Expect to find the value in the binary Map
         if (isNotEmpty(binaryValueMap)) {
             byte[][] values = binaryValueMap.get(localAttribute);
@@ -259,15 +269,21 @@ public class DefaultIDPAttributeMapper extends DefaultAttributeMapper implements
                 for (byte[] value : values) {
                     result.add(Base64.encode(value));
                 }
-                debug.message("{} adding '{}' as binary for attribute named '{}'.",
-                              debugClass, localAttribute, samlAttribute);
+                if (debug.messageEnabled()) {
+                    debug.message("DefaultIDPAttributeMapper.getBinaryAttributeValues: adding '{}'" +
+                            " as binary for attribute named '{}'.", localAttribute, samlAttribute);
+                }
             } else {
-                debug.message("{} '{}' was flagged as binary but no value was found.",
-                              debugClass, localAttribute);
+                if (debug.messageEnabled()) {
+                    debug.message("DefaultIDPAttributeMapper.getBinaryAttributeValues: '{}'"  +
+                            " was flagged as binary but no value was found.", localAttribute);
+                }
             }
         } else {
-            debug.message("{} '{}' was flagged as binary but binary value map was empty or null.",
-                          debugClass, localAttribute);
+            if (debug.messageEnabled()) {
+                debug.message("DefaultIDPAttributeMapper.getBinaryAttributeValues: '{}' was flagged as binary but " +
+                        "binary value map was empty or null.", localAttribute);
+            }
         }
 
         return result;

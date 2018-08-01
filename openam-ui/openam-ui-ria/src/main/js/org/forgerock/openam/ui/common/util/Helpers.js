@@ -53,7 +53,15 @@ define([
      * 3) Resulting string will be "Display test1 and test2"
      */
     Handlebars.registerHelper("tWithParams", function (translationKey, options) {
-        options = options || {};
-        return $.t(translationKey, options.hash);
+        var parameters = {},
+            key;
+
+        for (key in options.hash) {
+            if (options.hash.hasOwnProperty(key)) {
+                parameters[key] = options.hash[key];
+            }
+        }
+
+        return $.t(translationKey, parameters);
     });
 });

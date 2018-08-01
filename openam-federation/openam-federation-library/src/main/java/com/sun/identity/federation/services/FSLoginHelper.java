@@ -24,12 +24,10 @@
  *
  * $Id: FSLoginHelper.java,v 1.5 2008/06/25 05:46:54 qcheng Exp $
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015 ForgeRock AS.
  */
 
 package com.sun.identity.federation.services;
-
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import com.sun.identity.cot.COTException;
 import com.sun.identity.cot.CircleOfTrustDescriptor;
@@ -50,6 +48,7 @@ import com.sun.identity.federation.services.util.FSServiceUtils;
 import com.sun.identity.liberty.ws.meta.jaxb.IDPDescriptorType;
 import com.sun.identity.liberty.ws.meta.jaxb.SPDescriptorType;
 import com.sun.identity.plugin.session.SessionManager;
+import com.sun.identity.shared.encode.URLEncDec;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -267,9 +266,10 @@ public class FSLoginHelper {
                 "FSLoginHelper.createAuthnRequest()::AuthnRequest is null");
             String redirectURL = errorPage + "&" 
                 + IFSConstants.FEDERROR + "="
-                + urlEncodeQueryParameterNameOrValue("Unable to create AuthnRequest") + "&"
+                + URLEncDec.encode("Unable to create AuthnRequest") + "&"
                 + IFSConstants.FEDREMARK + "="
-                + urlEncodeQueryParameterNameOrValue("Please check your Federation Configuration.") ;
+                + URLEncDec.encode(
+                    "Please check your Federation Configuration.") ;
             return createMap(redirectURL, null, retHeaderMap);
         }
         String requestID = authnRequest.getRequestID();
@@ -380,9 +380,9 @@ public class FSLoginHelper {
                     + "In case where isSSO true and tldURL is true and not "
                     + "single idp. So redirecting to thirdlevel domain");
             }
-            redirectURL = tldURL + "?" + IFSConstants.LRURL + "=" +
-                    urlEncodeQueryParameterNameOrValue(interSiteURL + "?" + authnReqIDKey
-                + "=" + urlEncodeQueryParameterNameOrValue(requestID)
+            redirectURL = tldURL + "?" + IFSConstants.LRURL + "=" + 
+            URLEncDec.encode(interSiteURL + "?" + authnReqIDKey 
+                + "=" + URLEncDec.encode(requestID)
                 + "&" + IFSConstants.META_ALIAS + "=" + metaAlias);
         } else if (isSSO && !isSingleIDP) {
             if(FSUtils.debug.messageEnabled())
@@ -403,10 +403,11 @@ public class FSLoginHelper {
                         + " Cannot proceed.");
                     redirectURL = errorPage + "&" 
                         + IFSConstants.FEDERROR + "="
-                        + urlEncodeQueryParameterNameOrValue("No IDPs Found in Configuration.")
+                        + URLEncDec.encode("No IDPs Found in Configuration.")
                         + "&"
                         + IFSConstants.FEDREMARK + "="
-                        + urlEncodeQueryParameterNameOrValue("Please configure you Federation Services for an IDP.");
+                        + URLEncDec.encode(
+                        "Please configure you Federation Services for an IDP.");
                     noIDP = true;
                 }
             }
@@ -436,8 +437,8 @@ public class FSLoginHelper {
 
                 String providerID = FSUtils.stringToBase64(succintID);
                 redirectURL = interSiteURL
-                    + "?" + authnReqIDKey + "=" + urlEncodeQueryParameterNameOrValue(requestID)
-                    + "&" + providerIDKey + "=" + urlEncodeQueryParameterNameOrValue(providerID)
+                    + "?" + authnReqIDKey + "=" + URLEncDec.encode(requestID)
+                    + "&" + providerIDKey + "=" + URLEncDec.encode(providerID)
                     + "&" + IFSConstants.META_ALIAS + "=" + metaAlias ;
                 }
         }
@@ -752,9 +753,10 @@ public class FSLoginHelper {
                     "FSLoginHelper.createAuthnRequest()::AuthnRequest is null");
                 return errorPage + "&" 
                     + IFSConstants.FEDERROR + "="
-                    + urlEncodeQueryParameterNameOrValue("Unable to create AuthnRequest") + "&"
+                    + URLEncDec.encode("Unable to create AuthnRequest") + "&"
                     + IFSConstants.FEDREMARK + "="
-                    + urlEncodeQueryParameterNameOrValue("Please check your Federation Configuration.") ;
+                    + URLEncDec.encode(
+                        "Please check your Federation Configuration.") ;
             }
             String requestID = authnRequest.getRequestID();
             if (FSUtils.debug.messageEnabled()) {

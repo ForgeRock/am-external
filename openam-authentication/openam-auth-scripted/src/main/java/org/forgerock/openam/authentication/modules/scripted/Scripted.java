@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2016 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.scripted;
 
@@ -48,9 +48,7 @@ import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * An authentication module that allows users to authenticate via a scripting language
@@ -91,7 +89,6 @@ public class Scripted extends AMLoginModule {
     private RestletHttpClient httpClient;
     private ScriptIdentityRepository identityRepository;
     protected Map<String, Object> sharedState;
-    private Set<String> userSearchAttributes = Collections.emptySet();
 
     /**
      * {@inheritDoc}
@@ -107,16 +104,11 @@ public class Scripted extends AMLoginModule {
         scriptEvaluator = getScriptEvaluator();
         clientSideScriptEnabled = getClientSideScriptEnabled();
         httpClient = getHttpClient();
-        try {
-            userSearchAttributes = getUserAliasList();
-        } catch (final AuthLoginException ale) {
-            DEBUG.warning("Scripted.init: unable to retrieve search attributes", ale);
-        }
-        identityRepository = getScriptIdentityRepository(userSearchAttributes);
+        identityRepository  = getScriptIdentityRepository();
     }
 
-    private ScriptIdentityRepository getScriptIdentityRepository(Set<String> userSearchAttributes) {
-        return new ScriptIdentityRepository(getAmIdentityRepository(), userSearchAttributes);
+    private ScriptIdentityRepository getScriptIdentityRepository() {
+        return new ScriptIdentityRepository(getAmIdentityRepository());
     }
 
     private AMIdentityRepository getAmIdentityRepository() {

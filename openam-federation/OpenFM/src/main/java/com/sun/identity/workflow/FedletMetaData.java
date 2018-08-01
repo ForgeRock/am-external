@@ -24,7 +24,6 @@
  *
  * $Id: FedletMetaData.java,v 1.10 2009/09/22 22:56:59 madan_ranganath Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
  */
 
 package com.sun.identity.workflow;
@@ -65,7 +64,7 @@ public class FedletMetaData {
         if (idx != -1) {
             extendedData = extendedData.substring(0, idx) +
                 "<Attribute name=\"fedletAdapter\">\n" +
-                "            <Value></Value>\n" +
+                "            <Value>com.sun.identity.saml2.plugins.DefaultFedletAdapter</Value>\n" +
                 "        </Attribute>\n" +
                 "        <Attribute name=\"fedletAdapterEnv\">\n" +
                 "            <Value></Value>\n" +

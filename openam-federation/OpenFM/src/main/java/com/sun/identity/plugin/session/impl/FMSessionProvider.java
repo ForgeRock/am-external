@@ -24,13 +24,14 @@
  *
  * $Id: FMSessionProvider.java,v 1.23 2009/11/20 00:30:40 exu Exp $
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2016 ForgeRock AS.
  */
 
 package com.sun.identity.plugin.session.impl;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Cookie;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.Collections;
@@ -42,7 +43,6 @@ import java.security.SecureRandom;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 
-import com.sun.identity.authentication.client.AuthClientUtils;
 import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.plugin.session.SessionListener;
 import com.sun.identity.plugin.session.SessionException;
@@ -69,6 +69,9 @@ import com.sun.identity.authentication.service.AuthUtils;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.sm.DNMapper;
+import com.sun.identity.sm.ServiceSchema;
+import com.sun.identity.sm.ServiceSchemaManager;
+import com.sun.identity.sm.SMSException;
 
 /**
  * Used for creating sessions, and for accessing session
@@ -258,19 +261,23 @@ public class FMSessionProvider implements SessionProvider {
             // is set and passed over
             int failureCode = SessionException.AUTH_ERROR_NOT_DEFINED;
             AuthLoginException ale = ac.getLoginException();
-            String authError = ac.getErrorCode();
-
+            String authError = null;
+            if (ale != null) {
+                authError = ale.getErrorCode();
+            }
             if (authError == null) {
                 failureCode = SessionException.AUTH_ERROR_NOT_DEFINED;
             } else if (authError.equals(AMAuthErrorCode.AUTH_USER_INACTIVE)) {
                 failureCode = SessionException.AUTH_USER_INACTIVE;
-            } else if (authError.equals(AMAuthErrorCode.AUTH_USER_LOCKED)) {
+            } else if(authError.equals(AMAuthErrorCode.AUTH_USER_LOCKED)) {
                 failureCode = SessionException.AUTH_USER_LOCKED;
-            } else if (authError.equals(AMAuthErrorCode.AUTH_ACCOUNT_EXPIRED)) {
+            } else if(authError.equals(
+                AMAuthErrorCode.AUTH_ACCOUNT_EXPIRED))
+            {
                 failureCode = SessionException.AUTH_ACCOUNT_EXPIRED;
             }
-
-            SessionException se;
+            
+            SessionException se = null;
             if (ale != null) {
                 se = new SessionException(ale);
             } else {
@@ -283,12 +290,43 @@ public class FMSessionProvider implements SessionProvider {
         }
 
         if (response != null) {
+            ServiceSchemaManager scm = null;
+            try {
+                scm = new ServiceSchemaManager(
+                    "iPlanetAMPlatformService", ssoToken);
+            } catch (Exception e) {
+                throw new SessionException(e);
+            }
+            ServiceSchema platformSchema = null;
+            try {
+                platformSchema = scm.getGlobalSchema();
+            } catch (SMSException se) {
+                throw new SessionException(se);
+            }
             setLoadBalancerCookie(request, response);
-            final Set<String> cookieDomains = AuthClientUtils.getCookieDomainsForRequest(request);
+            Set cookieDomains = (Set)platformSchema.getAttributeDefaults().
+                get("iplanet-am-platform-cookie-domains");
             String value = ssoToken.getTokenID().toString();
-            for (String cookieDomain : cookieDomains) {
-                debug.message("cookieName={}, value={}, cookieDomain={}", cookieName, value, cookieDomain);
-                CookieUtils.addCookieToResponse(response, CookieUtils.newCookie(cookieName, value, "/", cookieDomain));
+            if (cookieDomains.size() == 0) {
+                Cookie cookie =
+                    CookieUtils.newCookie(cookieName, value, "/");
+		CookieUtils.addCookieToResponse(response, cookie);
+            } else {
+                Iterator it = cookieDomains.iterator();
+                Cookie cookie = null;
+                String cookieDomain = null;
+                while (it.hasNext()) {
+                    cookieDomain = (String) it.next();
+                    if (debug.messageEnabled()) {
+                        debug.message("cookieName=" + cookieName);
+                        debug.message("value=" + value);
+                        debug.message("cookieDomain=" + cookieDomain);
+                    }
+                    cookie = CookieUtils.newCookie(
+                        cookieName, value,
+                        "/", cookieDomain);
+		    CookieUtils.addCookieToResponse(response, cookie);
+                }
             }
             if (urlRewriteEnabled && targetApplication != null) {
                 int n = targetApplication.length();

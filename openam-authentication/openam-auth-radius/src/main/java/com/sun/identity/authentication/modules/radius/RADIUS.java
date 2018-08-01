@@ -145,14 +145,23 @@ public class RADIUS extends AMLoginModule {
                     String timeOut = CollectionHelper.getMapAttr(options, "iplanet-am-auth-radius-timeout",
                             DEFAULT_TIMEOUT);
                     iTimeOut = Integer.parseInt(timeOut);
+                    String authLevel = CollectionHelper.getMapAttr(options, "iplanet-am-auth-radius-auth-level");
 
                     String interval = CollectionHelper.getMapAttr(options, "openam-auth-radius-healthcheck-interval",
                             DEFAULT_INTERVAL);
                     healthCheckInterval = Integer.parseInt(interval);
 
+                    if (authLevel != null) {
+                        try {
+                            setAuthLevel(Integer.parseInt(authLevel));
+                        } catch (Exception e) {
+                            debug.error("Unable to set auth level " + authLevel);
+                        }
+                    }
+
                     if (debug.messageEnabled()) {
                         debug.message("server1: " + primaryServers + " server2: " + secondaryServers + " serverPort: "
-                                + serverPort + " timeOut: " + timeOut);
+                                + serverPort + " timeOut: " + timeOut + " authLevel: " + authLevel);
                     }
 
                     if ((sharedSecret == null) || (sharedSecret.length() == 0)) {

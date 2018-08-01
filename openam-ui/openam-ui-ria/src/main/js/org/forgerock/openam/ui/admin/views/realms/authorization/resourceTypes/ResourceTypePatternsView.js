@@ -40,7 +40,7 @@ define([
     };
 
     ResourceTypePatternsView.prototype.getPendingItem = function () {
-        return this.$el.find("[data-editing-input]").val().toString().trim();
+        return this.$el.find("[data-editing-input]").val().toString();
     };
 
     ResourceTypePatternsView.prototype.isValid = function (e) {

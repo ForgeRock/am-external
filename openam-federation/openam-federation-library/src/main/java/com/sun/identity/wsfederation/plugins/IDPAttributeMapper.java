@@ -1,4 +1,4 @@
-/*
+/**
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
@@ -24,13 +24,11 @@
  *
  * $Id: IDPAttributeMapper.java,v 1.4 2008/06/25 05:48:07 qcheng Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
  */
+
+
 package com.sun.identity.wsfederation.plugins;
 
-import java.util.List;
-
-import com.sun.identity.saml.assertion.Attribute;
 import com.sun.identity.wsfederation.common.WSFederationException;
 
 
@@ -59,11 +57,11 @@ public interface IDPAttributeMapper {
      * @return list of <code>Attributes</code>s of an authenticated user. 
      * @exception WSFederationException if any failure.
      */
-    List<Attribute> getAttributes(
+    public java.util.List getAttributes(
         Object session,
-        String hostEntityID,
-        String remoteEntityID,
-        String realm
+        java.lang.String hostEntityID,
+        java.lang.String remoteEntityID, 
+        java.lang.String realm
     ) throws WSFederationException;
 
 

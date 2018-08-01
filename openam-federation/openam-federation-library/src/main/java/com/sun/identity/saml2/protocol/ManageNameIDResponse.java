@@ -24,14 +24,12 @@
  *
  * $Id: ManageNameIDResponse.java,v 1.2 2008/06/25 05:47:57 qcheng Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.sun.identity.saml2.protocol.impl.ManageNameIDResponseImpl;
+import com.sun.identity.saml2.protocol.StatusResponse;
 
 /**
  * This class represents the ManageNameIDResponse element declaration.
@@ -45,7 +43,5 @@ import com.sun.identity.saml2.protocol.impl.ManageNameIDResponseImpl;
  * @supported.all.api
  */
 
-@JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
-        defaultImpl = ManageNameIDResponseImpl.class)
 public interface ManageNameIDResponse extends StatusResponse {
 }

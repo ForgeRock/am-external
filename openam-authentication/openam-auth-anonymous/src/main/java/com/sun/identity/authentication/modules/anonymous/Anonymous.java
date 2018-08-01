@@ -55,6 +55,7 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 public class Anonymous extends AMLoginModule {
 
     private static com.sun.identity.shared.debug.Debug debug = null;
+    private static final int DEFAULT_ANONYMOUS_AUTH_LEVEL = 0;
     private static final String amAuthAnonymous = "amAuthAnonymous";
 
     private  ResourceBundle bundle = null;
@@ -62,6 +63,7 @@ public class Anonymous extends AMLoginModule {
     private String userTokenId;
     private String defaultAnonUser;
     private Set validAnonUsernames;
+    private int authLevel;
     private String errorMsg = null;
     private String usernameParam = null;
     // the authentication status
@@ -101,6 +103,19 @@ public class Anonymous extends AMLoginModule {
             defaultAnonUser = CollectionHelper.getMapAttr(options,
                 "iplanet-am-auth-anonymous-default-user-name");
 
+            String tmp = CollectionHelper.getMapAttr(options,
+                "iplanet-am-auth-anonymous-auth-level");
+
+            if (tmp == null || tmp.length() == 0) {
+                authLevel = DEFAULT_ANONYMOUS_AUTH_LEVEL;
+            } else {
+                try {
+                    authLevel = Integer.parseInt(tmp);
+                } catch (Exception e) {
+                    debug.error("Invalid auth level " + tmp);
+                    authLevel = DEFAULT_ANONYMOUS_AUTH_LEVEL;
+                }
+            }
             callbackHandler = getCallbackHandler();
 
             isCaseSensitive = Boolean.valueOf(CollectionHelper.getMapAttr(
@@ -130,6 +145,7 @@ public class Anonymous extends AMLoginModule {
             if (useSharedstate) {
                 usernameParam = (String) sharedState.get(getUserKey());
                 if (processAnonUser(usernameParam)) {
+                    setAuthLevel(authLevel);
                     return ISAuthConstants.LOGIN_SUCCEED;
                 }
             }
@@ -142,6 +158,7 @@ public class Anonymous extends AMLoginModule {
                                 + usernameParam);
                     }
                     if (processAnonUser(usernameParam)) {
+                        setAuthLevel(authLevel);
                         return ISAuthConstants.LOGIN_SUCCEED;
                     }
                 }
@@ -154,6 +171,12 @@ public class Anonymous extends AMLoginModule {
             }
             storeUsernamePasswd(usernameParam, null);
             processAnonUser(usernameParam);
+            setAuthLevel(authLevel);
+            if (debug.messageEnabled()) {
+                debug.message (
+                    "Set auth level: " + authLevel +
+                    "\nAnonymous userid: " + userTokenId);
+            }
 
         } catch (Exception e) {
             debug.error("login: User not found in valid Anon List");

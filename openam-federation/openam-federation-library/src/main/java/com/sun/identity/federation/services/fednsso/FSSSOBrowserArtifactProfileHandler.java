@@ -1,4 +1,4 @@
-/*
+/**
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,12 +24,13 @@
  *
  * $Id: FSSSOBrowserArtifactProfileHandler.java,v 1.6 2008/12/19 06:50:46 exu Exp $
  *
- * Portions Copyrighted 2013-2017 ForgeRock AS.
+ */
+
+/*
+ * Portions Copyrighted 2013 ForgeRock, Inc.
  */
 
 package com.sun.identity.federation.services.fednsso;
-
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import com.sun.identity.federation.services.FSAssertionManager;
 import com.sun.identity.federation.services.util.FSServiceUtils;
@@ -59,6 +60,7 @@ import com.sun.identity.saml.common.SAMLException;
 import com.sun.identity.saml.common.SAMLResponderException;
 import com.sun.identity.saml.common.SAMLUtils;
 
+import com.sun.identity.shared.encode.URLEncDec;
 import org.forgerock.openam.utils.ClientUtils;
 
 import javax.servlet.http.HttpServletRequest;
@@ -879,7 +881,7 @@ public class FSSSOBrowserArtifactProfileHandler extends FSSSOAndFedHandler {
             } else {
                 Iterator iter = artis.iterator();
                 while(iter.hasNext()) {
-                    String art = urlEncodeQueryParameterNameOrValue((String)iter.next());
+                    String art = URLEncDec.encode((String)iter.next());
                     if(FSUtils.debug.messageEnabled()) {
                         FSUtils.debug.message(
                             "FSSSOBrowserArtifactProfileHandler."
@@ -902,7 +904,7 @@ public class FSSSOBrowserArtifactProfileHandler extends FSSSOAndFedHandler {
             if (relayURL != null){
                 tmp.append(IFSConstants.LRURL)
                     .append("=")
-                    .append(urlEncodeQueryParameterNameOrValue(relayURL));
+                    .append(URLEncDec.encode(relayURL));
             }
             response.setStatus(HttpServletResponse.SC_MOVED_TEMPORARILY);
             String redirecto = tmp.toString();

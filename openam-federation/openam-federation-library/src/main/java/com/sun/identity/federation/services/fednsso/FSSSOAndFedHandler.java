@@ -1,4 +1,4 @@
-/*
+/**
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,12 +24,10 @@
  *
  * $Id: FSSSOAndFedHandler.java,v 1.12 2009/11/04 00:06:11 exu Exp $ 
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015 ForgeRock AS.
  */
 
 package com.sun.identity.federation.services.fednsso;
-
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.federation.services.FSSessionManager;
@@ -45,6 +43,7 @@ import com.sun.identity.federation.services.util.FSNameIdentifierHelper;
 import com.sun.identity.federation.services.util.FSServiceUtils;
 import com.sun.identity.federation.services.util.FSSignatureManager;
 import com.sun.identity.federation.services.util.FSSignatureUtil;
+import com.sun.identity.federation.meta.IDFFMetaException;
 import com.sun.identity.federation.meta.IDFFMetaManager;
 import com.sun.identity.federation.meta.IDFFMetaUtils;
 import com.sun.identity.federation.message.FSAuthnRequest;
@@ -74,15 +73,18 @@ import com.sun.identity.saml.common.SAMLException;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml.protocol.Status;
 import com.sun.identity.saml.protocol.StatusCode;
+import com.sun.identity.saml.xmlsig.XMLSignatureManager;
 import com.sun.identity.saml2.xmlsig.SigManager;
 
 import com.sun.identity.shared.encode.Base64;
+import com.sun.identity.shared.encode.URLEncDec;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.security.cert.X509Certificate;
 import java.util.Collections;
+import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -90,6 +92,7 @@ import java.util.logging.Level;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
 
 /**
  * Base class for <code>IDP</code> side handler that handles single sign on 
@@ -683,15 +686,15 @@ public abstract class FSSSOAndFedHandler {
             returnUrl.append(IFSConstants.AUTHN_INDICATOR_PARAM)
                 .append("=").append(IFSConstants.AUTHN_INDICATOR_VALUE)
                 .append("&").append(IFSConstants.AUTHN_CONTEXT)
-                .append("=").append(urlEncodeQueryParameterNameOrValue(authnContext))
+                .append("=").append(URLEncDec.encode(authnContext))
                 .append("&").append(IFSConstants.REALM)
-                .append("=").append(urlEncodeQueryParameterNameOrValue(realm))
+                .append("=").append(URLEncDec.encode(realm))
                 .append("&").append(IFSConstants.PROVIDER_ID_KEY)
-                .append("=").append(urlEncodeQueryParameterNameOrValue(hostedEntityId))
+                .append("=").append(URLEncDec.encode(hostedEntityId))
                 .append("&").append(IFSConstants.META_ALIAS)
-                .append("=").append(urlEncodeQueryParameterNameOrValue(metaAlias))
+                .append("=").append(URLEncDec.encode(metaAlias))
                 .append("&").append(IFSConstants.AUTH_REQUEST_ID)
-                .append("=").append(urlEncodeQueryParameterNameOrValue(
+                .append("=").append(URLEncDec.encode(
                     authnRequest.getRequestID()));
             
             //create goto url
@@ -704,7 +707,7 @@ public abstract class FSSSOAndFedHandler {
                 gotoUrl.append("&");
             }
             gotoUrl.append(IFSConstants.LRURL).append("=")
-                .append(urlEncodeQueryParameterNameOrValue(returnUrl.toString()))
+                .append(URLEncDec.encode(returnUrl.toString()))
                 .append("&").append(IFSConstants.SSOKEY).append("=")
                 .append(IFSConstants.SSOVALUE).append("&")
                 .append(IFSConstants.META_ALIAS).append("=").append(metaAlias);
@@ -718,10 +721,10 @@ public abstract class FSSSOAndFedHandler {
                 redirectUrl.append("&");
             }
             redirectUrl.append(IFSConstants.GOTO_URL_PARAM).append("=")
-                .append(urlEncodeQueryParameterNameOrValue(gotoUrl.toString()));
+                .append(URLEncDec.encode(gotoUrl.toString()));
             
             redirectUrl.append("&").append(IFSConstants.ORGKEY).append("=")
-                    .append(urlEncodeQueryParameterNameOrValue(realm));
+                    .append(URLEncDec.encode(realm));
             //will change
             //request.getSession(true)
              //      .setAttribute(IFSConstants.AUTHN_CONTEXT, authnContext);
@@ -1450,10 +1453,10 @@ public abstract class FSSSOAndFedHandler {
                 String paramValue = request.getParameter(paramKey);
                 if (returnString == null || returnString.length() < 1) {
                     returnString =  
-                        paramKey + "=" + urlEncodeQueryParameterNameOrValue(paramValue);
+                        paramKey + "=" + URLEncDec.encode(paramValue);
                 } else {
                     returnString = returnString + "&"
-                        +  paramKey + "=" + urlEncodeQueryParameterNameOrValue(paramValue);
+                        +  paramKey + "=" + URLEncDec.encode(paramValue);
                 }
             }
         }

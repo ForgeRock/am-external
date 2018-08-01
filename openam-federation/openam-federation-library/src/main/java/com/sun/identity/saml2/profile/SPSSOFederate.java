@@ -24,11 +24,10 @@
  *
  * $Id: SPSSOFederate.java,v 1.29 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2011-2017 ForgeRock AS.
+ * Portions Copyrighted 2011-2016 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.federation.common.FSUtils;
@@ -74,12 +73,14 @@ import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.RequestedAuthnContext;
 import com.sun.identity.saml2.protocol.Scoping;
 import com.sun.identity.shared.datastruct.OrderedSet;
+import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +91,6 @@ import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
-import org.forgerock.openam.utils.StringUtils;
 
 /**
  * This class reads the query parameters and performs the required
@@ -211,7 +211,10 @@ public class SPSSOFederate {
             throw new SAML2Exception(SAML2Utils.bundle.getString("nullIDPEntityID"));
         }
         
-
+        String binding = getParameter(paramsMap, SAML2Constants.REQ_BINDING);
+        if (binding == null) {
+            binding = SAML2Constants.HTTP_REDIRECT;
+        }
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message("SPSSOFederate: in initiateSSOFed");
             SAML2Utils.debug.message("SPSSOFederate: spEntityID is : " + spEntityID);
@@ -221,7 +224,7 @@ public class SPSSOFederate {
         String realm = getRealm(realmName);
         
         try {
-            // Retrieve MetaData
+            // Retreive MetaData 
             if (sm == null) {
                 throw new SAML2Exception(SAML2Utils.bundle.getString("errorMetaManager"));
             }
@@ -247,37 +250,28 @@ public class SPSSOFederate {
                 LogUtil.error(Level.INFO, LogUtil.IDP_METADATA_ERROR, data, null);
                 throw new SAML2Exception(SAML2Utils.bundle.getString("metaDataError"));
             }
+            
+            List ssoServiceList = idpsso.getSingleSignOnService();
+            String ssoURL = getSSOURL(ssoServiceList, binding);
 
-            String binding = getParameter(paramsMap, SAML2Constants.REQ_BINDING);
-            List<SingleSignOnServiceElement> ssoServiceList = idpsso.getSingleSignOnService();
-            final SingleSignOnServiceElement endPoint = getSingleSignOnServiceEndpoint(ssoServiceList, binding);
-
-            if (endPoint == null || StringUtils.isEmpty(endPoint.getLocation())) {
-                String[] data = { idpEntityID };
-                LogUtil.error(Level.INFO, LogUtil.SSO_NOT_FOUND, data, null);
-                throw new SAML2Exception(SAML2Utils.bundle.getString("ssoServiceNotfound"));
-            }
-
-            String ssoURL = endPoint.getLocation();
-            SAML2Utils.debug.message("SPSSOFederate: SingleSignOnService URL : {}", ssoURL);
-            if (binding == null) {
-                SAML2Utils.debug.message("SPSSOFederate: reqBinding is null using endpoint binding: {} ",
-                        endPoint.getBinding());
-                binding = endPoint.getBinding();
-                if (binding == null) {
-                    String[] data = { idpEntityID };
-                    LogUtil.error(Level.INFO, LogUtil.NO_RETURN_BINDING, data, null);
-                    throw new SAML2Exception(SAML2Utils.bundle.getString("UnableTofindBinding"));
-                }
+            if (ssoURL == null || ssoURL.length() == 0) {
+              String[] data = { idpEntityID };
+              LogUtil.error(Level.INFO, LogUtil.SSO_NOT_FOUND, data, null);
+              throw new SAML2Exception(SAML2Utils.bundle.getString("ssoServiceNotfound"));
             }
 
             // create AuthnRequest 
-            AuthnRequest authnRequest = createAuthnRequest(request, response, realm, spEntityID, idpEntityID,
-                    paramsMap, spConfigAttrsMap, extensionsList, spsso, idpsso, ssoURL, false);
+            AuthnRequest authnRequest = createAuthnRequest(realm, spEntityID, paramsMap, spConfigAttrsMap,
+                    extensionsList, spsso, idpsso, ssoURL, false);
             if (null != auditor && null != authnRequest) {
                 auditor.setRequestId(authnRequest.getID());
             }
 
+            // invoke SP Adapter class if registered
+            SAML2ServiceProviderAdapter spAdapter = SAML2Utils.getSPAdapterClass(spEntityID, realmName);
+            if (spAdapter != null) {
+                spAdapter.preSingleSignOnRequest(spEntityID, idpEntityID, realmName, request, response, authnRequest);
+            }
 
             String authReqXMLString = authnRequest.toXMLString(true, true);
         
@@ -368,7 +362,7 @@ public class SPSSOFederate {
         if ((relayStateID != null) && (relayStateID.length() > 0)) {
             queryString.append("&").append(SAML2Constants.RELAY_STATE)
                     .append("=")
-                    .append(urlEncodeQueryParameterNameOrValue(relayStateID));
+                    .append(URLEncDec.encode(relayStateID));
         }
 
         StringBuilder redirectURL =
@@ -523,8 +517,17 @@ public class SPSSOFederate {
             List extensionsList = getExtensionsList(spEntityID, realm);
 
             // create AuthnRequest 
-            AuthnRequest authnRequest = createAuthnRequest(request, response, realm, spEntityID, null,
-                    paramsMap, spConfigAttrsMap, extensionsList, spsso, null, null, true);
+            AuthnRequest authnRequest = createAuthnRequest(realm, spEntityID,
+                paramsMap, spConfigAttrsMap, extensionsList, spsso, null, null,
+                true);
+
+            // invoke SP Adapter class if registered
+            SAML2ServiceProviderAdapter spAdapter =
+                SAML2Utils.getSPAdapterClass(spEntityID, realm);
+            if (spAdapter != null) {
+                spAdapter.preSingleSignOnRequest(spEntityID, realm, null,
+                    request, response, authnRequest);
+            }
 
             String alias = SAML2Utils.getSigningCertAlias(realm, spEntityID,
                 SAML2Constants.SP_ROLE);
@@ -585,13 +588,10 @@ public class SPSSOFederate {
                                 realm, idpEntityID, SAML2Constants.IDP_ROLE,
                                 SAML2Constants.ENTITY_DESCRIPTION);
                             idpEntry.setName(description);
-                            List<SingleSignOnServiceElement> ssoServiceList = idpDesc.getSingleSignOnService();
-                            SingleSignOnServiceElement endPoint = getSingleSignOnServiceEndpoint(ssoServiceList, SAML2Constants.SOAP);
-                            if (endPoint == null || StringUtils.isEmpty(endPoint.getLocation())) {
-                                throw new SAML2Exception(SAML2Utils.bundle.getString("ssoServiceNotfound"));
-                            }
-                            String ssoURL = endPoint.getLocation();
-                            SAML2Utils.debug.message("SPSSOFederate.initiateECPRequest URL : {}", ssoURL);
+                            List ssoServiceList =
+                                idpDesc.getSingleSignOnService();
+                            String ssoURL = getSSOURL(ssoServiceList,
+                                SAML2Constants.SOAP);
                             idpEntry.setLoc(ssoURL);
                             if (idpEntries == null) {
                                 idpEntries = new ArrayList();
@@ -781,11 +781,8 @@ public class SPSSOFederate {
     /**
      * Create an AuthnRequest.
      *
-     * @param request the HttpServletRequest.
-     * @param response the HttpServletResponse.
      * @param realmName the authentication realm for this request
      * @param spEntityID the entity id for the service provider
-     * @param idpEntityID entityID of Identity Provider.
      * @param paramsMap the map of parameters for the authentication request
      * @param spConfigMap the configuration map for the service provider
      * @param extensionsList a list of extendsions for the authentication request
@@ -796,11 +793,8 @@ public class SPSSOFederate {
      * @return a new AuthnRequest object
      * @throws SAML2Exception
      */
-    public static AuthnRequest createAuthnRequest(final HttpServletRequest request,
-                                                  final HttpServletResponse response,
-                                                  final String realmName,
+    public static AuthnRequest createAuthnRequest(final String realmName,
                                                   final String spEntityID,
-                                                  final String idpEntityID,
                                                   final Map paramsMap,
                                                   final Map spConfigMap,
                                                   final List extensionsList,
@@ -919,11 +913,6 @@ public class SPSSOFederate {
              }
              authnReq.setScoping(scoping);
          }
-        // invoke SP Adapter class if registered
-        SAML2ServiceProviderAdapter spAdapter = SAML2Utils.getSPAdapterClass(spEntityID, realmName);
-        if (spAdapter != null) {
-            spAdapter.preSingleSignOnRequest(spEntityID, idpEntityID, realmName, request, response, authnReq);
-        }
  
         return authnReq;        
     }
@@ -949,30 +938,33 @@ public class SPSSOFederate {
      }
 
     /**
-     * Returns the SingleSignOnService service. If no binding is specified
-     * it will return the first endpoint in the list matching either HTTP-Redirect or HTTP-Post.
-     * If the binding is specified it will attempt to return a match.
-     * If either of the above is not found it will return null.
+     * Returns the SingleSignOnService URL.
      *
      * @param ssoServiceList list of sso services
-     * @param binding        binding of the sso service to get the url for
-     * @return a SingleSignOnServiceElement or null if no match found.
+     * @param binding binding of the sso service to get the url for
+     * @return a string url for the sso service
      */
-    public static SingleSignOnServiceElement getSingleSignOnServiceEndpoint(
-            List<SingleSignOnServiceElement> ssoServiceList, String binding) {
-        SingleSignOnServiceElement preferredEndpoint = null;
-        boolean noPreferredBinding = StringUtils.isEmpty(binding);
-        for (SingleSignOnServiceElement endpoint : ssoServiceList) {
-            if (noPreferredBinding && (SAML2Constants.HTTP_REDIRECT.equals(endpoint.getBinding())
-                    || SAML2Constants.HTTP_POST.equals(endpoint.getBinding()))) {
-                preferredEndpoint = endpoint;
-                break;
-            } else if (binding.equals(endpoint.getBinding())) {
-                preferredEndpoint = endpoint;
-                break;
+    public static String getSSOURL(List ssoServiceList, String binding) {
+         String ssoURL = null;
+         if ((ssoServiceList != null) && (!ssoServiceList.isEmpty())) {
+            Iterator i = ssoServiceList.iterator();
+            while (i.hasNext()) {
+                SingleSignOnServiceElement sso = 
+                            (SingleSignOnServiceElement) i.next();
+                if ((sso != null && sso.getBinding()!=null) && 
+                            (sso.getBinding().equals(binding))) {
+                    ssoURL = sso.getLocation();
+                    break;
+                }
+                    
             }
-        }
-        return preferredEndpoint;
+         }
+         if (SAML2Utils.debug.messageEnabled()) {
+               SAML2Utils.debug.message("SPSSOFederate: "
+                                         + " SingleSignOnService URL :" 
+                                         + ssoURL);
+         }
+         return ssoURL;
     }
           
     /**

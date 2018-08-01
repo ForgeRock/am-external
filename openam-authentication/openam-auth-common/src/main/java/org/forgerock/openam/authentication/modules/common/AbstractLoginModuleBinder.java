@@ -11,19 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2016 ForgeRock AS.
+ * Copyright 2013 ForgeRock Inc.
  */
 
 package org.forgerock.openam.authentication.modules.common;
 
-import java.security.Principal;
-import java.util.Map;
+import com.sun.identity.authentication.spi.AMLoginModule;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
-
-import com.sun.identity.authentication.spi.AMLoginModule;
+import java.security.Principal;
+import java.util.Map;
 
 /**
  * Implementation of the AMLoginModuleBinder, as per described in the interface's JavaDoc, also extends
@@ -31,11 +30,12 @@ import com.sun.identity.authentication.spi.AMLoginModule;
  * AMLoginModule will be pass through too.
  *
  * This is to enable unit testing on the actual authentication logic of the Authentication Module.
+ *
+ * @author Phill Cunnington phill.cunnington@forgerock.com
  */
 public abstract class AbstractLoginModuleBinder extends AMLoginModule implements AMLoginModuleBinder {
 
     private final AuthLoginModule authLoginModule;
-    private Map sharedState;
 
     /**
      * Constructs an instance of the AbstractLoginModuleBinder.
@@ -63,7 +63,6 @@ public abstract class AbstractLoginModuleBinder extends AMLoginModule implements
      */
     @Override
     public void init(Subject subject, Map sharedState, Map options) {
-        this.sharedState = sharedState;
         authLoginModule.init(subject, sharedState, options);
     }
 
@@ -92,18 +91,5 @@ public abstract class AbstractLoginModuleBinder extends AMLoginModule implements
     @Override
     public Principal getPrincipal() {
         return authLoginModule.getPrincipal();
-    }
-
-    @Override
-    public String getAuthenticatingUserName() {
-        if (sharedState != null) {
-            return (String) sharedState.get(getUserKey());
-        }
-        return null;
-    }
-
-    @Override
-    public void setAuthenticatingUserName(final String username) {
-        storeUsername(username);
     }
 }

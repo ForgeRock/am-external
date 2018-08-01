@@ -11,16 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2016 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
 import static com.sun.identity.shared.Constants.*;
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.authentication.modules.saml2.Constants.*;
 import static org.forgerock.openam.utils.Time.*;
 
-import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.AuthContext;
 import com.sun.identity.authentication.client.AuthClientUtils;
 import com.sun.identity.authentication.spi.AMLoginModule;
@@ -44,7 +42,6 @@ import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SingleSignOnServiceElement;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
@@ -61,9 +58,9 @@ import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.encode.CookieUtils;
+import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.locale.L10NMessageImpl;
 import com.sun.identity.sm.DNMapper;
-
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.util.Collection;
@@ -75,12 +72,10 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.SAML2Store;
@@ -156,6 +151,15 @@ public class SAML2 extends AMLoginModule {
         realm = DNMapper.orgNameToRealmName(getRequestOrg());
 
         bundle = amCache.getResBundle(BUNDLE_NAME, getLoginLocale());
+        String authLevel = CollectionHelper.getMapAttr(options, AUTHLEVEL);
+
+        if (authLevel != null) {
+            try {
+                setAuthLevel(Integer.parseInt(authLevel));
+            } catch (Exception e) {
+                DEBUG.error("SAML2 :: init() : Unable to set auth level {}", authLevel, e);
+            }
+        }
     }
 
     /**
@@ -201,6 +205,9 @@ public class SAML2 extends AMLoginModule {
     private int initiateSAMLLoginAtIDP(final HttpServletResponse response, final HttpServletRequest request)
             throws SAML2Exception, AuthLoginException {
 
+        if (reqBinding == null) {
+            reqBinding = SAML2Constants.HTTP_REDIRECT;
+        }
 
         final String spEntityID = SPSSOFederate.getSPEntityId(metaAlias);
         final IDPSSODescriptorElement idpsso = SPSSOFederate.getIDPSSOForAuthnReq(realm, entityName);
@@ -211,29 +218,12 @@ public class SAML2 extends AMLoginModule {
                     bundle.getString("samlLocalConfigFailed"));
         }
 
-        List<SingleSignOnServiceElement> ssoServiceList = idpsso.getSingleSignOnService();
-        final SingleSignOnServiceElement endPoint = SPSSOFederate
-                .getSingleSignOnServiceEndpoint(ssoServiceList, reqBinding);
-
-        if (endPoint == null || StringUtils.isEmpty(endPoint.getLocation())) {
-            throw new SAML2Exception(SAML2Utils.bundle.getString("ssoServiceNotfound"));
-        }
-        if (reqBinding == null) {
-            SAML2Utils.debug.message("SAML2 :: initiateSAMLLoginAtIDP() reqBinding is null using endpoint  binding: {}",
-                    endPoint.getBinding());
-            reqBinding = endPoint.getBinding();
-            if (reqBinding == null) {
-                throw new SAML2Exception(SAML2Utils.bundle.getString("UnableTofindBinding"));
-            }
-        }
-
-        String ssoURL = endPoint.getLocation();
-        SAML2Utils.debug.message("SAML2 :: initiateSAMLLoginAtIDP()  ssoURL : {}", ssoURL);
-
+        final String ssoURL = SPSSOFederate.getSSOURL(idpsso.getSingleSignOnService(), reqBinding);
         final List extensionsList = SPSSOFederate.getExtensionsList(spEntityID, realm);
+
         final Map<String, Collection<String>> spConfigAttrsMap
                 = SPSSOFederate.getAttrsMapForAuthnReq(realm, spEntityID);
-        authnRequest = SPSSOFederate.createAuthnRequest(request, response, realm, spEntityID, entityName, params,
+        authnRequest = SPSSOFederate.createAuthnRequest(realm, spEntityID, params,
                 spConfigAttrsMap, extensionsList, spsso, idpsso, ssoURL, false);
         final AuthnRequestInfo reqInfo = new AuthnRequestInfo(request, response, realm, spEntityID, null,
                 authnRequest, null, params);
@@ -315,22 +305,20 @@ public class SAML2 extends AMLoginModule {
 
         if (!StringUtils.isBlank(key)) {
             data = (SAML2ResponseData) SAML2Store.getTokenFromStore(key);
+        }
 
-            if (data == null) {
-                if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                    try {
-                        data = (SAML2ResponseData) SAML2FailoverUtils.retrieveSAML2Token(key);
-                    } catch (SAML2TokenRepositoryException e) {
-                        return processError(bundle.getString("samlFailoverError"),
-                                "SAML2.handleReturnFromRedirect : Error reading from failover map.", e);
-                    }
-                }
+        if (data == null && SAML2FailoverUtils.isSAML2FailoverEnabled() && !StringUtils.isBlank(key)) {
+            try {
+                data = (SAML2ResponseData) SAML2FailoverUtils.retrieveSAML2Token(key);
+            } catch (SAML2TokenRepositoryException e) {
+                return processError(bundle.getString("samlFailoverError"),
+                        "SAML2.handleReturnFromRedirect : Error reading from failover map.", e);
             }
         }
 
         if (data == null) {
             return processError(bundle.getString("localLinkError"), "SAML2 :: handleReturnFromRedirect() : "
-                    + "Unable to perform local linking - response data not found");
+                    + "Unable to perform local linking - response data key not found");
         }
 
         storageKey = key;
@@ -440,7 +428,7 @@ public class SAML2 extends AMLoginModule {
         }
 
         if (StringUtils.isNotEmpty(realm)) {
-            originalUrl.append("?realm=").append(urlEncodeQueryParameterNameOrValue(realm));
+            originalUrl.append("?realm=").append(URLEncDec.encode(realm));
         }
 
         if (requestedQuery != null) {
@@ -627,9 +615,7 @@ public class SAML2 extends AMLoginModule {
         }
 
         //we need the following for idp initiated slo as well as sp, so always include it
-        if (sessionIndex != null) {
-            setUserSessionProperty(SAML2Constants.SESSION_INDEX, sessionIndex);
-        }
+        setUserSessionProperty(SAML2Constants.SESSION_INDEX, sessionIndex);
         setUserSessionProperty(SAML2Constants.IDPENTITYID, entityName);
         setUserSessionProperty(SAML2Constants.SPENTITYID, SPSSOFederate.getSPEntityId(metaAlias));
         setUserSessionProperty(SAML2Constants.METAALIAS, metaAlias);
@@ -722,16 +708,7 @@ public class SAML2 extends AMLoginModule {
 
         nameIDFormat = SAML2Utils.verifyNameIDFormat(nameIDFormat, spsso, idpsso);
         isTransient = SAML2Constants.NAMEID_TRANSIENT_FORMAT.equals(nameIDFormat);
-
-        Object session = null;
-        try {
-            session = getLoginState("shouldPersistNameID").getSSOToken();
-        } catch (SSOException | AuthLoginException ssoe) {
-            if (DEBUG.messageEnabled()) {
-                DEBUG.message("SAML2 :: failed to get user's SSOToken.");
-            }
-        }
-        boolean ignoreProfile = SAML2PluginsUtils.isIgnoredProfile(session, realm);
+        boolean ignoreProfile = SAML2PluginsUtils.isIgnoredProfile(realm);
 
         return !isTransient && !ignoreProfile
                 && spAccountMapper.shouldPersistNameIDFormat(realm, spEntityId, entityName, nameIDFormat);

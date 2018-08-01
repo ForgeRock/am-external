@@ -24,13 +24,12 @@
  *
  * $Id: IDPSSOUtil.java,v 1.56 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2016 ForgeRock AS.
  * Portions Copyrighted 2013 Nomura Research Institute, Ltd
  */
 
 package com.sun.identity.saml2.profile;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.saml2.common.AccountUtils;
@@ -42,6 +41,7 @@ import com.sun.identity.saml2.common.SAML2FailoverUtils;
 import com.sun.identity.saml2.common.SAML2InvalidNameIDPolicyException;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.common.SOAPCommunicator;
+import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.DateUtils;
 import com.sun.identity.shared.xml.XMLUtils;
 
@@ -106,8 +106,6 @@ import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
 import org.forgerock.openam.utils.ClientUtils;
-import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.openam.utils.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -303,6 +301,12 @@ public class IDPSSOUtil {
                         SAML2Utils.bundle.getString("invalidReceiver"));
             }
         }
+
+        // Validate the RelayState URL.
+        SAML2Utils.validateRelayStateURL(realm,
+                idpEntityID,
+                relayState,
+                SAML2Constants.IDP_ROLE);
 
         if (authnReq == null && (session == null || !isValidSessionInRealm(realm, session))) {
             // idp initiated and not logged in yet, need to authenticate
@@ -576,7 +580,7 @@ public class IDPSSOUtil {
                 .append(SAML2Constants.RES_INFO_ID)
                 .append("=")
                 .append(cachedResID);
-        String retURL = urlEncodeQueryParameterNameOrValue(retURLSB.toString());
+        String retURL = URLEncDec.encode(retURLSB.toString());
         StringBuffer redirectURLSB = new StringBuffer(200);
         redirectURLSB.append(writerURL);
         if (writerURL.indexOf("?") > 0) {
@@ -905,7 +909,7 @@ public class IDPSSOUtil {
         String sessionID = sessionProvider.getSessionID(session);
         synchronized (sessionID) {
             authnStatement = getAuthnStatement(request, session, isNewSessionIndex, authnReq, idpEntityID, realm,
-                matchingAuthnContext, idpMetaAlias);
+                matchingAuthnContext);
             if (authnStatement == null) {
                 return null;
             }
@@ -1037,7 +1041,7 @@ public class IDPSSOUtil {
         assertion.setAuthnStatements(statementList);
         assertion.setSubject(subject);
         Conditions conditions = getConditions(recipientEntityID,
-                notBeforeSkewTime, effectiveTime, realm);
+                notBeforeSkewTime, effectiveTime);
         assertion.setConditions(conditions);
 
         String discoBootstrapEnabled = getAttributeValueFromIDPSSOConfig(
@@ -1134,7 +1138,6 @@ public class IDPSSOUtil {
      * @param idpEntityID The entity ID of the identity provider.
      * @param realm The realm name.
      * @param matchingAuthnContext The <code>AuthnContext</code> used to find authentication type and scheme.
-     * @param metaAlias The meta alias.
      * @return The <code>SAML AuthnStatement</code> object.
      * @throws SAML2Exception If the operation is not successful.
      */
@@ -1145,8 +1148,7 @@ public class IDPSSOUtil {
             AuthnRequest authnReq,
             String idpEntityID,
             String realm,
-            AuthnContext matchingAuthnContext,
-            String metaAlias)
+            AuthnContext matchingAuthnContext)
             throws SAML2Exception {
         String classMethod = "IDPSSOUtil.getAuthnStatement: ";
 
@@ -1205,33 +1207,13 @@ public class IDPSSOUtil {
             // a new SAML response for the SP.
             Set<String> authenticatingAuthorities = new LinkedHashSet<String>();
             final List<Assertion> assertions = idpResponse.getAssertion();
-            if (CollectionUtils.isNotEmpty(assertions)) {
-                for (Assertion assertion : assertions) {
-                    authenticatingAuthorities.addAll(extractAuthenticatingAuthorities(assertion));
-                }
-                // According to SAML profile 4.1.4.2 each assertion within the SAML Response MUST have the same issuer, so
-                // this should suffice. We should have at least one assertion or encrypted assertion available since the 
-                // IdP proxy's SP already accepted it.
-                authenticatingAuthorities.add(assertions.iterator().next().getIssuer().getValue());
-                authnContext.setAuthenticatingAuthority(new ArrayList<String>(authenticatingAuthorities));
-            } else {
-                // Check for Encrypted Assertions
-                final List<EncryptedAssertion> encryptedAssertions = idpResponse.getEncryptedAssertion();
-                if (CollectionUtils.isNotEmpty(encryptedAssertions)) {
-                    boolean firstAssertion = true;
-                    String hostEntityId = metaManager.getEntityByMetaAlias(metaAlias);
-                    Set<PrivateKey> decryptionKeys = KeyUtil.getDecryptionKeys(metaManager.getSPSSOConfig(realm, hostEntityId));
-                    for (EncryptedAssertion encryptedAssertion : encryptedAssertions) {
-                        Assertion assertion = encryptedAssertion.decrypt(decryptionKeys);
-                        authenticatingAuthorities.addAll(extractAuthenticatingAuthorities(assertion));
-                        if (firstAssertion) {
-                            authenticatingAuthorities.add(assertion.getIssuer().getValue());
-                            firstAssertion = false;
-                        }
-                    }
-                    authnContext.setAuthenticatingAuthority(new ArrayList<String>(authenticatingAuthorities));
-                }
+            for (Assertion assertion : assertions) {
+                authenticatingAuthorities.addAll(extractAuthenticatingAuthorities(assertion));
             }
+            // According to SAML profile 4.1.4.2 each assertion within the SAML Response MUST have the same issuer, so
+            // this should suffice. We should have at least one assertion, since the IdP proxy's SP already accepted it.
+            authenticatingAuthorities.add(assertions.iterator().next().getIssuer().getValue());
+            authnContext.setAuthenticatingAuthority(new ArrayList<String>(authenticatingAuthorities));
         }
         authnStatement.setAuthnContext(authnContext);
 
@@ -1503,11 +1485,7 @@ public class IDPSSOUtil {
         if (authnReq != null) {
             remoteEntityID = authnReq.getIssuer().getValue();
             NameIDPolicy nameIDPolicy = authnReq.getNameIDPolicy();
-            boolean hasNameIDPolicy = nameIDPolicy != null &&
-                    (StringUtils.isNotEmpty(nameIDPolicy.getSPNameQualifier())
-                    || StringUtils.isNotEmpty(nameIDPolicy.getFormat()));
-
-            if (hasNameIDPolicy) {
+            if (nameIDPolicy != null) {
                 // this will take care of affiliation
                 allowCreate = nameIDPolicy.isAllowCreate();
                 spNameQualifier = nameIDPolicy.getSPNameQualifier();
@@ -1697,12 +1675,12 @@ public class IDPSSOUtil {
      * @throws SAML2Exception if the operation is not successful
      */
     protected static Conditions getConditions(String audienceEntityID,
-            int notBeforeSkewTime, int effectiveTime, String realm) throws SAML2Exception {
+                                              int notBeforeSkewTime, int effectiveTime) throws SAML2Exception {
 
         String classMethod = "IDPSSOUtil.getConditions: ";
 
-        SPSSOConfigElement spConfig = metaManager.getSPSSOConfig(realm, audienceEntityID);
-        Conditions conditions = AssertionFactory.getInstance().createConditions();
+        Conditions conditions = AssertionFactory.getInstance().
+                createConditions();
         Date date = newDate();
         date.setTime(date.getTime() - notBeforeSkewTime * 1000);
         conditions.setNotBefore(date);
@@ -1718,12 +1696,6 @@ public class IDPSSOUtil {
                     "Unable to get Audience Restriction");
             throw new SAML2Exception(
                     SAML2Utils.bundle.getString("noAudienceRestriction"));
-        }
-        String audienceUri = SAML2Utils.getAttributeValueFromSPSSOConfig(spConfig, SAML2Constants.AUDIENCE_URI);
-        if (audienceUri != null) {
-            List<String> audienceList = ar.getAudience();
-            audienceList.add(audienceUri);
-            ar.setAudience(audienceList);
         }
         list.add(ar);
 
@@ -2167,10 +2139,10 @@ public class IDPSSOUtil {
             } else {
                 String redirectURL = acsURL +
                         (acsURL.contains("?") ? "&" : "?") + "SAMLart=" +
-                        urlEncodeQueryParameterNameOrValue(artStr);
+                        URLEncDec.encode(artStr);
                 if ((relayState != null) && (relayState.trim().length() != 0)) {
                     redirectURL += "&RelayState=" +
-                            urlEncodeQueryParameterNameOrValue(relayState);
+                            URLEncDec.encode(relayState);
                 }
                 if (SAML2Utils.debug.messageEnabled()) {
                     SAML2Utils.debug.message(classMethod +
@@ -2390,7 +2362,7 @@ public class IDPSSOUtil {
             }
             newURL.append(SAML2Constants.SPENTITYID);
             newURL.append("=");
-            newURL.append(urlEncodeQueryParameterNameOrValue(spEntityID));
+            newURL.append(URLEncDec.encode(spEntityID));
         }
 
         // find out the authentication method, e.g. module=LDAP, from
@@ -2446,7 +2418,7 @@ public class IDPSSOUtil {
                     "gotoURL=" + gotoURL);
         }
 
-        newURL.append(urlEncodeQueryParameterNameOrValue(gotoURL));
+        newURL.append(URLEncDec.encode(gotoURL));
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(classMethod +
                     "New URL for authentication: " + newURL.toString());

@@ -24,12 +24,9 @@
  *
  * $Id: FSDefaultSPAdapter.java,v 1.6 2008/06/25 05:49:54 qcheng Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
  */
 
 package com.sun.identity.federation.plugins;
-
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import com.iplanet.sso.SSOToken;
 import com.iplanet.sso.SSOException;
@@ -40,6 +37,7 @@ import com.sun.identity.federation.accountmgmt.FSAccountMgmtException;
 import com.sun.identity.federation.common.FederationException;
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.federation.common.IFSConstants;
+import com.sun.identity.federation.common.LogUtil;
 import com.sun.identity.federation.jaxb.entityconfig.SPDescriptorConfigElement;
 import com.sun.identity.federation.message.FSAuthenticationStatement;
 import com.sun.identity.federation.message.FSAssertion;
@@ -69,6 +67,7 @@ import com.sun.identity.saml.protocol.Status;
 import com.sun.identity.saml.protocol.StatusCode;
 import com.sun.identity.security.AdminTokenAction;
 import com.sun.identity.shared.Constants;
+import com.sun.identity.shared.encode.URLEncDec;
 import java.security.AccessController;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -76,6 +75,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -412,7 +412,8 @@ public class FSDefaultSPAdapter implements FederationSPAdapter {
                 return false;
             }
 
-            String statusValue = urlEncodeQueryParameterNameOrValue(secondLevelStatusCode.getValue());
+            String statusValue = URLEncDec.encode(
+                secondLevelStatusCode.getValue());
             sb.append("&").append(IFSConstants.STATUS_CODE).append("=")
                 .append(statusValue);
         }

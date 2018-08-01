@@ -28,13 +28,18 @@
  */
 package com.sun.identity.saml2.protocol;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.sun.identity.saml.xmlsig.XMLSignatureException;
 import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.common.SAML2Exception;
+import java.security.PublicKey;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.security.Signature;
+import com.sun.identity.saml2.xmlsig.SigManager;
 import java.util.Date;
 import java.util.Set;
+
+import org.w3c.dom.Element;
 
 /** 
  * This interface defines methods for setting and retrieving attributes and 
@@ -43,7 +48,6 @@ import java.util.Set;
  * @supported.all.api
  */
 
-@JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS)
 public interface RequestAbstract {
     
     /** 

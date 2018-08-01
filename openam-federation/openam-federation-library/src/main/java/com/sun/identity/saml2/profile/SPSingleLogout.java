@@ -24,7 +24,7 @@
  *
  * $Id: SPSingleLogout.java,v 1.29 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2013-2017 ForgeRock AS.
+ * Portions Copyrighted 2013-2015 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
@@ -77,6 +77,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPMessage;
 
+import org.forgerock.openam.audit.AMAuditEventBuilderUtils;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.SAML2Store;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
@@ -1068,7 +1069,7 @@ public class SPSingleLogout {
                     // obtain fedlet adapter
                     FedletAdapter fedletAdapter = 
                         SAML2Utils.getFedletAdapterClass(spEntityID, realm);
-                    boolean result = true;
+                    boolean result = false;
                     if (fedletAdapter != null) {
                         // call adapter to do real logout
                         result = fedletAdapter.doFedletSLO(request, response,

@@ -1,0 +1,84 @@
+#
+# The contents of this file are subject to the terms of the Common Development and
+# Distribution License (the License). You may not use this file except in compliance with the
+# License.
+#
+# You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+# specific language governing permission and limitations under the License.
+#
+# When distributing Covered Software, include this CDDL Header Notice in each file and include
+# the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+# Header, with the fields enclosed by brackets [] replaced by your own identifying
+# information: "Portions copyright [year] [name of copyright owner]".
+#
+# Copyright 2018 ForgeRock AS.
+#
+dn: dc=openam,dc=forgerock,dc=org
+dc: openam
+objectClass: domain
+objectClass: top
+
+dn: cn=users,dc=openam,dc=forgerock,dc=org
+cn: users
+objectClass: container
+objectClass: top
+
+dn: ou=groups,dc=openam,dc=forgerock,dc=org
+ou: Groups
+objectClass: organizationalUnit
+objectClass: top
+
+dn: cn=Demo,cn=users,dc=openam,dc=forgerock,dc=org
+cn: Demo
+sn: demo
+givenName: demo
+mail: demo@example.com
+userpassword: changeit
+objectclass: inetorgperson
+objectclass: organizationalPerson
+objectclass: inetuser
+objectclass: top
+objectclass: person
+l: DemoLand
+
+dn: cn=Administrator,cn=users,dc=openam,dc=forgerock,dc=org
+cn: Administrator
+sn: admin
+givenName: admin
+mail: admin@example.com
+userpassword: helloworld
+objectclass: inetorgperson
+objectclass: organizationalPerson
+objectclass: inetuser
+objectclass: top
+objectclass: person
+l: AdminLand
+
+dn: cn=duplicate,cn=users,dc=openam,dc=forgerock,dc=org
+cn: duplicate
+sn: duplicate
+givenName: duplicate
+mail: duplicate@example.com
+userpassword: changeit
+objectclass: inetorgperson
+objectclass: organizationalPerson
+objectclass: inetuser
+objectclass: top
+objectclass: person
+
+dn: cn=domain users,cn=users,dc=openam,dc=forgerock,dc=org
+cn: domain users
+objectclass: top
+objectclass: container
+
+dn: cn=duplicate,cn=domain users,cn=users,dc=openam,dc=forgerock,dc=org
+cn: duplicate
+sn: duplicate
+givenName: duplicate
+mail: duplicate@example.com
+userpassword: changeit
+objectclass: inetorgperson
+objectclass: organizationalPerson
+objectclass: inetuser
+objectclass: top
+objectclass: person

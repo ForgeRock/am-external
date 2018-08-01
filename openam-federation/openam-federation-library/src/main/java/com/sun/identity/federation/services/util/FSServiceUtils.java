@@ -24,12 +24,10 @@
  *
  * $Id: FSServiceUtils.java,v 1.11 2008/11/10 22:56:59 veiming Exp $
  *
- * Portions Copyrighted 2012-2017 ForgeRock AS.
+ * Portions Copyrighted 2012-2016 ForgeRock AS.
  */
 
 package com.sun.identity.federation.services.util;
-
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -61,6 +59,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 
+import com.sun.identity.common.SystemConfigurationException;
 import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.federation.accountmgmt.FSAccountFedInfo;
 import com.sun.identity.federation.accountmgmt.FSAccountManager;
@@ -80,6 +79,7 @@ import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.shared.Constants;
+import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
 import org.w3c.dom.Node;
 
@@ -216,22 +216,22 @@ public class FSServiceUtils {
         }
         if(resourceUrl != null && !resourceUrl.equals ("")){
             gotoBuffer.append("&").append (IFSConstants.LRURL)
-                .append ("=").append (urlEncodeQueryParameterNameOrValue(resourceUrl));
+                .append ("=").append (URLEncDec.encode (resourceUrl));
             commonLoginPageUrl.append (IFSConstants.LRURL).append ("=").
-                append (urlEncodeQueryParameterNameOrValue(resourceUrl)).append("&");
+                append (URLEncDec.encode (resourceUrl)).append("&");
         }
         commonLoginPageUrl.append (IFSConstants.GOTOKEY).append ("=").
-            append (urlEncodeQueryParameterNameOrValue(gotoBuffer.toString ()));
+            append (URLEncDec.encode (gotoBuffer.toString ()));
         String org = FSUtils.getAuthDomainURL(realm);
         if(org != null && org.length() != 0){
             commonLoginPageUrl.append("&").append(IFSConstants.ORGKEY).
-                append ("=").append (urlEncodeQueryParameterNameOrValue(org));
+                append ("=").append (URLEncDec.encode (org));
         }
         
         if(requestId != null && !requestId.equals ("")){
             commonLoginPageUrl.append("&").
                 append(IFSConstants.AUTH_REQUEST_ID).append ("=").
-                append (urlEncodeQueryParameterNameOrValue(requestId));
+                append (URLEncDec.encode (requestId));
         }
         if (FSUtils.debug.messageEnabled()) {
             FSUtils.debug.message(
@@ -542,12 +542,12 @@ public class FSServiceUtils {
         errorPage.append(delimiter)
             .append(IFSConstants.FEDERROR)
             .append(IFSConstants.EQUAL_TO)
-            .append(urlEncodeQueryParameterNameOrValue(FSUtils.bundle.getString(
+            .append(URLEncDec.encode(FSUtils.bundle.getString(
                 errorLocaleString)))
             .append(IFSConstants.AMPERSAND)
             .append(IFSConstants.FEDREMARK)
             .append(IFSConstants.EQUAL_TO)
-            .append(urlEncodeQueryParameterNameOrValue(FSUtils.bundle.getString(
+            .append(URLEncDec.encode(FSUtils.bundle.getString(
                 remarkLocaleString)));
         if (FSUtils.debug.messageEnabled()) {
             FSUtils.debug.message("Redirecting to Error page : "

@@ -1,7 +1,7 @@
 /**
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2010-2016 ForgeRock AS. All Rights Reserved.
+ * Copyright (c) 2010-2014 ForgeRock AS. All Rights Reserved.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -73,7 +73,6 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
     public static String SESSION_ATTR_NAME_RELAYSTATE = "_RELAYSTATE_";
     public static String SESSION_ATTR_NAME_SPREQUESTER = "_SPREQUESTER_";
     public static String SESSION_ATTR_NAME_REQAUTHNCONTEXT = "_REQAUTHNCONTEXT_";
-    public static String SESSION_ATTR_NAME_IDP_META_ALIAS = "_IDPMETAALIAS_";
 
     SPSSODescriptorElement spSSODescriptor = null;
     String relayState = "";
@@ -165,11 +164,6 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
                 isIdPFinderEnabled = idpFinderEnabled.equalsIgnoreCase("true");
 
             String idpFinderJSP = getIDPFinderJSP(realm, hostProviderID);
-            IDPSSOConfigElement config = sm.getIDPSSOConfig(realm, hostProviderID);
-            if (config == null) {
-                throw new SAML2Exception(SAML2Utils.bundle.getString("nullIDPMetaAlias"));
-            }
-            String metaAlias = config.getMetaAlias();
 
             // providerIDs will contain the list of IdPs to return from this method
             List providerIDs = new ArrayList();
@@ -205,7 +199,7 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
                     // Store the important stuff and the session parameters so the
                     // idpFinderImplemenatation can read them and process them
                     storeSessionParamsAndCache(request, idpListSt, authnRequest,
-                            hostProviderID, realm, requestID, metaAlias);
+                            hostProviderID, realm, requestID);
 
                     debugMessage(methodName, ": Redirect url = " + idpFinder);
                     response.sendRedirect(idpFinder);
@@ -235,7 +229,7 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
                     // Store the important stuff and the session parameters so the
                     // idpFinderImplemenatation can read them and process them
                     storeSessionParamsAndCache(request, idpListSt, authnRequest,
-                            hostProviderID, realm, requestID, metaAlias);
+                            hostProviderID, realm, requestID);
 
                     debugMessage(methodName, ": Redirect url = " + idpFinder);
                     response.sendRedirect(idpFinder);
@@ -503,8 +497,7 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
             AuthnRequest authnRequest,
             String hostProviderID,
             String realm,
-            String requestID,
-            String metaAlias) {
+            String requestID) {
 
         String methodName = "storeSessionParamsAndCache";
         HttpSession hts = request.getSession();
@@ -519,8 +512,6 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
         hts.setAttribute(SESSION_ATTR_NAME_REQAUTHNCONTEXT,
                 requestedAuthnContext == null ? null : requestedAuthnContext.getAuthnContextClassRef());
         debugMessage(methodName, " Setting " + SESSION_ATTR_NAME_REQAUTHNCONTEXT);
-        hts.setAttribute(SESSION_ATTR_NAME_IDP_META_ALIAS, metaAlias);
-        debugMessage(methodName, " Setting " + SESSION_ATTR_NAME_IDP_META_ALIAS + " = " + metaAlias);
 
         // Save the important param in the reqParamHash so we can
         // locate them when we return to the IDPSSOFederate.

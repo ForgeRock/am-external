@@ -1,4 +1,4 @@
-/*
+/**
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -28,13 +28,12 @@
 
 package com.sun.identity.federation.message;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.federation.common.IFSConstants;
 import com.sun.identity.federation.message.common.FSMsgException;
 import com.sun.identity.federation.message.common.IDPEntries;
 import com.sun.identity.federation.message.common.IDPEntry;
+import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -229,7 +228,7 @@ public class FSScoping {
                         space = " ";
                     }
                     sb.append("IDPEntries=").append(
-                            urlEncodeQueryParameterNameOrValue(strProviders.toString()));
+                            URLEncDec.encode(strProviders.toString()));
                 }
             }
         }

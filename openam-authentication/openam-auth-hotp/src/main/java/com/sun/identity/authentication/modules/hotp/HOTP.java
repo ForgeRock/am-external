@@ -24,7 +24,7 @@
  *
  * $Id: HOTP.java,v 1.1 2009/03/24 23:52:12 pluo Exp $
  *
- * Portions Copyrighted 2012-2017 ForgeRock AS.
+ * Portions Copyrighted 2012-2015 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 
@@ -59,7 +59,6 @@ public class HOTP extends AMLoginModule {
     protected static final Debug debug = Debug.getInstance(amAuthHOTP);
     private static final String FROM_ADDRESS = "sunAMAuthHOTPSMTPFromAddress";
     ResourceBundle bundle = null;
-    private static final String MODULE_NAME = "HOTP";
 
     private String userName = null;
     private String userUUID = null;
@@ -71,6 +70,7 @@ public class HOTP extends AMLoginModule {
     private String enteredHOTPCode = null;
 
     // Module specific properties
+    private static final String AUTHLEVEL = "sunAMAuthHOTPAuthLevel";
     private static final String GATEWAYSMSImplCLASS = "sunAMAuthHOTPSMSGatewayImplClassName";
     private static final String CODEVALIDITYDURATION = "sunAMAuthHOTPPasswordValidityDuration";
     private static final String CODELENGTH = "sunAMAuthHOTPPasswordLength";
@@ -80,7 +80,6 @@ public class HOTP extends AMLoginModule {
     private static final String ATTRIBUTEEMAIL = "openamEmailAttribute";
     private static final String AUTO_CLICKING = "sunAMAuthHOTPAutoClicking";
     private static final String SKIP_HOTP = "skipHOTP";
-    private static final String HOTP_RETRY = "forgerock-am-auth-hotp-max-retry";
     private String gatewaySMSImplClass = null;
     private String codeValidityDuration = null;
     private String codeLength = null;
@@ -92,8 +91,6 @@ public class HOTP extends AMLoginModule {
     private boolean hotpAutoClicking = false;
 
     private int START_STATE = 2;
-    private int attempt = 0;
-    private static int hotpRetryMaxAttempts = 1;
 
     private HOTPService hotpService;
     
@@ -101,6 +98,14 @@ public class HOTP extends AMLoginModule {
 
     public void init(Subject subject, Map sharedState, Map options) {
         currentConfig = options;
+        String authLevel = CollectionHelper.getMapAttr(options, AUTHLEVEL);
+        if (authLevel != null) {
+            try {
+                setAuthLevel(Integer.parseInt(authLevel));
+            } catch (Exception e) {
+                debug.error("HOTP.init() : " + "Unable to set auth level " + authLevel, e);
+            }
+        }
 
         gatewaySMSImplClass = CollectionHelper.getMapAttr(options,
                 GATEWAYSMSImplCLASS);
@@ -112,7 +117,6 @@ public class HOTP extends AMLoginModule {
         telephoneAttribute = CollectionHelper.getMapAttr(options, ATTRIBUTEPHONE);
         carrierAttribute = CollectionHelper.getMapAttr(options, ATTRIBUTECARRIER);
         emailAttribute = CollectionHelper.getMapAttr(options, ATTRIBUTEEMAIL);
-        this.hotpRetryMaxAttempts = CollectionHelper.getIntMapAttr(options, HOTP_RETRY, 3, debug);
         
         try {
             userSearchAttributes = getUserAliasList();
@@ -209,34 +213,21 @@ public class HOTP extends AMLoginModule {
 
                     if (action == 0) { //Submit HOTP Code
                         enteredHOTPCode = String.valueOf(((PasswordCallback) callbacks[0]).getPassword());
-
                         if (enteredHOTPCode == null || enteredHOTPCode.length() == 0) {
-                            if (++attempt >= hotpRetryMaxAttempts) {
-                                if (debug.messageEnabled()) {
-                                    debug.message("HOTP.process() : " + "invalid HOTP code");
-                                }
-                                setFailureID(userName);
-                                throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
+                            if (debug.messageEnabled()) {
+                                debug.message("HOTP.process() : " + "invalid HOTP code");
                             }
-                            substituteHeader(state,
-                                    MODULE_NAME + " Attempt " + (attempt + 1) + " of " + hotpRetryMaxAttempts);
-                            return currentState;
+                            setFailureID(userName); 
+                            throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
                         }
 
                         // Enforce the code validate time HOTP module config
                         if (hotpService.isValidHOTP(enteredHOTPCode)) {
                             return ISAuthConstants.LOGIN_SUCCEED;
                         } else {
-                            //the OTP is out of the window or incorrect
-                            if (++attempt >= hotpRetryMaxAttempts) {
-                                setFailureID(userName);
-                                throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
-                            }
-                            substituteHeader(state,
-                                    MODULE_NAME + " Attempt " + (attempt + 1) + " of " + hotpRetryMaxAttempts);
-                            return state;
+                            setFailureID(userName);
+                            throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
                         }
-
                     } else { // Send HOTP Code
                         try {
                             hotpService.sendHOTP();

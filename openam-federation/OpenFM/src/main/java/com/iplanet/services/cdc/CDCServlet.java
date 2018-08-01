@@ -24,12 +24,11 @@
  *
  * $Id: CDCServlet.java,v 1.13 2009/11/13 23:43:17 dknab Exp $
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2016 ForgeRock AS.
  */
 
 package com.iplanet.services.cdc;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.iplanet.dpro.session.SessionException;
@@ -71,7 +70,6 @@ import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.encode.CookieUtils;
 import com.sun.identity.shared.encode.URLEncDec;
-import com.sun.identity.sm.DNMapper;
 import com.sun.identity.sm.SMSEntry;
 
 import java.io.IOException;
@@ -470,7 +468,7 @@ public class CDCServlet extends HttpServlet {
                         parameterString.append(AMP)
                             .append(paramName)
                             .append(EQUALS)
-                            .append(urlEncodeQueryParameterNameOrValue(values[i]));
+                            .append(URLEncDec.encode(values[i]));
                     }
                 }
             }
@@ -501,7 +499,13 @@ public class CDCServlet extends HttpServlet {
                         try {
                             String orgDN = token.getProperty("Organization");
                         if (orgDN !=null ) {
-                                String tokenRealm = DNMapper.orgNameToRealmName(orgDN);
+                                String tokenRealm = LDAPUtils.rdnTypeFromDn(orgDN);
+                                if (tokenRealm.equalsIgnoreCase(SMSEntry.getRootSuffix())) {
+                                    tokenRealm = "/";
+                                } else {
+                                    int orgIndex = tokenRealm.indexOf(SMSEntry.ORGANIZATION_RDN + SMSEntry.EQUALS);
+                                    tokenRealm = tokenRealm.substring(orgIndex+2, tokenRealm.length());
+                                }
                                 String requestRealm = request.getParameter(paramName);
                                 if (tokenRealm.equalsIgnoreCase(requestRealm)) {
                                     //if realm for user session is the same as the one from request,
@@ -577,7 +581,7 @@ public class CDCServlet extends HttpServlet {
                     StringBuilder gotoURL = new StringBuilder(1024);
                     gotoURL.append(deployDescriptor).append(CDCURI)
                         .append(QUESTION_MARK).append(TARGET_PARAMETER)
-                        .append(EQUALS).append(urlEncodeQueryParameterNameOrValue(finalURL))
+                        .append(EQUALS).append(URLEncDec.encode(finalURL))
                         .append(AMP).append(getParameterString(request));
 
                     // Construct the login URL
@@ -618,11 +622,11 @@ public class CDCServlet extends HttpServlet {
                             ISAuthConstants.RESOURCE_URL_PARAM);
                         if (resourceUrl == null) {
                             // not present, use goto/TARGET as the resource URL
-                            redirectURL.append(urlEncodeQueryParameterNameOrValue(finalURL))
+                            redirectURL.append(URLEncDec.encode(finalURL))
                                 .append(AMP);
                         } else {
                             // resourceURL present in request
-                            redirectURL.append(urlEncodeQueryParameterNameOrValue(resourceUrl))
+                            redirectURL.append(URLEncDec.encode(resourceUrl))
                                 .append(AMP);
                         }
                     }
@@ -631,7 +635,7 @@ public class CDCServlet extends HttpServlet {
                     }
                     redirectURL.append(GOTO_PARAMETER)
                         .append(EQUALS)
-                        .append(urlEncodeQueryParameterNameOrValue(gotoURL.toString()));
+                        .append(URLEncDec.encode(gotoURL.toString()));
                     
                     if (debug.messageEnabled()) {
                         debug.message("CDCServlet.redirectForAuthentication:" +

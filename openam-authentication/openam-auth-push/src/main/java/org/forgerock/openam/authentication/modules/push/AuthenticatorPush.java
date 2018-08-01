@@ -11,13 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.push;
 
 import static org.forgerock.openam.authentication.modules.push.Constants.*;
 import static org.forgerock.openam.services.push.PushNotificationConstants.*;
 
+import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,9 +26,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Collections;
-import java.util.concurrent.ExecutionException;
 
+import java.util.concurrent.ExecutionException;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
@@ -57,17 +57,14 @@ import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.util.Reject;
 
-import com.amazonaws.services.sns.model.InvalidParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.iplanet.dpro.session.SessionException;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.spi.AuthLoginException;
-import com.sun.identity.authentication.spi.InvalidPasswordException;
 import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdUtils;
-import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.encode.Base64;
@@ -99,9 +96,6 @@ public class AuthenticatorPush extends AbstractPushModule {
 
     private String pushMessage;
 
-    // support for search with alias name
-    private Set<String> userSearchAttributes = Collections.emptySet();
-
     @Override
     public void init(Subject subject, Map sharedState, Map options) {
 
@@ -130,10 +124,13 @@ public class AuthenticatorPush extends AbstractPushModule {
 
         pushMessage = CollectionHelper.getMapAttr(options, DEVICE_PUSH_MESSAGE);
 
-        try {
-            userSearchAttributes = getUserAliasList();
-        } catch (final AuthLoginException ale) {
-            DEBUG.warning("AuthenticatorPush :: init() : Unable to retrieve search attributes", ale);
+        String authLevel = CollectionHelper.getMapAttr(options, AUTH_LEVEL);
+        if (authLevel != null) {
+            try {
+                setAuthLevel(Integer.parseInt(authLevel));
+            } catch (Exception e) {
+                DEBUG.error("AuthenticatorPush :: init() : Unable to set auth level {}", authLevel, e);
+            }
         }
     }
 
@@ -236,7 +233,7 @@ public class AuthenticatorPush extends AbstractPushModule {
             coreTokenService.deleteAsync(messageId);
 
             if (deny != null && deny) { //denied
-                throw failedAsPasswordException();
+                throw failedAsLoginException();
             } else {
                 storeUsername(username);
                 return ISAuthConstants.LOGIN_SUCCEED;
@@ -261,7 +258,7 @@ public class AuthenticatorPush extends AbstractPushModule {
                     storeUsername(username);
                     return ISAuthConstants.LOGIN_SUCCEED;
                 } else { //denied
-                    throw failedAsPasswordException();
+                    throw failedAsLoginException();
                 }
             }
         } catch (CoreTokenException e) {
@@ -286,11 +283,7 @@ public class AuthenticatorPush extends AbstractPushModule {
         if (username == null) {
             return USERNAME_STATE;
         } else {
-            AMIdentity id = IdUtils.getIdentity(username, realm, userSearchAttributes);
-            if (id == null) {
-                throw failedAsLoginException();
-            }
-            device = getDevice(id.getName(), realm);
+            device = getDevice(username, realm);
             if (sendMessage(device)) {
                 this.expireTime = Time.currentTimeMillis() + timeout;
                 setEmergencyButton();
@@ -312,7 +305,7 @@ public class AuthenticatorPush extends AbstractPushModule {
             throw failedAsLoginException();
         }
 
-        AMIdentity id = IdUtils.getIdentity(username, realm, userSearchAttributes);
+        AMIdentity id = IdUtils.getIdentity(username, realm);
 
         try {
             if (id != null && id.isExists() && id.isActive()) {
@@ -378,11 +371,6 @@ public class AuthenticatorPush extends AbstractPushModule {
     @Override
     public Principal getPrincipal() {
         return principal;
-    }
-
-    private InvalidPasswordException failedAsPasswordException() throws InvalidParameterException {
-        setFailureID(username);
-        return new InvalidPasswordException(AM_AUTH_AUTHENTICATOR_PUSH, "authFailed", null);
     }
 
     private AuthLoginException failedAsLoginException() throws AuthLoginException {

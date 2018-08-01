@@ -35,7 +35,7 @@
 			i18nKey="iplanet-am-auth-adaptive-service-description"
                 resourceName="adaptiverisk">
             <Organization>
-                <AttributeSchema name="forgerock-am-auth-adaptive-auth-level"
+                <AttributeSchema name="openam-auth-adaptive-auth-level"
                 cosQualifier="default"
                 type="single"
                 syntax="number"
@@ -595,7 +595,7 @@
                 </AttributeSchema>
                 
                 <SubSchema name="serverconfig" inheritance="multiple" resourceName="USE-PARENT">
-                <AttributeSchema name="forgerock-am-auth-adaptive-auth-level"
+                <AttributeSchema name="openam-auth-adaptive-auth-level"
                 cosQualifier="default"
                 type="single"
                 syntax="number"

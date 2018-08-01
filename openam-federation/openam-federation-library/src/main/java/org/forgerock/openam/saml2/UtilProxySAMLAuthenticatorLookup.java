@@ -15,16 +15,6 @@
 */
 package org.forgerock.openam.saml2;
 
-import java.io.PrintWriter;
-import java.util.logging.Level;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.forgerock.guava.common.annotations.VisibleForTesting;
-import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.openam.utils.StringUtils;
-
 import com.sun.identity.multiprotocol.MultiProtocolUtils;
 import com.sun.identity.multiprotocol.SingleLogoutManager;
 import com.sun.identity.plugin.monitoring.FedMonAgent;
@@ -38,7 +28,6 @@ import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.logging.LogUtil;
-import com.sun.identity.saml2.plugins.IDPAuthnContextInfo;
 import com.sun.identity.saml2.profile.CacheObject;
 import com.sun.identity.saml2.profile.ClientFaultException;
 import com.sun.identity.saml2.profile.IDPCache;
@@ -48,12 +37,24 @@ import com.sun.identity.saml2.profile.ServerFaultException;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.NameIDPolicy;
 import com.sun.identity.saml2.protocol.Response;
+import org.forgerock.openam.audit.AMAuditEventBuilderUtils;
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.StringUtils;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.PrintWriter;
+import java.util.logging.Level;
 
 /**
  * An implementation of A SAMLAuthenticatorLookup that uses the Util classes to make the federation connection.
  */
 public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAuthenticatorLookup {
 
+    private final HttpServletRequest request;
+    private final HttpServletResponse response;
+
+    private final IDPSSOFederateRequest data;
     private final PrintWriter out;
 
     /**
@@ -64,10 +65,14 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
      * @param response the http response object.
      * @param out the output.
      */
-    public UtilProxySAMLAuthenticatorLookup(IDPSSOFederateRequest data, HttpServletRequest request,
-            HttpServletResponse response, PrintWriter out) {
-        super(request, response, data);
+    public UtilProxySAMLAuthenticatorLookup(final IDPSSOFederateRequest data,
+                                            final HttpServletRequest request,
+                                            final HttpServletResponse response,
+                                            final PrintWriter out) {
+        this.data = data;
         this.out = out;
+        this.request = request;
+        this.response = response;
     }
 
     @Override
@@ -212,17 +217,16 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
             IDPSSOUtil.sendResponse(request, response, out, acsBinding, spEntityID, data.getIdpEntityID(),
                     data.getIdpMetaAlias(), data.getRealm(), data.getRelayState(), acsURL, res, data.getSession());
         } catch (SAML2Exception sme) {
-            SAML2Utils.debug.error(classMethod + "an error occurred while sending error response", sme);
+            SAML2Utils.debug.error(classMethod + "an error occured while sending error response", sme);
             throw new ServerFaultException(data.getIdpAdapter(), "UnableToGetAuthnReq");
         }
 
     }
 
-    @VisibleForTesting
-    boolean isSessionValid(SessionProvider sessionProvider) throws ServerFaultException,
+    private boolean isSessionValid(SessionProvider sessionProvider) throws ServerFaultException,
             ClientFaultException, SessionException {
 
-        final String classMethod = "UtilProxySAMLAuthenticatorLookup.isSessionValid: ";
+        final String classMethod = "UtilProxySAMLAuthenticatorLookup.validteSesison";
 
         // Let's verify if the session belongs to the proper realm
         boolean isValidSessionInRealm = data.getSession() != null &&
@@ -269,13 +273,7 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
             }
         }
 
-        IDPAuthnContextInfo idpAuthnContextInfo = getIdpAuthnContextInfo();
-        if (isSessionUpgrade(idpAuthnContextInfo, data.getSession())) {
-            SAML2Utils.debug.message("{}The session upgrade requested by the SP was not completed by the end user {}",
-                    classMethod, sessionProvider.getPrincipalName(data.getSession()));
-            throw new ClientFaultException(data.getIdpAdapter(), SSO_OR_FEDERATION_ERROR);
-        }
-
         return true;
     }
+
 }

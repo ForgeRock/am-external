@@ -24,12 +24,11 @@
  *
  * $Id: FSFedTerminationHandler.java,v 1.7 2009/11/03 00:49:26 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015-2016 ForgeRock AS.
  */
 
 package com.sun.identity.federation.services.termination;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.federation.accountmgmt.FSAccountManager;
@@ -56,6 +55,7 @@ import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.saml.common.SAMLException;
 import com.sun.identity.saml.common.SAMLResponderException;
 import com.sun.identity.saml.xmlsig.XMLSignatureManager;
+import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.encode.CookieUtils;
 import javax.xml.soap.SOAPMessage;
 import javax.servlet.http.HttpServletRequest;
@@ -63,6 +63,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Cookie;
 import java.io.IOException;
 import java.util.List;
+import java.util.Iterator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -666,7 +667,7 @@ public class FSFedTerminationHandler {
                     finalReturnURL.append(delimiter).
                         append(RELAY_STATE).
                         append(IFSConstants.EQUAL_TO).
-                        append(urlEncodeQueryParameterNameOrValue(relayState));
+                        append(URLEncDec.encode(relayState));
                 }
                 if (FSUtils.debug.messageEnabled()) {
                     FSUtils.debug.message("Now sendRedirecting to : " +

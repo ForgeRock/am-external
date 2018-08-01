@@ -22,14 +22,8 @@ define([
     "org/forgerock/commons/ui/common/main/Router",
     "org/forgerock/openam/ui/common/util/Constants",
     "org/forgerock/openam/ui/common/util/RealmHelper",
-    "org/forgerock/commons/ui/common/main/EventManager",
-    "org/forgerock/commons/ui/common/util/URIUtils"
-], ($, _, AnonymousProcessDelegate, AnonymousProcessView, Router, Constants, RealmHelper, EventManager, URIUtils) => {
-
-    function getFragmentParamString () {
-        const params = URIUtils.getCurrentFragmentQueryString();
-        return _.isEmpty(params) ? "" : `&${params}`;
-    }
+    "org/forgerock/commons/ui/common/main/EventManager"
+], ($, _, AnonymousProcessDelegate, AnonymousProcessView, Router, Constants, RealmHelper, EventManager) => {
 
     return AnonymousProcessView.extend({
 
@@ -40,6 +34,8 @@ define([
                 endpoint = this.endpoint,
                 realmPath = "/",
                 continueRoute;
+
+            this.events["click #anonymousProcessReturn"] = "returnToLoginPage";
 
             if (endpoint === Constants.SELF_SERVICE_REGISTER) {
                 continueRoute = Router.configuration.routes.continueSelfRegister;
@@ -71,22 +67,24 @@ define([
                 return;
             }
 
-            this.data.fragmentParamString = getFragmentParamString();
-            // TODO: The first undefined argument is the deprecated realm which is defined in the
-            // CommonRoutesConfig login route. This needs to be removed as part of AME-11109.
-            this.data.args = [undefined, this.data.fragmentParamString];
             this.setTranslationBase();
             this.parentRender();
+        },
+
+        returnToLoginPage (e) {
+            e.preventDefault();
+            location.href = e.target.href + RealmHelper.getSubRealm();
         },
 
         restartProcess (e) {
             e.preventDefault();
             delete this.delegate;
             delete this.stateData;
+            const subrealm = RealmHelper.getSubRealm();
 
             EventManager.sendEvent(Constants.EVENT_CHANGE_VIEW, {
-                args: this.data.args,
-                route: _.extend({}, Router.currentRoute, { forceUpdate: true })
+                route: _.extend({}, Router.currentRoute, { forceUpdate: true }),
+                args: [`/${subrealm}`]
             });
         }
     });

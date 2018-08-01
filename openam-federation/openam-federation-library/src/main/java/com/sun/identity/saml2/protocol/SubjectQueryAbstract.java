@@ -29,7 +29,6 @@
 
 package com.sun.identity.saml2.protocol;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.assertion.Subject;
 import com.sun.identity.saml2.common.SAML2Exception;
 
@@ -52,8 +51,6 @@ import com.sun.identity.saml2.common.SAML2Exception;
  * 
  * @supported.all.api
  */
-
-@JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS)
 public interface SubjectQueryAbstract extends RequestAbstract {
     /** 
      * Returns the <code>Subject</code> object. 

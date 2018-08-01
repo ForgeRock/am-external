@@ -1,4 +1,4 @@
-/*
+/**
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,13 +24,10 @@
  *
  * $Id: FSNameRegistrationHandler.java,v 1.7 2008/12/19 06:50:47 exu Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
  */
 
 
 package com.sun.identity.federation.services.registration;
-
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.federation.accountmgmt.FSAccountManager;
@@ -54,6 +51,7 @@ import com.sun.identity.federation.message.common.IDPProvidedNameIdentifier;
 import com.sun.identity.federation.message.common.SPProvidedNameIdentifier;
 import com.sun.identity.federation.message.common.OldProvidedNameIdentifier;
 import com.sun.identity.federation.message.common.FSMsgException;
+import com.sun.identity.federation.meta.IDFFMetaException;
 import com.sun.identity.federation.meta.IDFFMetaUtils;
 import com.sun.identity.federation.plugins.FederationSPAdapter;
 import com.sun.identity.liberty.ws.meta.jaxb.ProviderDescriptorType;
@@ -66,6 +64,7 @@ import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.saml.common.SAMLException;
 import com.sun.identity.saml.common.SAMLResponderException;
 import com.sun.identity.saml.xmlsig.XMLSignatureManager;
+import com.sun.identity.shared.encode.URLEncDec;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPMessage;
@@ -1500,7 +1499,7 @@ public class FSNameRegistrationHandler {
                 value = (String)regisMap.get(key);
                 ssoURL.append(key)
                     .append(IFSConstants.EQUAL_TO)
-                    .append(urlEncodeQueryParameterNameOrValue(value))
+                    .append(URLEncDec.encode(value))
                     .append(IFSConstants.AMPERSAND);
             }
             ssoURL.append(IFSConstants.AUTHN_INDICATOR_PARAM)

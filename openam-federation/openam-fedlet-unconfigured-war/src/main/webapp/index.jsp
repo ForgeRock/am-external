@@ -198,7 +198,7 @@
                 List trustedIDPs = new ArrayList();
                 idpEntityID = request.getParameter("idpEntityID");
                 if (!ESAPI.validator().isValidInput("HTTP Parameter Value: " +
-                    idpEntityID, idpEntityID, "HTTPURL", 2000, true)){
+                    idpEntityID, idpEntityID, "HTTPParameterValue", 2000, true)){
                         idpEntityID = null;
                 }
                 if ((idpEntityID == null) || (idpEntityID.length() == 0)) {

@@ -65,6 +65,17 @@ public class AD extends LDAP {
 
     public boolean initializeLDAP() throws AuthLoginException{
         boolean returnValue = super.initializeLDAP();
+        String authLevel = CollectionHelper.getMapAttr(currentConfig,
+            AMAuthConfigUtils.getAuthLevelAttribute(currentConfig, "AD"));
+
+        if (authLevel != null) {
+            try {
+                setAuthLevel(Integer.parseInt(authLevel));
+            } catch (Exception e) {
+                debug.error("Unable to set auth level " + authLevel);
+            }
+        }
+        
         ldapUtil.setAD(true);
         return returnValue;
     }

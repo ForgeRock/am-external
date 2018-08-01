@@ -130,15 +130,6 @@
                         <Value>5</Value>
                     </DefaultValues>
                 </AttributeSchema>
-                <AttributeSchema name="forgerock-am-auth-hotp-max-retry"
-                                 type="single"
-                                 syntax="number_range" rangeStart="1" rangeEnd="10"
-                                 i18nKey="a5071"
-                                 resourceName="otpMaxRetry">
-                    <DefaultValues>
-                        <Value>3</Value>
-                    </DefaultValues>
-                </AttributeSchema>
                 <AttributeSchema name="sunAMAuthHOTPPasswordLength"
                     type="single_choice"
                     syntax="string"
@@ -289,15 +280,6 @@
                         resourceName="otpValidityDuration">
                         <DefaultValues>
                             <Value>5</Value>
-                        </DefaultValues>
-                    </AttributeSchema>
-                    <AttributeSchema name="forgerock-am-auth-hotp-max-retry"
-                                     type="single"
-                                     syntax="number_range" rangeStart="1" rangeEnd="10"
-                                     i18nKey="a5071"
-                                     resourceName="otpMaxRetry">
-                        <DefaultValues>
-                            <Value>3</Value>
                         </DefaultValues>
                     </AttributeSchema>
                     <AttributeSchema name="sunAMAuthHOTPPasswordLength"

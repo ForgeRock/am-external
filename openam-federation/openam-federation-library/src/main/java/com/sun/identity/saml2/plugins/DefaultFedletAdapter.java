@@ -87,10 +87,10 @@ public class DefaultFedletAdapter extends FedletAdapter {
      * @exception SAML2Exception if user want to fail the process.
      */
     public boolean doFedletSLO (
-        HttpServletRequest request,
-        HttpServletResponse response,
+        HttpServletRequest request, 
+        HttpServletResponse response, 
         LogoutRequest logoutReq,
-        String hostedEntityID,
+        String hostedEntityID, 
         String idpEntityID,
         List siList,
         String nameIDValue,
@@ -121,7 +121,7 @@ public class DefaultFedletAdapter extends FedletAdapter {
                         logoutUrl = url.substring(0, loc + deployuri.length()) +
                             "/logout";
                     }
-                }
+                } 
             }
             if (logoutUrl == null) {
                 return status;
@@ -138,7 +138,7 @@ public class DefaultFedletAdapter extends FedletAdapter {
             String strCookies = SAML2Utils.getCookiesString(request);
             if (strCookies != null) {
                 if (SAML2Utils.debug.messageEnabled()) {
-                    SAML2Utils.debug.message(method + "Sending cookies : " +
+                    SAML2Utils.debug.message(method + "Sending cookies : " + 
                         strCookies);
                 }
                 conn.setRequestProperty("Cookie", strCookies);
@@ -147,7 +147,7 @@ public class DefaultFedletAdapter extends FedletAdapter {
                 "application/x-www-form-urlencoded");
 
             conn.setRequestProperty("IDP", URLEncDec.encode(idpEntityID));
-            conn.setRequestProperty("SP", URLEncDec.encode(hostedEntityID));
+            conn.setRequestProperty("SP", URLEncDec.encode(hostedEntityID)); 
             conn.setRequestProperty(
                 "NameIDValue", URLEncDec.encode(nameIDValue));
             if (siList != null && !siList.isEmpty()) {
@@ -281,7 +281,7 @@ public class DefaultFedletAdapter extends FedletAdapter {
                         logoutUrl = url.substring(0, loc + deployuri.length()) +
                             "/logout";
                     }
-                }
+                } 
             }
             if (logoutUrl == null) {
                 return;
@@ -298,7 +298,7 @@ public class DefaultFedletAdapter extends FedletAdapter {
             String strCookies = SAML2Utils.getCookiesString(request);
             if (strCookies != null) {
                 if (SAML2Utils.debug.messageEnabled()) {
-                    SAML2Utils.debug.message(method + "Sending cookies : " +
+                    SAML2Utils.debug.message(method + "Sending cookies : " + 
                         strCookies);
                 }
                 conn.setRequestProperty("Cookie", strCookies);
@@ -307,16 +307,16 @@ public class DefaultFedletAdapter extends FedletAdapter {
                 "application/x-www-form-urlencoded");
 
             conn.setRequestProperty("IDP", URLEncDec.encode(idpEntityID));
-            conn.setRequestProperty("SP", URLEncDec.encode(hostedEntityID));
+            conn.setRequestProperty("SP", URLEncDec.encode(hostedEntityID)); 
             if (logoutReq != null) {
                 NameID nameID = logoutReq.getNameID();
                 if (nameID != null) {
                     conn.setRequestProperty(
                         "NameIDValue", URLEncDec.encode(nameID.getValue()));
                 }
-                List siList = logoutReq.getSessionIndex();
+                List siList = logoutReq.getSessionIndex(); 
                 if ((siList != null) && (!siList.isEmpty())) {
-                    conn.setRequestProperty("SessionIndex",
+                    conn.setRequestProperty("SessionIndex", 
                         URLEncDec.encode((String)siList.get(0)));
                 }
             }

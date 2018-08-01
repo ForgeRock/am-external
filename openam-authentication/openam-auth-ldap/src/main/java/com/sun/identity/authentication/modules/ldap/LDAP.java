@@ -30,7 +30,6 @@
 package com.sun.identity.authentication.modules.ldap;
 
 import static org.forgerock.openam.utils.Time.*;
-import static com.sun.identity.authentication.service.AMAuthErrorCode.USERID_NOT_FOUND;
 
 import com.sun.identity.authentication.spi.AMAuthCallBackImpl;
 import com.sun.identity.authentication.spi.AMAuthCallBackException;
@@ -41,7 +40,6 @@ import com.sun.identity.authentication.spi.UserNamePasswordValidationException;
 import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.debug.Debug;
-
 import java.security.Principal;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -51,7 +49,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
-
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
@@ -87,6 +84,7 @@ public class LDAP extends AMLoginModule {
     private String regEx;
     private String currentConfigName;
     private String bindDN;
+    private String protocolVersion;
     private int currentState;
     protected LDAPAuthUtils ldapUtil;
     private boolean isReset;
@@ -207,10 +205,22 @@ public class LDAP extends AMLoginModule {
                 currentConfig, "openam-auth-ldap-connection-mode", "LDAP");
             useStartTLS = connectionMode.equalsIgnoreCase("StartTLS");
             isSecure = connectionMode.equalsIgnoreCase("LDAPS") || useStartTLS;
+            protocolVersion = CollectionHelper.getMapAttr(
+                    currentConfig, "openam-auth-ldap-secure-protocol-version", "TLSv1");
 
             getUserCreationAttrs(currentConfig);
             String tmp = CollectionHelper.getMapAttr(currentConfig,
                 "iplanet-am-auth-ldap-search-scope", "SUBTREE");
+
+            String authLevel = CollectionHelper.getMapAttr(currentConfig,
+                "iplanet-am-auth-ldap-auth-level");
+            if (authLevel != null) {
+                try {
+                    setAuthLevel(Integer.parseInt(authLevel));
+                } catch (Exception e) {
+                    debug.error("Unable to set auth level " + authLevel);
+                }
+            }
 
             SearchScope searchScope = SearchScope.WHOLE_SUBTREE;
 
@@ -258,6 +268,7 @@ public class LDAP extends AMLoginModule {
             ldapUtil.setHeartBeatInterval(heartBeatInterval);
             ldapUtil.setHeartBeatTimeUnit(heartBeatTimeUnit);
             ldapUtil.setOperationTimeout(operationTimeout);
+            ldapUtil.setProtocolVersion(protocolVersion);
 
             if (debug.messageEnabled()) {
                 debug.message("bindDN-> " + bindDN
@@ -271,6 +282,7 @@ public class LDAP extends AMLoginModule {
                         + "\nisSecure-> " + isSecure
                         + "\nuseStartTLS-> " + useStartTLS
                         + "\ntrustAll-> " + sslTrustAll
+                        + "\nauthLevel-> " + authLevel
                         + "\nbeheraEnabled->" + beheraEnabled
                         + "\nprimaryServers-> " + primaryServers
                         + "\nsecondaryServers-> " + secondaryServers
@@ -450,7 +462,7 @@ public class LDAP extends AMLoginModule {
                     debug.message("The specified user does not exist.");
                 }
 
-                throw new AuthLoginException(AM_AUTH, USERID_NOT_FOUND, null);
+                throw new AuthLoginException(AM_AUTH, "NoUser", null);
             } else if (ex.getResultCode().equals(ResultCode.INVALID_CREDENTIALS)) {
                 if (debug.messageEnabled()) {
                     debug.message("Invalid password.");
@@ -533,6 +545,7 @@ public class LDAP extends AMLoginModule {
     }
 
     private void processLoginScreen(ModuleState newState) throws AuthLoginException {
+        try {
             switch (newState) {
                 case SUCCESS:
                     validatedUserID = ldapUtil.getUserId();
@@ -620,17 +633,22 @@ public class LDAP extends AMLoginModule {
                 }
                     currentState = LoginScreen.PASSWORD_CHANGE.intValue();
                 case USER_NOT_FOUND:
-                    setFailureID(userName);
-                    if (getCredentialsFromSharedState && !isUseFirstPassEnabled()) {
-                        getCredentialsFromSharedState = false;
-                        currentState = LoginScreen.LOGIN_START.intValue();
-                        return;
-                    }
-                    throw new AuthLoginException(AM_AUTH, USERID_NOT_FOUND, null);
+                    throw new LDAPUtilException("noUserMatchFound", (Object[])null);
                 case SERVER_DOWN:
                     throw new AuthLoginException(AM_AUTH, "LDAPex", null);
                 default:
             }
+        } catch (LDAPUtilException ex) {
+            if (getCredentialsFromSharedState && !isUseFirstPassEnabled()) {
+                getCredentialsFromSharedState = false;
+                currentState = LoginScreen.LOGIN_START.intValue();
+                return;
+            }
+            if (newState != ModuleState.USER_NOT_FOUND) {
+                debug.error("Unknown Login State:", ex);
+            }
+            throw new AuthLoginException(AM_AUTH, "LDAPex", null, ex);
+        }
     }
 
     private void processPasswordScreen(ModuleState newState)

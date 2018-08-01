@@ -24,7 +24,7 @@
 
     <groupId>org.forgerock.am</groupId>
     <artifactId>openam-external</artifactId>
-<version>13.5.2</version>    
+<version>13.5.0</version>    
     <packaging>pom</packaging>
 
     <!-- Child Modules -->
@@ -32,9 +32,9 @@
         <module>openam-ui</module>
         <module>openam-authentication</module>
         <module>openam-samples</module>
-        <module>openam-auth-trees</module>
         <module>openam-push-notification</module>
         <module>openam-radius</module>
+        <module>openam-datastore</module>
     </modules>
 
     <repositories>

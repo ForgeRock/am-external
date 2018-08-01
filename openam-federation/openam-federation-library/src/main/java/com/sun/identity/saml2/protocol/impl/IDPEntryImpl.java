@@ -24,7 +24,6 @@
  *
  * $Id: IDPEntryImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
  */
 
 
@@ -227,6 +226,7 @@ public class IDPEntryImpl implements IDPEntry {
 	}
 		 
 	xmlString.append(SAML2Constants.END_TAG)
+		 .append(SAML2Constants.NEWLINE)
 		 .append(SAML2Constants.SAML2_END_TAG)
 		 .append(SAML2Constants.IDPENTRY)
 		 .append(SAML2Constants.END_TAG);

@@ -24,7 +24,6 @@ import GroupedJSONSchemaView from "org/forgerock/openam/ui/common/views/jsonSche
 import Messages from "org/forgerock/commons/ui/common/components/Messages";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import ServicesService from "org/forgerock/openam/ui/admin/services/realm/ServicesService";
-import JSONValues from "org/forgerock/openam/ui/common/models/JSONValues";
 
 function toggleCreate (el, enable) {
     el.find("[data-create]").prop("disabled", !enable);
@@ -72,22 +71,20 @@ class NewServiceView extends AbstractView {
 
         if (service !== this.data.type && this.jsonSchemaView) {
             this.jsonSchemaView.remove();
-            delete this.schema;
         }
 
         if (!_.isEmpty(service)) {
             this.data.type = service;
 
             ServicesService.instance.getInitialState(this.data.realmPath, this.data.type).then((response) => {
-                this.schema = response.schema;
                 const options = {
-                    schema: this.schema,
+                    schema: response.schema,
                     values: response.values,
                     showOnlyRequiredAndEmpty: true,
                     onRendered: () => toggleCreate(this.$el, true)
                 };
 
-                if (this.schema.isCollection()) {
+                if (response.schema.isCollection()) {
                     this.jsonSchemaView = new GroupedJSONSchemaView(options);
                 } else {
                     this.jsonSchemaView = new FlatJSONSchemaView(options);
@@ -100,18 +97,18 @@ class NewServiceView extends AbstractView {
         }
     }
     onCreateClick () {
-        const values = new JSONValues(this.jsonSchemaView.getData());
-        const valuesWithoutNullPasswords = values.removeNullPasswords(this.schema);
-
-        ServicesService.instance.create(this.data.realmPath, this.data.type, valuesWithoutNullPasswords.raw)
-            .then(() => {
-                Router.routeTo(Router.configuration.routes.realmsServiceEdit, {
-                    args: _.map([this.data.realmPath, this.data.type], encodeURIComponent),
-                    trigger: true
-                });
-            }, (response) => {
-                Messages.addMessage({ response, type: Messages.TYPE_DANGER });
+        ServicesService.instance.create(this.data.realmPath, this.data.type, this.jsonSchemaView.getData())
+        .then(() => {
+            Router.routeTo(Router.configuration.routes.realmsServiceEdit, {
+                args: _.map([this.data.realmPath, this.data.type], encodeURIComponent),
+                trigger: true
             });
+        }, (response) => {
+            Messages.addMessage({
+                response,
+                type: Messages.TYPE_DANGER
+            });
+        });
     }
 }
 

@@ -24,15 +24,13 @@
  *
  * $Id: IDPEntry.java,v 1.2 2008/06/25 05:47:56 qcheng Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.protocol.impl.IDPEntryImpl;
+import org.w3c.dom.Element;
 
 /** 
  * This interface defines methods to set/retrieve single identity provider
@@ -41,8 +39,6 @@ import com.sun.identity.saml2.protocol.impl.IDPEntryImpl;
  * @supported.all.api
  */
 
-@JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
-        defaultImpl = IDPEntryImpl.class)
 public interface IDPEntry {
     
     /** 

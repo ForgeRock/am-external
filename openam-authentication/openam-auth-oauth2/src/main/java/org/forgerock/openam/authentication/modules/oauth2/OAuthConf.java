@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2017 ForgeRock AS.
+ * Copyright 2011-2016 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -55,7 +55,6 @@ public class OAuthConf {
 
     static final String CLIENT = "genericHTML";
     private boolean openIDConnect;
-    private boolean mixUpMitigationEnabled;
     private String accountProvider;
     // private static Debug debug = Debug.getInstance("amAuth");
     private String clientId = null;
@@ -85,6 +84,7 @@ public class OAuthConf {
     private String smtpUserPassword = null;
     private String smtpSSLEnabled = "false";
     private String emailFrom = null;
+    private String authLevel = "0";
 
     OAuthConf() {
     }
@@ -127,7 +127,20 @@ public class OAuthConf {
         smtpUserPassword = CollectionHelper.getMapAttr(config, KEY_SMTP_PASSWORD);
         smtpSSLEnabled = CollectionHelper.getMapAttr(config, KEY_SMTP_SSL_ENABLED);
         emailFrom = CollectionHelper.getMapAttr(config, KEY_EMAIL_FROM);
-        mixUpMitigationEnabled = CollectionHelper.getBooleanMapAttr(config, KEY_MIX_UP_MITIGATION_ENABLED, false);
+        authLevel = CollectionHelper.getMapAttr(config, KEY_AUTH_LEVEL);
+    }
+
+    public int getAuthnLevel() {
+        int authLevelInt = 0;
+        if (authLevel != null) {
+            try {
+                authLevelInt = Integer.parseInt(authLevel);
+            } catch (Exception e) {
+                OAuthUtil.debugError("Unable to find a valid auth level " + authLevel
+                        + ", defaulting to 0", e);
+            }
+        }
+        return authLevelInt;
     }
 
     public String getGatewayImplClass()
@@ -254,7 +267,7 @@ public class OAuthConf {
         return tokenServiceUrl;
     }
 
-    public Map<String, String> getTokenServicePOSTparameters(String code, String authServiceURL, String csrfState)
+    public Map<String, String> getTokenServicePOSTparameters(String code, String authServiceURL)
             throws AuthLoginException {
 
         Map<String, String> postParameters = new HashMap<String, String>();
@@ -269,9 +282,6 @@ public class OAuthConf {
             postParameters.put(PARAM_REDIRECT_URI, OAuthUtil.oAuthEncode(authServiceURL));
             postParameters.put(PARAM_CLIENT_SECRET, clientSecret);
             postParameters.put(PARAM_CODE, OAuthUtil.oAuthEncode(code));
-            if (isMixUpMitigationEnabled()) {
-                postParameters.put(PARAM_STATE, csrfState);
-            }
             postParameters.put(PARAM_GRANT_TYPE, OAuth2Constants.TokenEndpoint.AUTHORIZATION_CODE);
 
         } catch (UnsupportedEncodingException ex) {
@@ -339,7 +349,4 @@ public class OAuthConf {
         return openIDConnect;
     }
 
-    public boolean isMixUpMitigationEnabled() {
-        return mixUpMitigationEnabled;
-    }
 }

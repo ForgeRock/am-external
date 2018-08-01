@@ -24,7 +24,7 @@
  *
  * $Id: SAML2Constants.java,v 1.44 2009/11/24 21:53:02 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2016 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -1206,11 +1206,8 @@ public interface SAML2Constants {
     public String CACHE_CLEANUP_INTERVAL = 
                 "com.sun.identity.saml2.cacheCleanUpInterval";
 
-    // default Cache cleanup interval in seconds.
-    public int CACHE_CLEANUP_INTERVAL_DEFAULT = 600;
-
-    // minimum Cache cleanup interval in seconds (5 mins).
-    public int CACHE_CLEANUP_INTERVAL_MINIMUM = 300;
+    // default Cache cleanup interval in seconds
+    public int CACHE_CLEANUP_INTERVAL_DEFAULT = 3600;
 
     // IDP SLO parameter name for logout all sessions
     public String LOGOUT_ALL = "logoutAll";
@@ -1653,9 +1650,4 @@ public interface SAML2Constants {
      * Default Value for the SAML2 Server Port
      */
     int DEFAULT_SERVER_PORT = 18080;
-
-    /**
-     * Attribute to be configured in SPSSOConfig for Audience elements.
-     */
-    public String AUDIENCE_URI = "audienceUri";
 }

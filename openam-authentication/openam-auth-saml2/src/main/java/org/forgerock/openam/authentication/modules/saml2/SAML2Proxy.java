@@ -15,7 +15,6 @@
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.authentication.modules.saml2.Constants.*;
 import static org.forgerock.openam.utils.Time.*;
 
@@ -52,6 +51,7 @@ import com.sun.identity.saml2.profile.SPACSUtils;
 import com.sun.identity.saml2.profile.SPCache;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.encode.CookieUtils;
+import com.sun.identity.shared.encode.URLEncDec;
 
 /**
  * Called on the way back into the SAML2 Authentication Module
@@ -269,10 +269,8 @@ public final class SAML2Proxy {
         }
 
         value.append("&").append(ERROR_PARAM_KEY).append("=").append(true)
-            .append("&").append(ERROR_CODE_PARAM_KEY).append("=")
-            .append(urlEncodeQueryParameterNameOrValue(errorType))
-            .append("&").append(ERROR_MESSAGE_PARAM_KEY).append("=")
-            .append(urlEncodeQueryParameterNameOrValue(messageDetail));
+            .append("&").append(ERROR_CODE_PARAM_KEY).append("=").append(URLEncDec.encode(errorType))
+            .append("&").append(ERROR_MESSAGE_PARAM_KEY).append("=").append(URLEncDec.encode(messageDetail));
 
         return value.toString();
     }
@@ -284,7 +282,7 @@ public final class SAML2Proxy {
             value.append("?");
         }
 
-        value.append(RESPONSE_KEY).append("=").append(urlEncodeQueryParameterNameOrValue(key))
+        value.append(RESPONSE_KEY).append("=").append(URLEncDec.encode(key))
                 .append("&").append(ERROR_PARAM_KEY).append("=").append(false);
 
         return value.toString();

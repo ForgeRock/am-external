@@ -65,14 +65,11 @@
                 </AttributeSchema>
                 <AttributeSchema name="openam-auth-openidconnect-crypto-context-value"
                                  type="single" syntax="string" i18nKey="crypto_context_value"
+                                 validator="RequiredValueValidator"
                                  resourceName="cryptoContextValue">
                     <DefaultValues>
                         <Value>https://accounts.google.com/.well-known/openid-configuration</Value>
                     </DefaultValues>
-                </AttributeSchema>
-                <AttributeSchema name="iplanet-am-auth-oauth-client-secret"
-                                 type="single" syntax="password" i18nKey="client_secret"
-                                 resourceName="clientSecret">
                 </AttributeSchema>
                 <AttributeSchema name="openam-auth-openidconnect-account-provider-class"
                                  type="single" syntax="string" i18nKey="account_provider_class"
@@ -165,14 +162,11 @@
                     </AttributeSchema>
                     <AttributeSchema name="openam-auth-openidconnect-crypto-context-value"
                                      type="single" syntax="string" i18nKey="crypto_context_value"
+                                     validator="RequiredValueValidator"
                                      resourceName="cryptoContextValue">
                         <DefaultValues>
                             <Value>https://accounts.google.com/.well-known/openid-configuration</Value>
                         </DefaultValues>
-                    </AttributeSchema>
-                    <AttributeSchema name="iplanet-am-auth-oauth-client-secret"
-                                     type="single" syntax="password" i18nKey="client_secret"
-                                     resourceName="clientSecret">
                     </AttributeSchema>
                     <AttributeSchema name="openam-auth-openidconnect-account-provider-class"
                                      type="single" syntax="string" i18nKey="account_provider_class"

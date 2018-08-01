@@ -15,28 +15,6 @@
 */
 package org.forgerock.openam.saml2;
 
-import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.security.cert.X509Certificate;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.xml.soap.SOAPMessage;
-
-import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.openam.utils.IOUtils;
-import org.forgerock.openam.utils.StringUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.multiprotocol.MultiProtocolUtils;
 import com.sun.identity.multiprotocol.SingleLogoutManager;
@@ -49,11 +27,11 @@ import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.common.SOAPCommunicator;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SingleSignOnServiceElement;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.plugins.IDPAuthnContextInfo;
+import com.sun.identity.saml2.plugins.IDPAuthnContextMapper;
 import com.sun.identity.saml2.plugins.IDPECPSessionMapper;
 import com.sun.identity.saml2.profile.CacheObject;
 import com.sun.identity.saml2.profile.ClientFaultException;
@@ -72,14 +50,38 @@ import com.sun.identity.saml2.protocol.Response;
 import com.sun.identity.shared.Constants;
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.encode.Base64;
+import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.IOUtils;
+import org.forgerock.openam.utils.StringUtils;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.soap.SOAPMessage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.security.cert.X509Certificate;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
 
 /**
  * An implementation of A SAMLAuthenticator that uses the Util classes to make the federation connection.
  */
 public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenticator {
 
+    private final HttpServletRequest request;
+    private final HttpServletResponse response;
+
+    private final IDPSSOFederateRequest data;
     private final PrintWriter out;
+
     private final boolean isFromECP;
 
     /**
@@ -91,10 +93,15 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
      * @param out       the print out.
      * @param isFromECP true if this request was made by an ECP.
      */
-    public UtilProxySAMLAuthenticator(IDPSSOFederateRequest data, HttpServletRequest request,
-            HttpServletResponse response, PrintWriter out, boolean isFromECP) {
-        super(request, response, data);
+    public UtilProxySAMLAuthenticator(final IDPSSOFederateRequest data,
+                                      final HttpServletRequest request,
+                                      final HttpServletResponse response,
+                                      final PrintWriter out,
+                                      final boolean isFromECP) {
+        this.data = data;
         this.out = out;
+        this.request = request;
+        this.response = response;
         this.isFromECP = isFromECP;
     }
 
@@ -183,20 +190,10 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
                 // In ECP profile, sp doesn't know idp.
                 if (!isFromECP) {
                     // verify Destination
-                    List<SingleSignOnServiceElement> ssoServiceList = idpSSODescriptor.getSingleSignOnService();
-                    SingleSignOnServiceElement  endPoint = SPSSOFederate.getSingleSignOnServiceEndpoint(ssoServiceList, binding);
-                    if (endPoint == null || StringUtils.isEmpty(endPoint.getLocation())) {
-                        SAML2Utils.debug
-                                .error("{} authn request unable to get endpoint location for IdpEntity: {}  MetaAlias: {} ",
-                                        classMethod, data.getIdpEntityID(), data.getIdpMetaAlias());
-                        throw new ClientFaultException(data.getIdpAdapter(), "invalidDestination");
-                    }
-                    if (!SAML2Utils
-                            .verifyDestination(data.getAuthnRequest().getDestination(), endPoint.getLocation())) {
-                        SAML2Utils.debug
-                                .error("{} authn request destination verification failed for IdpEntity: {}  MetaAlias: {} Destination: {}  Location: {}",
-                                        classMethod, data.getIdpEntityID(), data.getIdpMetaAlias(),
-                                        data.getAuthnRequest().getDestination(), endPoint.getLocation());
+                    List ssoServiceList = idpSSODescriptor.getSingleSignOnService();
+                    String ssoURL = SPSSOFederate.getSSOURL(ssoServiceList, binding);
+                    if (!SAML2Utils.verifyDestination(data.getAuthnRequest().getDestination(), ssoURL)) {
+                        SAML2Utils.debug.error(classMethod + "authn request destination verification failed.");
                         throw new ClientFaultException(data.getIdpAdapter(), "invalidDestination");
                     }
                 }
@@ -243,7 +240,25 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
         }
         // End of adapter invocation
 
-        IDPAuthnContextInfo idpAuthnContextInfo = getIdpAuthnContextInfo();
+        IDPAuthnContextMapper idpAuthnContextMapper = null;
+        try {
+            idpAuthnContextMapper = IDPSSOUtil.getIDPAuthnContextMapper(data.getRealm(), data.getIdpEntityID());
+        } catch (SAML2Exception sme) {
+            SAML2Utils.debug.error(classMethod, sme);
+        }
+        if (idpAuthnContextMapper == null) {
+            SAML2Utils.debug.error(classMethod + "Unable to get IDPAuthnContextMapper from meta.");
+            throw new ServerFaultException(data.getIdpAdapter(), METADATA_ERROR);
+        }
+
+        IDPAuthnContextInfo idpAuthnContextInfo = null;
+        try {
+            idpAuthnContextInfo = idpAuthnContextMapper.getIDPAuthnContextInfo(data.getAuthnRequest(),
+                    data.getIdpEntityID(), data.getRealm());
+        } catch (SAML2Exception sme) {
+            SAML2Utils.debug.error(classMethod, sme);
+        }
+
         if (idpAuthnContextInfo == null) {
             SAML2Utils.debug.message("{} Unable to find valid AuthnContext. Sending error Response.", classMethod);
             try {
@@ -397,6 +412,53 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             }
         }
 
+    }
+
+
+    /**
+     * Iterates through the RequestedAuthnContext from the Service Provider and
+     * check if user has already authenticated with a sufficient authentication
+     * level.
+     * <p/>
+     * If RequestAuthnContext is not found in the authenticated AuthnContext
+     * then session upgrade will be done .
+     *
+     * @return true if the requester requires to reauthenticate
+     */
+    private static boolean isSessionUpgrade(IDPAuthnContextInfo idpAuthnContextInfo, Object session) {
+
+        String classMethod = "UtilProxySAMLAuthenticator.isSessionUpgrade: ";
+
+        if (session != null) {
+            // Get the Authentication Context required
+            String authnClassRef = idpAuthnContextInfo.getAuthnContext().
+                    getAuthnContextClassRef();
+            // Get the AuthN level associated with the Authentication Context
+            int authnLevel = idpAuthnContextInfo.getAuthnLevel();
+
+            SAML2Utils.debug.message(classMethod + "Requested AuthnContext: authnClassRef=" + authnClassRef +
+                    " authnLevel=" + authnLevel);
+
+            int sessionAuthnLevel = 0;
+
+            try {
+                final String strAuthLevel = SessionManager.getProvider().getProperty(session,
+                        SAML2Constants.AUTH_LEVEL)[0];
+                if (strAuthLevel.contains(":")) {
+                    String[] realmAuthLevel = strAuthLevel.split(":");
+                    sessionAuthnLevel = Integer.parseInt(realmAuthLevel[1]);
+                } else {
+                    sessionAuthnLevel = Integer.parseInt(strAuthLevel);
+                }
+                SAML2Utils.debug.message(classMethod + "Current session Authentication Level: " + sessionAuthnLevel);
+            } catch (SessionException sex) {
+                SAML2Utils.debug.error(classMethod + " Couldn't get the session Auth Level", sex);
+            }
+            
+            return authnLevel > sessionAuthnLevel;
+        } else {
+            return true;
+        }
     }
 
     private void generateAssertionResponse(IDPSSOFederateRequest data) throws ServerFaultException {
@@ -651,9 +713,7 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
                 newURL.append("&");
             }
 
-            newURL.append(SAML2Constants.SPENTITYID)
-                  .append("=")
-                  .append(urlEncodeQueryParameterNameOrValue(data.getSpEntityID()));
+            newURL.append(SAML2Constants.SPENTITYID).append("=").append(URLEncDec.encode(data.getSpEntityID()));
         }
 
         Set<String> authnTypeAndValues = info.getAuthnTypeAndValues();
@@ -670,7 +730,7 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
                         authSB.append("&");
                     }
                     authSB.append(authnTypeAndValue.substring(0, index + 1))
-                          .append(urlEncodeQueryParameterNameOrValue(authnTypeAndValue.substring(index + 1)));
+                            .append(URLEncDec.encode(authnTypeAndValue.substring(index + 1)));
                 }
             }
 
@@ -719,15 +779,11 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
         //originally received AuthnRequest gets lost.
         gotoURL.append("?ReqID=").append(data.getAuthnRequest().getID()).append('&')
                 .append(INDEX).append('=').append(data.getAuthnRequest().getAssertionConsumerServiceIndex()).append('&')
-                .append(ACS_URL).append('=')
-                .append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getAssertionConsumerServiceURL()))
-                .append('&')
-                .append(SP_ENTITY_ID).append('=')
-                .append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getIssuer().getValue())).append('&')
-                .append(BINDING).append('=')
-                .append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getProtocolBinding()));
+                .append(ACS_URL).append('=').append(URLEncDec.encode(data.getAuthnRequest().getAssertionConsumerServiceURL())).append('&')
+                .append(SP_ENTITY_ID).append('=').append(URLEncDec.encode(data.getAuthnRequest().getIssuer().getValue())).append('&')
+                .append(BINDING).append('=').append(URLEncDec.encode(data.getAuthnRequest().getProtocolBinding()));
 
-        newURL.append(urlEncodeQueryParameterNameOrValue(gotoURL.toString()));
+        newURL.append(URLEncDec.encode(gotoURL.toString()));
 
         SAML2Utils.debug.message("{} New URL for authentication: {}", classMethod, newURL.toString());
 

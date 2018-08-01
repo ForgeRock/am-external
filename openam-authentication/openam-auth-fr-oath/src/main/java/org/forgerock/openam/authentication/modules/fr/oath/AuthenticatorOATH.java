@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2012-2017 ForgeRock AS.
+ * Copyright 2012-2016 ForgeRock AS.
  * Portions Copyrighted 2014-2015 Nomura Research Institute, Ltd.
  */
 
@@ -43,7 +43,6 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,9 +58,6 @@ import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
 import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathService;
 import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathServiceFactory;
-import org.forgerock.openam.utils.Alphabet;
-import org.forgerock.openam.utils.CodeException;
-import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.utils.qr.GenerationUtils;
@@ -83,6 +79,7 @@ public class AuthenticatorOATH extends AMLoginModule {
     //static attribute names
     private static final int NUM_CODES = 10;
 
+    private static final String AUTHLEVEL = "iplanet-am-auth-authenticatoroath-auth-level";
     private static final String PASSWORD_LENGTH =
             "iplanet-am-auth-fr-oath-password-length";
     private static final String WINDOW_SIZE =
@@ -99,7 +96,7 @@ public class AuthenticatorOATH extends AMLoginModule {
             "iplanet-am-auth-fr-oath-min-secret-key-length";
     private static final String MAXIMUM_CLOCK_DRIFT = "openam-auth-fr-oath-maximum-clock-drift";
     private static final String ISSUER_NAME = "openam-auth-fr-oath-issuer-name";
-    private static final String FRAUTH_RETRY = "openam-auth-fr-oath-max-retry";
+    private static final int TOTAL_ATTEMPTS = 3;
 
     private static final String MODULE_NAME = "ForgeRock Authenticator (OATH)";
 
@@ -110,6 +107,7 @@ public class AuthenticatorOATH extends AMLoginModule {
     private int passLen = 0;
     private int minSecretKeyLength = 0;
     private int windowSize = 0;
+    private String authLevel = null;
     private int truncationOffset = -1;
     private boolean checksum = false;
     private int totpTimeStep = 0;
@@ -117,7 +115,6 @@ public class AuthenticatorOATH extends AMLoginModule {
     private long time = 0;
     private int totpMaxClockDrift = 0;
     private int attempt = 0;
-    private static int totalAttempts = 0;
 
     private static final int HOTP = 0;
     private static final int TOTP = 1;
@@ -150,13 +147,8 @@ public class AuthenticatorOATH extends AMLoginModule {
                     new TypeLiteral<AuthenticatorDeviceServiceFactory<AuthenticatorOathService>>(){},
                     Names.named(AuthenticatorOathServiceFactory.FACTORY_NAME)));
 
-    private final RecoveryCodeGenerator recoveryCodeGenerator = InjectorHolder.getInstance(RecoveryCodeGenerator.class);
-
     private OathDeviceSettings newDevice = null;
-
-    // support for search with alias name
-    private Set<String> userSearchAttributes = Collections.emptySet();
-
+    
     /**
      * Standard constructor sets-up the debug logging module.
      */
@@ -208,18 +200,14 @@ public class AuthenticatorOATH extends AMLoginModule {
             return;
         }
 
-        try {
-            userSearchAttributes = getUserAliasList();
-        } catch (final AuthLoginException ale) {
-            debug.warning("AuthenticatorOATH :: init() : Unable to retrieve search attributes", ale);
-        }
-
         //get username from previous authentication
         try {
 
             String realm = DNMapper.orgNameToRealmName(getRequestOrg());
-            id = IdUtils.getIdentity(userName, realm, userSearchAttributes);
+            id = IdUtils.getIdentity(userName, realm);
             realmOathService = oathServiceFactory.create(id.getRealm());
+
+            this.authLevel = CollectionHelper.getMapAttr(options, AUTHLEVEL);
 
             try {
                 this.passLen = CollectionHelper.getIntMapAttr(options, PASSWORD_LENGTH, 0, debug);
@@ -241,7 +229,6 @@ public class AuthenticatorOATH extends AMLoginModule {
             this.checksum = CollectionHelper.getBooleanMapAttr(options, CHECKSUM, false);
             this.totpMaxClockDrift = CollectionHelper.getIntMapAttr(options, MAXIMUM_CLOCK_DRIFT, 0, debug);
             this.issuerName = CollectionHelper.getMapAttr(options, ISSUER_NAME);
-            this.totalAttempts = CollectionHelper.getIntMapAttr(options, FRAUTH_RETRY, 3, debug);
 
             final String algorithm = CollectionHelper.getMapAttr(options, ALGORITHM);
             if ("HOTP".equalsIgnoreCase(algorithm)) {
@@ -251,9 +238,19 @@ public class AuthenticatorOATH extends AMLoginModule {
             } else {
                 this.algorithm = ERROR;
             }
+
+            if (authLevel != null) {
+                try {
+                    setAuthLevel(Integer.parseInt(authLevel));
+                } catch (Exception e) {
+                    if (debug.errorEnabled()) {
+                        debug.error("OATH :: init() : Unable to set auth level " + authLevel, e);
+                    }
+                }
+            }
         } catch (SMSException | SSOException | AuthLoginException e) {
             if (debug.errorEnabled()) {
-                debug.error("OATH :: init() : Unable to configure basic module properties.", e);
+                debug.error("OATH :: init() : Unable to configure basic module properties " + authLevel, e);
             }
         }
 
@@ -408,12 +405,12 @@ public class AuthenticatorOATH extends AMLoginModule {
         String OTP = ((NameCallback) callbacks[0]).getName();
         if (OTP.length() == 0) {
             debug.error("OATH.process() : invalid OTP code");
-            if (++attempt >= totalAttempts) {
+            if (++attempt >= TOTAL_ATTEMPTS) {
                 setFailureID(userName);
                 throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
             }
 
-            replaceHeader(state, MODULE_NAME + "Attempt " + (attempt + 1) + " of " + totalAttempts);
+            replaceHeader(state, MODULE_NAME + "Attempt " + (attempt + 1) + " of " + TOTAL_ATTEMPTS);
             return state;
         }
 
@@ -433,12 +430,12 @@ public class AuthenticatorOATH extends AMLoginModule {
             return ISAuthConstants.LOGIN_SUCCEED;
         } else {
             //the OTP is out of the window or incorrect
-            if (++attempt >= totalAttempts) {
+            if (++attempt >= TOTAL_ATTEMPTS) {
                 setFailureID(userName);
                 throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
             }
 
-            replaceHeader(state, MODULE_NAME + "Attempt " + (attempt + 1) + " of " + totalAttempts);
+            replaceHeader(state, MODULE_NAME + "Attempt " + (attempt + 1) + " of " + TOTAL_ATTEMPTS);
             return state;
         }
     }
@@ -447,12 +444,7 @@ public class AuthenticatorOATH extends AMLoginModule {
 
         OathDeviceSettings settings = oathDevices.createDeviceProfile(minSecretKeyLength);
         settings.setChecksumDigit(checksum);
-
-        try {
-            settings.setRecoveryCodes(recoveryCodeGenerator.generateCodes(NUM_CODES, Alphabet.ALPHANUMERIC, false));
-        } catch (CodeException e) {
-            throw new AuthLoginException(amAuthOATH, "authFailed", null);
-        }
+        settings.setRecoveryCodes(OathDeviceSettings.generateRecoveryCodes(NUM_CODES));
 
         return settings;
     }
@@ -587,6 +579,7 @@ public class AuthenticatorOATH extends AMLoginModule {
      */
     @Override
     public void nullifyUsedVars() {
+        authLevel = null;
         amAuthOATH = null;
     }
 

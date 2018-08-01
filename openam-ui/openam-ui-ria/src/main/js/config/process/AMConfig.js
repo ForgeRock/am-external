@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Portions copyright 2011-2017 ForgeRock AS.
+ * Portions copyright 2011-2016 ForgeRock AS.
  */
 
 define([
@@ -23,73 +23,6 @@ define([
     "org/forgerock/commons/ui/common/util/URIUtils"
 ], function ($, _, Constants, EventManager, Router, URIUtils) {
     return [{
-        startEvent: Constants.EVENT_LOGIN_REQUEST,
-        override: true,
-        description: "Temporary gotoUrl fix. Moved back into CommonConfig for 14.0",
-        dependencies: [
-            "org/forgerock/commons/ui/common/main/Configuration",
-            "org/forgerock/commons/ui/common/util/ModuleLoader",
-            "org/forgerock/commons/ui/common/main/Router",
-            "org/forgerock/commons/ui/common/main/SessionManager",
-            "org/forgerock/commons/ui/common/main/ViewManager",
-            "org/forgerock/openam/ui/user/login/gotoUrl"
-        ],
-        processDescription (event, Configuration, ModuleLoader, Router, SessionManager, ViewManager, gotoUrl) {
-            var promise = $.Deferred(),
-                submitContent = event.submitContent || event;
-
-            SessionManager.login(submitContent, (user) => {
-                Configuration.setProperty("loggedUser", user);
-
-                EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, { anonymousMode: false });
-
-                if (!Configuration.backgroundLogin) {
-
-                    if (gotoUrl.exists()) {
-                        window.location.href = gotoUrl.toHref();
-                        return false;
-                    }
-
-                    if (Configuration.gotoURL && _.indexOf(["#", "", "#/", "/#"], Configuration.gotoURL) === -1) {
-                        Router.navigate(Configuration.gotoURL, { trigger: true });
-                        delete Configuration.gotoURL;
-                    } else if (Router.checkRole(Router.configuration.routes["default"])) {
-                        EventManager.sendEvent(Constants.ROUTE_REQUEST, { routeName: "default", args: [] });
-                    } else {
-                        EventManager.sendEvent(Constants.EVENT_UNAUTHORIZED);
-                        return;
-                    }
-                } else if (ViewManager.currentDialog !== null) {
-                    ModuleLoader.load(ViewManager.currentDialog).then((dialog) => {
-                        dialog.close();
-                    });
-                } else if (typeof $.prototype.modal === "function") {
-                    $(".modal.in").modal("hide");
-                    // There are some cases, when user is presented with login modal panel,
-                    // rather than a normal login view. backgroundLogin property is used to
-                    // indicate such cases. It should be deleted afterwards for correct
-                    // display of the login view later
-                    delete Configuration.backgroundLogin;
-                }
-
-                promise.resolve(user);
-
-            }, (reason) => {
-
-                reason = reason ? reason : "authenticationFailed";
-                EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, reason);
-
-                if (event.failureCallback) {
-                    event.failureCallback(reason);
-                }
-
-                promise.reject(reason);
-
-            });
-
-            return promise;
-        }
-    }, {
         startEvent: Constants.EVENT_LOGOUT,
         description: "used to override common logout event",
         override: true,
@@ -97,55 +30,43 @@ define([
             "org/forgerock/commons/ui/common/main/Router",
             "org/forgerock/commons/ui/common/main/Configuration",
             "org/forgerock/commons/ui/common/main/SessionManager",
-            "org/forgerock/openam/ui/common/sessions/SessionValidator",
-            "org/forgerock/openam/ui/user/login/gotoUrl",
-            "org/forgerock/openam/ui/common/util/uri/query"
+            "org/forgerock/openam/ui/common/sessions/SessionValidator"
         ],
-        processDescription (event, Router, Configuration, SessionManager, SessionValidator, gotoUrl, query) {
+        processDescription (event, router, conf, sessionManager, SessionValidator) {
+            var argsURLFragment = event ? (event.args ? event.args[0] : "") : "",
+                urlParams = URIUtils.parseQueryString(argsURLFragment),
+                gotoURL = urlParams.goto;
+
             SessionValidator.stop();
 
-            const logoutSuccess = (response) => {
-                Configuration.setProperty("loggedUser", null);
+            sessionManager.logout(function (response) {
+                conf.setProperty("loggedUser", null);
                 EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, { anonymousMode: true });
-                delete Configuration.gotoURL;
+                delete conf.gotoURL;
 
-                if (gotoUrl.exists()) {
-                    window.location.href = gotoUrl.toHref();
-                } else if (_.has(response, "goto")) {
-                    window.location.href = decodeURIComponent(response.goto);
+                if (!gotoURL && response) {
+                    gotoURL = response.goto;
+                }
+
+                if (gotoURL) {
+                    Router.setUrl(decodeURIComponent(gotoURL));
                 } else {
                     EventManager.sendEvent(Constants.EVENT_CHANGE_VIEW, {
-                        route: Router.configuration.routes.loggedOut
+                        route: router.configuration.routes.loggedOut
                     });
                 }
-            };
-
-            const logoutFail = () => {
-                Configuration.setProperty("loggedUser", null);
+            }, function () {
+                conf.setProperty("loggedUser", null);
                 EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, { anonymousMode: true });
                 EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "unauthorized");
-                if (gotoUrl.exists()) {
-                    window.location.href = gotoUrl.toHref();
+                if (gotoURL) {
+                    Router.setUrl(decodeURIComponent(gotoURL));
                 } else {
                     EventManager.sendEvent(Constants.EVENT_CHANGE_VIEW, {
-                        route: Router.configuration.routes.login
+                        route: router.configuration.routes.login
                     });
                 }
-            };
-
-            const unvalidatedGotoParam = query.parseParameters(URIUtils.getCurrentFragment()).goto;
-            if (unvalidatedGotoParam) {
-                gotoUrl.validateParam(unvalidatedGotoParam).then((validatedUrl) => {
-                    gotoUrl.setValidated(validatedUrl);
-                    SessionManager.logout().then(logoutSuccess, logoutFail);
-                }, () => {
-                    gotoUrl.remove();
-                    SessionManager.logout().then(logoutSuccess, logoutFail);
-                });
-            } else {
-                gotoUrl.remove();
-                SessionManager.logout().then(logoutSuccess, logoutFail);
-            }
+            });
         }
     }, {
         startEvent: Constants.EVENT_INVALID_REALM,

@@ -24,16 +24,13 @@
  *
  * $Id: AttributeQuery.java,v 1.2 2008/06/25 05:47:56 qcheng Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.protocol.impl.AttributeQueryImpl;
 import java.util.List;
+import com.sun.identity.saml2.common.SAML2Exception;
 
 
 /**
@@ -55,9 +52,6 @@ import java.util.List;
  * 
  * @supported.all.api
  */
-
-@JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
-        defaultImpl = AttributeQueryImpl.class)
 public interface AttributeQuery extends SubjectQueryAbstract {
     /** 
      * Returns <code>Attribute</code> objects. 

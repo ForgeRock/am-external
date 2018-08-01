@@ -20,7 +20,6 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  *
- * Copyright 2012-2017 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 
@@ -40,7 +39,6 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdSearchControl;
-import com.sun.identity.idm.IdSearchOpModifier;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdSearchResults;
 import com.sun.identity.idm.IdType;
@@ -84,6 +82,7 @@ public class OATH extends AMLoginModule {
     private ResourceBundle bundle = null;
 
     // static attribute names
+    private static final String AUTHLEVEL = "iplanet-am-auth-oath-auth-level";
     private static final String PASSWORD_LENGTH = "iplanet-am-auth-oath-password-length";
     private static final String SECRET_KEY_ATTRIBUTE_NAME = "iplanet-am-auth-oath-secret-key-attribute";
     private static final String WINDOW_SIZE = "iplanet-am-auth-oath-hotp-window-size";
@@ -98,13 +97,13 @@ public class OATH extends AMLoginModule {
     private static final String SHARED_SECRET_IMPLEMENTATION_CLASS = "forgerock-oath-sharedsecret-implementation-class";
     private static final String MAXIMUM_CLOCK_DRIFT = "forgerock-oath-maximum-clock-drift";
     private static final String OBSERVED_CLOCK_DRIFT_ATTRIBUTE_NAME = "forgerock-oath-observed-clock-drift-attribute-name";
-    private static final String AUTH_RETRY = "forgerock-oath-max-retry";
 
     private int passLen = 0;
     private int minSecretKeyLength = 0;
     private String secretKeyAttrName = null;
     private int windowSize = 0;
     private String counterAttrName = null;
+    private String authLevel = null;
     private int truncationOffset = -1;
     private boolean checksum = false;
     private int totpTimeStep = 0;
@@ -114,8 +113,6 @@ public class OATH extends AMLoginModule {
     private String loginTimeAttrName = null;
     private boolean clockDriftCheckEnabled = false;
     private String observedClockDriftAttrName = null;
-    private int attempt = 0;
-    private static int totalAttempts = 0;
 
     private static final int HOTP = 0;
     private static final int TOTP = 1;
@@ -127,9 +124,6 @@ public class OATH extends AMLoginModule {
 
     protected String amAuthOATH = null;
     private final int START_STATE = 2;
-
-    // support for search with alias name
-    private Set<String> userSearchAttributes = Collections.emptySet();
 
     /**
      * Standard constructor sets-up the debug logging module.
@@ -179,6 +173,7 @@ public class OATH extends AMLoginModule {
 
         //get module attributes
         try {
+            this.authLevel = CollectionHelper.getMapAttr(options, AUTHLEVEL);
             try {
                 this.passLen = Integer.parseInt(CollectionHelper.getMapAttr(options, PASSWORD_LENGTH));
             } catch (NumberFormatException e) {
@@ -199,7 +194,6 @@ public class OATH extends AMLoginModule {
             this.sharedSecretImplClass = CollectionHelper.getMapAttr(options, SHARED_SECRET_IMPLEMENTATION_CLASS);
             this.totpMaxClockDrift = CollectionHelper.getIntMapAttr(options, MAXIMUM_CLOCK_DRIFT, -1, debug);
             this.observedClockDriftAttrName = CollectionHelper.getMapAttr(options, OBSERVED_CLOCK_DRIFT_ATTRIBUTE_NAME);
-            this.totalAttempts = CollectionHelper.getIntMapAttr(options, AUTH_RETRY, 3, debug);
 
             String algorithm = CollectionHelper.getMapAttr(options, ALGORITHM);
             if (algorithm.equalsIgnoreCase("HOTP")) {
@@ -213,6 +207,15 @@ public class OATH extends AMLoginModule {
 
             String checksumVal = CollectionHelper.getMapAttr(options, CHECKSUM);
             checksum = Boolean.parseBoolean(checksumVal);
+
+            // set authentication level
+            if (authLevel != null) {
+                try {
+                    setAuthLevel(Integer.parseInt(authLevel));
+                } catch (Exception e) {
+                    debug.error("OATH.init(): Unable to set auth level " + authLevel, e);
+                }
+            }
         } catch (Exception e) {
             debug.error("OATH.init(): Unable to get module attributes", e);
         }
@@ -222,12 +225,6 @@ public class OATH extends AMLoginModule {
             userName = (String) sharedState.get(getUserKey());
         } catch (Exception e) {
             debug.error("OATH.init(): Unable to get username: ", e);
-        }
-
-        try {
-            userSearchAttributes = getUserAliasList();
-        } catch (final AuthLoginException ale) {
-            debug.warning("OATH.init(): unable to retrieve search attributes", ale);
         }
     }
 
@@ -284,13 +281,9 @@ public class OATH extends AMLoginModule {
                     // get OTP
                     String OTP = String.valueOf(((PasswordCallback) callbacks[0]).getPassword());
                     if (StringUtils.isEmpty(OTP)) {
-                        if (++attempt >= totalAttempts) {
-                            debug.error("OATH.process(): invalid OTP code");
-                            setFailureID(userName);
-                            throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
-                        }
-                        substituteHeader(state, "OATH Attempt " + (attempt + 1) + " of " + totalAttempts);
-                        return state;
+                        debug.error("OATH.process(): invalid OTP code");
+                        setFailureID(userName);
+                        throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
                     }
 
                     if (minSecretKeyLength <= 0) {
@@ -309,13 +302,9 @@ public class OATH extends AMLoginModule {
                     if (checkOTP(OTP)) {
                         return ISAuthConstants.LOGIN_SUCCEED;
                     } else {
-                        //the OTP is out of the window or incorrect
-                        if (++attempt >= totalAttempts) {
-                            setFailureID(userName);
-                            throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
-                        }
-                        substituteHeader(state, "OATH Attempt " + (attempt + 1) + " of " + totalAttempts);
-                        return state;
+                        // the OTP is out of the window or incorrect
+                        setFailureID(userName);
+                        throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
                     }
             }
         } catch (SSOException e) {
@@ -344,9 +333,9 @@ public class OATH extends AMLoginModule {
         bundle = null;
         secretKeyAttrName = null;
         counterAttrName = null;
+        authLevel = null;
         amAuthOATH = null;
         loginTimeAttrName = null;
-        userSearchAttributes = Collections.emptySet();
     }
 
     /**
@@ -653,16 +642,6 @@ public class OATH extends AMLoginModule {
         try {
             idsc.setMaxResults(0);
             IdSearchResults searchResults = amIdRepo.searchIdentities(IdType.USER, uName, idsc);
-
-            if (searchResults.getSearchResults().isEmpty() && !userSearchAttributes.isEmpty()) {
-                debug.message("OATH.getIdentity: searching user identity with alternative attributes {} ",
-                        userSearchAttributes);
-                final Map<String, Set<String>> searchAVP = CollectionUtils.toAvPairMap(userSearchAttributes, userName);
-                idsc.setSearchModifiers(IdSearchOpModifier.OR, searchAVP);
-                //workaround as data store always adds 'user-naming-attribute' to searchfilter
-                searchResults = amIdRepo.searchIdentities(IdType.USER, "*", idsc);
-            }
-
             if (searchResults != null) {
                 results = searchResults.getSearchResults();
             }

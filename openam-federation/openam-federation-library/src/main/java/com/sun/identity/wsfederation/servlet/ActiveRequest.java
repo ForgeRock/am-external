@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.servlet;
 
@@ -95,7 +95,6 @@ public class ActiveRequest extends WSFederationAction {
      * Processes the incoming SOAP request {@link #parseAndValidateRequest(SOAPMessage, IDPSSOConfigElement) parsing
      * and validating the request}, and then authenticating the end-user using a customizable {@link WsFedAuthenticator}
      * implementation. In case of a successful login, a SAML1.1 RequestedSecurityToken is returned in a SOAP message.
-     * In case of a SOAPFault, the HTTP response status may be taken from {@link ActiveRequestorException}
      *
      * @throws ServletException If there was a problem whilst rendering the response.
      * @throws IOException If there was an IO error whilst working with the request or response.
@@ -139,7 +138,6 @@ public class ActiveRequest extends WSFederationAction {
         MimeHeaders headers = SOAPCommunicator.getInstance().getHeaders(request);
         SOAPMessage soapFault;
         SSOToken ssoToken = null;
-        int httpStatus = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
         try (InputStream is = request.getInputStream()) {
             SOAPMessage soapMessage = MessageFactory.newInstance(SOAPConstants.SOAP_1_2_PROTOCOL)
                     .createMessage(headers, is);
@@ -174,7 +172,6 @@ public class ActiveRequest extends WSFederationAction {
         } catch (ActiveRequestorException are) {
             DEBUG.message("An error occurred while processing the Active Request", are);
             soapFault = are.getSOAPFault();
-            httpStatus = are.getStatusCode();
         } catch (SOAPException | WSFederationException ex) {
             DEBUG.error("An unexpected error occurred while processing the SOAP message", ex);
             soapFault = newReceiverException(ex).getSOAPFault();
@@ -192,7 +189,7 @@ public class ActiveRequest extends WSFederationAction {
                 if (soapFault.saveRequired()) {
                     soapFault.saveChanges();
                 }
-                response.setStatus(httpStatus);
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 SAML2Utils.putHeaders(soapFault.getMimeHeaders(), response);
                 os = response.getOutputStream();
                 soapFault.writeTo(os);

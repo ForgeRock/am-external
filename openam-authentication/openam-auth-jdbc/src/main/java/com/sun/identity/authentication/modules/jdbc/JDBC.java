@@ -86,6 +86,8 @@ public class JDBC extends AMLoginModule {
         "JDBCStatement";
     private static String TRANSFORM =ISAuthConstants.AUTH_ATTR_PREFIX_NEW +  
         "JDBCPasswordSyntaxTransformPlugin";
+    private static String AUTHLEVEL = ISAuthConstants.AUTH_ATTR_PREFIX_NEW + 
+        "JDBCAuthLevel";  
     private static String DEFAULT_TRANSFORM =
         "com.sun.identity.authentication.modules.jdbc.ClearTextTransform";
     
@@ -240,6 +242,17 @@ public class JDBC extends AMLoginModule {
                 } else {
                     if (debug.messageEnabled()) {
                         debug.message("Plugin for TRANSFORM: " + transform);
+                    }
+                }
+                                        
+                String authLevel = CollectionHelper.getMapAttr(
+                    options, AUTHLEVEL);
+                if (authLevel != null) {
+                    try {
+                        setAuthLevel(Integer.parseInt(authLevel));
+                    } catch (Exception e) {
+                        debug.error("Unable to set auth level " +
+                                    authLevel,e);
                     }
                 }
                       
