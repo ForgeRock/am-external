@@ -34,11 +34,12 @@ define([
     "org/forgerock/commons/ui/common/util/UIUtils",
     "org/forgerock/commons/ui/common/util/URIUtils",
     "org/forgerock/openam/ui/common/util/uri/query",
-    "org/forgerock/openam/ui/user/login/gotoUrl"
-
+    "org/forgerock/openam/ui/user/login/gotoUrl",
+    "org/forgerock/commons/ui/common/main/ProcessConfiguration",
+    "config/process/CommonConfig"
 ], ($, _, AbstractView, AuthNService, BootstrapDialog, Configuration, Constants, CookieHelper, EventManager,
         Form2js, Handlebars, i18nManager, Messages, RESTLoginHelper, RealmHelper, Router, UIUtils,
-        URIUtils, query, gotoUrl) => {
+        URIUtils, query, gotoUrl, ProcessConfiguration, CommonConfig) => {
 
     function hasSsoRedirectOrPost (goto) {
         let decodedGoto;
@@ -241,7 +242,7 @@ define([
 
             // END CUSTOM STAGE-SPECIFIC LOGIC HERE
 
-            EventManager.sendEvent(Constants.EVENT_LOGIN_REQUEST, {
+            this.loginRequestFunction({
                 submitContent,
                 failureCallback () {
                     // enabled the login button if login failure
@@ -268,6 +269,23 @@ define([
             // CommonRoutesConfig login route. This needs to be removed as part of AME-11109.
             this.data.args = [undefined, getFragmentParamString()];
 
+            var _extends = Object.assign || function (target) {
+                for (var i = 1; i < arguments.length; i++) {
+                    const source = arguments[i];
+                    for (const key in source) {
+                        if (Object.prototype.hasOwnProperty.call(source, key)) {
+                            target[key] = source[key];
+                        }
+                    }
+                }
+                return target;
+            };
+
+            this.data.compositeQueryString = `&${query.urlParamsFromObject(
+                _extends({},
+                    query.parseParameters(URIUtils.getCurrentFragmentQueryString()),
+                    query.parseParameters(URIUtils.getCurrentQueryString()))
+                )}`;
 
             if (args) {
                 auth.additional = addtionalArguments;
@@ -293,12 +311,16 @@ define([
                 if (reqs.hasOwnProperty("tokenId")) {
                     this.handleExistingSession(reqs);
                 } else { // We aren't logged in yet, so render a form...
-                    this.renderForm(reqs, params);
+                    const config = _.find(CommonConfig, { startEvent: Constants.EVENT_LOGIN_REQUEST });
+                    ProcessConfiguration.getProcessDescriptionFromConfig(config).then((func) => {
+                        this.loginRequestFunction = func;
+                        this.renderForm(reqs, params);
 
-                    if (CookieHelper.getCookie("invalidRealm")) {
-                        CookieHelper.deleteCookie("invalidRealm");
-                        EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "invalidRealm");
-                    }
+                        if (CookieHelper.getCookie("invalidRealm")) {
+                            CookieHelper.deleteCookie("invalidRealm");
+                            EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "invalidRealm");
+                        }
+                    });
                 }
             }, this), _.bind((error) => {
                 if (error) {

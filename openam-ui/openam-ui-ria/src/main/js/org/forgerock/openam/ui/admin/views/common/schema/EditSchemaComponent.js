@@ -207,7 +207,8 @@ define([
                 return;
             }
             this.updateValues();
-            this.updateInstance(this.data.values.raw).then(() => {
+            const valuesWithoutNullPasswords = this.data.values.removeNullPasswords(this.data.schema);
+            this.updateInstance(valuesWithoutNullPasswords.raw).then(() => {
                 EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "changesSaved");
             }, (response) => {
                 Messages.addMessage({ response, type: Messages.TYPE_DANGER });

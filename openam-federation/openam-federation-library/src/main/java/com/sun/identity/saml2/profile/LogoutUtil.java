@@ -24,10 +24,11 @@
  *
  * $Id: LogoutUtil.java,v 1.16 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2012-2016 ForgeRock AS.
+ * Portions Copyrighted 2012-2017 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import java.io.ByteArrayInputStream;
@@ -55,7 +56,6 @@ import org.w3c.dom.Element;
 
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.saml.common.SAMLUtils;
@@ -1188,7 +1188,7 @@ public class LogoutUtil {
             if (relayState != null && relayState.length() > 0
                     && relayState.getBytes("UTF-8").length <= 80) {
                     queryString.append("&").append(SAML2Constants.RELAY_STATE)
-                    .append("=").append(URLEncDec.encode(relayState));
+                    .append("=").append(urlEncodeQueryParameterNameOrValue(relayState));
             }
                 boolean needToSign = false; 
             if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {

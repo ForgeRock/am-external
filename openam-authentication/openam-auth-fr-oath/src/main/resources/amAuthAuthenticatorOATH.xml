@@ -4,7 +4,7 @@
 
   DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 
-  Copyright 2012-2016 ForgeRock AS.
+  Copyright 2012-2017 ForgeRock AS.
 
   The contents of this file are subject to the terms
   of the Common Development and Distribution License
@@ -169,6 +169,15 @@
                         <Value>ForgeRock</Value>
                     </ExampleValue>
                 </AttributeSchema>
+                <AttributeSchema name="openam-auth-fr-oath-max-retry"
+                                 type="single"
+                                 syntax="number_range" rangeStart="1" rangeEnd="10"
+                                 i18nKey="a516"
+                                 resourceName="frOathOtpMaxRetry">
+                    <DefaultValues>
+                        <Value>3</Value>
+                    </DefaultValues>
+                </AttributeSchema>
                 <SubSchema name="serverconfig" inheritance="multiple" resourceName="USE-PARENT">
                     <AttributeSchema name="RequiredValueValidator"
                                      type="validator"
@@ -293,6 +302,15 @@
                         <ExampleValue>
                             <Value>ForgeRock</Value>
                         </ExampleValue>
+                    </AttributeSchema>
+                    <AttributeSchema name="openam-auth-fr-oath-max-retry"
+                                     type="single"
+                                     syntax="number_range" rangeStart="1" rangeEnd="10"
+                                     i18nKey="a516"
+                                     resourceName="frOathOtpMaxRetry">
+                        <DefaultValues>
+                            <Value>3</Value>
+                        </DefaultValues>
                     </AttributeSchema>
                 </SubSchema>
             </Organization>

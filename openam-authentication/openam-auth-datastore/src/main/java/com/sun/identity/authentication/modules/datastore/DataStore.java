@@ -64,7 +64,6 @@ public class DataStore extends AMLoginModule {
     private int currentState;
     private String currentConfigName;
 
-    private static String AUTHLEVEL = "sunAMAuthDataStoreAuthLevel";
     private static final String INVALID_CHARS =
             "iplanet-am-auth-ldap-invalid-chars";
 
@@ -85,14 +84,6 @@ public class DataStore extends AMLoginModule {
         currentConfig = options;
         currentConfigName = 
             (String)options.get(ISAuthConstants.MODULE_INSTANCE_NAME);
-        String authLevel = CollectionHelper.getMapAttr(options, AUTHLEVEL);
-        if (authLevel != null) {
-            try {
-                setAuthLevel(Integer.parseInt(authLevel));
-            } catch (Exception e) {
-                debug.error("Unable to set auth level " + authLevel,e);
-            }
-        }
         java.util.Locale locale = getLoginLocale();
         bundle = amCache.getResBundle(amAuthDataStore, locale);
         if (debug.messageEnabled()) {

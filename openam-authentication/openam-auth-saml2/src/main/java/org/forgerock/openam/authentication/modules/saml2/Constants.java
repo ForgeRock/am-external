@@ -85,8 +85,6 @@ final class Constants {
     /*
      * Auth Module Configuration XML Names.
      */
-    /** Auth Level Module Configuration XML Name. */
-    static final String AUTHLEVEL = AUTH_ATTR_PREFIX_FORGEROCK + "saml2-auth-level";
     /** Entity Name Module Configuration XML Name. */
     static final String ENTITY_NAME = AUTH_ATTR_PREFIX_FORGEROCK + "saml2-entity-name";
     /** Meta Alias Module Configuration XML Name. */

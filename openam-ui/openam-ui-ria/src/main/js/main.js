@@ -57,7 +57,7 @@ require.config({
         "js2form"     : "libs/js2form-2.0-769718a",
         "jsonEditor"  : "libs/jsoneditor-0.7.23-custom",
         "lodash"      : "libs/lodash-3.10.1-min",
-        "moment"      : "libs/moment-2.8.1-min",
+        "moment"      : "libs/moment-2.20.1-min",
         "qrcode"      : "libs/qrcode-1.0.0-min",
         "sortable"    : "libs/jquery-nestingSortable-0.9.12",
         "spin"        : "libs/spin-2.0.1-min",

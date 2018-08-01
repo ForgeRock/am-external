@@ -127,17 +127,21 @@ public class DefaultIDPAuthnContextMapper
             // Let's find an exact match, and break early if we do. If we find non-exact matches, then let's return
             // the first one, but only if there is no exact match amongst the rest of the classrefs.
             for (String requestedClassRef : requestedClassRefs) {
-                // In case the comparison is 'better', the exact match will not be sufficient.
+                // For exact, min, max comparison, the ideal is to return the requested authncontext, if available
                 if (!"better".equals(comparison) && classRefSchemesMap.containsKey(requestedClassRef)) {
                     classRef = requestedClassRef;
                     break;
-                } else if (classRef != null) {
+                } else {
                     List<String> singleClassRef = Collections.singletonList(requestedClassRef);
                     for (String configuredRef : classRefSchemesMap.keySet()) {
                         if (isAuthnContextMatching(singleClassRef, configuredRef, comparison, realm, idpEntityID)) {
                             classRef = configuredRef;
                             break;
                         }
+                    }
+                    if (StringUtils.isNotEmpty(classRef)) {
+                        // First one that satisfies min, max, better than criteria is returned
+                        break;
                     }
                 }
             }

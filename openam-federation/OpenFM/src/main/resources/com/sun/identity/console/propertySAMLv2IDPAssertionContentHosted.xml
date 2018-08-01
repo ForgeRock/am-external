@@ -24,7 +24,7 @@
 
    $Id: propertySAMLv2IDPAssertionContentHosted.xml,v 1.6 2008/06/30 18:36:46 babysunil Exp $
 
-   Portions Copyrighted 2013-2015 ForgeRock AS.
+   Portions Copyrighted 2013-2018 ForgeRock AS.
 -->
 
 <!DOCTYPE propertysheet SYSTEM "propertysheet.dtd">
@@ -300,7 +300,7 @@
                            defaultValue="samlv2idp.attribute.label.idpbasicauthpassword"
                            labelFor="basicAuthPassword" />
                     <cc name="basicAuthPassword" 
-                        tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag" >
+                        tagclass="com.sun.web.ui.taglib.html.CCPasswordTag" >
                         <attribute name="size" value="15" />
                         <attribute name="autoSubmit" value="false" />
                         <attribute name="localizeDisplayFieldValue" value="false" />

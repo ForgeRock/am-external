@@ -14,7 +14,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
- Copyright 2012-2015 ForgeRock AS.
+ Copyright 2012-2017 ForgeRock AS.
  
 -->
 
@@ -179,6 +179,15 @@
                         <Value></Value>
                     </DefaultValues>
                 </AttributeSchema>
+                <AttributeSchema name="forgerock-oath-max-retry"
+                                 type="single"
+                                 syntax="number_range" rangeStart="1" rangeEnd="10"
+                                 i18nKey="a515"
+                                 resourceName="oathOtpMaxRetry">
+                    <DefaultValues>
+                        <Value>3</Value>
+                    </DefaultValues>
+                </AttributeSchema>
                 <SubSchema name="serverconfig" inheritance="multiple" resourceName="USE-PARENT">
                     <AttributeSchema name="iplanet-am-auth-oath-auth-level"
                                      type="single"
@@ -319,6 +328,15 @@
                                      resourceName="lastLoginTimeAttribute">
                     <DefaultValues>
                             <Value></Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="forgerock-oath-max-retry"
+                                     type="single"
+                                     syntax="number_range" rangeStart="1" rangeEnd="10"
+                                     i18nKey="a515"
+                                     resourceName="oathOtpMaxRetry">
+                        <DefaultValues>
+                            <Value>3</Value>
                         </DefaultValues>
                     </AttributeSchema>
                 </SubSchema>

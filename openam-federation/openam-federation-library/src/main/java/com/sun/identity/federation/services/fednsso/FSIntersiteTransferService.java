@@ -24,13 +24,15 @@
  *
  * $Id: FSIntersiteTransferService.java,v 1.6 2008/08/29 04:57:16 exu Exp $
  *
+ * Portions Copyrighted 2017 ForgeRock AS.
  */
 
 package com.sun.identity.federation.services.fednsso;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
+
 import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.cot.COTException;
-import com.sun.identity.cot.COTConstants;
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.federation.common.IFSConstants;
 import com.sun.identity.federation.common.LogUtil;
@@ -51,7 +53,6 @@ import com.sun.identity.liberty.ws.meta.jaxb.IDPDescriptorType;
 import com.sun.identity.liberty.ws.meta.jaxb.SPDescriptorType;
 import com.sun.identity.liberty.ws.meta.jaxb.AffiliationDescriptorType;
 import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.shared.encode.URLEncDec;
 import java.util.ArrayList;
 import java.io.PrintWriter;
 import java.io.IOException;
@@ -135,17 +136,16 @@ public class FSIntersiteTransferService extends HttpServlet {
                 returnURL.append("?")
                          .append(IFSConstants.AUTH_REQUEST_ID)
                          .append("=")
-                         .append(URLEncDec.encode(requestID));
+                         .append(urlEncodeQueryParameterNameOrValue(requestID));
                 returnURL.append("&")
                          .append(IFSConstants.META_ALIAS)
                          .append("=")
-                         .append(URLEncDec.encode(metaAlias));
+                         .append(urlEncodeQueryParameterNameOrValue(metaAlias));
                 redirectURL.append(readerServiceURL);
                 redirectURL.append("?");
                 redirectURL.append(IFSConstants.LRURL);
                 redirectURL.append("=");
-                redirectURL.append(URLEncDec.encode(
-                    returnURL.toString()));
+                redirectURL.append(urlEncodeQueryParameterNameOrValue(returnURL.toString()));
                 String url = redirectURL.toString();
                 if (FSUtils.debug.messageEnabled()) {
                     FSUtils.debug.message("FSIntersiteTransferService."
@@ -270,7 +270,7 @@ public class FSIntersiteTransferService extends HttpServlet {
             return null;
         }
         queryString = 
-            queryString + "SigAlg=" + URLEncDec.encode(algoId);
+            queryString + "SigAlg=" + urlEncodeQueryParameterNameOrValue(algoId);
         if (FSUtils.debug.messageEnabled()) {
             FSUtils.debug.message(
                 "FSIntersiteTransferService.signAndReturnQueryString: "
@@ -292,7 +292,7 @@ public class FSIntersiteTransferService extends HttpServlet {
         }
         String encodedSig = Base64.encode(signature);
         queryString = queryString + "&" + "Signature=" 
-                        + URLEncDec.encode(encodedSig);
+                        + urlEncodeQueryParameterNameOrValue(encodedSig);
         if (FSUtils.debug.messageEnabled()) {
             FSUtils.debug.message("FSIntersiteTransferService."
                 + "signAndReturnQueryString:Signed Querystring: " 

@@ -71,9 +71,10 @@ define([
                 return;
             }
 
+            this.data.fragmentParamString = getFragmentParamString();
             // TODO: The first undefined argument is the deprecated realm which is defined in the
             // CommonRoutesConfig login route. This needs to be removed as part of AME-11109.
-            this.data.args = [undefined, getFragmentParamString()];
+            this.data.args = [undefined, this.data.fragmentParamString];
             this.setTranslationBase();
             this.parentRender();
         },

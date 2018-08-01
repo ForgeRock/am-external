@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,21 +24,18 @@
  *
  * $Id: FSSignatureUtil.java,v 1.3 2008/07/17 16:56:39 exu Exp $
  *
+ * Portions Copyrighted 2017 ForgeRock AS.
  */
 
 
 package com.sun.identity.federation.services.util;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
+
 import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.shared.encode.URLEncDec;
-import com.sun.identity.saml.common.*;
-import com.sun.identity.saml.xmlsig.*;
 import com.sun.identity.federation.common.*;
-import javax.servlet.*;
 import javax.servlet.http.*;
-import java.io.*;
 import java.security.cert.X509Certificate;
-import java.util.*;
 
 
 /**
@@ -119,7 +116,7 @@ public class FSSignatureUtil {
         if(queryString.charAt(queryString.length()-1) != '&'){
             queryString = queryString + "&";
         }
-        queryString = queryString + "SigAlg=" + URLEncDec.encode(algoId);
+        queryString = queryString + "SigAlg=" + urlEncodeQueryParameterNameOrValue(algoId);
         if (FSUtils.debug.messageEnabled()) {
             FSUtils.debug.message(
                 "FSSignatureUtil.signAndReturnQueryString: "
@@ -140,7 +137,7 @@ public class FSSignatureUtil {
         }
         String encodedSig = Base64.encode(signature);
         queryString = queryString + "&" + "Signature=" 
-                        + URLEncDec.encode(encodedSig);
+                        + urlEncodeQueryParameterNameOrValue(encodedSig);
         if (FSUtils.debug.messageEnabled()) {
             FSUtils.debug.message("FSSignatureUtil."
                 + "signAndReturnQueryString:Signed Querystring: " 

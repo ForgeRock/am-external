@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2015 ForgeRock AS.
+ * Copyright 2014-2017 ForgeRock AS.
  * Portions Copyrighted 2015 Nomura Research Institute, Ltd.
  */
 
@@ -19,15 +19,18 @@ package org.forgerock.openam.authentication.modules.deviceprint;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.spi.AMLoginModule;
+import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdSearchControl;
+import com.sun.identity.idm.IdSearchOpModifier;
 import com.sun.identity.idm.IdSearchResults;
 import com.sun.identity.idm.IdType;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.debug.Debug;
 import org.forgerock.openam.authentication.modules.scripted.ScriptedPrinciple;
+import org.forgerock.openam.utils.CollectionUtils;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
@@ -59,6 +62,7 @@ public class DeviceIdSave extends AMLoginModule {
 
     private String userName;
     private PersistModuleProcessor processor;
+    private Set<String> userSearchAttributes = Collections.emptySet();
 
     /**
      * {@inheritDoc}
@@ -68,12 +72,18 @@ public class DeviceIdSave extends AMLoginModule {
         int maxProfilesAllowed = Integer.parseInt(CollectionHelper.getMapAttr(config, MAX_PROFILES_ALLOWED_KEY));
         userName = (String) sharedState.get(getUserKey());
         try {
+            userSearchAttributes = getUserAliasList();
+        } catch (final AuthLoginException ale) {
+            DEBUG.warning("DeviceIdSave.init: unable to retrieve search attributes", ale);
+        }
+        try {
             Map<String, Object> devicePrintProfile =
                     MAPPER.readValue((String) sharedState.get(DEVICE_PRINT_PROFILE_KEY), Map.class);
             boolean autoStoreProfiles = Boolean.parseBoolean(CollectionHelper.getMapAttr(config, AUTO_STORE_PROFILES_KEY));
             ProfilePersister profilePersister = new ProfilePersister(maxProfilesAllowed, new DevicePrintDao(),
                     getIdentity());
             processor = new PersistModuleProcessor(devicePrintProfile, autoStoreProfiles, profilePersister);
+
         } catch (IOException e) {
             DEBUG.error("DeviceIdSave.init : Module exception : ", e);
         }
@@ -106,7 +116,19 @@ public class DeviceIdSave extends AMLoginModule {
             if (searchResults != null) {
                 results = searchResults.getSearchResults();
             }
-
+            if (results.isEmpty() && !userSearchAttributes.isEmpty()) {
+                if (DEBUG.messageEnabled()) {
+                    DEBUG.message("DeviceIdSave.getIdentity: searching user identity " + "with alternative attributes "
+                            + userSearchAttributes);
+                }
+                final Map<String, Set<String>> searchAVP = CollectionUtils.toAvPairMap(userSearchAttributes, userName);
+                idsc.setSearchModifiers(IdSearchOpModifier.OR, searchAVP);
+                // workaround as data store always adds 'user-naming-attribute' to searchfilter
+                searchResults = amIdRepo.searchIdentities(IdType.USER, "*", idsc);
+                if (searchResults != null) {
+                    results = searchResults.getSearchResults();
+                }
+            }
             if (results.isEmpty()) {
                 DEBUG.error("DeviceIdSave.getIdentity : User " + userName + " is not found");
             } else if (results.size() > 1) {

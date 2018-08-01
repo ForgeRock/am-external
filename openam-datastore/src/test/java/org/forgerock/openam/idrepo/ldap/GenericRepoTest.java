@@ -11,11 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2016 ForgeRock AS.
+ * Copyright 2013-2017 ForgeRock AS.
  */
 package org.forgerock.openam.idrepo.ldap;
 
-import static org.fest.assertions.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.openam.utils.CollectionUtils.asOrderedSet;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
 import static org.mockito.Mockito.*;
@@ -133,8 +133,14 @@ public class GenericRepoTest extends IdRepoTestBase {
     }
 
     @Test
-    public void isActiveReturnsFalseForNonExistentUser() throws Exception {
-        assertThat(idrepo.isActive(null, IdType.USER, "invalid")).isFalse();
+    public void isActiveReturnsExceptionForNonExistentUser() throws Exception {
+        try {
+            idrepo.isActive(null, IdType.USER, "invalid");
+            fail();
+        } catch (IdentityNotFoundException infe) {
+            assertThat(infe).isInstanceOf(IdentityNotFoundException.class)
+                    .hasMessage(getIdRepoExceptionMessage(IdRepoErrorCode.TYPE_NOT_FOUND, "invalid", "user"));
+        }
     }
 
     @Test
@@ -158,12 +164,22 @@ public class GenericRepoTest extends IdRepoTestBase {
     @Test
     public void getAttributesDoesNotReturnUndefinedAttributes() throws Exception {
         Map<String, Set<String>> attrs = idrepo.getAttributes(null, IdType.USER, DEMO);
-        Set<String> attrNames = new CaseInsensitiveHashSet(attrs.keySet());
+        Set<String> attrNames = attrs.keySet();
         assertThat(attrs).isNotEmpty();
         assertThat(attrNames.contains("l")).isFalse();
         attrs = idrepo.getAttributes(null, IdType.USER, DEMO, asSet("l"));
         assertThat(attrs).isEmpty();
         attrs = idrepo.getAttributes(null, IdType.USER, DEMO, asSet("l", "sn"));
+        assertThat(attrs).hasSize(1);
+        assertThat(attrs.keySet().contains("sn")).isTrue();
+    }
+
+    @Test
+    public void getAttributesReturnCaseInsensitiveAttributes() throws Exception {
+        Map<String, Set<String>> attrs = idrepo.getAttributes(null, IdType.USER, DEMO);
+        Set<String> attrNames = attrs.keySet();
+        assertThat(attrs).isNotEmpty();
+        attrs = idrepo.getAttributes(null, IdType.USER, DEMO, asSet("Sn"));
         assertThat(attrs).hasSize(1);
         assertThat(attrs.keySet().contains("sn")).isTrue();
     }

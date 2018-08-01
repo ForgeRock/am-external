@@ -24,12 +24,13 @@
  *
  * $Id: IDPSSOUtil.java,v 1.56 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2016 ForgeRock AS.
+ * Portions Copyrighted 2010-2017 ForgeRock AS.
  * Portions Copyrighted 2013 Nomura Research Institute, Ltd
  */
 
 package com.sun.identity.saml2.profile;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.saml2.common.AccountUtils;
@@ -41,7 +42,6 @@ import com.sun.identity.saml2.common.SAML2FailoverUtils;
 import com.sun.identity.saml2.common.SAML2InvalidNameIDPolicyException;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.common.SOAPCommunicator;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.DateUtils;
 import com.sun.identity.shared.xml.XMLUtils;
 
@@ -303,12 +303,6 @@ public class IDPSSOUtil {
                         SAML2Utils.bundle.getString("invalidReceiver"));
             }
         }
-
-        // Validate the RelayState URL.
-        SAML2Utils.validateRelayStateURL(realm,
-                idpEntityID,
-                relayState,
-                SAML2Constants.IDP_ROLE);
 
         if (authnReq == null && (session == null || !isValidSessionInRealm(realm, session))) {
             // idp initiated and not logged in yet, need to authenticate
@@ -582,7 +576,7 @@ public class IDPSSOUtil {
                 .append(SAML2Constants.RES_INFO_ID)
                 .append("=")
                 .append(cachedResID);
-        String retURL = URLEncDec.encode(retURLSB.toString());
+        String retURL = urlEncodeQueryParameterNameOrValue(retURLSB.toString());
         StringBuffer redirectURLSB = new StringBuffer(200);
         redirectURLSB.append(writerURL);
         if (writerURL.indexOf("?") > 0) {
@@ -1043,7 +1037,7 @@ public class IDPSSOUtil {
         assertion.setAuthnStatements(statementList);
         assertion.setSubject(subject);
         Conditions conditions = getConditions(recipientEntityID,
-                notBeforeSkewTime, effectiveTime);
+                notBeforeSkewTime, effectiveTime, realm);
         assertion.setConditions(conditions);
 
         String discoBootstrapEnabled = getAttributeValueFromIDPSSOConfig(
@@ -1703,12 +1697,12 @@ public class IDPSSOUtil {
      * @throws SAML2Exception if the operation is not successful
      */
     protected static Conditions getConditions(String audienceEntityID,
-                                              int notBeforeSkewTime, int effectiveTime) throws SAML2Exception {
+            int notBeforeSkewTime, int effectiveTime, String realm) throws SAML2Exception {
 
         String classMethod = "IDPSSOUtil.getConditions: ";
 
-        Conditions conditions = AssertionFactory.getInstance().
-                createConditions();
+        SPSSOConfigElement spConfig = metaManager.getSPSSOConfig(realm, audienceEntityID);
+        Conditions conditions = AssertionFactory.getInstance().createConditions();
         Date date = newDate();
         date.setTime(date.getTime() - notBeforeSkewTime * 1000);
         conditions.setNotBefore(date);
@@ -1724,6 +1718,12 @@ public class IDPSSOUtil {
                     "Unable to get Audience Restriction");
             throw new SAML2Exception(
                     SAML2Utils.bundle.getString("noAudienceRestriction"));
+        }
+        String audienceUri = SAML2Utils.getAttributeValueFromSPSSOConfig(spConfig, SAML2Constants.AUDIENCE_URI);
+        if (audienceUri != null) {
+            List<String> audienceList = ar.getAudience();
+            audienceList.add(audienceUri);
+            ar.setAudience(audienceList);
         }
         list.add(ar);
 
@@ -2167,10 +2167,10 @@ public class IDPSSOUtil {
             } else {
                 String redirectURL = acsURL +
                         (acsURL.contains("?") ? "&" : "?") + "SAMLart=" +
-                        URLEncDec.encode(artStr);
+                        urlEncodeQueryParameterNameOrValue(artStr);
                 if ((relayState != null) && (relayState.trim().length() != 0)) {
                     redirectURL += "&RelayState=" +
-                            URLEncDec.encode(relayState);
+                            urlEncodeQueryParameterNameOrValue(relayState);
                 }
                 if (SAML2Utils.debug.messageEnabled()) {
                     SAML2Utils.debug.message(classMethod +
@@ -2390,7 +2390,7 @@ public class IDPSSOUtil {
             }
             newURL.append(SAML2Constants.SPENTITYID);
             newURL.append("=");
-            newURL.append(URLEncDec.encode(spEntityID));
+            newURL.append(urlEncodeQueryParameterNameOrValue(spEntityID));
         }
 
         // find out the authentication method, e.g. module=LDAP, from
@@ -2446,7 +2446,7 @@ public class IDPSSOUtil {
                     "gotoURL=" + gotoURL);
         }
 
-        newURL.append(URLEncDec.encode(gotoURL));
+        newURL.append(urlEncodeQueryParameterNameOrValue(gotoURL));
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(classMethod +
                     "New URL for authentication: " + newURL.toString());

@@ -24,9 +24,12 @@
  *
  * $Id: QuerySignatureUtil.java,v 1.2 2008/06/25 05:47:45 qcheng Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2017 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
+
+import static org.forgerock.http.util.Uris.urlDecodeQueryParameterNameOrValue;
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import java.security.GeneralSecurityException;
 import java.util.Set;
@@ -39,12 +42,9 @@ import java.security.cert.X509Certificate;
 
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.shared.encode.URLEncDec;
-import com.sun.identity.saml.common.SAMLConstants;
 import org.apache.xml.security.Init;
 import org.apache.xml.security.algorithms.JCEMapper;
 import org.apache.xml.security.signature.XMLSignature;
-import org.forgerock.openam.utils.StringUtils;
 
 import java.security.NoSuchAlgorithmException;
 
@@ -124,7 +124,7 @@ public class QuerySignatureUtil {
            != '&'){
             queryString = queryString + "&";
         }
-        queryString += SAML2Constants.SIG_ALG + "=" + URLEncDec.encode(querySigAlg);
+        queryString += SAML2Constants.SIG_ALG + "=" + urlEncodeQueryParameterNameOrValue(querySigAlg);
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(
                 classMethod +
@@ -154,9 +154,7 @@ public class QuerySignatureUtil {
         }
         Base64 encoder = new Base64();
         String encodedSig = encoder.encode(sigBytes);
-        queryString +=
-            "&" + SAML2Constants.SIGNATURE + "=" +
-            URLEncDec.encode(encodedSig);
+        queryString += "&" + SAML2Constants.SIGNATURE + "=" + urlEncodeQueryParameterNameOrValue(encodedSig);
 
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(
@@ -262,7 +260,7 @@ public class QuerySignatureUtil {
             throw new SAML2Exception( 
                 SAML2Utils.bundle.getString("nullSigAlg"));         
         }
-        sigAlgValue = URLEncDec.decode(sigAlgValue);
+        sigAlgValue = urlDecodeQueryParameterNameOrValue(sigAlgValue);
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(
                 classMethod +
@@ -279,7 +277,7 @@ public class QuerySignatureUtil {
             throw new SAML2Exception( 
                 SAML2Utils.bundle.getString("nullSig"));            
         }
-        encSigValue = URLEncDec.decode(encSigValue);
+        encSigValue = urlDecodeQueryParameterNameOrValue(encSigValue);
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(
                 classMethod +

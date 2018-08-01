@@ -90,7 +90,7 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
 
         String resource = request.getParameter("resource");
         if (!ESAPI.validator().isValidInput("HTTP Parameter Value: " + resource,
-            resource, "HTTPURL", 2000, false)){
+            resource, "HTTPURI", 2000, false)){
                 resource = "";
         }
         String action = request.getParameter("action");

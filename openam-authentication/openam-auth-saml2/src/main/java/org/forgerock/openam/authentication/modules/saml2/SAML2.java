@@ -11,11 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2016 ForgeRock AS.
+ * Copyright 2015-2017 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
 import static com.sun.identity.shared.Constants.*;
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.authentication.modules.saml2.Constants.*;
 import static org.forgerock.openam.utils.Time.*;
 
@@ -60,7 +61,6 @@ import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.encode.CookieUtils;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.locale.L10NMessageImpl;
 import com.sun.identity.sm.DNMapper;
 
@@ -156,15 +156,6 @@ public class SAML2 extends AMLoginModule {
         realm = DNMapper.orgNameToRealmName(getRequestOrg());
 
         bundle = amCache.getResBundle(BUNDLE_NAME, getLoginLocale());
-        String authLevel = CollectionHelper.getMapAttr(options, AUTHLEVEL);
-
-        if (authLevel != null) {
-            try {
-                setAuthLevel(Integer.parseInt(authLevel));
-            } catch (Exception e) {
-                DEBUG.error("SAML2 :: init() : Unable to set auth level {}", authLevel, e);
-            }
-        }
     }
 
     /**
@@ -242,7 +233,7 @@ public class SAML2 extends AMLoginModule {
         final List extensionsList = SPSSOFederate.getExtensionsList(spEntityID, realm);
         final Map<String, Collection<String>> spConfigAttrsMap
                 = SPSSOFederate.getAttrsMapForAuthnReq(realm, spEntityID);
-        authnRequest = SPSSOFederate.createAuthnRequest(realm, spEntityID, params,
+        authnRequest = SPSSOFederate.createAuthnRequest(request, response, realm, spEntityID, entityName, params,
                 spConfigAttrsMap, extensionsList, spsso, idpsso, ssoURL, false);
         final AuthnRequestInfo reqInfo = new AuthnRequestInfo(request, response, realm, spEntityID, null,
                 authnRequest, null, params);
@@ -449,7 +440,7 @@ public class SAML2 extends AMLoginModule {
         }
 
         if (StringUtils.isNotEmpty(realm)) {
-            originalUrl.append("?realm=").append(URLEncDec.encode(realm));
+            originalUrl.append("?realm=").append(urlEncodeQueryParameterNameOrValue(realm));
         }
 
         if (requestedQuery != null) {
@@ -636,7 +627,9 @@ public class SAML2 extends AMLoginModule {
         }
 
         //we need the following for idp initiated slo as well as sp, so always include it
-        setUserSessionProperty(SAML2Constants.SESSION_INDEX, sessionIndex);
+        if (sessionIndex != null) {
+            setUserSessionProperty(SAML2Constants.SESSION_INDEX, sessionIndex);
+        }
         setUserSessionProperty(SAML2Constants.IDPENTITYID, entityName);
         setUserSessionProperty(SAML2Constants.SPENTITYID, SPSSOFederate.getSPEntityId(metaAlias));
         setUserSessionProperty(SAML2Constants.METAALIAS, metaAlias);

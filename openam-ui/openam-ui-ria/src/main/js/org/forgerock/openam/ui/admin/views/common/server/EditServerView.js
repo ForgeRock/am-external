@@ -40,6 +40,10 @@ define([
             .value();
     }
 
+    function isAdvancedSection (sectionId) {
+        return sectionId === ServersService.servers.ADVANCED_SECTION;
+    }
+
     return AbstractView.extend({
         template: "templates/admin/views/common/HeaderFormTemplate.html",
         events: {
@@ -62,7 +66,7 @@ define([
                 this.defaultValues = defaultValues;
 
                 this.parentRender(() => {
-                    if (this.sectionId === ServersService.servers.ADVANCED_SECTION) {
+                    if (isAdvancedSection(this.sectionId)) {
                         this.subview = new PanelComponent({
                             createBody: () => new InlineEditTable({ values: _.cloneDeep(this.values.raw) }),
                             createFooter: () => new PartialBasedView({ partial: "form/_JSONSchemaFooter" })
@@ -115,7 +119,7 @@ define([
                 ? this.sectionId
                 : this.subview.getTabId();
         },
-        updateData () {
+        updateValues () {
             this.values = this.values.extend({
                 [this.getSection()]: this.getJSONSchemaView().getData()
             });
@@ -128,16 +132,18 @@ define([
                 });
                 return;
             }
-            this.updateData();
-            ServersService.servers.update(this.sectionId, this.values.raw, this.serverId)
-            .then(() => {
-                EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "changesSaved");
-            }, (response) => {
-                Messages.addMessage({
-                    response,
-                    type: Messages.TYPE_DANGER
+            this.updateValues();
+
+            const values = isAdvancedSection(this.sectionId)
+               ? this.values
+               : this.values.removeNullPasswords(this.schema);
+
+            ServersService.servers.update(this.sectionId, values.raw, this.serverId)
+                .then(() => {
+                    EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "changesSaved");
+                }, (response) => {
+                    Messages.addMessage({ response, type: Messages.TYPE_DANGER });
                 });
-            });
         },
         toggleInheritance (event) {
             const target = event.currentTarget;

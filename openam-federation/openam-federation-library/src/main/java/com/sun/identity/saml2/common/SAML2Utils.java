@@ -22,11 +22,12 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2016 ForgeRock AS.
+ * Portions Copyrighted 2010-2017 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.common;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.common.HttpURLConnectionManager;
@@ -1265,7 +1266,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             IOUtils.closeIfNotNull(deflaterOutputStream);
         }
 
-        String encoded = URLEncDec.encode(Base64.encode(out.toByteArray()));
+        String encoded = urlEncodeQueryParameterNameOrValue(Base64.encode(out.toByteArray()));
         if (debug.messageEnabled()) {
             debug.message(classMethod + "out string length : " + encoded.length());
             debug.message(classMethod + "out string is ===>" + encoded + "<===");
@@ -2311,7 +2312,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             authUrl += "&goto=";
         }
 
-        authUrl += URLEncDec.encode(request.getRequestURL().toString()
+        authUrl += urlEncodeQueryParameterNameOrValue(request.getRequestURL().toString()
                 + "?" + request.getQueryString());
         if (debug.messageEnabled()) {
             debug.message(method + "New URL for authentication: " + authUrl);
@@ -2754,7 +2755,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             returnURLBuilder.append("&");
         }
         returnURLBuilder.append("requestID=").append(requestID);
-        String returnURLString = URLEncDec.encode(returnURLBuilder.toString());
+        String returnURLString = urlEncodeQueryParameterNameOrValue(returnURLBuilder.toString());
         redirectURLBuilder.append(returnURLString);
 
         return redirectURLBuilder.toString();

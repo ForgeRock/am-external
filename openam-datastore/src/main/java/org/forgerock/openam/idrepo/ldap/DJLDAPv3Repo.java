@@ -55,6 +55,9 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
@@ -68,6 +71,7 @@ import org.forgerock.openam.ldap.LDAPRequests;
 import org.forgerock.openam.ldap.LDAPURL;
 import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.openam.ldap.LdapFromJsonQueryFilterVisitor;
+import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.CrestQuery;
 import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.StringUtils;
@@ -549,17 +553,15 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                     IdRepoErrorCode.PLUGIN_OPERATION_NOT_SUPPORTED,
                     new Object[]{CLASS_NAME, IdOperation.READ.getName(), type.getName()});
         }
+        // check if the identity exists, using getDN here on purpose instead of using isExists
+        // to trigger an exception if the identity does not exist
+        getDN(type, name);
         if (alwaysActive) {
-            try {
-                return isExists(token, type, name);
-            } catch (IdRepoException ide) {
-                return false;
-            }
+            return true;
         }
         Map<String, Set<String>> attrMap;
         try {
             attrMap = getAttributes(token, type, name, asSet(userStatusAttr));
-            attrMap = new CaseInsensitiveHashMap(attrMap);
         } catch (IdRepoException ire) {
             return false;
         }
@@ -765,15 +767,17 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
      */
     private <T> Map<String, T> getAttributes(IdType type, String name, Set<String> attrNames,
             Function<Attribute, T, IdRepoException> function) throws IdRepoException {
-        Set<String> attrs = attrNames == null
-                ? new CaseInsensitiveHashSet(0) : new CaseInsensitiveHashSet(attrNames);
+        Set<String> attrs = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        if (CollectionUtils.isNotEmpty(attrNames)) {
+            attrs.addAll(attrNames);
+        }
 
         if (type.equals(IdType.REALM)) {
             if (attrs.contains(OBJECT_CLASS_ATTR)) {
                 return new HashMap(0);
             }
         }
-        Map<String, T> result = new HashMap<String, T>();
+        Map<String, T> result = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         String dn = getDN(type, name);
         if (type.equals(IdType.USER)) {
             if (attrs.contains(DEFAULT_USER_STATUS_ATTR)) {
@@ -1795,14 +1799,15 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         if (type.equals(IdType.USER)) {
             Set<String> attrs = asSet("objectclass");
             Set<String> objectClasses = getAttributes(token, type, name, attrs).get(OBJECT_CLASS_ATTR);
-            if (objectClasses != null) {
-                objectClasses = new CaseInsensitiveHashSet(objectClasses);
-            }
-            for (Map.Entry<String, Set<String>> entry : mapOfServicesAndOCs.entrySet()) {
-                String serviceName = entry.getKey();
-                Set<String> serviceOCs = entry.getValue();
-                if (objectClasses != null && objectClasses.containsAll(serviceOCs)) {
-                    results.add(serviceName);
+            if (CollectionUtils.isNotEmpty(objectClasses)) {
+                Set<String>OCValues = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+                OCValues.addAll(objectClasses);
+                for (Map.Entry<String, Set<String>> entry : mapOfServicesAndOCs.entrySet()) {
+                    String serviceName = entry.getKey();
+                    Set<String> serviceOCs = entry.getValue();
+                    if (OCValues.containsAll(serviceOCs)) {
+                        results.add(serviceName);
+                    }
                 }
             }
         } else if (type.equals(IdType.REALM)) {
@@ -1884,12 +1889,12 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             Function<Map<String, Set<String>>, Map<String, T>, IdRepoException> converter) throws IdRepoException {
         if (type.equals(IdType.USER)) {
             Map<String, T> attrsFromUser = getAttributes(type, name, attrNames, extractor);
-            if (serviceName == null || serviceName.isEmpty()) {
+            if (StringUtils.isEmpty(serviceName)) {
                 return attrsFromUser;
             }
             Map<String, Set<String>> attrsFromRealm = serviceMap.get(serviceName);
             Map<String, Set<String>> filteredAttrsFromRealm = new HashMap<String, Set<String>>();
-            if (attrsFromRealm == null || attrsFromRealm.isEmpty()) {
+            if (CollectionUtils.isEmpty(attrsFromRealm)) {
                 return attrsFromUser;
             } else {
                 attrNames = new CaseInsensitiveHashSet(attrNames);
@@ -1902,7 +1907,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             }
 
             Map<String, T> filteredAttrsFromRealm2 = converter.apply(filteredAttrsFromRealm);
-            Set<String> attrNameSet = new CaseInsensitiveHashSet(attrsFromUser.keySet());
+            Set<String> attrNameSet = attrsFromUser.keySet();
             for (Map.Entry<String, T> entry : filteredAttrsFromRealm2.entrySet()) {
                 String attrName = entry.getKey();
                 if (!attrNameSet.contains(attrName)) {
@@ -2013,7 +2018,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             Set<String> removeOCs = attrMap.get(OBJECT_CLASS_ATTR);
             if (removeOCs != null) {
                 Schema dirSchema = getSchema();
-                Map attrs = new CaseInsensitiveHashMap();
+                Map<String, Set<String>> attrs = new ConcurrentSkipListMap<>(String.CASE_INSENSITIVE_ORDER);
                 for (String oc : removeOCs) {
                     try {
                         ObjectClass oc2 = dirSchema.getObjectClass(oc);
@@ -2028,13 +2033,15 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                         throw newIdRepoException(IdRepoErrorCode.UNABLE_GET_SERVICE_SCHEMA, serviceName);
                     }
                 }
-                Set<String> requestedAttrs = new CaseInsensitiveHashSet(attrs.keySet());
+                Set<String> ocKeys = attrs.keySet();
+                Set<String>requestedAttrs = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+                requestedAttrs.addAll(ocKeys);
                 //if the service objectclass is auxiliary (which it should be), then the objectclass attribute may not
                 //be present if top is not defined as superior class.
                 requestedAttrs.add(OBJECT_CLASS_ATTR);
-                Map<String, Set<String>> attributes = new CaseInsensitiveHashMap(
-                        getAttributes(token, type, name, requestedAttrs));
-                Set<String> OCValues = new CaseInsensitiveHashSet(attributes.get(OBJECT_CLASS_ATTR));
+                Map<String, Set<String>> attributes = getAttributes(token, type, name, requestedAttrs);
+                Set<String>OCValues = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+                OCValues.addAll(attributes.get(OBJECT_CLASS_ATTR));
                 OCValues.removeAll(removeOCs);
                 attrs.put(OBJECT_CLASS_ATTR, OCValues);
                 //we need to only change existing attributes, removal of a non-existing attribute results in failure.

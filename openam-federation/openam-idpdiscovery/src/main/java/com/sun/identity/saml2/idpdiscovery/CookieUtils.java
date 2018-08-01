@@ -24,12 +24,11 @@
  *
  * $Id: CookieUtils.java,v 1.9 2009/11/03 00:50:34 madan_ranganath Exp $
  *
- */
-
-/**
- * Portions Copyrighted 2013 ForgeRock, Inc.
+ * Portions Copyrighted 2013-2017 ForgeRock AS.
  */
 package com.sun.identity.saml2.idpdiscovery;
+
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import java.io.IOException;
 import java.util.ResourceBundle;
@@ -352,7 +351,7 @@ public class CookieUtils {
             String newUrl = errorUrl.trim() + jointString
                     + "errorcode=" + errorCode + "&"
                     + "httpstatuscode=" + httpStatusCode + "&"
-                    + "errormessage=" + URLEncDec.encode(errorMsg);
+                    + "errormessage=" + urlEncodeQueryParameterNameOrValue(errorMsg);
             if (debug.messageEnabled()) {
                 debug.message("CookieUtils.sendError: final redirectionURL="
                         + newUrl);

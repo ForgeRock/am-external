@@ -132,20 +132,15 @@ define([
             return this.jsonEditor.validate().length === 0;
         },
         getData () {
-            const passwordKeys = this.options.schema.getPasswordKeys();
-            const values = new JSONValues(this.jsonEditor.getValue());
-            let valuesWithoutEmptyPasswords = values.omit((value, key) => {
-                if (passwordKeys.indexOf(key) !== -1 && _.isEmpty(value)) {
-                    return true;
-                }
-            });
+            let values = new JSONValues(this.jsonEditor.getValue());
 
+            values = values.nullifyEmptyPasswords(this.options.schema.getPasswordKeys());
             if (this.options.schema.hasInheritance()) {
-                valuesWithoutEmptyPasswords = valuesWithoutEmptyPasswords.addInheritance(this.options.values.raw);
+                values = values.addInheritance(this.options.values.raw);
             }
 
-            this.options.values = valuesWithoutEmptyPasswords;
-            return valuesWithoutEmptyPasswords.raw;
+            this.options.values = values;
+            return values.raw;
         },
         setData (data) {
             this.options.values = this.options.values.extend(data);

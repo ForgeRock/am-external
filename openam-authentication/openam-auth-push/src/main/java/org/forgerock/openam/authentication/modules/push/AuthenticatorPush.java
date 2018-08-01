@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016 ForgeRock AS.
+ * Copyright 2016-2017 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.push;
 
@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 
 import javax.security.auth.Subject;
@@ -98,6 +99,9 @@ public class AuthenticatorPush extends AbstractPushModule {
 
     private String pushMessage;
 
+    // support for search with alias name
+    private Set<String> userSearchAttributes = Collections.emptySet();
+
     @Override
     public void init(Subject subject, Map sharedState, Map options) {
 
@@ -126,13 +130,10 @@ public class AuthenticatorPush extends AbstractPushModule {
 
         pushMessage = CollectionHelper.getMapAttr(options, DEVICE_PUSH_MESSAGE);
 
-        String authLevel = CollectionHelper.getMapAttr(options, AUTH_LEVEL);
-        if (authLevel != null) {
-            try {
-                setAuthLevel(Integer.parseInt(authLevel));
-            } catch (Exception e) {
-                DEBUG.error("AuthenticatorPush :: init() : Unable to set auth level {}", authLevel, e);
-            }
+        try {
+            userSearchAttributes = getUserAliasList();
+        } catch (final AuthLoginException ale) {
+            DEBUG.warning("AuthenticatorPush :: init() : Unable to retrieve search attributes", ale);
         }
     }
 
@@ -285,7 +286,11 @@ public class AuthenticatorPush extends AbstractPushModule {
         if (username == null) {
             return USERNAME_STATE;
         } else {
-            device = getDevice(username, realm);
+            AMIdentity id = IdUtils.getIdentity(username, realm, userSearchAttributes);
+            if (id == null) {
+                throw failedAsLoginException();
+            }
+            device = getDevice(id.getName(), realm);
             if (sendMessage(device)) {
                 this.expireTime = Time.currentTimeMillis() + timeout;
                 setEmergencyButton();
@@ -307,7 +312,7 @@ public class AuthenticatorPush extends AbstractPushModule {
             throw failedAsLoginException();
         }
 
-        AMIdentity id = IdUtils.getIdentity(username, realm);
+        AMIdentity id = IdUtils.getIdentity(username, realm, userSearchAttributes);
 
         try {
             if (id != null && id.isExists() && id.isActive()) {

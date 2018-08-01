@@ -24,13 +24,11 @@
  *
  * $Id: SAMLAwareServlet.java,v 1.5 2009/06/12 22:21:39 mallas Exp $
  *
- * Portions Copyrighted 2013 ForgeRock AS
+ * Portions Copyrighted 2013-2017 ForgeRock AS.
  */
 package com.sun.identity.saml.servlet;
 
-import com.sun.identity.shared.encode.URLEncDec;
-
-import com.sun.identity.shared.encode.CookieUtils;
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
@@ -280,15 +278,15 @@ public class SAMLAwareServlet extends HttpServlet {
             StringBuffer sb = new StringBuffer(1000);
             String samltmp = null;
             while (iter.hasNext()) {
-                samltmp = URLEncDec.encode((String)iter.next());
+                samltmp = urlEncodeQueryParameterNameOrValue((String)iter.next());
                 if (SAMLUtils.debug.messageEnabled()) {
                     SAMLUtils.debug.message("Encoded SAML AssertionArtifact " +
                     samltmp);
                 }
                 sb.append("&").append(artifactName).append("=").append(samltmp);
             }
-            String redirecto = thisSite.getSAMLUrl() + "?" + targetName + "=" +
-            URLEncDec.encode(target) + sb.toString();
+            String redirecto = thisSite.getSAMLUrl() + "?" + targetName + "="
+                    + urlEncodeQueryParameterNameOrValue(target) + sb.toString();
             response.setStatus(response.SC_MOVED_TEMPORARILY);
             response.setHeader("Location", redirecto);
             String[] data = {SAMLUtils.bundle.getString("redirectTo"), 

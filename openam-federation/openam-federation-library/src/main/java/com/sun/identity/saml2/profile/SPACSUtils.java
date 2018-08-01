@@ -28,6 +28,7 @@
  */
 package com.sun.identity.saml2.profile;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.common.SystemConfigurationUtil;
@@ -88,7 +89,6 @@ import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.Response;
 import com.sun.identity.saml2.protocol.Status;
 import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -114,7 +114,6 @@ import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
 import org.forgerock.openam.utils.ClientUtils;
 import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -1981,7 +1980,7 @@ public class SPACSUtils {
                 } else {
                     redirectUrl += "?goto=";
                 }
-                redirectUrl += URLEncDec.encode(realFinalUrl);
+                redirectUrl += urlEncodeQueryParameterNameOrValue(realFinalUrl);
                 try {
                     realRedirectUrl = sessionProvider.rewriteURL(
                             newSession, redirectUrl);

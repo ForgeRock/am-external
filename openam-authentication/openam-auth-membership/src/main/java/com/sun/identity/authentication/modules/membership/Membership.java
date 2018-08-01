@@ -345,18 +345,6 @@ public class Membership extends AMLoginModule {
         }
         
         try {
-            String authLevel = CollectionHelper.getMapAttr(options,
-                "iplanet-am-auth-membership-auth-level");
-            
-            if (authLevel != null) {
-                try {
-                    int tmp = Integer.parseInt(authLevel);
-                    setAuthLevel(tmp);
-                } catch (NumberFormatException e) {
-                    // invalid auth level
-                    debug.error("invalid auth level " + authLevel, e);
-                }
-            }    
             
             regEx = CollectionHelper.getMapAttr(options, INVALID_CHARS);        
             serviceStatus = CollectionHelper.getMapAttr(options,

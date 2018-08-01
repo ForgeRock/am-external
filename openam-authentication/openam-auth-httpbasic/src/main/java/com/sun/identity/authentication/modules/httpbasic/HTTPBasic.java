@@ -67,7 +67,6 @@ public class HTTPBasic extends AMLoginModule {
     private static Debug debug = Debug.getInstance(amAuthHTTPBasic);
     private static String MODCONFIG =
     "iplanet-am-auth-http-basic-module-configured";
-    private static String AUTHLEVEL = "iplanet-am-auth-httpbasic-auth-level";
     private Principal userPrincipal = null;
     private ResourceBundle bundle = null;
     private String validatedUserID;
@@ -89,14 +88,6 @@ public class HTTPBasic extends AMLoginModule {
         }
         this.options = options;
         instanceName  = CollectionHelper.getMapAttr(options, MODCONFIG);
-        String authLevel = CollectionHelper.getMapAttr(options, AUTHLEVEL);
-        if (authLevel != null) {
-            try {
-                setAuthLevel(Integer.parseInt(authLevel));
-            } catch (Exception e) {
-                debug.error("Unable to set auth level " + authLevel,e);
-            }
-        }
         try {
             SSOToken adminToken = (SSOToken)AccessController.doPrivileged(
                 AdminTokenAction.getInstance());

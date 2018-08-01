@@ -28,9 +28,10 @@
 
 package com.sun.identity.federation.message.common;
 
+import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
+
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.federation.common.IFSConstants;
-import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -331,8 +332,8 @@ public class Extension {
         StringBuffer queryString = new StringBuffer();
         for(Iterator iter = attrMap.keySet().iterator();iter.hasNext();) {
             String key = (String)iter.next();
-            String value = URLEncDec.encode((String)attrMap.get(key));
-            key = URLEncDec.encode(prefix + key);
+            String value = urlEncodeQueryParameterNameOrValue((String)attrMap.get(key));
+            key = urlEncodeQueryParameterNameOrValue(prefix + key);
             if (queryString.length() > 0) {
                 queryString.append(IFSConstants.AMPERSAND);
             }
