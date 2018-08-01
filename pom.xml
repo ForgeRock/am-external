@@ -33,6 +33,7 @@
         <module>openam-authentication</module>
         <module>openam-samples</module>
         <module>openam-radius</module>
+        <module>openam-datastore</module>
     </modules>
 
     <repositories>
