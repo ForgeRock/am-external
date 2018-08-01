@@ -35,6 +35,7 @@
         <module>openam-auth-trees</module>
         <module>openam-push-notification</module>
         <module>openam-radius</module>
+        <module>openam-datastore</module>
     </modules>
 
     <repositories>
