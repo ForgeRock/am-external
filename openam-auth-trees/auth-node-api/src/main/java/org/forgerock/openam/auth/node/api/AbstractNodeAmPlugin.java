@@ -25,6 +25,7 @@ import javax.inject.Inject;
 import org.forgerock.openam.plugins.AmPlugin;
 import org.forgerock.openam.plugins.PluginException;
 import org.forgerock.openam.plugins.PluginTools;
+import org.forgerock.openam.plugins.StartupType;
 import org.forgerock.openam.plugins.VersionComparison;
 
 /** A convenient base class for {@link AmPlugin}s that provide authentication nodes.
@@ -55,7 +56,7 @@ public abstract class AbstractNodeAmPlugin implements AmPlugin {
     }
 
     @Override
-    public void onStartup() throws PluginException {
+    public void onStartup(StartupType startupType) throws PluginException {
         for (String version : getNodesByVersion().keySet()) {
             for (Class<? extends Node> nodeClass : getNodesByVersion().get(version)) {
                 pluginTools.startAuthNode(nodeClass);
@@ -84,8 +85,17 @@ public abstract class AbstractNodeAmPlugin implements AmPlugin {
     }
 
     /**
-     * Specify the Map of list of node classes that the plugin is providing. These will then be installed and registered
-     * at the appropriate times in plugin lifecycle.
+     * Retrieve the Map of list of node classes that the plugin is providing. The mappings returned describe which
+     * nodes have been introduced in which version of this plugin. For example:
+     *
+     * <pre>
+     *     return ImmutableMap.of(
+     *             "1.0.0", asList(ChoiceCollectorNode.class),
+     *             "2.0.0", asList(SetPersistentCookieNode.class));
+     * </pre>
+     *
+     * Tells that this node plugin's 1.0.0 version has introduced the ChoiceCollectorNode, the 2.0.0 version has
+     * introduced the SetPersistentCookieNode.
      *
      * @return The list of node classes.
      */

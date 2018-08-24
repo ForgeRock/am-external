@@ -26,5 +26,8 @@ They can be installed in a OpenAM server using Amster. The Amster command to imp
 import-config --path /path/to/sample-trees/root
 ```
 * * *
-The files in this project are licensed under the [CDDL License](https://forum.forgerock.com/cddlv1-0/) and as such may be used as a basis for your own projects.
+Copyright 2018 ForgeRock AS. All Rights Reserved
 
+Use of this code requires a commercial software license with ForgeRock AS.
+or with one of its affiliates. All use shall be exclusively subject
+to such license between the licensee and ForgeRock AS.

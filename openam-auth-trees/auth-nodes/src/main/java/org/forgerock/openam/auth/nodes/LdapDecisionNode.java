@@ -284,10 +284,12 @@ public class LdapDecisionNode implements Node {
                 logger.debug("processing login");
                 ldapUtil.setDynamicProfileCreationEnabled(true);
                 ldapUtil.setUserAttributes(ImmutableSet.of(USER_STATUS_ATTRIBUTE));
-                ldapUtil.authenticateUser(userName, userPassword);
-                String userStatus = "Active";
-                if (ldapUtil.getUserAttributeValues().containsKey(USER_STATUS_ATTRIBUTE)) {
-                    userStatus = ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE).iterator().next();
+                String userStatus = USER_STATUS_INACTIVE;
+                if (authenticateUser(ldapUtil, userName, userPassword)) {
+                    userStatus = "Active";
+                    if (ldapUtil.getUserAttributeValues().containsKey(USER_STATUS_ATTRIBUTE)) {
+                        userStatus = ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE).iterator().next();
+                    }
                 }
                 String username = getUserNameFromIdentity(ldapUtil.getUserId());
                 newState.put(USERNAME, username);
@@ -314,6 +316,30 @@ public class LdapDecisionNode implements Node {
             }
         }
         return action.replaceSharedState(newState).build();
+    }
+
+    /**
+     * Authenticate user using provided credentials.
+     *
+     * @param ldapUtil the LDAPAuthUtils context
+     * @param userName
+     * @param userPassword
+     * @return true if authenticates,
+     *         false if LDAP server unwilling to authenticate
+     * @throws LDAPUtilException if there is other LDAP exceptions
+     */
+    private boolean authenticateUser(LDAPAuthUtils ldapUtil, String userName, String userPassword)
+            throws LDAPUtilException {
+        try {
+            ldapUtil.authenticateUser(userName, userPassword);
+            return true;
+        } catch (LDAPUtilException ex) {
+            if (ex.getResultCode().equals(ResultCode.UNWILLING_TO_PERFORM)) {
+                logger.debug("LDAP Unwilling to perform authenticate on user {}.", userName);
+                return false;
+            }
+            throw ex;
+        }
     }
 
     private ActionBuilder processPasswordChange(TreeContext context, String userName, String userPassword)
@@ -693,6 +719,14 @@ public class LdapDecisionNode implements Node {
     }
 
     private String getUserNameFromIdentity(String identity) {
-        return identity == null ? null : LDAPUtils.getName(Dn.valueOf(identity));
+        if (identity == null) {
+            return null;
+        }
+
+        if (!config.returnUserDn()) {
+            return identity;
+        }
+
+        return LDAPUtils.getName(Dn.valueOf(identity));
     }
 }

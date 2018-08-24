@@ -24,7 +24,7 @@
  *
  * $Id: QueryHandlerServlet.java,v 1.9 2009/09/22 22:49:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2012-2016 ForgeRock AS.
+ * Portions Copyrighted 2012-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.soapbinding;
 
@@ -46,14 +46,13 @@ import com.sun.identity.saml2.key.EncInfo;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import java.io.OutputStream;
-import java.io.InputStream;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.ServletException;
-import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 import org.w3c.dom.Element;
@@ -65,7 +64,6 @@ import com.sun.identity.shared.xml.XMLUtils;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
@@ -156,9 +154,10 @@ public class QueryHandlerServlet extends HttpServlet {
                        SAML2Constants.SERVER_FAULT, "invalidQuery", null);
             }
              // Write out the message on the response stream
-            OutputStream os = response.getOutputStream();
-            reply.writeTo(os);
-            os.flush();
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            reply.writeTo(stream);
+            response.getWriter().println(stream.toString("UTF-8"));
+            response.getWriter().flush();
         } catch (SAML2Exception ex) {
             debug.error(classMethod, ex);
             SAMLUtils.sendError(request, response,

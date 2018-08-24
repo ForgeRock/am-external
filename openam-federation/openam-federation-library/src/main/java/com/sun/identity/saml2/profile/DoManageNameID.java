@@ -24,7 +24,7 @@
  *
  * $Id: DoManageNameID.java,v 1.26 2009/11/24 21:53:27 madan_ranganath Exp $
  *
- * Portions copyright 2013-2017 ForgeRock AS.
+ * Portions copyright 2013-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -32,8 +32,8 @@ import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
@@ -861,9 +861,10 @@ public class DoManageNameID {
             response.setStatus(HttpServletResponse.SC_OK);
             SAML2Utils.putHeaders(reply.getMimeHeaders(), response);
             // Write out the message on the response stream
-            OutputStream os = response.getOutputStream();
-            reply.writeTo(os);
-            os.flush();
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            reply.writeTo(stream);
+            response.getWriter().println(stream.toString("UTF-8"));
+            response.getWriter().flush();
         } else {
             logError("errorObtainResponse", 
                                  LogUtil.CANNOT_INSTANTIATE_MNI_RESPONSE, null);

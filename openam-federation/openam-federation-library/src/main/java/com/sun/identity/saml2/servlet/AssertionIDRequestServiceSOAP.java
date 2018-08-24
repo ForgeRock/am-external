@@ -24,19 +24,17 @@
  *
  * $Id: AssertionIDRequestServiceSOAP.java,v 1.6 2009/10/14 23:59:43 exu Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.servlet;
 
-import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.ServletException;
-import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
@@ -174,9 +172,10 @@ public class AssertionIDRequestServiceSOAP extends HttpServlet {
             }
             resp.setStatus(HttpServletResponse.SC_OK);
             SAML2Utils.putHeaders(replymsg.getMimeHeaders(), resp);
-            OutputStream os = resp.getOutputStream();
-            replymsg.writeTo(os);
-            os.flush();
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            replymsg.writeTo(stream);
+            resp.getWriter().println(stream.toString("UTF-8"));
+            resp.getWriter().flush();
         } catch (SOAPException soap) {
             SAML2Utils.debug.error("AssertionIDRequestServiceSOAP.doGetPost",
                 soap);

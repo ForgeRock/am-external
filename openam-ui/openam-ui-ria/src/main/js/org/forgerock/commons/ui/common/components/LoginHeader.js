@@ -15,12 +15,11 @@
  */
 
 define([
-    "org/forgerock/commons/ui/common/main/AbstractView",
-    "templates/common/LoginHeaderTemplate"
-], function(AbstractView, LoginHeaderTemplate) {
+    "org/forgerock/commons/ui/common/main/AbstractView"
+], function(AbstractView) {
     var LoginHeader = AbstractView.extend({
         element: "#loginBaseLogo",
-        template: LoginHeaderTemplate,
+        template: "common/LoginHeaderTemplate",
         noBaseTemplate: true
     });
 

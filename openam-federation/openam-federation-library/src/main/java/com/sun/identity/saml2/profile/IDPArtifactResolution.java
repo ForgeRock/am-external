@@ -24,16 +24,16 @@
  *
  * $Id: IDPArtifactResolution.java,v 1.13 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2012-2017 ForgeRock AS.
+ * Portions Copyrighted 2012-2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
 
 import static org.forgerock.openam.utils.Time.newDate;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
@@ -186,9 +186,10 @@ public class IDPArtifactResolution {
                 response.setStatus(HttpServletResponse.SC_OK);
                 putHeaders(reply.getMimeHeaders(), response);
 
-                OutputStream outputStream = response.getOutputStream();
-                reply.writeTo(outputStream);
-                outputStream.flush();
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                reply.writeTo(stream);
+                response.getWriter().println(stream.toString("UTF-8"));
+                response.getWriter().flush();
             } else {
                 response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             }

@@ -16,12 +16,11 @@
 
 define([
     "jquery",
-    "org/forgerock/commons/ui/common/main/AbstractView",
-    "templates/common/FooterTemplate"
-], function($, AbstractView, FooterTemplate) {
+    "org/forgerock/commons/ui/common/main/AbstractView"
+], function($, AbstractView) {
     return AbstractView.extend({
         element: "#footer",
-        template: FooterTemplate,
+        template: "common/FooterTemplate",
         noBaseTemplate: true,
 
         /**

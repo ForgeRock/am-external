@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
 package org.forgerock.openam.saml2.plugins;
 
@@ -53,7 +53,7 @@ public class DefaultWsFedAuthenticator implements WsFedAuthenticator {
 
             while (authContext.hasMoreRequirements()) {
                 Callback[] callbacks = authContext.getRequirements();
-                if (callbacks == null || callbacks.length == 0) {
+                if (callbacks == null) {
                     continue;
                 }
                 List<Callback> missing = new ArrayList<>();
