@@ -23,12 +23,10 @@ import { create, getInitialState } from "org/forgerock/openam/ui/admin/services/
 import { JAVA_AGENT } from "org/forgerock/openam/ui/admin/services/realm/AgentTypes";
 import { setSchema } from "store/modules/remote/config/realm/applications/agents/java/groups/schema";
 import { setTemplate } from "store/modules/remote/config/realm/applications/agents/java/groups/template";
-import appendToUrl from "org/forgerock/openam/ui/admin/views/realms/applications/agents/common/appendToUrl";
 import connectWithStore from "components/redux/connectWithStore";
 import Messages from "org/forgerock/commons/ui/common/components/Messages";
 import NewJavaAgentGroup from "./NewJavaAgentGroup";
 import Router from "org/forgerock/commons/ui/common/main/Router";
-import URI from "URI";
 import withRouter from "org/forgerock/commons/ui/common/components/hoc/withRouter";
 import withRouterPropType from "org/forgerock/commons/ui/common/components/hoc/withRouterPropType";
 
@@ -67,22 +65,9 @@ class NewJavaAgentGroupContainer extends Component {
 
     handleCreate (formData) {
         const realm = this.props.router.params[0];
-        const serverUrl = new URI(this.state.serverUrl);
         const updatedValues = {
             ...formData,
-            ssoJ2EEAgentConfig: {
-                ...formData.ssoJ2EEAgentConfig,
-                cdssoUrls: [appendToUrl(this.state.serverUrl, "/cdcservlet")],
-                cdssoTrustedIdProvider: [appendToUrl(this.state.serverUrl, "/cdcservlet")]
-            },
-            amServicesJ2EEAgent: {
-                ...formData.amServicesJ2EEAgent,
-                amLoginUrl: [appendToUrl(this.state.serverUrl, "/UI/Login")],
-                amLogoutUrl: [appendToUrl(this.state.serverUrl, "/UI/Logout")],
-                authServiceHost: serverUrl.hostname(),
-                authServicePort: parseInt(serverUrl.port(), 10),
-                authServiceProtocol: serverUrl.protocol()
-            }
+            serverUrl: this.state.serverUrl
         };
 
         create(realm, JAVA_AGENT, updatedValues, this.state.groupId).then(() => {

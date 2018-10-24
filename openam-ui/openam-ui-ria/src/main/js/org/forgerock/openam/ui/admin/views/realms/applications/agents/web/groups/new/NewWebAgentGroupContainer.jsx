@@ -23,7 +23,6 @@ import { create, getInitialState } from "org/forgerock/openam/ui/admin/services/
 import { WEB_AGENT } from "org/forgerock/openam/ui/admin/services/realm/AgentTypes";
 import { setSchema } from "store/modules/remote/config/realm/applications/agents/web/groups/schema";
 import { setTemplate } from "store/modules/remote/config/realm/applications/agents/web/groups/template";
-import appendToUrl from "org/forgerock/openam/ui/admin/views/realms/applications/agents/common/appendToUrl";
 import connectWithStore from "components/redux/connectWithStore";
 import Messages from "org/forgerock/commons/ui/common/components/Messages";
 import NewWebAgentGroup from "./NewWebAgentGroup";
@@ -68,14 +67,7 @@ class NewWebAgentGroupContainer extends Component {
         const realm = this.props.router.params[0];
         const updatedValues = {
             ...formData,
-            ssoWebAgentConfig: {
-                cdssoUrls: [appendToUrl(this.state.serverUrl, "/cdcservlet")]
-            },
-            amServicesWebAgent: {
-                ...formData.amServicesWebAgent,
-                amLoginUrl: [appendToUrl(this.state.serverUrl, "/UI/Login")],
-                amLogoutUrl: [appendToUrl(this.state.serverUrl, "/UI/Logout")]
-            }
+            serverUrl: this.state.serverUrl
         };
 
         create(realm, WEB_AGENT, updatedValues, this.state.groupId).then(() => {

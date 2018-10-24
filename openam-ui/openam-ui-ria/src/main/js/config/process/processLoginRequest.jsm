@@ -14,7 +14,7 @@
  * Copyright 2018 ForgeRock AS.
  */
 
-import { has, indexOf } from "lodash";
+import { indexOf } from "lodash";
 import $ from "jquery";
 
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
@@ -22,22 +22,23 @@ import Constants from "org/forgerock/commons/ui/common/util/Constants";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import SessionManager from "org/forgerock/commons/ui/common/main/SessionManager";
+import { exists as hasValidGotoUrl, toHref as gotoUrlToHref } from "org/forgerock/openam/ui/user/login/gotoUrl";
 
 const processLoginRequest = (event) => {
     const promise = $.Deferred();
     const submitContent = (event && event.submitContent) || event || {};
 
     SessionManager.login(submitContent, (user) => {
+        if (hasValidGotoUrl()) {
+            window.location.href = gotoUrlToHref();
+            return;
+        }
+
         Configuration.setProperty("loggedUser", user);
 
         EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, { anonymousMode: false });
 
         if (!Configuration.backgroundLogin) {
-            if (has(Configuration, "globalData.auth.validatedGoto")) {
-                window.location.href = decodeURIComponent(Configuration.globalData.auth.validatedGoto);
-                return false;
-            }
-
             if (Configuration.gotoFragment &&
                   indexOf(["#", "", "#/", "/#"], Configuration.gotoFragment) === -1) {
                 Router.navigate(Configuration.gotoFragment, { trigger: true });

@@ -91,7 +91,12 @@ define([
                     const isFailure = status && status.success === false;
 
                     if (isPasswordResetFlow(endpoint) && isFailure) {
-                        setTemplateData();
+                        delete fragmentParams["token"];
+                        delete fragmentParams["code"];
+                        this.data.fragmentParamString =
+                            _.isEmpty(fragmentParams) ? "" : `&${query.urlParamsFromObject(fragmentParams)}`;
+                        this.data.args = [undefined, this.data.fragmentParamString];
+                        this.setTranslationBase();
                         this.renderResponse(response);
                     } else if (isSelfRegistrationFlow(endpoint) && isFailure) {
                         const errorMessage = getRegistrationError(status.code, status.reason);

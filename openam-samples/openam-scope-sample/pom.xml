@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.forgerock.am.examples</groupId>
         <artifactId>openam-samples</artifactId>
-        <version>6.0.0.4</version>
+        <version>6.0.0.5</version>
     </parent>
 
     <artifactId>openam-scope-sample</artifactId>

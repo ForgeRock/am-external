@@ -184,9 +184,10 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     private int defaultSizeLimit;
     private int defaultTimeLimit;
     private DirectoryHelper helper;
-    //although there is a max pool size, we are currently doubling that in order to be able to authenticate users
+    //although there is a max pool size, we are currently trebling that in order to be able to authenticate users
     private ConnectionFactory<Connection> connectionFactory;
     private ConnectionFactory<Connection> bindConnectionFactory;
+    private ConnectionFactory<Connection> passwordChangeConnectionFactory;
     //holds service attributes for the current realm
     private Map<String, Map<String, Set<String>>> serviceMap;
     //holds the directory schema
@@ -249,6 +250,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         beheraSupportEnabled = CollectionHelper.getBooleanMapAttr(configMap, BEHERA_SUPPORT_ENABLED, false);
         bindConnectionFactory = createConnectionFactory(null, null, maxPoolSize);
         connectionFactory = createConnectionFactory(username, password, maxPoolSize);
+        passwordChangeConnectionFactory = createPasswordConnectionFactory(null,null,maxPoolSize);
 
         supportedTypesAndOperations =
                 IdRepoUtils.parseSupportedTypesAndOperations(configParams.get(LDAP_SUPPORTED_TYPES_AND_OPERATIONS));
@@ -344,6 +346,18 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                             LDAPUtils.getLdapUrls(ldapServers, isSecure), username, password, maxPoolSize,
                             heartBeatInterval, heartBeatTimeUnit, useStartTLS, false, ldapOptions));
         }
+    }
+
+
+    protected ConnectionFactory<Connection> createPasswordConnectionFactory(String username, char[] password, int maxPoolSize) {
+
+        Options ldapOptions = Options.defaultOptions()
+                .set(REQUEST_TIMEOUT, new Duration((long) defaultTimeLimit, TimeUnit.SECONDS));
+
+        return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(
+                LDAPUtils.newPasswordConnectionFactory(
+                        LDAPUtils.getLdapUrls(ldapServers, isSecure), username, password, maxPoolSize,
+                        heartBeatInterval, heartBeatTimeUnit, useStartTLS, false, ldapOptions));
     }
 
     /**
@@ -449,7 +463,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         modifyRequest.addModification(ModificationType.ADD, attrName, encodedNewPwd);
         Connection conn = null;
         try {
-            conn = createBindConnection();
+            conn = createPasswordConnection();
             conn.bind(bindRequest);
             conn.modify(modifyRequest);
         } catch (LdapException ere) {
@@ -2687,6 +2701,15 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             return bindConnectionFactory.create();
         } catch (DataLayerException e) {
             DEBUG.error("An error occurred while trying to create a bind connection to the datastore", e);
+            throw newIdRepoException(IdRepoErrorCode.INITIALIZATION_ERROR, CLASS_NAME);
+        }
+    }
+
+    private Connection createPasswordConnection() throws IdRepoException {
+        try {
+            return passwordChangeConnectionFactory.create();
+        } catch (DataLayerException e) {
+            DEBUG.error("An error occurred while trying to create a password bind connection to the datastore", e);
             throw newIdRepoException(IdRepoErrorCode.INITIALIZATION_ERROR, CLASS_NAME);
         }
     }

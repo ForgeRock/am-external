@@ -28,6 +28,9 @@ import URIUtils from "org/forgerock/commons/ui/common/util/URIUtils";
 
 const defaultThemeName = "default";
 const applyThemeToPage = function (path, icon, stylesheets) {
+    // If path is present, ensure path is correctly scoped within themes
+    path = path ? `themes/${path}` : path;
+
     // We might be switching themes (due to a realm change) and so we need to clean up the previous theme.
     $("link").remove();
 
@@ -139,6 +142,17 @@ const getAuthenticationChainName = function () {
     return "";
 };
 
+const applyBaseUrl = (path) => {
+    return path.startsWith(window.pageData.baseUrl) ? path : window.pageData.baseUrl + path;
+};
+
+const applyBaseUrlToTheme = (theme) => {
+    theme.settings.loginLogo.src = applyBaseUrl(theme.settings.loginLogo.src);
+    theme.settings.logo.src = applyBaseUrl(theme.settings.logo.src);
+
+    return theme;
+};
+
 /**
  * Determine the theme from the current realm and setup the theme on the page. This will
  * clear out any previous theme.
@@ -167,7 +181,19 @@ export async function getTheme () {
 
     // We don't apply themes to the admin interface because it would take significant effort to make the UI
     // themeable.
-    const stylesheets = isAdminTheme ? Constants.DEFAULT_STYLESHEETS : theme.stylesheets;
+    let stylesheets = isAdminTheme ? Constants.DEFAULT_STYLESHEETS : theme.stylesheets;
+
+    /**
+     * When the XUI is booted outside of the XUI directory (e.g. the OAuth 2 Consent page "/oauth2/authorize"),
+     * paths to assets must be fully qualified (e.g. "https://www.../images/logo.png" instead of "images/logo.png")
+     * to successfully address those assets. When assets are loaded via an import statement in ThemeConfiguration,
+     * this is done automatically, however, when plain strings are provided, we must apply this manually.
+     */
+    const hasBaseUrl = _.has(window, "pageData.baseUrl");
+    if (hasBaseUrl) {
+        theme = applyBaseUrlToTheme(theme);
+        stylesheets = stylesheets.map(applyBaseUrl);
+    }
 
     applyThemeToPage(theme.path, theme.icon, stylesheets);
     Configuration.globalData.theme = theme;

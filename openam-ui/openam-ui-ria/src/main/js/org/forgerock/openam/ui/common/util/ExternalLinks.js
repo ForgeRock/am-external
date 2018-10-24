@@ -17,7 +17,7 @@
 define([
     "lodash"
 ], (_) => {
-    const backstageDocsUrl = "https://backstage.forgerock.com/#!/docs/openam/13.5/";
+    const backstageDocsUrl = "https://backstage.forgerock.com/#!/docs/am/6/";
 
     return {
         backstage: {
