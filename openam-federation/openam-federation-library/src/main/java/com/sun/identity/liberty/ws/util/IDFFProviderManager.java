@@ -24,6 +24,8 @@
  *
  * $Id: IDFFProviderManager.java,v 1.3 2008/06/25 05:47:24 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
@@ -35,8 +37,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.sun.identity.federation.common.IFSConstants;
-import com.sun.identity.federation.jaxb.entityconfig.EntityConfigElement;
 import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
+import com.sun.identity.federation.jaxb.entityconfig.EntityConfigType;
 import com.sun.identity.federation.key.EncInfo;
 import com.sun.identity.federation.key.KeyUtil;
 import com.sun.identity.federation.meta.IDFFMetaException;
@@ -44,7 +46,6 @@ import com.sun.identity.federation.meta.IDFFMetaManager;
 import com.sun.identity.federation.meta.IDFFMetaUtils;
 import com.sun.identity.liberty.ws.meta.jaxb.ProviderDescriptorType;
 import com.sun.identity.liberty.ws.meta.jaxb.SPDescriptorType;
-import com.sun.identity.shared.debug.Debug;
 
 /**
  * The class <code>IDFFProviderManager</code> retrieves properties consumed
@@ -110,7 +111,7 @@ public class IDFFProviderManager implements ProviderManager {
      *     false if it doesn't.
      */
     public boolean isNameIDEncryptionEnabled(String providerID) {
-        EntityConfigElement entityConfig = null;
+        EntityConfigType entityConfig = null;
         try {
             entityConfig = idffMetaManager.getEntityConfig(
                 ROOT_REALM, providerID);

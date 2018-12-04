@@ -24,25 +24,29 @@
  *
  * $Id: FSAuthnDecisionHandler.java,v 1.4 2008/06/25 05:46:53 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.federation.services;
 
-import com.sun.identity.common.SystemConfigurationUtil;
-import com.sun.identity.federation.common.FSException;
-import com.sun.identity.federation.common.FSUtils;
-import com.sun.identity.federation.common.IFSConstants;
-import com.sun.identity.federation.jaxb.entityconfig.IDPDescriptorConfigElement;
-import com.sun.identity.federation.meta.IDFFMetaException;
-import com.sun.identity.federation.meta.IDFFMetaManager;
-import com.sun.identity.federation.meta.IDFFMetaUtils;
-import com.sun.identity.federation.services.util.FSServiceUtils;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
+
+import com.sun.identity.common.SystemConfigurationUtil;
+import com.sun.identity.federation.common.FSException;
+import com.sun.identity.federation.common.FSUtils;
+import com.sun.identity.federation.common.IFSConstants;
+import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
+import com.sun.identity.federation.meta.IDFFMetaException;
+import com.sun.identity.federation.meta.IDFFMetaManager;
+import com.sun.identity.federation.meta.IDFFMetaUtils;
+import com.sun.identity.federation.services.util.FSServiceUtils;
 
 /**
  * Used by <code>IDP</code> to decide which authentication to use to meet the
@@ -91,7 +95,7 @@ public class FSAuthnDecisionHandler {
             return;
         }
         try {
-            IDPDescriptorConfigElement entityConfig = 
+            BaseConfigType entityConfig =
                 metaManager.getIDPDescriptorConfig(realm, entityID);
             if (entityConfig == null) {
                 return;

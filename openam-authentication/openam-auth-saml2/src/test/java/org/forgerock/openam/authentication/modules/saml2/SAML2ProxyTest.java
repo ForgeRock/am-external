@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2018 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
@@ -23,12 +23,12 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.xml.bind.StringInputStream;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.commons.io.IOUtils;
 import org.forgerock.util.xml.XMLUtils;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -95,7 +95,7 @@ public class SAML2ProxyTest {
 
     private String getFormAction(String html) {
         try {
-            final Document doc = XMLUtils.getSafeDocumentBuilder(false).parse(new StringInputStream(html));
+            final Document doc = XMLUtils.getSafeDocumentBuilder(false).parse(IOUtils.toInputStream(html));
             return XPathFactory.newInstance().newXPath().evaluate("string(//form/@action)", doc);
         } catch (Exception e) {
             throw new RuntimeException(e);

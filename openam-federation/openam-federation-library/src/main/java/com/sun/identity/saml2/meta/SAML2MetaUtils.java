@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,49 +24,58 @@
  *
  * $Id: SAML2MetaUtils.java,v 1.9 2009/09/21 17:28:12 exu Exp $
  *
- * Portions Copyrighted 2010-2015 ForgeRock AS.
+ * Portions Copyrighted 2010-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.meta;
 
-import java.io.InputStream;
+import static java.util.stream.Collectors.toMap;
+
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
 import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
+import org.forgerock.openam.utils.StringUtils;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-
-import com.sun.identity.shared.configuration.SystemPropertiesManager;
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.shared.locale.Locale;
-import com.sun.identity.shared.xml.XMLUtils;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.jaxb.entityconfig.AttributeType;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
+import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
-import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
-import com.sun.identity.saml2.jaxb.metadata.*;
-import com.sun.identity.saml2.jaxb.metadataextquery.AttributeQueryDescriptorElement;
-import java.util.*;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-
-import org.xml.sax.InputSource;
-// import com.sun.identity.saml2.jaxb.metadataattr.ObjectFactory;
+import com.sun.identity.saml2.jaxb.metadata.AttributeAuthorityDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.AuthnAuthorityDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.EntitiesDescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.XACMLPDPDescriptorType;
+import com.sun.identity.saml2.jaxb.metadataextquery.AttributeQueryDescriptorType;
+import com.sun.identity.shared.configuration.SystemPropertiesManager;
+import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.locale.Locale;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * The <code>SAML2MetaUtils</code> provides metadata related util methods.
@@ -76,55 +85,40 @@ public final class SAML2MetaUtils {
     protected static ResourceBundle resourceBundle =
                          Locale.getInstallResourceBundle(RESOURCE_BUNDLE_NAME);
     public static Debug debug = Debug.getInstance("libSAML2");
-    private static final String JAXB_PACKAGES =
+    private static final String METADATA_JAXB_PACKAGES =
         "com.sun.identity.saml2.jaxb.xmlenc:" +
         "com.sun.identity.saml2.jaxb.xmlsig:" +
         "com.sun.identity.saml2.jaxb.assertion:" +
         "com.sun.identity.saml2.jaxb.metadata:" +
-	"com.sun.identity.saml2.jaxb.metadataattr:" +
-        "com.sun.identity.saml2.jaxb.entityconfig:" +
-        "com.sun.identity.saml2.jaxb.schema";
+	    "com.sun.identity.saml2.jaxb.metadataattr";
+    private static final String ENTITY_CONFIG_PACKAGE = "com.sun.identity.saml2.jaxb.entityconfig";
     private static final String JAXB_PACKAGE_LIST_PROP =
         "com.sun.identity.liberty.ws.jaxb.packageList";
-    private static JAXBContext jaxbContext = null;
+    private static JAXBContext publicContext = null;
+    private static JAXBContext completeContext = null;
     private static final String PROP_JAXB_FORMATTED_OUTPUT =
                                         "jaxb.formatted.output";
     private static final String PROP_NAMESPACE_PREFIX_MAPPER =
                                     "com.sun.xml.bind.namespacePrefixMapper";
 
     private static NamespacePrefixMapperImpl nsPrefixMapper =
-                                            new NamespacePrefixMapperImpl();
-    static String jaxbPackages = null;
+            new NamespacePrefixMapperImpl();
 
     static {
         try {
-            String tmpJaxbPkgs = SystemPropertiesManager.get(
-                JAXB_PACKAGE_LIST_PROP);
-            if (tmpJaxbPkgs != null && tmpJaxbPkgs.length() > 0) {
-                jaxbPackages = JAXB_PACKAGES + ":" + tmpJaxbPkgs;
-            } else {
-                jaxbPackages = JAXB_PACKAGES;
-            }
-            if (debug.messageEnabled()) {
-                debug.message("SAML2MetaUtils.static: " +
-                    "jaxbPackages = " + jaxbPackages);
-            }
-            jaxbContext = JAXBContext.newInstance(jaxbPackages);
+            Optional<String> extraPackages = Optional.ofNullable(SystemPropertiesManager.get(JAXB_PACKAGE_LIST_PROP))
+                    .filter(StringUtils::isNotEmpty);
+            publicContext = JAXBContext.newInstance(extraPackages
+                    .map(p -> METADATA_JAXB_PACKAGES + ":" + p)
+                    .orElse(METADATA_JAXB_PACKAGES));
+            completeContext = JAXBContext.newInstance(ENTITY_CONFIG_PACKAGE + ":" + METADATA_JAXB_PACKAGES
+                    + extraPackages.map(p -> ":" + p).orElse(""));
         } catch (JAXBException jaxbe) {
             debug.error("SAML2MetaUtils.static:", jaxbe);
         }
     }
 
     private SAML2MetaUtils() {
-    }
-
-    /**
-     * Returns <code>JAXB</code> context for the metadata service.
-     * @return <code>JAXB</code> context object.
-     */
-    public static JAXBContext getMetaJAXBContext() {
-
-        return jaxbContext;
     }
 
     /**
@@ -137,22 +131,8 @@ public final class SAML2MetaUtils {
     public static Object convertStringToJAXB(String str)
         throws JAXBException {
 
-       Unmarshaller u = jaxbContext.createUnmarshaller();
+       Unmarshaller u = completeContext.createUnmarshaller();
        return u.unmarshal(XMLUtils.createSAXSource(new InputSource(new StringReader(str))));
-    }
-
-    /**
-     * Reads from the <code>InputStream</code> and converts to a JAXB object.
-     * @param is a <code>InputStream</code> object
-     * @return a JAXB object converted from the <code>InputStream</code> object.
-     * @exception JAXBException if an error occurs while converting
-     *                          <code>InputStream</code> object
-     */
-    public static Object convertInputStreamToJAXB(InputStream is)
-        throws JAXBException {
-
-       Unmarshaller u = jaxbContext.createUnmarshaller();
-       return u.unmarshal(XMLUtils.createSAXSource(new InputSource(is)));
     }
 
     /**
@@ -165,7 +145,7 @@ public final class SAML2MetaUtils {
     public static Object convertNodeToJAXB(Node node)
         throws JAXBException {
 
-       Unmarshaller u = jaxbContext.createUnmarshaller();
+       Unmarshaller u = completeContext.createUnmarshaller();
        //no need to get SAXSource, since the node is already created by using
        //a secure XML parser
        return u.unmarshal(node);
@@ -177,11 +157,9 @@ public final class SAML2MetaUtils {
      * @return a <code>String</code> representing the JAXB object.
      * @exception JAXBException if an error occurs while converting JAXB object
      */
-    public static String convertJAXBToString(Object jaxbObj)
-        throws JAXBException {
-
+    public static String convertJAXBToString(Object jaxbObj) throws JAXBException {
         StringWriter sw = new StringWriter();
-        Marshaller marshaller = jaxbContext.createMarshaller();
+        Marshaller marshaller = getMarshaller(jaxbObj);
         marshaller.setProperty(PROP_JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
         marshaller.setProperty(PROP_NAMESPACE_PREFIX_MAPPER, nsPrefixMapper);
         marshaller.marshal(jaxbObj, sw);
@@ -194,14 +172,17 @@ public final class SAML2MetaUtils {
      * @param os an <code>OutputStream</code> object
      * @exception JAXBException if an error occurs while converting JAXB object
      */
-    public static void convertJAXBToOutputStream(Object jaxbObj,
-                                                 OutputStream os)
-        throws JAXBException {
-
-        Marshaller marshaller = jaxbContext.createMarshaller();
+    public static void convertJAXBToOutputStream(Object jaxbObj, OutputStream os) throws JAXBException {
+        Marshaller marshaller = getMarshaller(jaxbObj);
         marshaller.setProperty(PROP_JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
         marshaller.setProperty(PROP_NAMESPACE_PREFIX_MAPPER, nsPrefixMapper);
         marshaller.marshal(jaxbObj, os);
+    }
+
+    private static Marshaller getMarshaller(Object jaxbObj) throws JAXBException {
+        return jaxbObj instanceof EntityConfigElement
+                ? completeContext.createMarshaller()
+                : publicContext.createMarshaller();
     }
 
     /**
@@ -232,16 +213,13 @@ public final class SAML2MetaUtils {
      * put in a <code>Map</code>. The key is attribute name and the value is
      * a <code>List</code> of attribute values;
      * @param config the <code>BaseConfigType</code> object
-     * @return a attrbute value <code>Map</code>
+     * @return a attribute value <code>Map</code>
      */
-    public static Map<String, List<String>> getAttributes(BaseConfigType config) {
-        Map<String, List<String>> attrMap = new HashMap<>();
-        List<AttributeType> list = config.getAttribute();
-        for (AttributeType avp : list) {
-            attrMap.put(avp.getName(), avp.getValue());
-        }
-
-        return attrMap;
+    public static Map<String, List<String>> getAttributes(JAXBElement<BaseConfigType> config) {
+        return config.getValue()
+                .getAttribute()
+                .stream()
+                .collect(toMap(AttributeType::getName, type -> new ArrayList<>(type.getValue())));
     }
 
     /**
@@ -291,26 +269,19 @@ public final class SAML2MetaUtils {
      * @param eDescriptor The entity descriptor.
      * @return policy decision point descriptor or null if it is not found.
      */
-    public static XACMLPDPDescriptorElement getPolicyDecisionPointDescriptor(
-        EntityDescriptorElement eDescriptor)
-    {
-        XACMLPDPDescriptorElement descriptor = null;
-
+    public static XACMLPDPDescriptorType getPolicyDecisionPointDescriptor(EntityDescriptorElement eDescriptor) {
         if (eDescriptor != null) {
-            List list =
-            eDescriptor.getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
+            List<RoleDescriptorType> list = eDescriptor.getValue()
+                    .getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
 
-            for (Iterator i = list.iterator();
-                i.hasNext() && (descriptor == null);
-            ) {
-                Object obj = i.next();
-                if (obj instanceof XACMLPDPDescriptorElement) {
-                    descriptor = (XACMLPDPDescriptorElement)obj;
+            for (RoleDescriptorType descriptorType : list) {
+                if (descriptorType instanceof XACMLPDPDescriptorType) {
+                    return (XACMLPDPDescriptorType) descriptorType;
                 }
             }
         }
 
-        return descriptor;
+        return null;
     }
 
 
@@ -321,27 +292,20 @@ public final class SAML2MetaUtils {
      * @param eDescriptor The entity descriptor.
      * @return policy enforcement point descriptor or null if it is not found.
      */
-    public static XACMLAuthzDecisionQueryDescriptorElement
-        getPolicyEnforcementPointDescriptor(
-        EntityDescriptorElement eDescriptor)
-    {
-        XACMLAuthzDecisionQueryDescriptorElement descriptor = null;
-
+    public static XACMLAuthzDecisionQueryDescriptorType getPolicyEnforcementPointDescriptor(
+            EntityDescriptorElement eDescriptor) {
         if (eDescriptor != null) {
-            List list =
-            eDescriptor.getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
+            List<RoleDescriptorType> list = eDescriptor.getValue()
+                    .getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
 
-            for (Iterator i = list.iterator();
-                i.hasNext() && (descriptor == null);
-            ) {
-                Object obj = i.next();
-                if (obj instanceof XACMLAuthzDecisionQueryDescriptorElement) {
-                    descriptor = (XACMLAuthzDecisionQueryDescriptorElement)obj;
+            for (RoleDescriptorType obj : list) {
+                if (obj instanceof XACMLAuthzDecisionQueryDescriptorType) {
+                    return (XACMLAuthzDecisionQueryDescriptorType) obj;
                 }
             }
         }
 
-        return descriptor;
+        return null;
     }
 
     /**
@@ -351,20 +315,15 @@ public final class SAML2MetaUtils {
      * @return <code>SPSSODescriptorElement</code> for the entity or null if
      *         not found.
      */
-    public static SPSSODescriptorElement getSPSSODescriptor(
-        EntityDescriptorElement eDescriptor)
-    {
+    public static SPSSODescriptorType getSPSSODescriptor(EntityDescriptorElement eDescriptor) {
         if (eDescriptor == null) {
             return null;
         }
 
-        List list =
-            eDescriptor.getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
-            // TODO: may need to cache to avoid using instanceof
-            if (obj instanceof SPSSODescriptorElement) {
-                return (SPSSODescriptorElement)obj;
+        List<RoleDescriptorType> list = eDescriptor.getValue().getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
+        for (RoleDescriptorType obj : list) {
+            if (obj instanceof SPSSODescriptorType) {
+                return (SPSSODescriptorType) obj;
             }
         }
 
@@ -378,19 +337,15 @@ public final class SAML2MetaUtils {
      * @return <code>IDPSSODescriptorElement</code> for the entity or null if
      *         not found.
      */
-    public static IDPSSODescriptorElement getIDPSSODescriptor(
-        EntityDescriptorElement eDescriptor)
-    {
+    public static IDPSSODescriptorType getIDPSSODescriptor(EntityDescriptorElement eDescriptor) {
         if (eDescriptor == null) {
             return null;
         }
 
-        List list =
-            eDescriptor.getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
-            if (obj instanceof IDPSSODescriptorElement) {
-                return (IDPSSODescriptorElement)obj;
+        List<RoleDescriptorType> list = eDescriptor.getValue().getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
+        for (RoleDescriptorType obj : list) {
+            if (obj instanceof IDPSSODescriptorType) {
+                return (IDPSSODescriptorType) obj;
             }
         }
 
@@ -404,20 +359,17 @@ public final class SAML2MetaUtils {
      * @return an <code>AttributeAuthorityDescriptorElement</code> object for
      *     the entity or null if not found.
      */
-    public static AttributeAuthorityDescriptorElement
-        getAttributeAuthorityDescriptor(EntityDescriptorElement eDescriptor)
-    {
+    public static AttributeAuthorityDescriptorType getAttributeAuthorityDescriptor(
+            EntityDescriptorElement eDescriptor) {
         if (eDescriptor == null) {
             return null;
         }
 
-        List list =
-            eDescriptor.getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
+        List<RoleDescriptorType> list = eDescriptor.getValue().getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
 
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
-            if (obj instanceof AttributeAuthorityDescriptorElement) {
-                return (AttributeAuthorityDescriptorElement)obj;
+        for (RoleDescriptorType obj : list) {
+            if (obj instanceof AttributeAuthorityDescriptorType) {
+                return (AttributeAuthorityDescriptorType) obj;
             }
         }
 
@@ -431,20 +383,17 @@ public final class SAML2MetaUtils {
      * @return an <code>AttributeQueryDescriptorElement</code> object for
      *     the entity or null if not found.
      */
-    public static AttributeQueryDescriptorElement
-        getAttributeQueryDescriptor(EntityDescriptorElement eDescriptor)
-    {
+    public static AttributeQueryDescriptorType getAttributeQueryDescriptor(EntityDescriptorElement eDescriptor) {
         if (eDescriptor == null) {
             return null;
         }
 
-        List list =
-            eDescriptor.getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
+        List<RoleDescriptorType> list =
+            eDescriptor.getValue().getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
 
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
-            if (obj instanceof AttributeQueryDescriptorElement) {
-                return (AttributeQueryDescriptorElement)obj;
+        for (RoleDescriptorType obj : list) {
+            if (obj instanceof AttributeQueryDescriptorType) {
+                return (AttributeQueryDescriptorType) obj;
             }
         }
 
@@ -458,64 +407,21 @@ public final class SAML2MetaUtils {
      * @return an <code>AuthnAuthorityDescriptorElement</code> object for
      *     the entity or null if not found.
      */
-    public static AuthnAuthorityDescriptorElement
-        getAuthnAuthorityDescriptor(EntityDescriptorElement eDescriptor)
-    {
+    public static AuthnAuthorityDescriptorType getAuthnAuthorityDescriptor(EntityDescriptorElement eDescriptor) {
         if (eDescriptor == null) {
             return null;
         }
 
-        List list =
-            eDescriptor.getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
+        List<RoleDescriptorType> list =
+            eDescriptor.getValue().getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
 
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
-            if (obj instanceof AuthnAuthorityDescriptorElement) {
-                return (AuthnAuthorityDescriptorElement)obj;
+        for (RoleDescriptorType obj : list) {
+            if (obj instanceof AuthnAuthorityDescriptorType) {
+                return (AuthnAuthorityDescriptorType) obj;
             }
         }
 
         return null;
-    }
-
-    /**
-     * Get the first value of set by given key searching in the given map.
-     * return null if <code>attrMap</code> is null or <code>key</code>
-     * is null.
-     *
-     * @param attrMap Map of which set is to be added.
-     * @param key Key of the entry to be added.
-     * @return the first value of a matching set by the given key.
-     */
-    public static String getFirstEntry(Map attrMap, String key) {
-        String retValue = null;
-
-        if ((attrMap != null) && !attrMap.isEmpty()) {
-            Set valueSet = (Set)attrMap.get(key);
-
-            if ((valueSet != null) && !valueSet.isEmpty()) {
-                retValue = (String)valueSet.iterator().next();
-            }
-        }
-
-        return retValue;
-    }
-
-     /**
-     * Adds a set of a given value to a map. Set will not be added if
-     * <code>attrMap</code> is null or <code>value</code> is null or
-     * <code>key</code> is null.
-     *
-     * @param attrMap Map of which set is to be added.
-     * @param key Key of the entry to be added.
-     * @param value Value to be added to the Set.
-     */
-    public static void fillEntriesInSet(Map attrMap, String key, String value) {
-        if ((key != null) && (value != null) && (attrMap != null)) {
-            Set valueSet = new HashSet();
-            valueSet.add(value);
-            attrMap.put(key, valueSet);
-        }
     }
 
     /**
@@ -524,22 +430,17 @@ public final class SAML2MetaUtils {
      * be retrieved.
      * @return <code>SPSSOConfigElement</code> for the entity or null if not
      *         found.
-     * @throws SAML2MetaException if unable to retrieve the first service
-     *                            provider's SSO configuration.
      */
-    public static SPSSOConfigElement getSPSSOConfig(EntityConfigElement eConfig)
-        throws SAML2MetaException {
-
+    public static SPSSOConfigElement getSPSSOConfig(EntityConfigElement eConfig) {
         if (eConfig == null) {
             return null;
         }
 
-        List list =
-            eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
+        List<JAXBElement<BaseConfigType>> list =
+                eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+        for (JAXBElement<BaseConfigType> obj : list) {
             if (obj instanceof SPSSOConfigElement) {
-                return (SPSSOConfigElement)obj;
+                return (SPSSOConfigElement) obj;
             }
         }
 
@@ -552,57 +453,50 @@ public final class SAML2MetaUtils {
      * be retrieved.
      * @return <code>IDPSSOConfigElement</code> for the entity or null if not
      *         found.
-     * @throws SAML2MetaException if unable to retrieve the first identity
-     *                            provider's SSO configuration.
      */
     public static IDPSSOConfigElement getIDPSSOConfig(
-        EntityConfigElement eConfig) throws SAML2MetaException {
+        EntityConfigElement eConfig) {
         if (eConfig == null) {
             return null;
         }
 
-        List list =
-            eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
+        List<JAXBElement<BaseConfigType>> list =
+            eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+        for (JAXBElement<BaseConfigType> obj : list) {
             if (obj instanceof IDPSSOConfigElement) {
-                return (IDPSSOConfigElement)obj;
+                return (IDPSSOConfigElement) obj;
             }
         }
 
         return null;
     }
 
-    public static String exportStandardMeta(String realm, String entityID,
-	boolean sign)
-	throws SAML2MetaException {
+    public static String exportStandardMeta(String realm, String entityID, boolean sign) throws SAML2MetaException {
+        try {
+            SAML2MetaManager metaManager = new SAML2MetaManager();
+            EntityDescriptorElement descriptor = metaManager.getEntityDescriptor(realm, entityID);
 
-	try {
-	    SAML2MetaManager metaManager = new SAML2MetaManager();
-	    EntityDescriptorElement descriptor =
-		metaManager.getEntityDescriptor(realm, entityID);
+            String xmlstr = null;
+            if (descriptor == null) {
+                return null;
+            }
 
-	    String xmlstr = null;
-	    if (descriptor == null) {
-		return null;
-	    }
-
-	    if (sign) {
-		Document doc = SAML2MetaSecurityUtils.sign(realm, descriptor);
-		if (doc != null) {
+            if (sign) {
+                Document doc = SAML2MetaSecurityUtils.sign(realm, descriptor);
+                if (doc != null) {
                     xmlstr = XMLUtils.print(doc);
-		}
+                }
             }
             if (xmlstr == null) {
-		xmlstr = convertJAXBToString(descriptor);
-		xmlstr = SAML2MetaSecurityUtils.formatBase64BinaryElement(
-                    xmlstr);
+                xmlstr = convertJAXBToString(descriptor);
+                xmlstr = SAML2MetaSecurityUtils.formatBase64BinaryElement(
+                        xmlstr);
             }
             xmlstr = workaroundAbstractRoleDescriptor(xmlstr);
             return xmlstr;
-	} catch (JAXBException e) {
+        } catch (JAXBException e) {
             throw new SAML2MetaException(e.getMessage());
-	}
+        }
     }
 
     /**
@@ -689,11 +583,11 @@ public final class SAML2MetaUtils {
 
         List<String> result = new ArrayList<String>();
 
-        List descriptors = descriptor.getEntityDescriptorOrEntitiesDescriptor();
+        List<JAXBElement<?>> descriptors = descriptor.getValue().getEntityDescriptorOrEntitiesDescriptor();
         if (descriptors != null && !descriptors.isEmpty()) {
-            Iterator entities = descriptors.iterator();
+            Iterator<JAXBElement<?>> entities = descriptors.iterator();
             while (entities.hasNext()) {
-                Object o = entities.next();
+                JAXBElement<?> o = entities.next();
                 if (o instanceof EntityDescriptorElement) {
                     String entityId = importSAML2Entity(metaManager, realm,
                             (EntityDescriptorElement) o);
@@ -712,7 +606,7 @@ public final class SAML2MetaUtils {
 
         String result = null;
 
-        List roles = descriptor.getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
+        List roles = descriptor.getValue().getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
         Iterator it = roles.iterator();
         while (it.hasNext()) {
             RoleDescriptorType role = (RoleDescriptorType)it.next();
@@ -721,7 +615,7 @@ public final class SAML2MetaUtils {
                 if (debug.messageEnabled()) {
                     debug.message("SAML2MetaUtils.importSAML2Entity: "
                         + "Removing non-SAML2 role from entity "
-                        + descriptor.getEntityID());
+                        + descriptor.getValue().getEntityID());
                 }
                 it.remove();
             }
@@ -729,7 +623,7 @@ public final class SAML2MetaUtils {
 
         if (roles.size() > 0) {
             metaManager.createEntityDescriptor(realm, descriptor);
-            result = descriptor.getEntityID();
+            result = descriptor.getValue().getEntityID();
         }
 
         return result;
@@ -766,10 +660,21 @@ public final class SAML2MetaUtils {
 
                     String newTag = type.substring(0, type.length() - 4);
 
+                    String extraNS = "";
+                    if (newTag.contains(":")) {
+                        String prefix = newTag.substring(0, newTag.indexOf(":"));
+                        String nsvalue = child.getAttributeNS(SAML2Constants.NS_XML, prefix);
+                        if (!SAML2MetaSecurityUtils.NS_MD_QUERY.equals(nsvalue)) {
+                            extraNS = " " + SAML2Constants.NAMESPACE_PREFIX + ":" + prefix +
+                               SAML2Constants.EQUAL + SAML2Constants.QUOTE +
+                               SAML2MetaSecurityUtils.NS_MD_QUERY + SAML2Constants.QUOTE;
+                       }
+                    }
+
                     String xmlstr = XMLUtils.print(child);
                     int index = xmlstr.indexOf(
                         SAML2MetaConstants.ROLE_DESCRIPTOR);
-                    xmlstr = "<" + newTag + xmlstr.substring(index +
+                    xmlstr = "<" + newTag + extraNS + xmlstr.substring(index +
                         SAML2MetaConstants.ROLE_DESCRIPTOR.length());
                     if (!xmlstr.endsWith("/>")) {
                         index = xmlstr.lastIndexOf("</");

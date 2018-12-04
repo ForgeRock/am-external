@@ -28,7 +28,23 @@ import org.forgerock.openam.plugins.PluginTools;
 import org.forgerock.openam.plugins.StartupType;
 import org.forgerock.openam.plugins.VersionComparison;
 
-/** A convenient base class for {@link AmPlugin}s that provide authentication nodes.
+/**
+ * <p>A convenient base class for {@link AmPlugin}s that provide authentication nodes.</p>
+ *
+ * <p>Note on implementing the {@link #getPluginVersion()} method:</p>
+ *
+ * <p>Nodes extending this class and overriding the {@link #getPluginVersion()} may declare themselves as being of
+ * version "0.0.0" ({@link PluginTools#DEVELOPMENT_VERSION}) The framework will recognise this as meaning the plugin is
+ * still in development. This can be utilised to ensure that the SMS is installed fresh after updating a node .jar in
+ * the /WEB-INF/lib/ directory to carry over updates to the node's config. Simply shutdown AM, copy over the new .jar
+ * and startup AM.</p>
+ *
+ * <p>This process will break any instance of the node (and tree containing that node) which already exists as part of
+ * a tree. Therefore, nodes whose plugins extend this class using version "0.0.0" should be tested in development trees
+ * which should be destroyed and recreated after every restart.</p>
+ *
+ * <p>Once ready for release, and for subsequent upgrades, the {@link #getPluginVersion()} method should be overridden
+ * again to reflect the appropriate release version.</p>
  *
  * @supported.all.api
  **/
@@ -70,6 +86,11 @@ public abstract class AbstractNodeAmPlugin implements AmPlugin {
         for (String nodeVersion : nodes.keySet()) {
             if (isNewerVersion(nodeVersion, fromVersion)) {
                 for (Class<? extends Node> nodeClass : nodes.get(nodeVersion)) {
+                    pluginTools.installAuthNode(nodeClass);
+                }
+            } else if (nodeVersion.equals(PluginTools.DEVELOPMENT_VERSION)) {
+                for (Class<? extends Node> nodeClass : nodes.get(nodeVersion)) {
+                    pluginTools.uninstallAuthNode(nodeClass);
                     pluginTools.installAuthNode(nodeClass);
                 }
             } else {

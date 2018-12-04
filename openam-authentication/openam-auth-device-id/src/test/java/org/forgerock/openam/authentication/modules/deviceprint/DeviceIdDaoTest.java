@@ -25,8 +25,10 @@ import static org.mockito.Mockito.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.DeviceSerialisation;
 import org.forgerock.openam.core.rest.devices.deviceprint.DeviceIdDao;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
@@ -103,6 +105,27 @@ public class DeviceIdDaoTest {
         verify(mockAMIdentity, times(1)).store();
     }
 
+
+    @Test(expectedExceptions = DevicePersistenceException.class)
+    public void shouldThrowDevicePersistenceExceptionIfNoUserNamer() throws Exception {
+
+        //When
+        devicePrintDao.getDeviceProfiles(null, realm);
+
+        // Then - DevicePersistenceException exception;
+
+    }
+
+    @Test(expectedExceptions = DevicePersistenceException.class)
+    public void shouldThrowDevicePersistenceExceptionIfNoUserNamerOverloadedMethod() throws Exception {
+        // Test the overloaded method.
+        //When
+        devicePrintDao.getDeviceProfiles(null, realm, Collections.emptySet());
+
+        // Then - DevicePersistenceException exception;
+
+    }
+
     private class DeviceIdDaoMockedGetIdentity extends DeviceIdDao {
 
         /**
@@ -115,8 +138,13 @@ public class DeviceIdDaoTest {
         }
 
         @Override
-        protected AMIdentity getIdentity(String userName, String realm) {
+        protected AMIdentity getIdentity(String userName, String realm, Set<String> userSearchAttributes) {
             return mockAMIdentity;
+        }
+
+        @Override
+        protected Set<String> getUserAliasList(String realm) {
+            return Collections.emptySet();
         }
     }
 }

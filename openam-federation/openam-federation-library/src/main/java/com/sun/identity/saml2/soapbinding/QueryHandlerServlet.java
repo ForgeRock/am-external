@@ -28,45 +28,47 @@
  */
 package com.sun.identity.saml2.soapbinding;
 
-import static org.forgerock.openam.utils.Time.*;
-
-import com.sun.identity.saml2.common.SOAPCommunicator;
-import com.sun.identity.saml2.key.KeyUtil;
-import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml.common.SAMLUtils;
-import com.sun.identity.saml.xmlsig.KeyProvider;
-import com.sun.identity.saml2.assertion.Assertion;
-import com.sun.identity.saml2.assertion.AssertionFactory;
-import com.sun.identity.saml2.assertion.EncryptedAssertion;
-import com.sun.identity.saml2.assertion.Issuer;
-import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorElement;
-import com.sun.identity.saml2.key.EncInfo;
-import com.sun.identity.saml2.logging.LogUtil;
-import com.sun.identity.saml2.meta.SAML2MetaException;
-import com.sun.identity.saml2.meta.SAML2MetaUtils;
+import static org.forgerock.openam.utils.Time.newDate;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.ServletException;
-import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPMessage;
-import org.w3c.dom.Element;
-import com.sun.identity.saml2.protocol.RequestAbstract;
-import com.sun.identity.saml2.protocol.Response;
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.xacml.context.ContextFactory;
-import com.sun.identity.shared.xml.XMLUtils;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.soap.SOAPException;
+import javax.xml.soap.SOAPMessage;
+
+import org.w3c.dom.Element;
+
+import com.sun.identity.saml.common.SAMLUtils;
+import com.sun.identity.saml.xmlsig.KeyProvider;
+import com.sun.identity.saml2.assertion.Assertion;
+import com.sun.identity.saml2.assertion.AssertionFactory;
+import com.sun.identity.saml2.assertion.EncryptedAssertion;
+import com.sun.identity.saml2.assertion.Issuer;
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.common.SOAPCommunicator;
+import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorType;
+import com.sun.identity.saml2.key.EncInfo;
+import com.sun.identity.saml2.key.KeyUtil;
+import com.sun.identity.saml2.logging.LogUtil;
+import com.sun.identity.saml2.meta.SAML2MetaException;
+import com.sun.identity.saml2.meta.SAML2MetaUtils;
+import com.sun.identity.saml2.protocol.RequestAbstract;
+import com.sun.identity.saml2.protocol.Response;
+import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.xml.XMLUtils;
+import com.sun.identity.xacml.context.ContextFactory;
 
 /**
  * This class <code>QueryHandlerServlet</code> receives and processes
@@ -354,7 +356,7 @@ public class QueryHandlerServlet extends HttpServlet {
         }
         if (pdpWantAuthzQuerySigned) {                        
             if (samlRequest.isSigned()) {
-                XACMLAuthzDecisionQueryDescriptorElement pep =
+                XACMLAuthzDecisionQueryDescriptorType pep =
                         SAML2Utils.getSAML2MetaManager().
                         getPolicyEnforcementPointDescriptor(
                         realm,pepEntityID);
@@ -407,9 +409,9 @@ public class QueryHandlerServlet extends HttpServlet {
                     realm,SAML2Constants.PEP_ROLE,
                     pepEntityID,
                     SAML2Constants.WANT_ASSERTION_ENCRYPTED);
-            
-            
-            XACMLAuthzDecisionQueryDescriptorElement
+
+
+            XACMLAuthzDecisionQueryDescriptorType
                     pepDescriptor  = SAML2Utils.
                     getSAML2MetaManager().
                     getPolicyEnforcementPointDescriptor(realm,

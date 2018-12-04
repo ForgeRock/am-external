@@ -19,9 +19,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>openam</artifactId>
+        <artifactId>openam-parent</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>6.0.0.5</version>
+        <version>6.5.0</version>
     </parent>
 
     <properties>
@@ -64,9 +64,9 @@
     </dependencies>
 
     <repositories>
-        <repository>
-            <id>forgerock-private-releases</id>
-            <url>https://maven.forgerock.org/repo/private-releases</url>
-        </repository>
-    </repositories>
-</project>
+      <repository>
+         <id>forgerock-build-dependencies</id>
+            <url>https://maven.forgerock.org/repo/forgerock-openam-6.5.0-dependencies</url>
+         </repository>
+      </repositories>
+  </project>

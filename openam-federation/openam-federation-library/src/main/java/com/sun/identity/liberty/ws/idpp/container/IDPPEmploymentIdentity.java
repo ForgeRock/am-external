@@ -24,23 +24,26 @@
  *
  * $Id: IDPPEmploymentIdentity.java,v 1.2 2008/06/25 05:47:16 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.liberty.ws.idpp.container;
 
-import com.sun.identity.shared.datastruct.CollectionHelper;
-import javax.xml.bind.JAXBException;
-import java.util.Set;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.List;
-import org.w3c.dom.Document;
-import com.sun.identity.liberty.ws.idpp.common.*;
-import com.sun.identity.liberty.ws.idpp.jaxb.*;
-import com.sun.identity.liberty.ws.idpp.plugin.*;
-import com.sun.identity.liberty.ws.idpp.IDPPServiceManager;
+import java.util.Map;
+import java.util.Set;
+
+import com.sun.identity.liberty.ws.idpp.common.IDPPConstants;
+import com.sun.identity.liberty.ws.idpp.common.IDPPException;
+import com.sun.identity.liberty.ws.idpp.common.IDPPUtils;
+import com.sun.identity.liberty.ws.idpp.jaxb.DSTString;
+import com.sun.identity.liberty.ws.idpp.jaxb.EmploymentIdentityType;
+import com.sun.identity.liberty.ws.idpp.jaxb.PPType;
+import com.sun.identity.shared.datastruct.CollectionHelper;
 
 
 /**
@@ -59,46 +62,39 @@ public class IDPPEmploymentIdentity extends IDPPBaseContainer {
       * Gets the employment identity jaxb object 
       * @param userMap user map
       * @return EmploymentIdentityElement JAXB Object.
-      * @exception IDPPException.
+      * @exception IDPPException
       */
      public Object getContainerObject(Map userMap) throws IDPPException {
          IDPPUtils.debug.message("IDPPEmploymentIdentity:getContainerObj:Init");
-         try {
-             PPType ppType = IDPPUtils.getIDPPFactory().createPPElement();
-             EmploymentIdentityElement ei = 
-                 IDPPUtils.getIDPPFactory().createEmploymentIdentityElement();
-             String jobTitle = CollectionHelper.getMapAttr(
-                userMap, getAttributeMapper().getDSAttribute(
-                    IDPPConstants.JOB_TITLE_ELEMENT).toLowerCase());
-             if(jobTitle != null) {
-                DSTString dstString = getDSTString(jobTitle);
-                ei.setJobTitle(dstString);
-             }
- 
-             String org = CollectionHelper.getMapAttr(userMap, 
-                getAttributeMapper().getDSAttribute(
-                    IDPPConstants.O_ELEMENT).toLowerCase());
-             if(org != null) {
-                DSTString dstString = getDSTString(org);
-                ei.setO(dstString);
-             }
-
-             Set altOs = (Set)userMap.get(
-             getAttributeMapper().getDSAttribute(
-             IDPPConstants.ALT_O_ELEMENT).toLowerCase());
-             Iterator iter = altOs.iterator();
-             while(iter.hasNext()) {
-                DSTString dstString = getDSTString((String)iter.next());
-                ei.getAltO().add(dstString);
-             }
-             ppType.setEmploymentIdentity(ei);
-             return ppType;
-         } catch (JAXBException je) {
-             IDPPUtils.debug.error(
-              "IDPPContainers:getContainerObject: JAXB failure", je); 
-              throw new IDPPException(
-              IDPPUtils.bundle.getString("jaxbFailure"));
+         PPType ppType = IDPPUtils.getIDPPFactory().createPPType();
+         EmploymentIdentityType ei =
+             IDPPUtils.getIDPPFactory().createEmploymentIdentityType();
+         String jobTitle = CollectionHelper.getMapAttr(
+            userMap, getAttributeMapper().getDSAttribute(
+                IDPPConstants.JOB_TITLE_ELEMENT).toLowerCase());
+         if(jobTitle != null) {
+            DSTString dstString = getDSTString(jobTitle);
+            ei.setJobTitle(dstString);
          }
+
+         String org = CollectionHelper.getMapAttr(userMap,
+            getAttributeMapper().getDSAttribute(
+                IDPPConstants.O_ELEMENT).toLowerCase());
+         if(org != null) {
+            DSTString dstString = getDSTString(org);
+            ei.setO(dstString);
+         }
+
+         Set altOs = (Set)userMap.get(
+         getAttributeMapper().getDSAttribute(
+         IDPPConstants.ALT_O_ELEMENT).toLowerCase());
+         Iterator iter = altOs.iterator();
+         while(iter.hasNext()) {
+            DSTString dstString = getDSTString((String)iter.next());
+            ei.getAltO().add(dstString);
+         }
+         ppType.setEmploymentIdentity(ei);
+         return ppType;
      }
 
      /**
@@ -141,7 +137,7 @@ public class IDPPEmploymentIdentity extends IDPPBaseContainer {
       * @param select Select expression.
       * @param data list of new data objects.
       * @return Attribute key value pair for the given select.
-      * @exception IDPPException.
+      * @exception IDPPException
       */
      public Map getDataMapForSelect(String select, List data) 
      throws IDPPException {
@@ -160,7 +156,7 @@ public class IDPPEmploymentIdentity extends IDPPBaseContainer {
         switch(attrType) {
                case IDPPConstants.JOB_TITLE_ELEMENT_INT:
                    if((dataElement == null) || 
-                      (dataElement instanceof JobTitleElement)) {
+                      (dataElement instanceof DSTString)) {
                       map = getAttributeMap(expContext, dataElement, map);
                       break;
                    } else {
@@ -169,7 +165,7 @@ public class IDPPEmploymentIdentity extends IDPPBaseContainer {
                    }
                case IDPPConstants.O_ELEMENT_INT:
                    if((dataElement == null) || 
-                      (dataElement instanceof OElement)) {
+                      (dataElement instanceof DSTString)) {
                       map = getAttributeMap(expContext, dataElement, map);
                    } else {
                       throw new IDPPException(

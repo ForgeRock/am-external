@@ -24,25 +24,28 @@
  *
  * $Id: IDPPExtensionContainer.java,v 1.2 2008/06/25 05:47:16 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.liberty.ws.idpp.container;
 
-import com.sun.identity.shared.datastruct.CollectionHelper;
-import javax.xml.bind.JAXBException;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
-import org.w3c.dom.Document;
-import com.sun.identity.liberty.ws.idpp.common.*;
-import com.sun.identity.liberty.ws.idpp.jaxb.*;
-import com.sun.identity.liberty.ws.idpp.plugin.*;
+
+import com.sun.identity.liberty.ws.idpp.common.IDPPConstants;
+import com.sun.identity.liberty.ws.idpp.common.IDPPException;
+import com.sun.identity.liberty.ws.idpp.common.IDPPUtils;
+import com.sun.identity.liberty.ws.idpp.jaxb.ExtensionType;
+import com.sun.identity.liberty.ws.idpp.jaxb.PPType;
+import com.sun.identity.liberty.ws.idpp.plugin.IDPPExtension;
 import com.sun.identity.liberty.ws.idpp.plugin.jaxb.PPISExtensionElement;
-import com.sun.identity.liberty.ws.idpp.IDPPServiceManager;
+import com.sun.identity.shared.datastruct.CollectionHelper;
 
 
 /**
@@ -64,46 +67,39 @@ public class IDPPExtensionContainer extends IDPPBaseContainer {
       * Gets the container extension jaxb object.
       * @param userMap user map
       * @return ExtensionElement JAXB Object.
-      * @exception IDPPException.
+      * @exception IDPPException
       */
      public Object getContainerObject(Map userMap) throws IDPPException {
         IDPPUtils.debug.message("IDPPContainers:getContainerObject:Init");
-        try {
-            PPType ppType = IDPPUtils.getIDPPFactory().createPPElement();
-            ExtensionElement ee = 
-                     IDPPUtils.getIDPPFactory().createExtensionElement();
+        PPType ppType = IDPPUtils.getIDPPFactory().createPPType();
+        ExtensionType ee =
+                 IDPPUtils.getIDPPFactory().createExtensionType();
 
-            IDPPExtension extension = getExtensionContainerClass(); 
-            if(extension != null) {
-               ee.getAny().addAll(extension.getExtAttributes());
-               ppType.setExtension(ee);
-               return ppType;
-            }
-
-            Set extensionAttributes = getExtensionContainerAttributes();
-            if(extensionAttributes == null || extensionAttributes.isEmpty()) {
-               ppType.setExtension(ee);
-               return ppType;
-            }
-        
-            Iterator iter = extensionAttributes.iterator();
-            while(iter.hasNext()) {
-               String extName = (String)iter.next();
-               String extValue = CollectionHelper.getMapAttr(userMap,
-                    getAttributeMapper().getDSAttribute(extName).toLowerCase());
-               if(extValue != null) {
-                  ee.getAny().add(getISExtension(extName, extValue));
-               }
-            }
-
-            ppType.setExtension(ee);
-            return ppType;
-        } catch (JAXBException je) {
-            IDPPUtils.debug.error(
-            "IDPPExtensionContainer:getContainerObject: JAXB failure", je); 
-            throw new IDPPException(
-            IDPPUtils.bundle.getString("jaxbFailure"));
+        IDPPExtension extension = getExtensionContainerClass();
+        if(extension != null) {
+           ee.getAny().addAll(extension.getExtAttributes());
+           ppType.setExtension(ee);
+           return ppType;
         }
+
+        Set extensionAttributes = getExtensionContainerAttributes();
+        if(extensionAttributes == null || extensionAttributes.isEmpty()) {
+           ppType.setExtension(ee);
+           return ppType;
+        }
+
+        Iterator iter = extensionAttributes.iterator();
+        while(iter.hasNext()) {
+           String extName = (String)iter.next();
+           String extValue = CollectionHelper.getMapAttr(userMap,
+                getAttributeMapper().getDSAttribute(extName).toLowerCase());
+           if(extValue != null) {
+              ee.getAny().add(getISExtension(extName, extValue));
+           }
+        }
+
+        ppType.setExtension(ee);
+        return ppType;
      }
 
      /**
@@ -175,7 +171,7 @@ public class IDPPExtensionContainer extends IDPPBaseContainer {
       * @param select Select expression.
       * @param data list of new data objects.
       * @return Attribute key value pair for the given select.
-      * @exception IDPPException.
+      * @exception IDPPException
       */
      public Map getDataMapForSelect(String select, List data) 
      throws IDPPException {
@@ -231,23 +227,17 @@ public class IDPPExtensionContainer extends IDPPBaseContainer {
       * Gets the PP ISExtension element.
       * @param attrName Extension attribute name.
       * @param attrValue Extension attribute value.
-      * @exception IDPPException.
+      * @exception IDPPException
       */ 
      private PPISExtensionElement getISExtension(
          String attrName, String attrValue) throws IDPPException {
          IDPPUtils.debug.message("IDPPExtensionContainer.getISExtension:Init");
-         try {
-             com.sun.identity.liberty.ws.idpp.plugin.jaxb.ObjectFactory fac =
-             new com.sun.identity.liberty.ws.idpp.plugin.jaxb.ObjectFactory();
-             PPISExtensionElement ext = fac.createPPISExtensionElement();
-             ext.setName(attrName);
-             ext.setValue(attrValue);
-             return ext;
-         } catch (JAXBException je) {
-             IDPPUtils.debug.error("IDPPExtensionContainer.getISExtension:" +
-             "Fails in creating PP Extension element.", je);
-             throw new IDPPException(IDPPUtils.bundle.getString("jaxbFailure"));
-         }
+         com.sun.identity.liberty.ws.idpp.plugin.jaxb.ObjectFactory fac =
+         new com.sun.identity.liberty.ws.idpp.plugin.jaxb.ObjectFactory();
+         PPISExtensionElement ext = fac.createPPISExtensionElement();
+         ext.setName(attrName);
+         ext.setValue(attrValue);
+         return ext;
      }
  
      /**

@@ -13,12 +13,11 @@
 #
 # Copyright 2018 ForgeRock AS.
 #
-
-src/main/js/config/errorhandlers/CommonErrorHandlers.js
-src/main/js/config/messages/CommonMessages.js
-src/main/js/config/messages/UserMessages.js
-src/main/js/config/routes/CommonRoutesConfig.js
-src/main/js/config/routes/UserRoutesConfig.js
-src/main/js/config/validators/CommonValidators.js
-src/main/js/libs
-src/main/js/org/forgerock/commons
+src/js/config/errorhandlers/CommonErrorHandlers.js
+src/js/config/messages/CommonMessages.js
+src/js/config/messages/UserMessages.js
+src/js/config/routes/CommonRoutesConfig.js
+src/js/config/routes/UserRoutesConfig.js
+src/js/config/validators/CommonValidators.js
+src/js/libs
+src/js/org/forgerock/commons/ui/common

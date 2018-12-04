@@ -26,17 +26,10 @@
  *
  */
 /**
- * Portions Copyrighted 2012-2014 ForgeRock AS
+ * Portions Copyrighted 2012-2018 ForgeRock AS.
  */
 package com.sun.identity.liberty.ws.interaction;
 
-import com.sun.identity.common.HttpURLConnectionManager;
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.liberty.ws.common.LogUtil;
-import com.sun.identity.liberty.ws.interaction.jaxb.InquiryElement;
-import com.sun.identity.liberty.ws.interaction.jaxb.InteractionResponseElement;
-import com.sun.identity.liberty.ws.interaction.jaxb.ParameterType;
-import com.sun.identity.shared.xml.XMLUtils;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -44,10 +37,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.net.URL;
-import java.net.URLConnection;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -56,24 +48,34 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.logging.Level;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.TransformerException;
-import org.xml.sax.SAXException;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
+
+import com.sun.identity.common.HttpURLConnectionManager;
+import com.sun.identity.liberty.ws.common.LogUtil;
+import com.sun.identity.liberty.ws.interaction.jaxb.InquiryType;
+import com.sun.identity.liberty.ws.interaction.jaxb.InteractionResponseType;
+import com.sun.identity.liberty.ws.interaction.jaxb.ParameterType;
+import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * Class that works in conjection with InteractionManager to facilitate
@@ -362,7 +364,7 @@ public class WSPRedirectHandlerServlet extends HttpServlet {
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) 
             throws IOException {
-        InquiryElement inquiryElement 
+        InquiryType inquiryElement
                 = InteractionManager.getInstance().
                 getInquiryElement(messageID);
 
@@ -512,9 +514,9 @@ public class WSPRedirectHandlerServlet extends HttpServlet {
         try {
 
             //read and save query parameters;
-            InteractionResponseElement interactionResponseElement 
+            InteractionResponseType interactionResponseElement
                     = JAXBObjectFactory.getObjectFactory()
-                    .createInteractionResponseElement();
+                    .createInteractionResponseType();
             List list = interactionResponseElement.getParameter();
             Enumeration parameterNames = httpRequest.getParameterNames();
             while ( parameterNames.hasMoreElements()) {
@@ -581,13 +583,6 @@ public class WSPRedirectHandlerServlet extends HttpServlet {
                 LogUtil.access(Level.INFO,LogUtil.IS_REDIRECTED_USER_AGENT_BACK,
                                objs);
             }
-        } catch (JAXBException je) {
-            debug.error(
-                    "WSPRedirectHandlerServlet.sendInteractionResponsePage():"
-                    + "catching JAXBException =", je);
-            showErrorPage(httpRequest, httpResponse, 
-                    "Error createing JAXBObject:"
-                    + je.getMessage());
         } catch (Exception e) {
             debug.error(
                     "WSPRedirectHandlerServlet.sendInteractionResponsePage():"

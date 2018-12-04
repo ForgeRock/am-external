@@ -24,18 +24,18 @@
  *
  * $Id: NamespacePrefixMapperImpl.java,v 1.2 2008/06/25 05:47:22 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.liberty.ws.soapbinding;
 
-import com.sun.xml.bind.marshaller.NamespacePrefixMapper;
-
 /**
  * This class is the implementation of the <code>NamespacePrefixMapper</code>.
  */
 
-public class NamespacePrefixMapperImpl extends NamespacePrefixMapper {
+public class NamespacePrefixMapperImpl extends com.sun.xml.bind.marshaller.NamespacePrefixMapper {
     
     /**
      * Returns a preferred prefix for the given namespace URI.
@@ -73,8 +73,8 @@ public class NamespacePrefixMapperImpl extends NamespacePrefixMapper {
      *      value will be ignored and the system will generate one.
      *
      */
-    public String getPreferredPrefix(String namespaceUri,String suggestion,
-            boolean requirePrefix) {
+    @Override
+    public String getPreferredPrefix(String namespaceUri,String suggestion, boolean requirePrefix) {
         String prefix = (String)Utils.nsPrefix.get(namespaceUri);
         if (prefix != null) {
             return prefix;

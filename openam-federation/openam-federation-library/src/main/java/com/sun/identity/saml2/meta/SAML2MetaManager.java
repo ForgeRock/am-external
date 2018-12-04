@@ -24,7 +24,7 @@
  *
  * $Id: SAML2MetaManager.java,v 1.18 2009/10/28 23:58:58 exu Exp $
  *
- * Portions Copyrighted 2010-2016 ForgeRock AS.
+ * Portions Copyrighted 2010-2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.meta;
@@ -37,17 +37,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
+
+import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 
-import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.cot.COTConstants;
 import com.sun.identity.cot.COTException;
-import com.sun.identity.plugin.configuration.ConfigurationManager;
-import com.sun.identity.plugin.configuration.ConfigurationInstance;
+import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.plugin.configuration.ConfigurationException;
+import com.sun.identity.plugin.configuration.ConfigurationInstance;
+import com.sun.identity.plugin.configuration.ConfigurationManager;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.jaxb.entityconfig.AffiliationConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.AttributeAuthorityConfigElement;
@@ -55,19 +57,21 @@ import com.sun.identity.saml2.jaxb.entityconfig.AttributeQueryConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.AuthnAuthorityConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
+import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigType;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
-import com.sun.identity.saml2.jaxb.entityconfig.XACMLPDPConfigElement;
-import com.sun.identity.saml2.jaxb.entityconfig.XACMLAuthzDecisionQueryConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
+import com.sun.identity.saml2.jaxb.entityconfig.XACMLAuthzDecisionQueryConfigElement;
+import com.sun.identity.saml2.jaxb.entityconfig.XACMLPDPConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.AffiliationDescriptorType;
-import com.sun.identity.saml2.jaxb.metadata.AttributeAuthorityDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.AuthnAuthorityDescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.AttributeAuthorityDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.AuthnAuthorityDescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.XACMLPDPDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadataextquery.AttributeQueryDescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.XACMLPDPDescriptorType;
+import com.sun.identity.saml2.jaxb.metadataextquery.AttributeQueryDescriptorType;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.shared.debug.Debug;
 
@@ -240,7 +244,7 @@ public class SAML2MetaManager {
      * @throws SAML2MetaException if unable to retrieve the first service 
      *         provider's SSO descriptor.
      */
-    public SPSSODescriptorElement getSPSSODescriptor(
+    public SPSSODescriptorType getSPSSODescriptor(
         String realm,
         String entityId) 
         throws SAML2MetaException {
@@ -260,7 +264,7 @@ public class SAML2MetaManager {
      * @throws SAML2MetaException if unable to retrieve attribute authority
      *     descriptor.
      */
-    public AttributeAuthorityDescriptorElement
+    public AttributeAuthorityDescriptorType
         getAttributeAuthorityDescriptor(String realm, String entityId)
         throws SAML2MetaException {
         EntityDescriptorElement eDescriptor = getEntityDescriptor(
@@ -278,7 +282,7 @@ public class SAML2MetaManager {
      * @throws SAML2MetaException if unable to retrieve attribute query
      *     descriptor.
      */
-    public AttributeQueryDescriptorElement
+    public AttributeQueryDescriptorType
         getAttributeQueryDescriptor(String realm, String entityId)
         throws SAML2MetaException {
         EntityDescriptorElement eDescriptor = getEntityDescriptor(
@@ -296,7 +300,7 @@ public class SAML2MetaManager {
      * @throws SAML2MetaException if unable to retrieve authentication
      *     authority descriptor.
      */
-    public AuthnAuthorityDescriptorElement getAuthnAuthorityDescriptor(
+    public AuthnAuthorityDescriptorType getAuthnAuthorityDescriptor(
         String realm, String entityId) throws SAML2MetaException {
 
         EntityDescriptorElement eDescriptor = getEntityDescriptor(
@@ -312,7 +316,7 @@ public class SAML2MetaManager {
      * @return policy decision point descriptor.
      * @throws SAML2MetaException if unable to retrieve the descriptor.
      */
-    public XACMLPDPDescriptorElement getPolicyDecisionPointDescriptor(
+    public XACMLPDPDescriptorType getPolicyDecisionPointDescriptor(
         String realm, String entityId
     ) throws SAML2MetaException {
         EntityDescriptorElement eDescriptor = getEntityDescriptor(
@@ -328,7 +332,7 @@ public class SAML2MetaManager {
      * @return policy enforcement point descriptor.
      * @throws SAML2MetaException if unable to retrieve the descriptor.
      */
-    public XACMLAuthzDecisionQueryDescriptorElement 
+    public XACMLAuthzDecisionQueryDescriptorType
         getPolicyEnforcementPointDescriptor(
         String realm, String entityId
     ) throws SAML2MetaException {
@@ -347,7 +351,7 @@ public class SAML2MetaManager {
      * @throws SAML2MetaException if unable to retrieve the first identity 
      *                            provider's SSO descriptor.
      */
-    public IDPSSODescriptorElement getIDPSSODescriptor(String realm,
+    public IDPSSODescriptorType getIDPSSODescriptor(String realm,
                                                        String entityId) 
         throws SAML2MetaException {
 
@@ -374,7 +378,7 @@ public class SAML2MetaManager {
             entityId);
 
         return (eDescriptor == null ? null :
-            eDescriptor.getAffiliationDescriptor());
+            eDescriptor.getValue().getAffiliationDescriptor());
     }
 
     /**
@@ -385,10 +389,10 @@ public class SAML2MetaManager {
      */
     public void setEntityDescriptor(
         String realm,
-        EntityDescriptorElement descriptor) 
+        EntityDescriptorElement descriptor)
         throws SAML2MetaException {
 
-        String entityId = descriptor.getEntityID();
+        String entityId = descriptor.getValue().getEntityID();
         if (entityId == null) {
             debug.error(
                 "SAML2MetaManager.setEntityDescriptor: entity ID is null");
@@ -465,9 +469,9 @@ public class SAML2MetaManager {
         }
         String entityId = null;
         if (descriptor != null) {
-           entityId = descriptor.getEntityID();
+           entityId = descriptor.getValue().getEntityID();
         } else {
-           entityId = config.getEntityID();
+           entityId = config.getValue().getEntityID();
         }
 
         if (realm == null) {
@@ -526,26 +530,24 @@ public class SAML2MetaManager {
             }
             if (oldDescriptor != null) {
                 if (descriptor != null) {
-                    List currentRoles = oldDescriptor.
+                    List<RoleDescriptorType> currentRoles = oldDescriptor.getValue().
                         getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
-                    Set currentRolesTypes = getEntityRolesTypes(currentRoles);
-                    List newRoles = descriptor.
+                    Set<String> currentRolesTypes = getEntityRolesTypes(currentRoles);
+                    List<RoleDescriptorType> newRoles = descriptor.getValue().
                         getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
-                    for (Iterator i = newRoles.iterator(); i.hasNext(); ) {
-                        Object role = i.next();
+                    for (RoleDescriptorType role : newRoles) {
                         if (currentRolesTypes.contains(
-                            role.getClass().getName())) 
-                        {
+                                role.getClass().getName())) {
                             debug.error("SAML2MetaManager.createEntity: current"
-                                + " descriptor contains role " 
-                                + role.getClass().getName() 
-                                + " already");
-                            String[] data = {entityId, realm };
-                            LogUtil.error(Level.INFO, 
-                                LogUtil.SET_ENTITY_DESCRIPTOR, data, null);
+                                    + " descriptor contains role "
+                                    + role.getClass().getName()
+                                    + " already");
+                            String[] data = {entityId, realm};
+                            LogUtil.error(Level.INFO,
+                                    LogUtil.SET_ENTITY_DESCRIPTOR, data, null);
                             String[] param = {entityId};
-                            throw new SAML2MetaException("role_already_exists", 
-                                param);
+                            throw new SAML2MetaException("role_already_exists",
+                                    param);
                         }
                         currentRoles.add(role);
                     }
@@ -572,26 +574,24 @@ public class SAML2MetaManager {
                         objs);
                 }
                 if (oldConfig != null) {
-                    List currentRoles = oldConfig.
+                    List<JAXBElement<BaseConfigType>> currentRoles = oldConfig.getValue().
                         getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-                    Set currentRolesTypes = getEntityRolesTypes(currentRoles);
-                    List newRoles = config.
+                    Set<String> currentRolesTypes = getEntityRolesTypes(currentRoles);
+                    List<JAXBElement<BaseConfigType>> newRoles = config.getValue().
                         getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-                    for (Iterator i = newRoles.iterator(); i.hasNext(); ) {
-                        Object role = i.next();
+                    for (JAXBElement<BaseConfigType> role : newRoles) {
                         if (currentRolesTypes.contains(
-                            role.getClass().getName())) 
-                        {
+                                role.getClass().getName())) {
                             debug.error("SAML2MetaManager.createEntity: current"
-                                + " entity config contains role " 
-                                + role.getClass().getName() 
-                                + " already");
-                            String[] data = {entityId, realm };
-                            LogUtil.error(Level.INFO, 
-                                LogUtil.SET_ENTITY_CONFIG, data, null);
+                                    + " entity config contains role "
+                                    + role.getClass().getName()
+                                    + " already");
+                            String[] data = {entityId, realm};
+                            LogUtil.error(Level.INFO,
+                                    LogUtil.SET_ENTITY_CONFIG, data, null);
                             String[] param = {entityId};
-                            throw new SAML2MetaException("role_already_exists", 
-                                param);
+                            throw new SAML2MetaException("role_already_exists",
+                                    param);
                         }
                         currentRoles.add(role);
                     }
@@ -628,7 +628,7 @@ public class SAML2MetaManager {
                 // Add the entity to cot
                 if (config != null) {
                     SAML2MetaCache.putEntityConfig(realm, entityId, config);
-                    addToCircleOfTrust(realm, entityId, config);
+                    addToCircleOfTrust(realm, entityId, config.getValue());
                 }
             } else {
                 configInst.setConfiguration(realm, entityId, oldAttrs);
@@ -645,7 +645,7 @@ public class SAML2MetaManager {
                     SAML2MetaCache.putEntityConfig(realm, entityId, oldConfig);
                 } else if (config != null) {
                     SAML2MetaCache.putEntityConfig(realm, entityId, config);
-                    addToCircleOfTrust(realm, entityId, config);
+                    addToCircleOfTrust(realm, entityId, config.getValue());
                 }
             }
         } catch (ConfigurationException e) {
@@ -662,10 +662,9 @@ public class SAML2MetaManager {
         }
     } 
 
-    private static Set getEntityRolesTypes(Collection roles) {
-        Set types = new HashSet();
-        for (Iterator i = roles.iterator(); i.hasNext(); ) {
-            Object o = i.next();
+    private static Set<String> getEntityRolesTypes(Collection<?> roles) {
+        Set<String> types = new HashSet<>();
+        for (Object o : roles) {
             types.add(o.getClass().getName());
         }
         return types;
@@ -818,12 +817,11 @@ public class SAML2MetaManager {
             return null;
         }
 
-        List list =
-            eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
+        List<JAXBElement<BaseConfigType>> list =
+            eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+        for (JAXBElement<BaseConfigType> obj : list) {
             if (obj instanceof SPSSOConfigElement) {
-                return (SPSSOConfigElement)obj;
+                return (SPSSOConfigElement) obj;
             }
         }
 
@@ -845,10 +843,10 @@ public class SAML2MetaManager {
         EntityConfigElement eConfig = getEntityConfig(realm, entityId);
         
         if (eConfig != null) {
-            List list = 
-                eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-            for (Iterator i = list.iterator(); i.hasNext() && (elm == null);) {
-                Object obj = i.next();
+            List<JAXBElement<BaseConfigType>> list =
+                eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+            for (Iterator<JAXBElement<BaseConfigType>> i = list.iterator(); i.hasNext() && (elm == null);) {
+                JAXBElement<BaseConfigType> obj = i.next();
                 if (obj instanceof XACMLPDPConfigElement) {
                     elm = (XACMLPDPConfigElement)obj;
                 }
@@ -872,10 +870,10 @@ public class SAML2MetaManager {
         EntityConfigElement eConfig = getEntityConfig(realm, entityId);
         
         if (eConfig != null) {
-            List list = 
-                eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-            for (Iterator i = list.iterator(); i.hasNext() && (elm == null);) {
-                Object obj = i.next();
+            List<JAXBElement<BaseConfigType>> list =
+                eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+            for (Iterator<JAXBElement<BaseConfigType>> i = list.iterator(); i.hasNext() && (elm == null);) {
+                JAXBElement<BaseConfigType> obj = i.next();
                 if (obj instanceof XACMLAuthzDecisionQueryConfigElement) {
                     elm = (XACMLAuthzDecisionQueryConfigElement)obj;
                 }
@@ -901,12 +899,11 @@ public class SAML2MetaManager {
             return null;
         }
 
-        List list =
-            eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
+        List<JAXBElement<BaseConfigType>> list =
+            eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+        for (JAXBElement<BaseConfigType> obj : list) {
             if (obj instanceof IDPSSOConfigElement) {
-                return (IDPSSOConfigElement)obj;
+                return (IDPSSOConfigElement) obj;
             }
         }
 
@@ -931,12 +928,11 @@ public class SAML2MetaManager {
             return null;
         }
 
-        List list =
-            eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
+        List<JAXBElement<BaseConfigType>> list =
+            eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+        for (JAXBElement<BaseConfigType> obj : list) {
             if (obj instanceof AttributeAuthorityConfigElement) {
-                return (AttributeAuthorityConfigElement)obj;
+                return (AttributeAuthorityConfigElement) obj;
             }
         }
 
@@ -961,12 +957,11 @@ public class SAML2MetaManager {
             return null;
         }
 
-        List list =
-            eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
+        List<JAXBElement<BaseConfigType>> list =
+            eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+        for (JAXBElement<BaseConfigType> obj : list) {
             if (obj instanceof AttributeQueryConfigElement) {
-                return (AttributeQueryConfigElement)obj;
+                return (AttributeQueryConfigElement) obj;
             }
         }
 
@@ -991,12 +986,11 @@ public class SAML2MetaManager {
             return null;
         }
 
-        List list =
-            eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            Object obj = iter.next();
+        List<JAXBElement<BaseConfigType>> list =
+            eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+        for (JAXBElement<BaseConfigType> obj : list) {
             if (obj instanceof AuthnAuthorityConfigElement) {
-                return (AuthnAuthorityConfigElement)obj;
+                return (AuthnAuthorityConfigElement) obj;
             }
         }
 
@@ -1020,7 +1014,7 @@ public class SAML2MetaManager {
             return null;
         }
 
-        return (AffiliationConfigElement)eConfig.getAffiliationConfig();
+        return eConfig.getValue().getAffiliationConfig();
     }
 
     /**
@@ -1032,7 +1026,7 @@ public class SAML2MetaManager {
     public void setEntityConfig(String realm, EntityConfigElement config)
         throws SAML2MetaException {
 
-        String entityId = config.getEntityID();
+        String entityId = config.getValue().getEntityID();
         if (entityId == null) {
             debug.error("SAML2MetaManager.setEntityConfig: " +
                         "entity ID is null");
@@ -1097,19 +1091,19 @@ public class SAML2MetaManager {
     }
     
     private void addToCircleOfTrust(
-        String realm, String entityId, EntityConfigElement eConfig) 
+        String realm, String entityId, EntityConfigType eConfig)
     {
         try {
             if (eConfig != null) {
-                List elist = eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+                List<JAXBElement<BaseConfigType>> elist = eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
                 // Use first one to add the entity to COT, if this is present in the config
                 // Typically found in the proprietary extended metadata, not standard SAML2 entity metadata
-                BaseConfigType config = (BaseConfigType) elist.iterator().next();
-                Map attr = SAML2MetaUtils.getAttributes(config);
-                List cotList = (List) attr.get(SAML2Constants.COT_LIST);
+                JAXBElement<BaseConfigType> config = elist.iterator().next();
+                Map<String, List<String>> attr = SAML2MetaUtils.getAttributes(config);
+                List<String> cotList = attr.get(SAML2Constants.COT_LIST);
                 if (CollectionUtils.isNotEmpty(cotList)) {
-                    for (Iterator iter = cotList.iterator(); iter.hasNext();) {
-                        String cotName = ((String) iter.next()).trim();
+                    for (String aCotList : cotList) {
+                        String cotName = aCotList.trim();
                         if (StringUtils.isNotEmpty(cotName)) {
                             cotm.addCircleOfTrustMember(realm, cotName, COTConstants.SAML2, entityId, false);
                         }
@@ -1181,12 +1175,12 @@ public class SAML2MetaManager {
             }
 
             if (eConfig != null) {
-                BaseConfigType config;
+                JAXBElement<BaseConfigType> config;
                 if (isAffiliation) {
                     config = getAffiliationConfig(realm, entityId);
                 } else {
                     // use first one to delete the entity from COT
-                    config = (BaseConfigType) eConfig.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig().get(0);
+                    config = eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig().get(0);
                 }
                 List<String> cots = SAML2MetaUtils.getAttributes(config).get(SAML2Constants.COT_LIST);
                 for (String cot : cots) {
@@ -1211,10 +1205,10 @@ public class SAML2MetaManager {
      * @return a <code>List</code> of entity ID <code>String</code>.
      * @throws SAML2MetaException if unable to retrieve the entity ids.
      */
-    public List getAllHostedEntities(String realm)
+    public List<String> getAllHostedEntities(String realm)
         throws SAML2MetaException {
 
-        List hostedEntityIds = new ArrayList();
+        List<String> hostedEntityIds = new ArrayList<>();
         try {
             Set entityIds = configInst.getAllConfigurationNames(realm);
             if (entityIds != null && !entityIds.isEmpty()) {
@@ -1222,7 +1216,7 @@ public class SAML2MetaManager {
                     String entityId = (String)iter.next();
                     EntityConfigElement config =
                                     getEntityConfig(realm, entityId);
-                    if (config != null && config.isHosted()) {
+                    if (config != null && config.getValue().isHosted()) {
                         hostedEntityIds.add(entityId);
                     }
                 }
@@ -1251,14 +1245,14 @@ public class SAML2MetaManager {
      * @return a <code>List</code> of entity ID <code>String</code>.
      * @throws SAML2MetaException if unable to retrieve the entity ids.
      */
-    public List getAllHostedServiceProviderEntities(String realm)
+    public List<String> getAllHostedServiceProviderEntities(String realm)
         throws SAML2MetaException {
 
-        List hostedSPEntityIds = new ArrayList();
-        List hostedEntityIds = getAllHostedEntities(realm);
+        List<String> hostedSPEntityIds = new ArrayList<>();
+        List<String> hostedEntityIds = getAllHostedEntities(realm);
 
-        for(Iterator iter = hostedEntityIds.iterator(); iter.hasNext();) {
-            String entityId = (String)iter.next();
+        for (Object hostedEntityId : hostedEntityIds) {
+            String entityId = (String) hostedEntityId;
             if (getSPSSODescriptor(realm, entityId) != null) {
                 hostedSPEntityIds.add(entityId);
             }
@@ -1360,14 +1354,13 @@ public class SAML2MetaManager {
      * @return a <code>List</code> of entity ID <code>String</code>.
      * @throws SAML2MetaException if unable to retrieve the entity ids.
      */
-    public List getAllHostedIdentityProviderEntities(String realm)
+    public List<String> getAllHostedIdentityProviderEntities(String realm)
         throws SAML2MetaException {
 
-        List hostedIDPEntityIds = new ArrayList();
-        List hostedEntityIds = getAllHostedEntities(realm);
+        List<String> hostedIDPEntityIds = new ArrayList<>();
+        List<String> hostedEntityIds = getAllHostedEntities(realm);
 
-        for(Iterator iter = hostedEntityIds.iterator(); iter.hasNext();) {
-            String entityId = (String)iter.next();
+        for (String entityId : hostedEntityIds) {
             if (getIDPSSODescriptor(realm, entityId) != null) {
                 hostedIDPEntityIds.add(entityId);
             }
@@ -1381,19 +1374,18 @@ public class SAML2MetaManager {
      * @return a <code>List</code> of entity ID <code>String</code>.
      * @throws SAML2MetaException if unable to retrieve the entity ids.
      */
-    public List getAllRemoteEntities(String realm)
+    public List<String> getAllRemoteEntities(String realm)
         throws SAML2MetaException {
 
-        List remoteEntityIds = new ArrayList();
+        List<String> remoteEntityIds = new ArrayList<>();
         String[] objs = { realm };
         try {
-            Set entityIds = configInst.getAllConfigurationNames(realm);
+            Set<String> entityIds = configInst.getAllConfigurationNames(realm);
             if (entityIds != null && !entityIds.isEmpty()) {
-                for(Iterator iter = entityIds.iterator(); iter.hasNext();) {
-                    String entityId = (String)iter.next();
+                for (String entityId : entityIds) {
                     EntityConfigElement config =
-                                    getEntityConfig(realm, entityId);
-                    if (config == null || !config.isHosted()) {
+                            getEntityConfig(realm, entityId);
+                    if (config == null || !config.getValue().isHosted()) {
                         remoteEntityIds.add(entityId);
                     }
                 }
@@ -1421,14 +1413,13 @@ public class SAML2MetaManager {
      * @return a <code>List</code> of entity ID <code>String</code>.
      * @throws SAML2MetaException if unable to retrieve the entity ids.
      */
-    public List getAllRemoteServiceProviderEntities(String realm)
+    public List<String> getAllRemoteServiceProviderEntities(String realm)
         throws SAML2MetaException {
 
-        List remoteSPEntityIds = new ArrayList();
-        List remoteEntityIds = getAllRemoteEntities(realm);
+        List<String> remoteSPEntityIds = new ArrayList<>();
+        List<String> remoteEntityIds = getAllRemoteEntities(realm);
 
-        for(Iterator iter = remoteEntityIds.iterator(); iter.hasNext();) {
-            String entityId = (String)iter.next();
+        for (String entityId : remoteEntityIds) {
             if (getSPSSODescriptor(realm, entityId) != null) {
                 remoteSPEntityIds.add(entityId);
             }
@@ -1443,14 +1434,13 @@ public class SAML2MetaManager {
      * @return a <code>List</code> of entity ID <code>String</code>.
      * @throws SAML2MetaException if unable to retrieve the entity ids.
      */
-    public List getAllRemoteIdentityProviderEntities(String realm)
+    public List<String> getAllRemoteIdentityProviderEntities(String realm)
         throws SAML2MetaException {
 
-        List remoteIDPEntityIds = new ArrayList();
-        List remoteEntityIds = getAllRemoteEntities(realm);
+        List<String> remoteIDPEntityIds = new ArrayList<>();
+        List<String> remoteEntityIds = getAllRemoteEntities(realm);
 
-        for(Iterator iter = remoteEntityIds.iterator(); iter.hasNext();) {
-            String entityId = (String)iter.next();
+        for (String entityId : remoteEntityIds) {
             if (getIDPSSODescriptor(realm, entityId) != null) {
                 remoteIDPEntityIds.add(entityId);
             }
@@ -1469,22 +1459,20 @@ public class SAML2MetaManager {
 
         String realm = SAML2MetaUtils.getRealmByMetaAlias(metaAlias);
         try {
-            Set entityIds = configInst.getAllConfigurationNames(realm);
+            Set<String> entityIds = configInst.getAllConfigurationNames(realm);
             if (entityIds == null || entityIds.isEmpty()) {
                 return null;
             }
 
-            for (Iterator iter = entityIds.iterator(); iter.hasNext();) {
-                String entityId = (String)iter.next();
+            for (String entityId : entityIds) {
                 EntityConfigElement config = getEntityConfig(realm, entityId);
-                if ((config == null) || !config.isHosted()) {
+                if ((config == null) || !config.getValue().isHosted()) {
                     continue;
                 }
-                List list =
-                    config.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-                for(Iterator iter2 = list.iterator(); iter2.hasNext();) {
-                    BaseConfigType bConfig = (BaseConfigType)iter2.next();
-                    String cMetaAlias = bConfig.getMetaAlias();
+                List<JAXBElement<BaseConfigType>> list =
+                        config.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+                for (JAXBElement<BaseConfigType> bConfig : list) {
+                    String cMetaAlias = bConfig.getValue().getMetaAlias();
                     if (cMetaAlias != null && cMetaAlias.equals(metaAlias)) {
                         return entityId;
                     }
@@ -1515,12 +1503,13 @@ public class SAML2MetaManager {
             }
             for (String entityId : entityIds) {
                 EntityConfigElement config = getEntityConfig(realm, entityId);
-                if (config == null || !config.isHosted()) {
+                if (config == null || !config.getValue().isHosted()) {
                     continue;
                 }
-                List<BaseConfigType> configList = config.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
-                for (BaseConfigType bConfigType : configList) {
-                    String curMetaAlias = bConfigType.getMetaAlias();
+                List<JAXBElement<BaseConfigType>> configList = config.getValue()
+                        .getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+                for (JAXBElement<BaseConfigType> bConfigType : configList) {
+                    String curMetaAlias = bConfigType.getValue().getMetaAlias();
                     if (curMetaAlias != null && !curMetaAlias.isEmpty()) {
                         metaAliases.add(curMetaAlias);
                     }
@@ -1559,22 +1548,22 @@ public class SAML2MetaManager {
                 getPolicyEnforcementPointConfig(realm, entityId);
             
             if (idpConfig != null) {
-                String m = idpConfig.getMetaAlias();
+                String m = idpConfig.getValue().getMetaAlias();
                 if ((m != null) && m.equals(metaAlias)) {
                     role = SAML2Constants.IDP_ROLE;
                 }
             } else if (spConfig != null) {
-                String m = spConfig.getMetaAlias();
+                String m = spConfig.getValue().getMetaAlias();
                 if ((m != null) && m.equals(metaAlias)) {
                     role = SAML2Constants.SP_ROLE;
                 }
             } else if (pdpConfig != null) {
-                String m = pdpConfig.getMetaAlias();
+                String m = pdpConfig.getValue().getMetaAlias();
                 if ((m != null) && m.equals(metaAlias)) {
                     role = SAML2Constants.PDP_ROLE;
                 }
             } else if (pepConfig != null) {
-                String m = pepConfig.getMetaAlias();
+                String m = pepConfig.getValue().getMetaAlias();
                 if ((m != null) && m.equals(metaAlias)) {
                     role = SAML2Constants.PEP_ROLE;
                 }
@@ -1600,7 +1589,7 @@ public class SAML2MetaManager {
         for(Iterator iter = hostedEntityIds.iterator(); iter.hasNext();) {
             String entityId = (String)iter.next();
             if ((idpConfig = getIDPSSOConfig(realm, entityId)) != null) {
-                metaAliases.add(idpConfig.getMetaAlias());
+                metaAliases.add(idpConfig.getValue().getMetaAlias());
             
             }
         }
@@ -1623,7 +1612,7 @@ public class SAML2MetaManager {
         for(Iterator iter = hostedEntityIds.iterator(); iter.hasNext();) {
             String entityId = (String)iter.next();
             if ((spConfig = getSPSSOConfig(realm, entityId)) != null) {
-                metaAliases.add(spConfig.getMetaAlias());
+                metaAliases.add(spConfig.getValue().getMetaAlias());
             
             }
         }
@@ -1646,7 +1635,7 @@ public class SAML2MetaManager {
             XACMLPDPConfigElement elm = getPolicyDecisionPointConfig(
                 realm, entityId);
             if (elm != null) {
-                metaAliases.add(elm.getMetaAlias());
+                metaAliases.add(elm.getValue().getMetaAlias());
             }
         }
         return metaAliases;
@@ -1671,7 +1660,7 @@ public class SAML2MetaManager {
             XACMLAuthzDecisionQueryConfigElement elm = 
                 getPolicyEnforcementPointConfig(realm, entityId);
             if (elm != null) {
-                metaAliases.add(elm.getMetaAlias());
+                metaAliases.add(elm.getValue().getMetaAlias());
             }
         }
         return metaAliases;
@@ -1746,7 +1735,7 @@ public class SAML2MetaManager {
         return result;
     }
     
-    private boolean isSameCircleOfTrust(BaseConfigType config, String realm,
+    private boolean isSameCircleOfTrust(JAXBElement<BaseConfigType> config, String realm,
                  String trustedEntityId) {
         try {
             if (config != null) {

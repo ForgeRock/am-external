@@ -27,27 +27,30 @@
  */
 
 /**
- * Portions Copyrighted 2012 ForgeRock Inc
+ * Portions Copyrighted 2012-2018 ForgeRock AS.
  */
 package com.sun.identity.liberty.ws.disco.common;
 
 import java.io.StringReader;
-import java.util.Set;
-import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
-import javax.xml.transform.stream.StreamSource;
-import javax.xml.bind.*;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+
+import org.xml.sax.InputSource;
 
 import com.sun.identity.common.SystemConfigurationUtil;
+import com.sun.identity.liberty.ws.disco.jaxb.InsertEntryType;
 import com.sun.identity.liberty.ws.disco.plugins.Default64ResourceIDMapper;
 import com.sun.identity.liberty.ws.disco.plugins.DiscoEntryHandler;
 import com.sun.identity.liberty.ws.disco.plugins.NameIdentifierMapper;
-import com.sun.identity.liberty.ws.disco.plugins.jaxb.*;
-import com.sun.identity.liberty.ws.interfaces.ResourceIDMapper;
 import com.sun.identity.liberty.ws.interfaces.Authorizer;
+import com.sun.identity.liberty.ws.interfaces.ResourceIDMapper;
 import com.sun.identity.liberty.ws.soapbinding.Utils;
 import com.sun.identity.plugin.configuration.ConfigurationActionEvent;
 import com.sun.identity.plugin.configuration.ConfigurationException;
@@ -58,7 +61,6 @@ import com.sun.identity.shared.Constants;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.xml.XMLUtils;
-import org.xml.sax.InputSource;
 
 
 /**
@@ -283,12 +285,12 @@ public class DiscoServiceManager implements ConfigurationListener {
      * configured. A default value will be configured during installation.
      * @return Bootstrapping <code>DiscoEntryElement</code>
      */
-    public static synchronized DiscoEntryElement getBootstrappingDiscoEntry() {
-        DiscoEntryElement bootDiscoEntry = null;
+    public static synchronized InsertEntryType getBootstrappingDiscoEntry() {
+        InsertEntryType bootDiscoEntry = null;
         if ((bootDiscoEntryStr != null) && (bootDiscoEntryStr.length() != 0)) {
             try {
                 Unmarshaller u = jc.createUnmarshaller();
-                bootDiscoEntry = (DiscoEntryElement) u.unmarshal(
+                bootDiscoEntry = (InsertEntryType) u.unmarshal(
                         XMLUtils.createSAXSource(new InputSource(new StringReader(bootDiscoEntryStr))));
             } catch (Exception e) {
                 debug.error("DiscoServiceManager.setValues: "

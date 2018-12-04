@@ -24,20 +24,24 @@
  *
  * $Id: ECPIDPFinder.java,v 1.2 2008/06/25 05:47:51 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.saml2.plugins;
 
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
+import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.protocol.AuthnRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * This class <code>ECPIDPFinder</code> is used to find a list of 

@@ -24,23 +24,28 @@
  *
  * $Id: IDPPCommonName.java,v 1.2 2008/06/25 05:47:15 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.liberty.ws.idpp.container;
 
-import com.sun.identity.shared.datastruct.CollectionHelper;
-import javax.xml.bind.JAXBException;
-import java.util.Set;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.List;
-import org.w3c.dom.Document;
-import com.sun.identity.liberty.ws.idpp.common.*;
-import com.sun.identity.liberty.ws.idpp.jaxb.*;
-import com.sun.identity.liberty.ws.idpp.plugin.*;
+import java.util.Map;
+import java.util.Set;
+
 import com.sun.identity.liberty.ws.idpp.IDPPServiceManager;
+import com.sun.identity.liberty.ws.idpp.common.IDPPConstants;
+import com.sun.identity.liberty.ws.idpp.common.IDPPException;
+import com.sun.identity.liberty.ws.idpp.common.IDPPUtils;
+import com.sun.identity.liberty.ws.idpp.jaxb.AnalyzedNameType;
+import com.sun.identity.liberty.ws.idpp.jaxb.CommonNameType;
+import com.sun.identity.liberty.ws.idpp.jaxb.DSTString;
+import com.sun.identity.liberty.ws.idpp.jaxb.PPType;
+import com.sun.identity.shared.datastruct.CollectionHelper;
 
 
 /**
@@ -61,15 +66,15 @@ public class IDPPCommonName extends IDPPBaseContainer {
       * Gets the common name jaxb element 
       * @param userMap user map
       * @return CommonNameElement JAXB Object.
-      * @exception IDPPException.
+      * @exception IDPPException
       */
      public Object getContainerObject(Map userMap) throws IDPPException {
 
          IDPPUtils.debug.message("IDPPContainers:getContainerObject:Init");
          try {
-             PPType ppType = IDPPUtils.getIDPPFactory().createPPElement();
-             CommonNameElement ce = 
-                   IDPPUtils.getIDPPFactory().createCommonNameElement();
+             PPType ppType = IDPPUtils.getIDPPFactory().createPPType();
+             CommonNameType ce =
+                   IDPPUtils.getIDPPFactory().createCommonNameType();
 
              String cn = CollectionHelper.getMapAttr(
                 userMap, getAttributeMapper().getDSAttribute(
@@ -95,11 +100,6 @@ public class IDPPCommonName extends IDPPBaseContainer {
 
              ppType.setCommonName(ce);
              return ppType;
-         } catch (JAXBException je) {
-             IDPPUtils.debug.error(
-              "IDPPContainers:getContainerObject: JAXB failure", je); 
-              throw new IDPPException(
-              IDPPUtils.bundle.getString("jaxbFailure"));
          } catch (IDPPException ie) {
               IDPPUtils.debug.error("IDPPContainers:getContainerObject:" +
               "Error while creating common name.", ie);
@@ -167,7 +167,7 @@ public class IDPPCommonName extends IDPPBaseContainer {
       * @param select Select expression.
       * @param data list of new data objects.
       * @return Attribute key value pair for the given select.
-      * @throws IDPPException.
+      * @throws IDPPException
       */
      public Map getDataMapForSelect(String select, List data) 
      throws IDPPException {
@@ -186,7 +186,7 @@ public class IDPPCommonName extends IDPPBaseContainer {
         switch(attrType) {
                case IDPPConstants.SN_ELEMENT_INT:
                    if((dataElement == null) || 
-                      (dataElement instanceof SNElement)) {
+                      (dataElement instanceof DSTString)) {
                       map = getAttributeMap(expContext, dataElement, map);
                       break;
                    } else {
@@ -195,7 +195,7 @@ public class IDPPCommonName extends IDPPBaseContainer {
                    }
                case IDPPConstants.FN_ELEMENT_INT:
                    if((dataElement == null) || 
-                      (dataElement instanceof FNElement)) {
+                      (dataElement instanceof DSTString)) {
                       map = getAttributeMap(expContext, dataElement, map);
                    } else {
                       throw new IDPPException(
@@ -204,7 +204,7 @@ public class IDPPCommonName extends IDPPBaseContainer {
                    break;
                case IDPPConstants.MN_ELEMENT_INT:
                    if((dataElement == null) || 
-                      (dataElement instanceof MNElement)) {
+                      (dataElement instanceof DSTString)) {
                       map = getAttributeMap(expContext, dataElement, map);
                    } else {
                       throw new IDPPException(
@@ -213,7 +213,7 @@ public class IDPPCommonName extends IDPPBaseContainer {
                    break;
                case IDPPConstants.PT_ELEMENT_INT:
                    if((dataElement == null) || 
-                      (dataElement instanceof PersonalTitleElement)) {
+                      (dataElement instanceof DSTString)) {
                       map = getAttributeMap(expContext, dataElement, map);
                    } else {
                       throw new IDPPException(
@@ -222,7 +222,7 @@ public class IDPPCommonName extends IDPPBaseContainer {
                    break;
                case IDPPConstants.CN_ELEMENT_INT:
                    if((dataElement == null) ||
-                      (dataElement instanceof CNElement)) {
+                      (dataElement instanceof DSTString)) {
                       map = getAttributeMap(expContext, dataElement, map);
                    } else {
                       throw new IDPPException(

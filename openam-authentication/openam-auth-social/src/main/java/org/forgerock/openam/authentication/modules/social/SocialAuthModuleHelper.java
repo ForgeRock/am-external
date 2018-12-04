@@ -11,9 +11,8 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.authentication.modules.social;
 
 import static com.iplanet.am.util.SecureRandomManager.getSecureRandom;
@@ -24,6 +23,7 @@ import static org.forgerock.openam.utils.Time.getTimeService;
 
 import java.security.SecureRandom;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
-import org.forgerock.guava.common.base.Optional;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.http.Handler;
 import org.forgerock.oauth.OAuthClient;
@@ -41,6 +40,7 @@ import org.forgerock.oauth.UserInfo;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.authentication.modules.oauth2.OAuthUtil;
 import org.forgerock.util.time.TimeService;
+import org.owasp.esapi.ESAPI;
 
 import com.google.inject.Key;
 import com.google.inject.name.Names;
@@ -49,7 +49,6 @@ import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.encode.CookieUtils;
-import org.owasp.esapi.ESAPI;
 
 /**
  * Helper class for the Social Auth Module.
@@ -153,7 +152,7 @@ class SocialAuthModuleHelper {
                 return Optional.of(user);
             }
         }
-        return Optional.absent();
+        return Optional.empty();
     }
 
     /**

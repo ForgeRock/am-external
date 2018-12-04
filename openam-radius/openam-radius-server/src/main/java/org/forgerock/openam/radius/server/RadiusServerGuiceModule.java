@@ -12,6 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server;
 
@@ -21,7 +22,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.forgerock.guava.common.eventbus.EventBus;
 import org.forgerock.openam.radius.server.audit.RadiusAuditLoggerEventBus;
 import org.forgerock.openam.radius.server.audit.RadiusAuditor;
 import org.forgerock.openam.radius.server.config.RadiusServer;
@@ -30,6 +30,7 @@ import org.forgerock.openam.radius.server.config.RadiusServerManager;
 import org.forgerock.openam.radius.server.monitoring.RadiusServerEventRegistrar;
 import org.forgerock.openam.radius.server.monitoring.RadiusServerEventRegistrator;
 
+import com.google.common.eventbus.EventBus;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.iplanet.sso.SSOToken;

@@ -11,9 +11,8 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes.validators;
 
 import java.util.HashSet;
@@ -23,8 +22,7 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import org.forgerock.guava.common.collect.Sets;
-
+import com.google.common.collect.Sets;
 import com.sun.identity.sm.ServiceAttributeValidator;
 
 /**

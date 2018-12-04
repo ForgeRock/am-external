@@ -23,34 +23,38 @@
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
  * $Id: SAML2IDPProxyImpl.java,v 1.5 2009/03/12 20:33:40 huacui Exp $
+ *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins;
 
-import com.sun.identity.cot.CircleOfTrustManager;
-import com.sun.identity.cot.CircleOfTrustDescriptor;
-import com.sun.identity.cot.COTException;
-import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
-import com.sun.identity.saml2.meta.SAML2MetaManager;
-import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import com.sun.identity.saml2.meta.SAML2MetaException;
-import com.sun.identity.saml2.profile.SPSSOFederate;
-import com.sun.identity.saml2.profile.SPCache;
-import com.sun.identity.saml2.protocol.AuthnRequest;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap; 
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.sun.identity.cot.COTException;
+import com.sun.identity.cot.CircleOfTrustDescriptor;
+import com.sun.identity.cot.CircleOfTrustManager;
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
+import com.sun.identity.saml2.meta.SAML2MetaException;
+import com.sun.identity.saml2.meta.SAML2MetaManager;
+import com.sun.identity.saml2.meta.SAML2MetaUtils;
+import com.sun.identity.saml2.profile.SPCache;
+import com.sun.identity.saml2.profile.SPSSOFederate;
+import com.sun.identity.saml2.protocol.AuthnRequest;
 
 /**
  * This class <code>SAML2IDPProxyImpl</code> is used to find a preferred Identity
  * Authenticating provider to proxy the authentication request.
- */ 
+ */
 public class SAML2IDPProxyImpl implements SAML2IDPFinder {
     /**
      * Default Constructor.
@@ -70,14 +74,14 @@ public class SAML2IDPProxyImpl implements SAML2IDPFinder {
      * @exception SAML2Exception if error occurs.
      */
     public List getPreferredIDP (
-          AuthnRequest authnRequest,
-          String hostProviderID,
-          String realm,
-          HttpServletRequest request,
-          HttpServletResponse response
+            AuthnRequest authnRequest,
+            String hostProviderID,
+            String realm,
+            HttpServletRequest request,
+            HttpServletResponse response
     ) throws SAML2Exception
-    {       
-        String classMethod = "SAML2IDPProxyImpl.getPreferredIDP:"; 
+    {
+        String classMethod = "SAML2IDPProxyImpl.getPreferredIDP:";
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(classMethod + "Init.");
         }
@@ -86,32 +90,32 @@ public class SAML2IDPProxyImpl implements SAML2IDPFinder {
             // Retreive MetaData
             if (sm == null) {
                 throw new SAML2Exception(
-                    SAML2Utils.bundle.getString("errorMetaManager"));
+                        SAML2Utils.bundle.getString("errorMetaManager"));
             }
             SPSSOConfigElement spEntityCfg =
-                sm.getSPSSOConfig(realm, authnRequest.getIssuer().getValue());
+                    sm.getSPSSOConfig(realm, authnRequest.getIssuer().getValue());
             Map spConfigAttrsMap = null;
             if (spEntityCfg != null) {
                 spConfigAttrsMap = SAML2MetaUtils.getAttributes(spEntityCfg);
-            }         
-            String useIntroductionForProxying = 
-                SPSSOFederate.getParameter(spConfigAttrsMap,
-                    SAML2Constants.USE_INTRODUCTION_FOR_IDP_PROXY);
+            }
+            String useIntroductionForProxying =
+                    SPSSOFederate.getParameter(spConfigAttrsMap,
+                            SAML2Constants.USE_INTRODUCTION_FOR_IDP_PROXY);
             List providerIDs = new ArrayList();
             if (useIntroductionForProxying == null ||
-                !useIntroductionForProxying.equals("true")) 
+                    !useIntroductionForProxying.equals("true"))
             {
                 List proxyIDPs = null;
                 if ((spConfigAttrsMap != null) && (!spConfigAttrsMap.isEmpty())) {
                     proxyIDPs = (List) spConfigAttrsMap.get(
-                        SAML2Constants.IDP_PROXY_LIST);
+                            SAML2Constants.IDP_PROXY_LIST);
                 }
                 if (proxyIDPs == null || proxyIDPs.isEmpty()) {
                     SAML2Utils.debug.error("SAML2IDPProxyImpl.getPrefferedIDP:" +
-                        "Preferred IDPs are null.");
+                            "Preferred IDPs are null.");
                     return null;
                 }
-               
+
                 providerIDs.add(proxyIDPs.iterator().next());
                 return providerIDs;
             } else {
@@ -121,43 +125,43 @@ public class SAML2IDPProxyImpl implements SAML2IDPFinder {
                 String cotListStr = (String) cotList.iterator().next();
                 CircleOfTrustManager cotManager = new CircleOfTrustManager();
                 CircleOfTrustDescriptor cotDesc =
-                    cotManager.getCircleOfTrust(realm,cotListStr);
+                        cotManager.getCircleOfTrust(realm,cotListStr);
                 String readerURL = cotDesc.getSAML2ReaderServiceURL();
                 if (SAML2Utils.debug.messageEnabled()) {
-                    SAML2Utils.debug.message(classMethod + "SAMLv2 idp" + 
-                        "discovery reader URL = " + readerURL);
-                }    
+                    SAML2Utils.debug.message(classMethod + "SAMLv2 idp" +
+                            "discovery reader URL = " + readerURL);
+                }
                 if (readerURL != null && (!readerURL.equals(""))) {
                     String rID = SAML2Utils.generateID();
-                    String redirectURL = 
- 	                SAML2Utils.getRedirectURL(readerURL, rID, request);
- 	            if (SAML2Utils.debug.messageEnabled()) {
-                        SAML2Utils.debug.error(classMethod + 
-                            "Redirect url = " + redirectURL); 
-                    }        
-		    if (redirectURL != null) {
-		        response.sendRedirect(redirectURL); 
-		        Map aMap = new HashMap(); 
-		        SPCache.reqParamHash.put(rID, aMap);
-		        providerIDs.add(rID); 
+                    String redirectURL =
+                            SAML2Utils.getRedirectURL(readerURL, rID, request);
+                    if (SAML2Utils.debug.messageEnabled()) {
+                        SAML2Utils.debug.error(classMethod +
+                                "Redirect url = " + redirectURL);
+                    }
+                    if (redirectURL != null) {
+                        response.sendRedirect(redirectURL);
+                        Map aMap = new HashMap();
+                        SPCache.reqParamHash.put(rID, aMap);
+                        providerIDs.add(rID);
                         return providerIDs;
-		    }
-		}
-	    }
-	    return null;    
+                    }
+                }
+            }
+            return null;
         } catch (SAML2MetaException ex) {
             SAML2Utils.debug.error(classMethod +
-                "meta Exception in retrieving the preferred IDP", ex);
+                    "meta Exception in retrieving the preferred IDP", ex);
             return null;
         } catch (COTException sme) {
-            SAML2Utils.debug.error(classMethod + 
-                "Error retreiving COT ",sme);
+            SAML2Utils.debug.error(classMethod +
+                    "Error retreiving COT ",sme);
             return null;
         } catch (Exception e) {
             SAML2Utils.debug.error(classMethod +
-                "Exception in retrieving the preferred IDP", e);
+                    "Exception in retrieving the preferred IDP", e);
             return null;
         }
-    }   
-    
+    }
+
 }

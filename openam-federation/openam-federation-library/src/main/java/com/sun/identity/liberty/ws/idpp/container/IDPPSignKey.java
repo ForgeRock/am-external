@@ -24,21 +24,26 @@
  *
  * $Id: IDPPSignKey.java,v 1.2 2008/06/25 05:47:16 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
-
 package com.sun.identity.liberty.ws.idpp.container;
 
-import javax.xml.bind.JAXBException;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Iterator;
-import org.w3c.dom.Document;
-import com.sun.identity.liberty.ws.idpp.common.*;
-import com.sun.identity.liberty.ws.idpp.jaxb.*;
-import com.sun.identity.liberty.ws.idpp.plugin.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.xml.bind.JAXBElement;
+
+import com.sun.identity.liberty.ws.common.jaxb.xmlsig.X509DataType;
+import com.sun.identity.liberty.ws.idpp.common.IDPPConstants;
+import com.sun.identity.liberty.ws.idpp.common.IDPPException;
+import com.sun.identity.liberty.ws.idpp.common.IDPPUtils;
+import com.sun.identity.liberty.ws.idpp.jaxb.KeyInfoType;
+import com.sun.identity.liberty.ws.idpp.jaxb.PPType;
 
 
 /**
@@ -59,45 +64,36 @@ public class IDPPSignKey extends IDPPBaseContainer {
       * Gets the common name jaxb element 
       * @param userMap user map
       * @return InformalNameElement JAXB Object.
-      * @exception IDPPException.
+      * @exception IDPPException
       */
      public Object getContainerObject(Map userMap) throws IDPPException {
         IDPPUtils.debug.message("IDPPSignKey:getContainerObject:Init");
-        try {
-            PPType ppType = IDPPUtils.getIDPPFactory().createPPElement();
-            SignKeyElement signKey = 
-                IDPPUtils.getIDPPFactory().createSignKeyElement();
-            byte[][] certBytes = (byte[][]) userMap.get(
-            getAttributeMapper().getDSAttribute(
-            IDPPConstants.SIGN_KEY_ELEMENT).toLowerCase());
+        PPType ppType = IDPPUtils.getIDPPFactory().createPPType();
+        KeyInfoType signKey =
+            IDPPUtils.getIDPPFactory().createKeyInfoType();
+        byte[][] certBytes = (byte[][]) userMap.get(
+        getAttributeMapper().getDSAttribute(
+        IDPPConstants.SIGN_KEY_ELEMENT).toLowerCase());
 
-            if(IDPPUtils.debug.messageEnabled()) {
-               IDPPUtils.debug.message("IDPPSignKey.getContainerObject: " +
-                "SignKey Value" + certBytes);
-            }
-            com.sun.identity.liberty.ws.common.jaxb.xmlsig.ObjectFactory of =
-            new com.sun.identity.liberty.ws.common.jaxb.xmlsig.ObjectFactory();
-
-            com.sun.identity.liberty.ws.common.jaxb.xmlsig.X509DataType 
-            x509DataType = of.createX509DataElement();
-
-            com.sun.identity.liberty.ws.common.jaxb.xmlsig.X509DataType.
-            X509Certificate cert = of.createX509DataTypeX509Certificate(
-              certBytes[0]);
-
-            x509DataType.
-            getX509IssuerSerialOrX509SKIOrX509SubjectName().add(cert);
-
-            signKey.getContent().add(x509DataType);
-
-            ppType.setSignKey(signKey);
-            return ppType;
-        } catch (JAXBException je) {
-            IDPPUtils.debug.error(
-            "IDPPContainers:getInformalName: JAXB failure", je); 
-            throw new IDPPException(
-            IDPPUtils.bundle.getString("jaxbFailure"));
+        if(IDPPUtils.debug.messageEnabled()) {
+           IDPPUtils.debug.message("IDPPSignKey.getContainerObject: " +
+            "SignKey Value" + Arrays.deepToString(certBytes));
         }
+        com.sun.identity.liberty.ws.common.jaxb.xmlsig.ObjectFactory of =
+        new com.sun.identity.liberty.ws.common.jaxb.xmlsig.ObjectFactory();
+
+        X509DataType
+        x509DataType = of.createX509DataType();
+
+        JAXBElement<byte[]> cert = of.createX509DataTypeX509Certificate(certBytes[0]);
+
+        x509DataType.
+        getX509IssuerSerialOrX509SKIOrX509SubjectName().add(cert);
+
+        signKey.getContent().add(x509DataType);
+
+        ppType.setSignKey(signKey);
+        return ppType;
      }
 
      /**
@@ -126,7 +122,7 @@ public class IDPPSignKey extends IDPPBaseContainer {
       * @param select Select expression.
       * @param data list of new data objects.
       * @return Attribute key value pair for the given select.
-      * @exception IDPPException.
+      * @exception IDPPException
       */
      public Map getDataMapForSelect(String select, List data) 
      throws IDPPException {
@@ -145,9 +141,9 @@ public class IDPPSignKey extends IDPPBaseContainer {
            return map;
         }
 
-        if(dataElement instanceof SignKeyElement) {
+        if(dataElement instanceof KeyInfoType) {
            byte[] certBytes = null; 
-           SignKeyElement signKey = (SignKeyElement)dataElement;
+           KeyInfoType signKey = (KeyInfoType)dataElement;
            List contents = signKey.getContent();
 
            if(contents == null || contents.size() == 0) {
@@ -159,30 +155,20 @@ public class IDPPSignKey extends IDPPBaseContainer {
 
            while(iter.hasNext()) {
              Object obj = iter.next();
-             if(obj instanceof 
-                com.sun.identity.liberty.ws.common.jaxb.xmlsig.X509DataElement){
+             if(obj instanceof X509DataType) {
 
-                com.sun.identity.liberty.ws.common.jaxb.xmlsig.X509DataElement
-                x509Data = (com.sun.identity.liberty.ws.common.jaxb.
-                            xmlsig.X509DataElement)obj;
-                List certs = 
-                     x509Data.getX509IssuerSerialOrX509SKIOrX509SubjectName(); 
+                X509DataType x509Data = (X509DataType) obj;
+                List<Object> certs = x509Data.getX509IssuerSerialOrX509SKIOrX509SubjectName();
 
-                if(certs == null || certs.size() == 0) {
+                if (certs == null || certs.size() == 0) {
                    IDPPUtils.debug.error("IDPPSignKey.getDataMapForSelect:" +
                    "Unsupported data. certs are null");
                    return null;
                 }
 
                 Object certObj = certs.get(0);
-                if(certObj instanceof 
-                   com.sun.identity.liberty.ws.common.jaxb.xmlsig.
-                   X509DataType.X509Certificate) {
-                   com.sun.identity.liberty.ws.common.jaxb.xmlsig.
-                   X509DataType.X509Certificate cert = 
-                   (com.sun.identity.liberty.ws.common.jaxb.xmlsig.
-                    X509DataType.X509Certificate)certObj;
-                    certBytes =  cert.getValue();
+                if (certObj instanceof byte[]) {
+                    certBytes =  (byte[]) certObj;
                 } else {
                    IDPPUtils.debug.error("IDPPSignKey.getDataMapForSelect:" +
                    "Unsupported data. not x509 certificate");

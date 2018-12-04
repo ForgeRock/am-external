@@ -12,14 +12,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+ * Copyright 2016-2018 ForgeRock AS. All Rights Reserved
  * 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>openam-federation</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>6.0.0.5</version>
+        <version>6.5.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -190,10 +190,12 @@
                             </includes>
                         </resource>
                     </webResources>
+                    <attachClasses>true</attachClasses>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
     <dependencies>
         <dependency>
             <groupId>javax.servlet</groupId>

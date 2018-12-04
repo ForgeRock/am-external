@@ -15,7 +15,7 @@
  */
 
 module.exports = [
-    ".js", ".jsm", ".jsx", // Resolve JavaScript first so other types are not accidentally imported
+    ".js", ".jsx", // Resolve JavaScript first so other types are not accidentally imported
     ".css",
     ".html",
     ".json",

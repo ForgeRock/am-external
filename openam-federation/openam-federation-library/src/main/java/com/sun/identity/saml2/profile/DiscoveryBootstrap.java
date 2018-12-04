@@ -24,7 +24,7 @@
  *
  * $Id: DiscoveryBootstrap.java,v 1.4 2008/12/05 00:18:31 exu Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -37,23 +37,22 @@ import com.sun.identity.federation.common.IFSConstants;
 import com.sun.identity.federation.message.common.AuthnContext;
 import com.sun.identity.federation.message.common.EncryptedNameIdentifier;
 import com.sun.identity.federation.message.common.IDPProvidedNameIdentifier;
+import com.sun.identity.liberty.ws.disco.ResourceOffering;
 import com.sun.identity.liberty.ws.disco.common.DiscoConstants;
 import com.sun.identity.liberty.ws.disco.common.DiscoServiceManager;
 import com.sun.identity.liberty.ws.disco.common.DiscoUtils;
+import com.sun.identity.liberty.ws.disco.jaxb.InsertEntryType;
 import com.sun.identity.liberty.ws.disco.jaxb.ObjectFactory;
 import com.sun.identity.liberty.ws.disco.jaxb.ResourceIDType;
 import com.sun.identity.liberty.ws.disco.jaxb.ResourceOfferingType;
 import com.sun.identity.liberty.ws.disco.jaxb.ServiceInstanceType;
-import com.sun.identity.liberty.ws.disco.plugins.jaxb.DiscoEntryElement;
-import com.sun.identity.liberty.ws.disco.ResourceOffering;
 import com.sun.identity.liberty.ws.interfaces.ResourceIDMapper;
 import com.sun.identity.liberty.ws.security.SessionContext;
 import com.sun.identity.liberty.ws.security.SessionSubject;
-import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionException;
+import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.saml.assertion.Assertion;
 import com.sun.identity.saml.assertion.NameIdentifier;
-import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.saml.common.SAMLException;
 import com.sun.identity.saml2.assertion.Advice;
 import com.sun.identity.saml2.assertion.AssertionFactory;
@@ -66,11 +65,10 @@ import com.sun.identity.saml2.assertion.SubjectConfirmationData;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.key.EncInfo;
 import com.sun.identity.saml2.key.KeyUtil;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
 import com.sun.identity.shared.Constants;
-import com.sun.identity.shared.xml.XMLUtils;
 
 
 /**
@@ -141,7 +139,7 @@ public class DiscoveryBootstrap {
                 "DiscoveryBootstrap.getResourceOffering:Init");
         }
 
-        DiscoEntryElement discoEntry =
+        InsertEntryType discoEntry =
             DiscoServiceManager.getBootstrappingDiscoEntry();
         if (discoEntry == null) {
             throw new SAML2Exception(
@@ -198,7 +196,7 @@ public class DiscoveryBootstrap {
             discoEntryList.add(discoEntry);
             SessionSubject sessionSubject = null;
             if (DiscoServiceManager.encryptNIinSessionContext()) {
-                IDPSSODescriptorElement idpSSODesc = SAML2Utils
+                IDPSSODescriptorType idpSSODesc = SAML2Utils
                     .getSAML2MetaManager().getIDPSSODescriptor(realm,
                     providerID);
                 EncInfo encInfo = KeyUtil.getEncInfo(idpSSODesc, wscID,

@@ -24,13 +24,14 @@
  *
  * $Id: AttributeQuery.java,v 1.2 2008/06/25 05:47:56 qcheng Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.sun.identity.saml2.assertion.Attribute;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.protocol.impl.AttributeQueryImpl;
 import java.util.List;
@@ -38,8 +39,8 @@ import java.util.List;
 
 /**
  * This class represents the AttributeQueryType complex type.
- * <p>The following schema fragment specifies the expected 	
- * content contained within this java content object. 	
+ * <p>The following schema fragment specifies the expected
+ * content contained within this java content object.
  * <p>
  * <pre>
  * &lt;complexType name="AttributeQueryType">
@@ -52,27 +53,27 @@ import java.util.List;
  *   &lt;/complexContent>
  * &lt;/complexType>
  * </pre>
- * 
+ *
  * @supported.all.api
  */
 
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
         defaultImpl = AttributeQueryImpl.class)
 public interface AttributeQuery extends SubjectQueryAbstract {
-    /** 
-     * Returns <code>Attribute</code> objects. 
+    /**
+     * Returns <code>Attribute</code> objects.
      *
-     * @return the <code>Attribute</code> objects. 
+     * @return the <code>Attribute</code> objects.
      * @see #setAttributes(List)
      */
-    public List getAttributes();
-    
-    /** 
-     * Sets the <code>Attribute</code> objects. 
+    public List<Attribute> getAttributes();
+
+    /**
+     * Sets the <code>Attribute</code> objects.
      *
-     * @param attributes the new <code>Attribute</code> objects. 
+     * @param attributes the new <code>Attribute</code> objects.
      * @throws SAML2Exception if the object is immutable.
      * @see #getAttributes
      */
-    public void setAttributes(List attributes) throws SAML2Exception;
+    public void setAttributes(List<Attribute> attributes) throws SAML2Exception;
 }

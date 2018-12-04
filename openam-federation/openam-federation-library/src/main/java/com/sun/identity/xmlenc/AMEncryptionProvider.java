@@ -24,20 +24,19 @@
  *
  * $Id: AMEncryptionProvider.java,v 1.7 2009/08/29 07:30:38 mallas Exp $
  *
- * Portions Copyrighted 2014-2016 ForgeRock AS.
+ * Portions Copyrighted 2014-2018 ForgeRock AS.
  */
 
 package com.sun.identity.xmlenc;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.X509Certificate;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
+
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
@@ -46,17 +45,16 @@ import org.apache.xml.security.encryption.EncryptedKey;
 import org.apache.xml.security.encryption.XMLCipher;
 import org.apache.xml.security.keys.KeyInfo;
 import org.apache.xml.security.keys.content.X509Data;
-import org.apache.xml.security.keys.storage.StorageResolver;
-import org.apache.xml.security.keys.storage.implementations.KeyStoreResolver;
 import org.apache.xml.security.keys.keyresolver.implementations.X509CertificateResolver;
 import org.apache.xml.security.keys.keyresolver.implementations.X509IssuerSerialResolver;
 import org.apache.xml.security.keys.keyresolver.implementations.X509SKIResolver;
 import org.apache.xml.security.keys.keyresolver.implementations.X509SubjectNameResolver;
-
+import org.apache.xml.security.keys.storage.StorageResolver;
+import org.apache.xml.security.keys.storage.implementations.KeyStoreResolver;
+import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.Document;
 
 import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -79,6 +77,7 @@ public class AMEncryptionProvider implements EncryptionProvider {
     protected static Map keyMap = new HashMap();
     
     static {
+        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
         org.apache.xml.security.Init.init();
     }
     

@@ -1,0 +1,88 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2018 ForgeRock AS.
+ */
+
+.alert-system {
+    position: fixed;
+    margin: 5px auto 0;
+    z-index: 10000;
+    left: 0;
+    right: 0;
+    width: 400px;
+    min-height: 50px;
+    background-image: none;
+}
+
+.logged-user .alert-system {
+    margin-top: 70px;
+}
+
+.alert-message.alert-warning {
+    .alert-message-icon {
+        .fa-icon();
+        font-weight: bold;
+        margin-right: 15px;
+
+        &:before {
+          content: @fa-var-exclamation-circle;
+        }
+    }
+}
+
+.alert-message.alert-danger{
+    .alert-message-icon {
+        .fa-icon();
+        font-weight: bold;
+        margin-right: 15px;
+
+        &:before {
+          content: @fa-var-exclamation-circle;
+        }
+    }
+}
+
+.alert-message.alert-info {
+    .alert-message-icon {
+        .fa-icon();
+        margin-right: 15px;
+        font-weight: bold;
+
+        &:before {
+          content: @fa-var-info-circle;
+        }
+    }
+}
+
+.alert-message.alert-success {
+  .alert-message-icon {
+    .fa-icon();
+    margin-right: 15px;
+    font-weight: bold;
+
+    &:before {
+      content: @fa-var-check-circle-o;
+    }
+  }
+}
+
+.alert-sm {
+    padding: 6px 12px;
+    margin-right: 5px;
+    display: inline-block;
+    margin-bottom: 0;
+    margin-top: 0;
+    line-height: 1.42857143;
+    vertical-align: middle;
+}

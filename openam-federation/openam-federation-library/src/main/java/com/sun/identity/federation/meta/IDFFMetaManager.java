@@ -24,31 +24,12 @@
  *
  * $Id: IDFFMetaManager.java,v 1.9 2009/10/28 23:58:57 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.federation.meta;
-
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.cot.COTConstants;
-import com.sun.identity.cot.COTException;
-import com.sun.identity.cot.CircleOfTrustManager;
-import com.sun.identity.federation.common.FSUtils;
-import com.sun.identity.federation.common.IFSConstants;
-import com.sun.identity.federation.common.LogUtil;
-import com.sun.identity.federation.jaxb.entityconfig.AffiliationDescriptorConfigElement;
-import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
-import com.sun.identity.federation.jaxb.entityconfig.EntityConfigElement;
-import com.sun.identity.federation.jaxb.entityconfig.IDPDescriptorConfigElement;
-import com.sun.identity.federation.jaxb.entityconfig.SPDescriptorConfigElement;
-import com.sun.identity.liberty.ws.meta.jaxb.AffiliationDescriptorType;
-import com.sun.identity.liberty.ws.meta.jaxb.EntityDescriptorElement;
-import com.sun.identity.liberty.ws.meta.jaxb.IDPDescriptorType;
-import com.sun.identity.liberty.ws.meta.jaxb.SPDescriptorType;
-
-import com.sun.identity.plugin.configuration.ConfigurationException;
-import com.sun.identity.plugin.configuration.ConfigurationInstance;
-import com.sun.identity.plugin.configuration.ConfigurationManager;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -59,6 +40,25 @@ import java.util.Set;
 import java.util.logging.Level;
 
 import javax.xml.bind.JAXBException;
+
+import com.sun.identity.cot.COTConstants;
+import com.sun.identity.cot.COTException;
+import com.sun.identity.cot.CircleOfTrustManager;
+import com.sun.identity.federation.common.FSUtils;
+import com.sun.identity.federation.common.IFSConstants;
+import com.sun.identity.federation.common.LogUtil;
+import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
+import com.sun.identity.federation.jaxb.entityconfig.EntityConfigElement;
+import com.sun.identity.federation.jaxb.entityconfig.EntityConfigType;
+import com.sun.identity.liberty.ws.meta.jaxb.AffiliationDescriptorType;
+import com.sun.identity.liberty.ws.meta.jaxb.EntityDescriptorElement;
+import com.sun.identity.liberty.ws.meta.jaxb.EntityDescriptorType;
+import com.sun.identity.liberty.ws.meta.jaxb.IDPDescriptorType;
+import com.sun.identity.liberty.ws.meta.jaxb.SPDescriptorType;
+import com.sun.identity.plugin.configuration.ConfigurationException;
+import com.sun.identity.plugin.configuration.ConfigurationInstance;
+import com.sun.identity.plugin.configuration.ConfigurationManager;
+import com.sun.identity.shared.debug.Debug;
 
 /**
  * The <code>IDFFMetaManager</code> provides methods to manage the Service and
@@ -154,7 +154,7 @@ public class IDFFMetaManager {
      * @throws IDFFMetaException if unable to create the entity descriptor.
      */
     public void createEntityDescriptor(
-        String realm, EntityDescriptorElement entityDescriptor)
+        String realm, EntityDescriptorType entityDescriptor)
         throws IDFFMetaException 
     {
         String classMethod = "IDFFMetaManager.createEntityDescriptor:";
@@ -175,7 +175,7 @@ public class IDFFMetaManager {
             realm = ROOT_REALM;
         }
         String[] args = { entityId, realm };
-        EntityDescriptorElement descriptor = getEntityDescriptor(
+        EntityDescriptorType descriptor = getEntityDescriptor(
             realm,entityId);
         
         if (descriptor != null) {
@@ -236,7 +236,7 @@ public class IDFFMetaManager {
      *         not found.
      * @throws IDFFMetaException if unable to retrieve the entity descriptor.
      */
-    public EntityDescriptorElement getEntityDescriptor(
+    public EntityDescriptorType getEntityDescriptor(
         String realm, String entityID)
     throws IDFFMetaException {
         String classMethod = "IDFFMetaManager.getEntityDescriptor:";
@@ -297,7 +297,7 @@ public class IDFFMetaManager {
             LogUtil.error(Level.INFO, LogUtil.NULL_ENTITY_ID, null);
             throw new IDFFMetaException("nullEntityID", null);
         }
-        return entityDescriptor;
+        return entityDescriptor.getValue();
     }
     
     
@@ -310,10 +310,10 @@ public class IDFFMetaManager {
      * @param entityDescriptor The standard entity descriptor object to be set.
      * @throws IDFFMetaException if there is an error setting the entity
      *         descriptor.
-     * @see #createEntityDescriptor(String, EntityDescriptorElement)
+     * @see #createEntityDescriptor(String, EntityDescriptorType)
      */
     public void setEntityDescriptor(
-        String realm, EntityDescriptorElement entityDescriptor)
+        String realm, EntityDescriptorType entityDescriptor)
     throws IDFFMetaException {
         String classMethod = "IDFFMetaManager:setEntityDescriptor";
         if (entityDescriptor != null) {
@@ -463,7 +463,7 @@ public class IDFFMetaManager {
      */
     public SPDescriptorType getSPDescriptor(String realm, String entityID)
     throws IDFFMetaException {
-        EntityDescriptorElement entityDescriptor =
+        EntityDescriptorType entityDescriptor =
                 getEntityDescriptor(realm, entityID);
         
         return IDFFMetaUtils.getSPDescriptor(entityDescriptor);
@@ -481,7 +481,7 @@ public class IDFFMetaManager {
      */
     public IDPDescriptorType getIDPDescriptor(String realm, String entityID)
     throws IDFFMetaException {
-        EntityDescriptorElement entityDescriptor =
+        EntityDescriptorType entityDescriptor =
                 getEntityDescriptor(realm, entityID);
         
         return IDFFMetaUtils.getIDPDescriptor(entityDescriptor);
@@ -503,7 +503,7 @@ public class IDFFMetaManager {
         String realm, String entityID)
     throws IDFFMetaException {
         AffiliationDescriptorType affiliationDescriptor = null;
-        EntityDescriptorElement entityDescriptor =
+        EntityDescriptorType entityDescriptor =
                 getEntityDescriptor(realm, entityID);
         if (entityDescriptor != null) {
             affiliationDescriptor = entityDescriptor.getAffiliationDescriptor();
@@ -520,7 +520,7 @@ public class IDFFMetaManager {
      * @throws IDFFMetaException if unable to create the entity configuration.
      */
     public void createEntityConfig(
-        String realm, EntityConfigElement entityConfig)
+        String realm, EntityConfigType entityConfig)
     throws IDFFMetaException {
         String classMethod = "IDFFMetaManager.createEntityConfig:";
         String entityID = null;
@@ -603,7 +603,7 @@ public class IDFFMetaManager {
      * @throws IDFFMetaException if unable to retrieve the entity
      *                            configuration.
      */
-    public EntityConfigElement getEntityConfig(String realm, String entityID)
+    public EntityConfigType getEntityConfig(String realm, String entityID)
     throws IDFFMetaException {
         String classMethod = "IDFFMetaManager:getEntityConfig:";
         EntityConfigElement entityConfig = null;
@@ -660,7 +660,7 @@ public class IDFFMetaManager {
             LogUtil.error(Level.INFO, LogUtil.NULL_ENTITY_ID, null);
             throw new IDFFMetaException("nullEntityID",null);
         }
-        return entityConfig ;
+        return entityConfig.getValue();
     }
     
     /**
@@ -672,7 +672,7 @@ public class IDFFMetaManager {
      * @param entityConfig The extended entity configuration object to be set.
      * @throws IDFFMetaException if unable to set the entity configuration.
      */
-    public void setEntityConfig(String realm, EntityConfigElement entityConfig)
+    public void setEntityConfig(String realm, EntityConfigType entityConfig)
     throws IDFFMetaException {
         String classMethod = "IDFFMetaManager:setEntityConfig";
         if (entityConfig != null) {
@@ -730,12 +730,12 @@ public class IDFFMetaManager {
      * @throws IDFFMetaException if there is an error retrieving service
      *         provider configuration.
      */
-    public SPDescriptorConfigElement getSPDescriptorConfig(
+    public BaseConfigType getSPDescriptorConfig(
         String realm, String entityID)
     throws IDFFMetaException 
     {
         
-        EntityConfigElement entityConfigElement = getEntityConfig(
+        EntityConfigType entityConfigElement = getEntityConfig(
             realm, entityID);
         
         return IDFFMetaUtils.getSPDescriptorConfig(entityConfigElement);
@@ -753,12 +753,12 @@ public class IDFFMetaManager {
      * @throws IDFFMetaException if there is an error retrieving service
      *         provider configuration.
      */
-    public IDPDescriptorConfigElement getIDPDescriptorConfig(
+    public BaseConfigType getIDPDescriptorConfig(
         String realm, String entityID)
     throws IDFFMetaException 
     {
         
-        EntityConfigElement entityConfigElement = getEntityConfig(
+        EntityConfigType entityConfigElement = getEntityConfig(
             realm, entityID);
         
         return IDFFMetaUtils.getIDPDescriptorConfig(entityConfigElement);
@@ -775,14 +775,14 @@ public class IDFFMetaManager {
      * @throws IDFFMetaException if there is an error retrieving service
      *         provider configuration.
      */
-    public AffiliationDescriptorConfigElement
+    public BaseConfigType
             getAffiliationDescriptorConfig(String realm, String entityID)
             throws IDFFMetaException {
-        AffiliationDescriptorConfigElement affiliationDesConfig = null;
-        EntityConfigElement entityConfig = getEntityConfig(realm, entityID);
+        BaseConfigType affiliationDesConfig = null;
+        EntityConfigType entityConfig = getEntityConfig(realm, entityID);
         if (entityConfig != null) {
             affiliationDesConfig =
-                    (AffiliationDescriptorConfigElement)
+                    (BaseConfigType)
                     entityConfig.getAffiliationDescriptorConfig();
         }
         return affiliationDesConfig;
@@ -830,7 +830,7 @@ public class IDFFMetaManager {
                 Iterator entityIterator = entityIDs.iterator();
                 while (entityIterator.hasNext()) {
                     String entityID = (String) entityIterator.next();
-                    EntityConfigElement entityConfig =
+                    EntityConfigType entityConfig =
                             getEntityConfig(realm, entityID);
                     if (entityConfig != null && entityConfig.isHosted()) {
                         hostedEntityList.add(entityID);
@@ -865,7 +865,7 @@ public class IDFFMetaManager {
                 Iterator entityIterator = entityIDs.iterator();
                 while (entityIterator.hasNext()) {
                     String entityID = (String) entityIterator.next();
-                    EntityConfigElement entityConfig =
+                    EntityConfigType entityConfig =
                             getEntityConfig(realm, entityID);
                     if (entityConfig != null && !entityConfig.isHosted()) {
                         remoteEntityList.add(entityID);
@@ -995,12 +995,12 @@ public class IDFFMetaManager {
         String classMethod = "IDFFMetaManager:isTrustedProvider";
         boolean isTrusted = false;
         try {
-            SPDescriptorConfigElement spConfig =
+            BaseConfigType spConfig =
                     getSPDescriptorConfig(realm, entityID);
             if (spConfig != null) {
                 isTrusted = isSameCircleOfTrust(spConfig,realm, entityID);
             } else {
-                IDPDescriptorConfigElement idpConfig =
+                BaseConfigType idpConfig =
                         getIDPDescriptorConfig(realm, entityID);
                 if (idpConfig != null) {
                     isTrusted = isSameCircleOfTrust(idpConfig,realm, entityID);
@@ -1198,8 +1198,8 @@ public class IDFFMetaManager {
                             + " process entity cache for metaAlias=" + metaAlias
                             + ", ID=" + tmpId);
                 }
-                
-                SPDescriptorConfigElement spconfig =
+
+                BaseConfigType spconfig =
                         getSPDescriptorConfig(realm, tmpId);
                 if (spconfig != null) {
                     String tmpMetaAlias = spconfig.getMetaAlias();
@@ -1220,8 +1220,8 @@ public class IDFFMetaManager {
                         }
                     }
                 }
-                
-                IDPDescriptorConfigElement idpconfig =
+
+                BaseConfigType idpconfig =
                         getIDPDescriptorConfig(realm, tmpId);
                 if (idpconfig != null) {
                     String tmpMetaAlias = idpconfig.getMetaAlias();
@@ -1314,8 +1314,8 @@ public class IDFFMetaManager {
                             + " process entity cache for succinctID="
                             + succinctId + ", ID=" + tmpId);
                 }
-                
-                IDPDescriptorConfigElement idpconfig =
+
+                BaseConfigType idpconfig =
                         getIDPDescriptorConfig(realm, tmpId);
                 if (idpconfig != null) {
                     String tmpSuccinctId = FSUtils.generateSourceID(tmpId);
@@ -1457,13 +1457,13 @@ public class IDFFMetaManager {
     private void addEntityToCOT(String realm, String entityID) 
         throws IDFFMetaException 
     {
-        IDPDescriptorConfigElement idpConfig =
+        BaseConfigType idpConfig =
                 getIDPDescriptorConfig(realm, entityID);
         if (idpConfig !=null) {
             addToCircleOfTrust(idpConfig, realm, entityID);
         }
-        
-        SPDescriptorConfigElement spConfig = getSPDescriptorConfig(
+
+        BaseConfigType spConfig = getSPDescriptorConfig(
             realm, entityID);
         if (spConfig != null) {
             addToCircleOfTrust(spConfig,realm, entityID);
@@ -1479,19 +1479,19 @@ public class IDFFMetaManager {
     private void removeEntityFromCOT(String realm, String entityID) 
         throws IDFFMetaException 
     {
-        IDPDescriptorConfigElement idpConfig =
+        BaseConfigType idpConfig =
                 getIDPDescriptorConfig(realm, entityID);
         if (idpConfig != null) {
             removeFromCircleOfTrust(idpConfig, realm, entityID);
         }
-        
-        SPDescriptorConfigElement spConfig = getSPDescriptorConfig(
+
+        BaseConfigType spConfig = getSPDescriptorConfig(
             realm, entityID);
         if (spConfig != null) {
             removeFromCircleOfTrust(spConfig, realm, entityID);
         }
 
-        AffiliationDescriptorConfigElement affiConfig = 
+        BaseConfigType affiConfig =
             getAffiliationDescriptorConfig(realm, entityID);
         if (affiConfig != null) {
             removeFromCircleOfTrust(affiConfig, realm, entityID);

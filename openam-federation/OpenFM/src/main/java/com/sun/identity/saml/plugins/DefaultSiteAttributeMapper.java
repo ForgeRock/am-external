@@ -24,12 +24,12 @@
  *
  * $Id: DefaultSiteAttributeMapper.java,v 1.2 2009/01/08 04:29:00 hengming Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
-
-
 package com.sun.identity.saml.plugins;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -178,7 +178,7 @@ public class DefaultSiteAttributeMapper implements ConsumerSiteAttributeMapper {
                         SAMLUtils.debug.message("DefaultSiteAttributeMapper." +
                             "getAttribute: add atttribute = " + samlAttrName +
                             ", attrNamespace = " + attrNamespace +
-                            ", values = " + localAttrValues);
+                            ", values = " + Arrays.toString(localAttrValues));
                     }
                 }
             }

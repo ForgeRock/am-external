@@ -11,29 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2018 ForgeRock AS.
  */
-
 package com.sun.identity.workflow;
 
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.getCalendarInstance;
 
-import com.iplanet.am.util.SystemProperties;
-import com.iplanet.services.util.JCEEncryption;
-import org.forgerock.openam.password.RandomPasswordGenerator;
-import com.sun.identity.shared.Constants;
-import com.sun.identity.shared.configuration.SystemPropertiesManager;
-import com.sun.identity.shared.debug.Debug;
-import org.apache.commons.lang.ArrayUtils;
-import org.forgerock.guava.common.annotations.VisibleForTesting;
-import org.forgerock.openam.shared.security.crypto.KeyStoreBuilder;
-import org.forgerock.openam.shared.security.crypto.KeyStoreType;
-import org.forgerock.openam.shared.sts.SharedSTSConstants;
-import org.forgerock.openam.utils.StringUtils;
-import org.forgerock.util.encode.Base64;
-
-import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -55,6 +38,24 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.apache.commons.lang.ArrayUtils;
+import org.forgerock.openam.password.RandomPasswordGenerator;
+import org.forgerock.openam.shared.security.crypto.KeyStoreBuilder;
+import org.forgerock.openam.shared.security.crypto.KeyStoreType;
+import org.forgerock.openam.shared.sts.SharedSTSConstants;
+import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.util.encode.Base64;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.iplanet.am.util.SystemProperties;
+import com.iplanet.services.util.JCEEncryption;
+import com.sun.identity.shared.Constants;
+import com.sun.identity.shared.configuration.SystemPropertiesManager;
+import com.sun.identity.shared.debug.Debug;
 
 /**
  * This class is responsible for creating the soap-sts .war file which will expose soap-sts instances published to

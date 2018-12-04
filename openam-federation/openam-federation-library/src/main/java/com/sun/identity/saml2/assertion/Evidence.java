@@ -24,6 +24,7 @@
  *
  * $Id: Evidence.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -81,7 +82,7 @@ public interface Evidence {
      *                in the <code>Evidence</code>.
      * @see #setAssertionIDRef(List)
      */
-    public List getAssertionIDRef();
+    public List<AssertionIDRef> getAssertionIDRef();
 
     /**
      * Sets the <code>AssertionIDRef</code>(s) in the element.
@@ -91,7 +92,7 @@ public interface Evidence {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAssertionIDRef()
      */
-    public void setAssertionIDRef(List value)
+    public void setAssertionIDRef(List<AssertionIDRef> value)
         throws SAML2Exception;
 
     /**
@@ -120,7 +121,7 @@ public interface Evidence {
      * @return List of <code>Assertion</code>(s) in the <code>Evidence</code>.
      * @see #setAssertion(List)
      */
-    public List getAssertion();
+    public List<Assertion> getAssertion();
 
     /**
      * Sets the <code>Assertion</code>(s) in the element.
@@ -129,7 +130,7 @@ public interface Evidence {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAssertion()
      */
-    public void setAssertion(List value)
+    public void setAssertion(List<Assertion> value)
         throws SAML2Exception;
 
     /**
@@ -139,7 +140,7 @@ public interface Evidence {
      *                <code>Evidence</code>.
      * @see #setEncryptedAssertion(List)
      */
-    public List getEncryptedAssertion();
+    public List<EncryptedAssertion> getEncryptedAssertion();
 
     /**
      * Sets the <code>EncryptedAssertion</code>(s) in the element.
@@ -148,7 +149,7 @@ public interface Evidence {
      * @throws SAML2Exception if the object is immutable.
      * @see #getEncryptedAssertion()
      */
-    public void setEncryptedAssertion(List value)
+    public void setEncryptedAssertion(List<EncryptedAssertion> value)
         throws SAML2Exception;
 
     /**

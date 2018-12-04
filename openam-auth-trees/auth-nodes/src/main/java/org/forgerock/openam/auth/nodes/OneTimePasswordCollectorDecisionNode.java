@@ -26,7 +26,6 @@ import java.util.ResourceBundle;
 import javax.inject.Inject;
 import javax.security.auth.callback.PasswordCallback;
 
-import org.forgerock.guava.common.base.Strings;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
@@ -38,6 +37,7 @@ import org.forgerock.openam.utils.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
 import com.google.inject.assistedinject.Assisted;
 
 /**

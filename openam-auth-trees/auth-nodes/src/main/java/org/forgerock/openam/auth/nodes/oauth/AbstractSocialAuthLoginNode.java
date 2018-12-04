@@ -13,7 +13,6 @@
  *
  * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes.oauth;
 
 import static java.util.Collections.singletonList;
@@ -24,23 +23,22 @@ import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.Action.goTo;
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.EMAIL_ADDRESS;
-import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.*;
+import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.ATTRIBUTES_SHARED_STATE_KEY;
+import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.USER_INFO_SHARED_STATE_KEY;
+import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.USER_NAMES_SHARED_STATE_KEY;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.security.auth.callback.Callback;
 
-import com.iplanet.am.util.SystemProperties;
-import com.sun.identity.shared.Constants;
-import org.forgerock.guava.common.base.Optional;
-import org.forgerock.guava.common.collect.ImmutableList;
 import org.forgerock.json.JsonValue;
 import org.forgerock.oauth.DataStore;
 import org.forgerock.oauth.OAuthClient;
@@ -57,8 +55,11 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
+import com.iplanet.am.util.SystemProperties;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.RedirectCallback;
+import com.sun.identity.shared.Constants;
 
 /**
  * This class serves as a base for social authentication login node.

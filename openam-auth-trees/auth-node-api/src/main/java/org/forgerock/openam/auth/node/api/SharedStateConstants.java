@@ -71,4 +71,7 @@ public final class SharedStateConstants {
     /** The gotoOnFail URL parameter key. **/
     public static final String USER_GOTO_ON_FAIL_PARAM_KEY = "userGotoOnFailParam";
 
+    /** The AuthType parameter key. Must be kept in sync with: ISAuthConstants#NODE_TYPE. **/
+    public static final String NODE_TYPE = "NodeType";
+
 }

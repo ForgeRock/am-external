@@ -39,15 +39,12 @@ module.exports = {
     "popoverclickaway"  : "libs/popover-clickaway",
     "prop-types"        : resolve(process.cwd(), "node_modules", "prop-types"),
     "sortable"          : "jquery-sortable",
-    // TODO: Remove this when there are no longer any references to the "underscore" dependency
-    "underscore"        : "lodash",
     "URI"               : "urijs",
 
     // Internal Aliases
     "Footer"            : "org/forgerock/openam/ui/common/components/Footer",
     "ForgotUsernameView": "org/forgerock/openam/ui/user/anonymousProcess/ForgotUsernameView",
     "KBADelegate"       : "org/forgerock/openam/ui/user/services/KBADelegate",
-    "LoginDialog"       : "org/forgerock/openam/ui/user/login/RESTLoginDialog",
     "LoginView"         : "org/forgerock/openam/ui/user/login/RESTLoginView",
     "NavigationFilter"  : "org/forgerock/openam/ui/common/components/navigation/filters/RouteNavGroupFilter",
     "PasswordResetView" : "org/forgerock/openam/ui/user/anonymousProcess/PasswordResetView",

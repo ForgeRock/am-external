@@ -24,12 +24,16 @@
  *
  * $Id: AudienceRestriction.java,v 1.2 2008/06/25 05:47:40 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.assertion;
 
 import java.util.List;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.sun.identity.saml2.assertion.impl.AudienceRestrictionImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /**
@@ -37,6 +41,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  * is addressed to one or more specific <code>Audience</code>s.
  * @supported.all.api
  */
+@JsonDeserialize(as=AudienceRestrictionImpl.class)
 public interface AudienceRestriction extends ConditionAbstract {
 
     /**
@@ -44,7 +49,7 @@ public interface AudienceRestriction extends ConditionAbstract {
      *
      * @return a list of <code>String</code> represented audiences 
      */
-    public List getAudience();
+    List<String> getAudience();
 
     /**
      * Sets the audiences
@@ -52,7 +57,7 @@ public interface AudienceRestriction extends ConditionAbstract {
      * @param audiences List of audiences as URI strings
      * @exception SAML2Exception if the object is immutable
      */
-    public void setAudience(List audiences) throws SAML2Exception;
+    void setAudience(List<String> audiences) throws SAML2Exception;
 
    /**
     * Returns a String representation
@@ -63,7 +68,7 @@ public interface AudienceRestriction extends ConditionAbstract {
     * @return A String representation
     * @exception SAML2Exception if something is wrong during conversion
      */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
+   String toXMLString(boolean includeNSPrefix, boolean declareNS)
      throws SAML2Exception;
 
    /**
@@ -72,18 +77,18 @@ public interface AudienceRestriction extends ConditionAbstract {
     * @return A String representation
     * @exception SAML2Exception if something is wrong during conversion
     */
-    public String toXMLString() throws SAML2Exception;
+   String toXMLString() throws SAML2Exception;
 
    /**
     * Makes the object immutable
     */
-    public void makeImmutable();
+   void makeImmutable();
 
    /**
     * Returns true if the object is mutable
     *
     * @return true if the object is mutable
     */
-    public boolean isMutable();
+   boolean isMutable();
 
 }

@@ -11,35 +11,27 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.authentication.modules.persistentcookie;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.any;
+import static org.assertj.core.api.Assertions.entry;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.INSTANCE_NAME_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.testng.AssertJUnit.assertEquals;
 
-import java.util.Collections;
 import java.util.Map;
 
-import org.forgerock.guava.common.collect.Sets;
-import org.forgerock.jaspi.modules.session.jwt.JwtSessionModule;
 import org.forgerock.jaspi.modules.session.jwt.ServletJwtSessionModule;
 import org.forgerock.openam.utils.AMKeyProvider;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.iplanet.sso.SSOException;
-import com.sun.identity.sm.SMSException;
-import com.sun.identity.sm.ServiceConfig;
-import com.sun.identity.sm.ServiceConfigManager;
+import com.google.common.collect.Sets;
 
 public class PersistentCookieWrapperTest {
 
-    private static final String KEY_ALIAS = "KEY_ALIAS";
     private static final String ANY_STRING = "any_string";
     private static final boolean ANY_BOOLEAN = false;
     private ServletJwtSessionModule jwtSessionModule;
@@ -52,18 +44,7 @@ public class PersistentCookieWrapperTest {
         jwtSessionModule = mock(ServletJwtSessionModule.class);
         amKeyProvider = mock(AMKeyProvider.class);
 
-        persistentCookieWrapper = new PersistentCookieModuleWrapper(jwtSessionModule, amKeyProvider) {
-
-            @Override
-            protected ServiceConfigManager getServiceConfigManager() throws SSOException, SMSException {
-                ServiceConfigManager serviceConfigManager = mock(ServiceConfigManager.class);
-                ServiceConfig serviceConfig = mock(ServiceConfig.class);
-                given(serviceConfig.getAttributeValue("iplanet-am-auth-key-alias")).willReturn(
-                        Sets.newHashSet(KEY_ALIAS));
-                given(serviceConfigManager.getOrganizationConfig(any(), any())).willReturn(serviceConfig);
-                return serviceConfigManager;
-            }
-        };
+        persistentCookieWrapper = new PersistentCookieModuleWrapper(jwtSessionModule);
 
         given(amKeyProvider.getPrivateKeyPass()).willReturn("PRIVATE_KEY_PASS");
         given(amKeyProvider.getKeystoreType()).willReturn("KEYSTORE_TYPE");
@@ -72,19 +53,15 @@ public class PersistentCookieWrapperTest {
     }
 
     @Test
-    public void generatesConfigWithCorrectValues() throws Exception {
+    public void generatesConfigWithCorrectValuesUsingSecretsApi() {
         Map<String, Object> config = persistentCookieWrapper.generateConfig(ANY_STRING, ANY_STRING, ANY_BOOLEAN,
-                ANY_STRING, ANY_BOOLEAN, ANY_BOOLEAN, ANY_STRING, Sets.newHashSet(ANY_STRING), ANY_STRING);
+                ANY_STRING, ANY_BOOLEAN, ANY_BOOLEAN, ANY_STRING, Sets.newHashSet(ANY_STRING),
+                "instance_name");
 
-        assertThat(config).hasSize(13);
+        assertThat(config).hasSize(9);
         assertThat(config).doesNotContainValue(null);
 
-        assertEquals(config.get(JwtSessionModule.KEY_ALIAS_KEY), KEY_ALIAS);
-
-        assertEquals(config.get(JwtSessionModule.PRIVATE_KEY_PASSWORD_KEY), "PRIVATE_KEY_PASS");
-        assertEquals(config.get(JwtSessionModule.KEYSTORE_TYPE_KEY), "KEYSTORE_TYPE");
-        assertEquals(config.get(JwtSessionModule.KEYSTORE_FILE_KEY), "KEYSTORE_FILE_PATH");
-        assertEquals(config.get(JwtSessionModule.KEYSTORE_PASSWORD_KEY), "KEYSTORE_PASS");
+        assertThat(config)
+                .contains(entry(INSTANCE_NAME_KEY, "instance_name"));
     }
-
 }

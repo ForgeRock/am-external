@@ -24,14 +24,15 @@
  *
  * $Id: AttributeQueryUtil.java,v 1.11 2009/07/24 22:51:48 madan_ranganath Exp $
  *
- * Portions copyright 2010-2017 ForgeRock AS.
+ * Portions copyright 2010-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.newDate;
 
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -39,19 +40,18 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
+
 import javax.crypto.SecretKey;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
-import com.sun.identity.saml2.common.SOAPCommunicator;
+import org.forgerock.openam.utils.CollectionUtils;
 import org.w3c.dom.Element;
 
-import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.plugin.datastore.DataStoreProvider;
+import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.saml2.assertion.Assertion;
 import com.sun.identity.saml2.assertion.AssertionFactory;
@@ -59,21 +59,21 @@ import com.sun.identity.saml2.assertion.Attribute;
 import com.sun.identity.saml2.assertion.AttributeStatement;
 import com.sun.identity.saml2.assertion.Conditions;
 import com.sun.identity.saml2.assertion.EncryptedAssertion;
+import com.sun.identity.saml2.assertion.EncryptedID;
 import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.assertion.NameID;
-import com.sun.identity.saml2.assertion.EncryptedID;
 import com.sun.identity.saml2.assertion.Subject;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.jaxb.assertion.AttributeElement;
-import com.sun.identity.saml2.jaxb.assertion.AttributeValueElement;
+import com.sun.identity.saml2.common.SOAPCommunicator;
+import com.sun.identity.saml2.jaxb.assertion.AttributeType;
 import com.sun.identity.saml2.jaxb.entityconfig.AttributeAuthorityConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.AttributeQueryConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
-import com.sun.identity.saml2.jaxb.metadata.AttributeAuthorityDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.AttributeServiceElement;
-import com.sun.identity.saml2.jaxb.metadataextquery.AttributeQueryDescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.AttributeAuthorityDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.AttributeServiceType;
+import com.sun.identity.saml2.jaxb.metadataextquery.AttributeQueryDescriptorType;
 import com.sun.identity.saml2.key.EncInfo;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
@@ -134,7 +134,7 @@ public class AttributeQueryUtil {
         String attrAuthorityEntityID, String realm, String attrQueryProfile,
         String attrProfile, String binding) throws SAML2Exception {
 
-        AttributeAuthorityDescriptorElement aad = null;
+        AttributeAuthorityDescriptorType aad = null;
         try {
              aad = metaManager.getAttributeAuthorityDescriptor(
                 realm, attrAuthorityEntityID);
@@ -196,7 +196,7 @@ public class AttributeQueryUtil {
         String attrAuthorityEntityID, String realm, String attrQueryProfile,
         String attrProfile, String binding) throws SAML2Exception {
 
-        AttributeAuthorityDescriptorElement aad = null;
+        AttributeAuthorityDescriptorType aad = null;
         try {
              aad = metaManager.getAttributeAuthorityDescriptor(
                 realm, attrAuthorityEntityID);
@@ -286,7 +286,7 @@ public class AttributeQueryUtil {
 
         Issuer issuer = attrQuery.getIssuer();
         String requesterEntityID = issuer.getValue();        
-        AttributeAuthorityDescriptorElement aad = null;
+        AttributeAuthorityDescriptorType aad = null;
         try {
              aad = metaManager.getAttributeAuthorityDescriptor(
                 realm, attrAuthorityEntityID);
@@ -500,7 +500,7 @@ public class AttributeQueryUtil {
 
         String requestedEntityID = attrQuery.getIssuer().getValue();
 
-        AttributeQueryDescriptorElement attrqDesc =
+        AttributeQueryDescriptorType attrqDesc =
             metaManager.getAttributeQueryDescriptor(realm, requestedEntityID);
         if (attrqDesc == null) {
             throw new SAML2Exception(SAML2Utils.bundle.getString(
@@ -817,7 +817,7 @@ public class AttributeQueryUtil {
         SecretKey secretKey = EncManager.getEncInstance().getSecretKey(encryptedID.toXMLString(true, true),
                 KeyUtil.getDecryptionKeys(realm, attrAuthorityEntityID, SAML2Constants.ATTR_AUTH_ROLE));
 
-        AttributeQueryDescriptorElement aqd =
+        AttributeQueryDescriptorType aqd =
             metaManager.getAttributeQueryDescriptor(realm, requesterEntityID);
         EncInfo encInfo = KeyUtil.getEncInfo(aqd, requesterEntityID,
             SAML2Constants.ATTR_QUERY_ROLE);
@@ -831,7 +831,7 @@ public class AttributeQueryUtil {
         return AssertionFactory.getInstance().createEncryptedAssertion(el);
     }
 
-    private static List<Attribute> verifyDesiredAttributes(List<AttributeElement> supportedAttrs,
+    private static List<Attribute> verifyDesiredAttributes(List<AttributeType> supportedAttrs,
             List<Attribute> desiredAttrs) throws SAML2Exception {
         if (supportedAttrs == null || supportedAttrs.isEmpty()) {
             return desiredAttrs;
@@ -843,9 +843,9 @@ public class AttributeQueryUtil {
 
         for (Attribute desiredAttr : desiredAttrs) {
             boolean isAttrValid = false;
-            Iterator<AttributeElement> supportedAttrIterator = supportedAttrs.iterator();
+            Iterator<AttributeType> supportedAttrIterator = supportedAttrs.iterator();
             while (supportedAttrIterator.hasNext()) {
-                AttributeElement supportedAttr = supportedAttrIterator.next();
+                AttributeType supportedAttr = supportedAttrIterator.next();
                 if (isSameAttribute(desiredAttr, supportedAttr)) {
                     if (isValueValid(desiredAttr, supportedAttr)) {
                         isAttrValid = true;
@@ -865,33 +865,29 @@ public class AttributeQueryUtil {
         return desiredAttrs;
     }
 
-    private static List convertAttributes(List jaxbAttrs)
+    private static List<Attribute> convertAttributes(List<AttributeType> jaxbAttrs)
         throws SAML2Exception {
 
-        List resultAttrs = new ArrayList();
-        for(Iterator iter = jaxbAttrs.iterator(); iter.hasNext(); ) {
-            AttributeElement jaxbAttr = (AttributeElement)iter.next();
-            Attribute attr = AssertionFactory.getInstance().createAttribute();
-            attr.setName(jaxbAttr.getName());
-            attr.setNameFormat(jaxbAttr.getNameFormat());
-            attr.setFriendlyName(jaxbAttr.getFriendlyName());
+        List<Attribute> resultAttrs = new ArrayList<>();
 
-            List jaxbValues = jaxbAttr.getAttributeValue();
-            if ((jaxbValues != null) && (!jaxbValues.isEmpty())) {
-                List newValues = new ArrayList();
-                for(Iterator iterV = jaxbValues.iterator(); iterV.hasNext();) {
-                    AttributeValueElement jaxbValeu =
-                        (AttributeValueElement)iter.next();
-                    List content = jaxbValeu.getContent();
-                    if ((content != null) && (!content.isEmpty())) {
-                        newValues.add(content.get(0));
+        for (AttributeType attributeType : jaxbAttrs) {
+            Attribute attribute = AssertionFactory.getInstance().createAttribute();
+            attribute.setName(attributeType.getName());
+            attribute.setNameFormat(attributeType.getNameFormat());
+            attribute.setFriendlyName(attributeType.getFriendlyName());
+            List<Object> attributeValues = attributeType.getAttributeValue();
+            if (CollectionUtils.isNotEmpty(attributeValues)) {
+                List<Object> newValues = new ArrayList<>();
+                for (Object attributeValue : attributeValues) {
+                    if (attributeValue instanceof Element) {
+                        newValues.add(((Element) attributeValue).getTextContent());
                     }
                 }
                 if (!newValues.isEmpty()) {
-                    attr.setAttributeValueString(newValues);
+                    attribute.setAttributeValueString(newValues);
                 }
             }
-            resultAttrs.add(attr);
+            resultAttrs.add(attribute);
         }
         return resultAttrs;
     }
@@ -987,7 +983,7 @@ public class AttributeQueryUtil {
         }
     }
 
-    private static boolean isSameAttribute(Attribute desired, AttributeElement supported) {
+    private static boolean isSameAttribute(Attribute desired, AttributeType supported) {
         return desired.getName().equals(supported.getName())
                 && isNameFormatMatching(desired.getNameFormat(), supported.getNameFormat());
     }
@@ -1014,22 +1010,22 @@ public class AttributeQueryUtil {
     }
 
     private static boolean isValueValid(Attribute desiredAttr,
-        AttributeElement supportedAttr) {
+        AttributeType supportedAttr) {
 
-        List valuesD = desiredAttr.getAttributeValueString();
+        List<String> valuesD = desiredAttr.getAttributeValueString();
         if ((valuesD == null) || (valuesD.isEmpty())) {
             return true;
         }
-        List attrValuesS = supportedAttr.getAttributeValue();
-        if ((attrValuesS == null) || (attrValuesS.isEmpty())) {
+        List<Object> attrValuesS = supportedAttr.getAttributeValue();
+        if (CollectionUtils.isEmpty(attrValuesS)) {
             return true;
         }
 
-        List valuesS = new ArrayList();
-        for(Iterator iter = attrValuesS.iterator(); iter.hasNext(); ) {
-            AttributeValueElement attrValueElem =
-                (AttributeValueElement)iter.next();
-            valuesS.addAll(attrValueElem.getContent());
+        List<String> valuesS = new ArrayList<>();
+        for (Object attributeValue : attrValuesS) {
+            if (attributeValue instanceof Element) {
+                valuesS.add(((Element) attributeValue).getTextContent());
+            }
         }
 
         try {
@@ -1045,7 +1041,7 @@ public class AttributeQueryUtil {
 
     private static Response sendAttributeQuerySOAP(AttributeQuery attrQuery,
         String attributeServiceURL, String attrAuthorityEntityID,
-        AttributeAuthorityDescriptorElement aad) throws SAML2Exception {
+        AttributeAuthorityDescriptorType aad) throws SAML2Exception {
 
         String attrQueryXMLString = attrQuery.toXMLString(true, true);
         if (SAML2Utils.debug.messageEnabled()) {
@@ -1099,7 +1095,7 @@ public class AttributeQueryUtil {
 
     private static void verifyResponse(Response response,
         AttributeQuery attrQuery, String attrAuthorityEntityID,
-        AttributeAuthorityDescriptorElement aad)
+        AttributeAuthorityDescriptorType aad)
         throws SAML2Exception {
 
         String attrQueryID = attrQuery.getID();
@@ -1147,7 +1143,7 @@ public class AttributeQueryUtil {
     }
 
     private static String findLocation(
-        AttributeAuthorityDescriptorElement aad, String binding,
+        AttributeAuthorityDescriptorType aad, String binding,
         String attrQueryProfile, String attrProfile) {
         SAML2Utils.debug.message("AttributeQueryUtil.findLocation entering...");
         List attrProfiles = aad.getAttributeProfile();
@@ -1165,8 +1161,8 @@ public class AttributeQueryUtil {
 
         List attrServices = aad.getAttributeService();
         for(Iterator iter = attrServices.iterator(); iter.hasNext(); ) {
-            AttributeServiceElement attrService =
-                (AttributeServiceElement)iter.next();
+            AttributeServiceType attrService =
+                (AttributeServiceType)iter.next();
             if (isValidAttributeService(binding, attrService,
                 attrQueryProfile)) {
                 SAML2Utils.debug.message("AttributeQueryUtil.findLocation: found valid service");
@@ -1179,7 +1175,7 @@ public class AttributeQueryUtil {
     }
 
     private static boolean isValidAttributeService(String binding,
-        AttributeServiceElement attrService, String attrQueryProfile) {
+        AttributeServiceType attrService, String attrQueryProfile) {
     
         if (!binding.equalsIgnoreCase(attrService.getBinding())) {
             return false;
@@ -1347,7 +1343,7 @@ public class AttributeQueryUtil {
             return null;
         }
 
-        String attrqMetaAlias = attrQueryConfig.getMetaAlias();
+        String attrqMetaAlias = attrQueryConfig.getValue().getMetaAlias();
         if (attrqMetaAlias == null) {
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message(classMethod + "Attribute Query MetaAlias is null");
@@ -1378,7 +1374,7 @@ public class AttributeQueryUtil {
         if (validResp) {
             // Return back the AttributeMap
             if (samlResp != null) {
-                List<Object> assertions;
+                List<?> assertions;
                 if (wantNameIDEncrypted) {
                     assertions = samlResp.getEncryptedAssertion();
                 } else {
@@ -1500,7 +1496,7 @@ public class AttributeQueryUtil {
         if (!wantNameIDEncrypted) {
             subject.setNameID(nameID);
         } else {
-            AttributeAuthorityDescriptorElement aad =
+            AttributeAuthorityDescriptorType aad =
                   metaManager.getAttributeAuthorityDescriptor("/", idpEntityID);
 
             EncInfo encInfo = KeyUtil.getEncInfo(aad, idpEntityID,

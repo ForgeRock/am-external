@@ -13,33 +13,23 @@
  *
  * Copyright 2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.stream.Collectors.joining;
 import static org.forgerock.openam.auth.node.api.Action.send;
 
-import java.security.Key;
-import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.security.auth.callback.Callback;
 
 import org.apache.http.client.utils.URIBuilder;
-import org.forgerock.guava.common.base.Optional;
 import org.forgerock.json.JsonValue;
-import org.forgerock.json.jose.builders.JwtBuilderFactory;
-import org.forgerock.json.jose.builders.JwtClaimsSetBuilder;
-import org.forgerock.json.jose.jwe.EncryptionMethod;
-import org.forgerock.json.jose.jwe.JweAlgorithm;
-import org.forgerock.json.jose.jws.JwsAlgorithm;
-import org.forgerock.json.jose.jws.SigningManager;
-import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
@@ -51,15 +41,13 @@ import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.authentication.modules.oauth2.OAuthUtil;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-import org.forgerock.openam.utils.AMKeyProvider;
-import org.forgerock.util.encode.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.authentication.spi.AuthLoginException;
@@ -83,10 +71,10 @@ public class ProvisionIdmAccountNode extends SingleOutcomeNode {
 
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final IdmIntegrationService idmIntegrationService;
-    private final AMKeyProvider amKeyProvider;
     private final Realm realm;
     private final SocialOAuth2Helper authModuleHelper;
     private final Config config;
+    private final ClientTokenJwtGenerator clientTokenJwtGenerator;
 
     /**
      * The interface Config.
@@ -105,23 +93,25 @@ public class ProvisionIdmAccountNode extends SingleOutcomeNode {
     /**
      * Constructs a new {@link ProvisionIdmAccountNode} with the provided {@link ProvisionIdmAccountNode.Config}.
      *
-     * @param config The node configuration
-     * @param realm The realm context
-     * @param authModuleHelper Helper class for oauth2
-     * @param idmIntegrationService Service stub for the IDM integration service
-     * @param amKeyProvider Handle to the AM key provider for signing the payload to pass to IDM
+     * @param config The node configuration.
+     * @param realm The realm context.
+     * @param authModuleHelper Helper class for oauth2.
+     * @param idmIntegrationService Service stub for the IDM integration service.
+     * @param clientTokenJwtGenerator Helper class for creating signed JWT to pass to IDM for account provisioning.
      * @throws NodeProcessException if there is a problem during construction.
      */
     @Inject
-    public ProvisionIdmAccountNode(@Assisted Config config,
+    public ProvisionIdmAccountNode(
+            @Assisted Config config,
             @Assisted Realm realm,
             SocialOAuth2Helper authModuleHelper,
-            IdmIntegrationService idmIntegrationService, AMKeyProvider amKeyProvider) throws NodeProcessException {
+            IdmIntegrationService idmIntegrationService,
+            ClientTokenJwtGenerator clientTokenJwtGenerator) throws NodeProcessException {
         this.config = config;
         this.realm = realm;
         this.authModuleHelper = authModuleHelper;
         this.idmIntegrationService = idmIntegrationService;
-        this.amKeyProvider = amKeyProvider;
+        this.clientTokenJwtGenerator = clientTokenJwtGenerator;
     }
 
     @Override
@@ -176,7 +166,7 @@ public class ProvisionIdmAccountNode extends SingleOutcomeNode {
         urlRoot += "#handleOAuth/&";
         URIBuilder uriBuilder = new URIBuilder();
         uriBuilder.addParameter("returnParams", generateRequestParams(context));
-        uriBuilder.addParameter("clientToken", generateClientJwtToken(idmConfig, context.sharedState));
+        uriBuilder.addParameter("clientToken", clientTokenJwtGenerator.generate(idmConfig, context.sharedState));
         return urlRoot + uriBuilder.toString().substring(1);
     }
 
@@ -185,29 +175,6 @@ public class ProvisionIdmAccountNode extends SingleOutcomeNode {
                 .filter(e -> Arrays.asList(PARAMS).contains(e.getKey()))
                 .map(e -> e.getKey() + "=" + e.getValue().get(0))
                 .collect(joining("&"));
-    }
-
-    private String generateClientJwtToken(IdmIntegrationConfig idmIntegrationConfig, JsonValue sharedState)
-            throws JsonProcessingException {
-        Key signingKey = amKeyProvider.getSecretKey(idmIntegrationConfig.getSigningKeyAlias());
-        String sharedSecret = Base64.encode(signingKey.getEncoded());
-        PublicKey encryptionKey = amKeyProvider.getCertificate(idmIntegrationConfig.getEncryptionKeyAlias())
-                .getPublicKey();
-
-        JwtClaimsSet claimsSet = new JwtClaimsSetBuilder()
-                .claim("state", new ObjectMapper().writeValueAsString(sharedState.getObject()))
-                .build();
-
-        SigningManager signingManager = new SigningManager();
-        return new JwtBuilderFactory().jwe(encryptionKey)
-                .headers()
-                .alg(JweAlgorithm.valueOf(idmIntegrationConfig.getEncryptionAlgorithm()))
-                .enc(EncryptionMethod.valueOf(idmIntegrationConfig.getEncryptionMethod()))
-                .done()
-                .claims(claimsSet)
-                .signedWith(signingManager.newHmacSigningHandler(sharedSecret.getBytes()),
-                        JwsAlgorithm.valueOf(idmIntegrationConfig.getSigningAlgorithm()))
-                .build();
     }
 
     private Map<String, Set<String>> convertMapOfListToMapOfSet(Map<String, List<String>> attrMap) {

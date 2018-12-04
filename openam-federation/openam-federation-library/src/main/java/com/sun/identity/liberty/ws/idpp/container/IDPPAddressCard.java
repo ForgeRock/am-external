@@ -24,24 +24,31 @@
  *
  * $Id: IDPPAddressCard.java,v 1.2 2008/06/25 05:47:15 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.liberty.ws.idpp.container;
 
-import com.sun.identity.shared.datastruct.CollectionHelper;
-import javax.xml.bind.JAXBException;
-import java.util.Set;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
-import org.w3c.dom.Document;
-import com.sun.identity.liberty.ws.idpp.common.*;
-import com.sun.identity.liberty.ws.idpp.jaxb.*;
-import com.sun.identity.liberty.ws.idpp.plugin.*;
+
+import javax.xml.bind.JAXBException;
+
+import com.sun.identity.liberty.ws.idpp.common.IDPPConstants;
+import com.sun.identity.liberty.ws.idpp.common.IDPPException;
+import com.sun.identity.liberty.ws.idpp.common.IDPPUtils;
+import com.sun.identity.liberty.ws.idpp.jaxb.AddressCardType;
+import com.sun.identity.liberty.ws.idpp.jaxb.AddressType;
+import com.sun.identity.liberty.ws.idpp.jaxb.DSTString;
+import com.sun.identity.liberty.ws.idpp.jaxb.DSTURI;
+import com.sun.identity.liberty.ws.idpp.jaxb.PPType;
+import com.sun.identity.shared.datastruct.CollectionHelper;
 
 
 /**
@@ -64,13 +71,13 @@ public class IDPPAddressCard extends IDPPBaseContainer {
       * Gets the container object i.e. LegalIdentity JAXB Object 
       * @param userMap user map
       * @return LegalIdentityElement JAXB Object.
-      * @exception IDPPException.
+      * @exception IDPPException
       */
      public Object getContainerObject(Map userMap) throws IDPPException {
 
          IDPPUtils.debug.message("IDPPAddressCard:getContainerObject:Init");
          try {
-             PPType ppType = IDPPUtils.getIDPPFactory().createPPElement();
+             PPType ppType = IDPPUtils.getIDPPFactory().createPPType();
 
              Set addressCards = (Set)userMap.get(
                   getAttributeMapper().getDSAttribute(
@@ -84,7 +91,7 @@ public class IDPPAddressCard extends IDPPBaseContainer {
              Iterator iter = addressCards.iterator();
              while(iter.hasNext()) {
                 String addrCard = (String)iter.next();
-                AddressCardElement ace = parseEntry(addrCard, userMap);
+                AddressCardType ace = parseEntry(addrCard, userMap);
                 if(ace != null) {
                    ppType.getAddressCard().add(ace);
                 }
@@ -102,7 +109,7 @@ public class IDPPAddressCard extends IDPPBaseContainer {
     /**
      * Parses the entry and creates an address card element from the given map
      */
-     private AddressCardElement parseEntry(String entry, Map userMap)
+     private AddressCardType parseEntry(String entry, Map userMap)
        throws JAXBException {
 
          if(entry == null || entry.length() == 0) {
@@ -115,8 +122,8 @@ public class IDPPAddressCard extends IDPPBaseContainer {
             return null;
          }
 
-         AddressCardElement ace =
-            IDPPUtils.getIDPPFactory().createAddressCardElement();
+         AddressCardType ace =
+            IDPPUtils.getIDPPFactory().createAddressCardType();
 
          StringTokenizer st = new StringTokenizer(entry, 
               IDPPConstants.ATTRIBUTE_SEPARATOR);
@@ -182,7 +189,7 @@ public class IDPPAddressCard extends IDPPBaseContainer {
             return null;
          }
 
-         AddressType ae = IDPPUtils.getIDPPFactory().createAddressElement();
+         AddressType ae = IDPPUtils.getIDPPFactory().createAddressType();
          ae.setC(getDSTString(country));
          ae.setSt(getDSTString(state));
          ae.setL(getDSTString(city));
@@ -229,7 +236,7 @@ public class IDPPAddressCard extends IDPPBaseContainer {
       * @param select select expression
       * @param data list of new data objects.
       * @return Attribute key value pair for the given select.
-      * @exception IDPPException.
+      * @exception IDPPException
       */
      public Map getDataMapForSelect(String select, List data) 
       throws IDPPException {
@@ -269,7 +276,7 @@ public class IDPPAddressCard extends IDPPBaseContainer {
      * @param expContext Given select expression context.
      * @param dataElement DataElement. 
      * @return Map Modifiable attribute value pair.
-     * @exception IDPPException.
+     * @exception IDPPException
      */
     private Map getDataMap(String expContext, Object dataElement)
        throws IDPPException {
@@ -302,8 +309,8 @@ public class IDPPAddressCard extends IDPPBaseContainer {
                  tmpMap.put(addressType, REMOVE_CARD);
                  return setAddressMap(tmpMap);
               } 
-           } else if(dataElement instanceof AddressCardElement) {
-              AddressCardElement addr = (AddressCardElement)dataElement;
+           } else if(dataElement instanceof AddressCardType) {
+               AddressCardType addr = (AddressCardType)dataElement;
               if(addressType == null || addressType.length() == 0) {
                  List list = addr.getAddrType();
                  if(list != null && list.size() != 0) {
@@ -365,8 +372,8 @@ public class IDPPAddressCard extends IDPPBaseContainer {
            if(dataElement == null) {
               entry = modifyAddress(entry, null);
 
-           } else if(dataElement instanceof AddressElement) {
-              AddressElement ae = (AddressElement)dataElement;
+           } else if(dataElement instanceof AddressType) {
+               AddressType ae = (AddressType)dataElement;
               entry = modifyAddress(entry, ae);
 
            } else {
@@ -413,7 +420,7 @@ public class IDPPAddressCard extends IDPPBaseContainer {
      /**
       * Create a new address card.
       */
-     private String createAddressCard(AddressCardElement ace, 
+     private String createAddressCard(AddressCardType ace,
                  String addressType) {
 
         StringBuffer sb = new StringBuffer();
@@ -484,7 +491,7 @@ public class IDPPAddressCard extends IDPPBaseContainer {
      /**
       * Modifies the address entry.
       */
-     private String modifyAddress(String entry, AddressElement ae) {
+     private String modifyAddress(String entry, AddressType ae) {
 
         StringBuffer sb = new StringBuffer(100);
         StringTokenizer st = new StringTokenizer(entry, "|");
@@ -557,11 +564,11 @@ public class IDPPAddressCard extends IDPPBaseContainer {
      /**
       * Modifies the address card entry.
       */
-     private String modifyAddressCard(String entry, AddressCardElement ace) {
+     private String modifyAddressCard(String entry, AddressCardType ace) {
 
          StringBuffer sb = new StringBuffer(100);
 
-         AddressElement ae = (AddressElement)ace.getAddress();
+         AddressType ae = (AddressType)ace.getAddress();
          String address = modifyAddress(entry, ae);
          StringTokenizer st = new StringTokenizer(address, "|");
 

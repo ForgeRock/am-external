@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,60 +24,61 @@
  *
  * $Id: SigProvider.java,v 1.2 2008/06/25 05:48:04 qcheng Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.xmlsig;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Set;
 
+import org.w3c.dom.Element;
+
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /**
- * <code>SigProvider</code> is an interface for signing
- * and verifying XML documents
- */ 
+ * <code>SigProvider</code> is an interface for signing and verifying XML documents.
+ */
 public interface SigProvider {
-    /**
-     * Sign the xml document node whose identifying attribute value
-     * is as supplied, using enveloped signatures and use exclusive xml
-     * canonicalization. The resulting signature is inserted after the
-     * first child node (normally Issuer element for SAML2) of the node
-     * to be signed.
-     * @param xmlString String representing an XML document to be signed
-     * @param idValue id attribute value of the root node to be signed
-     * @param privateKey Signing key
-     * @param cert Certificate which contain the public key correlated to
-     *             the signing key; It if is not null, then the signature
-     *             will include the certificate; Otherwise, the signature
-     *             will not include any certificate
-     * @return Element representing the signature element
-     * @throws SAML2Exception if the document could not be signed
-     */
-    public Element sign(
-	String xmlString,
-	String idValue,
-	PrivateKey privateKey,
-	X509Certificate cert
-    ) throws SAML2Exception;
 
-	/**
-	 * Verify the signature of the xml document.
-	 *
-	 * @param xmlString String representing an signed XML document.
-	 * @param idValue id attribute value of the node whose signature is to be verified.
-	 * @param verificationCerts Certificates containing the public keys which may be used for signature verification;
-	 *                          This certificate may also may be used to check against the certificate included in the
-	 *                          signature.
-	 * @return true if the xml signature is verified, false otherwise.
-	 * @throws SAML2Exception if problem occurs during verification.
-	 */
-    public boolean verify(
-	String xmlString,
-	String idValue,
-	Set<X509Certificate> verificationCerts
-    ) throws SAML2Exception;
+    /**
+     * Sign the XML document node whose identifying attribute value is as supplied, using enveloped signatures and use
+     * exclusive XML canonicalization. The resulting signature is inserted after the first child node (normally Issuer
+     * element for SAML2) of the node to be signed.
+     *
+     * @param xmlString String representing the XML document to be signed.
+     * @param idValue ID attribute value of the root node to be signed.
+     * @param privateKey Signing key.
+     * @param cert Certificate which contain the public key corresponding to the signing key; It if is not null, then
+     * the signature will include the certificate; Otherwise, the signature will not include any certificate.
+     * @return Element representing the signature element.
+     * @throws SAML2Exception If the document could not be signed.
+     */
+    Element sign(String xmlString, String idValue, PrivateKey privateKey, X509Certificate cert) throws SAML2Exception;
+
+    /**
+     * Verify the enveloped signature in the provided XML document.
+     *
+     * @param xmlString String representing an signed XML document.
+     * @param idValue ID attribute value of the node whose signature is to be verified.
+     * @param verificationCerts Certificates containing the public keys which may be used for signature verification;
+     * These certificates may also may be used to check against the certificate included in the signature.
+     * @return True if the xml signature was successfully verified, false otherwise.
+     * @throws SAML2Exception If problem occurs during verification.
+     */
+    boolean verify(String xmlString, String idValue, Set<X509Certificate> verificationCerts) throws SAML2Exception;
+
+    /**
+     * Verify the enveloped signature in the provided XML document.
+     *
+     * @param xmlString String representing an signed XML document.
+     * @param idAttribute The name of the ID attribute on the root element. May not be null.
+     * @param idValue ID attribute value of the node whose signature is to be verified.
+     * @param verificationCerts Certificates containing the public keys which may be used for signature verification;
+     * These certificates may also may be used to check against the certificate included in the signature.
+     * @return True if the xml signature was successfully verified, false otherwise.
+     * @throws SAML2Exception If problem occurs during verification.
+     */
+    boolean verify(String xmlString, String idAttribute, String idValue, Set<X509Certificate> verificationCerts)
+            throws SAML2Exception;
 }

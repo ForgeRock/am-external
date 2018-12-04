@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2017 ForgeRock AS.
+ * Copyright 2013-2018 ForgeRock AS.
  */
 package org.forgerock.openam.idrepo.ldap;
 
@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import com.sun.identity.idm.IdRepoListener;
 import org.forgerock.openam.utils.CrestQuery;
@@ -223,9 +224,9 @@ public class GenericRepoTest extends IdRepoTestBase {
         Map<String, Set<String>> attrs = MapHelper.readMap("/config/users/testuser1.properties");
         String dn = idrepo.create(null, IdType.USER, TEST_USER1, attrs);
         assertThat(dn).isEqualTo("uid=testuser1,ou=people,dc=openam,dc=forgerock,dc=org");
-        Map<String, Set<String>> createdAttrs =
-                new CaseInsensitiveHashMap(idrepo.getAttributes(null, IdType.USER, TEST_USER1));
-        assertThat(createdAttrs.keySet().containsAll(asSet("objectclass", "uid", "sn", "cn", "postaladdress")));
+        Map<String, Set<String>> createdAttrs = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        createdAttrs.putAll(idrepo.getAttributes(null, IdType.USER, TEST_USER1));
+        assertThat(createdAttrs).containsKeys("objectclass", "uid", "sn", "cn", "postaladdress");
         assertThat(createdAttrs.get("sn")).containsOnly(TEST_USER1);
         assertThat(createdAttrs.get("cn")).containsOnly(TEST_USER1);
         assertThat(createdAttrs.get("postaladdress")).containsOnly("true");

@@ -19,6 +19,7 @@ import static java.util.Arrays.asList;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.NODE_TYPE;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -254,6 +255,42 @@ public final class Action {
         public ActionBuilder addWebhooks(List<String> webhooks) {
             Reject.ifNull(webhooks);
             this.webhooks.addAll(webhooks);
+            return this;
+        }
+
+        /**
+         * Update the NodeType session property, and the NodeType sharedState value.
+         * This method will copy the supplied TreeContext's shared state into this builder
+         * if the builder does not already have a sharedState set.
+         *
+         * @param context The tree context.
+         * @param authName Name of the auth module just passed
+         * @return the same instance of ActionBuilder.
+         */
+        public ActionBuilder addNodeType(TreeContext context, String authName) {
+
+            String authType = null;
+
+            if (sharedState == null) {
+                replaceSharedState(context.sharedState.copy());
+            }
+
+            if (sharedState.contains(NODE_TYPE)) {
+                authType = sharedState.get(NODE_TYPE).asString();
+            }
+
+            StringBuilder newAuthType = new StringBuilder();
+
+            if (authType != null) {
+                newAuthType.append(authType);
+            }
+
+            newAuthType.append(authName);
+            newAuthType.append("|");
+
+            replaceSharedState(sharedState.put(NODE_TYPE, newAuthType.toString()));
+            putSessionProperty(NODE_TYPE, newAuthType.toString());
+
             return this;
         }
 

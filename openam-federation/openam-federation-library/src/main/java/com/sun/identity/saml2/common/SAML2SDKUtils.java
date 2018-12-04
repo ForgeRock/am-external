@@ -24,7 +24,7 @@
  *
  * $Id: SAML2SDKUtils.java,v 1.12 2008/08/31 05:49:48 bina Exp $
  *
- * Portions copyright 2014-2017 ForgeRock AS.
+ * Portions copyright 2014-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import javax.servlet.http.HttpServletRequest;
+import javax.xml.bind.JAXBElement;
 import javax.xml.soap.SOAPException;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
@@ -73,7 +74,7 @@ public class SAML2SDKUtils {
     public static final String BUNDLE_NAME = "libSAML2";
     // The resource bundle for SAML 2.0 implementation.
     public static ResourceBundle bundle = Locale.
-        getInstallResourceBundle(BUNDLE_NAME);
+            getInstallResourceBundle(BUNDLE_NAME);
     protected static final String SAML2ID_PREFIX = "s2";
     public static SecureRandom random = new SecureRandom();
 
@@ -87,40 +88,40 @@ public class SAML2SDKUtils {
     private static Map classMapping = new HashMap();
 
     // define constants for the interface names
-    public static final String ACTION = "Action"; 
-    public static final String ADVICE = "Advice"; 
+    public static final String ACTION = "Action";
+    public static final String ADVICE = "Advice";
     public static final String ASSERTION = "Assertion";
     public static final String ASSERTION_ID_REF = "AssertionIDRef";
     public static final String ASSERTION_ID_REQUEST = "AssertionIDRequest";
-    public static final String ATTRIBUTE = "Attribute"; 
+    public static final String ATTRIBUTE = "Attribute";
     public static final String ATTRIBUTE_STATEMENT = "AttributeStatement";
-    public static final String AUDIENCE_RESTRICTION = "AudienceRestriction"; 
-    public static final String AUTHN_CONTEXT = "AuthnContext"; 
-    public static final String AUTHN_STATEMENT = "AuthnStatement"; 
-    public static final String AUTHZ_DECISION_STATEMENT = 
-        "AuthzDecisionStatement"; 
-    public static final String BASEID = "BaseID"; 
-    public static final String CONDITION = "Condition"; 
-    public static final String CONDITIONS = "Conditions"; 
+    public static final String AUDIENCE_RESTRICTION = "AudienceRestriction";
+    public static final String AUTHN_CONTEXT = "AuthnContext";
+    public static final String AUTHN_STATEMENT = "AuthnStatement";
+    public static final String AUTHZ_DECISION_STATEMENT =
+            "AuthzDecisionStatement";
+    public static final String BASEID = "BaseID";
+    public static final String CONDITION = "Condition";
+    public static final String CONDITIONS = "Conditions";
     public static final String ENCRYPTED_ASSERTION = "EncryptedAssertion";
-    public static final String ENCRYPTED_ATTRIBUTE = "EncryptedAttribute"; 
-    public static final String ENCRYPTED_ELEMENT = "EncryptedElement"; 
-    public static final String ENCRYPTEDID = "EncryptedID"; 
+    public static final String ENCRYPTED_ATTRIBUTE = "EncryptedAttribute";
+    public static final String ENCRYPTED_ELEMENT = "EncryptedElement";
+    public static final String ENCRYPTEDID = "EncryptedID";
     public static final String EVIDENCE = "Evidence";
-    public static final String ISSUER = "Issuer"; 
-    public static final String KEYINFO_CONFIRMATION_DATA = 
-        "KeyInfoConfirmationData"; 
-    public static final String NAMEID = "NameID"; 
-    public static final String ONE_TIME_USE = "OneTimeUse"; 
-    public static final String PROXY_RESTRICTION = "ProxyRestriction"; 
-    public static final String STATEMENT = "Statement"; 
-    public static final String SUBJECT_CONFIRMATION_DATA = 
-        "SubjectConfirmationData"; 
-    public static final String SUBJECT_CONFIRMATION = "SubjectConfirmation"; 
+    public static final String ISSUER = "Issuer";
+    public static final String KEYINFO_CONFIRMATION_DATA =
+            "KeyInfoConfirmationData";
+    public static final String NAMEID = "NameID";
+    public static final String ONE_TIME_USE = "OneTimeUse";
+    public static final String PROXY_RESTRICTION = "ProxyRestriction";
+    public static final String STATEMENT = "Statement";
+    public static final String SUBJECT_CONFIRMATION_DATA =
+            "SubjectConfirmationData";
+    public static final String SUBJECT_CONFIRMATION = "SubjectConfirmation";
     public static final String SUBJECT = "Subject";
-    public static final String SUBJECT_LOCALITY = "SubjectLocality"; 
-    public static final String ARTIFACT = "Artifact"; 
-    public static final String ARTIFACT_RESOLVE = "ArtifactResolve"; 
+    public static final String SUBJECT_LOCALITY = "SubjectLocality";
+    public static final String ARTIFACT = "Artifact";
+    public static final String ARTIFACT_RESOLVE = "ArtifactResolve";
     public static final String ARTIFACT_RESPONSE = "ArtifactResponse";
     public static final String ATTRIBUTE_QUERY = "AttributeQuery";
     public static final String AUTHN_QUERY = "AuthnQuery";
@@ -128,57 +129,57 @@ public class SAML2SDKUtils {
     public static final String ECP_RELAY_STATE = "ECPRelayState";
     public static final String ECP_REQUEST = "ECPRequest";
     public static final String ECP_RESPONSE = "ECPResponse";
-    public static final String EXTENSIONS = "Extensions"; 
-    public static final String GET_COMPLETE = "GetComplete"; 
-    public static final String IDPENTRY = "IDPEntry"; 
+    public static final String EXTENSIONS = "Extensions";
+    public static final String GET_COMPLETE = "GetComplete";
+    public static final String IDPENTRY = "IDPEntry";
     public static final String IDPLIST = "IDPList";
-    public static final String LOGOUT_REQUEST = "LogoutRequest"; 
-    public static final String LOGOUT_RESPONSE = "LogoutResponse"; 
-    public static final String MANAGE_NAMEID_REQUEST = "ManageNameIDRequest"; 
-    public static final String MANAGE_NAMEID_RESPONSE = "ManageNameIDResponse"; 
-    public static final String NAMEID_POLICY = "NameIDPolicy"; 
-    public static final String NEW_ENCRYPTEDID = "NewEncryptedID"; 
+    public static final String LOGOUT_REQUEST = "LogoutRequest";
+    public static final String LOGOUT_RESPONSE = "LogoutResponse";
+    public static final String MANAGE_NAMEID_REQUEST = "ManageNameIDRequest";
+    public static final String MANAGE_NAMEID_RESPONSE = "ManageNameIDResponse";
+    public static final String NAMEID_POLICY = "NameIDPolicy";
+    public static final String NEW_ENCRYPTEDID = "NewEncryptedID";
     public static final String NEWID = "NewID";
-    public static final String REQUESTED_AUTHN_CONTEXT = 
-        "RequestedAuthnContext"; 
-    public static final String REQUESTERID = "RequesterID"; 
+    public static final String REQUESTED_AUTHN_CONTEXT =
+            "RequestedAuthnContext";
+    public static final String REQUESTERID = "RequesterID";
     public static final String RESPONSE = "Response";
-    public static final String SCOPING = "Scoping"; 
-    public static final String SESSION_INDEX = "SessionIndex"; 
-    public static final String STATUS_CODE = "StatusCode"; 
-    public static final String STATUS_DETAIL = "StatusDetail"; 
+    public static final String SCOPING = "Scoping";
+    public static final String SESSION_INDEX = "SessionIndex";
+    public static final String STATUS_CODE = "StatusCode";
+    public static final String STATUS_DETAIL = "StatusDetail";
     public static final String STATUS = "Status";
-    public static final String STATUS_MESSAGE = "StatusMessage"; 
-    public static final String STATUS_RESPONSE = "StatusResponse"; 
-    public static final String NAMEIDMAPPING_REQ = "NameIDMappingRequest"; 
-    public static final String NAMEIDMAPPING_RES = "NameIDMappingResponse"; 
+    public static final String STATUS_MESSAGE = "StatusMessage";
+    public static final String STATUS_RESPONSE = "StatusResponse";
+    public static final String NAMEIDMAPPING_REQ = "NameIDMappingRequest";
+    public static final String NAMEIDMAPPING_RES = "NameIDMappingResponse";
 
     /**
-     * List of Interfaces in assertion and protocol packages which could have 
+     * List of Interfaces in assertion and protocol packages which could have
      * customized implementation
      */
     private static String[] interfactNames = {
-        ACTION, ADVICE, ASSERTION, ASSERTION_ID_REF, ASSERTION_ID_REQUEST,
-        ATTRIBUTE, ATTRIBUTE_STATEMENT, AUDIENCE_RESTRICTION, AUTHN_CONTEXT,
-        AUTHN_STATEMENT, AUTHZ_DECISION_STATEMENT, BASEID, 
-        CONDITION, CONDITIONS, ENCRYPTED_ASSERTION,
-        ENCRYPTED_ATTRIBUTE, ENCRYPTED_ELEMENT, ENCRYPTEDID, EVIDENCE,
-        ISSUER, KEYINFO_CONFIRMATION_DATA, NAMEID,
-        ONE_TIME_USE, PROXY_RESTRICTION, STATEMENT, 
-        SUBJECT_CONFIRMATION_DATA, SUBJECT_CONFIRMATION, SUBJECT,
-        SUBJECT_LOCALITY, ARTIFACT, ARTIFACT_RESOLVE, ARTIFACT_RESPONSE,
-        ATTRIBUTE_QUERY, AUTHN_QUERY, AUTHN_REQUEST, EXTENSIONS, GET_COMPLETE,
-        IDPENTRY, IDPLIST, LOGOUT_REQUEST, LOGOUT_RESPONSE,
-        MANAGE_NAMEID_REQUEST, MANAGE_NAMEID_RESPONSE, NAMEID_POLICY,
-        NEW_ENCRYPTEDID, NEWID, REQUESTED_AUTHN_CONTEXT, REQUESTERID, RESPONSE,
-        SCOPING, SESSION_INDEX, STATUS_CODE, STATUS_DETAIL, STATUS,
-        STATUS_MESSAGE, STATUS_RESPONSE, NAMEIDMAPPING_REQ, NAMEIDMAPPING_RES}; 
+            ACTION, ADVICE, ASSERTION, ASSERTION_ID_REF, ASSERTION_ID_REQUEST,
+            ATTRIBUTE, ATTRIBUTE_STATEMENT, AUDIENCE_RESTRICTION, AUTHN_CONTEXT,
+            AUTHN_STATEMENT, AUTHZ_DECISION_STATEMENT, BASEID,
+            CONDITION, CONDITIONS, ENCRYPTED_ASSERTION,
+            ENCRYPTED_ATTRIBUTE, ENCRYPTED_ELEMENT, ENCRYPTEDID, EVIDENCE,
+            ISSUER, KEYINFO_CONFIRMATION_DATA, NAMEID,
+            ONE_TIME_USE, PROXY_RESTRICTION, STATEMENT,
+            SUBJECT_CONFIRMATION_DATA, SUBJECT_CONFIRMATION, SUBJECT,
+            SUBJECT_LOCALITY, ARTIFACT, ARTIFACT_RESOLVE, ARTIFACT_RESPONSE,
+            ATTRIBUTE_QUERY, AUTHN_QUERY, AUTHN_REQUEST, EXTENSIONS, GET_COMPLETE,
+            IDPENTRY, IDPLIST, LOGOUT_REQUEST, LOGOUT_RESPONSE,
+            MANAGE_NAMEID_REQUEST, MANAGE_NAMEID_RESPONSE, NAMEID_POLICY,
+            NEW_ENCRYPTEDID, NEWID, REQUESTED_AUTHN_CONTEXT, REQUESTERID, RESPONSE,
+            SCOPING, SESSION_INDEX, STATUS_CODE, STATUS_DETAIL, STATUS,
+            STATUS_MESSAGE, STATUS_RESPONSE, NAMEIDMAPPING_REQ, NAMEIDMAPPING_RES};
 
     /**
      * Class array for Artifact constructor
      */
-    private static Class[] artParam = new Class[] { (new byte[2]).getClass(), 
-        int.class, String.class, String.class };
+    private static Class[] artParam = new Class[] { (new byte[2]).getClass(),
+            int.class, String.class, String.class };
 
     /**
      * Class array for String as parameter
@@ -197,30 +198,30 @@ public class SAML2SDKUtils {
             String iName = interfactNames[i];
             try {
                 String implClass = SystemPropertiesManager.get(
-                    SAML2Constants.SDK_CLASS_MAPPING + iName);
+                        SAML2Constants.SDK_CLASS_MAPPING + iName);
                 if (implClass != null && implClass.trim().length() != 0) {
                     // try it out
                     if (debug.messageEnabled()) {
                         debug.message("SAML2SDKUtils.init: mapper for " + iName
-                            + "=" + implClass);
+                                + "=" + implClass);
                     }
                     classMapping.put(iName, Class.forName(implClass.trim()));
                 }
             } catch (ClassNotFoundException cnfe) {
                 debug.error("SAML2SDKUtils.init: " + iName, cnfe);
-            } 
+            }
         }
     }
-    
+
     /**
      * Protected contstructor.
      */
     protected SAML2SDKUtils() {}
-     
+
     /**
-     * Returns default object instance for a given interface. 
+     * Returns default object instance for a given interface.
      * @param iName name of the interface.
-     * @return object instance corresponding to the interface implementation. 
+     * @return object instance corresponding to the interface implementation.
      *         return null if the object instance could not be obtained.
      */
     public static Object getObjectInstance(String iName) {
@@ -234,16 +235,16 @@ public class SAML2SDKUtils {
                 debug.error("SAML2SDKUtils.getDefaultInstance: " + iName, ie);
             } catch (IllegalAccessException iae) {
                 debug.error("SAML2SDKUtils.getDefaultInstance: " + iName, iae);
-            } 
+            }
             return null;
         }
     }
 
     /**
-     * Returns new object instance taking String parameter in constructor. 
+     * Returns new object instance taking String parameter in constructor.
      * @param iName name of the interface.
      * @param value String value to be used as parameter in constructor.
-     * @return object instance corresponding to the interface implementation. 
+     * @return object instance corresponding to the interface implementation.
      *         return null if the object instance could not be obtained.
      */
     public static Object getObjectInstance(String iName, String value){
@@ -253,18 +254,18 @@ public class SAML2SDKUtils {
         } else {
             if (debug.messageEnabled()) {
                 debug.message("SAML2SDKUtils.getObjectInstance: new customized "
-                    + "impl (String) instance for " + iName);
+                        + "impl (String) instance for " + iName);
             }
-            Object[] params = new Object[] { value }; 
+            Object[] params = new Object[] { value };
             return getObjectInstance(implClass, stringParam, params);
         }
     }
 
     /**
-     * Returns new object instance taking Element parameter in constructor. 
+     * Returns new object instance taking Element parameter in constructor.
      * @param iName name of the interface.
      * @param value Element value to be used as parameter in constructor.
-     * @return object instance corresponding to the interface implementation. 
+     * @return object instance corresponding to the interface implementation.
      *         return null if the object instance could not be obtained.
      */
     public static Object getObjectInstance(String iName, Element value) {
@@ -274,74 +275,74 @@ public class SAML2SDKUtils {
         } else {
             if (debug.messageEnabled()) {
                 debug.message("SAML2SDKUtils.getObjectInstance: new customized "
-                    + "impl instance (Element) for " + iName);
+                        + "impl instance (Element) for " + iName);
             }
-            Object[] params = new Object[] { value }; 
+            Object[] params = new Object[] { value };
             return getObjectInstance(implClass, elementParam, params);
         }
     }
 
     /**
-     * Returns new object instance with given parameters. 
+     * Returns new object instance with given parameters.
      * @param iName name of the interface.
      * @param typecode type code.
      * @param endpointIndex end point index.
      * @param sourceID source ID.
      * @param messageHandle message handler.
-     * @return object instance corresponding to the interface implementation. 
+     * @return object instance corresponding to the interface implementation.
      *         return null if the object instance could not be obtained.
      */
 
     public static Object getObjectInstance(String iName, byte[] typecode,
-        int endpointIndex, String sourceID, String messageHandle) {
+            int endpointIndex, String sourceID, String messageHandle) {
         Class implClass = (Class) classMapping.get(iName);
         if (implClass == null) {
             return null;
         } else {
             if (debug.messageEnabled()) {
                 debug.message("SAML2SDKUtils.getObjectInstance: new customized "
-                    + "impl (4) instance for " + iName);
+                        + "impl (4) instance for " + iName);
             }
-            Object[] params = new Object[] 
-                { typecode, new Integer(endpointIndex), 
-                  sourceID, messageHandle }; 
+            Object[] params = new Object[]
+                    { typecode, new Integer(endpointIndex),
+                            sourceID, messageHandle };
             return getObjectInstance(implClass, artParam, params);
         }
     }
 
 
     /**
-     * Returns new object instance with given parameter in constructor. 
+     * Returns new object instance with given parameter in constructor.
      * @param impl Class instance.
      * @param paramObj Class array for constructor parameters.
      * @param valueObj Object array for values of constructor parameters.
-     * @return object instance corresponding to the interface implementation. 
+     * @return object instance corresponding to the interface implementation.
      *         return null if the object instance could not be obtained.
      */
-    private static Object getObjectInstance(Class impl, 
-        Class[] paramObj, Object[] valueObj) {
+    private static Object getObjectInstance(Class impl,
+            Class[] paramObj, Object[] valueObj) {
         try {
             Constructor constr = impl.getConstructor(paramObj);
             return constr.newInstance(valueObj);
         } catch (NoSuchMethodException nsme) {
-            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(), 
-                nsme);
+            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(),
+                    nsme);
         } catch (SecurityException se) {
-            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(), 
-                se);
+            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(),
+                    se);
         } catch (InstantiationException ie) {
-            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(), 
-                ie);
+            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(),
+                    ie);
         } catch (IllegalAccessException iae) {
-            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(), 
-                iae);
+            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(),
+                    iae);
         } catch (IllegalArgumentException iae) {
-            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(), 
-                iae);
+            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(),
+                    iae);
         } catch (InvocationTargetException ite) {
-            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(), 
-                ite);
-        } 
+            debug.error("SAML2SDKUtils.getObjectInstance: " + impl.getName(),
+                    ite);
+        }
         return null;
     }
 
@@ -359,7 +360,7 @@ public class SAML2SDKUtils {
         if (element == null || statementname == null) {
             return false;
         }
-        
+
         String tag = element.getLocalName();
         if (tag == null) {
             return false;
@@ -372,7 +373,7 @@ public class SAML2SDKUtils {
                 attr = (Attr) nm.item(j);
                 attrName = attr.getLocalName();
                 if ((attrName != null) && (attrName.equals("type")) &&
-                (attr.getNodeValue().equals(statementname + "Type"))) {
+                        (attr.getNodeValue().equals(statementname + "Type"))) {
                     return true;
                 }
             }
@@ -380,7 +381,7 @@ public class SAML2SDKUtils {
             return true;
         }
         return false;
-    }   
+    }
 
     /**
      * Converts byte array to String.
@@ -404,17 +405,17 @@ public class SAML2SDKUtils {
      * @throws SAML2Exception if the input is not between 0 and 65535.
      */
     public static byte[] intToTwoBytes(int i)
-    throws SAML2Exception {
+            throws SAML2Exception {
         if (i < 0 || i > 65535) {
             debug.error("SAML2Utils.intToTwoBytes: wrong index value range.");
             throw new SAML2Exception(
-            bundle.getString("wrongInput"));
+                    bundle.getString("wrongInput"));
         }
-        
+
         String hexStr = Integer.toHexString(i);
-        
+
         //System.out.println("Original="+hexStr);
-        
+
         int len = hexStr.length();
         String norm = null;
         if (len > 4) {
@@ -434,12 +435,12 @@ public class SAML2SDKUtils {
                     norm = hexStr;
             }
         }
-        
+
         byte[] bytes = hexStringToByteArray(norm);
-        
+
         return bytes;
     }
-    
+
     /**
      * Converts two bytes to an integer.
      *
@@ -448,13 +449,13 @@ public class SAML2SDKUtils {
      * @throws SAML2Exception if the input is null or the length is not 2.
      */
     public static int twoBytesToInt(byte[] bytes)
-    throws SAML2Exception {
+            throws SAML2Exception {
         if (bytes == null || bytes.length != 2) {
             debug.error("SAML2Utils.twoBytesToInt: input is null or length is "
-            + "not 2.");
+                    + "not 2.");
             throw new SAML2Exception(bundle.getString("wrontInput"));
         }
-        
+
         String str0 = Integer.toHexString(bytes[0]);
         int len0 = str0.length();
         String norm0 = null;
@@ -473,14 +474,14 @@ public class SAML2SDKUtils {
         } else {
             norm1 = str1;
         }
-        
+
         String wholeHexStr = norm0+norm1;
-        
+
         int i = Integer.parseInt(wholeHexStr, 16);
-        
+
         return i;
     }
-    
+
     /**
      * Generates message handle used in an <code>Artifact</code>.
      *
@@ -495,7 +496,7 @@ public class SAML2SDKUtils {
         random.nextBytes(bytes);
         return byteArrayToString(bytes);
     }
-    
+
     /**
      * Converts String to Byte Array.
      *
@@ -510,7 +511,7 @@ public class SAML2SDKUtils {
         }
         return bytes;
     }
-    
+
     /**
      * Converts byte array to <code>Hex</code> String.
      *
@@ -527,7 +528,7 @@ public class SAML2SDKUtils {
         }
         return hexData.toString();
     }
-    
+
     /**
      * Converts <code>Hex</code> String to Byte Array.
      *
@@ -540,13 +541,13 @@ public class SAML2SDKUtils {
         for (int i=0, j=0; i < read; i++, j++) {
             String part = hexString.substring(i,i+2);
             byteArray[j] =
-            new Short(Integer.toString(Integer.parseInt(part,16))).
-            byteValue();
+                    new Short(Integer.toString(Integer.parseInt(part,16))).
+                            byteValue();
             i++;
         }
         return byteArray;
     }
-    
+
     /**
      * Generates ID.
      * @return ID value.
@@ -558,7 +559,7 @@ public class SAML2SDKUtils {
         byte bytes[] = new byte[SAML2Constants.ID_LENGTH];
         random.nextBytes(bytes);
         return (SAML2ID_PREFIX + byteArrayToHexString(bytes));
-    }    
+    }
 
     /**
      * Gets the Discovery bootstrap resource offering in an attribute
@@ -575,12 +576,12 @@ public class SAML2SDKUtils {
      *         null if there is any failure  or if there is not one
      */
     public static ResourceOffering getDiscoveryBootStrapResourceOffering(
-        HttpServletRequest request) {
+            HttpServletRequest request) {
 
         if (request == null) {
             if (debug.messageEnabled()) {
                 debug.message("SAML2Utils.getDiscoveryBootStrapResource" +
-                    "Offerings: null Input params");
+                        "Offerings: null Input params");
             }
             return null;
         }
@@ -589,22 +590,22 @@ public class SAML2SDKUtils {
             Object session = sessionProvider.getSession(request);
 
             String[] roStr = sessionProvider.getProperty(session,
-                SAML2Constants.DISCOVERY_BOOTSTRAP_ATTRIBUTE_NAME);
+                    SAML2Constants.DISCOVERY_BOOTSTRAP_ATTRIBUTE_NAME);
             if ((roStr == null) || (roStr.length == 0)) {
                 return null;
             }
 
             return new ResourceOffering(
-                XMLUtils.toDOMDocument(roStr[0], debug).getDocumentElement());
+                    XMLUtils.toDOMDocument(roStr[0], debug).getDocumentElement());
 
         } catch(Exception ex) {
             debug.error("SAML2Utils.getDiscoveryBootStrapResourceOfferings: " +
-                " Exception while retrieving discovery boot strap info.", ex);
+                    " Exception while retrieving discovery boot strap info.", ex);
             return null;
         }
-       
+
     }
-    
+
     /**
      * Gets the Discovery bootstrap credentials.
      * After a single sign-on with an Identity Provider, a service
@@ -620,12 +621,12 @@ public class SAML2SDKUtils {
      *     null if there is any failure  or if there is not one
      */
     public static List getDiscoveryBootStrapCredentials(
-        HttpServletRequest request) {
-  
+            HttpServletRequest request) {
+
         if (request == null) {
             if (debug.messageEnabled()) {
                 debug.message("SAML2Utils.getDiscoveryBootStrapCredentials: " +
-                    " null Input params");
+                        " null Input params");
             }
             return null;
         }
@@ -633,16 +634,16 @@ public class SAML2SDKUtils {
             SessionProvider sessionProvider = SessionManager.getProvider();
             Object session = sessionProvider.getSession(request);
             String[] credentials = sessionProvider.getProperty(session,
-                SAML2Constants.DISCOVERY_BOOTSTRAP_CREDENTIALS);
+                    SAML2Constants.DISCOVERY_BOOTSTRAP_CREDENTIALS);
             if ((credentials == null) || (credentials.length == 0)) {
                 return null;
             }
 
-            List securityAssertions = new ArrayList(); 
+            List securityAssertions = new ArrayList();
             for(int i=0; i< credentials.length; i++) {
                 SecurityAssertion securityAssertion = new SecurityAssertion(
-                    XMLUtils.toDOMDocument(credentials[i], debug)
-                    .getDocumentElement());
+                        XMLUtils.toDOMDocument(credentials[i], debug)
+                                .getDocumentElement());
                 securityAssertions.add(securityAssertion);
             }
             return securityAssertions;
@@ -661,34 +662,34 @@ public class SAML2SDKUtils {
      *            <code>SOAPMessage</code>.
      */
     public static String createSOAPMessageString(String xmlString)
-    throws SOAPException, SAML2Exception {
-            StringBuffer sb = new StringBuffer(500);
-            if (debug.messageEnabled()) {
-                debug.message("SAML2Utils.createSOAPMessage: xmlstr = " +
-                        xmlString);
-            }
-            sb.append("<").append(SAMLConstants.SOAP_ENV_PREFIX).
-                    append(":Envelope").append(SAMLConstants.SPACE).
-                    append("xmlns:").append(SAMLConstants.SOAP_ENV_PREFIX).
-                    append("=\"").append(SAMLConstants.SOAP_URI).append("\">").
-                    append("<").
-                    append(SAMLConstants.SOAP_ENV_PREFIX).append(":Body>").
-                    append(xmlString).
-                    append(SAMLConstants.START_END_ELEMENT).
-                    append(SAMLConstants.SOAP_ENV_PREFIX).
-                    append(":Body>").
-                    append(SAMLConstants.START_END_ELEMENT).
-                    append(SAMLConstants.SOAP_ENV_PREFIX).
-                    append(":Envelope>").append(SAMLConstants.NL);
+            throws SOAPException, SAML2Exception {
+        StringBuffer sb = new StringBuffer(500);
+        if (debug.messageEnabled()) {
+            debug.message("SAML2Utils.createSOAPMessage: xmlstr = " +
+                    xmlString);
+        }
+        sb.append("<").append(SAMLConstants.SOAP_ENV_PREFIX).
+                append(":Envelope").append(SAMLConstants.SPACE).
+                append("xmlns:").append(SAMLConstants.SOAP_ENV_PREFIX).
+                append("=\"").append(SAMLConstants.SOAP_URI).append("\">").
+                append("<").
+                append(SAMLConstants.SOAP_ENV_PREFIX).append(":Body>").
+                append(xmlString).
+                append(SAMLConstants.START_END_ELEMENT).
+                append(SAMLConstants.SOAP_ENV_PREFIX).
+                append(":Body>").
+                append(SAMLConstants.START_END_ELEMENT).
+                append(SAMLConstants.SOAP_ENV_PREFIX).
+                append(":Envelope>").append(SAMLConstants.NL);
 
-            if (debug.messageEnabled()) {
-                debug.message("SAML2Utils.createSOAPMessage: soap message = " +
-                        sb.toString());
-            }
+        if (debug.messageEnabled()) {
+            debug.message("SAML2Utils.createSOAPMessage: soap message = " +
+                    sb.toString());
+        }
         return sb.toString();
-     }
-    
-    
+    }
+
+
     /**
      * Fills in basic auth user and password inside the location URL
      * if configuration is done properly
@@ -701,7 +702,7 @@ public class SAML2SDKUtils {
      *         and password if configured properly
      */
     public static String fillInBasicAuthInfo(
-            BaseConfigType config,
+            JAXBElement<BaseConfigType> config,
             String locationURL) {
 
         if (config == null) {
@@ -723,7 +724,7 @@ public class SAML2SDKUtils {
         }
         List ul =  (List)map.get(
                 SAML2Constants.BASIC_AUTH_USER);
-  
+
         if (ul == null || ul.isEmpty()) {
             return locationURL;
         }
@@ -764,17 +765,17 @@ public class SAML2SDKUtils {
         if (str == null) {
             return null;
         }
-        
+
         if (str.equals("true") || str.equals("1")) {
             return Boolean.TRUE;
         }
-        
+
         if (str.equals("false") || str.equals("0")) {
             return Boolean.FALSE;
         }
-        
+
         throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
-            "invalidXMLBooleanValue"));
+                "invalidXMLBooleanValue"));
     }
 
     /**
@@ -816,7 +817,7 @@ public class SAML2SDKUtils {
         if (decryptDebug.messageEnabled() && isSAMLDecryptionDebugEnabled()) {
             String xmlOutput = XMLUtils.print(xmlElement);
             decryptDebug.message(callerName + "Decrypted xml element node:\n" +
-                ((xmlOutput != null) ? xmlOutput : "NULL"));
+                    ((xmlOutput != null) ? xmlOutput : "NULL"));
         }
     }
 

@@ -24,21 +24,24 @@
  *
  * $Id: IDPPInformalName.java,v 1.2 2008/06/25 05:47:16 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.liberty.ws.idpp.container;
 
-import com.sun.identity.shared.datastruct.CollectionHelper;
-import javax.xml.bind.JAXBException;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import org.w3c.dom.Document;
-import com.sun.identity.liberty.ws.idpp.common.*;
-import com.sun.identity.liberty.ws.idpp.jaxb.*;
-import com.sun.identity.liberty.ws.idpp.plugin.*;
+import java.util.Map;
+import java.util.Set;
+
+import com.sun.identity.liberty.ws.idpp.common.IDPPConstants;
+import com.sun.identity.liberty.ws.idpp.common.IDPPException;
+import com.sun.identity.liberty.ws.idpp.common.IDPPUtils;
+import com.sun.identity.liberty.ws.idpp.jaxb.DSTString;
+import com.sun.identity.liberty.ws.idpp.jaxb.PPType;
+import com.sun.identity.shared.datastruct.CollectionHelper;
 
 
 /**
@@ -57,28 +60,21 @@ public class IDPPInformalName extends IDPPBaseContainer {
       * Gets the Informal Name JAXB Object 
       * @param userMap user map
       * @return InformalNameElement JAXB Object.
-      * @exception IDPPException.
+      * @exception IDPPException
       */
      public Object getContainerObject(Map userMap) throws IDPPException {
         IDPPUtils.debug.message("IDPPInformalName:getInformalName:Init");
-        try {
-            PPType ppType = IDPPUtils.getIDPPFactory().createPPElement();
-            InformalNameElement in = 
-                 IDPPUtils.getIDPPFactory().createInformalNameElement();
+        PPType ppType = IDPPUtils.getIDPPFactory().createPPType();
+        DSTString in =
+             IDPPUtils.getIDPPFactory().createDSTString();
 
-            String informalName = CollectionHelper.getMapAttr(
-                userMap, getAttributeMapper().getDSAttribute(
-                    IDPPConstants.INFORMAL_NAME_ELEMENT).toLowerCase());
-            in.setValue(informalName);
+        String informalName = CollectionHelper.getMapAttr(
+            userMap, getAttributeMapper().getDSAttribute(
+                IDPPConstants.INFORMAL_NAME_ELEMENT).toLowerCase());
+        in.setValue(informalName);
 
-            ppType.setInformalName(in);
-            return ppType;
-        } catch (JAXBException je) {
-            IDPPUtils.debug.error(
-            "IDPPInformalName:getContainerObject: JAXB failure", je); 
-            throw new IDPPException(
-            IDPPUtils.bundle.getString("jaxbFailure"));
-        }
+        ppType.setInformalName(in);
+        return ppType;
      }
 
      /**
@@ -107,7 +103,7 @@ public class IDPPInformalName extends IDPPBaseContainer {
       * @param select Select Excepression.
       * @param data list of new data objects.
       * @return Attribute key value pair for the given select.
-      * @throws IDPPException.
+      * @throws IDPPException
       */
      public Map getDataMapForSelect(String select, List data) 
      throws IDPPException {
@@ -117,7 +113,7 @@ public class IDPPInformalName extends IDPPBaseContainer {
            dataElement = data.get(0);
         }
         if((dataElement == null) || 
-           (dataElement instanceof InformalNameElement)) {
+           (dataElement instanceof DSTString)) {
            Map map = new HashMap();
            map = getAttributeMap(
            IDPPConstants.INFORMAL_NAME_ELEMENT, dataElement, map);

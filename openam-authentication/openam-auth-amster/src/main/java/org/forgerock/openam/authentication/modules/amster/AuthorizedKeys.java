@@ -11,9 +11,8 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.authentication.modules.amster;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -43,9 +42,6 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.forgerock.guava.common.annotations.VisibleForTesting;
-import org.forgerock.guava.common.collect.ImmutableMap;
-import org.forgerock.guava.common.io.CharStreams;
 import org.forgerock.json.jose.jws.SupportedEllipticCurve;
 import org.forgerock.json.jose.jws.handlers.ECDSASigningHandler;
 import org.forgerock.json.jose.jws.handlers.RSASigningHandler;
@@ -53,6 +49,9 @@ import org.forgerock.json.jose.jws.handlers.SigningHandler;
 import org.forgerock.util.SignatureUtil;
 import org.forgerock.util.encode.Base64;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.CharStreams;
 import com.sun.identity.shared.debug.Debug;
 
 /**

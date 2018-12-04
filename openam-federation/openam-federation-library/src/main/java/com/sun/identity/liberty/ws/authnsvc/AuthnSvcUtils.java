@@ -24,6 +24,8 @@
  *
  * $Id: AuthnSvcUtils.java,v 1.5 2008/12/05 00:18:02 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
@@ -34,28 +36,27 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.shared.locale.Locale;
-import com.sun.identity.shared.xml.XMLUtils;
-import com.sun.identity.shared.encode.Base64;
-
-import com.sun.identity.shared.Constants;
 import com.sun.identity.liberty.ws.authnsvc.protocol.SASLResponse;
+import com.sun.identity.liberty.ws.disco.ResourceOffering;
 import com.sun.identity.liberty.ws.disco.common.DiscoConstants;
 import com.sun.identity.liberty.ws.disco.common.DiscoServiceManager;
 import com.sun.identity.liberty.ws.disco.common.DiscoUtils;
+import com.sun.identity.liberty.ws.disco.jaxb.InsertEntryType;
 import com.sun.identity.liberty.ws.disco.jaxb.ObjectFactory;
 import com.sun.identity.liberty.ws.disco.jaxb.ResourceIDType;
 import com.sun.identity.liberty.ws.disco.jaxb.ResourceOfferingType;
 import com.sun.identity.liberty.ws.disco.jaxb.ServiceInstanceType;
-import com.sun.identity.liberty.ws.disco.plugins.jaxb.DiscoEntryElement;
-import com.sun.identity.liberty.ws.disco.ResourceOffering;
 import com.sun.identity.liberty.ws.interfaces.ResourceIDMapper;
 import com.sun.identity.liberty.ws.security.SecurityAssertion;
 import com.sun.identity.liberty.ws.soapbinding.Message;
+import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.encode.Base64;
+import com.sun.identity.shared.locale.Locale;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * The class <code>AuthnSvcUtils</code> provides some utils for Authentication
@@ -115,7 +116,7 @@ public class AuthnSvcUtils {
     {
 
         try {
-            DiscoEntryElement discoEntry = (DiscoEntryElement)
+            InsertEntryType discoEntry =
                       DiscoServiceManager.getBootstrappingDiscoEntry();
             ResourceOfferingType offering = discoEntry.getResourceOffering();
             if (!DiscoServiceManager.useImpliedResource()) {

@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
@@ -24,14 +24,18 @@
  *
  * $Id: IDPSSOUtil.java,v 1.3 2009/10/28 23:58:59 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
-
 
 package com.sun.identity.wsfederation.profile;
 
+import static com.sun.identity.saml2.common.SAML2Constants.AUTH_URL;
+import static com.sun.identity.wsfederation.common.WSFederationUtils.getMetaManager;
+import static com.sun.identity.wsfederation.meta.WSFederationMetaUtils.getAttribute;
+import static org.forgerock.openam.utils.StringUtils.isBlank;
+
 import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.federation.common.IFSConstants;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.wsfederation.common.WSFederationUtils;
 import com.sun.identity.wsfederation.jaxb.entityconfig.IDPSSOConfigElement;
@@ -39,15 +43,12 @@ import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.TokenIssuerEndpointElement;
 import com.sun.identity.wsfederation.meta.WSFederationMetaException;
 import com.sun.identity.wsfederation.meta.WSFederationMetaManager;
-import com.sun.identity.wsfederation.meta.WSFederationMetaUtils;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.List;
-import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * The utility class is used by the identity provider to process 
+ * The utility class is used by the identity provider to process
  * the authentication request from a service provider and send back
  * a proper response.
  * The identity provider can also send unsolicited response to a service
@@ -57,14 +58,14 @@ public class IDPSSOUtil {
     private static Debug debug = WSFederationUtils.debug;
 
     /**
-     * Returns the authentication service <code>URL</code> of the 
+     * Returns the authentication service <code>URL</code> of the
      * identity provider
      *
      * @param realm the realm name of the identity provider
-     * @param hostEntityId the entity id of the identity provider 
-     * @param request the <code>HttpServletRequest</code> object 
+     * @param hostEntityId the entity id of the identity provider
+     * @param request the <code>HttpServletRequest</code> object
      *
-     * @return the authentication service <code>URL</code> of the 
+     * @return the authentication service <code>URL</code> of the
      * identity provider
      */
     public static String getAuthenticationServiceURL(
@@ -74,25 +75,19 @@ public class IDPSSOUtil {
         String classMethod = "IDPSSOUtil.getAuthenticationServiceURL: ";
 
         // Try to get authUrl from system configuration
-        String authUrl = SystemConfigurationUtil.getProperty(
-             IFSConstants.IDP_LOGIN_URL);
+        String authUrl = SystemConfigurationUtil.getProperty(IFSConstants.IDP_LOGIN_URL);
 
-        if ((authUrl == null) || (authUrl.trim().length() == 0)) {
+        if (isBlank(authUrl)) {
             // It's not in the system config,
             // try to get it from IDP config
             try {
-                IDPSSOConfigElement config = 
-                    WSFederationUtils.getMetaManager().getIDPSSOConfig(
-                        realm, hostEntityId);
-                authUrl = WSFederationMetaUtils.getAttribute(config, 
-                    SAML2Constants.AUTH_URL);
+                IDPSSOConfigElement config = getMetaManager().getIDPSSOConfig(realm, hostEntityId);
+                authUrl = getAttribute(config.getValue(), AUTH_URL);
             } catch (WSFederationMetaException sme) {
-                if (debug.messageEnabled()) {
-                    debug.message(classMethod +  "get IDPSSOConfig failed:", sme);
-                }
+                debug.warning("{}get IDPSSOConfig failed:", classMethod, sme);
             }
 
-            if (authUrl == null) {
+            if (isBlank(authUrl)) {
                 // It's not in IDP config
                 // need to get it from the request
                 String uri = request.getRequestURI();
@@ -101,20 +96,17 @@ public class IDPSSOUtil {
                 int secondSlashIndex = uri.indexOf("/", firstSlashIndex+1);
                 if (secondSlashIndex != -1) {
                     deploymentURI = uri.substring(0, secondSlashIndex);
-                } 
+                }
                 StringBuffer sb = new StringBuffer(100);
                 sb.append(request.getScheme()).append("://")
                   .append(request.getServerName()).append(":")
                   .append(request.getServerPort())
-                  .append(deploymentURI) 
+                  .append(deploymentURI)
                   .append("/UI/Login?realm=").append(realm);
                 authUrl = sb.toString();
             }
         }
-        
-        if (debug.messageEnabled()) {
-            debug.message(classMethod + "auth url=:" + authUrl);
-        }
+        debug.message("{}auth url='{}'", classMethod, authUrl);
         return authUrl;
     }
 
@@ -122,17 +114,15 @@ public class IDPSSOUtil {
      * Returns the assertion consumer service (ACS) URL for the entity.
      * @param entityId entity ID of provider
      * @param realm realm of the provider
-     * @param wreply the ACSURL supplied by the requestor. If supplied, this is 
+     * @param wreply the ACSURL supplied by the requestor. If supplied, this is
      * checked against the URLs registered for the provider.
      * @return assertion consumer service (ACS) URL for the entity.
      */
-    public static String getACSurl(String entityId, String realm, 
+    public static String getACSurl(String entityId, String realm,
         String wreply) throws WSFederationMetaException
     {
-        WSFederationMetaManager metaManager = 
-            WSFederationUtils.getMetaManager();
-        FederationElement sp = 
-            metaManager.getEntityDescriptor(realm, entityId);
+        WSFederationMetaManager metaManager = getMetaManager();
+        FederationElement sp = metaManager.getEntityDescriptor(realm, entityId);
         if ( wreply == null )
         {
             // Get first ACS URL for this SP
@@ -142,14 +132,14 @@ public class IDPSSOUtil {
         {
             // Check that wreply is registered on this SP
             // Just return first TokenIssuerEndpoint in the Federation
-            for ( Object o: sp.getAny() )
+            for ( Object o: sp.getValue().getAny() )
             {
                 if ( o instanceof TokenIssuerEndpointElement )
                 {
                     try {
                         URL replyUrl = new URL(wreply);
                         URL thisUrl = new URL(
-                          ((TokenIssuerEndpointElement)o).getAddress().
+                          ((TokenIssuerEndpointElement)o).getValue().getAddress().
                           getValue());
                         if ( replyUrl.equals(thisUrl))
                             return wreply;

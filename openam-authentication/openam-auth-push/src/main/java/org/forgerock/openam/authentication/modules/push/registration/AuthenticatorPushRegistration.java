@@ -110,6 +110,7 @@ import com.sun.identity.sm.SMSException;
 public class AuthenticatorPushRegistration extends AbstractPushModule {
 
     private static final Debug DEBUG = Debug.getInstance("amAuthPush");
+    private static final int GET_APP_OPTIONAL_SKIP_BUTTON = 2;
 
     private PollingWaitAssistant pollingWaitAssistant;
 
@@ -257,7 +258,8 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
 
     private int optionalStartRegistration(Callback[] callbacks) throws AuthLoginException {
         if (isOptional) {
-            if (((ConfirmationCallback) callbacks[0]).getSelectedIndex() == APP_STORE_SKIP_INDEX) {
+            if (((ConfirmationCallback) callbacks[GET_APP_OPTIONAL_SKIP_BUTTON]).getSelectedIndex()
+                    == APP_STORE_SKIP_INDEX) {
                 setSkippable(SkipSetting.SKIPPABLE);
                 return ISAuthConstants.LOGIN_SUCCEED;
             }
@@ -275,10 +277,11 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
         case START_REGISTRATION_OPTION:
             return startRegistration();
         case GET_THE_APP_OPTION:
-            setAppLinkCallbacks(isOptional);
-            if (isOptional) {
+            if (isOptional && userConfiguredSkippable == SkipSetting.NOT_SET) {
+                setAppLinkCallbacks(STATE_GET_THE_APP);
                 return STATE_GET_THE_APP;
             } else {
+                setAppLinkCallbacks(STATE_GET_THE_APP_NO_SKIP);
                 return STATE_GET_THE_APP_NO_SKIP;
             }
         case SKIP_THIS_STEP: //fallthrough is intentional in the case of false canSkip
@@ -387,7 +390,7 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
         storeUsername(amIdentityPrincipal.getName());
         saveDeviceDetailsUnderUserAccount(deviceResponse);
         setSkippable(SkipSetting.NOT_SKIPPABLE);
-        return STATE_CONFIRMATION;
+        return displayRecoveryCodes(STATE_CONFIRMATION);
     }
 
     private int waitingChecks() throws AuthLoginException {
@@ -431,16 +434,21 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
         }
 
         try {
-            newDeviceRegistrationProfile.setRecoveryCodes(
-                    recoveryCodeGenerator.generateCodes(NUM_RECOVERY_CODES, Alphabet.ALPHANUMERIC, false));
+            recoveryCodes = recoveryCodeGenerator.generateCodes(NUM_RECOVERY_CODES, Alphabet.ALPHANUMERIC, false);
+            newDeviceRegistrationProfile.setRecoveryCodes(recoveryCodes);
         } catch (CodeException e) {
             DEBUG.error("Insufficient recovery code generation occurred.");
             throw failedAsLoginException();
         }
         newDeviceRegistrationProfile.setIssuer(issuer);
 
-        userPushDeviceProfileManager.saveDeviceProfile(
-                amIdentityPrincipal.getName(), realm, newDeviceRegistrationProfile);
+        try {
+            userPushDeviceProfileManager.saveDeviceProfile(
+                    amIdentityPrincipal.getName(), realm, newDeviceRegistrationProfile);
+        } catch (DevicePersistenceException e) {
+            DEBUG.error("Unable to store device profile.");
+            throw failedAsLoginException();
+        }
     }
 
     private void paintRegisterDeviceCallback(AMIdentity id, String messageId, String challenge)
@@ -513,16 +521,9 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
                 POLLING_TIME_OUTPUT_CALLBACK_INDEX, newPollingWaitCallback);
     }
 
-    private void setAppLinkCallbacks(boolean isOptional) throws AuthLoginException {
+    private void setAppLinkCallbacks(int state) throws AuthLoginException {
         TextOutputCallback appleOutput = new TextOutputCallback(TextOutputCallback.INFORMATION, appleLink);
         TextOutputCallback googleOutput = new TextOutputCallback(TextOutputCallback.INFORMATION, googleLink);
-
-        int state = STATE_GET_THE_APP;
-
-        if (!isOptional) {
-            state = STATE_GET_THE_APP_NO_SKIP;
-        }
-
         replaceCallback(state, APPLE_LINK_CALLBACK_INDEX, appleOutput);
         replaceCallback(state, GOOGLE_LINK_CALLBACK_INDEX, googleOutput);
 

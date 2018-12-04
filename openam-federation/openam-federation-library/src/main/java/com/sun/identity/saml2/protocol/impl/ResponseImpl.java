@@ -24,6 +24,7 @@
  *
  * $Id: ResponseImpl.java,v 1.4 2009/12/16 05:26:39 ericow Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -83,9 +84,9 @@ import com.sun.identity.saml2.protocol.Response;
  */
 public class ResponseImpl extends StatusResponseImpl implements Response {
 
-    private List assertions = null;
-    private List encAssertions = null;
-    
+    private List<Assertion> assertions = null;
+    private List<EncryptedAssertion> encAssertions = null;
+
     private void parseElement(Element element)
         throws SAML2Exception {
         // make sure that the input xml block is not null
@@ -188,8 +189,8 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
                         throw new SAML2Exception(
                             SAML2SDKUtils.bundle.getString("schemaViolation"));
                     }
-                    signatureString = XMLUtils.print((Element) child, 
-                        "UTF-8");  
+                    signatureString = XMLUtils.print((Element) child,
+                        "UTF-8");
                     isSigned = true;
                 } else if (childName.equals("Extensions")) {
                     if (extensions != null) {
@@ -319,12 +320,12 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
     }
 
     /**
-     * Returns <code>Assertion</code>(s) of the response. 
+     * Returns <code>Assertion</code>(s) of the response.
      *
      * @return List of <code>Assertion</code>(s) in the response.
      * @see #setAssertion(List)
      */
-    public List getAssertion() {
+    public List<Assertion> getAssertion() {
 	return assertions;
     }
 
@@ -335,7 +336,7 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAssertion()
      */
-    public void setAssertion(List value)
+    public void setAssertion(List<Assertion> value)
 	throws SAML2Exception
     {
 	 if (isMutable) {
@@ -347,12 +348,12 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
     }
 
     /**
-     * Returns <code>EncryptedAssertion</code>(s) of the response. 
+     * Returns <code>EncryptedAssertion</code>(s) of the response.
      *
      * @return List of <code>EncryptedAssertion</code>(s) in the response.
      * @see #setEncryptedAssertion(List)
      */
-    public List getEncryptedAssertion() {
+    public List<EncryptedAssertion> getEncryptedAssertion() {
 	return encAssertions;
     }
 
@@ -363,7 +364,7 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      * @throws SAML2Exception if the object is immutable.
      * @see #getEncryptedAssertion()
      */
-    public void setEncryptedAssertion(List value)
+    public void setEncryptedAssertion(List<EncryptedAssertion> value)
 	throws SAML2Exception
     {
  	if (isMutable) {
@@ -434,7 +435,7 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
 	if (inResponseTo != null && inResponseTo.trim().length() != 0) {
 	    result.append(" InResponseTo=\"").append(inResponseTo).append("\"");
 	}
-	
+
         result.append(" Version=\"").append(version).append("\"").
                 append(" IssueInstant=\"").
                 append(DateUtils.toUTCDateFormat(issueInstant)).append("\"");

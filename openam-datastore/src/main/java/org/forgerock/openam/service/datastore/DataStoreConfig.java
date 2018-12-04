@@ -16,18 +16,23 @@
 
 package org.forgerock.openam.service.datastore;
 
+import org.forgerock.openam.services.datastore.DataStoreId;
 import org.forgerock.util.Reject;
 
 /**
- * A simple model object to represent a Data Store Config
+ * A simple model object to represent a data store.
+ *
+ * @since 6.5.0
  */
-public class DataStoreConfig {
+final class DataStoreConfig {
 
-    private final String id;
+    private final DataStoreId id;
     private final String hostname;
     private final int port;
     private final String bindDN;
     private final String bindPassword;
+    private final int minimumConnectionPool;
+    private final int maximumConnectionPool;
     private final boolean useSsl;
     private final boolean useStartTLS;
 
@@ -37,11 +42,13 @@ public class DataStoreConfig {
         this.port = builder.port;
         this.bindDN = builder.bindDN;
         this.bindPassword = builder.bindPassword;
+        this.minimumConnectionPool = builder.minimumConnectionPool;
+        this.maximumConnectionPool = builder.maximumConnectionPool;
         this.useSsl = builder.useSsl;
         this.useStartTLS = builder.useStartTLS;
     }
 
-    String getId() {
+    DataStoreId getId() {
         return id;
     }
 
@@ -61,6 +68,14 @@ public class DataStoreConfig {
         return bindPassword;
     }
 
+    int getMinimumConnectionPool() {
+        return minimumConnectionPool;
+    }
+
+    int getMaximumConnectionPool() {
+        return maximumConnectionPool;
+    }
+
     boolean isUseSsl() {
         return useSsl;
     }
@@ -69,111 +84,80 @@ public class DataStoreConfig {
         return useStartTLS;
     }
 
-    static Builder builder() {
-        return new Builder();
+    static Builder builder(DataStoreId id) {
+        return new Builder(id);
     }
 
     /**
      * Builder for building the Data Store Config
      */
-    public static final class Builder {
+    static final class Builder {
 
-        private String id;
+        private final DataStoreId id;
         private String hostname;
         private int port;
         private String bindDN;
         private String bindPassword;
+        private int minimumConnectionPool;
+        private int maximumConnectionPool;
         private boolean useSsl;
         private boolean useStartTLS;
 
-        /**
-         * Sets the ID of the Data Store Config.
-         *
-         * @param id The Data Store Config ID.
-         * @return The Data Store Config Instance
-         */
-        public Builder withId(String id) {
-            Reject.ifBlank(id);
+        Builder(DataStoreId id) {
             this.id = id;
-            return this;
         }
 
-        /**
-         * Sets the host name of the Data Store.
-         *
-         * @param hostname The Data Store Host Name.
-         * @return The Data Store Config Instance
-         */
-        public Builder withHostname(String hostname) {
+        Builder withHostname(String hostname) {
             Reject.ifBlank(hostname);
             this.hostname = hostname;
             return this;
         }
 
-        /**
-         * Sets the Server Port for the Data Store.
-         *
-         * @param port The Data Store Server Port.
-         * @return The Data Store Config Instance
-         */
-        public Builder withPort(int port) {
-            Reject.ifNull(port);
+        Builder withPort(int port) {
+            Reject.ifTrue(port < 0);
             this.port = port;
             return this;
         }
 
-        /**
-         * Sets the Bind DN to connect to the Data Store.
-         *
-         * @param bindDN The Data Store BindDN.
-         * @return The Data Store Config Instance
-         */
-        public Builder withBindDN(String bindDN) {
+        Builder withBindDN(String bindDN) {
             Reject.ifBlank(bindDN);
             this.bindDN = bindDN;
             return this;
         }
 
-        /**
-         * Sets the Bind Password to connect to the Data Store.
-         *
-         * @param bindPassword The Data Store Bind Password.
-         * @return The Data Store Config Instance
-         */
-        public Builder withBindPassword(String bindPassword) {
+        Builder withBindPassword(String bindPassword) {
             Reject.ifBlank(bindPassword);
             this.bindPassword = bindPassword;
             return this;
         }
 
-        /**
-         * Sets the useSsl flag
-         *
-         * @param useSsl The useSsl flag.
-         * @return The Data Store Config Instance
-         */
-        public Builder withUseSsl(boolean useSsl) {
+        Builder withMinimumConnectionPool(int minimumConnectionPool) {
+            Reject.ifTrue(minimumConnectionPool < 0);
+            this.minimumConnectionPool = minimumConnectionPool;
+            return this;
+        }
+
+        Builder withMaximumConnectionPool(int maximumConnectionPool) {
+            Reject.ifTrue(maximumConnectionPool < 0);
+            this.maximumConnectionPool = maximumConnectionPool;
+            return this;
+        }
+
+        Builder withUseSsl(boolean useSsl) {
             this.useSsl = useSsl;
             return this;
         }
 
-        /**
-         * Sets the useStartTLS flag.
-         *
-         * @param useStartTLS The useStartTLS flag.
-         * @return The Data Store Config Instance
-         */
-        public Builder withUseStartTLS(boolean useStartTLS) {
+        Builder withUseStartTLS(boolean useStartTLS) {
             this.useStartTLS = useStartTLS;
             return this;
         }
 
-        /**
-         * Builds the Data Store Config.
-         * @return The Data Store Config Instance
-         */
-        public DataStoreConfig build() {
+        DataStoreConfig build() {
+            Reject.ifTrue(minimumConnectionPool > maximumConnectionPool,
+                    "Minimal pool size must be less or equal to the maximum pool size");
             return new DataStoreConfig(this);
         }
     }
+
 }

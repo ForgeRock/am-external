@@ -24,11 +24,11 @@
  *
  * $Id: NameIDMapping.java,v 1.6 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2013-2017 ForgeRock AS.
+ * Portions Copyrighted 2013-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.newDate;
 
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
@@ -36,11 +36,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
-import com.sun.identity.saml2.common.SOAPCommunicator;
-import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import org.w3c.dom.Element;
 
 import com.sun.identity.plugin.session.SessionException;
@@ -57,9 +56,10 @@ import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.NameIDMappingServiceElement;
+import com.sun.identity.saml2.common.SOAPCommunicator;
+import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
+import com.sun.identity.saml2.jaxb.metadata.EndpointType;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
 import com.sun.identity.saml2.key.EncInfo;
 import com.sun.identity.saml2.key.KeyUtil;
@@ -71,7 +71,6 @@ import com.sun.identity.saml2.protocol.NameIDMappingResponse;
 import com.sun.identity.saml2.protocol.NameIDPolicy;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.Status;
-
 import com.sun.identity.shared.xml.XMLUtils;
 
 /**
@@ -176,7 +175,7 @@ public class NameIDMapping {
             String nimURL = SAML2Utils.getParameter(paramsMap,
                 "nimURL");
             if (nimURL == null) {
-                NameIDMappingServiceElement nameIDMappingService =
+                EndpointType nameIDMappingService =
                     getNameIDMappingService(realm, idpEntityID, binding);
 
                 if (nameIDMappingService != null) {
@@ -200,7 +199,7 @@ public class NameIDMapping {
 
             signNIMRequest(nimRequest, realm, spEntityID, false);
 
-            BaseConfigType config = metaManager.getIDPSSOConfig(realm,
+            IDPSSOConfigElement config = metaManager.getIDPSSOConfig(realm,
                 idpEntityID);
 
             nimURL = SAML2SDKUtils.fillInBasicAuthInfo(config, nimURL);
@@ -431,28 +430,28 @@ public class NameIDMapping {
      * @return <code>ManageNameIDServiceElement</code> for the entity or null
      * @throws SAML2MetaException if unable to retrieve the first identity provider's SSO configuration.
      */
-    static public NameIDMappingServiceElement getNameIDMappingService(
+    static public EndpointType getNameIDMappingService(
         String realm, String entityId, String binding)
         throws SAML2MetaException {
 
 
-        IDPSSODescriptorElement idpSSODesc = metaManager.getIDPSSODescriptor(
+        IDPSSODescriptorType idpSSODesc = metaManager.getIDPSSODescriptor(
             realm, entityId);
         if (idpSSODesc == null) {
             SAML2Utils.debug.error(SAML2Utils.bundle.getString("noIDPEntry"));
             return null;
         }
 
-        List list = idpSSODesc.getNameIDMappingService();
+        List<EndpointType> list = idpSSODesc.getNameIDMappingService();
 
-        NameIDMappingServiceElement nimService = null;
+        EndpointType nimService = null;
         if ((list != null) && !list.isEmpty()) {
             if (binding == null) {
-                return (NameIDMappingServiceElement)list.get(0);
+                return list.get(0);
             }
-            Iterator it = list.iterator();
+            Iterator<EndpointType> it = list.iterator();
             while (it.hasNext()) {
-                nimService = (NameIDMappingServiceElement)it.next();  
+                nimService = it.next();
                 if (binding.equalsIgnoreCase(nimService.getBinding())) {
                     return nimService;
                 }
@@ -563,7 +562,7 @@ public class NameIDMapping {
     private static boolean verifyNIMResponse(NameIDMappingResponse nimResponse,
         String realm, String idpEntityID) throws SAML2Exception {
 
-        IDPSSODescriptorElement idpSSODesc = metaManager.getIDPSSODescriptor(
+        IDPSSODescriptorType idpSSODesc = metaManager.getIDPSSODescriptor(
             realm, idpEntityID);
         Set<X509Certificate> signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, idpEntityID,
                 SAML2Constants.IDP_ROLE);

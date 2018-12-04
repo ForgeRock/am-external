@@ -13,15 +13,15 @@
  *
  * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.node.api;
 
 import java.util.List;
 import java.util.ResourceBundle;
 
-import org.forgerock.guava.common.collect.ImmutableList;
 import org.forgerock.json.JsonValue;
 import org.forgerock.util.i18n.PreferredLocales;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * An abstract node implementation for nodes that result in a simple true-false outcome.

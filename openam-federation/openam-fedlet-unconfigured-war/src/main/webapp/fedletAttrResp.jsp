@@ -22,7 +22,7 @@
 
   Copyright 2009 Sun Microsystems Inc. All Rights Reserved
 
-  Portions Copyrighted 2016 ForgeRock AS.
+  Portions Copyrighted 2016-2018 ForgeRock AS.
 --%>
 
 
@@ -34,23 +34,13 @@
    3) Displays the attribute value pairs.
 --%>
 
-<%@ page import="com.sun.identity.shared.debug.Debug" %>
-<%@ page import="com.sun.identity.saml.common.SAMLUtils" %>
-<%@ page import="com.sun.identity.saml2.assertion.Assertion" %>
-<%@ page import="com.sun.identity.saml2.assertion.AssertionFactory" %>
-<%@ page import="com.sun.identity.saml2.assertion.Attribute" %>
-<%@ page import="com.sun.identity.saml2.assertion.NameID" %>
-<%@ page import="com.sun.identity.saml2.common.SAML2Constants" %>
-<%@ page import="com.sun.identity.saml2.common.SAML2Utils" %>
-<%@ page import="com.sun.identity.saml2.common.SAML2Exception" %>
-<%@ page import="com.sun.identity.saml2.profile.AttributeQueryUtil" %>
-<%@ page import="com.sun.identity.saml2.protocol.Response" %>
 <%@ page import="java.util.ArrayList" %>
-<%@ page import="java.util.Date" %>
-<%@ page import="java.util.HashMap" %>
 <%@ page import="java.util.Iterator" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="com.sun.identity.saml2.assertion.AssertionFactory" %>
+<%@ page import="com.sun.identity.saml2.common.SAML2Utils" %>
+<%@ page import="com.sun.identity.saml2.profile.AttributeQueryUtil" %>
 
 <%
     String deployuri = request.getRequestURI();

@@ -24,7 +24,7 @@
  *
  * $Id: DefaultAttributeMapper.java,v 1.4 2009/10/28 23:58:59 exu Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
+ * Portions Copyrighted 2017-2018 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.plugins;
 
@@ -44,6 +44,8 @@ import java.util.HashMap;
 import java.util.ResourceBundle;
 import java.util.StringTokenizer;
 import java.util.Collections;
+
+import javax.xml.bind.JAXBElement;
 
 import org.forgerock.openam.utils.CollectionUtils;
 
@@ -87,7 +89,7 @@ public class DefaultAttributeMapper {
         final String debugClass = "DefaultAttributeMapper.getConfigAttributeMap:";
 
         try {
-            BaseConfigType config;
+            JAXBElement<BaseConfigType> config;
             if (SP.equals(role)) {
                 config = WSFederationUtils.getMetaManager().getSPSSOConfig(realm, entityId);
             } else {
@@ -99,7 +101,7 @@ public class DefaultAttributeMapper {
                 return Collections.emptyMap();
             }
 
-            Map<String, List<String>> attribConfig = WSFederationMetaUtils.getAttributes(config);
+            Map<String, List<String>> attribConfig = WSFederationMetaUtils.getAttributes(config.getValue());
             List<String> mappedAttributes = attribConfig.get(SAML2Constants.ATTRIBUTE_MAP);
 
             if (CollectionUtils.isEmpty(mappedAttributes)) {

@@ -24,7 +24,7 @@
  *
  * $Id: SecureAttrs.java,v 1.12 2009/03/31 17:18:10 exu Exp $
  *
- * Portions Copyrighted 2016-2017 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
 
 package com.sun.identity.sae.api;
@@ -838,8 +838,9 @@ public class SecureAttrs
             return false;
         }
         byte abyte0[] = Base64.decode(s1);
-        if (dbg)
-          System.out.println("SAE:verifyAsym:signature="+abyte0+" origstr="+s1);
+        if (dbg) {
+            System.out.println("SAE:verifyAsym:signature=" + Arrays.toString(abyte0) + " origstr=" + s1);
+        }
         Object obj = null;
         Object obj1 = null;
         String s2 = x509certificate.getPublicKey().getAlgorithm();
@@ -889,7 +890,7 @@ public class SecureAttrs
         }
         catch(Exception exception3)
         {
-            System.out.println("SAE:asym verify :sig.update:"+exception3+" sig="+abyte0);
+            System.out.println("SAE:asym verify :sig.update:" + exception3 + " sig=" + Arrays.toString(abyte0));
             exception3.printStackTrace();
             return false;
         }
@@ -900,7 +901,7 @@ public class SecureAttrs
         }
         catch(Exception exception4)
         {
-            System.out.println("SAE:asym verify :sig.verify:"+exception4+"sig="+abyte0);
+            System.out.println("SAE:asym verify :sig.verify:" + exception4 + "sig=" + Arrays.toString(abyte0));
             exception4.printStackTrace();
             return false;
         }

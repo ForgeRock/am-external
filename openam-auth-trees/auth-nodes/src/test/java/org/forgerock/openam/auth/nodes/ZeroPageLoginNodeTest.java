@@ -13,7 +13,6 @@
  *
  * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
@@ -27,8 +26,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.HashSet;
 
-import org.forgerock.guava.common.collect.ImmutableListMultimap;
-import org.forgerock.guava.common.collect.ListMultimap;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
@@ -39,6 +36,9 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ListMultimap;
 
 public class ZeroPageLoginNodeTest {
 

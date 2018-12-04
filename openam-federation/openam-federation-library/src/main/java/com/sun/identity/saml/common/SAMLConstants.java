@@ -24,7 +24,7 @@
  *
  * $Id: SAMLConstants.java,v 1.17 2009/06/12 22:21:39 mallas Exp $
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml.common;
@@ -1028,6 +1028,14 @@ public final class SAMLConstants
      */
     public static final String ALGO_ID_SIGNATURE_DSA =
                                 "http://www.w3.org/2000/09/xmldsig#dsa-sha1";
+
+    /**
+     * Signature Algorithm DSAwithSHA1 URI - Required.
+     *
+     * @supported.api
+     */
+    public static final String ALGO_ID_SIGNATURE_DSA_256 =
+                                "http://www.w3.org/2009/xmldsig11#dsa-sha256";
 
     /**
      * Signature Algorithm RSAwithSHA1 URI - Recommended.

@@ -24,9 +24,12 @@
  *
  * $Id: SubjectConfirmation.java,v 1.2 2008/06/25 05:47:42 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.sun.identity.saml2.assertion.impl.SubjectConfirmationImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /**
@@ -36,6 +39,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  *
  *  @supported.all.api
  */
+@JsonDeserialize(as=SubjectConfirmationImpl.class)
 public interface SubjectConfirmation {
 
     /**
@@ -43,7 +47,7 @@ public interface SubjectConfirmation {
      *
      * @return the encrypted ID 
      */
-    public EncryptedID getEncryptedID();
+    EncryptedID getEncryptedID();
 
     /**
      * Sets the encrypted ID
@@ -51,14 +55,14 @@ public interface SubjectConfirmation {
      * @param value the encrypted ID 
      * @exception SAML2Exception if the object is immutable
      */
-    public void setEncryptedID(EncryptedID value) throws SAML2Exception;
+    void setEncryptedID(EncryptedID value) throws SAML2Exception;
 
     /**
      * Returns the subject confirmation data
      *
      * @return the subject confirmation data 
      */
-    public SubjectConfirmationData getSubjectConfirmationData();
+    SubjectConfirmationData getSubjectConfirmationData();
 
     /**
      * Sets the subject confirmation data
@@ -66,7 +70,7 @@ public interface SubjectConfirmation {
      * @param value the subject confirmation data 
      * @exception SAML2Exception if the object is immutable
      */
-    public void setSubjectConfirmationData(SubjectConfirmationData value)
+    void setSubjectConfirmationData(SubjectConfirmationData value)
         throws SAML2Exception;
 
     /**
@@ -74,7 +78,7 @@ public interface SubjectConfirmation {
      *
      * @return the name identifier 
      */
-    public NameID getNameID();
+    NameID getNameID();
 
     /**
      * Sets the name identifier 
@@ -82,14 +86,14 @@ public interface SubjectConfirmation {
      * @param value the name identifier 
      * @exception SAML2Exception if the object is immutable
      */
-    public void setNameID(NameID value) throws SAML2Exception;
+    void setNameID(NameID value) throws SAML2Exception;
 
     /**
      * Returns the base ID 
      *
      * @return the base ID 
      */
-    public BaseID getBaseID();
+    BaseID getBaseID();
 
     /**
      * Sets the base ID 
@@ -97,14 +101,14 @@ public interface SubjectConfirmation {
      * @param value the base ID 
      * @exception SAML2Exception if the object is immutable
      */
-    public void setBaseID(BaseID value) throws SAML2Exception;
+    void setBaseID(BaseID value) throws SAML2Exception;
 
     /**
      * Returns the confirmation method 
      *
      * @return the confirmation method 
      */
-    public String getMethod();
+    String getMethod();
 
     /**
      * Sets the confirmation method 
@@ -112,7 +116,7 @@ public interface SubjectConfirmation {
      * @param value the confirmation method 
      * @exception SAML2Exception if the object is immutable
      */
-    public void setMethod(String value) throws SAML2Exception;
+    void setMethod(String value) throws SAML2Exception;
 
    /**
     * Returns a String representation
@@ -124,7 +128,7 @@ public interface SubjectConfirmation {
     * @return A String representation
     * @exception SAML2Exception if something is wrong during conversion
      */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
+   String toXMLString(boolean includeNSPrefix, boolean declareNS)
      throws SAML2Exception;
 
    /**
@@ -133,18 +137,18 @@ public interface SubjectConfirmation {
     * @return A String representation
     * @exception SAML2Exception if something is wrong during conversion
     */
-    public String toXMLString() throws SAML2Exception;
+   String toXMLString() throws SAML2Exception;
 
    /**
     * Makes the object immutable
     */
-    public void makeImmutable();
+   void makeImmutable();
 
    /**
     * Returns true if the object is mutable
     *
     * @return true if the object is mutable
     */
-    public boolean isMutable();
+   boolean isMutable();
 
 }

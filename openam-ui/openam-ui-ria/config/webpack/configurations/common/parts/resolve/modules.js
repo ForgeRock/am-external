@@ -18,6 +18,6 @@ const { resolve } = require("path");
 
 module.exports = [
     "node_modules",
-    resolve(process.cwd(), "src", "main", "js"),
-    resolve(process.cwd(), "src", "main", "resources")
+    resolve(process.cwd(), "src", "js"),
+    resolve(process.cwd(), "src", "resources")
 ];

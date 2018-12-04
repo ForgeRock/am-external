@@ -24,13 +24,16 @@
  *
  * $Id: EncryptedAssertion.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion;
 
 import java.security.PrivateKey;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.sun.identity.saml2.assertion.impl.EncryptedAssertionImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /**
@@ -41,6 +44,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  * <code>EncryptedKey</code>s.
  * @supported.all.api
  */
+@JsonDeserialize(as=EncryptedAssertionImpl.class)
 public interface EncryptedAssertion extends EncryptedElement {
 
     /**

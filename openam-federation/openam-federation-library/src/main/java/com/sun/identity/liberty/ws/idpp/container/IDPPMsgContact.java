@@ -24,23 +24,30 @@
  *
  * $Id: IDPPMsgContact.java,v 1.3 2008/06/25 05:47:16 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.liberty.ws.idpp.container;
 
-import com.sun.identity.shared.datastruct.CollectionHelper;
-import javax.xml.bind.JAXBException;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
-import org.w3c.dom.Document;
-import com.sun.identity.liberty.ws.idpp.common.*;
-import com.sun.identity.liberty.ws.idpp.jaxb.*;
-import com.sun.identity.liberty.ws.idpp.plugin.*;
+
+import javax.xml.bind.JAXBException;
+
+import com.sun.identity.liberty.ws.idpp.common.IDPPConstants;
+import com.sun.identity.liberty.ws.idpp.common.IDPPException;
+import com.sun.identity.liberty.ws.idpp.common.IDPPUtils;
+import com.sun.identity.liberty.ws.idpp.jaxb.DSTString;
+import com.sun.identity.liberty.ws.idpp.jaxb.DSTURI;
+import com.sun.identity.liberty.ws.idpp.jaxb.MsgContactType;
+import com.sun.identity.liberty.ws.idpp.jaxb.PPType;
+import com.sun.identity.shared.datastruct.CollectionHelper;
 
 /**
  * This class <code>IDPPMsgContact</code> is an implementation of 
@@ -60,12 +67,12 @@ public class IDPPMsgContact extends IDPPBaseContainer {
       * Gets the common name jaxb element 
       * @param userMap user map
       * @return InformalNameElement JAXB Object.
-      * @exception IDPPException.
+      * @exception IDPPException
       */
      public Object getContainerObject(Map userMap) throws IDPPException {
         IDPPUtils.debug.message("IDPPMsgContact:getContainerObject:Init");
         try {
-            PPType ppType = IDPPUtils.getIDPPFactory().createPPElement();
+            PPType ppType = IDPPUtils.getIDPPFactory().createPPType();
             Set msgContacts = (Set)userMap.get(
                 getAttributeMapper().getDSAttribute(
                 IDPPConstants.MSG_CONTACT_ELEMENT).toLowerCase());
@@ -78,7 +85,7 @@ public class IDPPMsgContact extends IDPPBaseContainer {
             Iterator iter = msgContacts.iterator();
             while(iter.hasNext()) {
                String msgContact = (String)iter.next();
-               MsgContactElement mce = parseEntry(msgContact, userMap);
+               MsgContactType mce = parseEntry(msgContact, userMap);
                if(mce != null) {
                   ppType.getMsgContact().add(mce);
                }
@@ -98,9 +105,9 @@ public class IDPPMsgContact extends IDPPBaseContainer {
       * @param entry MsgContact Entry
       * @userMap UserData Map.
       * @return MsgContactElement. 
-      * @exception JAXBException.
+      * @exception JAXBException
       */
-     private MsgContactElement parseEntry(String entry, Map userMap)
+     private MsgContactType parseEntry(String entry, Map userMap)
         throws JAXBException {
 
          if(entry == null || entry.length() == 0) {
@@ -115,8 +122,8 @@ public class IDPPMsgContact extends IDPPBaseContainer {
             return null;
          }
 
-         MsgContactElement mse = 
-              IDPPUtils.getIDPPFactory().createMsgContactElement();
+         MsgContactType mse =
+              IDPPUtils.getIDPPFactory().createMsgContactType();
 
          StringTokenizer st = 
              new StringTokenizer(entry, IDPPConstants.ATTRIBUTE_SEPARATOR);
@@ -157,7 +164,7 @@ public class IDPPMsgContact extends IDPPBaseContainer {
             } else if(attribute.equals("MsgMethod")) {
                mse.getMsgMethod().add(getDSTURI(value));
             } else if(attribute.equals("MsgTechnology")) {
-               mse.getMsgTechnology().add(getDSTURI(value));
+               mse.getMsgTechnology().add(getMsgTechnologyElement(value));
             } else if(attribute.equals("MsgAccount")) {
                mse.setMsgAccount(getDSTString(value));
             } else if(attribute.equals("MsgSubAccount")) {
@@ -197,7 +204,7 @@ public class IDPPMsgContact extends IDPPBaseContainer {
       * @param select Select expression.
       * @param data list of new data objects.
       * @return Attribute key value pair for the given select.
-      * @throws IDPPException.
+      * @throws IDPPException
       */
      public Map getDataMapForSelect(String select, List data) 
         throws IDPPException {
@@ -225,8 +232,8 @@ public class IDPPMsgContact extends IDPPBaseContainer {
 
            while(iter.hasNext()) {
               Object dataElement = iter.next();
-              if(dataElement instanceof MsgContactElement) {
-                 MsgContactElement mse = (MsgContactElement)dataElement;
+              if(dataElement instanceof MsgContactType) {
+                  MsgContactType mse = (MsgContactType)dataElement;
                  return getDataMap(mse, filter);
               } else {
                  throw new IDPPException(
@@ -246,7 +253,7 @@ public class IDPPMsgContact extends IDPPBaseContainer {
       * @param filter filter string 
       * @return data map
       */
-     private Map getDataMap(MsgContactElement mse, String filter) {
+     private Map getDataMap(MsgContactType mse, String filter) {
 
          Map map = new HashMap();
          Set existingSet = getMsgContacts();
@@ -296,7 +303,7 @@ public class IDPPMsgContact extends IDPPBaseContainer {
      /**
       * Modifies the existing entry.
       */
-     private String modifyEntry(String entry, MsgContactElement mse) {
+     private String modifyEntry(String entry, MsgContactType mse) {
 
          StringBuffer sb = new StringBuffer(200);
 

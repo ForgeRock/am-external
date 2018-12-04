@@ -61,10 +61,10 @@ import com.sun.identity.shared.DateUtils;
 public class ConditionsImpl implements Conditions {
 
     private Date notOnOrAfter;
-    private List conditions = new ArrayList();
-    private List audienceRestrictions = new ArrayList();
-    private List oneTimeUses = new ArrayList();
-    private List proxyRestrictions = new ArrayList();
+    private List<Condition> conditions = new ArrayList();
+    private List<AudienceRestriction> audienceRestrictions = new ArrayList();
+    private List<OneTimeUse> oneTimeUses = new ArrayList();
+    private List<ProxyRestriction> proxyRestrictions = new ArrayList();
     private Date notBefore;
     private boolean isMutable = true;
 
@@ -236,7 +236,7 @@ public class ConditionsImpl implements Conditions {
      * 
      *  @return a list of <code>Condition</code>
      */
-    public List getConditions() {
+    public List<Condition> getConditions() {
         return conditions;
     }
  
@@ -245,7 +245,7 @@ public class ConditionsImpl implements Conditions {
      * 
      *  @return a list of <code>AudienceRestriction</code>
      */
-    public List getAudienceRestrictions() {
+    public List<AudienceRestriction> getAudienceRestrictions() {
         return audienceRestrictions;
     }
  
@@ -254,7 +254,7 @@ public class ConditionsImpl implements Conditions {
      * 
      *  @return a list of <code>OneTimeUse</code>
      */
-    public List getOneTimeUses() {
+    public List<OneTimeUse> getOneTimeUses() {
         return oneTimeUses;
     }
  
@@ -263,7 +263,7 @@ public class ConditionsImpl implements Conditions {
      * 
      *  @return a list of <code>ProxyRestriction</code>
      */
-    public List getProxyRestrictions() {
+    public List<ProxyRestriction> getProxyRestrictions() {
         return proxyRestrictions;
     }
  
@@ -273,7 +273,7 @@ public class ConditionsImpl implements Conditions {
      *  @param conditions a list of <code>Condition</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setConditions(List conditions) throws SAML2Exception {
+    public void setConditions(List<Condition> conditions) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));
@@ -287,7 +287,7 @@ public class ConditionsImpl implements Conditions {
      *  @param ars a list of <code>AudienceRestriction</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setAudienceRestrictions(List ars) throws SAML2Exception {
+    public void setAudienceRestrictions(List<AudienceRestriction> ars) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));
@@ -301,7 +301,7 @@ public class ConditionsImpl implements Conditions {
      *  @param oneTimeUses a list of <code>OneTimeUse</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setOneTimeUses(List oneTimeUses) throws SAML2Exception {
+    public void setOneTimeUses(List<OneTimeUse> oneTimeUses) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));
@@ -315,7 +315,7 @@ public class ConditionsImpl implements Conditions {
      *  @param prs a list of <code>ProxyRestriction</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setProxyRestrictions(List prs) throws SAML2Exception {
+    public void setProxyRestrictions(List<ProxyRestriction> prs) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));

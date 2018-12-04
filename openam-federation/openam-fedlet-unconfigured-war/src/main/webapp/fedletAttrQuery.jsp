@@ -22,7 +22,7 @@
 
    Copyright 2009 Sun Microsystems Inc. All Rights Reserved
 
-     Portions Copyrighted 2014-2016 ForgeRock AS.
+     Portions Copyrighted 2014-2018 ForgeRock AS.
      Portions Copyrighted 2014 Nomura Research Institute, Ltd
 --%>
 
@@ -31,56 +31,42 @@
   This JSP used by the Fedlet is to get the list of attributes from IDP
 --%>
 
-<%@ page import="com.sun.identity.saml2.common.SAML2Exception" %>
-<%@ page import="com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement" %>
-<%@ page import="com.sun.identity.saml2.jaxb.metadata.SingleSignOnServiceElement" %>
-<%@ page import="com.sun.identity.saml2.meta.SAML2MetaException" %>
-<%@ page import="com.sun.identity.saml2.meta.SAML2MetaManager" %>
-<%@ page import="com.sun.identity.shared.encode.URLEncDec" %>
-<%@ page import="java.io.IOException" %>
 <%@ page import="java.io.File" %>
-<%@ page import="java.io.InputStream" %>
-<%@ page import="java.io.FileOutputStream" %>
-<%@ page import="java.util.ArrayList" %>
-<%@ page import="java.util.Iterator" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.Map" %>
 <%@ page import="java.util.Set" %>
 <%@ page import="org.owasp.esapi.ESAPI" %>
-
 <%@ page import="com.sun.identity.cot.CircleOfTrustManager" %>
-<%@ page import="com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement" %>
+<%@ page import="com.sun.identity.shared.encode.URLEncDec" %>
 
 <script>
-function enableSubjectDN() {
+    function enableSubjectDN() {
 
-    for (var i=0; i < document.fedletAttrQuery.attrQueryProfile.length; i++) {
-        if (document.fedletAttrQuery.attrQueryProfile[i].checked) {
-            var rad_val = document.fedletAttrQuery.attrQueryProfile[i].value;
-            if (rad_val == "x509Subject") {
-                document.fedletAttrQuery.subjectDN.disabled=false;
-            } else {
-                document.fedletAttrQuery.subjectDN.disabled=true;
+        for (var i = 0; i < document.fedletAttrQuery.attrQueryProfile.length; i++) {
+            if (document.fedletAttrQuery.attrQueryProfile[i].checked) {
+                var rad_val = document.fedletAttrQuery.attrQueryProfile[i].value;
+                if (rad_val == "x509Subject") {
+                    document.fedletAttrQuery.subjectDN.disabled = false;
+                } else {
+                    document.fedletAttrQuery.subjectDN.disabled = true;
+                }
             }
-       }
+        }
+        return true;
     }
-    return true;
-}
 
-function checkEmptySubjectDN() {
-    for (var i=0; i < document.fedletAttrQuery.attrQueryProfile.length; i++) {
-        if (document.fedletAttrQuery.attrQueryProfile[i].checked) {
-            var rad_val = document.fedletAttrQuery.attrQueryProfile[i].value;
-            if (rad_val == "x509Subject") {
-               if (document.fedletAttrQuery.subjectDN.value == "")  {
-                   alert("X.509 Subject DN cannot be empty");
-                   return false;
-                }        
+    function checkEmptySubjectDN() {
+        for (var i = 0; i < document.fedletAttrQuery.attrQueryProfile.length; i++) {
+            if (document.fedletAttrQuery.attrQueryProfile[i].checked) {
+                var rad_val = document.fedletAttrQuery.attrQueryProfile[i].value;
+                if (rad_val == "x509Subject") {
+                    if (document.fedletAttrQuery.subjectDN.value == "") {
+                        alert("X.509 Subject DN cannot be empty");
+                        return false;
+                    }
+                }
             }
-         }
+        }
+        return true;
     }
-    return true;
-}
 </script>
 <%
     String deployuri = request.getRequestURI();

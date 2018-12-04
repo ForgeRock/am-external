@@ -24,12 +24,12 @@
  *
  * $Id: ConfigFedMonitoring.java,v 1.2 2009/10/29 00:03:51 exu Exp $
  *
- * Portions Copyrighted 2011-2017 ForgeRock AS.
+ * Portions Copyrighted 2011-2018 ForgeRock AS.
  */
 
 package com.sun.identity.configuration;
 
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.newDate;
 
 import java.security.AccessController;
 import java.text.SimpleDateFormat;
@@ -65,7 +65,7 @@ import com.sun.identity.sm.SMSException;
 import com.sun.identity.sm.SchemaType;
 import com.sun.identity.sm.ServiceSchema;
 import com.sun.identity.sm.ServiceSchemaManager;
-import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
+import com.sun.identity.wsfederation.jaxb.wsfederation.FederationType;
 import com.sun.identity.wsfederation.jaxb.wsfederation.TokenIssuerEndpointElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.UriNamedClaimTypesOfferedElement;
 import com.sun.identity.wsfederation.meta.WSFederationMetaException;
@@ -324,8 +324,8 @@ public class ConfigFedMonitoring {
             
             //to handle dual roles specifically for WSFED
             if (roles.isEmpty()) {
-                FederationElement fedElem =
-                    metaManager.getEntityDescriptor(realm, entity);
+                FederationType fedElem =
+                    metaManager.getEntityDescriptor(realm, entity).getValue();
                 if (fedElem != null) {
                     for (Iterator iter = fedElem.getAny().iterator(); 
                         iter.hasNext(); ) 

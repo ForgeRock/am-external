@@ -39,7 +39,15 @@ import com.sun.identity.sm.RequiredValueValidator;
             configClass = SetFailureUrlNode.Config.class)
 public class SetFailureUrlNode extends SingleOutcomeNode {
 
-    interface Config {
+    /**
+     * Node Config Declaration.
+     */
+    public interface Config {
+        /**
+         * The failure URL.
+         *
+         * @return THe failure URL.
+         */
         @Attribute(order = 100, validators = RequiredValueValidator.class)
         String failureUrl();
     }

@@ -11,24 +11,30 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.authentication.modules.social;
 
 import static com.sun.identity.authentication.util.ISAuthConstants.FULL_LOGIN_URL;
-import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.*;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.BUNDLE_NAME;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.COOKIE_LOGOUT_URL;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.COOKIE_ORIG_URL;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.CREATE_USER_STATE;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.NONCE_TOKEN_ID;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.PARAM_ACTIVATION;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.SESSION_LOGOUT_BEHAVIOUR;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.SESSION_OAUTH_TOKEN;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.SET_PASSWORD_STATE;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.security.Principal;
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.function.Function;
@@ -44,15 +50,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.utils.URIBuilder;
-import org.forgerock.guava.common.annotations.VisibleForTesting;
-import org.forgerock.guava.common.base.Optional;
 import org.forgerock.json.JsonValue;
-import org.forgerock.json.jose.builders.JwtBuilderFactory;
-import org.forgerock.json.jose.builders.JwtClaimsSetBuilder;
-import org.forgerock.json.jose.jwe.EncryptionMethod;
-import org.forgerock.json.jose.jwe.JweAlgorithm;
-import org.forgerock.json.jose.jws.JwsAlgorithm;
-import org.forgerock.json.jose.jws.SigningManager;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthException;
@@ -63,15 +61,14 @@ import org.forgerock.openam.authentication.modules.oauth2.NoEmailSentException;
 import org.forgerock.openam.authentication.modules.oauth2.OAuth;
 import org.forgerock.openam.authentication.modules.oauth2.OAuthUtil;
 import org.forgerock.openam.authentication.modules.oidc.JwtHandlerConfig;
+import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-import org.forgerock.openam.utils.AMKeyProvider;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.Reject;
-import org.forgerock.util.encode.Base64;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.RedirectCallback;
 import com.sun.identity.authentication.util.ISAuthConstants;
@@ -553,30 +550,4 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
         }
     }
 
-    @VisibleForTesting
-    static class ClientTokenJwtGenerator {
-        String generate(IdmIntegrationConfig idmIntegrationConfig, JsonValue dataStoreContents)
-                throws JsonProcessingException {
-            AMKeyProvider keyProvider = new AMKeyProvider();
-            Key signingKey = keyProvider.getSecretKey(idmIntegrationConfig.getSigningKeyAlias());
-            String sharedSecret = Base64.encode(signingKey.getEncoded());
-            PublicKey encryptionKey = keyProvider.getCertificate(idmIntegrationConfig.getEncryptionKeyAlias())
-                    .getPublicKey();
-
-            JwtClaimsSet claimsSet = new JwtClaimsSetBuilder()
-                    .claim("state", new ObjectMapper().writeValueAsString(dataStoreContents.getObject()))
-                    .build();
-
-            SigningManager signingManager = new SigningManager();
-            return new JwtBuilderFactory().jwe(encryptionKey)
-                    .headers()
-                    .alg(JweAlgorithm.valueOf(idmIntegrationConfig.getEncryptionAlgorithm()))
-                    .enc(EncryptionMethod.valueOf(idmIntegrationConfig.getEncryptionMethod()))
-                    .done()
-                    .claims(claimsSet)
-                    .signedWith(signingManager.newHmacSigningHandler(sharedSecret.getBytes()),
-                            JwsAlgorithm.valueOf(idmIntegrationConfig.getSigningAlgorithm()))
-                    .build();
-        }
-    }
 }

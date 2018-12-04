@@ -2,7 +2,7 @@
 <!--
    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 
-   Copyright (c) 2013-2017 ForgeRock AS. All Rights Reserved
+   Copyright (c) 2013-2018 ForgeRock AS. All Rights Reserved
 
    The contents of this file are subject to the terms
    of the Common Development and Distribution License
@@ -22,13 +22,13 @@
    your own identifying information:
    "Portions Copyrighted [year] [name of copyright owner]"
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.forgerock.am</groupId>
-        <artifactId>openam</artifactId>
-        <version>6.0.0.5</version>
+        <artifactId>openam-parent</artifactId>
+        <version>6.5.0</version>
     </parent>
 
     <groupId>org.forgerock.am.examples</groupId>
@@ -47,10 +47,10 @@
     </modules>
 
     <repositories>
-        <repository>
-            <id>forgerock-private-releases</id>
-            <url>https://maven.forgerock.org/repo/private-releases</url>
-        </repository>
-    </repositories>
-</project>
+      <repository>
+         <id>forgerock-build-dependencies</id>
+            <url>https://maven.forgerock.org/repo/forgerock-openam-6.5.0-dependencies</url>
+         </repository>
+      </repositories>
+  </project>
 

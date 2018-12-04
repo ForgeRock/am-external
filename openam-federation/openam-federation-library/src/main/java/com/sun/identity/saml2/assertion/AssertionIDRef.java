@@ -24,10 +24,13 @@
  *
  * $Id: AssertionIDRef.java,v 1.2 2008/06/25 05:47:40 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.sun.identity.saml2.assertion.impl.AssertionIDRefImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /**
@@ -41,6 +44,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  *
  * @supported.all.api
  */
+@JsonDeserialize(as=AssertionIDRefImpl.class)
 public interface AssertionIDRef {
     
     /**
@@ -58,12 +62,12 @@ public interface AssertionIDRef {
      * @throws SAML2Exception if the object is immutable.
      * @see #getValue()
      */
-    public void setValue(String value) throws SAML2Exception;
+    void setValue(String value) throws SAML2Exception;
     
     /**
      * Makes the object immutable.
      */
-    public void makeImmutable();
+    void makeImmutable();
 
     /**
      * Returns the mutability of the object.
@@ -71,7 +75,7 @@ public interface AssertionIDRef {
      * @return <code>true</code> if the object is mutable; <code>false</code>
      *     otherwise.
      */
-    public boolean isMutable();
+    boolean isMutable();
 
     /**
      * Returns a String representation of the element.
@@ -80,7 +84,7 @@ public interface AssertionIDRef {
      *     By default name space name is prepended to the element name.
      * @throws SAML2Exception if the object does not conform to the schema.
      */
-    public String toXMLString() throws SAML2Exception;
+    String toXMLString() throws SAML2Exception;
 
     /**
      * Returns a String representation of the element.
@@ -92,6 +96,6 @@ public interface AssertionIDRef {
      * @return A string containing the valid XML for this element
      * @throws SAML2Exception if the object does not conform to the schema.
      */
-    public String toXMLString(boolean includeNS, boolean declareNS)
+    String toXMLString(boolean includeNS, boolean declareNS)
         throws SAML2Exception;
 }

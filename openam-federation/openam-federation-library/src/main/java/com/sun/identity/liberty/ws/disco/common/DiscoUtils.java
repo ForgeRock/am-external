@@ -24,42 +24,52 @@
  *
  * $Id: DiscoUtils.java,v 1.5 2008/06/25 05:47:12 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.liberty.ws.disco.common;
 
 import java.security.cert.X509Certificate;
-import java.util.List;
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.BitSet;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
-import com.sun.identity.saml.assertion.NameIdentifier;
-import com.sun.identity.saml.assertion.Statement;
-import com.sun.identity.liberty.ws.disco.DiscoveryException;
-import com.sun.identity.liberty.ws.disco.EncryptedResourceID;
-import com.sun.identity.liberty.ws.disco.ResourceOffering;
-import com.sun.identity.liberty.ws.disco.ResourceID;
+import com.sun.identity.federation.message.common.EncryptedNameIdentifier;
+import com.sun.identity.federation.message.common.IDPProvidedNameIdentifier;
 import com.sun.identity.liberty.ws.disco.Description;
-import com.sun.identity.liberty.ws.disco.jaxb.*;
-import com.sun.identity.liberty.ws.disco.jaxb11.*;
+import com.sun.identity.liberty.ws.disco.EncryptedResourceID;
+import com.sun.identity.liberty.ws.disco.ResourceID;
+import com.sun.identity.liberty.ws.disco.ResourceOffering;
+import com.sun.identity.liberty.ws.disco.jaxb.AuthenticateRequesterElement;
+import com.sun.identity.liberty.ws.disco.jaxb.AuthenticateSessionContextElement;
+import com.sun.identity.liberty.ws.disco.jaxb.AuthorizeRequesterElement;
+import com.sun.identity.liberty.ws.disco.jaxb.DescriptionType;
+import com.sun.identity.liberty.ws.disco.jaxb.DirectiveType;
+import com.sun.identity.liberty.ws.disco.jaxb.EncryptResourceIDElement;
+import com.sun.identity.liberty.ws.disco.jaxb.InsertEntryType;
+import com.sun.identity.liberty.ws.disco.jaxb11.GenerateBearerTokenElement;
 import com.sun.identity.liberty.ws.disco.plugins.NameIdentifierMapper;
-import com.sun.identity.liberty.ws.disco.plugins.jaxb.*;
 import com.sun.identity.liberty.ws.interfaces.Authorizer;
-import com.sun.identity.liberty.ws.meta.jaxb.SPDescriptorType;
-import com.sun.identity.liberty.ws.security.*;
+import com.sun.identity.liberty.ws.security.ResourceAccessStatement;
+import com.sun.identity.liberty.ws.security.SecurityAssertion;
+import com.sun.identity.liberty.ws.security.SecurityTokenManager;
+import com.sun.identity.liberty.ws.security.SessionContext;
+import com.sun.identity.liberty.ws.security.SessionContextStatement;
+import com.sun.identity.liberty.ws.security.SessionSubject;
 import com.sun.identity.liberty.ws.soapbinding.Message;
 import com.sun.identity.liberty.ws.soapbinding.ProviderHeader;
 import com.sun.identity.liberty.ws.soapbinding.Utils;
 import com.sun.identity.liberty.ws.util.ProviderManager;
 import com.sun.identity.liberty.ws.util.ProviderUtil;
-import com.sun.identity.federation.message.common.EncryptedNameIdentifier;
-import com.sun.identity.federation.message.common.IDPProvidedNameIdentifier;
+import com.sun.identity.saml.assertion.NameIdentifier;
+import com.sun.identity.saml.assertion.Statement;
 
 /**
  * Provides utility methods to discovery service.

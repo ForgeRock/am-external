@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema",
+  "definitions": {
+      "theme": {
+          "properties": {
+              "path": {
+                  "format": "uri-reference",
+                  "minLength": 2,
+                  "pattern": "^[^/].*/$",
+                  "type": "string"
+              }
+          },
+          "type": "object"
+      }
+  },
+  "patternProperties": {
+      ".*": { "$ref": "#/definitions/theme" }
+  },
+  "required": ["default"],
+  "type": "object"
+}

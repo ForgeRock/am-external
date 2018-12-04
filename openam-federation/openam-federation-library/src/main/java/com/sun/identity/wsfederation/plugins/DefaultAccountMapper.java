@@ -24,6 +24,8 @@
  *
  * $Id: DefaultAccountMapper.java,v 1.5 2009/10/28 23:58:59 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
@@ -149,10 +151,10 @@ public class DefaultAccountMapper {
             BaseConfigType config = null;
             if(role.equals(IDP)) {
                config = WSFederationUtils.getMetaManager().getIDPSSOConfig(
-                   realm, entityID);
+                   realm, entityID).getValue();
             } else {
                config = WSFederationUtils.getMetaManager().getSPSSOConfig(
-                   realm, entityID);
+                   realm, entityID).getValue();
             }
             Map attributes  = WSFederationMetaUtils.getAttributes(config);
 

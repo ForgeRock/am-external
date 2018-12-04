@@ -24,19 +24,22 @@
  *
  * $Id: InteractionUtils.java,v 1.2 2008/06/25 05:47:18 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.liberty.ws.interaction;
 
-import com.sun.identity.liberty.ws.interaction.jaxb.InteractionResponseElement;
-import com.sun.identity.liberty.ws.interaction.jaxb.UserInteractionElement;
-import com.sun.identity.liberty.ws.interaction.jaxb.ParameterType;
-import com.sun.identity.liberty.ws.soapbinding.Message;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import com.sun.identity.liberty.ws.interaction.jaxb.InteractionResponseType;
+import com.sun.identity.liberty.ws.interaction.jaxb.ParameterType;
+import com.sun.identity.liberty.ws.interaction.jaxb.UserInteractionHeaderType;
+import com.sun.identity.liberty.ws.soapbinding.Message;
 
 /**
  * Class that provides some utility methods that work with objects 
@@ -59,7 +62,7 @@ public class InteractionUtils {
      *          String objects
      */
     public static Map getParameters(
-            InteractionResponseElement interactionResponseElement) {
+            InteractionResponseType interactionResponseElement) {
         List parameters = interactionResponseElement.getParameter();
         Map pm = new HashMap();
         Iterator iter = parameters.iterator();
@@ -86,7 +89,7 @@ public class InteractionUtils {
      */
     public static List getInteractionLangauge(Message message) {
         List languages = null;
-        UserInteractionElement ue 
+        UserInteractionHeaderType ue
                 = InteractionManager.getUserInteractionElement(message);
         if (ue != null) {
             languages = ue.getLanguage();

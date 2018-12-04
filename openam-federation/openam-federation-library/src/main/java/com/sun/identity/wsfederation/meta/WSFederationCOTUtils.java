@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
@@ -24,19 +24,22 @@
  *
  * $Id: WSFederationCOTUtils.java,v 1.5 2009/10/28 23:58:59 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
-
-
 package com.sun.identity.wsfederation.meta;
 
-import javax.xml.bind.JAXBException;
 import java.util.Iterator;
 import java.util.List;
-import com.sun.identity.shared.debug.Debug;
+
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+
 import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.wsfederation.jaxb.entityconfig.AttributeType;
 import com.sun.identity.wsfederation.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.wsfederation.jaxb.entityconfig.FederationConfigElement;
+import com.sun.identity.wsfederation.jaxb.entityconfig.FederationConfigType;
 import com.sun.identity.wsfederation.jaxb.entityconfig.ObjectFactory;
 import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
 
@@ -90,51 +93,46 @@ public class WSFederationCOTUtils {
             String[] data = {realm, entityId};
             throw new WSFederationMetaException("entityid_invalid", data);
         }
-        FederationConfigElement eConfig = 
-            metaManager.getEntityConfig(realm, entityId);
+        FederationConfigElement eConfig = metaManager.getEntityConfig(realm, entityId);
         if (eConfig == null) {
-            BaseConfigType bctype = null;
             AttributeType atype = objFactory.createAttributeType();
             atype.setName(SAML2Constants.COT_LIST);
             atype.getValue().add(name);
             // add to eConfig
-            FederationConfigElement ele = 
-                objFactory.createFederationConfigElement();
-            ele.setFederationID(entityId);
-            ele.setHosted(false);
-            List ll =
-                    ele.getIDPSSOConfigOrSPSSOConfig();
+            FederationConfigType configType = objFactory.createFederationConfigType();
+            configType.setFederationID(entityId);
+            configType.setHosted(false);
+            List<JAXBElement<BaseConfigType>> federationConfigs = configType.getIDPSSOConfigOrSPSSOConfig();
             // Decide which role EntityDescriptorElement includes
             // Right now, it is either an SP or an IdP
             // IdP will have UriNamedClaimTypesOffered
-            if (metaManager.getUriNamedClaimTypesOffered(edes) != 
-                null) {
-                bctype = objFactory.createIDPSSOConfigElement();
-                bctype.getAttribute().add(atype);
-                ll.add(bctype);
+            if (metaManager.getUriNamedClaimTypesOffered(edes) != null) {
+                JAXBElement<BaseConfigType> configElement = objFactory.createIDPSSOConfigElement(
+                        objFactory.createBaseConfigType());
+                configElement.getValue().getAttribute().add(atype);
+                federationConfigs.add(configElement);
             } else {
-                bctype = objFactory.createSPSSOConfigElement();
-                bctype.getAttribute().add(atype);
-                ll.add(bctype);
+                JAXBElement<BaseConfigType> configElement = objFactory.createSPSSOConfigElement(
+                        objFactory.createBaseConfigType());
+                configElement.getValue().getAttribute().add(atype);
+                federationConfigs.add(configElement);
             }
-            metaManager.setEntityConfig(realm,ele);
+            metaManager.setEntityConfig(realm, objFactory.createFederationConfigElement(configType));
         } else {
-            List elist = eConfig.
-                    getIDPSSOConfigOrSPSSOConfig();
-            for (Iterator iter = elist.iterator(); iter.hasNext();) {
-                BaseConfigType bConfig = (BaseConfigType)iter.next();
-                List list = bConfig.getAttribute();
+            List<JAXBElement<BaseConfigType>> elist = eConfig.getValue().getIDPSSOConfigOrSPSSOConfig();
+            for (JAXBElement<BaseConfigType> anElist : elist) {
+                BaseConfigType bConfig = anElist.getValue();
+                List<AttributeType> list = bConfig.getAttribute();
                 boolean foundCOT = false;
-                for (Iterator iter2 = list.iterator(); iter2.hasNext();) {
-                    AttributeType avp = (AttributeType)iter2.next();
+                for (Object aList : list) {
+                    AttributeType avp = (AttributeType) aList;
                     if (avp.getName().trim().equalsIgnoreCase(
                             SAML2Constants.COT_LIST)) {
                         foundCOT = true;
-                        List avpl = avp.getValue();
-                        if (avpl.isEmpty() ||!containsValue(avpl,name)) {
+                        List<String> avpl = avp.getValue();
+                        if (avpl.isEmpty() || !containsValue(avpl, name)) {
                             avpl.add(name);
-                            metaManager.setEntityConfig(realm,
-                                eConfig);
+                            metaManager.setEntityConfig(realm, eConfig);
                             break;
                         }
                     }
@@ -170,11 +168,8 @@ public class WSFederationCOTUtils {
      * @param entityId the entity identifier of the provider.
      * @throws WSFederationMetaException if there is an error updating the 
      * entity config.
-     * @throws JAXBException if there is an error updating the entity config.
      */
-    public void removeFromEntityConfig(String realm, String name,
-        String entityId)
-    throws WSFederationMetaException, JAXBException {
+    public void removeFromEntityConfig(String realm, String name, String entityId) throws WSFederationMetaException {
         String classMethod = "WSFederationCOTUtils.removeFromEntityConfig: ";
         WSFederationMetaManager metaManager = null;
         if (callerSession != null) {
@@ -190,24 +185,20 @@ public class WSFederationCOTUtils {
             String[] data = {realm, entityId};
             throw new WSFederationMetaException("entityid_invalid", data);
         }
-        FederationConfigElement eConfig = 
-            metaManager.getEntityConfig(realm, entityId);
+        FederationConfigElement eConfig = metaManager.getEntityConfig(realm, entityId);
         if (eConfig != null) {
-            List elist = eConfig.
-                    getIDPSSOConfigOrSPSSOConfig();
-            for (Iterator iter = elist.iterator(); iter.hasNext();) {
-                BaseConfigType bConfig = (BaseConfigType)iter.next();
-                List list = bConfig.getAttribute();
-                for (Iterator iter2 = list.iterator(); iter2.hasNext();) {
-                    AttributeType avp = (AttributeType)iter2.next();
+            List<JAXBElement<BaseConfigType>> elist = eConfig.getValue(). getIDPSSOConfigOrSPSSOConfig();
+            for (JAXBElement<BaseConfigType> anElist : elist) {
+                BaseConfigType bConfig = anElist.getValue();
+                List<AttributeType> list = bConfig.getAttribute();
+                for (AttributeType avp : list) {
                     if (avp.getName().trim().equalsIgnoreCase(
                             SAML2Constants.COT_LIST)) {
                         List avpl = avp.getValue();
                         if (avpl != null && !avpl.isEmpty() &&
-                                containsValue(avpl,name)) {
+                                containsValue(avpl, name)) {
                             avpl.remove(name);
-                            metaManager.setEntityConfig(realm,
-                                eConfig);
+                            metaManager.setEntityConfig(realm, eConfig);
                             break;
                         }
                     }

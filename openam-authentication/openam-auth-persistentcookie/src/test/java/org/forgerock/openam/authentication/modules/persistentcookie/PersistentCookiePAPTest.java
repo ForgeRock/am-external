@@ -11,12 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
 
-import static org.mockito.BDDMockito.any;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.testng.AssertJUnit.assertEquals;
@@ -31,17 +31,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.forgerock.caf.authentication.framework.AuthenticationFramework;
-import org.forgerock.guava.common.collect.Sets;
 import org.forgerock.jaspi.modules.session.jwt.JwtSessionModule;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
 import com.iplanet.sso.SSOTokenID;
-import com.sun.identity.sm.SMSException;
-import com.sun.identity.sm.ServiceConfig;
-import com.sun.identity.sm.ServiceConfigManager;
 
 public class PersistentCookiePAPTest {
 
@@ -50,17 +45,7 @@ public class PersistentCookiePAPTest {
     @BeforeMethod
     public void setUp() {
 
-        PersistentCookieModuleWrapper persistentCookieWrapper = new PersistentCookieModuleWrapper() {
-            @Override
-            protected ServiceConfigManager getServiceConfigManager() throws SSOException, SMSException {
-                ServiceConfigManager serviceConfigManager = mock(ServiceConfigManager.class);
-                ServiceConfig serviceConfig = mock(ServiceConfig.class);
-                given(serviceConfig.getAttributes()).willReturn(Collections.singletonMap("iplanet-am-auth-key-alias",
-                        Sets.newHashSet("str")));
-                given(serviceConfigManager.getOrganizationConfig(any(), any())).willReturn(serviceConfig);
-                return serviceConfigManager;
-            }
-        };
+        PersistentCookieModuleWrapper persistentCookieWrapper = new PersistentCookieModuleWrapper();
 
         persistentCookieAuthPAP = new PersistentCookieAuthModulePostAuthenticationPlugin(persistentCookieWrapper);
     }
@@ -114,7 +99,7 @@ public class PersistentCookiePAPTest {
         HttpServletResponse response = mock(HttpServletResponse.class);
         SSOToken ssoToken = mock(SSOToken.class);
 
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         given(messageInfo.getMap()).willReturn(map);
 
         Principal principal = mock(Principal.class);
@@ -137,7 +122,7 @@ public class PersistentCookiePAPTest {
         assertEquals(contextMap.get("openam.usr"), "PRINCIPAL_NAME");
         assertEquals(contextMap.get("openam.aty"), "AUTH_TYPE");
         assertEquals(contextMap.get("openam.rlm"), "ORGANISATION");
-        assertEquals(contextMap.get("openam.clientip"), null);
+        assertThat(contextMap.get("openam.clientip")).isNull();
     }
 
     @Test
@@ -150,7 +135,7 @@ public class PersistentCookiePAPTest {
         HttpServletResponse response = mock(HttpServletResponse.class);
         SSOToken ssoToken = mock(SSOToken.class);
 
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         given(messageInfo.getMap()).willReturn(map);
 
         Principal principal = mock(Principal.class);
@@ -175,7 +160,7 @@ public class PersistentCookiePAPTest {
         assertEquals(contextMap.get("openam.usr"), "PRINCIPAL_NAME");
         assertEquals(contextMap.get("openam.aty"), "AUTH_TYPE");
         assertEquals(contextMap.get("openam.rlm"), "ORGANISATION");
-        assertEquals(contextMap.get("openam.clientip"), null);
+        assertThat(contextMap.get("openam.clientip")).isNull();
     }
 
     @Test
@@ -186,8 +171,8 @@ public class PersistentCookiePAPTest {
         HttpServletRequest request = mock(HttpServletRequest.class);
         HttpServletResponse response = mock(HttpServletResponse.class);
         SSOToken ssoToken = mock(SSOToken.class);
-        Map<String, Object> messageInfoMap = new HashMap<String, Object>();
-        Map<String, Object> contextMap = new HashMap<String, Object>();
+        Map<String, Object> messageInfoMap = new HashMap<>();
+        Map<String, Object> contextMap = new HashMap<>();
         Principal principal = mock(Principal.class);
         SSOTokenID ssoTokenID = mock(SSOTokenID.class);
 

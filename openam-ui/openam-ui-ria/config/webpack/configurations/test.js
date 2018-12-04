@@ -23,12 +23,11 @@ const loaders = require("../loaders/loaders");
 const modules = require("./common/parts/resolve/modules");
 
 module.exports = {
+    mode: "development",
     module: {
         rules: [
-            loaders("js", [babelLoader("js")]),
-            loaders("jsm", [babelLoader("jsm")]),
-            loaders("jsx", [babelLoader("jsx")]),
-            loaders(["css", "html", "less", "png"], "null-loader")
+            loaders(["js", "jsx"], [babelLoader()]),
+            loaders(["css", "html", "less", "png"], "null-loader", true)
         ]
     },
     resolve: {
@@ -38,5 +37,8 @@ module.exports = {
             ...modules,
             resolve(process.cwd(), "src", "test", "js")
         ]
+    },
+    performance: {
+        hints: false
     }
 };

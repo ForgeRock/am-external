@@ -24,21 +24,24 @@
  *
  * $Id: IDFFCOTUtils.java,v 1.6 2009/10/28 23:58:57 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 package com.sun.identity.federation.meta;
 
-import javax.xml.bind.JAXBException;
-import com.sun.identity.cot.COTConstants;
-import com.sun.identity.federation.jaxb.entityconfig.AffiliationDescriptorConfigElement;
-import com.sun.identity.federation.jaxb.entityconfig.AttributeType;
-import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
-import com.sun.identity.federation.jaxb.entityconfig.EntityConfigElement;
-import com.sun.identity.federation.jaxb.entityconfig.ObjectFactory;
-import com.sun.identity.liberty.ws.meta.jaxb.EntityDescriptorElement;
-import com.sun.identity.shared.debug.Debug;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import javax.xml.bind.JAXBException;
+
+import com.sun.identity.cot.COTConstants;
+import com.sun.identity.federation.jaxb.entityconfig.AttributeType;
+import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
+import com.sun.identity.federation.jaxb.entityconfig.EntityConfigType;
+import com.sun.identity.federation.jaxb.entityconfig.ObjectFactory;
+import com.sun.identity.liberty.ws.meta.jaxb.EntityDescriptorType;
+import com.sun.identity.shared.debug.Debug;
 
 /**
  * This class utility methods to update circle of trust
@@ -76,7 +79,7 @@ public class IDFFCOTUtils {
         IDFFMetaManager idffMetaMgr = new IDFFMetaManager(callerSession);
         ObjectFactory objFactory = new ObjectFactory();
         // Check whether the entity id existed in the DS
-        EntityDescriptorElement entityDesc =
+        EntityDescriptorType entityDesc =
                 idffMetaMgr.getEntityDescriptor(realm, entityID);
         
         if (entityDesc == null) {
@@ -84,35 +87,31 @@ public class IDFFCOTUtils {
             String[] data = {entityID};
             throw new IDFFMetaException("invalidEntityID", data);
         }
-        EntityConfigElement entityConfig =
+        EntityConfigType entityConfig =
                 idffMetaMgr.getEntityConfig(realm, entityID);
         if (entityConfig == null) {
             // create entity config and add the cot attribute
-            BaseConfigType IDFFCOTUtils = null;
+            BaseConfigType IDFFCOTUtils = new BaseConfigType();
             AttributeType atype = objFactory.createAttributeType();
             atype.setName(COT_LIST);
             atype.getValue().add(cotName);
             // add to entityConfig
-            entityConfig = objFactory.createEntityConfigElement();
+            entityConfig = objFactory.createEntityConfigType();
             entityConfig.setEntityID(entityID);
             entityConfig.setHosted(false);
             // Decide which role EntityDescriptorElement includes
             // It could have one sp and one idp.
             if (IDFFMetaUtils.getSPDescriptor(entityDesc) != null) {
-                IDFFCOTUtils = objFactory.createSPDescriptorConfigElement();
                 IDFFCOTUtils.getAttribute().add(atype);
-                entityConfig.getSPDescriptorConfig().add(IDFFCOTUtils);
+                entityConfig.getSPDescriptorConfig().add(objFactory.createSPDescriptorConfig(IDFFCOTUtils).getValue());
             }
             if (IDFFMetaUtils.getIDPDescriptor(entityDesc) != null) {
-                IDFFCOTUtils = objFactory.createIDPDescriptorConfigElement();
                 IDFFCOTUtils.getAttribute().add(atype);
-                entityConfig.getIDPDescriptorConfig().add(IDFFCOTUtils);
+                entityConfig.getIDPDescriptorConfig().add(objFactory.createIDPDescriptorConfig(IDFFCOTUtils).getValue());
             }
             if (entityDesc.getAffiliationDescriptor() != null) {
-                IDFFCOTUtils = 
-                    objFactory.createAffiliationDescriptorConfigElement();
                 IDFFCOTUtils.getAttribute().add(atype);
-                entityConfig.setAffiliationDescriptorConfig(IDFFCOTUtils);
+                entityConfig.setAffiliationDescriptorConfig(objFactory.createAffiliationDescriptorConfig(IDFFCOTUtils).getValue());
             }
             idffMetaMgr.setEntityConfig(realm, entityConfig);
         } else {
@@ -153,14 +152,14 @@ public class IDFFCOTUtils {
         String classMethod = "IDFFCOTUtils.removeFromEntityConfig: ";
         IDFFMetaManager idffMetaMgr = new IDFFMetaManager(callerSession);
         // Check whether the entity id existed in the DS
-        EntityDescriptorElement entityDesc =
+        EntityDescriptorType entityDesc =
                 idffMetaMgr.getEntityDescriptor(realm, entityID);
         if (entityDesc == null) {
             debug.error(classMethod +"No such entity: " + entityID);
             String[] data = { entityID };
             throw new IDFFMetaException("invalidEntityID", data);
         }
-        EntityConfigElement entityConfig =
+        EntityConfigType entityConfig =
                 idffMetaMgr.getEntityConfig(realm, entityID);
         if (entityConfig != null) {
             List spConfigList = entityConfig.getSPDescriptorConfig();
@@ -209,7 +208,7 @@ public class IDFFCOTUtils {
      */
     private void updateCOTAttrInConfig(String realm,
             List configList,String cotName,
-            EntityConfigElement entityConfig,
+            EntityConfigType entityConfig,
             ObjectFactory objFactory,
             IDFFMetaManager idffMetaMgr)
             throws IDFFMetaException,JAXBException {
@@ -248,7 +247,7 @@ public class IDFFCOTUtils {
             String realm,
             List configList,
             String cotName,
-            EntityConfigElement entityConfig,
+            EntityConfigType entityConfig,
             IDFFMetaManager idffMetaMgr)
             throws IDFFMetaException {
         for (Iterator iter = configList.iterator(); iter.hasNext();) {

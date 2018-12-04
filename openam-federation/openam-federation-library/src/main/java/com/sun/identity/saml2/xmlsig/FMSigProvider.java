@@ -26,7 +26,6 @@
  *
  *  Portions Copyrighted 2011-2018 ForgeRock AS.
  */
-
 package com.sun.identity.saml2.xmlsig;
 
 import java.security.PrivateKey;
@@ -47,6 +46,7 @@ import org.apache.xml.security.transforms.Transforms;
 import org.apache.xml.security.utils.Constants;
 import org.apache.xml.security.utils.ElementProxy;
 import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.util.Reject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -75,7 +75,10 @@ public final class FMSigProvider implements SigProvider {
     // the XML doc is the same as the one in its meta data
     private static boolean checkCert = true;
 
+    public static final String ALGO_ID_DIGEST_SHA256 = "http://www.w3.org/2001/04/xmlenc#sha256";
+
     static {
+        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
         org.apache.xml.security.Init.init();
 
 	c14nMethod = SystemPropertiesManager.get(
@@ -88,7 +91,7 @@ public final class FMSigProvider implements SigProvider {
 	    SAML2Constants.XMLSIG_ALGORITHM); 
 	digestAlg = SystemPropertiesManager.get(
 	    SAML2Constants.DIGEST_ALGORITHM,
-            Constants.ALGO_ID_DIGEST_SHA1);
+            ALGO_ID_DIGEST_SHA256);
 	
 	String valCert = 
 	    SystemPropertiesManager.get(
@@ -155,12 +158,12 @@ public final class FMSigProvider implements SigProvider {
 	       if (privateKey.getAlgorithm().equalsIgnoreCase(
 			SAML2Constants.DSA)) {
 	           sigAlg = 
-	               XMLSignature.ALGO_ID_SIGNATURE_DSA;
+	               XMLSignature.ALGO_ID_SIGNATURE_DSA_SHA256;
 	       } else { 
 	           if (privateKey.getAlgorithm().equalsIgnoreCase(
 			SAML2Constants.RSA)) {
 	               sigAlg = 
-	                   XMLSignature.ALGO_ID_SIGNATURE_RSA_SHA1;
+	                   XMLSignature.ALGO_ID_SIGNATURE_RSA_SHA256;
                    }
 	       }  
 	    }        
@@ -225,65 +228,50 @@ public final class FMSigProvider implements SigProvider {
         return sig.getElement();   
     }
 
-    public boolean verify(
-	String xmlString,
-	String idValue,
-	Set<X509Certificate> verificationCerts
-    ) throws SAML2Exception {
+    @Override
+    public boolean verify(String xmlString, String idValue, Set<X509Certificate> verificationCerts)
+            throws SAML2Exception {
+        return verify(xmlString, SAML2Constants.ID, idValue, verificationCerts);
+    }
 
+    @Override
+    public boolean verify(String xmlString, String idAttribute, String idValue, Set<X509Certificate> verificationCerts)
+            throws SAML2Exception {
+        Reject.ifNull(idAttribute);
         String classMethod = "FMSigProvider.verify: ";
-        if (xmlString == null ||
-                xmlString.length() == 0 ||
-                idValue == null ||
-                idValue.length() == 0) {
-
-            SAML2SDKUtils.debug.error(
-                    classMethod +
-                            "Either input xmlString or idValue is null.");
-            throw new SAML2Exception(
-                    SAML2SDKUtils.bundle.getString("nullInput"));
+        if (StringUtils.isEmpty(xmlString) || StringUtils.isEmpty(idValue)) {
+            SAML2SDKUtils.debug.error("{}Either input xmlString or idValue is null.", classMethod);
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("nullInput"));
         }
-        Document doc =
-                XMLUtils.toDOMDocument(xmlString, SAML2SDKUtils.debug);
+        Document doc = XMLUtils.toDOMDocument(xmlString, SAML2SDKUtils.debug);
         if (doc == null) {
-            throw new SAML2Exception(
-                    SAML2SDKUtils.bundle.getString(
-                            "errorObtainingElement")
-            );
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
         }
-        Element nscontext =
-                org.apache.xml.security.utils.XMLUtils.
-                        createDSctx(doc, "ds", Constants.SignatureSpecNS);
-        Element sigElement = null;
+        Element nscontext = org.apache.xml.security.utils.XMLUtils.createDSctx(doc, "ds", Constants.SignatureSpecNS);
+        Element sigElement;
         try {
-            sigElement = (Element) XPathAPI.selectSingleNode(
-                    doc,
-                    "//ds:Signature[1]", nscontext);
+            sigElement = (Element) XPathAPI.selectSingleNode(doc, "/*/ds:Signature", nscontext);
         } catch (XPathException te) {
             throw new SAML2Exception(te);
         }
-        Element refElement;
+        Element reference;
         try {
-            refElement = (Element) XPathAPI.selectSingleNode(
-                    doc,
-                    "//ds:Reference[1]", nscontext);
+            reference = (Element) XPathAPI.selectSingleNode(doc, "/*/ds:Signature/ds:SignedInfo/ds:Reference",
+                    nscontext);
         } catch (XPathException te) {
             throw new SAML2Exception(te);
         }
-        String refUri = refElement.getAttribute("URI");
-        String signedId = ((Element) sigElement.getParentNode()).getAttribute(SAML2Constants.ID);
-        if (refUri == null || signedId == null || !refUri.substring(1).equals(signedId)) {
-            SAML2SDKUtils.debug.error(classMethod + "Signature reference ID does "
-                    + "not match with element ID");
+        String refUri = reference.getAttribute("URI");
+        String signedId = ((Element) sigElement.getParentNode()).getAttribute(idAttribute);
+        if (refUri == null || !idValue.equals(signedId) || !refUri.substring(1).equals(signedId)) {
+            SAML2SDKUtils.debug.error("{}Signature reference ID does not match with element ID", classMethod);
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("uriNoMatchWithId"));
         }
 
-        doc.getDocumentElement().setIdAttribute(SAML2Constants.ID, true);
-        XMLSignature signature = null;
+        doc.getDocumentElement().setIdAttribute(idAttribute, true);
+        XMLSignature signature;
         try {
             signature = new XMLSignature(sigElement, "");
-        } catch (XMLSignatureException sige) {
-            throw new SAML2Exception(sige);
         } catch (XMLSecurityException xse) {
             throw new SAML2Exception(xse);
         }
@@ -293,21 +281,15 @@ public final class FMSigProvider implements SigProvider {
             try {
                 certToUse = ki.getX509Certificate();
             } catch (KeyResolverException kre) {
-                SAML2SDKUtils.debug.error(
-                        classMethod +
-                                "Could not obtain a certificate " +
-                                "from inside the document."
-                );
+                SAML2SDKUtils.debug.error("{}Could not obtain a certificate from inside the document.", classMethod);
                 certToUse = null;
             }
             if (certToUse != null && checkCert) {
                 if (!verificationCerts.contains(certToUse)) {
-                    SAML2SDKUtils.debug.error(classMethod + "The cert contained in the document is NOT trusted");
+                    SAML2SDKUtils.debug.error("{}The cert contained in the document is NOT trusted", classMethod);
                     throw new SAML2Exception(SAML2SDKUtils.bundle.getString("invalidCertificate"));
                 }
-                if (SAML2SDKUtils.debug.messageEnabled()) {
-                    SAML2SDKUtils.debug.message(classMethod + "The cert contained in the document is trusted");
-                }
+                SAML2SDKUtils.debug.message("{}The cert contained in the document is trusted", classMethod);
             }
         }
 
@@ -316,13 +298,11 @@ public final class FMSigProvider implements SigProvider {
         }
 
         if (!isValidSignature(signature, verificationCerts)) {
-            SAML2SDKUtils.debug.error(classMethod + "Signature verification failed.");
+            SAML2SDKUtils.debug.error("{}Signature verification failed.", classMethod);
             return false;
         }
 
-        if (SAML2SDKUtils.debug.messageEnabled()) {
-            SAML2SDKUtils.debug.message(classMethod + "Signature verification successful.");
-        }
+        SAML2SDKUtils.debug.message("{}Signature verification successful.", classMethod);
         return true;
     }
 

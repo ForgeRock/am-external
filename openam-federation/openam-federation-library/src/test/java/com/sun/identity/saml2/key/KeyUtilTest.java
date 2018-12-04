@@ -11,21 +11,26 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2017 ForgeRock AS.
+ * Copyright 2013-2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.key;
 
-import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.meta.SAML2MetaException;
-import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import com.sun.identity.saml2.jaxb.metadata.*;
-import com.sun.identity.shared.xml.XMLUtils;
 import java.util.List;
+
+import javax.xml.bind.JAXBException;
+
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import javax.xml.bind.JAXBException;
+import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
+import com.sun.identity.saml2.meta.SAML2MetaException;
+import com.sun.identity.saml2.meta.SAML2MetaUtils;
+import com.sun.identity.shared.xml.XMLUtils;
 
 public class KeyUtilTest {
 
@@ -43,10 +48,10 @@ public class KeyUtilTest {
                 XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(XML_DOCUMENT_TO_LOAD),
                     SAML2Utils.debug), "UTF-8");
         EntityDescriptorElement element = SAML2MetaUtils.getEntityDescriptorElement(idpMetadata);
-        List descriptors = element.getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
-        for (Object descriptor : descriptors) {
-            if (descriptor instanceof IDPSSODescriptorElement) {
-                KeyDescriptorType type = KeyUtil.getKeyDescriptor((IDPSSODescriptorElement)descriptor, "signing");
+        List<RoleDescriptorType> descriptors = element.getValue().getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
+        for (RoleDescriptorType descriptor : descriptors) {
+            if (descriptor instanceof IDPSSODescriptorType) {
+                KeyDescriptorElement type = KeyUtil.getKeyDescriptor(descriptor, "signing");
                 Assert.assertNotNull(type);
                 break;
             }

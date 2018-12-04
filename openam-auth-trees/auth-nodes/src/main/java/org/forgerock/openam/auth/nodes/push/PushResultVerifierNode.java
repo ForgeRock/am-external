@@ -19,7 +19,10 @@ import static org.forgerock.openam.auth.node.api.Action.goTo;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_CONTENT_KEY;
-import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.*;
+import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.EXPIRED;
+import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.FALSE;
+import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.TRUE;
+import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.WAITING;
 
 import java.util.Arrays;
 import java.util.List;
@@ -103,14 +106,14 @@ public class PushResultVerifierNode implements Node {
             if (messageHandler == null) {
                 LOGGER.error("The push message corresponds to {} message type which is not registered in the {} realm",
                         messageId.getMessageType(), realm);
-                return finishNode(FALSE, context.sharedState);
+                return finishNode(FALSE, context);
             }
             MessageState state = messageHandler.check(messageId);
 
             JsonValue newSharedState = context.sharedState.copy();
             if (state == null) {
                 LOGGER.debug("The push message with ID {} has timed out", messageId.toString());
-                return finishNode(EXPIRED, newSharedState);
+                return finishNode(EXPIRED, context);
             }
 
             switch (state) {
@@ -120,10 +123,10 @@ public class PushResultVerifierNode implements Node {
                 if (pushContent != null) {
                     newSharedState.put(PUSH_CONTENT_KEY, pushContent);
                 }
-                return finishNode(TRUE, newSharedState);
+                return finishNode(TRUE, context);
             case DENIED:
                 messageHandler.delete(messageId);
-                return finishNode(FALSE, newSharedState);
+                return finishNode(FALSE, context);
             case UNKNOWN:
                 return Action.goTo(WAITING.name()).build();
             default:
@@ -134,10 +137,15 @@ public class PushResultVerifierNode implements Node {
         }
     }
 
-    private Action finishNode(PushResultVerifierOutcome outcome, JsonValue sharedState) {
-        JsonValue newSharedState = sharedState.copy();
+    private Action finishNode(PushResultVerifierOutcome outcome, TreeContext context) {
+        JsonValue newSharedState = context.sharedState.copy();
         newSharedState.remove(MESSAGE_ID_KEY);
-        return goTo(outcome.name()).replaceSharedState(newSharedState).build();
+        Action.ActionBuilder builder = goTo(outcome.name());
+        builder.replaceSharedState(newSharedState);
+        if (outcome == TRUE) {
+            builder.addNodeType(context, "AuthenticatorPush");
+        }
+        return builder.build();
     }
 
     /**

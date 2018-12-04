@@ -13,7 +13,6 @@
  *
  * Copyright 2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes.oauth;
 
 import static com.iplanet.am.util.SecureRandomManager.getSecureRandom;
@@ -24,10 +23,10 @@ import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.forgerock.guava.common.base.Optional;
 import org.forgerock.http.Handler;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthClientConfiguration;
@@ -113,7 +112,7 @@ public class SocialOAuth2Helper {
                 return Optional.of(user);
             }
         }
-        return Optional.absent();
+        return Optional.empty();
     }
 
     private String getUser(String realm, AccountProvider accountProvider,

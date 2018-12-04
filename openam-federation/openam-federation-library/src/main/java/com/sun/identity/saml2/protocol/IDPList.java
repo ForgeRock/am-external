@@ -24,7 +24,7 @@
  *
  * $Id: IDPList.java,v 1.2 2008/06/25 05:47:56 qcheng Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
 
 
@@ -36,7 +36,7 @@ import com.sun.identity.saml2.protocol.impl.IDPListImpl;
 import java.util.List;
 
 
-/** 
+/**
  * This interface specifies the identity providers trusted by the requester
  * to authenticate the presenter.
  *
@@ -46,51 +46,51 @@ import java.util.List;
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
         defaultImpl = IDPListImpl.class)
 public interface IDPList {
-    
-    /** 
+
+    /**
      * Returns the list of <code>IDPEntry</code> Objects.
      *
      * @return the list <code>IDPEntry</code> objects.
      * @see #setIDPEntries(List)
      */
-    public List getIDPEntries();
-    
-    /** 
+    public List<IDPEntry> getIDPEntries();
+
+    /**
      * Sets the <code>IDPEntry</code> Object.
      *
      * @param idpEntryList  the  list of <code>IDPEntry</code> objects.
      * @throws SAML2Exception if the object is immutable.
      * @see #getIDPEntries
      */
-    public void setIDPEntries(List idpEntryList) throws SAML2Exception;
-    
-    /** 
+    public void setIDPEntries(List<IDPEntry> idpEntryList) throws SAML2Exception;
+
+    /**
      * Returns the <code>GetComplete</code> Object.
      *
      * @return the <code>GetComplete</code> object.
      * @see #setGetComplete(GetComplete)
      */
     public GetComplete getGetComplete();
-    
-    /** 
+
+    /**
      * Sets the <code>GetComplete</code> Object.
      *
      * @param getComplete the new <code>GetComplete</code> object.
      * @throws SAML2Exception if the object is immutable.
      * @see #getGetComplete
      */
-    
+
     public void setGetComplete(GetComplete getComplete) throws SAML2Exception;
-    
-    /** 
+
+    /**
      * Returns a String representation of this Object.
      *
      * @return a String representation of this Object.
      * @throws SAML2Exception cannot create String object.
      */
     public String toXMLString() throws SAML2Exception;
-    
-    /** 
+
+    /**
      * Returns a String representation of this Object.
      *
      * @param includeNSPrefix determines whether or not the namespace
@@ -100,17 +100,17 @@ public interface IDPList {
      * @return the String representation of this Object.
      * @throws SAML2Exception cannot create String object.
      **/
-    
+
     public String toXMLString(boolean includeNSPrefix,boolean declareNS)
            throws SAML2Exception;
-    
-        
-    /** 
-     * Makes this object immutable. 
+
+
+    /**
+     * Makes this object immutable.
      */
     public void makeImmutable() ;
-    
-    /** 
+
+    /**
      * Returns true if object is mutable.
      *
      * @return true if the object is mutable.

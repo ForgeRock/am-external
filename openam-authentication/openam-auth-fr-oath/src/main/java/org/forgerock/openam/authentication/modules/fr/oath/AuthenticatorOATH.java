@@ -20,7 +20,6 @@ package org.forgerock.openam.authentication.modules.fr.oath;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
 import java.security.MessageDigest;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +30,7 @@ import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.TextOutputCallback;
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.codec.DecoderException;
@@ -38,10 +38,10 @@ import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.core.rest.authn.mobile.TwoFactorAMLoginModule;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
+import org.forgerock.openam.core.rest.devices.oath.UserOathDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
 import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathService;
-import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathServiceFactory;
 import org.forgerock.openam.session.Session;
 import org.forgerock.openam.utils.Alphabet;
 import org.forgerock.openam.utils.CodeException;
@@ -52,7 +52,6 @@ import org.forgerock.openam.utils.qr.GenerationUtils;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
 import com.iplanet.sso.SSOTokenManager;
@@ -137,6 +136,7 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
     private static final int REGISTER_DEVICE = 5;
     private static final int RECOVERY_USED = 6;
     private static final int LOGIN_OPT_DEVICE = 7;
+    private static final int SHOW_RECOVERY_CODES = 8;
 
     private static final int REGISTER_DEVICE_OPTION_VALUE_INDEX = 0;
     private static final int OPT_DEVICE_SKIP_INDEX = 1;
@@ -146,7 +146,7 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
 
     private AMIdentity id;
 
-    private final OathMaker oathDevices = InjectorHolder.getInstance(OathMaker.class);
+    private final UserOathDeviceProfileManager oathDevices = InjectorHolder.getInstance(UserOathDeviceProfileManager.class);
 
     private final AuthenticatorDeviceServiceFactory<AuthenticatorOathService> oathServiceFactory =
             InjectorHolder.getInstance(Key.get(
@@ -340,6 +340,9 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
                         return LOGIN_SAVED_DEVICE;
                     }
 
+                case SHOW_RECOVERY_CODES:
+                    return ISAuthConstants.LOGIN_SUCCEED;
+
                 case RECOVERY_USED:
                     if (isSkippable) { //if it's skippable and you log in, config not skippable
                         realmService.setUserSkip(id, SkipSetting.NOT_SKIPPABLE);
@@ -402,7 +405,7 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
     }
 
     private int doLoginSavedDevice(final Callback[] callbacks, final int state, final OathDeviceSettings settings)
-            throws AuthLoginException, IdRepoException, SSOException {
+            throws AuthLoginException, IdRepoException, SSOException, DevicePersistenceException {
 
         OathDeviceSettings deviceToAuthAgainst = settings;
 
@@ -435,6 +438,7 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
             if (null == settings) {
                 // this is the first time we have authorised against this device - we can now save it.
                 oathDevices.saveDeviceProfile(id.getName(), id.getRealm(), deviceToAuthAgainst);
+                return displayRecoveryCodes(SHOW_RECOVERY_CODES);
             }
             return ISAuthConstants.LOGIN_SUCCEED;
         } else {
@@ -459,7 +463,8 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
         settings.setChecksumDigit(checksum);
 
         try {
-            settings.setRecoveryCodes(recoveryCodeGenerator.generateCodes(NUM_CODES, Alphabet.ALPHANUMERIC, false));
+            recoveryCodes = recoveryCodeGenerator.generateCodes(NUM_CODES, Alphabet.ALPHANUMERIC, false);
+            settings.setRecoveryCodes(recoveryCodes);
         } catch (CodeException e) {
             throw new AuthLoginException(amAuthOATH, "authFailed", null);
         }
@@ -467,16 +472,14 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
         return settings;
     }
 
-    private boolean isRecoveryCode(String otp, OathDeviceSettings settings, AMIdentity id) throws AuthLoginException {
+    private boolean isRecoveryCode(String otp, OathDeviceSettings settings, AMIdentity id)
+            throws AuthLoginException, DevicePersistenceException {
         if (settings == null) {
             debug.error("AuthenticatorOATH.checkOTP() : Invalid stored settings.");
             throw new AuthLoginException(amAuthOATH, "authFailed", null);
         }
 
-        List<String> recoveryCodes = new ArrayList<>(settings.getRecoveryCodes());
-        if (recoveryCodes.contains(otp)) {
-            recoveryCodes.remove(otp);
-            settings.setRecoveryCodes(recoveryCodes);
+        if (settings.useRecoveryCode(otp)) {
             oathDevices.saveDeviceProfile(id.getName(), id.getRealm(), settings);
             return true;
         }
@@ -738,7 +741,8 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
      * @param counter The counter value to set the attribute too.
      * @param settings The settings to store the value in.
      */
-    private void setCounterAttr(AMIdentity id, int counter, OathDeviceSettings settings) throws AuthLoginException {
+    private void setCounterAttr(AMIdentity id, int counter, OathDeviceSettings settings)
+            throws DevicePersistenceException {
         settings.setCounter(counter);
         oathDevices.saveDeviceProfile(id.getName(), id.getRealm(), settings);
     }
@@ -752,7 +756,8 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
      * @param settings The settings to store the value in.
      * @return {@code false} if the device is out of drift range, {@code true} if device profile has been saved.
      */
-    private boolean setLoginTime(AMIdentity id, long time, OathDeviceSettings settings) throws AuthLoginException {
+    private boolean setLoginTime(AMIdentity id, long time, OathDeviceSettings settings)
+            throws DevicePersistenceException {
 
         // Update the observed time-step drift for resynchronisation
         long drift = time - (this.time / totpTimeStep);

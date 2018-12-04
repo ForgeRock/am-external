@@ -24,10 +24,14 @@
  *
  * $Id: Advice.java,v 1.2 2008/06/25 05:47:39 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion;
 
 import java.util.List;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.sun.identity.saml2.assertion.impl.AdviceImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /** 
@@ -40,6 +44,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  *
  * @supported.all.api
  */
+@JsonDeserialize(as=AdviceImpl.class)
 public interface Advice {
 
     /** 
@@ -47,7 +52,7 @@ public interface Advice {
      * 
      *  @return a list of <code>Assertion</code>
      */
-    public List getAssertions();
+    List<Assertion> getAssertions();
 
     /** 
      *  Sets a list of <code>Assertion</code>
@@ -55,14 +60,14 @@ public interface Advice {
      *  @param assertions a list of <code>Assertion</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setAssertions(List assertions) throws SAML2Exception;
+    void setAssertions(List<Assertion> assertions) throws SAML2Exception;
 
     /** 
      *  Returns a list of <code>AssertionIDRef</code>
      * 
      *  @return a list of <code>AssertionIDRef</code>
      */
-    public List getAssertionIDRefs();
+    List<AssertionIDRef> getAssertionIDRefs();
 
     /** 
      *  Sets a list of <code>AssertionIDRef</code>
@@ -70,14 +75,14 @@ public interface Advice {
      *  @param idRefs a list of <code>AssertionIDRef</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setAssertionIDRefs(List idRefs) throws SAML2Exception;
+    void setAssertionIDRefs(List<AssertionIDRef> idRefs) throws SAML2Exception;
 
     /** 
      *  Returns a list of <code>AssertionURIRef</code>  
      * 
      *  @return a list of <code>AssertionURIRef</code>
      */
-    public List getAssertionURIRefs();
+    List getAssertionURIRefs();
 
     /** 
      *  Sets a list of <code>AssertionURIRef</code>  
@@ -85,14 +90,14 @@ public interface Advice {
      *  @param uriRefs a list of <code>AssertionURIRef</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setAssertionURIRefs(List uriRefs) throws SAML2Exception;
+    void setAssertionURIRefs(List uriRefs) throws SAML2Exception;
 
     /** 
      *  Returns a list of <code>EncryptedAssertion</code>
      * 
      *  @return a list of <code>EncryptedAssertion</code>
      */
-    public List getEncryptedAssertions();
+    List<EncryptedAssertion> getEncryptedAssertions();
 
     /** 
      *  Sets a list of <code>EncryptedAssertion</code>
@@ -100,7 +105,7 @@ public interface Advice {
      *  @param encryptedAssertions a list of <code>EncryptedAssertion</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setEncryptedAssertions(List encryptedAssertions) 
+    void setEncryptedAssertions(List<EncryptedAssertion> encryptedAssertions)
         throws SAML2Exception;
 
     /** 

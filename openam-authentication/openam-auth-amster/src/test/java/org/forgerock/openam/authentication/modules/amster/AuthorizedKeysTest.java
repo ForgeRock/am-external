@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.amster;
@@ -189,7 +189,7 @@ public class AuthorizedKeysTest {
         assertThat(key.isValid(realJwt, mock(HttpServletRequest.class))).isTrue();
         ArgumentCaptor<SigningHandler> handlerCaptor = ArgumentCaptor.forClass(SigningHandler.class);
         verify(capturingJwt).verify(handlerCaptor.capture());
-        assertThat(realJwt.verify(handlerCaptor.getValue()));
+        assertThat(realJwt.verify(handlerCaptor.getValue())).isTrue();
     }
 
     private byte[] authorizedKeysLineFor(KeyPair keyPair, String comment) {

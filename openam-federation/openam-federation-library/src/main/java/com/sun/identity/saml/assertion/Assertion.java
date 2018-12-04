@@ -24,24 +24,33 @@
  *
  * $Id: Assertion.java,v 1.3 2008/06/25 05:47:31 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
   
 package com.sun.identity.saml.assertion;
 
-import com.sun.identity.shared.DateUtils;
-import com.sun.identity.saml.common.*;
-import com.sun.identity.saml.xmlsig.*;
-import com.sun.identity.common.SystemConfigurationUtil;
-import com.sun.identity.shared.xml.XMLUtils;
-import java.util.Set;
-import java.util.List;
-import java.util.Date;
 import java.text.ParseException;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.Element;
-import org.w3c.dom.Document;
+
+import com.sun.identity.common.SystemConfigurationUtil;
+import com.sun.identity.saml.common.SAMLConstants;
+import com.sun.identity.saml.common.SAMLException;
+import com.sun.identity.saml.common.SAMLRequesterException;
+import com.sun.identity.saml.common.SAMLResponderException;
+import com.sun.identity.saml.common.SAMLUtils;
+import com.sun.identity.saml.common.SAMLVersionMismatchException;
+import com.sun.identity.saml.xmlsig.XMLSignatureManager;
+import com.sun.identity.shared.DateUtils;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  *This object stands for <code>Assertion</code> element. An Assertion is a

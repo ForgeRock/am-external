@@ -24,24 +24,26 @@
  *
  * $Id: FSRealmIDPProxyImpl.java,v 1.2 2008/06/25 05:46:55 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.federation.services;
 
-import com.sun.identity.federation.jaxb.entityconfig.SPDescriptorConfigElement;
-import com.sun.identity.federation.message.FSAuthnRequest;
-import com.sun.identity.federation.meta.IDFFMetaException;
-import com.sun.identity.federation.meta.IDFFMetaManager;
-import com.sun.identity.federation.meta.IDFFMetaUtils;
-import com.sun.identity.federation.services.util.FSServiceUtils;
-import com.sun.identity.federation.common.FSUtils;
-import com.sun.identity.federation.common.IFSConstants;
-import com.sun.identity.federation.common.FSRedirectException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.sun.identity.federation.common.FSRedirectException;
+import com.sun.identity.federation.common.FSUtils;
+import com.sun.identity.federation.common.IFSConstants;
+import com.sun.identity.federation.message.FSAuthnRequest;
+import com.sun.identity.federation.meta.IDFFMetaException;
+import com.sun.identity.federation.meta.IDFFMetaUtils;
+import com.sun.identity.federation.services.util.FSServiceUtils;
 
 /**
  * This class <code>FSRealmIDPProxyImpl</code> is used to find a preferred 

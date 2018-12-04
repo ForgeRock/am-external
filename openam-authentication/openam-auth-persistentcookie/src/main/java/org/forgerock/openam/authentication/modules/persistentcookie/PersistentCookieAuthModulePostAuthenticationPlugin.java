@@ -11,14 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
 
-import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.*;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.AUTH_RESOURCE_BUNDLE_NAME;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.COOKIE_DOMAINS_KEY;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.COOKIE_NAME_KEY;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.ENFORCE_CLIENT_IP_SETTING_KEY;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.HTTP_ONLY_COOKIE_KEY;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.INSTANCE_NAME_KEY;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.OPENAM_AUTH_TYPE_CLAIM_KEY;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.OPENAM_CLIENT_IP_CLAIM_KEY;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.OPENAM_REALM_CLAIM_KEY;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.OPENAM_USER_CLAIM_KEY;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.SECURE_COOKIE_KEY;
+import static org.forgerock.openam.authentication.modules.persistentcookie.PersistentCookieModuleWrapper.SSO_TOKEN_ORGANIZATION_PROPERTY_KEY;
 
-import java.security.AccessController;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,9 +47,6 @@ import org.forgerock.util.annotations.VisibleForTesting;
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.spi.AuthenticationException;
-import com.sun.identity.security.DecodeAction;
-import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.sm.SMSException;
 
 /**
  * Post authentication plugin for setting the Persistent Cookie on successful authentication.
@@ -56,7 +63,7 @@ public class PersistentCookieAuthModulePostAuthenticationPlugin extends JaspiAut
     }
 
     @VisibleForTesting
-    protected PersistentCookieAuthModulePostAuthenticationPlugin(PersistentCookieModuleWrapper persistentCookieModuleWrapper) {
+    PersistentCookieAuthModulePostAuthenticationPlugin(PersistentCookieModuleWrapper persistentCookieModuleWrapper) {
         super(AUTH_RESOURCE_BUNDLE_NAME, persistentCookieModuleWrapper);
         this.persistentCookieModuleWrapper = persistentCookieModuleWrapper;
     }
@@ -70,7 +77,6 @@ public class PersistentCookieAuthModulePostAuthenticationPlugin extends JaspiAut
     @Override
     protected Map<String, Object> generateConfig(HttpServletRequest request, HttpServletResponse response,
                                                  SSOToken ssoToken) throws AuthenticationException {
-
         try {
             final String tokenIdleTime = ssoToken.getProperty(JwtSessionModule.TOKEN_IDLE_TIME_IN_MINUTES_CLAIM_KEY);
             final String maxTokenLife = ssoToken.getProperty(JwtSessionModule.MAX_TOKEN_LIFE_IN_MINUTES_KEY);
@@ -86,13 +92,12 @@ public class PersistentCookieAuthModulePostAuthenticationPlugin extends JaspiAut
             } else {
                 cookieDomains = Arrays.asList(cookieDomainsString.split(","));
             }
-            final String hmacKey = AccessController.doPrivileged(new DecodeAction(ssoToken.getProperty(HMAC_KEY)));
-            ssoToken.setProperty(HMAC_KEY, "");
+            String instanceName = ssoToken.getProperty(INSTANCE_NAME_KEY);
 
-            return persistentCookieModuleWrapper.generateConfig(tokenIdleTime, maxTokenLife, enforceClientIP, realm, secureCookie,
-                    httpOnlyCookie, cookieName, cookieDomains, hmacKey);
+            return persistentCookieModuleWrapper.generateConfig(tokenIdleTime, maxTokenLife, enforceClientIP, realm,
+                    secureCookie, httpOnlyCookie, cookieName, cookieDomains, instanceName);
 
-        } catch (SSOException | SMSException e) {
+        } catch (SSOException e) {
             DEBUG.error("Could not initialise the Auth Module", e);
             throw new AuthenticationException(e.getLocalizedMessage());
         }
@@ -155,9 +160,6 @@ public class PersistentCookieAuthModulePostAuthenticationPlugin extends JaspiAut
     public void onLogout(HttpServletRequest request, HttpServletResponse response, SSOToken ssoToken) {
         try {
             Map<String, Object> config = generateConfig(request, response, ssoToken);
-            // The HMAC signing key will be null on logout, but this is rejected by the commons auth module, so
-            // replace with a dummy value here. It is not used.
-            config.put(JwtSessionModule.HMAC_SIGNING_KEY, Base64.encode(new byte[32]));
             persistentCookieModuleWrapper.initialize(null, config);
             persistentCookieModuleWrapper.deleteSessionJwtCookie(
                     persistentCookieModuleWrapper.prepareMessageInfo(null, response));

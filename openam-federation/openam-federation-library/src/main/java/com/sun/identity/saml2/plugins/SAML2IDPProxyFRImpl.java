@@ -11,45 +11,48 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2010-2017 ForgeRock AS.
+ * Copyright 2010-2018 ForgeRock AS.
  */
-
 package com.sun.identity.saml2.plugins;
 
-import com.sun.identity.cot.CircleOfTrustManager;
-import com.sun.identity.cot.CircleOfTrustDescriptor;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import javax.xml.bind.JAXBIntrospector;
+
+import org.w3c.dom.Element;
+
 import com.sun.identity.cot.COTException;
+import com.sun.identity.cot.CircleOfTrustDescriptor;
+import com.sun.identity.cot.CircleOfTrustManager;
+import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.jaxb.assertion.AttributeElement;
-import com.sun.identity.saml2.jaxb.assertion.AttributeValueElement;
+import com.sun.identity.saml2.jaxb.assertion.AttributeType;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.ExtensionsType;
-import com.sun.identity.saml2.jaxb.metadataattr.EntityAttributesElement;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadataattr.EntityAttributesType;
+import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
-import com.sun.identity.saml2.profile.SPSSOFederate;
 import com.sun.identity.saml2.profile.SPCache;
+import com.sun.identity.saml2.profile.SPSSOFederate;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.RequestedAuthnContext;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.StringTokenizer;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import org.forgerock.guava.common.base.Joiner;
 
 /**
  * This class <code>SAML2IDPProxyFRImpl</code> is used to find a preferred Identity
@@ -66,7 +69,7 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
     public static String SESSION_ATTR_NAME_REQAUTHNCONTEXT = "_REQAUTHNCONTEXT_";
     public static String SESSION_ATTR_NAME_IDP_META_ALIAS = "_IDPMETAALIAS_";
 
-    SPSSODescriptorElement spSSODescriptor = null;
+    SPSSODescriptorType spSSODescriptor = null;
     String relayState = "";
     String binding = "";
 
@@ -116,7 +119,7 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
 
             // Obtain the SP configuration
             try {
-                spSSODescriptor = IDPSSOUtil.metaManager.getSPSSODescriptor(realm, authnRequest.getIssuer().getValue().toString());
+                spSSODescriptor = IDPSSOUtil.metaManager.getSPSSODescriptor(realm, authnRequest.getIssuer().getValue());
             } catch (SAML2MetaException sme) {
                 SAML2Utils.debug.error(classMethod, sme);
                 spSSODescriptor = null;
@@ -132,7 +135,7 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
             // Read the local metadata of the SP that made the request
             SPSSOConfigElement spEntityCfg =
                     sm.getSPSSOConfig(realm, authnRequest.getIssuer().getValue());
-            Map spConfigAttrsMap = null;
+            Map<String, List<String>> spConfigAttrsMap = null;
             if (spEntityCfg != null) {
                 spConfigAttrsMap = SAML2MetaUtils.getAttributes(spEntityCfg);
             }
@@ -160,7 +163,7 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
             if (config == null) {
                 throw new SAML2Exception(SAML2Utils.bundle.getString("nullIDPMetaAlias"));
             }
-            String metaAlias = config.getMetaAlias();
+            String metaAlias = config.getValue().getMetaAlias();
 
             // providerIDs will contain the list of IdPs to return from this method
             List providerIDs = new ArrayList();
@@ -173,7 +176,7 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
                 debugMessage(methodName, " idpFinder wil use the static list of the SP");
                 List<String> proxyIDPs = null;
                 if (spConfigAttrsMap != null && !spConfigAttrsMap.isEmpty()) {
-                    proxyIDPs = (List<String>) spConfigAttrsMap.get(SAML2Constants.IDP_PROXY_LIST);
+                    proxyIDPs = spConfigAttrsMap.get(SAML2Constants.IDP_PROXY_LIST);
                 }
                 
                 debugMessage(methodName, " List from the configuration: " + proxyIDPs);
@@ -319,65 +322,46 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
             if (requestedAuthnContext == null) {
                 //Handle the special case when the original request did not contain any Requested AuthnContext:
                 //In this case we just simply return all the IdPs as each one should support a default AuthnContext.
-                return Joiner.on(' ').join(idpList);
+                return String.join(" ", idpList);
             }
-            List listOfAuthnContexts = requestedAuthnContext.getAuthnContextClassRef();
+            List<String> listOfAuthnContexts = requestedAuthnContext.getAuthnContextClassRef();
             debugMessage(classMethod, "listofAuthnContexts: " + listOfAuthnContexts);
 
             try {
-                authnRequestContextSet = new HashSet(listOfAuthnContexts);
+                authnRequestContextSet = new HashSet<>(listOfAuthnContexts);
             } catch (Exception ex1) {
-                authnRequestContextSet = new HashSet();
+                authnRequestContextSet = new HashSet<>();
             }
 
             if ((idpList != null) && (!idpList.isEmpty())) {
-                Iterator idpI = idpList.iterator();
-                while (idpI.hasNext()) {
-                    String idp = (String) idpI.next();
+                for (String idp : idpList) {
                     debugMessage(classMethod, "IDP is: " + idp);
                     idpDesc = SAML2Utils.getSAML2MetaManager().getEntityDescriptor(realm, idp);
                     if (idpDesc != null) {
-                        ExtensionsType et = idpDesc.getExtensions();
+                        ExtensionsType et = idpDesc.getValue().getExtensions();
                         if (et != null) {
                             debugMessage(classMethod, "Extensions found for idp: " + idp);
-                            List idpExtensions = et.getAny();
-                            if (idpExtensions != null || !idpExtensions.isEmpty()) {
-                                debugMessage(classMethod, "Extensions content found for idp: " + idp);
-                                Iterator idpExtensionsI = idpExtensions.iterator();
-                                while (idpExtensionsI.hasNext()) {
-                                    EntityAttributesElement eael = (EntityAttributesElement) idpExtensionsI.next();
-                                    if (eael != null) {
-                                        debugMessage(classMethod, "Entity Attributes found for idp: " + idp);
-                                        List attribL = eael.getAttributeOrAssertion();
-                                        if (attribL != null || !attribL.isEmpty()) {
-                                            Iterator attrI = attribL.iterator();
-                                            while (attrI.hasNext()) {
-                                                AttributeElement ae = (AttributeElement) attrI.next();
-                                                // TODO: Verify what type of element this is (Attribute or assertion)
-                                                // For validation purposes
-                                                List av = ae.getAttributeValue();
-                                                if (av != null || !av.isEmpty()) {
-                                                    debugMessage(classMethod, "Attribute Values found for idp: " + idp);
-                                                    Iterator avI = av.iterator();
-                                                    while (avI.hasNext()) {
-                                                        AttributeValueElement ave = (AttributeValueElement) avI.next();
-                                                        if (ave != null) {
-                                                            List contentL = ave.getContent();
-                                                            debugMessage(classMethod, "Attribute Value Elements found for idp: " + idp
-                                                                    + "-->" + contentL);
-                                                            if (contentL != null || !contentL.isEmpty()) {
-                                                                Set idpContextSet = trimmedListToSet(contentL);
-                                                                debugMessage(classMethod, "idpContextSet = " + idpContextSet);
-                                                                idpContextSet.retainAll(authnRequestContextSet);
-                                                                if (idpContextSet != null && !idpContextSet.isEmpty()) {
-                                                                    idps = idp + " " + idps;
-                                                                    debugMessage(classMethod, "Extension Values found for idp " + idp
-                                                                            + ": " + idpContextSet);
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                            List<Object> idpExtensions = et.getAny().stream()
+                                    .map(JAXBIntrospector::getValue).collect(Collectors.toList());
+                            debugMessage(classMethod, "Extensions content found for idp: " + idp);
+                            for (Object idpExtension : idpExtensions) {
+                                EntityAttributesType eael = (EntityAttributesType) idpExtension;
+                                if (eael != null) {
+                                    debugMessage(classMethod, "Entity Attributes found for idp: " + idp);
+                                    List<Object> attribL = eael.getAttributeOrAssertion();
+                                    if (attribL != null || !attribL.isEmpty()) {
+                                        for (Object anAttribL : attribL) {
+                                            AttributeType ae = (AttributeType) anAttribL;
+                                            // TODO: Verify what type of element this is (Attribute or assertion)
+                                            // For validation purposes
+                                            List<Object> attributeValues = ae.getAttributeValue();
+                                            Set<String> idpContextSet = getAttributeValues(attributeValues);
+                                            debugMessage(classMethod, "idpContextSet = " + idpContextSet);
+                                            idpContextSet.retainAll(authnRequestContextSet);
+                                            if (!idpContextSet.isEmpty()) {
+                                                idps = idp + " " + idps;
+                                                debugMessage(classMethod, "Extension Values found for idp "
+                                                        + idp + ": " + idpContextSet);
                                             }
                                         }
                                     }
@@ -400,65 +384,12 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
 
     }
 
-    private String selectIDPBasedOnAuthContext(List idpList, String realm, AuthnRequest authnRequest) {
-
-        String classMethod = "selectIdPBasedOnLOA";
-        EntityDescriptorElement idpDesc = null;
-        Set authnRequestContextSet = null;
-        String idps = "";
-
-        try {
-
-            List listOfAuthnContexts = authnRequest.getRequestedAuthnContext().getAuthnContextClassRef();
-            debugMessage(classMethod, "listofAuthnContexts: " + listOfAuthnContexts);
-
-            try {
-                authnRequestContextSet = new HashSet(listOfAuthnContexts);
-            } catch (Exception ex1) {
-                authnRequestContextSet = new HashSet();
+    private Set<String> getAttributeValues(List<Object> attributeValues) {
+        Set<String> trimmedSet = new HashSet<>();
+        for (Object attributeValue : attributeValues) {
+            if (attributeValue instanceof Element) {
+                trimmedSet.add(((Element) attributeValue).getTextContent().trim());
             }
-
-            if ((idpList != null) && (!idpList.isEmpty())) {
-                Iterator idpI = idpList.iterator();
-                while (idpI.hasNext()) {
-                    String idp = (String) idpI.next();
-                    debugMessage(classMethod, "IDP is: " + idp);
-                    List supportedAuthnContextsbyIDP =
-                            getSupportedAuthnContextsByIDP(realm, idp);
-                    if (supportedAuthnContextsbyIDP != null) {
-                        debugMessage(classMethod, "Standard Authn Contexts found for idp: " + idp);
-                        Set idpContextSet = trimmedListToSet(supportedAuthnContextsbyIDP);
-                        debugMessage(classMethod, "idpContextSet = " + idpContextSet);
-                        idpContextSet.retainAll(authnRequestContextSet);
-                        if (idpContextSet != null && !idpContextSet.isEmpty()) {
-                            idps = idp + " " + idps;
-                            debugMessage(classMethod, "Standard Authn Contexts found for idp " + idp
-                                    + ": " + idpContextSet);
-                        }
-
-                    } else {
-                        debugMessage(classMethod, "The IdP" + idp + " has no standard authentication"
-                                + " contexts configured");
-                    }
-                }
-            }
-        } catch (Exception me) {
-            SAML2Utils.debug.error(classMethod + "Error when trying to get the idp's by standard Authn Context: " + me);
-        }
-
-        debugMessage(classMethod, " IDPList returns: " + idps);
-        return idps.trim();
-
-    }
-
-    private Set trimmedListToSet(List list) {
-        Set trimmedSet= new HashSet();
-        String classMethod = "trimmedListToSet";
-        Iterator I = list.iterator();
-
-        while (I.hasNext()) {
-          trimmedSet.add(I.next().toString().trim());
-          debugMessage(classMethod, " element added to Set : ");
         }
         return trimmedSet;
     }
@@ -613,19 +544,19 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
 
 
 
-     public List getAttributeListValueFromIDPSSOConfig(
+     public List<String> getAttributeListValueFromIDPSSOConfig(
                              String realm,
                              String hostEntityId,
                              String attrName)
     {
         String classMethod = "IDPSSOUtil.getAttributeValueFromIDPSSOConfig: ";
-        List result = null;
+        List<String> result = null;
         try {
 
             IDPSSOConfigElement config = SAML2Utils.getSAML2MetaManager().getIDPSSOConfig(
                                           realm, hostEntityId);
-            Map attrs = SAML2MetaUtils.getAttributes(config);
-            List value = (List) attrs.get(attrName);
+            Map<String, List<String>> attrs = SAML2MetaUtils.getAttributes(config);
+            List<String> value = attrs.get(attrName);
             if (value != null && value.size() != 0) {
                 result = value;
             }

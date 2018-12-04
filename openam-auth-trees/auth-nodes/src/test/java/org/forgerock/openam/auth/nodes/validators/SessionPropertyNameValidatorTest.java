@@ -11,9 +11,8 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes.validators;
 
 import static java.util.Arrays.asList;
@@ -28,9 +27,9 @@ import java.util.List;
 
 import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.junit.CuppaRunner;
-import org.forgerock.guava.common.collect.ImmutableSet;
 import org.junit.runner.RunWith;
 
+import com.google.common.collect.ImmutableSet;
 import com.sun.identity.sm.ServiceAttributeValidator;
 
 @RunWith(CuppaRunner.class)

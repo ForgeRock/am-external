@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2017 ForgeRock AS.
+ * Copyright 2013-2018 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
@@ -65,7 +65,7 @@ public class PersistentCookieAuthModule extends JaspiAuthLoginModule {
     private boolean httpOnlyCookie;
     private String cookieName;
     private Collection<String> cookieDomains;
-    private String encryptedHmacKey;
+    private String instanceName;
 
     private Principal principal;
 
@@ -121,23 +121,11 @@ public class PersistentCookieAuthModule extends JaspiAuthLoginModule {
         httpOnlyCookie = CollectionHelper.getBooleanMapAttr(options, HTTP_ONLY_COOKIE_KEY, true);
         cookieName = CollectionHelper.getMapAttr(options, COOKIE_NAME_KEY);
         cookieDomains = coreWrapper.getCookieDomainsForRequest(getHttpServletRequest());
-        String hmacKey = CollectionHelper.getMapAttr(options, HMAC_KEY);
+        instanceName = (String) options.get(ISAuthConstants.MODULE_INSTANCE_NAME);
 
-        // As this key will need to be passed via session properties to the post-authentication plugin, we encrypt it
-        // here to avoid it being accidentally exposed.
-        encryptedHmacKey = AccessController.doPrivileged(new EncodeAction(hmacKey));
-
-        try {
-            return persistentCookieModuleWrapper.generateConfig(tokenIdleTime.toString(), maxTokenLife.toString(), enforceClientIP,
-                    getRequestOrg(), secureCookie, httpOnlyCookie, cookieName, cookieDomains, hmacKey);
-        } catch (SMSException e) {
-            DEBUG.error("Error initialising Authentication Module", e);
-            return null;
-        } catch (SSOException e) {
-            DEBUG.error("Error initialising Authentication Module", e);
-            return null;
-        }
-
+        return persistentCookieModuleWrapper.generateConfig(tokenIdleTime.toString(), maxTokenLife.toString(),
+                enforceClientIP, getRequestOrg(), secureCookie, httpOnlyCookie, cookieName, cookieDomains,
+                instanceName);
     }
 
     /**
@@ -161,6 +149,7 @@ public class PersistentCookieAuthModule extends JaspiAuthLoginModule {
             if (cookieName != null) {
                 setUserSessionProperty(COOKIE_NAME_KEY, cookieName);
             }
+            setUserSessionProperty(INSTANCE_NAME_KEY, instanceName);
             String cookieDomainsString = "";
             for (String cookieDomain : cookieDomains) {
                 if (StringUtils.isNotEmpty(cookieDomain)) {
@@ -168,7 +157,6 @@ public class PersistentCookieAuthModule extends JaspiAuthLoginModule {
                 }
             }
             setUserSessionProperty(COOKIE_DOMAINS_KEY, cookieDomainsString);
-            setUserSessionProperty(HMAC_KEY, encryptedHmacKey);
             final Subject clientSubject = new Subject();
             MessageInfo messageInfo = persistentCookieModuleWrapper.prepareMessageInfo(getHttpServletRequest(),
                     getHttpServletResponse());

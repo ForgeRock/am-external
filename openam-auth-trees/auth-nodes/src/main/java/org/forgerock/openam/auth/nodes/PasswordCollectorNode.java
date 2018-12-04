@@ -13,16 +13,15 @@
  *
  * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 
-import javax.security.auth.callback.PasswordCallback;
 import java.util.ResourceBundle;
 
-import org.forgerock.guava.common.base.Strings;
+import javax.security.auth.callback.PasswordCallback;
+
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
@@ -30,6 +29,8 @@ import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Strings;
 
 /**
  * A node which collects a password from the user via a password callback.
@@ -59,7 +60,7 @@ public class PasswordCollectorNode extends SingleOutcomeNode {
                 .map(String::new)
                 .filter(password -> !Strings.isNullOrEmpty(password))
                 .map(password -> {
-                    logger.debug("password has been collected and put in the shared state");
+                    logger.debug("password has been collected and put in the transient state");
                     return goToNext()
                         .replaceSharedState(sharedState.copy())
                         .replaceTransientState(transientState.copy().put(PASSWORD, password)).build();

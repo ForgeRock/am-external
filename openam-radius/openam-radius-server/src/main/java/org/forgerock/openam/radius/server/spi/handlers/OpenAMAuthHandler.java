@@ -12,11 +12,11 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2016-2017 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server.spi.handlers;
 
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,8 +30,6 @@ import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
-import org.forgerock.guava.common.base.Strings;
-import org.forgerock.guava.common.eventbus.EventBus;
 import org.forgerock.openam.radius.common.AccessAccept;
 import org.forgerock.openam.radius.common.AccessChallenge;
 import org.forgerock.openam.radius.common.AccessReject;
@@ -50,6 +48,8 @@ import org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolder;
 import org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolderCache;
 import org.forgerock.openam.radius.server.spi.handlers.amhandler.OpenAMAuthFactory;
 
+import com.google.common.base.Strings;
+import com.google.common.eventbus.EventBus;
 import com.google.inject.Inject;
 import com.sun.identity.authentication.AuthContext;
 import com.sun.identity.authentication.spi.AuthLoginException;

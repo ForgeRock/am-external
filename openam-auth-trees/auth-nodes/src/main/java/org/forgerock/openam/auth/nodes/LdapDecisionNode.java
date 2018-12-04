@@ -13,14 +13,12 @@
  *
  * Copyright 2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes;
 
 import static javax.security.auth.callback.ConfirmationCallback.OK_CANCEL_OPTION;
 import static javax.security.auth.callback.TextOutputCallback.ERROR;
 import static javax.security.auth.callback.TextOutputCallback.INFORMATION;
 import static javax.security.auth.callback.TextOutputCallback.WARNING;
-import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.HeartbeatTimeUnit.SECONDS;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMode.LDAP;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMode.LDAPS;
@@ -37,8 +35,6 @@ import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.TextOutputCallback;
 
-import org.forgerock.guava.common.collect.ImmutableList;
-import org.forgerock.guava.common.collect.ImmutableSet;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -60,6 +56,8 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.shared.debug.Debug;
@@ -93,7 +91,7 @@ public class LdapDecisionNode implements Node {
     /**
      * The interface Config.
      */
-    interface Config {
+    public interface Config {
         /**
          * Primary LDAP server configuration.
          *
@@ -291,8 +289,6 @@ public class LdapDecisionNode implements Node {
                         userStatus = ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE).iterator().next();
                     }
                 }
-                String username = getUserNameFromIdentity(ldapUtil.getUserId());
-                newState.put(USERNAME, username);
                 if (userStatus.equals(USER_STATUS_INACTIVE)) {
                     ldapUtil.setState(ModuleState.ACCOUNT_LOCKED);
                 }
@@ -508,7 +504,6 @@ public class LdapDecisionNode implements Node {
             loginResult = Action.send(callbacks);
             break;
         case USER_NOT_FOUND:
-            newState.remove(USERNAME);
             loginResult = goTo(LdapOutcome.FALSE);
             break;
         default:

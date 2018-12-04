@@ -24,13 +24,14 @@
  *
  * $Id: Cert.java,v 1.14 2009/03/13 20:54:42 beomsuk Exp $
  *
- * Portions Copyrighted 2013-2017 ForgeRock AS.
+ * Portions Copyrighted 2013-2018 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.cert;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
@@ -625,7 +626,7 @@ public class Cert extends AMLoginModule {
                     userTokenId = CertUtils.getAttributeValue(subjectPrincipal, CertUtils.MAIL);
                 }
             } else if (amAuthCert_userProfileMapper.equalsIgnoreCase("DER Certificate")) {
-                userTokenId = String.valueOf(cert.getTBSCertificate());
+                userTokenId = new String(cert.getTBSCertificate(), StandardCharsets.UTF_8);
             } else if (amAuthCert_userProfileMapper.equals("other")) {
                 //  "other" has been selected, so use attribute specified in the
                 //  iplanet-am-auth-cert-user-profile-mapper-other attribute,

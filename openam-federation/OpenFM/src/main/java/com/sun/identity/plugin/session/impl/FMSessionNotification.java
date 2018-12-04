@@ -34,13 +34,15 @@ import com.google.inject.name.Named;
 import com.iplanet.dpro.session.SessionID;
 import com.iplanet.dpro.session.service.SessionService;
 import com.iplanet.dpro.session.watchers.listeners.SessionDeletionListener;
+import com.iplanet.dpro.session.watchers.listeners.SessionPropertyChangeListener;
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
 import com.iplanet.sso.SSOTokenID;
 import com.iplanet.sso.SSOTokenListener;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionListener;
-import com.sun.identity.saml2.idpdiscovery.Debug;
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.shared.debug.Debug;
 
 /**
  * Responsible for providing notifications for session objects as part of OpenAM Federation implementation.
@@ -87,6 +89,28 @@ public class FMSessionNotification {
         @Override
         public void connectionReestablished() {
 
+        }
+    };
+
+    private final SessionPropertyChangeListener sessionPropertyChangeListener = new SessionPropertyChangeListener() {
+        @Override
+        public void sessionModified(String sessionId, Map<String, String> sessionProperties) {
+            String sessionIndex = sessionProperties.get(SAML2Constants.IDP_SESSION_INDEX);
+            if (sessionIndex != null) {
+                updateSessionIndex(sessionId, sessionIndex);
+            }
+        }
+
+        @Override
+        public void connectionLost() {
+        }
+
+        @Override
+        public void initiationFailed() {
+        }
+
+        @Override
+        public void connectionReestablished() {
         }
     };
 
@@ -142,9 +166,35 @@ public class FMSessionNotification {
             // Setup notifications for the session.
             try {
                 sessionService.notifyListenerFor(new SessionID(tokenId), sessionDeletionListener);
+                sessionService.notifyListenerFor(new SessionID(tokenId), sessionPropertyChangeListener);
             } catch (com.iplanet.dpro.session.SessionException e) {
                 debug.warning("Error whilst registering session for notifications", e);
             }
+        }
+    }
+
+    /**
+     * Updates the sessionIndex of the provided sessionId.
+     *
+     * @param sessionId Non null String
+     * @param sessionIndex Non null String
+     */
+    private void updateSessionIndex(String sessionId, String sessionIndex) {
+        Reject.ifNull(sessionId);
+        Reject.ifNull(sessionIndex);
+
+        final String classMethod = "FMSessionNotification.updateSessionIndex:";
+
+        Registration reg = store.get(sessionId);
+        if (reg != null) {
+            try {
+                reg.updateSessionIndex(sessionIndex);
+                debug.message("{} Updated sessionIndex for sessionId {} to {}", classMethod,  sessionId, sessionIndex);
+            } catch (SSOException ex) {
+                debug.message("{} Failed to set sessionIndex for sessionId {} to {}", classMethod, sessionId, sessionIndex);
+            }
+        } else {
+            debug.message("{} Failed to update store for sessionId {}", classMethod, sessionId);
         }
     }
 
@@ -210,6 +260,13 @@ public class FMSessionNotification {
          */
         private Registration(SSOToken session) {
             this.session = new StoredTokenProperties(session);
+        }
+
+        /**
+         * @param sessionIndex Non null String
+         */
+        private void updateSessionIndex(String sessionIndex) throws SSOException {
+            session.setProperty(SAML2Constants.IDP_SESSION_INDEX, sessionIndex);
         }
 
         /**
@@ -315,7 +372,7 @@ public class FMSessionNotification {
 
         @Override
         public void setProperty(String name, String value) throws SSOException {
-            throw new UnsupportedOperationException();
+            copyProps.put(name, value);
         }
 
         @Override

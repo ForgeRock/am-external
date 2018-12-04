@@ -16,24 +16,29 @@
 
 package org.forgerock.openam.auth.nodes;
 
+import static javax.security.auth.callback.TextOutputCallback.ERROR;
+import static org.forgerock.openam.auth.nodes.CreatePasswordNode.BUNDLE;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.TextOutputCallback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.mockito.Mock;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -42,7 +47,7 @@ import org.testng.annotations.Test;
  */
 public class CreatePasswordNodeTest {
 
-    public static final int PASSWORD_LENGTH_MIN = 8;
+    private static final int PASSWORD_LENGTH_MIN = 8;
     @Mock
     private CreatePasswordNode.Config config;
 
@@ -77,7 +82,7 @@ public class CreatePasswordNodeTest {
         Action process = node.process(context);
 
         //THEN
-        Assert.assertEquals(process.outcome, "outcome");
+        assertEquals(process.outcome, "outcome");
     }
 
     @Test
@@ -91,8 +96,8 @@ public class CreatePasswordNodeTest {
         Action process = node.process(context);
 
         //THEN
-        Assert.assertTrue(process.transientState.isDefined("password"));
-        Assert.assertEquals(process.transientState.get("password").asString(), "password");
+        assertTrue(process.transientState.isDefined("password"));
+        assertEquals(process.transientState.get("password").asString(), "password");
     }
 
     @Test
@@ -106,11 +111,20 @@ public class CreatePasswordNodeTest {
         Action process = node.process(context);
 
         //THEN
-        assertExpectedCallbacks(process);
+        assertExpectedCallbacksWithErrorMessage(process, expectedErrorMessage(context, "error.password.mismatch"));
+    }
+
+    private String expectedErrorMessage(TreeContext context, String s) {
+        return getResourceBundle(context).getString(s);
+    }
+
+    private ResourceBundle getResourceBundle(TreeContext context) {
+        return context.request.locales.getBundleInPreferredLocale(BUNDLE,
+                    getClass().getClassLoader());
     }
 
     @Test
-    public void processReturnsCallbacksIfPasswordToShort() throws Exception {
+    public void processReturnsCallbacksIfPasswordTooShort() throws Exception {
         //GIVEN
         String shortPassword = IntStream.range(1, PASSWORD_LENGTH_MIN)
                 .mapToObj(String::valueOf)
@@ -124,7 +138,9 @@ public class CreatePasswordNodeTest {
         Action process = node.process(context);
 
         //THEN
-        assertExpectedCallbacks(process);
+        String errorMessage = String.format(expectedErrorMessage(context, "error.password.length"),
+                PASSWORD_LENGTH_MIN);
+        assertExpectedCallbacksWithErrorMessage(process, errorMessage);
     }
 
     private List<Callback> createPasswordCallback(String password, String confirmPassword) {
@@ -141,8 +157,17 @@ public class CreatePasswordNodeTest {
     }
 
     private void assertExpectedCallbacks(Action process) {
-        Assert.assertEquals(process.callbacks.size(), 2);
-        Assert.assertTrue(process.callbacks.get(0) instanceof PasswordCallback);
-        Assert.assertTrue(process.callbacks.get(1) instanceof PasswordCallback);
+        assertEquals(process.callbacks.size(), 2);
+        assertTrue(process.callbacks.get(0) instanceof PasswordCallback);
+        assertTrue(process.callbacks.get(1) instanceof PasswordCallback);
+    }
+
+    private void assertExpectedCallbacksWithErrorMessage(Action process, String message) {
+        assertEquals(process.callbacks.size(), 3);
+        assertTrue(process.callbacks.get(0) instanceof PasswordCallback);
+        assertTrue(process.callbacks.get(1) instanceof PasswordCallback);
+        final TextOutputCallback errorMessage = (TextOutputCallback) process.callbacks.get(2);
+        assertEquals(errorMessage.getMessageType(), ERROR);
+        assertEquals(errorMessage.getMessage(), message);
     }
 }

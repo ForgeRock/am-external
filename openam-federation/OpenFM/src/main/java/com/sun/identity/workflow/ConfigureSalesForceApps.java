@@ -27,9 +27,17 @@
  */
 
 /**
- * Portions Copyrighted 2012-2013 ForgeRock Inc
+ * Portions Copyrighted 2012-2018 ForgeRock AS.
  */
 package com.sun.identity.workflow;
+
+import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import javax.xml.bind.JAXBException;
 
 import com.sun.identity.cot.COTException;
 import com.sun.identity.saml2.common.SAML2Constants;
@@ -41,12 +49,6 @@ import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import javax.xml.bind.JAXBException;
 
 /**
  ** Configure SalesForceApps.
@@ -103,7 +105,7 @@ public class ConfigureSalesForceApps
             localMetadata = METADATA.replace(ENTITY_ID_PLACEHOLDER, entityId);
             EntityDescriptorElement e =
                 SAML2MetaUtils.getEntityDescriptorElement(localMetadata);
-            String eId = e.getEntityID();
+            String eId = e.getValue().getEntityID();
             String metaAlias = generateMetaAliasForSP(realm);
             Map map = new HashMap();
             map.put(MetaTemplateParameters.P_SP, metaAlias);
@@ -136,17 +138,15 @@ public class ConfigureSalesForceApps
 
                 if (ssoConfig != null) {
                     ObjectFactory objFactory = new ObjectFactory();
-                    AttributeType avp = objFactory.createAttributeElement();
+                    AttributeType avp = objFactory.createAttributeType();
                     String key = SAML2Constants.ATTRIBUTE_MAP;
                     avp.setName(key);
                     avp.getValue().addAll(attrMapping);
-                    ssoConfig.getAttribute().add(avp);
+                    ssoConfig.getValue().getAttribute().add(avp);
                 }
                 manager.setEntityConfig(realm, config);
             }
         } catch (SAML2MetaException e) {
-            throw new WorkflowException(e.getMessage());
-        } catch (JAXBException e) {
             throw new WorkflowException(e.getMessage());
         }
 

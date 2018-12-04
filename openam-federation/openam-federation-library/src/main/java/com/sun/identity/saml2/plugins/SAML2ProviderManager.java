@@ -24,6 +24,8 @@
  *
  * $Id: SAML2ProviderManager.java,v 1.3 2008/06/25 05:47:52 qcheng Exp $
  *
+ * Porions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.saml2.plugins;
@@ -32,6 +34,8 @@ import java.security.Key;
 import java.security.PrivateKey;
 import java.util.List;
 import java.util.Map;
+
+import javax.xml.bind.JAXBElement;
 
 import com.sun.identity.liberty.ws.util.ProviderManager;
 import com.sun.identity.saml2.common.SAML2Constants;
@@ -51,7 +55,7 @@ import com.sun.identity.saml2.meta.SAML2MetaUtils;
  */
 public class SAML2ProviderManager implements ProviderManager {
     private static SAML2MetaManager metaManager =
-        SAML2Utils.getSAML2MetaManager();
+            SAML2Utils.getSAML2MetaManager();
 
     /**
      * Returns whether the specified provider exists or not.
@@ -65,7 +69,7 @@ public class SAML2ProviderManager implements ProviderManager {
             ed = metaManager.getEntityDescriptor("/", providerID);
         } catch (SAML2MetaException smex) {
             SAML2Utils.debug.error(
-                "SAML2ProviderManager.containsProvider:", smex);
+                    "SAML2ProviderManager.containsProvider:", smex);
         }
 
         return (ed != null);
@@ -90,7 +94,7 @@ public class SAML2ProviderManager implements ProviderManager {
      *     false if it doesn't.
      */
     public boolean isNameIDEncryptionEnabled(String providerID) {
-        BaseConfigType config = null;
+        JAXBElement<BaseConfigType> config = null;
         try {
             config = metaManager.getSPSSOConfig("/", providerID);
             if (config == null) {
@@ -98,14 +102,14 @@ public class SAML2ProviderManager implements ProviderManager {
             }
         } catch (SAML2MetaException smex) {
             SAML2Utils.debug.error(
-                "SAML2ProviderManager.isNameIDEncryptionEnabled:", smex);
+                    "SAML2ProviderManager.isNameIDEncryptionEnabled:", smex);
         }
 
         if (config == null) {
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message(
-                    "SAML2ProviderManager.isNameIDEncryptionEnabled:" +
-                    "config not found.");
+                        "SAML2ProviderManager.isNameIDEncryptionEnabled:" +
+                                "config not found.");
             }
             return false;
         }
@@ -114,7 +118,7 @@ public class SAML2ProviderManager implements ProviderManager {
         Map attrMap = SAML2MetaUtils.getAttributes(config);
         if ((attrMap != null) && !attrMap.isEmpty()) {
             List values =
-                (List)attrMap.get(SAML2Constants.WANT_NAMEID_ENCRYPTED);
+                    (List)attrMap.get(SAML2Constants.WANT_NAMEID_ENCRYPTED);
 
             if ((values != null) && (!values.isEmpty())) {
                 wantEncrypted = (String)values.get(0);
@@ -122,7 +126,7 @@ public class SAML2ProviderManager implements ProviderManager {
         }
 
         return ((wantEncrypted != null) &&
-            wantEncrypted.equalsIgnoreCase("true"));
+                wantEncrypted.equalsIgnoreCase("true"));
     }
 
     /**
@@ -161,7 +165,7 @@ public class SAML2ProviderManager implements ProviderManager {
      * @return decryption key for specified provider.
      */
     public PrivateKey getDecryptionKey(String providerID) {
-        BaseConfigType providerConfig = null;
+        JAXBElement<BaseConfigType> providerConfig = null;
         try {
             providerConfig = metaManager.getSPSSOConfig("/", providerID);
             if (providerConfig == null) {
@@ -169,9 +173,9 @@ public class SAML2ProviderManager implements ProviderManager {
             }
         } catch (SAML2MetaException smex) {
             SAML2Utils.debug.error("SAML2ProviderManager.getDecryptionKey",
-                smex);
+                    smex);
         }
-        
+
         if (providerConfig == null) {
             return null;
         }
@@ -185,7 +189,7 @@ public class SAML2ProviderManager implements ProviderManager {
      * @return signing certificate alias for specified provider.
      */
     public String getSigningKeyAlias(String providerID) {
-        BaseConfigType config = null;
+        JAXBElement<BaseConfigType> config = null;
         try {
             config = metaManager.getSPSSOConfig("/", providerID);
             if (config == null) {
@@ -193,14 +197,14 @@ public class SAML2ProviderManager implements ProviderManager {
             }
         } catch (SAML2MetaException smex) {
             SAML2Utils.debug.error(
-                "SAML2ProviderManager.getSigningKeyAlias:", smex);
+                    "SAML2ProviderManager.getSigningKeyAlias:", smex);
         }
 
         if (config == null) {
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message(
-                    "SAML2ProviderManager.getSigningKeyAlias:" +
-                    "config not found.");
+                        "SAML2ProviderManager.getSigningKeyAlias:" +
+                                "config not found.");
             }
             return null;
         }
@@ -218,13 +222,13 @@ public class SAML2ProviderManager implements ProviderManager {
             }
         } catch (SAML2MetaException smex) {
             SAML2Utils.debug.error(
-                "SAML2ProviderManager.getEncInfo:", smex);
+                    "SAML2ProviderManager.getEncInfo:", smex);
         }
 
         if (ssod == null) {
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message(
-                    "SAML2ProviderManager.getEncInfo: Descriptor not found.");
+                        "SAML2ProviderManager.getEncInfo: Descriptor not found.");
             }
             return null;
         }

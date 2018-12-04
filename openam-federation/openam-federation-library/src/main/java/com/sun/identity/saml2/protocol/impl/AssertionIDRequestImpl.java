@@ -24,6 +24,7 @@
  *
  * $Id: AssertionIDRequestImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -48,8 +49,8 @@ import com.sun.identity.shared.xml.XMLUtils;
 /**
  * This class represents the AssertionIDRequest element in SAMLv2 protocol
  * schema.
- * <p>The following schema fragment specifies the expected 	
- * content contained within this java content object. 	
+ * <p>The following schema fragment specifies the expected
+ * content contained within this java content object.
  * <p>
  * <pre>
  * &lt;element name="AssertionIDRequest" type="{urn:oasis:names:tc:SAML:2.0:protocol}AssertionIDRequestType"/>
@@ -59,7 +60,7 @@ import com.sun.identity.shared.xml.XMLUtils;
 public class AssertionIDRequestImpl extends RequestAbstractImpl
     implements AssertionIDRequest {
 
-    protected List assertionIDRefs;
+    protected List<AssertionIDRef> assertionIDRefs;
 
     /**
      * Constructor to create <code>AssertionIDRequest</code> Object .
@@ -74,7 +75,7 @@ public class AssertionIDRequestImpl extends RequestAbstractImpl
      *
      * @param element the Document Element Object.
      * @throws SAML2Exception if error creating <code>AssertionIDRequest</code>
-     *     Object. 
+     *     Object.
      */
     public AssertionIDRequestImpl(Element element) throws SAML2Exception {
         parseDOMElement(element);
@@ -89,7 +90,7 @@ public class AssertionIDRequestImpl extends RequestAbstractImpl
      *
      * @param xmlString the XML String.
      * @throws SAML2Exception if error creating <code>AssertionIDRequest</code>
-     *     Object. 
+     *     Object.
      */
     public AssertionIDRequestImpl(String xmlString) throws SAML2Exception {
         Document xmlDocument = XMLUtils.toDOMDocument(xmlString,
@@ -105,7 +106,7 @@ public class AssertionIDRequestImpl extends RequestAbstractImpl
         }
     }
 
-    /** 
+    /**
      * Returns a list of <code>AssertionIDRef</code> objects.
      *
      * @return list of <code>AssertionIDRef</code> objects.
@@ -115,14 +116,14 @@ public class AssertionIDRequestImpl extends RequestAbstractImpl
         return assertionIDRefs;
     }
 
-    /** 
+    /**
      * Sets a list of <code>AssertionIDRef</code> Objects.
      *
      * @param assertionIDRefs the list of <code>AssertionIDRef</code> objects.
      * @throws SAML2Exception if the object is immutable.
      * @see #getAssertionIDRefs
      */
-    public void setAssertionIDRefs(List assertionIDRefs) throws SAML2Exception {
+    public void setAssertionIDRefs(List<AssertionIDRef> assertionIDRefs) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2Utils.bundle.getString(
                 "objectImmutable"));
@@ -163,22 +164,22 @@ public class AssertionIDRequestImpl extends RequestAbstractImpl
         }
     }
 
-    /** 
+    /**
      * Parses attributes of the Docuemnt Element for this object.
-     * 
+     *
      * @param element the Document Element of this object.
      * @throws SAML2Exception if error parsing the Document Element.
-     */ 
+     */
     protected void parseDOMAttributes(Element element) throws SAML2Exception {
         super.parseDOMAttributes(element);
     }
 
-    /** 
+    /**
      * Parses child elements of the Docuemnt Element for this object.
-     * 
+     *
      * @param iter the child elements iterator.
      * @throws SAML2Exception if error parsing the Document Element.
-     */ 
+     */
     protected void parseDOMChileElements(ListIterator iter)
         throws SAML2Exception {
 

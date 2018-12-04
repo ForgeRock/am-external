@@ -11,26 +11,48 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.authentication.modules.social;
 
-import static com.sun.identity.authentication.util.ISAuthConstants.*;
+import static com.sun.identity.authentication.util.ISAuthConstants.FULL_LOGIN_URL;
+import static com.sun.identity.authentication.util.ISAuthConstants.LOGIN_IGNORE;
+import static com.sun.identity.authentication.util.ISAuthConstants.LOGIN_SUCCEED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.oauth.clients.oauth2.OAuth2Client.ACCESS_TOKEN;
-import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.*;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.COOKIE_LOGOUT_URL;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.COOKIE_ORIG_URL;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.CREATE_USER_STATE;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.KEY_EMAIL_GWY_IMPL;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.KEY_SMTP_HOSTNAME;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.KEY_SMTP_PASSWORD;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.KEY_SMTP_PORT;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.KEY_SMTP_SSL_ENABLED;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.KEY_SMTP_USERNAME;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.NONCE_TOKEN_ID;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.SESSION_LOGOUT_BEHAVIOUR;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.SESSION_OAUTH_TOKEN;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.SET_PASSWORD_STATE;
 import static org.forgerock.openam.authentication.modules.social.AbstractSocialAuthLoginModule.CANCEL_ACTION_SELECTED;
 import static org.forgerock.openam.authentication.modules.social.SocialAuthLoginModule.GET_OAUTH_TOKEN_STATE;
 import static org.forgerock.openam.authentication.modules.social.SocialAuthLoginModule.RESUME_FROM_REGISTRATION_REDIRECT_STATE;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.function.Function;
@@ -43,8 +65,6 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.forgerock.guava.common.base.Optional;
-import org.forgerock.guava.common.collect.ImmutableMap;
 import org.forgerock.json.JsonValue;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.UserInfo;
@@ -52,6 +72,7 @@ import org.forgerock.openam.authentication.modules.common.AMLoginModuleBinder;
 import org.forgerock.openam.authentication.modules.oauth2.EmailGateway;
 import org.forgerock.openam.authentication.modules.oauth2.NoEmailSentException;
 import org.forgerock.openam.authentication.modules.oidc.JwtHandlerConfig;
+import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.utils.CollectionUtils;
@@ -61,6 +82,7 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.google.common.collect.ImmutableMap;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.RedirectCallback;
 import com.sun.identity.authentication.util.ISAuthConstants;
@@ -116,7 +138,7 @@ public class SocialAuthLoginModuleTest {
     @Mock
     private Function<Map,AbstractSmsSocialAuthConfiguration> configFunction;
     @Mock
-    private SocialAuthLoginModule.ClientTokenJwtGenerator clientTokenJwtGenerator;
+    private ClientTokenJwtGenerator clientTokenJwtGenerator;
 
     private ResourceBundle bundle = new ResourceBundle() {
         @Override
@@ -262,7 +284,7 @@ public class SocialAuthLoginModuleTest {
                 .willReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
 
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
-                .willReturn(Optional.absent());
+                .willReturn(Optional.empty());
 
         given(config.getCfgCreateAccount()).willReturn(true);
         given(config.isCfgRegistrationServiceEnabled()).willReturn(true);
@@ -291,7 +313,7 @@ public class SocialAuthLoginModuleTest {
                 .willReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
 
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
-                .willReturn(Optional.absent());
+                .willReturn(Optional.empty());
         given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
 
         given(profileNormalizer.getNormalisedAttributes(userInfo, null))
@@ -326,7 +348,7 @@ public class SocialAuthLoginModuleTest {
                 .willReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
 
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
-                .willReturn(Optional.absent());
+                .willReturn(Optional.empty());
         given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
 
         given(profileNormalizer.getNormalisedAttributes(userInfo, null))
@@ -361,7 +383,7 @@ public class SocialAuthLoginModuleTest {
                 .willReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
 
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
-                .willReturn(Optional.absent());
+                .willReturn(Optional.empty());
         given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
 
         given(profileNormalizer.getNormalisedAttributes(userInfo, null))
@@ -404,7 +426,7 @@ public class SocialAuthLoginModuleTest {
     public void shouldFailWhenResumedFromRegistrationAndUserNotFound() throws Exception {
         //given
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
-                any(), anyMap())).willReturn(Optional.absent());
+                any(), anyMap())).willReturn(Optional.empty());
 
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 
@@ -424,7 +446,7 @@ public class SocialAuthLoginModuleTest {
                 .willReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
 
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
-                .willReturn(Optional.absent());
+                .willReturn(Optional.empty());
 
         given(config.getCfgCreateAccount()).willReturn(true);
         given(config.getCfgPromptForPassword()).willReturn(true);

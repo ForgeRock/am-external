@@ -11,9 +11,8 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.authentication.modules.amster;
 
 import java.util.Map;
@@ -21,11 +20,11 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.forgerock.guava.common.annotations.VisibleForTesting;
 import org.forgerock.json.jose.jws.SignedJwt;
 import org.forgerock.openam.utils.ClientUtils;
 import org.forgerock.openam.utils.IPRange;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.googlecode.ipv6.IPv6Address;
 import com.googlecode.ipv6.IPv6Network;
 import com.sun.identity.shared.debug.Debug;

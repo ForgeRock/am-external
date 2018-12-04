@@ -24,12 +24,12 @@
  *
  * $Id: LogoutUtil.java,v 1.16 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2012-2017 ForgeRock AS.
+ * Portions Copyrighted 2012-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.newDate;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -47,17 +47,14 @@ import java.util.logging.Level;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.JAXBElement;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
-import com.sun.identity.saml2.common.SOAPCommunicator;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.sun.identity.plugin.session.SessionException;
-import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.saml2.assertion.EncryptedID;
@@ -66,12 +63,12 @@ import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.common.SOAPCommunicator;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.saml2.jaxb.metadata.EndpointType;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorType;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SingleLogoutServiceElement;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.key.EncInfo;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.logging.LogUtil;
@@ -86,6 +83,9 @@ import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.SessionIndex;
 import com.sun.identity.saml2.protocol.Status;
 import com.sun.identity.saml2.protocol.StatusDetail;
+import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.encode.Base64;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * This class constructs the <code>LogoutRequest</code> and executes
@@ -94,12 +94,12 @@ import com.sun.identity.saml2.protocol.StatusDetail;
  */
 
 public class LogoutUtil {
-    static KeyProvider keyProvider = KeyUtil.getKeyProviderInstance(); 
+    static KeyProvider keyProvider = KeyUtil.getKeyProviderInstance();
     static SAML2MetaManager metaManager = null;
     static Debug debug = SAML2Utils.debug;
-    
+
     static {
-        metaManager= SAML2Utils.getSAML2MetaManager(); 
+        metaManager= SAML2Utils.getSAML2MetaManager();
     }
 
     /**
@@ -147,7 +147,7 @@ public class LogoutUtil {
             HttpServletRequest request,
             HttpServletResponse response,
             Map paramsMap,
-            BaseConfigType config) throws SAML2Exception, SessionException {
+            JAXBElement<BaseConfigType> config) throws SAML2Exception, SessionException {
         EndpointType logoutEndpoint = null;
         for (EndpointType endpoint : recipientSLOList) {
             if (binding.equals(endpoint.getBinding())) {
@@ -170,7 +170,7 @@ public class LogoutUtil {
             HttpServletRequest request,
             HttpServletResponse response,
             Map paramsMap,
-            BaseConfigType config) throws SAML2Exception, SessionException {
+            JAXBElement<BaseConfigType> config) throws SAML2Exception, SessionException {
         StringBuffer logoutRequestID = new StringBuffer();
 
         String classMethod = "LogoutUtil.doLogout: ";
@@ -312,23 +312,23 @@ public class LogoutUtil {
     }
 
     static private void doSLOByHttpRedirect(
-        String sloRequestXMLString,
-        String sloURL,
-        String relayState,
-        String realm, 
-        String hostEntity,
-        String hostEntityRole, 
-        String remoteEntity,        
-        HttpServletResponse response) throws SAML2Exception, IOException {
+            String sloRequestXMLString,
+            String sloURL,
+            String relayState,
+            String realm,
+            String hostEntity,
+            String hostEntityRole,
+            String remoteEntity,
+            HttpServletResponse response) throws SAML2Exception, IOException {
         String method = "doSLOByHttpRedirect: ";
         // encode the xml string
         String encodedXML = SAML2Utils.encodeForRedirect(sloRequestXMLString);
-        
-        StringBuffer queryString = 
+
+        StringBuffer queryString =
                 new StringBuffer().append(SAML2Constants.SAML_REQUEST)
-                                  .append(SAML2Constants.EQUAL)
-                                  .append(encodedXML);
-        
+                        .append(SAML2Constants.EQUAL)
+                        .append(encodedXML);
+
         // spec states that the relay state MUST NOT exceed 80
         // chanracters, need to have some means to pass it when it
         // exceeds 80 chars
@@ -340,37 +340,37 @@ public class LogoutUtil {
                 SPCache.relayStateHash.put(tmp, new CacheObject(relayState));
             }
             queryString.append("&").append(SAML2Constants.RELAY_STATE)
-                           .append("=").append(tmp);
+                    .append("=").append(tmp);
         }
-        
-        boolean needToSign = false; 
+
+        boolean needToSign = false;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
-            needToSign = 
-                SAML2Utils.getWantLogoutRequestSigned(realm, remoteEntity, 
-                                   SAML2Constants.SP_ROLE);
+            needToSign =
+                    SAML2Utils.getWantLogoutRequestSigned(realm, remoteEntity,
+                            SAML2Constants.SP_ROLE);
         } else {
-            needToSign = 
-                SAML2Utils.getWantLogoutRequestSigned(realm, remoteEntity, 
-                                   SAML2Constants.IDP_ROLE);
+            needToSign =
+                    SAML2Utils.getWantLogoutRequestSigned(realm, remoteEntity,
+                            SAML2Constants.IDP_ROLE);
         }
-        
+
         String signedQueryString = queryString.toString();
         if (needToSign == true) {
-            signedQueryString = SAML2Utils.signQueryString(signedQueryString, 
-                            realm, hostEntity, hostEntityRole);
+            signedQueryString = SAML2Utils.signQueryString(signedQueryString,
+                    realm, hostEntity, hostEntityRole);
         }
-        
+
         String redirectURL = sloURL + (sloURL.contains("?") ? "&" : "?") +
-            signedQueryString;
+                signedQueryString;
         if (debug.messageEnabled()) {
-            debug.message(method + "LogoutRequestXMLString : " 
-                                          + sloRequestXMLString);
+            debug.message(method + "LogoutRequestXMLString : "
+                    + sloRequestXMLString);
             debug.message(method + "LogoutRedirectURL : " + sloURL);
         }
-        
+
         response.sendRedirect(redirectURL);
     }
-    
+
     /**
      * Performs SOAP logout, this method will send LogoutResuest to IDP using
      * SOAP binding, and process LogoutResponse.
@@ -382,21 +382,21 @@ public class LogoutUtil {
      * @param hostRole SOAP logout URL on IDP side.
      * @throws SAML2Exception if logout failed. 
      * @throws SessionException if logout failed. 
-     */ 
+     */
     private static void doSLOBySOAP(
-        String requestID,
-        LogoutRequest sloRequest,
-        String sloURL,
-        String realm,
-        String hostEntity,
-        String hostRole, 
-        HttpServletRequest request,
-        HttpServletResponse response) throws SAML2Exception, SessionException {
+            String requestID,
+            LogoutRequest sloRequest,
+            String sloURL,
+            String realm,
+            String hostEntity,
+            String hostRole,
+            HttpServletRequest request,
+            HttpServletResponse response) throws SAML2Exception, SessionException {
 
         String sloRequestXMLString = sloRequest.toXMLString(true, true);
         if (debug.messageEnabled()) {
-            debug.message("LogoutUtil.doSLOBySOAP : SLORequestXML: " 
-                + sloRequestXMLString + "\nSOAPURL : " + sloURL);
+            debug.message("LogoutUtil.doSLOBySOAP : SLORequestXML: "
+                    + sloRequestXMLString + "\nSOAPURL : " + sloURL);
         }
 
         SOAPMessage resMsg = null;
@@ -407,7 +407,7 @@ public class LogoutUtil {
             debug.error("Unable to send SOAPMessage to IDP ", se);
             throw new SAML2Exception(se.getMessage());
         }
-        
+
         // get the LogoutResponse element from SOAP message
         Element respElem = SOAPCommunicator.getInstance().getSamlpElement(resMsg, "LogoutResponse");
         LogoutResponse sloResponse = ProtocolFactory.getInstance()
@@ -417,44 +417,44 @@ public class LogoutUtil {
         // invoke SPAdapter for preSingleLogoutProcess : SP initiated SOAP
         if ((hostRole != null) && hostRole.equals(SAML2Constants.SP_ROLE)) {
             userId = SPSingleLogout.preSingleLogoutProcess(hostEntity, realm,
-                request, response, null, sloRequest, sloResponse, 
-                SAML2Constants.SOAP);
+                    request, response, null, sloRequest, sloResponse,
+                    SAML2Constants.SOAP);
         }
         if (sloResponse == null) {
             debug.error("LogoutUtil.doSLOBySoap : null response");
             throw new SAML2Exception(SAML2Utils.bundle.getString(
-                 "nullLogoutResponse"));
+                    "nullLogoutResponse"));
         }
 
         if (debug.messageEnabled()) {
-            debug.message("LogoutUtil.doSLOBySOAP : " + 
-                "LogoutResponse without SOAP envelope:\n" + 
-                sloResponse.toXMLString());
+            debug.message("LogoutUtil.doSLOBySOAP : " +
+                    "LogoutResponse without SOAP envelope:\n" +
+                    sloResponse.toXMLString());
         }
-        
+
         Issuer resIssuer = sloResponse.getIssuer();
-            String requestId = sloResponse.getInResponseTo();
+        String requestId = sloResponse.getInResponseTo();
         SAML2Utils.verifyResponseIssuer(
-                            realm, hostEntity, resIssuer, requestId);
+                realm, hostEntity, resIssuer, requestId);
 
         String remoteEntityID = sloResponse.getIssuer().getValue();
-        verifySLOResponse(sloResponse, realm, remoteEntityID, hostEntity, 
-                              hostRole);
-        
+        verifySLOResponse(sloResponse, realm, remoteEntityID, hostEntity,
+                hostRole);
+
         boolean success = checkSLOResponse(sloResponse, requestID);
-        
+
         if (debug.messageEnabled()) {
             debug.message("Request success : " + success);
         }
-        
+
         if (success == false) {
             if (SPCache.isFedlet) {
                 FedletAdapter fedletAdapter =
-                    SAML2Utils.getFedletAdapterClass(hostEntity, realm);
+                        SAML2Utils.getFedletAdapterClass(hostEntity, realm);
                 if (fedletAdapter != null) {
                     fedletAdapter.onFedletSLOFailure(
-                        request, response, sloRequest, sloResponse,
-                        hostEntity, remoteEntityID, SAML2Constants.SOAP); 
+                            request, response, sloRequest, sloResponse,
+                            hostEntity, remoteEntityID, SAML2Constants.SOAP);
                 }
             }
             throw new SAML2Exception(SAML2Utils.bundle.getString("sloFailed"));
@@ -463,58 +463,58 @@ public class LogoutUtil {
             if ((hostRole != null) && hostRole.equals(SAML2Constants.SP_ROLE)) {
                 if (SPCache.isFedlet) {
                     FedletAdapter fedletAdapter =
-                        SAML2Utils.getFedletAdapterClass(hostEntity, realm);
+                            SAML2Utils.getFedletAdapterClass(hostEntity, realm);
                     if (fedletAdapter != null) {
                         fedletAdapter.onFedletSLOSuccess(
-                            request, response, sloRequest, sloResponse,
-                            hostEntity, remoteEntityID, SAML2Constants.SOAP); 
+                                request, response, sloRequest, sloResponse,
+                                hostEntity, remoteEntityID, SAML2Constants.SOAP);
                     }
                 } else {
                     SPSingleLogout.postSingleLogoutSuccess(hostEntity, realm,
-                        request, response, userId, sloRequest, sloResponse, 
-                        SAML2Constants.SOAP);
+                            request, response, userId, sloRequest, sloResponse,
+                            SAML2Constants.SOAP);
                 }
             }
         }
     }
 
-    private static boolean checkSLOResponse(LogoutResponse sloResponse, 
-        String requestID) 
-        throws SAML2Exception {
+    private static boolean checkSLOResponse(LogoutResponse sloResponse,
+            String requestID)
+            throws SAML2Exception {
         boolean success = false;
         String retCode = sloResponse.getStatus().getStatusCode().getValue();
-        
+
         if (retCode.equalsIgnoreCase(SAML2Constants.SUCCESS)) {
             String inResponseTo = sloResponse.getInResponseTo();
             if (inResponseTo.equals(requestID)) {
                 if (debug.messageEnabled()) {
                     debug.message("LogoutUtil.doSLOBySOAP " +
-                        "LogoutResponse inResponseTo matches LogoutRequest ID");
+                            "LogoutResponse inResponseTo matches LogoutRequest ID");
                 }
             } else {
                 debug.error("LogoutUtil.doSLOBySOAP " +
-                    "LogoutResponse inResponseTo does not match Request ID.");
+                        "LogoutResponse inResponseTo does not match Request ID.");
                 throw new SAML2Exception(SAML2Utils.bundle.getString(
-                    "inResponseToNoMatch"));
+                        "inResponseToNoMatch"));
             }
             success = true;
         } else {
             if (debug.messageEnabled()) {
                 debug.message("LogoutUtil.doSLOBySOAP : " +
-                    "return code : " + retCode);
+                        "return code : " + retCode);
             }
-            success = false; 
+            success = false;
         }
-        
+
         return success;
     }
-    
+
     static LogoutResponse forwardToRemoteServer(LogoutRequest logoutReq,
-                                                String remoteLogoutURL) {
+            String remoteLogoutURL) {
 
         if (debug.messageEnabled()) {
             debug.message("LogoutUtil.forwardToRemoteServer: " +
-                          "remoteLogoutURL = " + remoteLogoutURL);
+                    "remoteLogoutURL = " + remoteLogoutURL);
         }
 
         try {
@@ -566,7 +566,7 @@ public class LogoutUtil {
                 for(Iterator iter = sessionIndex.iterator(); iter.hasNext();) {
                     String si = (String)iter.next();
                     SessionIndex sIndex = ProtocolFactory.getInstance()
-                                                     .createSessionIndex(si);
+                            .createSessionIndex(si);
                     details.add(sIndex.toXMLString(true, true));
                 }
                 sd.setAny(details);
@@ -579,7 +579,7 @@ public class LogoutUtil {
 
     /**
      * Based on the preferred SAML binding this method tries to choose the most appropriate
-     * {@link SingleLogoutServiceElement} that can be used to send the logout request to. The algorithm itself is
+     * {@link EndpointType} that can be used to send the logout request to. The algorithm itself is
      * simple:
      * <ul>
      *  <li>When asynchronous binding was used with the initial logout request, it is preferred to use asynchronous
@@ -593,20 +593,20 @@ public class LogoutUtil {
      * @return The most appropriate SLO service location that can be used for sending the logout request. If there is
      * no appropriate logout endpoint, null is returned.
      */
-    public static SingleLogoutServiceElement getMostAppropriateSLOServiceLocation(
-            List<SingleLogoutServiceElement> sloList, String preferredBinding) {
+    public static EndpointType getMostAppropriateSLOServiceLocation(
+            List<EndpointType> sloList, String preferredBinding) {
         //shortcut for the case when SLO isn't supported at all
         if (sloList.isEmpty()) {
             return null;
         }
 
-        Map<String, SingleLogoutServiceElement> sloBindings =
-                new HashMap<String, SingleLogoutServiceElement>(sloList.size());
-        for (SingleLogoutServiceElement sloEndpoint : sloList) {
+        Map<String, EndpointType> sloBindings =
+                new HashMap<String, EndpointType>(sloList.size());
+        for (EndpointType sloEndpoint : sloList) {
             sloBindings.put(sloEndpoint.getBinding(), sloEndpoint);
         }
 
-        SingleLogoutServiceElement endpoint = sloBindings.get(preferredBinding);
+        EndpointType endpoint = sloBindings.get(preferredBinding);
         if (endpoint == null) {
             //if the requested binding isn't supported let's try to find the most appropriate SLO endpoint
             if (preferredBinding.equals(SAML2Constants.HTTP_POST)) {
@@ -633,38 +633,38 @@ public class LogoutUtil {
      * @return url of desiredBinding.
      */
     public static String getSLOServiceLocation(
-        List sloList,
-        String desiredBinding) {
+            List sloList,
+            String desiredBinding) {
         String classMethod =
-            "LogoutUtil.getSLOserviceLocation: ";
+                "LogoutUtil.getSLOserviceLocation: ";
         int n = sloList.size();
         if (debug.messageEnabled()) {
             debug.message(
-                classMethod +
-                "Number of single logout services = " +
-                n);
+                    classMethod +
+                            "Number of single logout services = " +
+                            n);
         }
-        SingleLogoutServiceElement slos = null;
+        EndpointType slos = null;
         String location = null;
         String binding = null;
         for (int i=0; i<n; i++) {
-            slos = (SingleLogoutServiceElement)sloList.get(i);
+            slos = (EndpointType)sloList.get(i);
             if (slos != null) {
                 binding = slos.getBinding();
             }
             if (debug.messageEnabled()) {
                 debug.message(
-                    classMethod +
-                    "Single logout service binding = " +
-                    binding);
+                        classMethod +
+                                "Single logout service binding = " +
+                                binding);
             }
             if ((binding != null) && (binding.equals(desiredBinding))) {
                 location = slos.getLocation();
                 if (debug.messageEnabled()) {
                     debug.message(
-                        classMethod +
-                        "Found the single logout service "+
-                        "with the desired binding");
+                            classMethod +
+                                    "Found the single logout service "+
+                                    "with the desired binding");
                 }
                 break;
             }
@@ -680,38 +680,38 @@ public class LogoutUtil {
      * @return url of desiredBinding.
      */
     public static String getSLOResponseServiceLocation(
-        List sloList,
-        String desiredBinding) {
+            List sloList,
+            String desiredBinding) {
         String classMethod =
-            "LogoutUtil.getSLOResponseServiceLocation: ";
+                "LogoutUtil.getSLOResponseServiceLocation: ";
         int n = sloList.size();
         if (debug.messageEnabled()) {
             debug.message(
-                classMethod +
-                "Number of single logout services = " +
-                n);
+                    classMethod +
+                            "Number of single logout services = " +
+                            n);
         }
-        SingleLogoutServiceElement slos = null;
+        EndpointType slos = null;
         String resLocation = null;
         String binding = null;
         for (int i=0; i<n; i++) {
-            slos = (SingleLogoutServiceElement)sloList.get(i);
+            slos = (EndpointType)sloList.get(i);
             if (slos != null) {
                 binding = slos.getBinding();
             }
             if (debug.messageEnabled()) {
                 debug.message(
-                    classMethod +
-                    "Single logout service binding = " +
-                    binding);
+                        classMethod +
+                                "Single logout service binding = " +
+                                binding);
             }
             if ((binding != null) && (binding.equals(desiredBinding))) {
                 resLocation = slos.getResponseLocation();
                 if (debug.messageEnabled()) {
                     debug.message(
-                        classMethod +
-                        "Found the single logout service "+
-                        "with the desired binding");
+                            classMethod +
+                                    "Found the single logout service "+
+                                    "with the desired binding");
                 }
                 break;
             }
@@ -721,7 +721,7 @@ public class LogoutUtil {
 
     /* Creates Extensions */
     private static com.sun.identity.saml2.protocol.Extensions
-        createExtensions(List extensionsList) throws SAML2Exception {
+    createExtensions(List extensionsList) throws SAML2Exception {
         Extensions extensions = null;
         if (extensionsList != null && !extensionsList.isEmpty()) {
             extensions = ProtocolFactory.getInstance().createExtensions();
@@ -731,7 +731,7 @@ public class LogoutUtil {
     }
 
     /**
-    * Builds the <code>LogoutResponse</code> to be sent to IDP.
+     * Builds the <code>LogoutResponse</code> to be sent to IDP.
      *
      * @param status status of the response.
      * @param inResponseTo inResponseTo.
@@ -742,21 +742,21 @@ public class LogoutUtil {
      *
      * @return <code>LogoutResponse</code>
      *
-     */   
+     */
     public static LogoutResponse generateResponse(
-        Status status,
-        String inResponseTo,
-        Issuer issuer,
-        String realm,
-        String hostRole,
-        String remoteEntity) {
+            Status status,
+            String inResponseTo,
+            Issuer issuer,
+            String realm,
+            String hostRole,
+            String remoteEntity) {
 
         if (status == null) {
             status = SAML2Utils.generateStatus(SAML2Constants.SUCCESS,
-                         SAML2Utils.bundle.getString("requestSuccess"));
+                    SAML2Utils.bundle.getString("requestSuccess"));
         }
         LogoutResponse logoutResponse = ProtocolFactory.getInstance()
-        .createLogoutResponse(); 
+                .createLogoutResponse();
         String responseID = SAMLUtils.generateID();
 
         try {
@@ -769,7 +769,7 @@ public class LogoutUtil {
         } catch (SAML2Exception e) {
             debug.error("Error in generating LogoutResponse.", e);
         }
-        
+
         return logoutResponse;
     }
 
@@ -782,38 +782,38 @@ public class LogoutUtil {
      * @param hostEntityRole role of host entity.
      * @param remoteEntity entity ID of remote host entity.
      * @throws SAML2Exception if error in signing the request.
-     */   
-    public static void signSLORequest(LogoutRequest sloRequest, 
-                               String realm, String hostEntity, 
-                               String hostEntityRole, String remoteEntity) 
-        throws SAML2Exception {
-        signSLORequest(sloRequest, realm, hostEntity, 
-                       hostEntityRole, remoteEntity, false);
+     */
+    public static void signSLORequest(LogoutRequest sloRequest,
+            String realm, String hostEntity,
+            String hostEntityRole, String remoteEntity)
+            throws SAML2Exception {
+        signSLORequest(sloRequest, realm, hostEntity,
+                hostEntityRole, remoteEntity, false);
     }
-    
-    static void signSLORequest(LogoutRequest sloRequest, 
-                               String realm, String hostEntity,
-                               String hostEntityRole, String remoteEntity,
-                               boolean includeCert) 
-        throws SAML2Exception {
+
+    static void signSLORequest(LogoutRequest sloRequest,
+            String realm, String hostEntity,
+            String hostEntityRole, String remoteEntity,
+            boolean includeCert)
+            throws SAML2Exception {
         String method = "signSLORequest : ";
         boolean needRequestSign = false;
-        
+
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
-            needRequestSign = SAML2Utils.getWantLogoutRequestSigned(realm, 
-                                  remoteEntity, SAML2Constants.SP_ROLE);
+            needRequestSign = SAML2Utils.getWantLogoutRequestSigned(realm,
+                    remoteEntity, SAML2Constants.SP_ROLE);
         } else {
-            needRequestSign = SAML2Utils.getWantLogoutRequestSigned(realm, 
-                                  remoteEntity, SAML2Constants.IDP_ROLE);
+            needRequestSign = SAML2Utils.getWantLogoutRequestSigned(realm,
+                    remoteEntity, SAML2Constants.IDP_ROLE);
         }
-        
+
         if (needRequestSign == false) {
             if (debug.messageEnabled()) {
                 debug.message(method + "SLORequest doesn't need to be signed.");
             }
             return;
         }
-        
+
         String alias = SAML2Utils.getSigningCertAlias(realm, hostEntity, hostEntityRole);
         String encryptedKeyPass = SAML2Utils.getSigningCertEncryptedKeyPass(realm, hostEntity, hostEntityRole);
         if (debug.messageEnabled()) {
@@ -821,8 +821,8 @@ public class LogoutUtil {
             debug.message(method + "hostEntity is : " + hostEntity);
             debug.message(method + "Host Entity role is : " + hostEntityRole);
             debug.message(method + "Cert Alias is : " + alias);
-            debug.message(method + "SLO Request before sign : " 
-                            + sloRequest.toXMLString(true, true));
+            debug.message(method + "SLO Request before sign : "
+                    + sloRequest.toXMLString(true, true));
             if (encryptedKeyPass != null && !encryptedKeyPass.isEmpty()) {
                 debug.message(method + "Using provided Cert KeyPass");
             }
@@ -838,18 +838,18 @@ public class LogoutUtil {
         if (includeCert) {
             signingCert = keyProvider.getX509Certificate(alias);
         }
-        
+
         if (signingKey != null) {
             sloRequest.sign(signingKey, signingCert);
         } else {
-                debug.error("Incorrect configuration for Signing Certificate.");
+            debug.error("Incorrect configuration for Signing Certificate.");
             throw new SAML2Exception(
                     SAML2Utils.bundle.getString("metaDataError"));
         }
-        
+
         if (debug.messageEnabled()) {
-            debug.message(method + "SLO Request after sign : " 
-                                    + sloRequest.toXMLString(true, true));
+            debug.message(method + "SLO Request after sign : "
+                    + sloRequest.toXMLString(true, true));
         }
     }
 
@@ -864,23 +864,23 @@ public class LogoutUtil {
      * @return returns true if signature is valid.
      * @throws SAML2Exception if error in verifying the signature.
      * @throws SessionException if error in verifying the signature.
-     */   
-    public static boolean verifySLORequest(LogoutRequest sloRequest, 
-                                    String realm, String remoteEntity, 
-                                    String hostEntity, String hostEntityRole) 
-        throws SAML2Exception, SessionException {
+     */
+    public static boolean verifySLORequest(LogoutRequest sloRequest,
+            String realm, String remoteEntity,
+            String hostEntity, String hostEntityRole)
+            throws SAML2Exception, SessionException {
         String method = "verifySLORequest : ";
-        boolean needVerifySignature = 
-                SAML2Utils.getWantLogoutRequestSigned(realm, hostEntity, 
-                                hostEntityRole);
-        
+        boolean needVerifySignature =
+                SAML2Utils.getWantLogoutRequestSigned(realm, hostEntity,
+                        hostEntityRole);
+
         if (needVerifySignature == false) {
             if (debug.messageEnabled()) {
                 debug.message(method+"SLORequest doesn't need to be verified.");
             }
             return true;
         }
-                
+
         if (debug.messageEnabled()) {
             debug.message(method + "realm is : "+ realm);
             debug.message(method + "remoteEntity is : " + remoteEntity);
@@ -890,27 +890,27 @@ public class LogoutUtil {
         boolean valid = false;
         Set<X509Certificate> signingCerts;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
-            SPSSODescriptorElement spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
+            SPSSODescriptorType spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
             signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
         } else {
-            IDPSSODescriptorElement idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
+            IDPSSODescriptorType idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
             signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
         }
 
         if (!signingCerts.isEmpty()) {
             valid = sloRequest.isSignatureValid(signingCerts);
-                if (debug.messageEnabled()) {
+            if (debug.messageEnabled()) {
                 debug.message(method + "Signature is : " + valid);
             }
         } else {
-                debug.error("Incorrect configuration for Signing Certificate.");
+            debug.error("Incorrect configuration for Signing Certificate.");
             throw new SAML2Exception(
                     SAML2Utils.bundle.getString("metaDataError"));
         }
-        
+
         return valid;
     }
-    
+
     /**
      * Sign LogoutResponse.
      *
@@ -920,35 +920,35 @@ public class LogoutUtil {
      * @param hostEntityRole role of host entity.
      * @param remoteEntity entity ID of remote host entity.
      * @throws SAML2Exception if error in signing the request.
-     */   
-    public static void signSLOResponse(LogoutResponse sloResponse, 
-                                String realm, String hostEntity, 
-                                String hostEntityRole, String remoteEntity) 
-        throws SAML2Exception {
-        signSLOResponse(sloResponse, realm, hostEntity, 
-                        hostEntityRole, remoteEntity, false); 
+     */
+    public static void signSLOResponse(LogoutResponse sloResponse,
+            String realm, String hostEntity,
+            String hostEntityRole, String remoteEntity)
+            throws SAML2Exception {
+        signSLOResponse(sloResponse, realm, hostEntity,
+                hostEntityRole, remoteEntity, false);
     }
-    
-    static void signSLOResponse(LogoutResponse sloResponse, 
-                               String realm, String hostEntity, 
-                               String hostEntityRole, String remoteEntity, 
-                               boolean includeCert) 
-        throws SAML2Exception {
+
+    static void signSLOResponse(LogoutResponse sloResponse,
+            String realm, String hostEntity,
+            String hostEntityRole, String remoteEntity,
+            boolean includeCert)
+            throws SAML2Exception {
         String method = "signSLOResponse : ";
         boolean needSignResponse = false;
-        
+
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
-            needSignResponse = SAML2Utils.getWantLogoutResponseSigned(realm, 
-                                  remoteEntity, SAML2Constants.SP_ROLE);
+            needSignResponse = SAML2Utils.getWantLogoutResponseSigned(realm,
+                    remoteEntity, SAML2Constants.SP_ROLE);
         } else {
-            needSignResponse = SAML2Utils.getWantLogoutResponseSigned(realm, 
-                                  remoteEntity, SAML2Constants.IDP_ROLE);
+            needSignResponse = SAML2Utils.getWantLogoutResponseSigned(realm,
+                    remoteEntity, SAML2Constants.IDP_ROLE);
         }
-        
+
         if (needSignResponse == false) {
             if (debug.messageEnabled()) {
-                debug.message(method + 
-                              "SLOResponse doesn't need to be signed.");
+                debug.message(method +
+                        "SLOResponse doesn't need to be signed.");
             }
             return;
         }
@@ -975,11 +975,11 @@ public class LogoutUtil {
         if (includeCert) {
             signingCert = keyProvider.getX509Certificate(alias);
         }
-        
+
         if (signingKey != null) {
             sloResponse.sign(signingKey, signingCert);
         } else {
-                debug.error("Incorrect configuration for Signing Certificate.");
+            debug.error("Incorrect configuration for Signing Certificate.");
             throw new SAML2Exception(
                     SAML2Utils.bundle.getString("metaDataError"));
         }
@@ -996,33 +996,33 @@ public class LogoutUtil {
      * @return returns true if signature is valid.
      * @throws SAML2Exception if error in verifying the signature.
      * @throws SessionException if error in verifying the signature.
-     */   
-    public static boolean verifySLOResponse(LogoutResponse sloResponse, 
-                                     String realm, String remoteEntity, 
-                                     String hostEntity, String hostEntityRole) 
-        throws SAML2Exception, SessionException {
+     */
+    public static boolean verifySLOResponse(LogoutResponse sloResponse,
+            String realm, String remoteEntity,
+            String hostEntity, String hostEntityRole)
+            throws SAML2Exception, SessionException {
         String method = "verifySLOResponse : ";
-        boolean needVerifySignature = 
-                SAML2Utils.getWantLogoutResponseSigned(realm, hostEntity, 
-                                hostEntityRole);
-        
+        boolean needVerifySignature =
+                SAML2Utils.getWantLogoutResponseSigned(realm, hostEntity,
+                        hostEntityRole);
+
         if (needVerifySignature == false) {
             if (debug.messageEnabled()) {
-                debug.message(method + 
-                              "SLOResponse doesn't need to be verified.");
+                debug.message(method +
+                        "SLOResponse doesn't need to be verified.");
             }
             return true;
         }
 
         Set<X509Certificate> signingCerts;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
-            SPSSODescriptorElement spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
+            SPSSODescriptorType spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
             signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
         } else {
-            IDPSSODescriptorElement idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
+            IDPSSODescriptorType idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
             signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
         }
-        
+
         if (!signingCerts.isEmpty()) {
             boolean valid = sloResponse.isSignatureValid(signingCerts);
             if (debug.messageEnabled()) {
@@ -1037,22 +1037,22 @@ public class LogoutUtil {
     }
 
     public static void setNameIDForSLORequest(LogoutRequest request,
-                          NameID nameID, String realm, String hostEntity,
-                          String hostEntityRole, String remoteEntity)
-        throws SAML2Exception, SessionException {
+            NameID nameID, String realm, String hostEntity,
+            String hostEntityRole, String remoteEntity)
+            throws SAML2Exception, SessionException {
         String method = "setNameIDForSLORequest: ";
         boolean needEncryptIt = false;
-        
+
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
-            needEncryptIt = 
-                SAML2Utils.getWantNameIDEncrypted(realm, remoteEntity, 
-                           SAML2Constants.SP_ROLE);
+            needEncryptIt =
+                    SAML2Utils.getWantNameIDEncrypted(realm, remoteEntity,
+                            SAML2Constants.SP_ROLE);
         } else {
-            needEncryptIt = 
-                SAML2Utils.getWantNameIDEncrypted(realm, remoteEntity, 
-                           SAML2Constants.IDP_ROLE);
+            needEncryptIt =
+                    SAML2Utils.getWantNameIDEncrypted(realm, remoteEntity,
+                            SAML2Constants.IDP_ROLE);
         }
-        
+
         if (needEncryptIt == false) {
             if (debug.messageEnabled()) {
                 debug.message(method + "NamID doesn't need to be encrypted.");
@@ -1060,21 +1060,21 @@ public class LogoutUtil {
             request.setNameID(nameID);
             return;
         }
-        
+
         EncInfo encryptInfo = null;
-        KeyDescriptorType keyDescriptor = null;
+        KeyDescriptorElement keyDescriptor = null;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
-            SPSSODescriptorElement spSSODesc =
-                metaManager.getSPSSODescriptor(realm, remoteEntity);
+            SPSSODescriptorType spSSODesc =
+                    metaManager.getSPSSODescriptor(realm, remoteEntity);
             keyDescriptor = KeyUtil.getKeyDescriptor(spSSODesc, "encryption");
             encryptInfo = KeyUtil.getEncInfo(spSSODesc, remoteEntity,
-                SAML2Constants.SP_ROLE);
+                    SAML2Constants.SP_ROLE);
         } else {
-            IDPSSODescriptorElement idpSSODesc = 
-                metaManager.getIDPSSODescriptor(realm, remoteEntity);
+            IDPSSODescriptorType idpSSODesc =
+                    metaManager.getIDPSSODescriptor(realm, remoteEntity);
             keyDescriptor = KeyUtil.getKeyDescriptor(idpSSODesc, "encryption");
             encryptInfo = KeyUtil.getEncInfo(idpSSODesc, remoteEntity,
-                SAML2Constants.IDP_ROLE);
+                    SAML2Constants.IDP_ROLE);
         }
 
         if (debug.messageEnabled()) {
@@ -1083,79 +1083,79 @@ public class LogoutUtil {
             debug.message(method + "Host Entity role is : " + hostEntityRole);
             debug.message(method + "remoteEntity is : " + remoteEntity);
         }
-        
+
         if (encryptInfo == null) {
             debug.error("NO meta data for encrypt Info.");
             throw new SAML2Exception(
-                SAML2Utils.bundle.getString("metaDataError"));       
+                    SAML2Utils.bundle.getString("metaDataError"));
         }
-          
+
         X509Certificate certificate = KeyUtil.getCert(keyDescriptor);
         PublicKey recipientPublicKey = certificate.getPublicKey();
-        EncryptedID encryptedID = nameID.encrypt(recipientPublicKey, 
-                                  encryptInfo.getDataEncAlgorithm(), 
-                                   encryptInfo.getDataEncStrength(), 
-                                                      remoteEntity);
+        EncryptedID encryptedID = nameID.encrypt(recipientPublicKey,
+                encryptInfo.getDataEncAlgorithm(),
+                encryptInfo.getDataEncStrength(),
+                remoteEntity);
         request.setEncryptedID(encryptedID);
-    }    
+    }
 
-    static NameID getNameIDFromSLORequest(LogoutRequest request, 
-                          String realm, String hostEntity,
-                          String hostEntityRole)
-        throws SAML2Exception {
+    static NameID getNameIDFromSLORequest(LogoutRequest request,
+            String realm, String hostEntity,
+            String hostEntityRole)
+            throws SAML2Exception {
         String method = "getNameIDFromSLORequest: ";
 
-        boolean needDecryptIt = 
-            SAML2Utils.getWantNameIDEncrypted(realm,hostEntity,hostEntityRole);
-        
+        boolean needDecryptIt =
+                SAML2Utils.getWantNameIDEncrypted(realm,hostEntity,hostEntityRole);
+
         if (needDecryptIt == false) {
             if (debug.messageEnabled()) {
                 debug.message(method + "NamID doesn't need to be decrypted.");
             }
             return request.getNameID();
         }
-        
+
         if (debug.messageEnabled()) {
             debug.message(method + "realm is : "+ realm);
             debug.message(method + "hostEntity is : " + hostEntity);
             debug.message(method + "Host Entity role is : " + hostEntityRole);
         }
-        
+
         EncryptedID encryptedID = request.getEncryptedID();
-  
+
         return encryptedID.decrypt(KeyUtil.getDecryptionKeys(realm, hostEntity, hostEntityRole));
-    }    
+    }
 
     public static void sendSLOResponse(HttpServletResponse response,
-        LogoutResponse sloResponse, String sloURL, String relayState,
-        String realm, String hostEntity, String hostEntityRole, 
-        String remoteEntity) throws SAML2Exception {
+            LogoutResponse sloResponse, String sloURL, String relayState,
+            String realm, String hostEntity, String hostEntityRole,
+            String remoteEntity) throws SAML2Exception {
 
         sendSLOResponseRedirect(response, sloResponse, sloURL, relayState,
-            realm, hostEntity, hostEntityRole, remoteEntity);
+                realm, hostEntity, hostEntityRole, remoteEntity);
     }
 
     public static void sendSLOResponse(HttpServletResponse response, HttpServletRequest request,
-        LogoutResponse sloResponse, String sloURL, String relayState,
-        String realm, String hostEntity, String hostEntityRole, 
-        String remoteEntity, String binding) throws SAML2Exception {
+            LogoutResponse sloResponse, String sloURL, String relayState,
+            String realm, String hostEntity, String hostEntityRole,
+            String remoteEntity, String binding) throws SAML2Exception {
 
         if (SAML2Constants.HTTP_POST.equals(binding)) {
             sendSLOResponsePost(response, request, sloResponse, sloURL, relayState,
-                realm, hostEntity, hostEntityRole, remoteEntity);
+                    realm, hostEntity, hostEntityRole, remoteEntity);
         } else {
             sendSLOResponseRedirect(response, sloResponse, sloURL, relayState,
-                realm, hostEntity, hostEntityRole, remoteEntity);
+                    realm, hostEntity, hostEntityRole, remoteEntity);
         }
     }
 
     public static void sendSLOResponsePost(HttpServletResponse response, HttpServletRequest request,
-        LogoutResponse sloResponse, String sloURL, String relayState,
-        String realm, String hostEntity, String hostEntityRole, 
-        String remoteEntity) throws SAML2Exception {
+            LogoutResponse sloResponse, String sloURL, String relayState,
+            String realm, String hostEntity, String hostEntityRole,
+            String remoteEntity) throws SAML2Exception {
 
         signSLOResponse(sloResponse, realm, hostEntity, hostEntityRole,
-            remoteEntity);
+                remoteEntity);
 
         String logoutResponseStr = sloResponse.toXMLString(true,true);
         String encMsg = SAML2Utils.encodeForPOST(logoutResponseStr);
@@ -1164,59 +1164,59 @@ public class LogoutUtil {
     }
 
     public static void sendSLOResponseRedirect(HttpServletResponse response,
-                    LogoutResponse sloResponse, 
-                    String sloURL,
-                    String relayState,
-                    String realm, 
-                    String hostEntity,
-                    String hostEntityRole, 
-                    String remoteEntity)        
-        throws SAML2Exception {
+            LogoutResponse sloResponse,
+            String sloURL,
+            String relayState,
+            String realm,
+            String hostEntity,
+            String hostEntityRole,
+            String remoteEntity)
+            throws SAML2Exception {
 
         try {
             String logoutResXMLString = sloResponse.toXMLString(true,true);
 
             // encode the xml string
             String encodedXML =
-                SAML2Utils.encodeForRedirect(logoutResXMLString);
+                    SAML2Utils.encodeForRedirect(logoutResXMLString);
 
             StringBuffer queryString =
-                new StringBuffer().append(SAML2Constants.SAML_RESPONSE)
-                .append(SAML2Constants.EQUAL)
-                .append(encodedXML);
+                    new StringBuffer().append(SAML2Constants.SAML_RESPONSE)
+                            .append(SAML2Constants.EQUAL)
+                            .append(encodedXML);
 
             if (relayState != null && relayState.length() > 0
                     && relayState.getBytes("UTF-8").length <= 80) {
-                    queryString.append("&").append(SAML2Constants.RELAY_STATE)
-                    .append("=").append(urlEncodeQueryParameterNameOrValue(relayState));
+                queryString.append("&").append(SAML2Constants.RELAY_STATE)
+                        .append("=").append(urlEncodeQueryParameterNameOrValue(relayState));
             }
-                boolean needToSign = false; 
+            boolean needToSign = false;
             if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
-                needToSign = 
-                    SAML2Utils.getWantLogoutResponseSigned(realm, remoteEntity, 
-                                   SAML2Constants.SP_ROLE);
+                needToSign =
+                        SAML2Utils.getWantLogoutResponseSigned(realm, remoteEntity,
+                                SAML2Constants.SP_ROLE);
             } else {
-                needToSign = 
-                    SAML2Utils.getWantLogoutResponseSigned(realm, remoteEntity, 
-                                   SAML2Constants.IDP_ROLE);
+                needToSign =
+                        SAML2Utils.getWantLogoutResponseSigned(realm, remoteEntity,
+                                SAML2Constants.IDP_ROLE);
             }
-        
+
             String signedQueryString = queryString.toString();
             if (needToSign == true) {
-                signedQueryString = 
-                    SAML2Utils.signQueryString(signedQueryString, realm, 
-                                           hostEntity, hostEntityRole); 
+                signedQueryString =
+                        SAML2Utils.signQueryString(signedQueryString, realm,
+                                hostEntity, hostEntityRole);
             }
-            
+
             String redirectURL = sloURL+ (sloURL.contains("?") ? "&" : "?") +
-                signedQueryString;
+                    signedQueryString;
 
             if (debug.messageEnabled()) {
                 debug.message("redirectURL :" + redirectURL);
             }
             String[] data = {sloURL};
             LogUtil.access(Level.INFO,LogUtil.REDIRECT_TO_SP,data,
-                           null);
+                    null);
 
             response.sendRedirect(redirectURL);
         } catch (Exception e) {
@@ -1224,8 +1224,8 @@ public class LogoutUtil {
             throw new SAML2Exception(SAML2Utils.bundle.getString(
                     "errorRedirectingLogoutResponse"));
         }
-    } 
-    
+    }
+
     /**
      * Returns binding information of SLO Service for remote entity 
      * from request or meta configuration.
@@ -1238,18 +1238,18 @@ public class LogoutUtil {
      * @throws SAML2Exception if no binding information is configured.
      */
     public static String getSLOBindingInfo(HttpServletRequest request,
-                                 String metaAlias,
-                                 String hostEntityRole,
-                                 String remoteEntityID)
-                                 throws SAML2Exception {
+            String metaAlias,
+            String hostEntityRole,
+            String remoteEntityID)
+            throws SAML2Exception {
         String binding = request.getParameter(SAML2Constants.BINDING);
 
         try {
             if (binding == null) {
                 String realm = SAML2MetaUtils.getRealmByMetaAlias(metaAlias);
-                SingleLogoutServiceElement sloService =
-                    getSLOServiceElement(realm, remoteEntityID,
-                                       hostEntityRole, null);
+                EndpointType sloService =
+                        getSLOServiceElement(realm, remoteEntityID,
+                                hostEntityRole, null);
                 if (sloService != null) {
                     binding = sloService.getBinding();
                 }
@@ -1257,24 +1257,24 @@ public class LogoutUtil {
         } catch (SessionException e) {
             debug.error("Invalid SSOToken", e);
             throw new SAML2Exception(
-                          SAML2Utils.bundle.getString("metaDataError"));       
+                    SAML2Utils.bundle.getString("metaDataError"));
         }
-        
+
         if (binding == null) {
             debug.error("Incorrect configuration for SingleLogout Service.");
             throw new SAML2Exception(
-                SAML2Utils.bundle.getString("metaDataError"));
+                    SAML2Utils.bundle.getString("metaDataError"));
         }
         return binding;
     }
 
-    private static SingleLogoutServiceElement getSLOServiceElement(
-                    String realm, String entityID,  
-                    String hostEntityRole, String binding)
-        throws SAML2MetaException, SessionException, SAML2Exception {
-        SingleLogoutServiceElement sloService = null;
+    private static EndpointType getSLOServiceElement(
+            String realm, String entityID,
+            String hostEntityRole, String binding)
+            throws SAML2MetaException, SessionException, SAML2Exception {
+        EndpointType sloService = null;
         String method = "getSLOServiceElement: ";
-        
+
         if (debug.messageEnabled()) {
             debug.message(method + "Realm : " + realm);
             debug.message(method + "Entity ID : " + entityID);
@@ -1288,9 +1288,9 @@ public class LogoutUtil {
         } else {
             debug.error("Hosted Entity role is missing .");
             throw new SAML2Exception(
-                SAML2Utils.bundle.getString("nullIDPEntityID"));
+                    SAML2Utils.bundle.getString("nullIDPEntityID"));
         }
-        
+
         return sloService;
     }
 
@@ -1305,29 +1305,28 @@ public class LogoutUtil {
      *                            provider's SSO configuration.
      * @throws SessionException invalid or expired single-sign-on session
      */
-    static public SingleLogoutServiceElement getIDPSLOConfig(
-                                                 String realm, 
-                                                 String entityId,
-                                                 String binding)
-        throws SAML2MetaException, SessionException {
-        SingleLogoutServiceElement slo = null;
+    static public EndpointType getIDPSLOConfig(
+            String realm,
+            String entityId,
+            String binding)
+            throws SAML2MetaException, SessionException {
+        EndpointType slo = null;
 
-        IDPSSODescriptorElement idpSSODesc = 
-                    metaManager.getIDPSSODescriptor(realm, entityId);
+        IDPSSODescriptorType idpSSODesc =
+                metaManager.getIDPSSODescriptor(realm, entityId);
         if (idpSSODesc == null) {
-                debug.error("Identity Provider SSO config is missing.");
+            debug.error("Identity Provider SSO config is missing.");
             return null;
         }
 
-        List list = idpSSODesc.getSingleLogoutService();
+        List<EndpointType> list = idpSSODesc.getSingleLogoutService();
 
         if ((list != null) && !list.isEmpty()) {
             if (binding == null) {
-                return (SingleLogoutServiceElement)list.get(0);
+                return list.get(0);
             }
-            Iterator it = list.iterator();
-            while (it.hasNext()) {
-                slo = (SingleLogoutServiceElement)it.next();  
+            for (EndpointType aList : list) {
+                slo = aList;
                 if (binding.equalsIgnoreCase(slo.getBinding())) {
                     break;
                 }
@@ -1348,27 +1347,26 @@ public class LogoutUtil {
      *                            provider's SSO configuration.
      * @throws SessionException invalid or expired single-sign-on session
      */
-    static public SingleLogoutServiceElement getSPSLOConfig(
-                                                String realm, String entityId,
-                                                String binding)
-        throws SAML2MetaException, SessionException {
-        SingleLogoutServiceElement slo = null;
+    static public EndpointType getSPSLOConfig(
+            String realm, String entityId,
+            String binding)
+            throws SAML2MetaException, SessionException {
+        EndpointType slo = null;
 
-        SPSSODescriptorElement spSSODesc = 
-                          metaManager.getSPSSODescriptor(realm, entityId);
+        SPSSODescriptorType spSSODesc =
+                metaManager.getSPSSODescriptor(realm, entityId);
         if (spSSODesc == null) {
             return null;
         }
 
-        List list = spSSODesc.getSingleLogoutService();
+        List<EndpointType> list = spSSODesc.getSingleLogoutService();
 
         if ((list != null) && !list.isEmpty()) {
             if (binding == null) {
-                return (SingleLogoutServiceElement)list.get(0);
+                return list.get(0);
             }
-            Iterator it = list.iterator();
-            while (it.hasNext()) {
-                slo = (SingleLogoutServiceElement)it.next();  
+            for (EndpointType aList : list) {
+                slo = aList;
                 if (binding.equalsIgnoreCase(slo.getBinding())) {
                     break;
                 }
@@ -1390,28 +1388,28 @@ public class LogoutUtil {
     }
 
     private static void doSLOByPOST(String requestID,
-        String sloRequestXMLString, String sloURL, String relayState,
-        String realm, String hostEntity, String hostRole, 
-        HttpServletResponse response, HttpServletRequest request) throws SAML2Exception, SessionException {
+            String sloRequestXMLString, String sloURL, String relayState,
+            String realm, String hostEntity, String hostRole,
+            HttpServletResponse response, HttpServletRequest request) throws SAML2Exception, SessionException {
 
         if (debug.messageEnabled()) {
-            debug.message("LogoutUtil.doSLOByPOST : SLORequestXML: " 
-                + sloRequestXMLString + "\nPOSTURL : " + sloURL);
-            debug.message("LogoutUtil.doSLOByPOST : relayState : " 
-                + sloRequestXMLString + "\nPOSTURL : " + relayState);
+            debug.message("LogoutUtil.doSLOByPOST : SLORequestXML: "
+                    + sloRequestXMLString + "\nPOSTURL : " + sloURL);
+            debug.message("LogoutUtil.doSLOByPOST : relayState : "
+                    + sloRequestXMLString + "\nPOSTURL : " + relayState);
         }
 
-	    String encMsg = SAML2Utils.encodeForPOST(sloRequestXMLString);
-	    SAML2Utils.postToTarget(request, response, "SAMLRequest", encMsg,
+        String encMsg = SAML2Utils.encodeForPOST(sloRequestXMLString);
+        SAML2Utils.postToTarget(request, response, "SAMLRequest", encMsg,
                 "RelayState", relayState, sloURL);
     }
 
     static LogoutResponse getLogoutResponseFromPost(String samlResponse,
-        HttpServletResponse response) throws SAML2Exception {
+            HttpServletResponse response) throws SAML2Exception {
 
         if (samlResponse == null) {
             throw new SAML2Exception(SAML2Utils.bundle.getString(
-                "missingLogoutResponse"));
+                    "missingLogoutResponse"));
         }
 
         LogoutResponse resp = null;
@@ -1423,7 +1421,7 @@ public class LogoutUtil {
                 Document doc = XMLUtils.toDOMDocument(bis, debug);
                 if (doc != null) {
                     resp = ProtocolFactory.getInstance().
-                        createLogoutResponse(doc.getDocumentElement());
+                            createLogoutResponse(doc.getDocumentElement());
                 }
             }
         } catch (Exception e) {
@@ -1435,7 +1433,7 @@ public class LogoutUtil {
                 } catch (Exception ie) {
                     if (debug.messageEnabled()) {
                         debug.message("LogoutUtil.getLogoutResponseFromPost:",
-                            ie);
+                                ie);
                     }
                 }
             }
@@ -1443,17 +1441,17 @@ public class LogoutUtil {
 
         if (resp == null) {
             throw new SAML2Exception(SAML2Utils.bundle.getString(
-                "errorGettingLogoutResponse"));
+                    "errorGettingLogoutResponse"));
         }
         return resp;
     }
 
     static LogoutRequest getLogoutRequestFromPost(String samlRequest,
-        HttpServletResponse response) throws SAML2Exception {
- 
+            HttpServletResponse response) throws SAML2Exception {
+
         if (samlRequest == null) {
             throw new SAML2Exception(SAML2Utils.bundle.getString(
-                "missingLogoutRequest"));
+                    "missingLogoutRequest"));
         }
 
         LogoutRequest req = null;
@@ -1465,7 +1463,7 @@ public class LogoutUtil {
                 Document doc = XMLUtils.toDOMDocument(bis, debug);
                 if (doc != null) {
                     req = ProtocolFactory.getInstance().
-                        createLogoutRequest(doc.getDocumentElement());
+                            createLogoutRequest(doc.getDocumentElement());
                 }
             }
         } catch (Exception e) {
@@ -1477,14 +1475,14 @@ public class LogoutUtil {
                 } catch (Exception ie) {
                     if (debug.messageEnabled()) {
                         debug.message("LogoutUtil.getLogoutRequestFromPost:",
-                            ie);
+                                ie);
                     }
                 }
             }
         }
         if (req == null) {
             throw new SAML2Exception(SAML2Utils.bundle.getString(
-                "errorGettingLogoutRequest"));
+                    "errorGettingLogoutRequest"));
         }
         return req;
     }

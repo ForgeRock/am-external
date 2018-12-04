@@ -24,7 +24,7 @@
  *
  * $Id: FSFederationTerminationNotification.java,v 1.3 2008/06/25 05:46:44 qcheng Exp $
  *
- * Portions Copyrighted 2014-2017 ForgeRock AS.
+ * Portions Copyrighted 2014-2018 ForgeRock AS.
  */
 
 package com.sun.identity.federation.message;
@@ -243,7 +243,6 @@ public class FSFederationTerminationNotification extends AbstractRequest {
                     throw new FSMsgException("wrongInput",null);
                 }
             }
-            this.respondWiths = respondWiths;
         }
         
         if ((requestId != null) && (requestId.length() != 0)) {

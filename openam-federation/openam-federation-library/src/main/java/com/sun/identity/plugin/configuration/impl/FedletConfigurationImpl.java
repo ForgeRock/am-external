@@ -24,12 +24,33 @@
  *
  * $Id: FedletConfigurationImpl.java,v 1.5 2010/01/26 21:31:59 madan_ranganath Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
+ * Portions Copyrighted 2017-2018 ForgeRock AS.
  */
 
 package com.sun.identity.plugin.configuration.impl;
 
-import com.sun.identity.shared.debug.Debug;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+
+import javax.xml.bind.JAXBException;
+
+import org.forgerock.openam.utils.CollectionUtils;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+
 import com.sun.identity.plugin.configuration.ConfigurationException;
 import com.sun.identity.plugin.configuration.ConfigurationInstance;
 import com.sun.identity.plugin.configuration.ConfigurationListener;
@@ -38,27 +59,8 @@ import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.meta.SAML2MetaConstants;
 import com.sun.identity.saml2.meta.SAML2MetaSecurityUtils;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
+import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.xml.XMLUtils;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import javax.xml.bind.JAXBException;
-
-import org.forgerock.openam.utils.CollectionUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
 /**
  * The <code>FedletConfigurationImpl</code> class is the implementation for 
@@ -283,7 +285,7 @@ public class FedletConfigurationImpl implements ConfigurationInstance {
         try {
             Object obj = SAML2MetaUtils.convertStringToJAXB(metaXML);
             if (obj instanceof EntityDescriptorElement) {
-                return ((EntityDescriptorElement) obj).getEntityID();
+                return ((EntityDescriptorElement) obj).getValue().getEntityID();
             }
         } catch (JAXBException jaxbe) {
             debug.error("FedletConfigImpl.getEntityID: " + metaXML, jaxbe);

@@ -1,0 +1,4 @@
+--include src/js/__test__/setup/include.js
+--require src/js/__test__/setup/require.js
+--webpack-config config/webpack/configurations/test.js
+src/js/**/*.test.js

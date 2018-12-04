@@ -11,12 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2017 ForgeRock AS.
+ * Copyright 2013-2018 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
 
-import java.security.AccessController;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,24 +26,16 @@ import org.forgerock.jaspi.modules.session.jwt.JwtSessionModule;
 import org.forgerock.jaspi.modules.session.jwt.ServletJwtSessionModule;
 import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.openam.authentication.modules.common.JaspiAuthModuleWrapper;
-import org.forgerock.openam.utils.AMKeyProvider;
-import org.forgerock.openam.utils.ConfigHelper;
 import org.forgerock.util.annotations.VisibleForTesting;
 
 import com.iplanet.sso.SSOException;
-import com.iplanet.sso.SSOToken;
-import com.sun.identity.security.AdminTokenAction;
-import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.sm.SMSException;
-import com.sun.identity.sm.ServiceConfig;
-import com.sun.identity.sm.ServiceConfigManager;
 
 /**
  * Wrapper class for providing Persistent Cookie functionality. Uses the Jaspi ServletJwtSessionModule for this.
  * Provides wrappers over the modules functionality, and hides the underlying code from external users.
  */
 public class PersistentCookieModuleWrapper extends JaspiAuthModuleWrapper<ServletJwtSessionModule> {
-    private final AMKeyProvider amKeyProvider;
 
     public static final String AUTH_RESOURCE_BUNDLE_NAME = "amAuthPersistentCookie";
     public static final String SSO_TOKEN_ORGANIZATION_PROPERTY_KEY = "Organization";
@@ -53,12 +44,7 @@ public class PersistentCookieModuleWrapper extends JaspiAuthModuleWrapper<Servle
     public static final String HTTP_ONLY_COOKIE_KEY = "openam-auth-persistent-cookie-http-only-cookie";
     public static final String COOKIE_NAME_KEY = "openam-auth-persistent-cookie-name";
     public static final String COOKIE_DOMAINS_KEY = "openam-auth-persistent-cookie-domains";
-
-    private static final String AUTH_SERVICE_NAME = "iPlanetAMAuthService";
-
-    public static final String HMAC_KEY = "openam-auth-persistent-cookie-hmac-key";
-
-    private static final String AUTH_KEY_ALIAS = "iplanet-am-auth-key-alias";
+    public static final String INSTANCE_NAME_KEY = "openam-auth-persistent-cookie-instance-name";
 
     public static final String OPENAM_USER_CLAIM_KEY = "openam.usr";
     public static final String OPENAM_AUTH_TYPE_CLAIM_KEY = "openam.aty";
@@ -69,18 +55,16 @@ public class PersistentCookieModuleWrapper extends JaspiAuthModuleWrapper<Servle
      * Creates the wrapper with default values for the dependencies.
      */
     public PersistentCookieModuleWrapper() {
-        this(new ServletJwtSessionModule(), new AMKeyProvider());
+        this(new ServletJwtSessionModule(new SecretsApiJwtCryptographyHandler()));
     }
 
     /**
      * Creates the wrapper with selectable dependencies for testing.
      * @param module The underlying module.
-     * @param amKeyProvider The AM Key Provider.
      */
     @VisibleForTesting
-    protected PersistentCookieModuleWrapper(ServletJwtSessionModule module, AMKeyProvider amKeyProvider) {
+    protected PersistentCookieModuleWrapper(ServletJwtSessionModule module) {
         super(module);
-        this.amKeyProvider = amKeyProvider;
     }
 
     /**
@@ -92,21 +76,15 @@ public class PersistentCookieModuleWrapper extends JaspiAuthModuleWrapper<Servle
      * @param realm           The realm for the persistent cookie.
      * @param secureCookie    {@code true} if the persistent cookie should be set as secure.
      * @param httpOnlyCookie  {@code true} if the persistent cookie should be set as http only.
-     * @param hmacKey         base64-encoded HMAC signing key.
+     * @param instanceName The name of this persistent cookie auth module instance.
      * @return A Map containing the configuration information for the JWTSessionModule.
      * @throws SMSException If there is a problem getting the key alias.
      * @throws SSOException If there is a problem getting the key alias.
      */
     public Map<String, Object> generateConfig(final String tokenIdleTime, final String maxTokenLife,
-                                              final boolean enforceClientIP, final String realm, boolean secureCookie, boolean httpOnlyCookie,
-                                              String cookieName, Collection<String> cookieDomains, String hmacKey) throws SMSException, SSOException {
-
-        Map<String, Object> config = new HashMap<String, Object>();
-        config.put(JwtSessionModule.KEY_ALIAS_KEY, getKeyAlias(realm));
-        config.put(JwtSessionModule.PRIVATE_KEY_PASSWORD_KEY, amKeyProvider.getPrivateKeyPass());
-        config.put(JwtSessionModule.KEYSTORE_TYPE_KEY, amKeyProvider.getKeystoreType());
-        config.put(JwtSessionModule.KEYSTORE_FILE_KEY, amKeyProvider.getKeystoreFilePath());
-        config.put(JwtSessionModule.KEYSTORE_PASSWORD_KEY, new String(amKeyProvider.getKeystorePass()));
+            final boolean enforceClientIP, final String realm, boolean secureCookie, boolean httpOnlyCookie,
+            String cookieName, Collection<String> cookieDomains, String instanceName) {
+        Map<String, Object> config = new HashMap<>();
         config.put(JwtSessionModule.TOKEN_IDLE_TIME_IN_MINUTES_CLAIM_KEY, tokenIdleTime);
         config.put(JwtSessionModule.MAX_TOKEN_LIFE_IN_MINUTES_KEY, maxTokenLife);
         config.put(JwtSessionModule.SECURE_COOKIE_KEY, secureCookie);
@@ -114,36 +92,11 @@ public class PersistentCookieModuleWrapper extends JaspiAuthModuleWrapper<Servle
         config.put(ENFORCE_CLIENT_IP_SETTING_KEY, enforceClientIP);
         config.put(JwtSessionModule.SESSION_COOKIE_NAME_KEY, cookieName);
         config.put(JwtSessionModule.COOKIE_DOMAINS_KEY, cookieDomains);
-        config.put(JwtSessionModule.HMAC_SIGNING_KEY, hmacKey);
+        config.put(INSTANCE_NAME_KEY, instanceName);
+        config.put(SSO_TOKEN_ORGANIZATION_PROPERTY_KEY, realm);
 
         return config;
     }
-
-    /**
-     * Gets the Key alias for the realm.
-     *
-     * @param orgName The organisation name for the realm.
-     * @return The key alias.
-     * @throws SSOException If there is a problem getting the key alias.
-     * @throws SMSException If there is a problem getting the key alias.
-     */
-    private String getKeyAlias(String orgName) throws SSOException, SMSException {
-        ServiceConfig orgConfig = getServiceConfigManager().getOrganizationConfig(orgName, null);
-        return ConfigHelper.readNullableValue(orgConfig, AUTH_KEY_ALIAS);
-    }
-
-    /**
-     * Returns the config manager for the auth service.
-     * @return The authentication service config manager.
-     * @throws SSOException If admin authentication fails.
-     * @throws SMSException If something goes wrong with the operation.
-     */
-    @VisibleForTesting
-    protected ServiceConfigManager getServiceConfigManager() throws SSOException, SMSException {
-        SSOToken token = AccessController.doPrivileged(AdminTokenAction.getInstance());
-        return new ServiceConfigManager(AUTH_SERVICE_NAME, token);
-    }
-
 
     /**
      * Validates if the Jwt Session Cookie is valid and the idle timeout or max life has expired. Calls into the

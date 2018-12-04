@@ -24,32 +24,33 @@
  *
  * $Id: DefaultAccountMapper.java,v 1.4 2008/06/25 05:47:50 qcheng Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
-import java.util.ResourceBundle;
-import java.util.Map;
-import java.util.Set;
-import java.util.List;
 import java.security.PrivateKey;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
+import java.util.Set;
 
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.plugin.datastore.DataStoreProviderException;
+import javax.xml.bind.JAXBElement;
+
 import com.sun.identity.plugin.datastore.DataStoreProvider;
-
+import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.saml.xmlsig.KeyProvider;
-import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.assertion.EncryptedID;
-import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.saml2.key.KeyUtil;
+import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import com.sun.identity.saml2.meta.SAML2MetaException;
-import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.saml2.protocol.ManageNameIDRequest;
+import com.sun.identity.shared.debug.Debug;
 
 
 /**
@@ -173,8 +174,8 @@ public class DefaultAccountMapper {
         }
 
 	try {
-            BaseConfigType config = getSSOConfig(realm, entityID);
-            Map attributes  = SAML2MetaUtils.getAttributes(config);
+            JAXBElement<BaseConfigType> config = getSSOConfig(realm, entityID);
+            Map<String, List<String>> attributes = SAML2MetaUtils.getAttributes(config);
 
             if(attributes == null || attributes.isEmpty()) {
 		if(debug.messageEnabled()) {
@@ -185,9 +186,9 @@ public class DefaultAccountMapper {
                return null;
             }
 
-            List list = (List)attributes.get(attributeName);
+            List<String> list = attributes.get(attributeName);
             if(list != null && list.size() > 0) {
-		return (String)list.iterator().next();
+		        return list.iterator().next();
             }
 
             if(debug.messageEnabled()) {
@@ -205,7 +206,7 @@ public class DefaultAccountMapper {
         return null;
     }
 
-    protected final BaseConfigType getSSOConfig(String realm, String entityID) throws SAML2MetaException {
+    protected final JAXBElement<BaseConfigType> getSSOConfig(String realm, String entityID) throws SAML2MetaException {
         if (IDP.equals(role)) {
             return metaManager.getIDPSSOConfig(realm, entityID);
         } else {

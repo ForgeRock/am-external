@@ -11,9 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2018 ForgeRock AS.
  */
 package org.forgerock.openam.saml2.plugins;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import javax.xml.bind.JAXBElement;
+
+import org.forgerock.openam.shared.security.whitelist.ValidDomainExtractor;
 
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
@@ -21,10 +29,6 @@ import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.shared.debug.Debug;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import org.forgerock.openam.shared.security.whitelist.ValidDomainExtractor;
 
 /**
  * Extracts the valid relaystate URL list from the hosted SAML entity's configuration.
@@ -36,7 +40,7 @@ public class ValidRelayStateExtractor implements ValidDomainExtractor<ValidRelay
     @Override
     public Collection<String> extractValidDomains(final SAMLEntityInfo entityInfo) {
         try {
-            BaseConfigType config;
+            JAXBElement<BaseConfigType> config;
             final Map<String, List<String>> attrs;
 
             final SAML2MetaManager metaManager = new SAML2MetaManager();

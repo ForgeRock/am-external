@@ -24,12 +24,16 @@
  *
  * $Id: SubjectConfirmationData.java,v 1.4 2008/06/25 05:47:42 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion;
 
 import java.util.List;
 import java.util.Date;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.sun.identity.saml2.assertion.impl.SubjectConfirmationDataImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /**
@@ -37,11 +41,12 @@ import com.sun.identity.saml2.common.SAML2Exception;
  *  that allows the subject to be confirmed or constrains the circumstances
  *  under which the act of subject confirmation can take place. Subject
  *  confirmation takes place when a relying party seeks to verify the
- *  relationship between an entity presenting the assertion and the 
+ *  relationship between an entity presenting the assertion and the
  *  subject of the assertion's claims.
  *
  *  @supported.all.api
  */
+@JsonDeserialize(as=SubjectConfirmationDataImpl.class)
 public interface SubjectConfirmationData {
 
     /**
@@ -83,19 +88,19 @@ public interface SubjectConfirmationData {
     public void setInResponseTo(String value) throws SAML2Exception;
 
     /**
-     * Returns a list of arbitrary XML elements to be added to this 
+     * Returns a list of arbitrary XML elements to be added to this
      * <code>SubjectConfirmationData</code> object.
      *
-     * @return a list of arbitrary XML elements to be added to this 
+     * @return a list of arbitrary XML elements to be added to this
      * <code>SubjectConfirmationData</code> object.
      */
     public List getContent();
 
     /**
-     * Sets a list of arbitrary XML elements to be added to this 
+     * Sets a list of arbitrary XML elements to be added to this
      * <code>SubjectConfirmationData</code> object.
      *
-     * @param content a list of arbitrary XML elements to be added to this 
+     * @param content a list of arbitrary XML elements to be added to this
      * <code>SubjectConfirmationData</code> object.
      * @exception SAML2Exception if the object is immutable
      */
@@ -103,19 +108,19 @@ public interface SubjectConfirmationData {
 
     /**
      *  Returns the URI specifying the entity or location to which an
-     *  attesting entity can present the assertion 
+     *  attesting entity can present the assertion
      *
      *  @return the URI specifying the entity or location to which an
-     *  attesting entity can present the assertion 
+     *  attesting entity can present the assertion
      */
     public String getRecipient();
 
     /**
      *  Sets the URI specifying the entity or location to which an
-     *  attesting entity can present the assertion 
+     *  attesting entity can present the assertion
      *
      *  @param value the URI specifying the entity or location to which an
-     *  attesting entity can present the assertion 
+     *  attesting entity can present the assertion
      *  @exception SAML2Exception if the object is immutable
      */
     public void setRecipient(String value) throws SAML2Exception;
@@ -137,36 +142,36 @@ public interface SubjectConfirmationData {
     public void setNotBefore(Date value) throws SAML2Exception;
 
     /**
-     *  Returns the network address/location from which an attesting 
-     *  entity can present the assertion 
+     *  Returns the network address/location from which an attesting
+     *  entity can present the assertion
      *
-     *  @return the network address/location from which an attesting 
-     *  entity can present the assertion 
+     *  @return the network address/location from which an attesting
+     *  entity can present the assertion
      */
     public String getAddress();
 
     /**
-     *  Sets the network address/location from which an attesting 
-     *  entity can present the assertion 
+     *  Sets the network address/location from which an attesting
+     *  entity can present the assertion
      *
-     *  @param value the network address/location from which an attesting 
-     *  entity can present the assertion 
+     *  @param value the network address/location from which an attesting
+     *  entity can present the assertion
      *  @exception SAML2Exception if the object is immutable
      */
     public void setAddress(String value) throws SAML2Exception;
-    
+
     /**
-     *  Returns the content type attribute     
+     *  Returns the content type attribute
      *
-     *  @return the content type attribute     
+     *  @return the content type attribute
      *  @see #setContentType(String)
      */
     public String getContentType();
-    
+
     /**
-     *  Sets the content type attribute     
+     *  Sets the content type attribute
      *
-     *  @param attribute attribute type value for the content that will be 
+     *  @param attribute attribute type value for the content that will be
      *         added
      *  @exception SAML2Exception if the object is immutable
      *  @see #getContentType()

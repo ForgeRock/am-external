@@ -24,13 +24,15 @@
  *
  * $Id: EncryptedAttribute.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion;
 
 import java.security.PrivateKey;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.sun.identity.saml2.assertion.impl.EncryptedAttributeImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /**
@@ -43,6 +45,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  * </pre>
  * @supported.all.api
  */
+@JsonDeserialize(as=EncryptedAttributeImpl.class)
 public interface EncryptedAttribute extends EncryptedElement {
 
     /**

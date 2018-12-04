@@ -17,11 +17,18 @@ package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.cuppa.Cuppa.*;
-import static org.forgerock.json.JsonValue.*;
+import static org.forgerock.cuppa.Cuppa.beforeEach;
+import static org.forgerock.cuppa.Cuppa.describe;
+import static org.forgerock.cuppa.Cuppa.it;
+import static org.forgerock.cuppa.Cuppa.when;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.verify;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,12 +44,15 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.RecoveryCodeCollectorDecisionNode.Config;
 import org.forgerock.openam.auth.nodes.RecoveryCodeCollectorDecisionNode.RecoveryCodeType;
+import org.forgerock.openam.core.rest.devices.DeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.DeviceSettings;
-import org.forgerock.openam.core.rest.devices.UserDeviceSettingsDao;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
+import org.forgerock.openam.core.rest.devices.oath.UserOathDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
+import org.forgerock.openam.core.rest.devices.push.UserPushDeviceProfileManager;
+import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
+import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -56,12 +66,18 @@ public class RecoveryCodeCollectorDecisionNodeTest {
     @Mock
     private Config config;
     @Mock
-    private UserDeviceSettingsDao<OathDeviceSettings> oathDevicesDao;
+    private UserOathDeviceProfileManager oathDeviceManager;
     @Mock
-    private UserDeviceSettingsDao<PushDeviceSettings> pushDevicesDao;
+    private UserPushDeviceProfileManager pushDeviceManager;
     @Mock
-    private DeviceSettings deviceSettings;
-    private UserDeviceSettingsDao<? extends DeviceSettings> dao;
+    private UserWebAuthnDeviceProfileManager webAuthnDeviceManager;
+
+    private OathDeviceSettings oathDeviceSettings;
+    private PushDeviceSettings pushDeviceSettings;
+    private WebAuthnDeviceSettings webAuthnDeviceSettings;
+
+    private DeviceSettings settings;
+    private DeviceProfileManager<? extends DeviceSettings> manager;
     private TreeContext treeContext;
     private List<Callback> callbacks;
     private RecoveryCodeCollectorDecisionNode node;
@@ -70,13 +86,31 @@ public class RecoveryCodeCollectorDecisionNodeTest {
         describe("Recovery Code Collector Decision Node", () -> {
             beforeEach(() -> {
                 MockitoAnnotations.initMocks(this);
+                oathDeviceSettings = new OathDeviceSettings();
+                pushDeviceSettings = new PushDeviceSettings();
+                webAuthnDeviceSettings = new WebAuthnDeviceSettings();
             });
-            for (String type : Arrays.asList("OATH", "PUSH")) {
+            for (String type : Arrays.asList("OATH", "PUSH", "WEB_AUTHN")) {
                 when("recovery code type is: " + type, () -> {
                     beforeEach(() -> {
                         given(config.recoveryCodeType()).willReturn(RecoveryCodeType.valueOf(type));
-                        node = new RecoveryCodeCollectorDecisionNode(config, oathDevicesDao, pushDevicesDao);
-                        dao = "OATH".equals(type) ? oathDevicesDao : pushDevicesDao;
+                        node = new RecoveryCodeCollectorDecisionNode(config, pushDeviceManager, oathDeviceManager,
+                                webAuthnDeviceManager);
+
+                        switch (type) {
+                        case "OATH":
+                            manager = oathDeviceManager;
+                            settings = oathDeviceSettings;
+                            break;
+                        case "PUSH":
+                            manager = pushDeviceManager;
+                            settings = pushDeviceSettings;
+                            break;
+                        default:
+                            manager = webAuthnDeviceManager;
+                            settings = webAuthnDeviceSettings;
+                            break;
+                        }
                     });
                     when("there is no callback provided", () -> {
                         beforeEach(() -> {
@@ -103,7 +137,7 @@ public class RecoveryCodeCollectorDecisionNodeTest {
                             Action result = node.process(treeContext);
 
                             assertThat(result.outcome).isEqualTo("false");
-                            verify(dao).readDeviceSettings("badger", "weasel");
+                            verify(manager).getDeviceProfiles("badger", "weasel");
                         });
                         it("returns true if the recovery code is correct", () -> {
                             mockRecoveryCodes("ferret");
@@ -122,13 +156,6 @@ public class RecoveryCodeCollectorDecisionNodeTest {
                             Action result = node.process(treeContext);
 
                             assertThat(result.outcome).isEqualTo("true");
-                            ArgumentCaptor<List<String>> captor = ArgumentCaptor.forClass(List.class);
-                            verify(deviceSettings).setRecoveryCodes(captor.capture());
-                            assertThat(captor.getValue()).hasSize(1).containsOnly("otter");
-
-                            ArgumentCaptor<List> listCaptor = ArgumentCaptor.forClass(List.class);
-                            verify(dao).saveDeviceSettings(eq(user), eq(realm), listCaptor.capture());
-                            assertThat(listCaptor.getValue()).hasSize(1).containsOnly(deviceSettings);
                         });
                     });
                 });
@@ -150,7 +177,7 @@ public class RecoveryCodeCollectorDecisionNodeTest {
     }
 
     private void mockRecoveryCodes(String... codes) throws Exception {
-        given(dao.readDeviceSettings(anyString(), anyString())).willAnswer(ignored -> singletonList(deviceSettings));
-        given(deviceSettings.getRecoveryCodes()).willReturn(Arrays.asList(codes));
+        given(manager.getDeviceProfiles(anyString(), anyString())).willAnswer(ignored -> singletonList(settings));
+        settings.setRecoveryCodes(Arrays.asList(codes));
     }
 }

@@ -13,16 +13,23 @@
  *
  * Copyright 2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.*;
-import static org.assertj.core.api.Assertions.*;
-import static org.forgerock.cuppa.Cuppa.*;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.forgerock.cuppa.Cuppa.before;
+import static org.forgerock.cuppa.Cuppa.beforeEach;
+import static org.forgerock.cuppa.Cuppa.describe;
+import static org.forgerock.cuppa.Cuppa.it;
 import static org.forgerock.cuppa.Cuppa.when;
-import static org.forgerock.json.JsonValue.*;
-import static org.forgerock.openam.auth.node.api.SharedStateConstants.*;
-import static org.mockito.BDDMockito.*;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
 
 import java.security.KeyPairGenerator;
 import java.security.cert.Certificate;
@@ -30,9 +37,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
-import javax.crypto.KeyGenerator;
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.cuppa.Test;
@@ -44,9 +51,9 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-import org.forgerock.openam.utils.AMKeyProvider;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -69,9 +76,9 @@ public class ProvisionIdmAccountNodeTest {
     @Mock private SocialOAuth2Helper authModuleHelper;
     @Mock private ProvisionIdmAccountNode.Config config;
     @Mock private IdmIntegrationService idmIntegrationService;
-    @Mock private AMKeyProvider amKeyProvider;
     @Mock private Certificate certificate;
     @Mock private Realm realm;
+    @Mock private ClientTokenJwtGenerator clientTokenJwtGenerator;
 
     private JsonValue initialSharedState;
     private JsonValue transientSharedState;
@@ -94,17 +101,13 @@ public class ProvisionIdmAccountNodeTest {
                 given(idmIntegrationService.getConfig("/"))
                         .willReturn(new IdmIntegrationConfig(idmIntegrationConfigAttributes));
                 given(authModuleHelper.userExistsInTheDataStore(any(), any(), any()))
-                        .willReturn(org.forgerock.guava.common.base.Optional.of(user));
+                        .willReturn(Optional.of(user));
 
                 given(config.accountProviderClass())
                         .willReturn(
                                 "org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider");
                 given(realm.asPath())
                         .willReturn("/");
-                given(amKeyProvider.getSecretKey(anyString()))
-                        .willReturn(KeyGenerator.getInstance("AES").generateKey());
-                given(amKeyProvider.getCertificate(anyString()))
-                        .willReturn(certificate);
                 given(certificate.getPublicKey())
                         .willReturn(KeyPairGenerator.getInstance("RSA").generateKeyPair().getPublic());
 
@@ -113,7 +116,7 @@ public class ProvisionIdmAccountNodeTest {
             when("valid configuration is passed", () -> {
                 beforeEach(() -> {
                     node = new ProvisionIdmAccountNode(config,
-                            realm, authModuleHelper, idmIntegrationService, amKeyProvider);
+                            realm, authModuleHelper, idmIntegrationService, clientTokenJwtGenerator);
                     initialSharedState = json(object(field("content", "initial")));
                     transientSharedState = json(object(field("content", "initial")));
 
@@ -131,7 +134,7 @@ public class ProvisionIdmAccountNodeTest {
             when("resuming from a callout to IDM", () -> {
                 beforeEach(() -> {
                     node = new ProvisionIdmAccountNode(config,
-                            realm, authModuleHelper, idmIntegrationService, amKeyProvider);
+                            realm, authModuleHelper, idmIntegrationService, clientTokenJwtGenerator);
                     initialSharedState = json(object(field("userInfo", getUserInfo()),
                             field(REALM, realm),
                             field(ProvisionIdmAccountNode.IDM_FLOW_INITIATED_KEY, true)));
@@ -149,7 +152,7 @@ public class ProvisionIdmAccountNodeTest {
                     given(config.accountProviderClass())
                             .willReturn("org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper");
                     node = new ProvisionIdmAccountNode(config,
-                            realm, authModuleHelper, idmIntegrationService, amKeyProvider);
+                            realm, authModuleHelper, idmIntegrationService, clientTokenJwtGenerator);
                     initialSharedState = json(object(field("userInfo", getUserInfo()),
                             field(REALM, realm),
                             field(ProvisionIdmAccountNode.IDM_FLOW_INITIATED_KEY, Boolean.TRUE)));

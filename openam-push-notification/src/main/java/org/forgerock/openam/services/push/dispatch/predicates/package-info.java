@@ -11,9 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
 /**
  * Classes pertaining to the predicates used by the Push Service's Message Dispatcher.
+ * @supported.api
  */
 package org.forgerock.openam.services.push.dispatch.predicates;

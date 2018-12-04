@@ -24,7 +24,7 @@
  *
  * $Id: RPSigninRequest.java,v 1.9 2009/11/03 00:48:54 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.servlet;
@@ -131,7 +131,7 @@ public class RPSigninRequest extends WSFederationAction {
         }
 
         Map<String,List<String>> spConfigAttributes = 
-            WSFederationMetaUtils.getAttributes(spConfig);
+            WSFederationMetaUtils.getAttributes(spConfig.getValue());
 
         String accountRealmSelection = 
                 spConfigAttributes.get(
@@ -207,7 +207,7 @@ public class RPSigninRequest extends WSFederationAction {
             }
         }
 
-        FederationElement sp = 
+        FederationElement sp =
             metaManager.getEntityDescriptor(spRealm,spEntityId);
         String spIssuerName = 
             metaManager.getTokenIssuerName(sp);

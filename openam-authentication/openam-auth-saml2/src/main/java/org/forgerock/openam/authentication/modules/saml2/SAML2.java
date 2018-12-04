@@ -42,9 +42,9 @@ import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2FailoverUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SingleSignOnServiceElement;
+import com.sun.identity.saml2.jaxb.metadata.EndpointType;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
@@ -84,6 +84,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.SAML2Store;
+import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.xui.XUIState;
@@ -203,16 +204,16 @@ public class SAML2 extends AMLoginModule {
 
 
         final String spEntityID = SPSSOFederate.getSPEntityId(metaAlias);
-        final IDPSSODescriptorElement idpsso = SPSSOFederate.getIDPSSOForAuthnReq(realm, entityName);
-        final SPSSODescriptorElement spsso = SPSSOFederate.getSPSSOForAuthnReq(realm, spEntityID);
+        final IDPSSODescriptorType idpsso = SPSSOFederate.getIDPSSOForAuthnReq(realm, entityName);
+        final SPSSODescriptorType spsso = SPSSOFederate.getSPSSOForAuthnReq(realm, spEntityID);
 
         if (idpsso == null || spsso == null) {
             return processError(bundle.getString("samlLocalConfigFailed"), "SAML2 :: initiateSAMLLoginAtIDP() : {}",
                     bundle.getString("samlLocalConfigFailed"));
         }
 
-        List<SingleSignOnServiceElement> ssoServiceList = idpsso.getSingleSignOnService();
-        final SingleSignOnServiceElement endPoint = SPSSOFederate
+        List<EndpointType> ssoServiceList = idpsso.getSingleSignOnService();
+        final EndpointType endPoint = SPSSOFederate
                 .getSingleSignOnServiceEndpoint(ssoServiceList, reqBinding);
 
         if (endPoint == null || StringUtils.isEmpty(endPoint.getLocation())) {
@@ -682,12 +683,14 @@ public class SAML2 extends AMLoginModule {
             Set<String> value = attrMap.get(name);
             StringBuilder toStore = new StringBuilder();
 
-            // | is defined as the property value delimiter, cf FMSessionProvider#setProperty
-            for (String toAdd : value) {
-                toStore.append(com.sun.identity.shared.StringUtils.getEscapedValue(toAdd))
+            if (CollectionUtils.isNotEmpty(value)) {
+                // | is defined as the property value delimiter, cf FMSessionProvider#setProperty
+                for (String toAdd : value) {
+                    toStore.append(com.sun.identity.shared.StringUtils.getEscapedValue(toAdd))
                         .append(PROPERTY_VALUES_SEPARATOR);
+                }
+                toStore.deleteCharAt(toStore.length() - 1);
             }
-            toStore.deleteCharAt(toStore.length() - 1);
             setUserSessionProperty(name, toStore.toString());
         }
     }
@@ -719,8 +722,8 @@ public class SAML2 extends AMLoginModule {
     private boolean shouldPersistNameID(String spEntityId) throws SAML2Exception {
         final DefaultLibrarySPAccountMapper spAccountMapper = new DefaultLibrarySPAccountMapper();
         final String spEntityID = SPSSOFederate.getSPEntityId(metaAlias);
-        final IDPSSODescriptorElement idpsso = SPSSOFederate.getIDPSSOForAuthnReq(realm, entityName);
-        final SPSSODescriptorElement spsso = SPSSOFederate.getSPSSOForAuthnReq(realm, spEntityID);
+        final IDPSSODescriptorType idpsso = SPSSOFederate.getIDPSSOForAuthnReq(realm, entityName);
+        final SPSSODescriptorType spsso = SPSSOFederate.getSPSSOForAuthnReq(realm, spEntityID);
 
         nameIDFormat = SAML2Utils.verifyNameIDFormat(nameIDFormat, spsso, idpsso);
         isTransient = SAML2Constants.NAMEID_TRANSIENT_FORMAT.equals(nameIDFormat);

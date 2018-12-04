@@ -24,7 +24,7 @@
  *
  * $Id: RPSigninResponse.java,v 1.8 2009/12/14 23:42:48 mallas Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
+ * Portions Copyrighted 2017-2018 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.servlet;
@@ -147,7 +147,7 @@ public class RPSigninResponse extends WSFederationAction {
                 metaManager.getSPSSOConfig(realm, spEntityId);
 
         int timeskew = SAML2Constants.ASSERTION_TIME_SKEW_DEFAULT;
-        String timeskewStr = WSFederationMetaUtils.getAttribute(spssoconfig,
+        String timeskewStr = WSFederationMetaUtils.getAttribute(spssoconfig.getValue(),
                 SAML2Constants.ASSERTION_TIME_SKEW);
         if (timeskewStr != null && timeskewStr.trim().length() > 0) {
             timeskew = Integer.parseInt(timeskewStr);
@@ -173,7 +173,7 @@ public class RPSigninResponse extends WSFederationAction {
         
         assert smap != null;
         
-        Map attributes = WSFederationMetaUtils.getAttributes(spssoconfig);
+        Map attributes = WSFederationMetaUtils.getAttributes(spssoconfig.getValue());
 
         SPAccountMapper acctMapper = getSPAccountMapper(attributes);        
         SPAttributeMapper attrMapper = getSPAttributeMapper(attributes);
@@ -229,7 +229,7 @@ public class RPSigninResponse extends WSFederationAction {
         if (wctx != null) {
             target = WSFederationUtils.removeReplyURL(wctx);
         } else {
-            target = WSFederationMetaUtils.getAttribute(spssoconfig,
+            target = WSFederationMetaUtils.getAttribute(spssoconfig.getValue(),
                 SAML2Constants.DEFAULT_RELAY_STATE);
         }
         

@@ -20,6 +20,9 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+
 import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
@@ -32,15 +35,19 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.openam.idrepo.ldap.IdentityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.Provider;
 import com.iplanet.sso.SSOException;
+import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.InvalidPasswordException;
 import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdRepoException;
+import com.sun.identity.idm.IdType;
 
 /**
  * A node that decides if the username and password exists in the data store.
@@ -58,15 +65,22 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
     }
 
     private final CoreWrapper coreWrapper;
+    private final IdentityUtils identityUtils;
+    private final Provider<PrivilegedAction<SSOToken>> adminTokenActionProvider;
     private final Logger logger = LoggerFactory.getLogger("amAuth");
 
     /**
      * Guice constructor.
      * @param coreWrapper A core wrapper instance.
+     * @param identityUtils A {@code IdentityUtils} instance.
+     * @param adminTokenActionProvider A provider for an {@code SSOToken}.
      */
     @Inject
-    public DataStoreDecisionNode(CoreWrapper coreWrapper) {
+    public DataStoreDecisionNode(CoreWrapper coreWrapper, IdentityUtils identityUtils,
+             Provider<PrivilegedAction<SSOToken>> adminTokenActionProvider) {
         this.coreWrapper = coreWrapper;
+        this.identityUtils = identityUtils;
+        this.adminTokenActionProvider = adminTokenActionProvider;
     }
 
     @Override
@@ -87,16 +101,13 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
         JsonValue newTransientState = context.transientState.copy();
         try {
             logger.debug("authenticating {} ", nameCallback.getName());
-            success = idrepo.authenticate(callbacks);
-            boolean isActive = coreWrapper.getIdentity(nameCallback.getName(),
-                    context.sharedState.get(REALM).asString()).isActive();
-            success = success && isActive;
+            success = idrepo.authenticate(getIdentityType(), callbacks)
+                    && isActive(context, nameCallback);
         } catch (InvalidPasswordException e) {
             logger.warn("invalid password error");
             // Ignore. Success is already false!
         } catch (IdentityNotFoundException e) {
             logger.warn("invalid username error");
-            newState.remove(USERNAME);
         } catch (IdRepoException | AuthLoginException e) {
             logger.warn("Exception in data store decision node");
             throw new NodeProcessException(e);
@@ -106,6 +117,16 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
         }
         return goTo(success).replaceSharedState(newState)
                 .replaceTransientState(newTransientState).build();
+    }
+
+    private boolean isActive(TreeContext context, NameCallback nameCallback) throws IdRepoException, SSOException {
+        SSOToken token = AccessController.doPrivileged(adminTokenActionProvider.get());
+        return identityUtils.getAmIdentity(token, nameCallback.getName(), getIdentityType(),
+                context.sharedState.get(REALM).asString()).isActive();
+    }
+
+    IdType getIdentityType() {
+        return IdType.USER;
     }
 
     private char[] getPassword(TreeContext context) throws NodeProcessException {

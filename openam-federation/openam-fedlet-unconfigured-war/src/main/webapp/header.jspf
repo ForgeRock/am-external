@@ -26,13 +26,13 @@
 
    $Id: header.jspf,v 1.1 2009/06/09 20:28:30 exu Exp $
 
-   Portions Copyrighted 2013-2016 ForgeRock AS.
+   Portions Copyrighted 2013-2018 ForgeRock AS.
 -->
 <%@ page import="com.sun.identity.saml2.common.SAML2Utils,
-com.sun.identity.saml2.jaxb.metadata.AssertionConsumerServiceElement,
-com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement,
-com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement,
-com.sun.identity.saml2.jaxb.metadata.SingleSignOnServiceElement,
+com.sun.identity.saml2.jaxb.metadata.IndexedEndpointType,
+com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType,
+com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType,
+com.sun.identity.saml2.jaxb.metadata.EndpointType,
 com.sun.identity.saml2.meta.SAML2MetaManager,
 java.util.HashMap,
 java.util.Iterator,
@@ -48,15 +48,14 @@ java.util.List"
         try {
             // find out IDP meta alias
             SAML2MetaManager manager = new SAML2MetaManager();
-            IDPSSODescriptorElement idp =
+            IDPSSODescriptorType idp =
                 manager.getIDPSSODescriptor("/", idpEntityID);
-            List ssoServiceList = idp.getSingleSignOnService();
+            List<EndpointType> ssoServiceList = idp.getSingleSignOnService();
             if ((ssoServiceList != null)
                 && (!ssoServiceList.isEmpty())) {
-                Iterator i = ssoServiceList.iterator();
+                Iterator<EndpointType> i = ssoServiceList.iterator();
                 while (i.hasNext()) {
-                    SingleSignOnServiceElement sso =
-                        (SingleSignOnServiceElement) i.next();
+                    EndpointType sso = i.next();
                     if ((sso != null) && (sso.getBinding() != null)) {
                         String ssoURL = sso.getLocation();
                         int loc = ssoURL.indexOf("/metaAlias/");
@@ -87,14 +86,13 @@ java.util.List"
         String fedletBaseUrl = null;
         try {
             SAML2MetaManager manager = new SAML2MetaManager();
-            SPSSODescriptorElement sp =
+            SPSSODescriptorType sp =
                 manager.getSPSSODescriptor("/", spEntityID);
-            List acsList = sp.getAssertionConsumerService();
+            List<IndexedEndpointType> acsList = sp.getAssertionConsumerService();
             if ((acsList != null) && (!acsList.isEmpty())) {
-                Iterator j = acsList.iterator();
+                Iterator<IndexedEndpointType> j = acsList.iterator();
                 while (j.hasNext()) {
-                    AssertionConsumerServiceElement acs =
-                        (AssertionConsumerServiceElement) j.next();
+                    IndexedEndpointType acs = j.next();
                     if ((acs != null) && (acs.getBinding() != null)) {
                         String acsURL = acs.getLocation();
                         int loc = acsURL.indexOf(deployuri + "/");

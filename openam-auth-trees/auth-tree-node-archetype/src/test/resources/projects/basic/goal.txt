@@ -1,0 +1,1 @@
+package -Dmaven.compiler.failOnWarning --legacy-local-repository

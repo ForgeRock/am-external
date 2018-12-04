@@ -24,14 +24,22 @@
  *
  * $Id: FSDiscoveryBootStrap.java,v 1.4 2008/12/05 00:18:00 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.federation.services;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.w3c.dom.Document;
+
 import com.sun.identity.federation.common.FSException;
-import com.sun.identity.federation.common.IFSConstants;
 import com.sun.identity.federation.common.FSUtils;
+import com.sun.identity.federation.common.IFSConstants;
 import com.sun.identity.federation.message.FSSubject;
 import com.sun.identity.federation.message.common.AuthnContext;
 import com.sun.identity.federation.message.common.EncryptedNameIdentifier;
@@ -39,17 +47,19 @@ import com.sun.identity.liberty.ws.disco.ResourceOffering;
 import com.sun.identity.liberty.ws.disco.common.DiscoConstants;
 import com.sun.identity.liberty.ws.disco.common.DiscoServiceManager;
 import com.sun.identity.liberty.ws.disco.common.DiscoUtils;
-import com.sun.identity.liberty.ws.disco.jaxb.*;
-import com.sun.identity.liberty.ws.disco.plugins.jaxb.DiscoEntryElement;
+import com.sun.identity.liberty.ws.disco.jaxb.InsertEntryType;
+import com.sun.identity.liberty.ws.disco.jaxb.ObjectFactory;
+import com.sun.identity.liberty.ws.disco.jaxb.ResourceIDType;
+import com.sun.identity.liberty.ws.disco.jaxb.ResourceOfferingType;
+import com.sun.identity.liberty.ws.disco.jaxb.ServiceInstanceType;
 import com.sun.identity.liberty.ws.interfaces.ResourceIDMapper;
-import com.sun.identity.liberty.ws.security.*;
-import com.sun.identity.saml.assertion.*;
-import com.sun.identity.saml.common.*;
+import com.sun.identity.liberty.ws.security.SessionContext;
+import com.sun.identity.liberty.ws.security.SessionSubject;
+import com.sun.identity.saml.assertion.Advice;
+import com.sun.identity.saml.assertion.Attribute;
+import com.sun.identity.saml.assertion.AttributeStatement;
+import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.shared.xml.XMLUtils;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import org.w3c.dom.Document;
 
 
 /**
@@ -133,7 +143,7 @@ public class FSDiscoveryBootStrap {
             .append("AttributeValue").append(SAMLConstants.assertionDeclareStr)
             .append(">").append(SAMLConstants.NL);
 
-        DiscoEntryElement discoEntry =
+        InsertEntryType discoEntry =
             DiscoServiceManager.getBootstrappingDiscoEntry();
         if (discoEntry == null) {
             throw new FSException("nullDiscoveryOffering", null);

@@ -17,6 +17,7 @@
 const eslintLoader = (options) => ({
     loader: "eslint-loader",
     options: {
+        cache: true,
         quiet: true,
         ...options
     }

@@ -13,7 +13,6 @@
  *
  * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes.validators;
 
 import static java.util.Arrays.asList;
@@ -32,11 +31,11 @@ import java.util.Set;
 
 import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.junit.CuppaRunner;
-import org.forgerock.guava.common.collect.ImmutableMap;
-import org.forgerock.guava.common.collect.ImmutableSet;
 import org.forgerock.openam.configuration.MapValueParser;
 import org.junit.runner.RunWith;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.sun.identity.sm.ServiceAttributeValidator;
 
 @RunWith(CuppaRunner.class)

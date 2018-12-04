@@ -24,15 +24,25 @@
  *
  * $Id: IDFFSingleLogoutHandler.java,v 1.6 2008/11/10 22:56:59 veiming Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.multiprotocol;
+
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.federation.common.IFSConstants;
 import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
-import com.sun.identity.federation.jaxb.entityconfig.IDPDescriptorConfigElement;
 import com.sun.identity.federation.meta.IDFFMetaManager;
 import com.sun.identity.federation.services.FSSessionManager;
 import com.sun.identity.federation.services.FSSessionPartner;
@@ -40,13 +50,6 @@ import com.sun.identity.federation.services.logout.FSLogoutStatus;
 import com.sun.identity.federation.services.logout.FSLogoutUtil;
 import com.sun.identity.federation.services.logout.FSSingleLogoutHandler;
 import com.sun.identity.liberty.ws.meta.jaxb.ProviderDescriptorType;
-import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * The <code>IDFFSingleLogoutHander</code> class is an implementation of
@@ -298,7 +301,7 @@ public class IDFFSingleLogoutHandler implements SingleLogoutHandler {
                                 "IDFFSingleLogoutHandler.findIDPMetaAlias : " +
                                 "found IDP " + idpId + " in COT " + cotName);
                     }
-                    IDPDescriptorConfigElement config =
+                    BaseConfigType config =
                             idffManager.getIDPDescriptorConfig(realm, idpId);
                     return config.getMetaAlias();
                 }

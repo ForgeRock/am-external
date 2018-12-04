@@ -11,12 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.authentication.modules.social;
 
-import static org.forgerock.json.JsonValue.*;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.oauth.clients.oauth2.OAuth2Client.ACCESS_TOKEN;
 import static org.forgerock.oauth.clients.oauth2.OAuth2Client.AUTHORIZATION_HEADER;
 import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.CREATE_USER_STATE;
@@ -30,13 +31,14 @@ import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.StringUtils;
-import org.forgerock.guava.common.annotations.VisibleForTesting;
 import org.forgerock.json.JsonValue;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthException;
 import org.forgerock.oauth.UserInfo;
+import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.shared.debug.Debug;

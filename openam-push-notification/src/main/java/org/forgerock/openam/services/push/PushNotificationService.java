@@ -11,12 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.services.push;
 
-import static org.forgerock.openam.services.push.PushNotificationConstants.*;
+import static org.forgerock.openam.services.push.PushNotificationConstants.SERVICE_NAME;
+import static org.forgerock.openam.services.push.PushNotificationConstants.SERVICE_VERSION;
 
 import java.io.IOException;
 import java.util.Map;
@@ -26,13 +26,13 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.inject.Inject;
 
-import org.forgerock.guava.common.annotations.VisibleForTesting;
 import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcher;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcherFactory;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
 import org.forgerock.openam.services.push.dispatch.predicates.Predicate;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.iplanet.sso.SSOException;

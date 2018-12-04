@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.servlet;
 
@@ -92,7 +92,7 @@ public class MexRequest extends WSFederationAction {
             throw new WSFederationException(WSFederationConstants.BUNDLE_NAME, "unableToFindIDPConfiguration", null);
         }
 
-        final boolean activeRequestorEnabled = Boolean.parseBoolean(WSFederationMetaUtils.getAttribute(idpConfig,
+        final boolean activeRequestorEnabled = Boolean.parseBoolean(WSFederationMetaUtils.getAttribute(idpConfig.getValue(),
                 WSFederationConstants.ACTIVE_REQUESTOR_PROFILE_ENABLED));
 
         if (!activeRequestorEnabled) {

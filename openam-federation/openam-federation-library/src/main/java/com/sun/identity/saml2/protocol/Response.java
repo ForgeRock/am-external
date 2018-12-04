@@ -24,7 +24,7 @@
  *
  * $Id: Response.java,v 1.2 2008/06/25 05:47:57 qcheng Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
 
 
@@ -32,6 +32,8 @@
 package com.sun.identity.saml2.protocol;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.sun.identity.saml2.assertion.Assertion;
+import com.sun.identity.saml2.assertion.EncryptedAssertion;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.protocol.impl.ResponseImpl;
 import java.util.List;
@@ -62,12 +64,12 @@ import java.util.List;
 public interface Response extends StatusResponse {
 
     /**
-     * Returns <code>Assertion</code>(s) of the response. 
+     * Returns <code>Assertion</code>(s) of the response.
      *
      * @return List of <code>Assertion</code>(s) in the response.
      * @see #setAssertion(List)
      */
-    public List getAssertion();
+    public List<Assertion> getAssertion();
 
     /**
      * Sets Assertion(s) of the response.
@@ -76,16 +78,16 @@ public interface Response extends StatusResponse {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAssertion()
      */
-    public void setAssertion(List value)
+    public void setAssertion(List<Assertion> value)
 	throws SAML2Exception;
 
     /**
-     * Returns <code>EncryptedAssertion</code>(s) of the response. 
+     * Returns <code>EncryptedAssertion</code>(s) of the response.
      *
      * @return List of <code>EncryptedAssertion</code>(s) in the response.
      * @see #setEncryptedAssertion(List)
      */
-    public List getEncryptedAssertion();
+    public List<EncryptedAssertion> getEncryptedAssertion();
 
     /**
      * Sets <code>EncryptedAssertion</code>(s) of the response.
@@ -94,7 +96,7 @@ public interface Response extends StatusResponse {
      * @throws SAML2Exception if the object is immutable.
      * @see #getEncryptedAssertion()
      */
-    public void setEncryptedAssertion(List value)
+    public void setEncryptedAssertion(List<EncryptedAssertion> value)
 	throws SAML2Exception;
 
 }

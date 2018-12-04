@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.push.registration;
 
@@ -65,7 +65,7 @@ final class Constants {
     static final int STATE_GET_THE_APP = 3;
     /** State to gather username if not already supplied. */
     static final int STATE_WAIT_FOR_RESPONSE_FROM_QR_SCAN = 4;
-    /** State to gather username if not already supplied. */
+    /** State to display recovery codes to confirm registration. */
     static final int STATE_CONFIRMATION = 5;
     /** State to register device or get the App page. */
     static final int STATE_OPTIONS_NO_SKIP = 6;

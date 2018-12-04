@@ -1,0 +1,35 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+}}
+{{#each columns}}
+{{#if this.selectOptions}}
+    <td class="form-group">
+        <select class="form-control" data-row-{{@index}}>
+            {{#each this.selectOptions}}
+            <option value="{{this.value}}" {{#if this.isSelected}}selected{{/if}}>{{this.value}}</option>
+            {{/each}}
+        </select>
+    </td>
+{{else}}
+    <td class="form-group">
+        <input class="form-control" type="text" value="{{this.data}}" data-add-row placeholder="{{t 'common.form.addValue'}}" data-row-{{@index}} data-validator="{{this.required}}">
+    </td>
+{{/if}}
+{{/each}}
+<td class="fr-col-btn-2">
+    <div class="btn-group">
+        <button class="btn btn-link" data-add-row title="{{t 'common.form.add'}}"><i class="fa fa-plus"></i></button>
+    </div>
+</td>

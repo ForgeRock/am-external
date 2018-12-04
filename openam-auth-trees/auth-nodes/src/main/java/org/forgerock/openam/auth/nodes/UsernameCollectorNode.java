@@ -13,7 +13,6 @@
  *
  * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.openam.auth.node.api.Action.send;
@@ -23,7 +22,6 @@ import java.util.ResourceBundle;
 
 import javax.security.auth.callback.NameCallback;
 
-import org.forgerock.guava.common.base.Strings;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
@@ -31,6 +29,8 @@ import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Strings;
 
 /**
  * A node which collects a username from the user via a name callback.

@@ -13,7 +13,6 @@
  *
  * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes.validators;
 
 import java.util.HashSet;
@@ -24,10 +23,10 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import org.forgerock.guava.common.base.Strings;
-import org.forgerock.guava.common.collect.Sets;
 import org.forgerock.openam.configuration.MapValueParser;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.Sets;
 import com.sun.identity.sm.ServiceAttributeValidator;
 
 /**

@@ -16,16 +16,20 @@
 
 package org.forgerock.openam.auth.nodes;
 
+import static javax.security.auth.callback.TextOutputCallback.ERROR;
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.utils.CollectionUtils.isEmpty;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.TextOutputCallback;
 
 import org.apache.commons.lang.StringUtils;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -34,6 +38,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.util.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +52,11 @@ import com.sun.identity.sm.RequiredValueValidator;
         configClass = CreatePasswordNode.Config.class)
 public class CreatePasswordNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger("amAuth");
-    private static final String BUNDLE = "org/forgerock/openam/auth/nodes/CreatePasswordNode";
+    @VisibleForTesting
+    static final String BUNDLE = "org/forgerock/openam/auth/nodes/CreatePasswordNode";
     private final Config config;
+    private List<Callback> passwordCallbacks;
+    private ResourceBundle bundle;
 
     /**
      * Node configuration.
@@ -79,21 +87,28 @@ public class CreatePasswordNode extends SingleOutcomeNode {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("CreatePasswordNode started");
+        bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
+        initialiseCallbacks();
 
         List<PasswordCallback> callbacks = context.getCallbacks(PasswordCallback.class);
-
         if (isEmpty(callbacks)) {
-            return collectPassword(context);
+            return send(passwordCallbacks).build();
         }
 
         PasswordPair passwords = getPasswords(callbacks);
         if (!checkPassword(passwords)) {
-            return collectPassword(context);
+            return send(passwordCallbacks).build();
         }
 
         return goToNext()
                 .replaceTransientState(context.transientState.copy().put(PASSWORD, passwords.password))
                 .build();
+    }
+
+    private void initialiseCallbacks() {
+        passwordCallbacks = new ArrayList<>();
+        passwordCallbacks.add(new PasswordCallback(bundle.getString("callback.password"), false));
+        passwordCallbacks.add(new PasswordCallback(bundle.getString("callback.password.confirm"), false));
     }
 
     private PasswordPair getPasswords(List<PasswordCallback> callbacks) throws NodeProcessException {
@@ -113,19 +128,18 @@ public class CreatePasswordNode extends SingleOutcomeNode {
         if (StringUtils.isBlank(passwords.password)) {
             return false;
         } else if (passwords.password.length() < config.minPasswordLength()) {
+            passwordCallbacks.add(getErrorCallback(String.format(bundle.getString("error.password.length"),
+                    config.minPasswordLength())));
             return false;
         } else if (!passwords.password.equals(passwords.confirmPassword)) {
+            passwordCallbacks.add(getErrorCallback(bundle.getString("error.password.mismatch")));
             return false;
         }
         return true;
     }
 
-    private Action collectPassword(TreeContext context) {
-        ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
-        return send(
-                new PasswordCallback(bundle.getString("callback.password"), false),
-                new PasswordCallback(bundle.getString("callback.password.confirm"), false)
-        ).build();
+    private TextOutputCallback getErrorCallback(String message) {
+        return new TextOutputCallback(ERROR, message);
     }
 
     private static class PasswordPair {

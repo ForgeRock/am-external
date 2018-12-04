@@ -13,7 +13,6 @@
  *
  * Copyright 2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
@@ -34,8 +33,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
-import org.forgerock.guava.common.base.Optional;
 import org.forgerock.json.JsonValue;
 import org.forgerock.oauth.UserInfo;
 import org.forgerock.oauth.clients.oauth2.OAuth2Client;
@@ -181,7 +180,7 @@ public class SocialNodeTest {
         //GIVEN
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
         TreeContext context = getTreeContext(parameters);
-        mockToProviderUser(Optional.absent());
+        mockToProviderUser(Optional.empty());
 
         SocialNode node = new SocialNode(config, helper, profileNormalizer);
 
@@ -198,7 +197,7 @@ public class SocialNodeTest {
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
 
         TreeContext context = getTreeContext(parameters);
-        mockToProviderUser(Optional.absent());
+        mockToProviderUser(Optional.empty());
 
         SocialNode node = new SocialNode(config, helper, profileNormalizer);
 
@@ -218,7 +217,7 @@ public class SocialNodeTest {
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
 
         TreeContext context = getTreeContext(parameters);
-        mockToProviderUser(Optional.absent());
+        mockToProviderUser(Optional.empty());
 
         SocialNode node = new SocialNode(config, helper, profileNormalizer);
 
@@ -235,7 +234,7 @@ public class SocialNodeTest {
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
 
         TreeContext context = getTreeContext(parameters);
-        mockToProviderUser(Optional.absent());
+        mockToProviderUser(Optional.empty());
 
         when(config.saveUserAttributesToSession()).thenReturn(true);
         SocialNode node = new SocialNode(config, helper, profileNormalizer);
@@ -257,7 +256,7 @@ public class SocialNodeTest {
         parameters.put("client_id", new String[] { config.clientId() });
 
         TreeContext context = getTreeContext(parameters);
-        mockToProviderUser(Optional.absent());
+        mockToProviderUser(Optional.empty());
 
         when(config.cfgMixUpMitigation()).thenReturn(true);
         SocialNode node = new SocialNode(config, helper, profileNormalizer);
@@ -280,7 +279,7 @@ public class SocialNodeTest {
         parameters.put("client_id", new String[] { "dummy_clientId" });
 
         TreeContext context = getTreeContext(parameters);
-        mockToProviderUser(Optional.absent());
+        mockToProviderUser(Optional.empty());
 
         when(config.cfgMixUpMitigation()).thenReturn(true);
         SocialNode node = new SocialNode(config, helper, profileNormalizer);
@@ -303,7 +302,7 @@ public class SocialNodeTest {
 
         TreeContext context = getTreeContext(parameters);
 
-        mockToProviderUser(Optional.absent());
+        mockToProviderUser(Optional.empty());
 
         when(config.cfgMixUpMitigation()).thenReturn(true);
         SocialNode node = new SocialNode(config, helper, profileNormalizer);

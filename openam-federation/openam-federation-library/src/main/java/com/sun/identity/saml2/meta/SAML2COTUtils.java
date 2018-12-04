@@ -24,35 +24,37 @@
  *
  * $Id: SAML2COTUtils.java,v 1.8 2009/10/28 23:58:58 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.saml2.meta;
 
-import javax.xml.bind.JAXBException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.logging.Level;
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.saml2.logging.LogUtil;
+
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBException;
+
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.jaxb.entityconfig.AffiliationConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.AttributeType;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
-import com.sun.identity.saml2.jaxb.entityconfig.ObjectFactory;
 import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
-import com.sun.identity.saml2.jaxb.metadata.AttributeAuthorityDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.AuthnAuthorityDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.XACMLPDPDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadataextquery.AttributeQueryDescriptorElement;
+import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigType;
+import com.sun.identity.saml2.jaxb.entityconfig.ObjectFactory;
+import com.sun.identity.saml2.jaxb.metadata.AttributeAuthorityDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.AuthnAuthorityDescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
-import java.util.ArrayList;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.XACMLPDPDescriptorType;
+import com.sun.identity.saml2.jaxb.metadataextquery.AttributeQueryDescriptorType;
+import com.sun.identity.shared.debug.Debug;
 
 /**
  * The <code>SAML2COTUtils</code> provides utility methods to update
@@ -60,15 +62,15 @@ import java.util.ArrayList;
  * in the Service and Identity Provider configurations.
  */
 public class SAML2COTUtils {
-    
+
     private static Debug debug = SAML2MetaUtils.debug;
-    private Object callerSession = null;    
+    private Object callerSession = null;
     /**
      * Default Constructor.
      */
     public SAML2COTUtils()  {
     }
-    
+
     /**
      * Constructor.
      * @param callerToken session token of the caller.
@@ -91,14 +93,14 @@ public class SAML2COTUtils {
      *          configuration.
      */
     public void updateEntityConfig(String realm, String name, String entityId)
-    throws SAML2MetaException, JAXBException {
+            throws SAML2MetaException, JAXBException {
         String classMethod = "SAML2COTUtils.updateEntityConfig: ";
         SAML2MetaManager metaManager = null;
         if (callerSession == null) {
             metaManager = new SAML2MetaManager();
         } else {
             metaManager = new SAML2MetaManager(callerSession);
-        } 
+        }
         ObjectFactory objFactory = new ObjectFactory();
         // Check whether the entity id existed in the DS
         EntityDescriptorElement edes = metaManager.getEntityDescriptor(
@@ -113,94 +115,80 @@ public class SAML2COTUtils {
             isAffiliation = true;
         }
         if (debug.messageEnabled()) {
-            debug.message(classMethod + "is " + entityId + " in realm " 
-                + realm + " an affiliation? " + isAffiliation);
+            debug.message(classMethod + "is " + entityId + " in realm "
+                    + realm + " an affiliation? " + isAffiliation);
         }
 
         EntityConfigElement eConfig = metaManager.getEntityConfig(
-            realm, entityId);
+                realm, entityId);
         if (eConfig == null) {
-            BaseConfigType bctype = null;
+            BaseConfigType bctype = objFactory.createBaseConfigType();
             AttributeType atype = objFactory.createAttributeType();
             atype.setName(SAML2Constants.COT_LIST);
             atype.getValue().add(name);
             // add to eConfig
-            EntityConfigElement ele =objFactory.createEntityConfigElement();
+            EntityConfigType ele =objFactory.createEntityConfigType();
             ele.setEntityID(entityId);
             ele.setHosted(false);
             if (isAffiliation) {
                 // handle affiliation case
-                bctype = objFactory.createAffiliationConfigElement();
                 bctype.getAttribute().add(atype);
-                ele.setAffiliationConfig(bctype);
+                ele.setAffiliationConfig(objFactory.createAffiliationConfigElement(bctype));
             } else {
-                List ll =
-                    ele.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+                List<JAXBElement<BaseConfigType>> ll =
+                        ele.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
                 // Decide which role EntityDescriptorElement includes
-                List list =
-                    edes.getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
+                List<RoleDescriptorType> list =
+                        edes.getValue().getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
 
-                for(Iterator iter = list.iterator(); iter.hasNext();) {
-                    Object obj = iter.next();
-                    if (obj instanceof SPSSODescriptorElement) {
-                        bctype = objFactory.createSPSSOConfigElement();
+                for (RoleDescriptorType obj : list) {
+                    if (obj instanceof SPSSODescriptorType) {
                         bctype.getAttribute().add(atype);
-                        ll.add(bctype);
-                    } else if (obj instanceof IDPSSODescriptorElement) {
-                        bctype = objFactory.createIDPSSOConfigElement();
+                        ll.add(objFactory.createSPSSOConfigElement(bctype));
+                    } else if (obj instanceof IDPSSODescriptorType) {
                         bctype.getAttribute().add(atype);
-                        ll.add(bctype);
-                    } else if (obj instanceof XACMLPDPDescriptorElement) {
-                        bctype = objFactory.createXACMLPDPConfigElement();
+                        ll.add(objFactory.createIDPSSOConfigElement(bctype));
+                    } else if (obj instanceof XACMLPDPDescriptorType) {
                         bctype.getAttribute().add(atype);
-                        ll.add(bctype);
-                    } else if (obj instanceof 
-                        XACMLAuthzDecisionQueryDescriptorElement) 
-                    {
-                        bctype =
-                        objFactory.createXACMLAuthzDecisionQueryConfigElement();
+                        ll.add(objFactory.createXACMLPDPConfigElement(bctype));
+                    } else if (obj instanceof XACMLAuthzDecisionQueryDescriptorType) {
                         bctype.getAttribute().add(atype);
-                        ll.add(bctype);
-                    } else if (obj instanceof AttributeAuthorityDescriptorElement) {
-                        bctype = 
-                            objFactory.createAttributeAuthorityConfigElement();
+                        ll.add(objFactory.createXACMLAuthzDecisionQueryConfigElement(bctype));
+                    } else if (obj instanceof AttributeAuthorityDescriptorType) {
                         bctype.getAttribute().add(atype);
-                        ll.add(bctype);
-                    } else if (obj instanceof  AttributeQueryDescriptorElement){
-                        bctype = objFactory.createAttributeQueryConfigElement();
+                        ll.add(objFactory.createAttributeAuthorityConfigElement(bctype));
+                    } else if (obj instanceof AttributeQueryDescriptorType) {
                         bctype.getAttribute().add(atype);
-                        ll.add(bctype);
-                    } else if (obj instanceof AuthnAuthorityDescriptorElement) {
-                        bctype = objFactory.createAuthnAuthorityConfigElement();
+                        ll.add(objFactory.createAttributeQueryConfigElement(bctype));
+                    } else if (obj instanceof AuthnAuthorityDescriptorType) {
                         bctype.getAttribute().add(atype);
-                        ll.add(bctype);
+                        ll.add(objFactory.createAuthnAuthorityConfigElement(bctype));
                     }
                 }
             }
-            metaManager.setEntityConfig(realm,ele);
+            metaManager.setEntityConfig(realm, objFactory.createEntityConfigElement(ele));
         } else {
             boolean needToSave = true;
-            List elist = null; 
+            List<JAXBElement<BaseConfigType>> elist = null;
             if (isAffiliation) {
                 AffiliationConfigElement affiliationCfgElm =
-                    metaManager.getAffiliationConfig(realm, entityId);
-                elist = new ArrayList();
+                        metaManager.getAffiliationConfig(realm, entityId);
+                elist = new ArrayList<>();
                 elist.add(affiliationCfgElm);
             } else {
-                elist = eConfig.
-                    getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+                elist = eConfig.getValue().
+                        getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
             }
-            for (Iterator iter = elist.iterator(); iter.hasNext();) {
+            for (JAXBElement<BaseConfigType> anElist : elist) {
                 boolean foundCOT = false;
-                BaseConfigType bConfig = (BaseConfigType)iter.next();
-                List list = bConfig.getAttribute();
-                for (Iterator iter2 = list.iterator(); iter2.hasNext();) {
-                    AttributeType avp = (AttributeType)iter2.next();
+                JAXBElement<BaseConfigType> bConfig = anElist;
+                List<AttributeType> list = bConfig.getValue().getAttribute();
+                for (AttributeType avp : list) {
                     if (avp.getName().trim().equalsIgnoreCase(
                             SAML2Constants.COT_LIST)) {
                         foundCOT = true;
-                        List avpl = avp.getValue();
-                        if (avpl.isEmpty() ||!containsValue(avpl,name)) {
+                        List<String> avpl = avp.getValue();
+                        if (avpl.isEmpty() || !containsValue(avpl, name)) {
                             avpl.add(name);
                             needToSave = true;
                             break;
@@ -221,7 +209,7 @@ public class SAML2COTUtils {
             }
         }
     }
-    
+
     private boolean containsValue(List list, String name) {
         for (Iterator iter = list.iterator(); iter.hasNext();) {
             if (((String) iter.next()).trim().equalsIgnoreCase(name)) {
@@ -230,7 +218,7 @@ public class SAML2COTUtils {
         }
         return false;
     }
-    
+
     /**
      * Removes the circle trust name passed from the <code>cotlist</code>
      * attribute in the Entity Config. The Service Provider and Identity
@@ -242,9 +230,9 @@ public class SAML2COTUtils {
      *          config.
      * @throws JAXBException if there is an error updating the entity config.
      */
-    
+
     public void removeFromEntityConfig(String realm,String name,String entityId)
-    throws SAML2MetaException, JAXBException {
+            throws SAML2MetaException, JAXBException {
         String classMethod = "SAML2COTUtils.removeFromEntityConfig: ";
         SAML2MetaManager metaManager = null;
         if (callerSession == null) {
@@ -268,33 +256,31 @@ public class SAML2COTUtils {
             isAffiliation = true;
         }
         if (debug.messageEnabled()) {
-            debug.message(classMethod + "is " + entityId + " in realm " 
-                + realm + " an affiliation? " + isAffiliation);
+            debug.message(classMethod + "is " + entityId + " in realm "
+                    + realm + " an affiliation? " + isAffiliation);
         }
 
         if (eConfig != null) {
-            List elist = null; 
+            List<JAXBElement<BaseConfigType>> elist = null;
             if (isAffiliation) {
                 AffiliationConfigElement affiliationCfgElm =
-                    metaManager.getAffiliationConfig(realm, entityId);
-                elist = new ArrayList();
+                        metaManager.getAffiliationConfig(realm, entityId);
+                elist = new ArrayList<>();
                 elist.add(affiliationCfgElm);
             } else {
-               elist = eConfig.
-                    getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+                elist = eConfig.getValue().
+                        getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
             }
 
             boolean needToSave = false;
-            for (Iterator iter = elist.iterator(); iter.hasNext();) {
-                BaseConfigType bConfig = (BaseConfigType)iter.next();
-                List list = bConfig.getAttribute();
-                for (Iterator iter2 = list.iterator(); iter2.hasNext();) {
-                    AttributeType avp = (AttributeType)iter2.next();
+            for (JAXBElement<BaseConfigType> bConfig : elist) {
+                List<AttributeType> list = bConfig.getValue().getAttribute();
+                for (AttributeType avp : list) {
                     if (avp.getName().trim().equalsIgnoreCase(
                             SAML2Constants.COT_LIST)) {
-                        List avpl = avp.getValue();
+                        List<String> avpl = avp.getValue();
                         if (avpl != null && !avpl.isEmpty() &&
-                                containsValue(avpl,name)) {
+                                containsValue(avpl, name)) {
                             avpl.remove(name);
                             needToSave = true;
                             break;

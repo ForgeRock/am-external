@@ -101,9 +101,10 @@ Performs a one-time build of the XUI, in production mode. Outputs to the `build`
 
 #### `test`
 
-Compiles, runs, and watches the unit tests.
+Compiles and runs the unit tests.
 
-Use this in a separate terminal window to continuously run tests while developing.
+> ***Tip***
+> Use this command in a separate terminal window with the `--watch` switch to continuously run tests while developing.
 
 #### `profile`
 

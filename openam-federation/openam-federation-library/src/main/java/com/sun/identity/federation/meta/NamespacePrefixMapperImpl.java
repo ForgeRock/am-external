@@ -24,14 +24,14 @@
  *
  * $Id: NamespacePrefixMapperImpl.java,v 1.2 2008/06/25 05:46:49 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.federation.meta;
 
-import com.sun.xml.bind.marshaller.NamespacePrefixMapper;
-
-public class NamespacePrefixMapperImpl extends NamespacePrefixMapper {
+public class NamespacePrefixMapperImpl extends com.sun.xml.bind.marshaller.NamespacePrefixMapper {
     
     /**
      * Returns a preferred prefix for the given namespace URI.
@@ -68,8 +68,8 @@ public class NamespacePrefixMapperImpl extends NamespacePrefixMapper {
      *      If this method returns "" when requirePrefix=true, the return
      *      value will be ignored and the system will generate one.
      */
-    public String getPreferredPrefix(String namespaceUri,String suggestion,
-            boolean requirePrefix) {
+    @Override
+    public String getPreferredPrefix(String namespaceUri,String suggestion, boolean requirePrefix) {
         return suggestion;
     }
 }

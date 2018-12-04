@@ -1,0 +1,112 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2018 ForgeRock AS.
+ */
+.react-bs-table {
+    border: 0;
+    margin: 0;
+
+    .react-bs-container-body {
+        // to allow popover content such as datepickers
+        overflow: visible;
+    }
+
+    tr td.editable-cell {
+        position: relative;
+        &:before {
+            content: "\F040";
+            font-family: FontAwesome;
+            position: absolute;
+            right: 5px;
+            color: transparent;
+        }
+
+        &:hover {
+            background-color: #fbfbfb;
+            cursor: pointer;
+            &:before {
+                transition: color 0.5s;
+                color: #ccc;
+            }
+        }
+    }
+
+    .table > tbody > tr > td {
+        &.editing-cell {
+            padding: 5px 5px 5px 0;
+            overflow: visible;
+        }
+
+        .Select.Select--multi {
+            // The react-select component uses inline-block for it's multi-select items. However inline-block items do not
+            // wrap properly inside of a table cells. The following `.Select` styles overrides the originals so that the
+            // component renders as it should but using floats instead.
+            padding-left: 11px;
+            padding-top: 6px;
+            margin-top: -4px;
+
+            .Select-control {
+                font-size: 0; // remove extra white space below control
+                .Select-multi-value-wrapper {
+                    font-size: 14px;
+                }
+            }
+
+            .Select-input {
+                display: block !important;
+                float: left;
+                & > input {
+                    padding-bottom: 8px;
+                }
+            }
+
+            .Select-value {
+                display: block;
+                float: left;
+            }
+        }
+
+        ul.am-multi-select-enum-format {
+            margin: -4px 0 0;
+            padding: 0 18px 0 0;
+
+            li {
+                background-color: #f8f8f8;
+                border-radius: 2px;
+                border: 1px solid #e1e1e1;
+                color: #7b7b7b;
+                display: block;
+                font-size: .9em;
+                line-height: 1.4;
+                margin: 5px 0 0 5px;
+                vertical-align: top;
+                float: left;
+
+                span {
+                    display: inline-block;
+                    vertical-align: middle;
+                    border-bottom-right-radius: 2px;
+                    border-top-right-radius: 2px;
+                    padding: 2px 5px;
+                }
+
+                span.am-multi-select-enum-format-icon {
+                    border-right: 1px solid #e1e1e1;
+                    color: transparent;
+                    padding: 1px 5px 3px;
+                }
+            }
+        }
+    }
+}

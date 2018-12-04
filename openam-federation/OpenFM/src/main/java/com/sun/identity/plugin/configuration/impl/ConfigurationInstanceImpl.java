@@ -24,10 +24,12 @@
  *
  * $Id: ConfigurationInstanceImpl.java,v 1.12 2009/10/29 00:03:50 exu Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 
 package com.sun.identity.plugin.configuration.impl;
+
+import static org.forgerock.openam.utils.StringUtils.isEmpty;
 
 import java.security.AccessController;
 import java.util.Collections;
@@ -35,22 +37,28 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import com.sun.identity.shared.debug.Debug;
+import org.forgerock.guice.core.InjectorHolder;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.core.realms.RealmLookupException;
+import org.forgerock.openam.core.realms.Realms;
+import org.forgerock.openam.services.datastore.DataStoreId;
+import org.forgerock.openam.services.datastore.DataStoreLookup;
+
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
-
+import com.sun.identity.common.configuration.ServerConfiguration;
+import com.sun.identity.common.configuration.SiteConfiguration;
+import com.sun.identity.plugin.configuration.ConfigurationException;
+import com.sun.identity.plugin.configuration.ConfigurationInstance;
+import com.sun.identity.plugin.configuration.ConfigurationListener;
 import com.sun.identity.security.AdminTokenAction;
+import com.sun.identity.shared.Constants;
+import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.sm.SMSException;
 import com.sun.identity.sm.ServiceConfig;
 import com.sun.identity.sm.ServiceConfigManager;
 import com.sun.identity.sm.ServiceSchema;
 import com.sun.identity.sm.ServiceSchemaManager;
-import com.sun.identity.sm.SMSException;
-import com.sun.identity.plugin.configuration.ConfigurationException;
-import com.sun.identity.plugin.configuration.ConfigurationInstance;
-import com.sun.identity.plugin.configuration.ConfigurationListener;
-import com.sun.identity.common.configuration.ServerConfiguration;
-import com.sun.identity.common.configuration.SiteConfiguration;
-import com.sun.identity.shared.Constants; 
 
 /**
  * <code>ConfigurationInstanceImpl</code> is the implementation that provides
@@ -58,7 +66,7 @@ import com.sun.identity.shared.Constants;
  */
 public class ConfigurationInstanceImpl implements ConfigurationInstance {
 
-    private static Map serviceNameMap = new HashMap();
+    private static Map<String, String> serviceNameMap;
     private ServiceSchemaManager ssm;
     private ServiceConfigManager scm;
     private String componentName = null;
@@ -67,11 +75,12 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
     private static final int SUBCONFIG_PRIORITY = 0;
     private static final String RESOURCE_BUNDLE = "fmConfigurationService";
     static Debug debug = Debug.getInstance("libPlugins");
+    private static final DataStoreLookup dataStoreLookup = InjectorHolder.getInstance(DataStoreLookup.class);
 
     private SSOToken ssoToken;
 
     static {
-        serviceNameMap = new HashMap();
+        serviceNameMap = new HashMap<>();
         serviceNameMap.put("SAML1", "iPlanetAMSAMLService");
         serviceNameMap.put("SAML2", "sunFMSAML2MetadataService");
         serviceNameMap.put("WS-FEDERATION", "sunFMWSFederationMetadataService");
@@ -92,9 +101,7 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
     }
 
     private SSOToken getSSOToken() {
-        return (ssoToken != null) ? ssoToken :
-            (SSOToken)AccessController.doPrivileged(
-                AdminTokenAction.getInstance());
+        return (ssoToken != null) ? ssoToken : AccessController.doPrivileged(AdminTokenAction.getInstance());
     }
 
     /**
@@ -106,13 +113,13 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
     public void init(String componentName, Object session) 
         throws ConfigurationException {
 
-        String serviceName = (String)serviceNameMap.get(componentName);
+        String serviceName = serviceNameMap.get(componentName);
         if (serviceName == null) {
             throw new ConfigurationException(RESOURCE_BUNDLE,
                 "componentNameUnsupported", null);
         }
-        if ((session != null) && (session instanceof SSOToken)) {
-            ssoToken = (SSOToken)session;
+        if (session instanceof SSOToken) {
+            ssoToken = (SSOToken) session;
         }
 
         try {
@@ -127,13 +134,10 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                 }
             }
             scm = new ServiceConfigManager(serviceName, adminToken);
-        } catch (SMSException smsex) {
+        } catch (SMSException | SSOException smsex) {
             debug.error("ConfigurationInstanceImpl.init:", smsex);
             throw new ConfigurationException(smsex);
-        } catch (SSOException ssoex) {
-            debug.error("ConfigurationInstanceImpl.init:", ssoex);
-            throw new ConfigurationException(ssoex);
-        } 
+        }
 
         this.componentName = componentName;       
     }
@@ -164,18 +168,17 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
 
         try {
             if (hasOrgSchema) {
-                ServiceConfig organizationConfig = null;
-                organizationConfig = scm.getOrganizationConfig(realm, null);
-
+                DataStoreId dataStoreId = getDataStoreId(realm);
+                ServiceConfig organizationConfig = scm.getOrganizationConfig(realm, null, dataStoreId);
                 if (organizationConfig == null) {
                     return null;
                 }
 
-                if ((configName == null) || (configName.length() == 0)) {
-                    Map organizationAttributes = organizationConfig.getAttributes();
-                    ServiceConfig globalConfig = scm.getGlobalConfig(configName);
+                if (isEmpty(configName)) {
+                    Map<String, Set<String>> organizationAttributes = organizationConfig.getAttributes();
+                    ServiceConfig globalConfig = scm.getGlobalConfig(configName, dataStoreId);
                     if (globalConfig != null) {
-                        Map mergedAttributes = globalConfig.getAttributes();
+                        Map<String, Set<String>> mergedAttributes = globalConfig.getAttributes();
                         mergedAttributes.putAll(organizationAttributes);
                         return mergedAttributes;
                     }
@@ -222,7 +225,7 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                         "noConfig", data);
                 }
 
-                Map retMap = ss.getAttributeDefaults();
+                Map<String, Set<String>> retMap = ss.getAttributeDefaults();
                 if (componentName.equals("PLATFORM")) {
                     SSOToken token = getSSOToken();
                     retMap.put(Constants.PLATFORM_LIST, 
@@ -232,13 +235,8 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                  }
                  return retMap;
             }
-        } catch (SMSException smsex) {
+        } catch (SMSException | SSOException | RealmLookupException smsex) {
             debug.error("ConfigurationInstanceImpl.getConfiguration:", smsex);
-            String[] data = { componentName, realm };
-            throw new ConfigurationException(RESOURCE_BUNDLE,
-                "failedGetConfig", data);
-        } catch (SSOException ssoex) {
-            debug.error("ConfigurationInstanceImpl.getConfiguration:", ssoex);
             String[] data = { componentName, realm };
             throw new ConfigurationException(RESOURCE_BUNDLE,
                 "failedGetConfig", data);
@@ -269,8 +267,7 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
 
         try {
             if (hasOrgSchema) {
-                ServiceConfig sc = null;
-                sc = scm.getOrganizationConfig(realm, null);
+                ServiceConfig sc = scm.getOrganizationConfig(realm, null, getDataStoreId(realm));
 
                 if (sc == null) {
                     String[] data = { componentName, realm };
@@ -325,13 +322,8 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
 
                 ss.setAttributeDefaults(avPairs);
             }
-        } catch (SMSException smsex) {
+        } catch (SMSException | SSOException | RealmLookupException smsex) {
             debug.error("ConfigurationInstanceImpl.setConfiguration:", smsex);
-            String[] data = { componentName, realm };
-            throw new ConfigurationException(RESOURCE_BUNDLE, 
-                "failedSetConfig", data);
-        } catch (SSOException ssoex) {
-            debug.error("ConfigurationInstanceImpl.setConfiguration:", ssoex);
             String[] data = { componentName, realm };
             throw new ConfigurationException(RESOURCE_BUNDLE, 
                 "failedSetConfig", data);
@@ -362,11 +354,11 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
 
         try {
             if (hasOrgSchema) {
-                ServiceConfig sc = null;
-                sc = scm.getOrganizationConfig(realm, null);
+                DataStoreId dataStoreId = getDataStoreId(realm);
+                ServiceConfig sc = scm.getOrganizationConfig(realm, null, dataStoreId);
 
-                if ((configName == null) || (configName.length() == 0)) {
-                    scm.createOrganizationConfig(realm, avPairs);
+                if (isEmpty(configName)) {
+                    scm.createOrganizationConfig(realm, avPairs, dataStoreId);
                 } else {
                     if (subConfigId == null) {
                         if (debug.messageEnabled()) {
@@ -380,7 +372,7 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                     }
 
                     if (sc == null) {
-                        sc = scm.createOrganizationConfig(realm, null);
+                        sc = scm.createOrganizationConfig(realm, null, dataStoreId);
                     } else if (sc.getSubConfigNames().contains(configName)) {
                         String[] data = { componentName, realm, configName };
                         throw new ConfigurationException(RESOURCE_BUNDLE, 
@@ -400,15 +392,9 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                 throw new ConfigurationException(RESOURCE_BUNDLE,
                     "noConfigCreation", data);
             }
-        } catch (SMSException smsex) {
+        } catch (SMSException | SSOException | RealmLookupException smsex) {
             debug.error("ConfigurationInstanceImpl.createConfiguration:",
                 smsex);
-            String[] data = { componentName, realm };
-            throw new ConfigurationException(RESOURCE_BUNDLE,
-                "failedCreateConfig", data);
-        } catch (SSOException ssoex) {
-            debug.error("ConfigurationInstanceImpl.createConfiguration:",
-                ssoex);
             String[] data = { componentName, realm };
             throw new ConfigurationException(RESOURCE_BUNDLE,
                 "failedCreateConfig", data);
@@ -441,12 +427,13 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
         boolean removeConfig = (attributes == null) || (attributes.isEmpty());
         try {
             if (hasOrgSchema) {
-                ServiceConfig sc = null;
-                if ((configName == null) || (configName.length() == 0)) {
+                ServiceConfig sc;
+                DataStoreId dataStoreId = getDataStoreId(realm);
+                if (isEmpty(configName)) {
                     if (removeConfig) {
-                        scm.removeOrganizationConfiguration(realm, null);
+                        scm.removeOrganizationConfiguration(realm, null, dataStoreId);
                     } else {
-                        sc = scm.getOrganizationConfig(realm, null);
+                        sc = scm.getOrganizationConfig(realm, null, dataStoreId);
                         if (sc != null) {
                             sc.removeAttributes(attributes);
                         }
@@ -463,7 +450,7 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                             "noSubConfig", data);
                     }
 
-                    sc = scm.getOrganizationConfig(realm, null);
+                    sc = scm.getOrganizationConfig(realm, null, dataStoreId);
                     if (sc != null) {
                         if (removeConfig) {
                             sc.removeSubConfig(configName);
@@ -485,15 +472,9 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                 throw new ConfigurationException(RESOURCE_BUNDLE,
                     "noConfigDeletion", data);
             }
-        } catch (SMSException smsex) {
+        } catch (SMSException | SSOException | RealmLookupException smsex) {
             debug.error("ConfigurationInstanceImpl.deleteConfiguration:",
                 smsex);
-            String[] data = { componentName, realm };
-            throw new ConfigurationException(RESOURCE_BUNDLE, 
-                "failedDeleteConfig", data);
-        } catch (SSOException ssoex) {
-            debug.error("ConfigurationInstanceImpl.deleteConfiguration:",
-                ssoex);
             String[] data = { componentName, realm };
             throw new ConfigurationException(RESOURCE_BUNDLE, 
                 "failedDeleteConfig", data);
@@ -510,7 +491,7 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
      * @exception ConfigurationException if could not get all service 
      *     configuration names.
      */
-    public Set getAllConfigurationNames(String realm) 
+    public Set<String> getAllConfigurationNames(String realm)
         throws ConfigurationException {
 
         if (debug.messageEnabled()) {
@@ -519,15 +500,15 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
         }
         try {
             if (hasOrgSchema) {
-                ServiceConfig sc = scm.getOrganizationConfig(realm, null);
+                ServiceConfig sc = scm.getOrganizationConfig(realm, null, getDataStoreId(realm));
                 if (sc == null) {
                     return null;
                 }
-                Set subConfigNames = sc.getSubConfigNames();
+                Set<String> subConfigNames = sc.getSubConfigNames();
                 if ((subConfigNames != null) && (subConfigNames.size() > 0)) {
                     return subConfigNames;
                 } else {
-                    return Collections.EMPTY_SET;
+                    return Collections.emptySet();
                 }
             } else {
                 if ((realm != null) && (!realm.equals("/"))) {
@@ -537,19 +518,12 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                 if (ss == null) {
                     return null;
                 } else {
-                    return Collections.EMPTY_SET;
+                    return Collections.emptySet();
                 }
             }
-        } catch (SMSException smsex) {
+        } catch (SMSException | SSOException | RealmLookupException smsex) {
             debug.error("ConfigurationInstanceImpl.getAllConfigurationNames:",
                 smsex);
-
-            String[] data = { componentName, realm };
-            throw new ConfigurationException(RESOURCE_BUNDLE,
-                "failedGetConfigNames", data);
-        } catch (SSOException ssoex) {
-            debug.error("ConfigurationInstanceImpl.getAllConfigurationNames:",
-                ssoex);
 
             String[] data = { componentName, realm };
             throw new ConfigurationException(RESOURCE_BUNDLE,
@@ -589,5 +563,10 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
         } else {
             ssm.removeListener(listenerID);
         }
+    }
+
+    private DataStoreId getDataStoreId(String realmName) throws RealmLookupException {
+        Realm realm = Realms.of(realmName);
+        return dataStoreLookup.lookupId(serviceNameMap.get(componentName), realm);
     }
 }

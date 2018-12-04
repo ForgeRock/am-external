@@ -30,14 +30,6 @@
 
 package com.sun.identity.wsfederation.meta;
 
-import com.sun.identity.cot.COTConstants;
-import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.wsfederation.jaxb.entityconfig.BaseConfigType;
-import com.sun.identity.wsfederation.jaxb.entityconfig.SPSSOConfigElement;
-import com.sun.identity.wsfederation.jaxb.entityconfig.FederationConfigElement;
-import com.sun.identity.wsfederation.jaxb.entityconfig.IDPSSOConfigElement;
-import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -45,25 +37,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
+
+import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 
 import org.forgerock.openam.utils.StringUtils;
 
-import com.sun.identity.cot.CircleOfTrustManager;
+import com.sun.identity.cot.COTConstants;
 import com.sun.identity.cot.COTException;
-import com.sun.identity.plugin.configuration.ConfigurationManager;
-import com.sun.identity.plugin.configuration.ConfigurationInstance;
+import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.plugin.configuration.ConfigurationException;
+import com.sun.identity.plugin.configuration.ConfigurationInstance;
+import com.sun.identity.plugin.configuration.ConfigurationManager;
+import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.wsfederation.common.WSFederationConstants;
+import com.sun.identity.wsfederation.jaxb.entityconfig.BaseConfigType;
+import com.sun.identity.wsfederation.jaxb.entityconfig.FederationConfigElement;
+import com.sun.identity.wsfederation.jaxb.entityconfig.FederationConfigType;
+import com.sun.identity.wsfederation.jaxb.entityconfig.IDPSSOConfigElement;
+import com.sun.identity.wsfederation.jaxb.entityconfig.SPSSOConfigElement;
+import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.TokenIssuerEndpointElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.TokenIssuerNameElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.TokenSigningKeyInfoElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.UriNamedClaimTypesOfferedElement;
-import com.sun.identity.wsfederation.logging.LogUtil;
+import com.sun.identity.wsfederation.jaxb.wsfederation.UriNamedClaimTypesOfferedType;
 import com.sun.identity.wsfederation.jaxb.wsse.SecurityTokenReferenceType;
+import com.sun.identity.wsfederation.jaxb.xmlsig.X509DataElement;
 import com.sun.identity.wsfederation.jaxb.xmlsig.X509DataType;
-import com.sun.identity.wsfederation.jaxb.xmlsig.X509DataType.X509Certificate;
+import com.sun.identity.wsfederation.jaxb.xmlsig.X509DataType.X509CertificateElement;
+import com.sun.identity.wsfederation.logging.LogUtil;
 
 /**
  * The <code>WSFederationMetaManager</code> provides methods to manage both the 
@@ -154,7 +158,7 @@ public class WSFederationMetaManager {
      * @throws WSFederationMetaException if unable to retrieve the entity 
      * descriptor.
      */
-    public FederationElement getEntityDescriptor(String realm, 
+    public FederationElement getEntityDescriptor(String realm,
         String entityId) 
         throws WSFederationMetaException {
         if (entityId == null) {
@@ -234,10 +238,10 @@ public class WSFederationMetaManager {
      * @param federation Federation object.
      * @throws WSFederationMetaException if unable to set the entity descriptor.
      */
-    public void setFederation(String realm, FederationElement federation) 
+    public void setFederation(String realm, FederationElement federation)
         throws WSFederationMetaException {
 
-        String federationId = federation.getFederationID();
+        String federationId = federation.getValue().getFederationID();
         if (federationId == null) {
             federationId = WSFederationConstants.DEFAULT_FEDERATION_ID;
         }
@@ -288,7 +292,7 @@ public class WSFederationMetaManager {
         FederationElement federation)
         throws WSFederationMetaException {
 
-        String federationId = federation.getFederationID();
+        String federationId = federation.getValue().getFederationID();
         if (federationId == null) {
             federationId = WSFederationConstants.DEFAULT_FEDERATION_ID;
         }
@@ -349,13 +353,13 @@ public class WSFederationMetaManager {
             IDPSSOConfigElement idpconfig = getIDPSSOConfig(realm,
                                                          federationId);
             if (idpconfig !=null) {
-                removeFromCircleOfTrust(idpconfig, realm, federationId); 
+                removeFromCircleOfTrust(idpconfig.getValue(), realm, federationId);
             }   
             
             SPSSOConfigElement spconfig = getSPSSOConfig(realm,
                                                         federationId);
             if (spconfig != null) { 
-                removeFromCircleOfTrust(spconfig, realm, federationId); 
+                removeFromCircleOfTrust(spconfig.getValue(), realm, federationId);
             }   
             // end of remove entity from cot
             configInst.deleteConfiguration(realm, federationId, null);
@@ -380,12 +384,12 @@ public class WSFederationMetaManager {
      * 
      * @param realm The realm under which the entity resides.
      * @param federationId ID of the entity to be retrieved.
-     * @return <code>FederationConfigElement</code> object for the entity or 
+     * @return <code>FederationConfigElement</code> object for the entity or
      * null if not found.
      * @throws WSFederationMetaException if unable to retrieve the entity
      *                            configuration.
      */
-    public FederationConfigElement getEntityConfig(String realm, 
+    public FederationConfigElement getEntityConfig(String realm,
         String federationId)
         throws WSFederationMetaException {
 
@@ -480,7 +484,7 @@ public class WSFederationMetaManager {
         }
 
         List list =
-            eConfig.getIDPSSOConfigOrSPSSOConfig();
+            eConfig.getValue().getIDPSSOConfigOrSPSSOConfig();
         for(Iterator iter = list.iterator(); iter.hasNext();) {
             Object obj = iter.next();
             if (obj instanceof SPSSOConfigElement) {
@@ -511,7 +515,7 @@ public class WSFederationMetaManager {
         }
 
         List list =
-            eConfig.getIDPSSOConfigOrSPSSOConfig();
+            eConfig.getValue().getIDPSSOConfigOrSPSSOConfig();
         for(Iterator iter = list.iterator(); iter.hasNext();) {
             Object obj = iter.next();
             if (obj instanceof IDPSSOConfigElement) {
@@ -541,7 +545,7 @@ public class WSFederationMetaManager {
             return null;
         }
 
-        return (BaseConfigType)eConfig.getIDPSSOConfigOrSPSSOConfig().get(0);
+        return eConfig.getValue().getIDPSSOConfigOrSPSSOConfig().get(0).getValue();
     }
     
     /**
@@ -552,11 +556,9 @@ public class WSFederationMetaManager {
      * @throws WSFederationMetaException if unable to set the entity 
      * configuration.
      */
-    public void setEntityConfig(String realm, 
-        FederationConfigElement config)
-        throws WSFederationMetaException {
+    public void setEntityConfig(String realm, FederationConfigElement config) throws WSFederationMetaException {
 
-        String federationId = config.getFederationID();
+        String federationId = config.getValue().getFederationID();
         if (federationId == null) {
             debug.error("WSFederationMetaManager.setEntityConfig: " +
                         "entity ID is null");
@@ -614,7 +616,7 @@ public class WSFederationMetaManager {
         FederationConfigElement config)
         throws WSFederationMetaException {
 
-        String federationId = config.getFederationID();
+        String federationId = config.getValue().getFederationID();
         if (federationId == null) {
             debug.error("WSFederationMetaManager.createEntityConfig: " +
                         "entity ID is null");
@@ -661,12 +663,12 @@ public class WSFederationMetaManager {
             SPSSOConfigElement spconfig = getSPSSOConfig(realm,
                                                         federationId);
             if (spconfig != null) {                                        
-                addToCircleOfTrust(spconfig, realm, federationId); 
+                addToCircleOfTrust(spconfig.getValue(), realm, federationId);
             }
             IDPSSOConfigElement idpconfig = getIDPSSOConfig(realm,
                                                          federationId);
             if (idpconfig !=null) {
-                addToCircleOfTrust(idpconfig, realm, federationId); 
+                addToCircleOfTrust(idpconfig.getValue(), realm, federationId);
             }                                         
         } catch (ConfigurationException e) {
             debug.error("WSFederationMetaManager.createEntityConfig:", e);
@@ -743,13 +745,13 @@ public class WSFederationMetaManager {
             IDPSSOConfigElement idpconfig = getIDPSSOConfig(realm,
                                                 federationId);
             if (idpconfig !=null) {
-                removeFromCircleOfTrust(idpconfig, realm, federationId); 
+                removeFromCircleOfTrust(idpconfig.getValue(), realm, federationId);
             }   
             
             SPSSOConfigElement spconfig = getSPSSOConfig(realm,
                                                         federationId);
             if (spconfig != null) { 
-                removeFromCircleOfTrust(spconfig, realm, federationId); 
+                removeFromCircleOfTrust(spconfig.getValue(), realm, federationId);
             }
             
             Set attr = new HashSet();
@@ -832,12 +834,12 @@ public class WSFederationMetaManager {
             }
             for (String entityId : entityIds) {
                 FederationConfigElement config = getEntityConfig(realm, entityId);
-                if (config == null || !config.isHosted()) {
+                if (config == null || !config.getValue().isHosted()) {
                     continue;
                 }
-                List<BaseConfigType> configList = config.getIDPSSOConfigOrSPSSOConfig();
-                for (BaseConfigType bConfigType : configList) {
-                    String curMetaAlias = bConfigType.getMetaAlias();
+                List<JAXBElement<BaseConfigType>> configList = config.getValue().getIDPSSOConfigOrSPSSOConfig();
+                for (JAXBElement<BaseConfigType> bConfigType : configList) {
+                    String curMetaAlias = bConfigType.getValue().getMetaAlias();
                     if (curMetaAlias != null && !curMetaAlias.isEmpty()) {
                         metaAliases.add(curMetaAlias);
                     }
@@ -892,7 +894,7 @@ public class WSFederationMetaManager {
                     String federationId = (String)iter.next();
                     FederationConfigElement config =
                                     getEntityConfig(realm, federationId);
-                    if (config != null && config.isHosted()) {
+                    if (config != null && config.getValue().isHosted()) {
                         hostedEntityIds.add(federationId);
                     }
                 }
@@ -978,7 +980,7 @@ public class WSFederationMetaManager {
                     String federationId = (String)iter.next();
                     FederationConfigElement config =
                                     getEntityConfig(realm, federationId);
-                    if (config == null || !config.isHosted()) {
+                    if (config == null || !config.getValue().isHosted()) {
                         remoteEntityIds.add(federationId);
                     }
                 }
@@ -1063,15 +1065,15 @@ public class WSFederationMetaManager {
 
             for (Iterator iter = entityIds.iterator(); iter.hasNext();) {
                 String federationId = (String)iter.next();
-                FederationConfigElement config = getEntityConfig(realm, 
+                FederationConfigElement config = getEntityConfig(realm,
                     federationId);
                 if (config == null) {
                     continue;
                 }
-                List list =
-                    config.getIDPSSOConfigOrSPSSOConfig();
-                for(Iterator iter2 = list.iterator(); iter2.hasNext();) {
-                    BaseConfigType bConfig = (BaseConfigType)iter2.next();
+                List<JAXBElement<BaseConfigType>> list =
+                    config.getValue().getIDPSSOConfigOrSPSSOConfig();
+                for(Iterator<JAXBElement<BaseConfigType>> iter2 = list.iterator(); iter2.hasNext();) {
+                    BaseConfigType bConfig = iter2.next().getValue();
                     String cMetaAlias = bConfig.getMetaAlias();
                     if (cMetaAlias != null && cMetaAlias.equals(metaAlias)) {
                         return federationId;
@@ -1103,7 +1105,7 @@ public class WSFederationMetaManager {
 
             for (Iterator iter = entityIds.iterator(); iter.hasNext();) {
                 String federationId = (String)iter.next();
-                FederationElement fed = getEntityDescriptor(realm, 
+                FederationElement fed = getEntityDescriptor(realm,
                     federationId);
                 if ( issuer.equals(getTokenIssuerName(fed)))
                 {
@@ -1141,22 +1143,22 @@ public class WSFederationMetaManager {
             SPSSOConfigElement spConfig = getSPSSOConfig(realm, federationId);
             
             if (idpConfig == null) {
-                String m = spConfig.getMetaAlias();
+                String m = spConfig.getValue().getMetaAlias();
                 if ((m != null) && m.equals(metaAlias)) {
                     role = SAML2Constants.SP_ROLE;
                 }
             } else if (spConfig == null) {
-                String m = idpConfig.getMetaAlias();
+                String m = idpConfig.getValue().getMetaAlias();
                 if ((m != null) && m.equals(metaAlias)) {
                     role = SAML2Constants.IDP_ROLE;
                 }
             } else {
                 //Assuming that sp and idp cannot have the same metaAlias
-                String m = spConfig.getMetaAlias();
+                String m = spConfig.getValue().getMetaAlias();
                 if ((m != null) && m.equals(metaAlias)) {
                     role = SAML2Constants.SP_ROLE;
                 } else {
-                    m = idpConfig.getMetaAlias();
+                    m = idpConfig.getValue().getMetaAlias();
                     if ((m != null) && m.equals(metaAlias)) {
                         role = SAML2Constants.IDP_ROLE;
                     }
@@ -1185,7 +1187,7 @@ public class WSFederationMetaManager {
             = getAllHostedIdentityProviderEntities(realm);
         for(String federationId : hostedEntityIds) {
             if ((idpConfig = getIDPSSOConfig(realm, federationId)) != null) {
-                metaAliases.add(idpConfig.getMetaAlias());
+                metaAliases.add(idpConfig.getValue().getMetaAlias());
             }
         }
         return metaAliases;
@@ -1209,7 +1211,7 @@ public class WSFederationMetaManager {
             realm);
         for(String federationId : hostedEntityIds) {
             if ((spConfig = getSPSSOConfig(realm, federationId)) != null) {
-                metaAliases.add(spConfig.getMetaAlias());
+                metaAliases.add(spConfig.getValue().getMetaAlias());
             }
         }
         return metaAliases;
@@ -1233,7 +1235,7 @@ public class WSFederationMetaManager {
         SPSSOConfigElement spconfig = getSPSSOConfig(realm,
                                                      federationId);
         if (spconfig != null) {        
-            result = isSameCircleOfTrust(spconfig, realm,
+            result = isSameCircleOfTrust(spconfig.getValue(), realm,
                                          trustedEntityId); 
         }
         if (result) {
@@ -1242,7 +1244,7 @@ public class WSFederationMetaManager {
         IDPSSOConfigElement idpconfig = getIDPSSOConfig(realm,
                                                         federationId);
         if (idpconfig !=null) {
-            return (isSameCircleOfTrust(idpconfig, realm,
+            return (isSameCircleOfTrust(idpconfig.getValue(), realm,
                         trustedEntityId)); 
         }
         return false;   
@@ -1314,11 +1316,11 @@ public class WSFederationMetaManager {
     public String getTokenIssuerEndpoint(FederationElement fed)
     {
         // Just return first TokenIssuerEndpoint in the Federation
-        for ( Object o: fed.getAny() )
+        for ( Object o: fed.getValue().getAny() )
         {
             if ( o instanceof TokenIssuerEndpointElement )
             {
-                return ((TokenIssuerEndpointElement)o).getAddress().getValue();
+                return ((TokenIssuerEndpointElement)o).getValue().getAddress().getValue();
             }
         }
         
@@ -1334,11 +1336,11 @@ public class WSFederationMetaManager {
     public String getTokenIssuerName(FederationElement fed)
     {
         // Just return first TokenIssuerName in the Federation
-        for ( Object o: fed.getAny() )
+        for ( Object o: fed.getValue().getAny() )
         {
             if ( o instanceof TokenIssuerNameElement )
             {
-                return ((TokenIssuerNameElement)o).getValue();
+                return ((TokenIssuerNameElement)o).getValue().getValue();
             }
         }
         
@@ -1352,33 +1354,24 @@ public class WSFederationMetaManager {
      * @return byte array containing the decoded value of the 
      * <code>&lt;TokenSigningCertificate&gt;</code> element
      */
-    public byte[] getTokenSigningCertificate(FederationElement fed)
-    {
-        // Just return first TokenIssuerName in the Federation
-        for ( Object o: fed.getAny() )
-        {
-            if ( o instanceof TokenSigningKeyInfoElement )
-            {
+    public byte[] getTokenSigningCertificate(FederationElement fed) {
+        // Just return first TokenSigningKeyInfo in the Federation
+        for (Object o : fed.getValue().getAny()) {
+            if (o instanceof TokenSigningKeyInfoElement) {
                 SecurityTokenReferenceType str =
-                    ((TokenSigningKeyInfoElement)o).getSecurityTokenReference();
-                for ( Object o1: str.getAny() )
-                {
-                    if ( o1 instanceof X509DataType )
-                    {
-                        for ( Object o2: 
-                            ((X509DataType)o1).
-                            getX509IssuerSerialOrX509SKIOrX509SubjectName())
-                        {
-                            if ( o2 instanceof X509Certificate )
-                            {
-                                return ((X509Certificate)o2).getValue();
+                        ((TokenSigningKeyInfoElement) o).getValue().getSecurityTokenReference();
+                for (Object o1 : str.getAny()) {
+                    if (o1 instanceof X509DataElement) {
+                        for (Object o2 : ((X509DataElement) o1).getValue().getX509IssuerSerialOrX509SKIOrX509SubjectName()) {
+                            if (o2 instanceof X509CertificateElement) {
+                                return ((X509CertificateElement) o2).getValue();
                             }
                         }
                     }
                 }
             }
         }
-        
+
         return null;
     }
     
@@ -1386,22 +1379,18 @@ public class WSFederationMetaManager {
      * Returns the value of the <code>&lt;UriNamedClaimTypesOffered&gt;</code> 
      * element for the given entity.
      * @param fed The standard metadata for the entity.
-     * @return <code>UriNamedClaimTypesOfferedElement</code> containing the
+     * @return <code>UriNamedClaimTypesOfferedType</code> containing the
      * offered claim types.
      * <code>&lt;UriNamedClaimTypesOffered&gt;</code> element
      */
-    public UriNamedClaimTypesOfferedElement getUriNamedClaimTypesOffered(
-        FederationElement fed)
-    {
+    public UriNamedClaimTypesOfferedType getUriNamedClaimTypesOffered(FederationElement fed) {
         // Just return first TokenIssuerName in the Federation
-        for ( Object o: fed.getAny() )
-        {
-            if ( o instanceof UriNamedClaimTypesOfferedElement )
-            {
-                return (UriNamedClaimTypesOfferedElement)o;
+        for (Object o : fed.getValue().getAny()) {
+            if (o instanceof UriNamedClaimTypesOfferedElement) {
+                return ((UriNamedClaimTypesOfferedElement) o).getValue();
             }
         }
-        
+
         return null;
     }
 }

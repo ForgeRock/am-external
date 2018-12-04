@@ -27,23 +27,24 @@
  */
 
 /*
- * Portions Copyrighted 2011 ForgeRock AS
+ * Portions Copyrighted 2011-2018 ForgeRock AS.
  */
 
 package com.sun.identity.workflow;
 
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import com.sun.identity.cot.COTConstants;
-import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.cot.COTException;
+import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 public class GetHostedIDPs
     extends Task 
@@ -68,7 +69,7 @@ public class GetHostedIDPs
                 String entityId = (String) i.next();
                 EntityConfigElement elm = mgr.getEntityConfig(realm, entityId);
                 // elm could be null due to OPENAM-269
-                if (elm != null && elm.isHosted()) {
+                if (elm != null && elm.getValue().isHosted()) {
                     EntityDescriptorElement desc = mgr.getEntityDescriptor(
                         realm, entityId);
                     if (SAML2MetaUtils.getIDPSSODescriptor(desc) != null) {

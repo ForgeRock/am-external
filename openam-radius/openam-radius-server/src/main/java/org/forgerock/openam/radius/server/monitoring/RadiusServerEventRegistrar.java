@@ -11,10 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
- */
-/**
- *
+ * Copyright 2015-2018 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server.monitoring;
 
@@ -26,8 +23,6 @@ import javax.inject.Named;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
-import org.forgerock.guava.common.eventbus.EventBus;
-import org.forgerock.guava.common.eventbus.Subscribe;
 import org.forgerock.openam.radius.server.config.RadiusServerConstants;
 import org.forgerock.openam.radius.server.events.AuthRequestAcceptedEvent;
 import org.forgerock.openam.radius.server.events.AuthRequestReceivedEvent;
@@ -35,6 +30,8 @@ import org.forgerock.openam.radius.server.events.AuthRequestRejectedEvent;
 import org.forgerock.openam.radius.server.events.PacketProcessedEvent;
 import org.forgerock.openam.radius.server.events.PacketReceivedEvent;
 
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import com.sun.identity.shared.debug.Debug;
 
 /**

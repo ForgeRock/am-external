@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2017 ForgeRock AS.
+ * Copyright 2011-2018 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -25,8 +25,11 @@
  */
 package org.forgerock.openam.authentication.modules.oauth2;
 
-import static org.forgerock.guava.common.collect.Sets.intersection;
-import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.*;
+import static com.google.common.collect.Sets.intersection;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.COOKIE_ORIG_URL;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.PARAM_ACTIVATION;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.PARAM_CODE;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.PARAM_OAUTH_VERIFIER;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
 
 import java.io.PrintWriter;

@@ -31,7 +31,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import org.forgerock.guava.common.collect.ImmutableList;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.core.CoreWrapper;
@@ -40,6 +39,7 @@ import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.modules.hotp.SMSGateway;
 import com.sun.identity.authentication.spi.AuthLoginException;

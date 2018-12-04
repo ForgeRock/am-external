@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
 package org.forgerock.openam.federation.testutils;
 
@@ -27,7 +27,7 @@ import com.sun.identity.plugin.configuration.ConfigurationException;
 import com.sun.identity.plugin.configuration.ConfigurationInstance;
 import com.sun.identity.plugin.configuration.ConfigurationListener;
 import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
-import com.sun.identity.saml2.jaxb.metadata.impl.EntityDescriptorElementImpl;
+import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.wsfederation.jaxb.entityconfig.FederationConfigElement;
@@ -150,7 +150,7 @@ public class TestCaseConfigurationInstance implements ConfigurationInstance {
         String metadata = getFileContentFromClassPath(TestCaseConfigurationInstance.class, metadataPath);
         String extendedMetadata = getFileContentFromClassPath(TestCaseConfigurationInstance.class, extendedPath);
         WSFederationMetaManager metaManager = new WSFederationMetaManager();
-        metaManager.createFederation(realm, (FederationElement) convertStringToJAXB(metadata));
+        metaManager.createFederation(realm, ((FederationElement) convertStringToJAXB(metadata)));
         metaManager.createEntityConfig(realm, (FederationConfigElement) convertStringToJAXB(extendedMetadata));
     }
 
@@ -159,8 +159,8 @@ public class TestCaseConfigurationInstance implements ConfigurationInstance {
         String extendedMetadata = getFileContentFromClassPath(TestCaseConfigurationInstance.class, extendedPath);
         SAML2MetaManager metaManager = new SAML2MetaManager();
         metaManager.createEntityDescriptor(realm,
-                (EntityDescriptorElementImpl) SAML2MetaUtils.convertStringToJAXB(metadata));
+                (EntityDescriptorElement) SAML2MetaUtils.convertStringToJAXB(metadata));
         metaManager.createEntityConfig(realm,
-                (EntityConfigElement) SAML2MetaUtils.convertStringToJAXB(extendedMetadata));
+                    (EntityConfigElement) SAML2MetaUtils.convertStringToJAXB(extendedMetadata));
     }
 }

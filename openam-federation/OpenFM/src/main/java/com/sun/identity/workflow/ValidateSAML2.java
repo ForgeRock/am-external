@@ -24,7 +24,7 @@
  *
  * $Id: ValidateSAML2.java,v 1.4 2009/11/20 22:45:57 ggennaro Exp $
  *
- * Portions Copyrighted 2014-2016 ForgeRock AS.
+ * Portions Copyrighted 2014-2018 ForgeRock AS.
  */
 
 package com.sun.identity.workflow;
@@ -45,21 +45,20 @@ import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SingleLogoutServiceElement;
-import com.sun.identity.saml2.jaxb.metadata.SingleSignOnServiceElement;
+import com.sun.identity.saml2.jaxb.metadata.EndpointType;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.locale.Locale;
 
 public class ValidateSAML2 {
-    
+
     private static Debug debug = Debug.getInstance("workflow");
     private static final String LOGIN_URL = "/UI/Login";
     private static final String LOGOUT_URL = "/UI/Logout";
-    
+
     private String realm;
     private String idpEntityId;
     private String spEntityId;
@@ -69,8 +68,8 @@ public class ValidateSAML2 {
     private String spBaseURL;
 
     private boolean bFedlet = false;
-    
-    public ValidateSAML2(String realm, String idp, String sp) 
+
+    public ValidateSAML2(String realm, String idp, String sp)
         throws WorkflowException {
         this.realm = realm;
         setIDPEntityId(idp);
@@ -78,19 +77,19 @@ public class ValidateSAML2 {
         validateIDP();
         validateSP();
     }
-    
-    private void validateIDP() 
+
+    private void validateIDP()
         throws WorkflowException {
         try {
             SAML2MetaManager mm = SAML2Utils.getSAML2MetaManager();
-            IDPSSODescriptorElement elt = mm.getIDPSSODescriptor(
+            IDPSSODescriptorType elt = mm.getIDPSSODescriptor(
                 realm, idpEntityId);
 
             if (elt == null) {
                 Object[] param = {idpEntityId};
                 throw new WorkflowException("cannot.locate.idp", param);
             }
-                        
+
             if (idpMetaAlias != null) {
                 IDPSSOConfigElement idpConfig = mm.getIDPSSOConfig(realm,
                     idpEntityId);
@@ -98,18 +97,18 @@ public class ValidateSAML2 {
                     Object[] param = {idpEntityId};
                     throw new WorkflowException("cannot.locate.idp", param);
                 } else {
-                    if (!idpConfig.getMetaAlias().equals(idpMetaAlias)) {
+                    if (!idpConfig.getValue().getMetaAlias().equals(idpMetaAlias)) {
                         Object[] param = {idpEntityId};
                         throw new WorkflowException("cannot.locate.idp", param);
                     }
                 }
             }
 
-            List ssoServiceList = elt.getSingleSignOnService();
+            List<EndpointType> ssoServiceList = elt.getSingleSignOnService();
             idpBaseURL = getIDPBaseURL(ssoServiceList);
             if (idpBaseURL == null) {
                 Object[] param = {idpEntityId};
-                throw new WorkflowException("cannot.locate.idp.loginURL", 
+                throw new WorkflowException("cannot.locate.idp.loginURL",
                     param);
             }
             validateURL(idpBaseURL);
@@ -119,14 +118,13 @@ public class ValidateSAML2 {
             throw new WorkflowException("cannot.locate.idp", param);
         }
     }
-    
-    private String getIDPBaseURL(List ssoServiceList) {
+
+    private String getIDPBaseURL(List<EndpointType> ssoServiceList) {
         String url = null;
         if ((ssoServiceList != null) && !ssoServiceList.isEmpty()) {
-            for (Iterator i = ssoServiceList.iterator();
-                i.hasNext() && (url == null);) {
-                SingleSignOnServiceElement sso =
-                    (SingleSignOnServiceElement) i.next();
+            for (Iterator<EndpointType> i = ssoServiceList.iterator();
+                 i.hasNext() && (url == null);) {
+                EndpointType sso = i.next();
                 if ((sso != null) && (sso.getBinding() != null)) {
                     String ssoURL = sso.getLocation();
                     int loc = ssoURL.indexOf("/metaAlias/");
@@ -140,12 +138,12 @@ public class ValidateSAML2 {
         }
         return url;
     }
-    
-    private void validateSP() 
+
+    private void validateSP()
         throws WorkflowException {
         try {
             SAML2MetaManager mm = SAML2Utils.getSAML2MetaManager();
-            SPSSODescriptorElement elt = mm.getSPSSODescriptor(
+            SPSSODescriptorType elt = mm.getSPSSODescriptor(
                 realm, spEntityId);
             if (elt == null) {
                 Object[] param = {spEntityId};
@@ -159,27 +157,27 @@ public class ValidateSAML2 {
                     Object[] param = {spEntityId};
                     throw new WorkflowException("cannot.locate.sp", param);
                 } else {
-                    if (!spConfig.getMetaAlias().equals(spMetaAlias)) {
+                    if (!spConfig.getValue().getMetaAlias().equals(spMetaAlias)) {
                         Object[] param = {spEntityId};
                         throw new WorkflowException("cannot.locate.sp", param);
                     }
                 }
             }
-            List sloServiceList = elt.getSingleLogoutService();
+            List<EndpointType> sloServiceList = elt.getSingleLogoutService();
             spBaseURL = getSPBaseURL(sloServiceList);
             if (spBaseURL == null) {
                 bFedlet = true;
             } else {
                 validateURL(spBaseURL);
             }
-            
+
         } catch (SAML2MetaException ex) {
             debug.error("ValidateSAML2: Error while validating SP", ex);
             Object[] param = {spEntityId};
             throw new WorkflowException("cannot.locate.sp", param);
         }
     }
-    
+
     private void validateURL(String strUrl)
         throws WorkflowException {
         try {
@@ -195,14 +193,13 @@ public class ValidateSAML2 {
             throw new WorkflowException("unable.to.reach.url", params);
         }
     }
-    
-    private String getSPBaseURL(List sloServiceList) {
+
+    private String getSPBaseURL(List<EndpointType> sloServiceList) {
         String url = null;
         if ((sloServiceList != null) && !sloServiceList.isEmpty()) {
-            for (Iterator i = sloServiceList.iterator();
-                i.hasNext() && (url == null);) {
-                SingleLogoutServiceElement sso =
-                    (SingleLogoutServiceElement) i.next();
+            for (Iterator<EndpointType> i = sloServiceList.iterator();
+                 i.hasNext() && (url == null);) {
+                EndpointType sso = i.next();
                 if ((sso != null) && (sso.getBinding() != null)) {
                     String ssoURL = sso.getLocation();
                     int loc = ssoURL.indexOf("/metaAlias/");

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2018 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
@@ -47,9 +47,9 @@ import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.common.SOAPCommunicator;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SingleSignOnServiceElement;
+import com.sun.identity.saml2.jaxb.metadata.EndpointType;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
@@ -103,7 +103,7 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
 
         final String classMethod = "UtilProxySAMLAuthenticator.authenticate: ";
 
-        SPSSODescriptorElement spSSODescriptor = null;
+        SPSSODescriptorType spSSODescriptor = null;
         String preferredIDP;
 
         // There is no reqID, this is the first time that we pass here.
@@ -134,7 +134,7 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
         }
 
         // verify the signature of the query string if applicable
-        IDPSSODescriptorElement idpSSODescriptor;
+        IDPSSODescriptorType idpSSODescriptor;
         try {
             idpSSODescriptor = IDPSSOUtil.metaManager.getIDPSSODescriptor(data.getRealm(), data.getIdpEntityID());
         } catch (SAML2MetaException sme) {
@@ -183,8 +183,8 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
                 // In ECP profile, sp doesn't know idp.
                 if (!isFromECP) {
                     // verify Destination
-                    List<SingleSignOnServiceElement> ssoServiceList = idpSSODescriptor.getSingleSignOnService();
-                    SingleSignOnServiceElement  endPoint = SPSSOFederate.getSingleSignOnServiceEndpoint(ssoServiceList, binding);
+                    List<EndpointType> ssoServiceList = idpSSODescriptor.getSingleSignOnService();
+                    EndpointType  endPoint = SPSSOFederate.getSingleSignOnServiceEndpoint(ssoServiceList, binding);
                     if (endPoint == null || StringUtils.isEmpty(endPoint.getLocation())) {
                         SAML2Utils.debug
                                 .error("{} authn request unable to get endpoint location for IdpEntity: {}  MetaAlias: {} ",
@@ -438,7 +438,7 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
 
     }
 
-    private void redirectToAuth(SPSSODescriptorElement spSSODescriptor, String binding,
+    private void redirectToAuth(SPSSODescriptorType spSSODescriptor, String binding,
                                 IDPAuthnContextInfo idpAuthnContextInfo, IDPSSOFederateRequest data)
             throws IOException, ServerFaultException {
 

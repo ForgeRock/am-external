@@ -24,20 +24,19 @@
  *
  * $Id: NamespacePrefixMapperImpl.java,v 1.3 2008/06/25 05:48:05 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.wsfederation.meta;
 
-import com.sun.xml.bind.marshaller.NamespacePrefixMapper;
-
 /**
  * Stub implementation - need this for JAXB marshalling
  */
-class NamespacePrefixMapperImpl extends NamespacePrefixMapper {
-    public String getPreferredPrefix( String namespaceUri, String suggestion,
-        boolean requirePrefix)
-    {
+class NamespacePrefixMapperImpl extends com.sun.xml.bind.marshaller.NamespacePrefixMapper {
+    @Override
+    public String getPreferredPrefix( String namespaceUri, String suggestion, boolean requirePrefix) {
         return suggestion;
     }
 }

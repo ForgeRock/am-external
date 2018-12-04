@@ -24,82 +24,80 @@
  *
  * $Id: SAMLUtils.java,v 1.16 2010/01/09 19:41:06 qcheng Exp $
  *
- * Portions Copyrighted 2012-2017 ForgeRock AS.
+ * Portions Copyrighted 2012-2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml.common;
 
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.security.MessageDigest;
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Map;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.HashSet;
-import java.util.Enumeration;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.StringTokenizer;
 
-import java.text.StringCharacterIterator;
-import java.text.CharacterIterator;
-import java.io.UnsupportedEncodingException;
-import java.io.PrintWriter;
-import java.io.IOException;
-import java.io.ByteArrayInputStream;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.soap.MimeHeader;
+import javax.xml.soap.MimeHeaders;
 
-import java.security.MessageDigest;
-
-import java.net.URL;
-import java.net.MalformedURLException;
-
-import org.w3c.dom.*;
+import org.apache.xml.security.c14n.Canonicalizer;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 
 import com.sun.identity.common.PeriodicGroupRunnable;
 import com.sun.identity.common.ScheduleableGroupAction;
-import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.common.SystemConfigurationException;
+import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.common.SystemTimerPool;
 import com.sun.identity.common.TaskRunnable;
 import com.sun.identity.common.TimerPool;
-import com.sun.identity.shared.encode.URLEncDec;
-import com.sun.identity.shared.xml.XMLUtils;
-import com.sun.identity.shared.encode.Base64;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletRequest;
-
-import javax.xml.soap.MimeHeaders;
-import javax.xml.soap.MimeHeader;
-
-import com.sun.identity.saml.assertion.SubjectConfirmation;
-import com.sun.identity.saml.assertion.Assertion;
-import com.sun.identity.saml.assertion.Attribute;
-import com.sun.identity.saml.assertion.AttributeStatement;
-import com.sun.identity.saml.assertion.AuthenticationStatement;
-import com.sun.identity.saml.assertion.AudienceRestrictionCondition;
-import com.sun.identity.saml.assertion.Condition;
-import com.sun.identity.saml.assertion.Conditions;
-import com.sun.identity.saml.assertion.Statement;
-import com.sun.identity.saml.assertion.SubjectStatement;
-import com.sun.identity.saml.xmlsig.XMLSignatureManager;
-import com.sun.identity.saml.plugins.PartnerAccountMapper;
-import com.sun.identity.saml.protocol.*;
-import com.sun.identity.saml.servlet.POSTCleanUpRunnable;
+import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionProvider;
-import com.sun.identity.saml.assertion.Subject;
 import com.sun.identity.saml.SAMLClient;
-import com.sun.identity.federation.common.FSUtils;
-
-import javax.xml.parsers.DocumentBuilder;
-
-import org.apache.xml.security.c14n.Canonicalizer;
+import com.sun.identity.saml.assertion.Assertion;
+import com.sun.identity.saml.assertion.Attribute;
+import com.sun.identity.saml.assertion.AttributeStatement;
+import com.sun.identity.saml.assertion.AudienceRestrictionCondition;
+import com.sun.identity.saml.assertion.AuthenticationStatement;
+import com.sun.identity.saml.assertion.Condition;
+import com.sun.identity.saml.assertion.Conditions;
+import com.sun.identity.saml.assertion.Statement;
+import com.sun.identity.saml.assertion.Subject;
+import com.sun.identity.saml.assertion.SubjectConfirmation;
+import com.sun.identity.saml.assertion.SubjectStatement;
+import com.sun.identity.saml.plugins.PartnerAccountMapper;
+import com.sun.identity.saml.protocol.AssertionArtifact;
+import com.sun.identity.saml.protocol.Response;
+import com.sun.identity.saml.servlet.POSTCleanUpRunnable;
+import com.sun.identity.saml.xmlsig.XMLSignatureManager;
+import com.sun.identity.shared.encode.Base64;
+import com.sun.identity.shared.encode.URLEncDec;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * This class contains some utility methods for processing SAML protocols.
@@ -135,6 +133,7 @@ public class SAMLUtils  extends SAMLUtilsCommon {
     private static Object ssoToken;
  
     static {
+        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
         org.apache.xml.security.Init.init();
         if (SystemConfigurationUtil.isServerMode()) {
             long period = ((Integer) SAMLServiceManager.getAttribute(

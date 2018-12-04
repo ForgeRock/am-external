@@ -1,4 +1,4 @@
-/**
+ /**
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,34 +24,35 @@
  *
  * $Id: KeyUtil.java,v 1.5 2009/06/08 23:41:03 madan_ranganath Exp $
  *
- * Portions Copyrighted 2013-2016 ForgeRock AS
+ * Portions Copyrighted 2013-2018 ForgeRock AS.
  */
 
 package com.sun.identity.federation.key;
 
-import java.util.Map;
-import java.util.List;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.io.ByteArrayInputStream;
-import java.security.cert.CertificateFactory;
-import java.security.PublicKey;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
+ import java.io.ByteArrayInputStream;
+ import java.security.PrivateKey;
+ import java.security.PublicKey;
+ import java.security.cert.CertificateFactory;
+ import java.security.cert.X509Certificate;
+ import java.util.Hashtable;
+ import java.util.Iterator;
+ import java.util.List;
+ import java.util.Map;
 
-import org.apache.xml.security.encryption.XMLCipher;
+ import org.apache.xml.security.encryption.XMLCipher;
 
-import com.sun.identity.common.SystemConfigurationUtil;
-import com.sun.identity.federation.common.FSUtils;
-import com.sun.identity.federation.common.IFSConstants;
-import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
-import com.sun.identity.federation.meta.IDFFMetaUtils;
-import com.sun.identity.liberty.ws.common.jaxb.xmlsig.KeyInfoType;
-import com.sun.identity.liberty.ws.common.jaxb.xmlsig.X509DataElement;
-import com.sun.identity.liberty.ws.meta.jaxb.ProviderDescriptorType;
-import com.sun.identity.liberty.ws.meta.jaxb.KeyDescriptorType;
-import com.sun.identity.saml.common.SAMLConstants;
-import com.sun.identity.saml.xmlsig.KeyProvider;
+ import com.sun.identity.common.SystemConfigurationUtil;
+ import com.sun.identity.federation.common.FSUtils;
+ import com.sun.identity.federation.common.IFSConstants;
+ import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
+ import com.sun.identity.federation.meta.IDFFMetaUtils;
+ import com.sun.identity.liberty.ws.common.jaxb.xmlsig.KeyInfoType;
+ import com.sun.identity.liberty.ws.common.jaxb.xmlsig.X509DataType;
+ import com.sun.identity.liberty.ws.meta.jaxb.KeyDescriptorType;
+ import com.sun.identity.liberty.ws.meta.jaxb.KeyTypes;
+ import com.sun.identity.liberty.ws.meta.jaxb.ProviderDescriptorType;
+ import com.sun.identity.saml.common.SAMLConstants;
+ import com.sun.identity.saml.xmlsig.KeyProvider;
 
 /**
  * The <code>KeyUtil</code> provides methods to obtain
@@ -291,18 +292,18 @@ public class KeyUtil {
         List list = providerDescriptor.getKeyDescriptor();
         Iterator iter = list.iterator();
         KeyDescriptorType kd = null;
-        String use = null;
+        KeyTypes use;
         KeyDescriptorType noUsageKD = null;
         while (iter.hasNext()) {
             kd = (KeyDescriptorType)iter.next();
             use = kd.getUse();
-            if ((use == null) || (use.trim().length() == 0)) {
-		if (noUsageKD == null) {
+            if ((use == null) || (use.value().trim().length() == 0)) {
+		        if (noUsageKD == null) {
                     noUsageKD = kd;
                 }
                 continue;
             }
-            if (use.trim().toLowerCase().equals(usage)) {
+            if (use.value().trim().toLowerCase().equals(usage)) {
                 break;
             } else {
                 kd = null;
@@ -348,11 +349,8 @@ public class KeyUtil {
             
             return null;
         }
-        X509DataElement data = (X509DataElement) ki.getContent().get(0);
-        byte[] bt = 
-            ((com.sun.identity.liberty.ws.common.jaxb.xmlsig.X509DataType.X509Certificate)
-             data.getX509IssuerSerialOrX509SKIOrX509SubjectName().get(0)).
-            getValue();
+        X509DataType data = (X509DataType) ki.getContent().get(0);
+        byte[] bt = ((byte[]) data.getX509IssuerSerialOrX509SKIOrX509SubjectName().get(0));
         CertificateFactory cf = null;
         try {
             cf = CertificateFactory.getInstance("X.509");

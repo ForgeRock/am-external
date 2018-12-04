@@ -24,14 +24,13 @@
  *
  * $Id: FMEncProvider.java,v 1.5 2008/06/25 05:48:03 qcheng Exp $
  *
- * Portions Copyrighted 2014-2016 ForgeRock AS.
+ * Portions Copyrighted 2014-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.xmlenc;
 
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.util.Hashtable;
 import java.util.Set;
 
 import javax.crypto.KeyGenerator;
@@ -59,17 +58,7 @@ import com.sun.identity.xmlenc.EncryptionConstants;
  * <code>FMEncProvier</code> is a class for encrypting and
  * decrypting XML documents, it implements <code>EncProvider</code>.
  */
-
 public final class FMEncProvider implements EncProvider {
-
-    /**
-     * A static map contains the recipients' entity IDs as
-     * the indices and symmetric keys as values. Symmetric key
-     * generation each time is expensive operation. Using the
-     * same key for each recipient is provided as an option
-     * here.
-     */
-    static Hashtable cachedKeys = new Hashtable();
 
     /**
      * A hidden property to switch between two encryption formats.
@@ -82,6 +71,7 @@ public final class FMEncProvider implements EncProvider {
     private static boolean encryptedKeyInKeyInfo = true;
 
     static {
+        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
         org.apache.xml.security.Init.init();
         String tmp = SystemConfigurationUtil.getProperty(
                 "com.sun.identity.saml.xmlenc.encryptedKeyInKeyInfo");
@@ -232,14 +222,7 @@ public final class FMEncProvider implements EncProvider {
         // start of obtaining secret key
         if (secretKey == null) {
             if (recipientEntityID != null) {
-                if (cachedKeys.containsKey(recipientEntityID)) {
-                    secretKey = (SecretKey)
-                            cachedKeys.get(recipientEntityID);
-                } else {
-                    secretKey = generateSecretKey(
-                            dataEncAlgorithm, dataEncStrength);
-                    cachedKeys.put(recipientEntityID, secretKey);
-                }
+                secretKey = generateSecretKey(dataEncAlgorithm, dataEncStrength);
             } else {
                 secretKey = generateSecretKey(
                         dataEncAlgorithm, dataEncStrength);

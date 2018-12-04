@@ -24,6 +24,8 @@
  *
  * $Id: IPRPSignoutRequest.java,v 1.7 2009/10/28 23:59:00 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.wsfederation.servlet;
@@ -149,7 +151,7 @@ public class IPRPSignoutRequest extends WSFederationAction {
                 if ( idpList != null && idpList.length > 0 
                     && idpList[0] != null && idpList[0].length()>0 )
                 {
-                    FederationElement fed = 
+                    FederationElement fed =
                         metaManager.getEntityDescriptor(realm, 
                         idpList[0]);
                     String endpoint = 
@@ -190,7 +192,7 @@ public class IPRPSignoutRequest extends WSFederationAction {
                         {
                             displayName = spList[i];
                         }
-                        FederationElement fed = 
+                        FederationElement fed =
                             metaManager.getEntityDescriptor(realm, 
                             spList[i]);
                         String endpoint = 

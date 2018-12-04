@@ -15,14 +15,28 @@
  */
 package org.forgerock.openam.authentication.modules.push;
 
-import static org.forgerock.openam.authentication.modules.push.Constants.*;
+import static org.forgerock.openam.authentication.modules.push.Constants.AM_AUTH_AUTHENTICATOR_PUSH;
+import static org.forgerock.openam.authentication.modules.push.Constants.CHALLENGE_KEY;
+import static org.forgerock.openam.authentication.modules.push.Constants.DEVICE_PUSH_MESSAGE;
+import static org.forgerock.openam.authentication.modules.push.Constants.DEVICE_PUSH_WAIT_TIMEOUT;
+import static org.forgerock.openam.authentication.modules.push.Constants.EMERGENCY_CALLBACK_POSITION;
+import static org.forgerock.openam.authentication.modules.push.Constants.EMERGENCY_NOT_PRESSED;
+import static org.forgerock.openam.authentication.modules.push.Constants.EMERGENCY_PRESSED;
+import static org.forgerock.openam.authentication.modules.push.Constants.LOADBALANCER_KEY;
+import static org.forgerock.openam.authentication.modules.push.Constants.POLLING_CALLBACK_POSITION;
+import static org.forgerock.openam.authentication.modules.push.Constants.RECOVERY_CODE_CALLBACK_POSITION;
+import static org.forgerock.openam.authentication.modules.push.Constants.STATE_EMERGENCY;
+import static org.forgerock.openam.authentication.modules.push.Constants.STATE_EMERGENCY_USED;
+import static org.forgerock.openam.authentication.modules.push.Constants.STATE_WAIT;
+import static org.forgerock.openam.authentication.modules.push.Constants.TIME_TO_LIVE_KEY;
+import static org.forgerock.openam.authentication.modules.push.Constants.USERNAME_CALLBACK_LOCATION_POSITION;
+import static org.forgerock.openam.authentication.modules.push.Constants.USERNAME_STATE;
+import static org.forgerock.openam.authentication.modules.push.Constants.USE_EMERGENCY_CODE;
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT;
 
 import java.security.Principal;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +55,7 @@ import org.forgerock.json.jose.jws.SigningManager;
 import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
 import org.forgerock.openam.authentication.callbacks.helpers.PollingWaitAssistant;
+import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
@@ -207,11 +222,12 @@ public class AuthenticatorPush extends AbstractPushModule {
         NameCallback recoveryCode = (NameCallback) callbacks[RECOVERY_CODE_CALLBACK_POSITION];
         String codeAttempt = recoveryCode.getName();
 
-        List<String> recoveryCodes = new ArrayList<>(device.getRecoveryCodes());
-        if (recoveryCodes.contains(codeAttempt)) {
-            recoveryCodes.remove(codeAttempt);
-            device.setRecoveryCodes(recoveryCodes);
-            userPushDeviceProfileManager.saveDeviceProfile(username, realm, device);
+        if (device.useRecoveryCode(codeAttempt)) {
+            try {
+                userPushDeviceProfileManager.saveDeviceProfile(username, realm, device);
+            } catch (DevicePersistenceException e) {
+                throw failedAsLoginException();
+            }
 
             return STATE_EMERGENCY_USED;
         }

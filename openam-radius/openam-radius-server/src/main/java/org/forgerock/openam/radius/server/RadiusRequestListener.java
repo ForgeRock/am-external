@@ -12,16 +12,9 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server;
-
-import com.sun.identity.shared.debug.Debug;
-import org.forgerock.guava.common.eventbus.EventBus;
-import org.forgerock.openam.radius.server.config.ClientConfig;
-import org.forgerock.openam.radius.server.config.RadiusServerConstants;
-import org.forgerock.openam.radius.server.config.RadiusServiceConfig;
-import org.forgerock.openam.radius.server.events.PacketDroppedSilentlyEvent;
-import org.forgerock.openam.radius.server.events.PacketReceivedEvent;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -40,6 +33,15 @@ import java.security.NoSuchAlgorithmException;
 import java.text.MessageFormat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import org.forgerock.openam.radius.server.config.ClientConfig;
+import org.forgerock.openam.radius.server.config.RadiusServerConstants;
+import org.forgerock.openam.radius.server.config.RadiusServiceConfig;
+import org.forgerock.openam.radius.server.events.PacketDroppedSilentlyEvent;
+import org.forgerock.openam.radius.server.events.PacketReceivedEvent;
+
+import com.google.common.eventbus.EventBus;
+import com.sun.identity.shared.debug.Debug;
 
 /**
  * Listens for incoming radius requests, validates they are for defined clients, drops packets that aren't, and queues

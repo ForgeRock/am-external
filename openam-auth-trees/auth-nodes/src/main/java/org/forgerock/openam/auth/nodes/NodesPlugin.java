@@ -13,19 +13,21 @@
  *
  * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Arrays.asList;
 
 import java.util.Map;
 
-import org.forgerock.guava.common.collect.ImmutableMap;
 import org.forgerock.openam.auth.node.api.AbstractNodeAmPlugin;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode;
 import org.forgerock.openam.auth.nodes.push.PushResultVerifierNode;
+import org.forgerock.openam.auth.nodes.webauthn.WebAuthnAuthenticationNode;
+import org.forgerock.openam.auth.nodes.webauthn.WebAuthnRegistrationNode;
 import org.forgerock.openam.plugins.PluginException;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Core nodes installed by default with no engine dependencies.
@@ -34,7 +36,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public String getPluginVersion() {
-        return "2.0.0";
+        return "3.0.0";
     }
 
     @Override
@@ -84,7 +86,14 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 SocialGoogleNode.class,
                 SocialNode.class,
                 TimerStartNode.class,
-                TimerStopNode.class
-        ));
+                TimerStopNode.class),
+            "3.0.0", asList(
+                AgentDataStoreDecisionNode.class,
+                CookiePresenceDecisionNode.class,
+                MessageNode.class,
+                WebAuthnRegistrationNode.class,
+                WebAuthnAuthenticationNode.class,
+                RecoveryCodeDisplayNode.class)
+        );
     }
 }

@@ -1,5 +1,4 @@
 /*
-/*
  * The contents of this file are subject to the terms of the Common Development and
  * Distribution License (the License). You may not use this file except in compliance with the
  * License.
@@ -16,7 +15,6 @@
  */
 package org.forgerock.openam.auth.node.api;
 
-import static org.forgerock.guava.common.collect.Multimaps.unmodifiableListMultimap;
 import static org.forgerock.util.Reject.checkNotNull;
 
 import java.util.Collections;
@@ -24,14 +22,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.forgerock.guava.common.collect.ImmutableList;
-import org.forgerock.guava.common.collect.ImmutableListMultimap;
-import org.forgerock.guava.common.collect.ImmutableMap;
 import org.forgerock.guava.common.collect.ListMultimap;
 import org.forgerock.util.i18n.PreferredLocales;
 
-import jdk.nashorn.internal.ir.annotations.Immutable;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Multimaps;
 
+import jdk.nashorn.internal.ir.annotations.Immutable;
 
 /**
  * A representation of the external HTTP request in the current tree authentication context.
@@ -69,11 +68,15 @@ public final class ExternalRequestContext {
      * The parameters of the request.
      */
     public final Map<String, List<String>> parameters;
+    /**
+     * The URL of the server.
+     */
+    public final String serverUrl;
 
-    private ExternalRequestContext(ListMultimap<String, String> headers, Map<String, String> cookies,
-            PreferredLocales locales, String clientIp, String hostName, String ssoTokenId,
-            Map<String, String[]> parameters) {
-        this.headers = unmodifiableListMultimap(checkNotNull(headers));
+    private ExternalRequestContext(com.google.common.collect.ListMultimap<String, String> headers,
+            Map<String, String> cookies, PreferredLocales locales, String clientIp, String hostName, String ssoTokenId,
+            Map<String, String[]> parameters, String serverUrl) {
+        this.headers = new WrappedListMultimap<>(Multimaps.unmodifiableListMultimap(checkNotNull(headers)));
         this.cookies = Collections.unmodifiableMap(cookies);
         this.locales = checkNotNull(locales);
         this.clientIp = checkNotNull(clientIp);
@@ -81,6 +84,7 @@ public final class ExternalRequestContext {
         this.ssoTokenId = ssoTokenId;
         this.parameters = Collections.unmodifiableMap(parameters.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> ImmutableList.copyOf(e.getValue()))));
+        this.serverUrl = serverUrl;
     }
 
     /**
@@ -88,13 +92,14 @@ public final class ExternalRequestContext {
      */
     public static class Builder {
 
-        private ListMultimap<String, String> headers = ImmutableListMultimap.of();
+        private com.google.common.collect.ListMultimap<String, String> headers = ImmutableListMultimap.of();
         private Map<String, String> cookies = ImmutableMap.of();
         private PreferredLocales locales = new PreferredLocales();
         private String clientIp = "unknown";
         private String hostName = "localhost";
         private String ssoTokenId = null;
         private Map<String, String[]> parameters = ImmutableMap.of();
+        private String serverUrl = null;
 
         /**
          * Sets the HTTP headers for the request.
@@ -102,7 +107,7 @@ public final class ExternalRequestContext {
          * @param headers The HTTP headers.
          * @return This builder instance.
          */
-        public Builder headers(ListMultimap<String, String> headers) {
+        public Builder headers(com.google.common.collect.ListMultimap<String, String> headers) {
             this.headers = headers;
             return this;
         }
@@ -173,12 +178,24 @@ public final class ExternalRequestContext {
         }
 
         /**
+         * Sets the serverUrl of the request.
+         *
+         * @param serverUrl the serverUrl.
+         * @return this builder.
+         */
+        public Builder serverUrl(String serverUrl) {
+            this.serverUrl = serverUrl;
+            return this;
+        }
+
+        /**
          * Creates a new {@link ExternalRequestContext} instance.
          *
          * @return A new instance of {@link ExternalRequestContext}.
          */
         public ExternalRequestContext build() {
-            return new ExternalRequestContext(headers, cookies, locales, clientIp, hostName, ssoTokenId, parameters);
+            return new ExternalRequestContext(headers, cookies, locales, clientIp, hostName, ssoTokenId, parameters,
+                    serverUrl);
         }
     }
 }

@@ -29,13 +29,14 @@
 package com.sun.identity.saml2.profile;
 
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.newDate;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -43,15 +44,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.JAXBElement;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.SOAPConnectionFactory;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
-import com.sun.identity.saml2.common.SOAPCommunicator;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -73,11 +75,12 @@ import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.common.SOAPCommunicator;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.saml2.jaxb.metadata.AffiliationDescriptorType;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.ManageNameIDServiceElement;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.EndpointType;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.key.EncInfo;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.logging.LogUtil;
@@ -93,8 +96,8 @@ import com.sun.identity.saml2.protocol.NewEncryptedID;
 import com.sun.identity.saml2.protocol.NewID;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.Status;
-import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.xml.XMLUtils;
 
 /**
@@ -222,9 +225,9 @@ public class DoManageNameID {
         
         try {
             String binding = 
-                SAML2Utils.getParameter(paramsMap, SAML2Constants.BINDING); 
-        
-            ManageNameIDServiceElement mniService =
+                SAML2Utils.getParameter(paramsMap, SAML2Constants.BINDING);
+
+            EndpointType mniService =
                 getMNIServiceElement(realm, remoteEntityID, 
                 hostEntityRole, binding);
             if (binding == null) {
@@ -286,7 +289,7 @@ public class DoManageNameID {
                 signMNIRequest(mniRequest, realm, hostEntityID, hostEntityRole,
                     remoteEntityID);
 
-                BaseConfigType config = null;
+                JAXBElement<BaseConfigType> config = null;
                 if (hostEntityRole.equalsIgnoreCase(SAML2Constants.SP_ROLE)) {
                     config = metaManager.getIDPSSOConfig(realm, remoteEntityID);
                 } else {
@@ -361,7 +364,7 @@ public class DoManageNameID {
         try {
             if (binding == null) {
                 String realm = SAML2MetaUtils.getRealmByMetaAlias(metaAlias);
-                ManageNameIDServiceElement mniService =
+                EndpointType mniService =
                     getMNIServiceElement(realm, remoteEntityID,
                                        hostEntityRole, null);
                 if (mniService != null) {
@@ -474,10 +477,10 @@ public class DoManageNameID {
         boolean valid;
         Set<X509Certificate> signingCerts;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
-            SPSSODescriptorElement spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
+            SPSSODescriptorType spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
             signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
         } else {
-            IDPSSODescriptorElement idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
+            IDPSSODescriptorType idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
             signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
         }
 
@@ -587,10 +590,10 @@ public class DoManageNameID {
         boolean valid;
         Set<X509Certificate> signingCerts;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
-            SPSSODescriptorElement spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
+            SPSSODescriptorType spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
             signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
         } else {
-            IDPSSODescriptorElement idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
+            IDPSSODescriptorType idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
             signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
         }
         
@@ -739,7 +742,7 @@ public class DoManageNameID {
         }
         
         try {
-            ManageNameIDServiceElement mniService =
+            EndpointType mniService =
                 getMNIServiceElement(realm, remoteEntityID, 
                 hostRole, SAML2Constants.HTTP_REDIRECT);
             String mniURL = mniService.getResponseLocation();
@@ -1764,11 +1767,11 @@ public class DoManageNameID {
         return AccountUtils.removeAccountFederation(nameInfo, userID);
     }
     
-    private static ManageNameIDServiceElement getMNIServiceElement(
+    private static EndpointType getMNIServiceElement(
                     String realm, String entityID,  
                     String hostEntityRole, String binding)
         throws SAML2MetaException, SessionException, SAML2Exception {
-        ManageNameIDServiceElement mniService = null;
+        EndpointType mniService = null;
         String method = "getMNIServiceElement: ";
         
         if (debug.messageEnabled()) {
@@ -1847,12 +1850,12 @@ public class DoManageNameID {
         
         EncInfo encInfo = null;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
-            SPSSODescriptorElement spSSODesc =
+            SPSSODescriptorType spSSODesc =
                 metaManager.getSPSSODescriptor(realm, remoteEntity);
             encInfo = KeyUtil.getEncInfo(spSSODesc, remoteEntity,
                 SAML2Constants.SP_ROLE);
         } else {
-            IDPSSODescriptorElement idpSSODesc = 
+            IDPSSODescriptorType idpSSODesc =
                  metaManager.getIDPSSODescriptor(realm, remoteEntity);
             encInfo = KeyUtil.getEncInfo(idpSSODesc, remoteEntity,
                  SAML2Constants.IDP_ROLE);
@@ -1957,29 +1960,29 @@ public class DoManageNameID {
      *                            provider's SSO configuration.
      * @throws SessionException invalid or expired single-sign-on session
      */
-    static public ManageNameIDServiceElement getIDPManageNameIDConfig(
+    static public EndpointType getIDPManageNameIDConfig(
                                                  String realm, 
                                                  String entityId,
                                                  String binding)
         throws SAML2MetaException, SessionException {
-        ManageNameIDServiceElement mni = null;
+        EndpointType mni = null;
 
-        IDPSSODescriptorElement idpSSODesc = 
+        IDPSSODescriptorType idpSSODesc =
                     metaManager.getIDPSSODescriptor(realm, entityId);
         if (idpSSODesc == null) {
                 debug.error(SAML2Utils.bundle.getString("noIDPEntry"));
             return null;
         }
 
-        List list = idpSSODesc.getManageNameIDService();
+        List<EndpointType> list = idpSSODesc.getManageNameIDService();
 
         if ((list != null) && !list.isEmpty()) {
             if (binding == null) {
-                return (ManageNameIDServiceElement)list.get(0);
+                return list.get(0);
             }
-            Iterator it = list.iterator();
+            Iterator<EndpointType> it = list.iterator();
             while (it.hasNext()) {
-                mni = (ManageNameIDServiceElement)it.next();  
+                mni = it.next();
                 if (binding.equalsIgnoreCase(mni.getBinding())) {
                     break;
                 }
@@ -2000,27 +2003,27 @@ public class DoManageNameID {
      *                            provider's SSO configuration.
      * @throws SessionException invalid or expired single-sign-on session.
      */
-    static public ManageNameIDServiceElement getSPManageNameIDConfig(
+    static public EndpointType getSPManageNameIDConfig(
                                                 String realm, String entityId,
                                                 String binding)
         throws SAML2MetaException, SessionException {
-        ManageNameIDServiceElement mni = null;
+        EndpointType mni = null;
 
-        SPSSODescriptorElement spSSODesc = 
+        SPSSODescriptorType spSSODesc =
                           metaManager.getSPSSODescriptor(realm, entityId);
         if (spSSODesc == null) {
             return null;
         }
 
-        List list = spSSODesc.getManageNameIDService();
+        List<EndpointType> list = spSSODesc.getManageNameIDService();
 
         if ((list != null) && !list.isEmpty()) {
             if (binding == null) {
-                return (ManageNameIDServiceElement)list.get(0);
+                return list.get(0);
             }
-            Iterator it = list.iterator();
+            Iterator<EndpointType> it = list.iterator();
             while (it.hasNext()) {
-                mni = (ManageNameIDServiceElement)it.next();  
+                mni = it.next();
                 if (binding.equalsIgnoreCase(mni.getBinding())) {
                     break;
                 }
@@ -2136,9 +2139,8 @@ public class DoManageNameID {
             sessionProvider.setProperty(
                 session, AccountUtils.getNameIDInfoKeyAttribute(), v);
             if (debug.messageEnabled()) {
-                debug.message(method+"New InfoKey from session : " +
-                    sessionProvider.getProperty(
-                        session, AccountUtils.getNameIDInfoKeyAttribute()));
+                debug.message("{}New InfoKey from session : {}", method, Arrays.toString(
+                        sessionProvider.getProperty(session, AccountUtils.getNameIDInfoKeyAttribute())));
             }
         } else {
             debug.message(method+"No InfoKey to remove.");
@@ -2285,7 +2287,7 @@ public class DoManageNameID {
                 throw new SAML2Exception(SAML2Utils.bundle.getString(
                 "invalidSignInRequest"));
             }
-            ManageNameIDServiceElement mniService = getMNIServiceElement(realm,
+            EndpointType mniService = getMNIServiceElement(realm,
                 remoteEntityID, hostEntityRole, SAML2Constants.HTTP_POST);
             String mniURL = mniService.getResponseLocation();
             if (mniURL == null){

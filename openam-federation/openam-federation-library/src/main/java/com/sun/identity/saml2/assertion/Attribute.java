@@ -24,7 +24,7 @@
  *
  * $Id: Attribute.java,v 1.2 2008/06/25 05:47:40 qcheng Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion;
@@ -104,7 +104,7 @@ public interface Attribute {
      *                 <code>AttributeValue</code>(s).
      * @see #setAttributeValueString(List)
      */
-    List getAttributeValueString();
+    List<String> getAttributeValueString();
 
     /**
      * Sets the value of <code>AttributeValue</code> element(s).

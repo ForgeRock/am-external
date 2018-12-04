@@ -15,20 +15,18 @@
  */
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.singletonList;
-import static org.forgerock.json.JsonValue.*;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.ResourceBundle;
 
 import javax.inject.Inject;
 import javax.security.auth.callback.NameCallback;
 
-import org.forgerock.guava.common.base.Strings;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
@@ -38,14 +36,16 @@ import org.forgerock.openam.auth.node.api.Node.Metadata;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.RecoveryCodeCollectorDecisionNode.Config;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
+import org.forgerock.openam.core.rest.devices.DeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.DeviceSettings;
-import org.forgerock.openam.core.rest.devices.UserDeviceSettingsDao;
-import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
-import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
+import org.forgerock.openam.core.rest.devices.oath.UserOathDeviceProfileManager;
+import org.forgerock.openam.core.rest.devices.push.UserPushDeviceProfileManager;
+import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Strings;
 import com.google.inject.assistedinject.Assisted;
 
 /**
@@ -58,8 +58,9 @@ public class RecoveryCodeCollectorDecisionNode extends AbstractDecisionNode {
     private static final Logger LOGGER = LoggerFactory.getLogger("amAuth");
     private static final String BUNDLE = "org/forgerock/openam/auth/nodes/RecoveryCodeCollectorDecisionNode";
     private final Config config;
-    private final UserDeviceSettingsDao<OathDeviceSettings> oathDevicesDao;
-    private final UserDeviceSettingsDao<PushDeviceSettings> pushDevicesDao;
+    private final UserPushDeviceProfileManager pushDeviceProfileManager;
+    private final UserOathDeviceProfileManager oathDeviceProfileManager;
+    private final UserWebAuthnDeviceProfileManager webauthnDeviceProfileManager;
 
     /**
      * Configuration for Recovery Code Collector Decision Node.
@@ -81,27 +82,43 @@ public class RecoveryCodeCollectorDecisionNode extends AbstractDecisionNode {
      * Guice constructor.
      *
      * @param config The configuration of this node.
-     * @param oathDevicesDao The DAO to be used to access OATH device settings.
-     * @param pushDevicesDao The DAO to be used to access Push device settings.
+     * @param pushDeviceProfileManager The profile manager for push devices.
+     * @param oathDeviceProfileManager The profile manager for OATH devices.
+     * @param webauthnDeviceProfileManager The profile manager for WebAuthn devices.
      */
     @Inject
     public RecoveryCodeCollectorDecisionNode(@Assisted Config config,
-            UserDeviceSettingsDao<OathDeviceSettings> oathDevicesDao,
-            UserDeviceSettingsDao<PushDeviceSettings> pushDevicesDao) {
+                                             UserPushDeviceProfileManager pushDeviceProfileManager,
+                                             UserOathDeviceProfileManager oathDeviceProfileManager,
+                                             UserWebAuthnDeviceProfileManager webauthnDeviceProfileManager) {
         this.config = config;
-        this.oathDevicesDao = oathDevicesDao;
-        this.pushDevicesDao = pushDevicesDao;
+        this.pushDeviceProfileManager = pushDeviceProfileManager;
+        this.oathDeviceProfileManager = oathDeviceProfileManager;
+        this.webauthnDeviceProfileManager = webauthnDeviceProfileManager;
     }
 
     @Override
     public Action process(TreeContext context) {
         LOGGER.debug("RecoveryCodeCollectorDecisionNode started");
-        UserDeviceSettingsDao<? extends DeviceSettings> dao =
-                RecoveryCodeType.OATH == config.recoveryCodeType() ? oathDevicesDao : pushDevicesDao;
+
+        DeviceProfileManager<? extends DeviceSettings> profileManager;
+        switch (config.recoveryCodeType()) {
+        case OATH:
+            profileManager = oathDeviceProfileManager;
+            break;
+        case PUSH:
+            profileManager = pushDeviceProfileManager;
+            break;
+        case WEB_AUTHN:
+        default:
+            profileManager = webauthnDeviceProfileManager;
+            break;
+        }
+
         return context.getCallback(NameCallback.class)
                 .map(NameCallback::getName)
                 .filter(code -> !Strings.isNullOrEmpty(code))
-                .map(code -> goTo(isRecoveryCodeValid(context, dao, code)).build())
+                .map(code -> goTo(isRecoveryCodeValid(context, profileManager, code)).build())
                 .orElseGet(() -> collectRecoveryCode(context));
     }
 
@@ -110,17 +127,16 @@ public class RecoveryCodeCollectorDecisionNode extends AbstractDecisionNode {
         return json(object(field("recoveryCodeType", config.recoveryCodeType().name())));
     }
 
-    private <T extends DeviceSettings> boolean isRecoveryCodeValid(TreeContext context, UserDeviceSettingsDao<T> dao,
-            String code) {
+    private <T extends DeviceSettings> boolean isRecoveryCodeValid(TreeContext context,
+                                                                   DeviceProfileManager<T> profileManager,
+                                                                   String code) {
         String username = context.sharedState.get(USERNAME).asString();
         String realm = context.sharedState.get(REALM).asString();
         try {
-            T device = CollectionUtils.getFirstItem(dao.readDeviceSettings(username, realm));
+            T device = CollectionUtils.getFirstItem(profileManager.getDeviceProfiles(username, realm));
             if (device != null) {
-                List<String> recoveryCodes = new ArrayList<>(device.getRecoveryCodes());
-                if (recoveryCodes.remove(code)) {
-                    device.setRecoveryCodes(recoveryCodes);
-                    dao.saveDeviceSettings(username, realm, singletonList(device));
+                if (device.useRecoveryCode(code)) {
+                    profileManager.saveDeviceProfile(username, realm, device);
                     return true;
                 }
             }
@@ -148,6 +164,10 @@ public class RecoveryCodeCollectorDecisionNode extends AbstractDecisionNode {
         /**
          * Push recovery code.
          */
-        PUSH
+        PUSH,
+        /**
+         * WebAuthn recovery code.
+         */
+        WEB_AUTHN
     }
 }

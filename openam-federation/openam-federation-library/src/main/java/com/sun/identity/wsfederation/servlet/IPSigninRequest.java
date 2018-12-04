@@ -24,40 +24,40 @@
  *
  * $Id: IPSigninRequest.java,v 1.8 2009/10/28 23:59:00 exu Exp $
  *
- * Portions Copyrighted 2014-2017 ForgeRock AS.
+ * Portions Copyrighted 2014-2018 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.servlet;
 
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
-import com.sun.identity.plugin.session.SessionException;
-import com.sun.identity.plugin.session.SessionProvider;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.logging.Level;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.owasp.esapi.ESAPI;
+
 import com.sun.identity.multiprotocol.MultiProtocolUtils;
 import com.sun.identity.multiprotocol.SingleLogoutManager;
+import com.sun.identity.plugin.session.SessionException;
+import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.wsfederation.common.WSFederationConstants;
 import com.sun.identity.wsfederation.common.WSFederationException;
-import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
-
-import java.io.IOException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.sun.identity.wsfederation.common.WSFederationUtils;
 import com.sun.identity.wsfederation.jaxb.entityconfig.SPSSOConfigElement;
+import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
 import com.sun.identity.wsfederation.logging.LogUtil;
 import com.sun.identity.wsfederation.meta.WSFederationMetaManager;
 import com.sun.identity.wsfederation.meta.WSFederationMetaUtils;
 import com.sun.identity.wsfederation.profile.IDPSSOUtil;
 import com.sun.identity.wsfederation.profile.RequestSecurityTokenResponse;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.logging.Level;
-import javax.servlet.ServletException;
-import org.owasp.esapi.ESAPI;
 
 /**
  * This class implements the sign-in request for the identity provider.
@@ -280,11 +280,10 @@ public class IPSigninRequest extends WSFederationAction {
             throw new WSFederationException(se);
         }
 
-        String strWantAssertionSigned = WSFederationMetaUtils.getAttribute(spConfig,
+        String strWantAssertionSigned = WSFederationMetaUtils.getAttribute(spConfig.getValue(),
                 WSFederationConstants.WANT_ASSERTION_SIGNED);
         // By default, we want to sign assertions
-        boolean wantAssertionSigned = strWantAssertionSigned != null ? Boolean.parseBoolean(strWantAssertionSigned)
-                : true;
+        boolean wantAssertionSigned = strWantAssertionSigned == null || Boolean.parseBoolean(strWantAssertionSigned);
 
         FederationElement sp = WSFederationUtils.getMetaManager().getEntityDescriptor(realm, spEntityId);
         String spTokenIssuerName = WSFederationUtils.getMetaManager().getTokenIssuerName(sp);

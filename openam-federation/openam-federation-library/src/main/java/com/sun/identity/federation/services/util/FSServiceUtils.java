@@ -24,7 +24,7 @@
  *
  * $Id: FSServiceUtils.java,v 1.11 2008/11/10 22:56:59 veiming Exp $
  *
- * Portions Copyrighted 2012-2017 ForgeRock AS.
+ * Portions Copyrighted 2012-2018 ForgeRock AS.
  */
 
 package com.sun.identity.federation.services.util;
@@ -60,6 +60,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.federation.accountmgmt.FSAccountFedInfo;
@@ -81,7 +82,6 @@ import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.shared.Constants;
 import com.sun.identity.shared.xml.XMLUtils;
-import org.w3c.dom.Node;
 
 /**
  * Util class to provide methods to manage ID-FF service.
@@ -935,9 +935,9 @@ public class FSServiceUtils {
         List urls = spDescriptor.getAssertionConsumerServiceURL();
         if (urls != null && !urls.isEmpty()) {
             Iterator iter = urls.iterator();
-            SPDescriptorType.AssertionConsumerServiceURLType curUrl = null;
+            SPDescriptorType.AssertionConsumerServiceURL curUrl = null;
             while (iter.hasNext()) {
-                curUrl = (SPDescriptorType.AssertionConsumerServiceURLType)
+                curUrl = (SPDescriptorType.AssertionConsumerServiceURL)
                     iter.next();
                 String curId = curUrl.getId();
                 String curValue = curUrl.getValue();

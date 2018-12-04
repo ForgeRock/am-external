@@ -35,7 +35,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2FailoverUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.metadata.EndpointType;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.plugins.SAML2ServiceProviderAdapter;
@@ -159,7 +159,7 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
         final String realm = SAML2MetaUtils.getRealmByMetaAlias(metaAlias);
         final String relayState = ssoToken.getProperty(SAML2Constants.RELAY_STATE);
         final String binding = SAML2Constants.HTTP_REDIRECT;
-        final IDPSSODescriptorElement idpsso = sm.getIDPSSODescriptor(realm, idpEntityId);
+        final IDPSSODescriptorType idpsso = sm.getIDPSSODescriptor(realm, idpEntityId);
 
         final List<EndpointType> slosList = idpsso.getSingleLogoutService();
 

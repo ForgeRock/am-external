@@ -24,9 +24,19 @@
  *
  * $Id: SAML2SingleLogoutHandler.java,v 1.6 2008/11/10 22:57:00 veiming Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
-
 package com.sun.identity.multiprotocol;
+
+import java.net.URLEncoder;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.plugin.session.SessionException;
@@ -37,21 +47,13 @@ import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
-import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.profile.IDPCache;
 import com.sun.identity.saml2.profile.IDPSession;
 import com.sun.identity.saml2.profile.LogoutUtil;
 import com.sun.identity.saml2.profile.NameIDandSPpair;
 import com.sun.identity.shared.debug.Debug;
-import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * The <code>SAML2SingleLogoutHander</code> class is an implementation of
@@ -244,7 +246,7 @@ public class SAML2SingleLogoutHandler implements SingleLogoutHandler {
                     }
                     IDPSSOConfigElement config =
                             saml2Manager.getIDPSSOConfig(realm, idpId);
-                    return config.getMetaAlias();
+                    return config.getValue().getMetaAlias();
                 }
             }
         } catch (Exception e) {
@@ -302,7 +304,7 @@ public class SAML2SingleLogoutHandler implements SingleLogoutHandler {
                 SAML2Constants.IDP_SESSION_INDEX);
         if (debug.messageEnabled()) {
             debug.message("SAML2SLOHandler.handleSOAPSLO: " +
-                    "session index = " + sessIndex);
+                    "session index = " + Arrays.toString(sessIndex));
         }
         if ((sessIndex == null) || (sessIndex.length == 0)) {
             if (debug.warningEnabled()) {
@@ -338,7 +340,7 @@ public class SAML2SingleLogoutHandler implements SingleLogoutHandler {
                 debug.message("SAML2SLOHanlder.handleSOAPSLO: "
                     + "SP for " + sessIndex[0] + " is " + spEntityID);
             }
-            SPSSODescriptorElement sp = null;
+            SPSSODescriptorType sp = null;
             sp = SAML2Utils.getSAML2MetaManager().
                     getSPSSODescriptor(realm, spEntityID);
             List slosList = sp.getSingleLogoutService();

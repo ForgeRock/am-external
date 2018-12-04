@@ -22,18 +22,18 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2016 ForgeRock AS.
+ * Portions Copyrighted 2010-2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
 
-import com.sun.identity.plugin.session.SessionException;
-import com.sun.identity.saml.common.SAMLUtils;
-import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
-import com.sun.identity.saml2.protocol.AuthnRequest;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.forgerock.openam.saml2.IDPRequestValidator;
 import org.forgerock.openam.saml2.IDPSSOFederateRequest;
 import org.forgerock.openam.saml2.SAML2ActorFactory;
@@ -44,11 +44,13 @@ import org.forgerock.openam.saml2.audit.SAML2EventLogger;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.annotations.VisibleForTesting;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Map;
+import com.sun.identity.plugin.session.SessionException;
+import com.sun.identity.saml.common.SAMLUtils;
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
+import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
+import com.sun.identity.saml2.protocol.AuthnRequest;
 
 /**
  * This class handles the federation and/or single sign on request
@@ -174,7 +176,7 @@ public class IDPSSOFederate {
                     IDPProxyUtil.sendProxyAuthnRequest(
                             (AuthnRequest) paramsMap.get("authnReq"),
                             preferredIDP,
-                            (SPSSODescriptorElement) paramsMap.get("spSSODescriptor"),
+                            (SPSSODescriptorType) paramsMap.get("spSSODescriptor"),
                             (String) paramsMap.get("idpEntityID"),
                             request,
                             response,
@@ -215,7 +217,7 @@ public class IDPSSOFederate {
         // Fetch a number of properties about the request.
         String idpMetaAlias = validator.getMetaAlias(request);
         String realm = validator.getRealmByMetaAlias(idpMetaAlias);
-        String idpEntityID = validator.getIDPEntity(idpMetaAlias, realm);
+        String idpEntityID = validator.getIDPEntity(idpMetaAlias, realm, isFromECP);
         SAML2IdentityProviderAdapter idpAdapter = validator.getIDPAdapter(realm, idpEntityID);
         String reqID = request.getParameter(REQ_ID);
         if (null != auditor) {

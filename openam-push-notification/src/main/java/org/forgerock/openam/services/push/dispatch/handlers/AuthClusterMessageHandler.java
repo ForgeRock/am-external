@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
 
 package org.forgerock.openam.services.push.dispatch.handlers;
@@ -60,7 +60,7 @@ public class AuthClusterMessageHandler extends AbstractClusterMessageHandler {
             token.setAttribute(PushNotificationConstants.CTS_ACCEPT_TOKEN_FIELD, ACCEPT_VALUE);
         }
 
-        ctsPersistentStore.update(token);
+        ctsPersistentStore.upsert(token);
     }
 
 

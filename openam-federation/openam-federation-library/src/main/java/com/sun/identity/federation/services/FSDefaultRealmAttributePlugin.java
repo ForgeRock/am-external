@@ -24,14 +24,22 @@
  *
  * $Id: FSDefaultRealmAttributePlugin.java,v 1.2 2008/06/25 05:46:53 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.federation.services;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.federation.common.IFSConstants;
-import com.sun.identity.federation.jaxb.entityconfig.IDPDescriptorConfigElement;
+import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.federation.message.FSSubject;
 import com.sun.identity.federation.meta.IDFFMetaException;
 import com.sun.identity.federation.meta.IDFFMetaManager;
@@ -47,11 +55,6 @@ import com.sun.identity.saml.assertion.Attribute;
 import com.sun.identity.saml.assertion.AttributeStatement;
 import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.saml.common.SAMLException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * This class <code>FSDefaultRealmAttributePlugin</code> is the default
@@ -88,7 +91,7 @@ public class FSDefaultRealmAttributePlugin implements FSRealmAttributePlugin {
         try {
             IDFFMetaManager metaManager = FSUtils.getIDFFMetaManager();
             if (metaManager != null) {
-                IDPDescriptorConfigElement idpConfig =
+                BaseConfigType idpConfig =
                     metaManager.getIDPDescriptorConfig(realm, hostEntityId);
                 if (idpConfig != null) {
                     Map attributes = IDFFMetaUtils.getAttributes(idpConfig);

@@ -28,7 +28,7 @@
  */
 package com.sun.identity.saml2.profile;
 
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.newDate;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -42,33 +42,35 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.bind.JAXBElement;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
-import com.sun.identity.saml2.common.SAML2FailoverUtils;
-import com.sun.identity.saml2.common.SOAPCommunicator;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
-import com.sun.identity.common.HttpURLConnectionManager;
 import org.w3c.dom.Element;
 
-import com.sun.identity.saml.xmlsig.KeyProvider;
+import com.sun.identity.common.HttpURLConnectionManager;
 import com.sun.identity.saml.common.SAMLUtils;
+import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.saml2.assertion.Assertion;
 import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.AssertionIDRef;
 import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2FailoverUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.common.SOAPCommunicator;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
-import com.sun.identity.saml2.jaxb.metadata.AttributeAuthorityDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.AssertionIDRequestServiceElement;
-import com.sun.identity.saml2.jaxb.metadata.AuthnAuthorityDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.AttributeAuthorityDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.AuthnAuthorityDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.EndpointType;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
@@ -87,9 +89,9 @@ import com.sun.identity.saml2.protocol.StatusCode;
  */
 public class AssertionIDRequestUtil {
 
-    static KeyProvider keyProvider = KeyUtil.getKeyProviderInstance(); 
+    static KeyProvider keyProvider = KeyUtil.getKeyProviderInstance();
     static SAML2MetaManager metaManager = SAML2Utils.getSAML2MetaManager();
-    static Hashtable assertionIDRequestMapperCache = new Hashtable(); 
+    static Hashtable assertionIDRequestMapperCache = new Hashtable();
     static final String MIME_TYPE_ASSERTION = "application/samlassertion+xml";
 
     private AssertionIDRequestUtil() {
@@ -103,7 +105,7 @@ public class AssertionIDRequestUtil {
      * @param assertionIDRequest the <code>AssertionIDRequest</code> object
      * @param samlAuthorityEntityID entity ID of SAML authority
      * @param role SAML authority role, for example,
-     * <code>SAML2Constants.ATTR_AUTH_ROLE</code>, 
+     * <code>SAML2Constants.ATTR_AUTH_ROLE</code>,
      * <code>SAML2Constants.AUTHN_AUTH_ROLE</code> or
      * <code>SAML2Constants.IDP_ROLE</code>
      * @param realm the realm of hosted entity
@@ -115,20 +117,20 @@ public class AssertionIDRequestUtil {
      * @supported.api
      */
     public static Response sendAssertionIDRequest(
-        AssertionIDRequest assertionIDRequest, String samlAuthorityEntityID,
-        String role, String realm, String binding) throws SAML2Exception {
+            AssertionIDRequest assertionIDRequest, String samlAuthorityEntityID,
+            String role, String realm, String binding) throws SAML2Exception {
 
         StringBuffer location = new StringBuffer();
         RoleDescriptorType roled = getRoleDescriptorAndLocation(
-            samlAuthorityEntityID, role, realm, binding, location);
+                samlAuthorityEntityID, role, realm, binding, location);
 
         if (binding.equalsIgnoreCase(SAML2Constants.SOAP)) {
             signAssertionIDRequest(assertionIDRequest, realm, false);
             return sendAssertionIDRequestBySOAP(assertionIDRequest,
-                location.toString(), realm, samlAuthorityEntityID, role, roled);
+                    location.toString(), realm, samlAuthorityEntityID, role, roled);
         } else {
             throw new SAML2Exception(
-                SAML2Utils.bundle.getString("unsupportedBinding"));
+                    SAML2Utils.bundle.getString("unsupportedBinding"));
         }
     }
 
@@ -140,7 +142,7 @@ public class AssertionIDRequestUtil {
      * @param assertionID the <code>asssertionID</code> object
      * @param samlAuthorityEntityID entity ID of SAML authority
      * @param role SAML authority role, for example,
-     * <code>SAML2Constants.ATTR_AUTH_ROLE</code>, 
+     * <code>SAML2Constants.ATTR_AUTH_ROLE</code>,
      * <code>SAML2Constants.AUTHN_AUTH_ROLE</code> or
      * <code>SAML2Constants.IDP_ROLE</code>
      * @param realm the realm of hosted entity
@@ -151,12 +153,12 @@ public class AssertionIDRequestUtil {
      * @supported.api
      */
     public static Assertion sendAssertionIDRequestURI(
-        String assertionID, String samlAuthorityEntityID,
-        String role, String realm) throws SAML2Exception {
+            String assertionID, String samlAuthorityEntityID,
+            String role, String realm) throws SAML2Exception {
 
         StringBuffer locationSB = new StringBuffer();
         getRoleDescriptorAndLocation(samlAuthorityEntityID, role, realm,
-            SAML2Constants.URI, locationSB);
+                SAML2Constants.URI, locationSB);
         if (locationSB.indexOf("?") == -1) {
             locationSB.append("?");
         } else {
@@ -164,7 +166,7 @@ public class AssertionIDRequestUtil {
         }
         locationSB.append("ID=").append(assertionID);
         String location = fillInBasicAuthInfo(locationSB.toString(), realm,
-            samlAuthorityEntityID, role); 
+                samlAuthorityEntityID, role);
 
         URL url = null;
         try {
@@ -183,9 +185,9 @@ public class AssertionIDRequestUtil {
             int respCode = conn.getResponseCode();
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message(
-                    "AssertionIDRequestUtil.sendAssertionIDRequestURI: " +
-                    "Response code = " + respCode + ", Response message = " +
-                    conn.getResponseMessage());
+                        "AssertionIDRequestUtil.sendAssertionIDRequestURI: " +
+                                "Response code = " + respCode + ", Response message = " +
+                                conn.getResponseMessage());
             }
             if (respCode != HttpURLConnection.HTTP_OK) {
                 return null;
@@ -194,11 +196,11 @@ public class AssertionIDRequestUtil {
             String contentType = conn.getContentType();
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message(
-                    "AssertionIDRequestUtil.sendAssertionIDRequestURI: " +
-                    "Content type = " + contentType);
+                        "AssertionIDRequestUtil.sendAssertionIDRequestURI: " +
+                                "Content type = " + contentType);
             }
             if ((contentType == null) ||
-                (contentType.indexOf(MIME_TYPE_ASSERTION) == -1)) {
+                    (contentType.indexOf(MIME_TYPE_ASSERTION) == -1)) {
 
                 return null;
             }
@@ -206,12 +208,12 @@ public class AssertionIDRequestUtil {
             int contentLength = conn.getContentLength();
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message(
-                    "AssertionIDRequestUtil.sendAssertionIDRequestURI: " +
-                    "Content length = " + contentLength);
+                        "AssertionIDRequestUtil.sendAssertionIDRequestURI: " +
+                                "Content length = " + contentLength);
             }
 
             BufferedInputStream bin =
-                new BufferedInputStream(conn.getInputStream());
+                    new BufferedInputStream(conn.getInputStream());
             StringBuffer contentSB = new StringBuffer();
             byte content[] = new byte[2048];
 
@@ -221,7 +223,7 @@ public class AssertionIDRequestUtil {
                 while (totalRead < contentLength) {
                     left = contentLength - totalRead;
                     read = bin.read(content, 0,
-                        left < content.length ? left : content.length);
+                            left < content.length ? left : content.length);
                     if (read == -1) {
                         // We need to close connection !!
                         break;
@@ -248,10 +250,10 @@ public class AssertionIDRequestUtil {
             }
 
             return AssertionFactory.getInstance().createAssertion(
-                contentSB.toString());
+                    contentSB.toString());
         } catch (IOException ioex) {
             SAML2Utils.debug.error(
-                "AssertionIDRequest.sendAssertionIDRequestURI:", ioex);
+                    "AssertionIDRequest.sendAssertionIDRequestURI:", ioex);
             throw new SAML2Exception(ioex.getMessage());
         }
     }
@@ -268,46 +270,46 @@ public class AssertionIDRequestUtil {
      * @exception IOException if response can't be sent
      */
     public static void processAssertionIDRequestURI(HttpServletRequest request,
-        HttpServletResponse response, String samlAuthorityEntityID,
-        String role, String realm) throws IOException {
+            HttpServletResponse response, String samlAuthorityEntityID,
+            String role, String realm) throws IOException {
 
         String assertionID = request.getParameter("ID");
         if (assertionID == null) {
-            SAMLUtils.sendError(request, response, 
-                HttpServletResponse.SC_BAD_REQUEST, "nullAssertionID",
-                SAML2Utils.bundle.getString("nullAssertionID"));
+            SAMLUtils.sendError(request, response,
+                    HttpServletResponse.SC_BAD_REQUEST, "nullAssertionID",
+                    SAML2Utils.bundle.getString("nullAssertionID"));
             return;
         }
 
         AssertionIDRequestMapper aidReqMapper = null;
         try {
             aidReqMapper = getAssertionIDRequestMapper(realm,
-                samlAuthorityEntityID, role);
+                    samlAuthorityEntityID, role);
         } catch (SAML2Exception ex) {
-            SAMLUtils.sendError(request, response, 
-                HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                "failedToGetAssertionIDRequestMapper", ex.getMessage());
+            SAMLUtils.sendError(request, response,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "failedToGetAssertionIDRequestMapper", ex.getMessage());
             return;
         }
 
         try {
             aidReqMapper.authenticateRequesterURI(request, response,
-                samlAuthorityEntityID, role, realm);
+                    samlAuthorityEntityID, role, realm);
         } catch (SAML2Exception ex) {
-            SAMLUtils.sendError(request, response, 
-                HttpServletResponse.SC_FORBIDDEN,
-                "failedToAuthenticateRequesterURI", ex.getMessage());
+            SAMLUtils.sendError(request, response,
+                    HttpServletResponse.SC_FORBIDDEN,
+                    "failedToAuthenticateRequesterURI", ex.getMessage());
             return;
         }
 
         Assertion assertion = (Assertion)IDPCache.assertionByIDCache.get(
-            assertionID);
+                assertionID);
 
         if ((assertion == null) || (!assertion.isTimeValid())) {
-            SAMLUtils.sendError(request, response, 
-                HttpServletResponse.SC_NOT_FOUND,
-                "invalidAssertionID",
-                SAML2Utils.bundle.getString("invalidAssertionID"));
+            SAMLUtils.sendError(request, response,
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "invalidAssertionID",
+                    SAML2Utils.bundle.getString("invalidAssertionID"));
             return;
         }
 
@@ -321,11 +323,11 @@ public class AssertionIDRequestUtil {
         } catch (SAML2Exception ex) {
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message("AssertionIDRequestUtil." +
-                "processAssertionIDRequestURI:", ex);
+                        "processAssertionIDRequestURI:", ex);
             }
-            SAMLUtils.sendError(request, response, 
-                HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                "invalidAssertion", ex.getMessage());
+            SAMLUtils.sendError(request, response,
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "invalidAssertion", ex.getMessage());
             return;
         }
         // The Content-Length header is defined as the number of octets, but special characters in a string with
@@ -350,48 +352,48 @@ public class AssertionIDRequestUtil {
      * @exception SAML2Exception if the operation is not successful
      */
     public static Response processAssertionIDRequest(
-        AssertionIDRequest assertionIDRequest, HttpServletRequest request, 
-        HttpServletResponse response, String samlAuthorityEntityID,
-        String role, String realm) throws SAML2Exception {
+            AssertionIDRequest assertionIDRequest, HttpServletRequest request,
+            HttpServletResponse response, String samlAuthorityEntityID,
+            String role, String realm) throws SAML2Exception {
 
         try {
             verifyAssertionIDRequest(assertionIDRequest, samlAuthorityEntityID,
-                role, realm);
+                    role, realm);
         } catch(SAML2Exception se) {
             SAML2Utils.debug.error("AssertionIDRequestUtil." +
-                "processAssertionIDRequest:", se);
+                    "processAssertionIDRequest:", se);
             return SAML2Utils.getErrorResponse(assertionIDRequest,
-                SAML2Constants.REQUESTER, null, se.getMessage(),
-                samlAuthorityEntityID);
+                    SAML2Constants.REQUESTER, null, se.getMessage(),
+                    samlAuthorityEntityID);
         }
 
         Issuer issuer = assertionIDRequest.getIssuer();
-        String spEntityID = issuer.getValue();        
+        String spEntityID = issuer.getValue();
 
         RoleDescriptorType roled = null;
         try {
             if (SAML2Constants.IDP_ROLE.equals(role)) {
                 roled = metaManager.getIDPSSODescriptor(realm,
-                    samlAuthorityEntityID);
+                        samlAuthorityEntityID);
             } else if (SAML2Constants.AUTHN_AUTH_ROLE.equals(role)) {
                 roled = metaManager.getAuthnAuthorityDescriptor(realm,
-                    samlAuthorityEntityID);
+                        samlAuthorityEntityID);
             } else if (SAML2Constants.ATTR_AUTH_ROLE.equals(role)) {
                 roled = metaManager.getAttributeAuthorityDescriptor(realm,
-                    samlAuthorityEntityID);
+                        samlAuthorityEntityID);
             }
         } catch (SAML2MetaException sme) {
             SAML2Utils.debug.error("AssertionIDRequestUtil." +
-                "processAssertionIDRequest:", sme);
+                    "processAssertionIDRequest:", sme);
             return SAML2Utils.getErrorResponse(assertionIDRequest,
-                SAML2Constants.RESPONDER, null, sme.getMessage(),
-                samlAuthorityEntityID);
+                    SAML2Constants.RESPONDER, null, sme.getMessage(),
+                    samlAuthorityEntityID);
         }
 
         if (roled == null) {
             return SAML2Utils.getErrorResponse(assertionIDRequest,
-                SAML2Constants.REQUESTER, null, SAML2Utils.bundle.getString(
-                "samlAuthorityNotFound"), samlAuthorityEntityID);
+                    SAML2Constants.REQUESTER, null, SAML2Utils.bundle.getString(
+                            "samlAuthorityNotFound"), samlAuthorityEntityID);
         }
 
         List returnAssertions = null;
@@ -401,23 +403,23 @@ public class AssertionIDRequestUtil {
             String assertionID = assertionIDRef.getValue();
 
             Assertion assertion = (Assertion)IDPCache.assertionByIDCache.get(
-                assertionID);
+                    assertionID);
             if ((assertion == null) && (SAML2FailoverUtils.isSAML2FailoverEnabled())) {
                 if (SAML2Utils.debug.messageEnabled()) {
                     SAML2Utils.debug.message("AssertionIDRequestUtil.processAssertionIDRequest: " +
-                        "reading assertion from the SAML2 Token Repository using assertionID:" + assertionID);
+                            "reading assertion from the SAML2 Token Repository using assertionID:" + assertionID);
                 }
                 String assertionStr = null;
                 try {
                     assertionStr = (String) SAML2FailoverUtils.retrieveSAML2Token(assertionID);
                 } catch (SAML2TokenRepositoryException se) {
                     SAML2Utils.debug.error("AssertionIDRequestUtil.processAssertionIDRequest: " +
-                         "There was a problem reading assertion from the SAML2 Token Repository using assertionID:"
+                            "There was a problem reading assertion from the SAML2 Token Repository using assertionID:"
                             + assertionID, se);
                 }
                 if (assertionStr != null) {
                     assertion = AssertionFactory.getInstance().createAssertion(
-                        assertionStr);
+                            assertionStr);
                 }
             }
 
@@ -427,7 +429,7 @@ public class AssertionIDRequestUtil {
                 }
                 returnAssertions.add(assertion);
             }
-        }        
+        }
 
         ProtocolFactory protocolFactory = ProtocolFactory.getInstance();
         Response samlResp = protocolFactory.createResponse();
@@ -438,7 +440,7 @@ public class AssertionIDRequestUtil {
 
         samlResp.setVersion(SAML2Constants.VERSION_2_0);
         samlResp.setIssueInstant(newDate());
-    
+
         Status status = protocolFactory.createStatus();
         StatusCode statusCode = protocolFactory.createStatusCode();
         statusCode.setValue(SAML2Constants.SUCCESS);
@@ -455,69 +457,68 @@ public class AssertionIDRequestUtil {
     }
 
     private static RoleDescriptorType getRoleDescriptorAndLocation(
-        String samlAuthorityEntityID, String role, String realm,
-        String binding, StringBuffer location) throws SAML2Exception {
+            String samlAuthorityEntityID, String role, String realm,
+            String binding, StringBuffer location) throws SAML2Exception {
 
-        List aIDReqServices = null;
+        List<EndpointType> aIDReqServices = null;
         RoleDescriptorType roled = null;
         try {
             if (role == null) {
                 throw new SAML2Exception(SAML2Utils.bundle.getString(
-                    "unsupportedRole"));
+                        "unsupportedRole"));
             } else if (role.equals(SAML2Constants.IDP_ROLE)) {
-                IDPSSODescriptorElement idpd =
-                    metaManager.getIDPSSODescriptor(realm,
-                    samlAuthorityEntityID);
+                IDPSSODescriptorType idpd =
+                        metaManager.getIDPSSODescriptor(realm,
+                                samlAuthorityEntityID);
                 if (idpd == null) {
                     throw new SAML2Exception(SAML2Utils.bundle.getString(
-                        "idpNotFound"));
+                            "idpNotFound"));
                 }
                 aIDReqServices = idpd.getAssertionIDRequestService();
                 roled = idpd;
             } else if (role.equals(SAML2Constants.AUTHN_AUTH_ROLE)) {
-                AuthnAuthorityDescriptorElement attrd =
-                    metaManager.getAuthnAuthorityDescriptor(realm,
-                    samlAuthorityEntityID);
+                AuthnAuthorityDescriptorType attrd =
+                        metaManager.getAuthnAuthorityDescriptor(realm,
+                                samlAuthorityEntityID);
                 if (attrd == null) {
                     throw new SAML2Exception(SAML2Utils.bundle.getString(
-                        "authnAuthorityNotFound"));
+                            "authnAuthorityNotFound"));
                 }
                 aIDReqServices = attrd.getAssertionIDRequestService();
                 roled = attrd;
             } else if (role.equals(SAML2Constants.ATTR_AUTH_ROLE)) {
-                AttributeAuthorityDescriptorElement aad =
-                    metaManager.getAttributeAuthorityDescriptor(realm,
-                    samlAuthorityEntityID);
+                AttributeAuthorityDescriptorType aad =
+                        metaManager.getAttributeAuthorityDescriptor(realm,
+                                samlAuthorityEntityID);
                 if (aad == null) {
                     throw new SAML2Exception(SAML2Utils.bundle.getString(
-                        "attrAuthorityNotFound"));
+                            "attrAuthorityNotFound"));
                 }
                 aIDReqServices = aad.getAssertionIDRequestService();
                 roled = aad;
             } else {
                 throw new SAML2Exception(SAML2Utils.bundle.getString(
-                    "unsupportedRole"));
+                        "unsupportedRole"));
             }
         } catch (SAML2MetaException sme) {
             SAML2Utils.debug.error(
-                "AssertionIDRequest.getRoleDescriptorAndLocation:", sme);
+                    "AssertionIDRequest.getRoleDescriptorAndLocation:", sme);
             throw new SAML2Exception(SAML2Utils.bundle.getString(
-                "metaDataError"));
+                    "metaDataError"));
         }
 
         if (binding == null) {
             throw new SAML2Exception(
-                SAML2Utils.bundle.getString("unsupportedBinding"));
+                    SAML2Utils.bundle.getString("unsupportedBinding"));
         }
 
         if ((aIDReqServices == null) || (aIDReqServices.isEmpty())) {
             throw new SAML2Exception(
-                SAML2Utils.bundle.getString("aIDReqServiceNotFound"));
+                    SAML2Utils.bundle.getString("aIDReqServiceNotFound"));
         }
 
-        for(Iterator iter = aIDReqServices.iterator(); iter.hasNext(); ) {
-            AssertionIDRequestServiceElement aIDReqService =
-                (AssertionIDRequestServiceElement)iter.next();
+        for(Iterator<EndpointType> iter = aIDReqServices.iterator(); iter.hasNext(); ) {
+            EndpointType aIDReqService = iter.next();
             if (binding.equalsIgnoreCase(aIDReqService.getBinding())) {
                 location.append(aIDReqService.getLocation());
                 break;
@@ -525,51 +526,51 @@ public class AssertionIDRequestUtil {
         }
         if (location.length() == 0) {
             throw new SAML2Exception(
-                SAML2Utils.bundle.getString("unsupportedBinding"));
+                    SAML2Utils.bundle.getString("unsupportedBinding"));
         }
 
         return roled;
     }
 
     private static void signAssertionIDRequest(
-        AssertionIDRequest assertionIDRequest,
-        String realm, boolean includeCert) throws SAML2Exception {
+            AssertionIDRequest assertionIDRequest,
+            String realm, boolean includeCert) throws SAML2Exception {
 
         String spEntityID = assertionIDRequest.getIssuer().getValue();
-        
+
         String alias = SAML2Utils.getSigningCertAlias(realm, spEntityID,
-            SAML2Constants.SP_ROLE);
+                SAML2Constants.SP_ROLE);
 
         PrivateKey signingKey = keyProvider.getPrivateKey(alias);
         X509Certificate signingCert = null;
         if (includeCert) {
             signingCert = keyProvider.getX509Certificate(alias);
         }
-        
+
         if (signingKey != null) {
             assertionIDRequest.sign(signingKey, signingCert);
         }
     }
 
     private static void verifyAssertionIDRequest(
-        AssertionIDRequest assertionIDRequest, String samlAuthorityEntityID,
-        String role, String realm) throws SAML2Exception {
+            AssertionIDRequest assertionIDRequest, String samlAuthorityEntityID,
+            String role, String realm) throws SAML2Exception {
 
         Issuer issuer = assertionIDRequest.getIssuer();
         String requestedEntityID = issuer.getValue();
 
         if (!SAML2Utils.isSourceSiteValid(issuer, realm,
-            samlAuthorityEntityID)) {
+                samlAuthorityEntityID)) {
 
             throw new SAML2Exception(SAML2Utils.bundle.getString(
-                "assertionIDRequestIssuerInvalid"));
+                    "assertionIDRequestIssuerInvalid"));
         }
 
-        SPSSODescriptorElement spSSODesc = metaManager.getSPSSODescriptor(
-            realm, requestedEntityID);
+        SPSSODescriptorType spSSODesc = metaManager.getSPSSODescriptor(
+                realm, requestedEntityID);
         if (spSSODesc == null) {
             throw new SAML2Exception(SAML2Utils.bundle.getString(
-                "assertionIDRequestIssuerNotFound"));
+                    "assertionIDRequestIssuerNotFound"));
         }
 
         Set<X509Certificate> verificationCerts = KeyUtil.getVerificationCerts(spSSODesc, requestedEntityID,
@@ -579,12 +580,12 @@ public class AssertionIDRequestUtil {
             boolean valid = assertionIDRequest.isSignatureValid(verificationCerts);
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message(
-                    "AssertionIDRequestUtil.verifyAssertionIDRequest: " +
-                    "Signature validity is : " + valid);
+                        "AssertionIDRequestUtil.verifyAssertionIDRequest: " +
+                                "Signature validity is : " + valid);
             }
             if (!valid) {
                 throw new SAML2Exception(SAML2Utils.bundle.getString(
-                    "invalidSignatureAssertionIDRequest"));
+                        "invalidSignatureAssertionIDRequest"));
             }
         } else {
             throw new SAML2Exception(
@@ -593,9 +594,9 @@ public class AssertionIDRequestUtil {
     }
 
     private static void signResponse(Response response,
-        String samlAuthorityEntityID, String role, String realm,
-        boolean includeCert) throws SAML2Exception {
-        
+            String samlAuthorityEntityID, String role, String realm,
+            boolean includeCert) throws SAML2Exception {
+
         String alias = SAML2Utils.getSigningCertAlias(realm, samlAuthorityEntityID, role);
 
         String encryptedKeyPass = SAML2Utils.getSigningCertEncryptedKeyPass(realm, samlAuthorityEntityID, role);
@@ -609,91 +610,91 @@ public class AssertionIDRequestUtil {
         if (includeCert) {
             signingCert = keyProvider.getX509Certificate(alias);
         }
-        
+
         if (signingKey != null) {
             response.sign(signingKey, signingCert);
         }
     }
 
     private static String fillInBasicAuthInfo(String location, String realm,
-        String samlAuthorityEntityID, String role) {
+            String samlAuthorityEntityID, String role) {
 
-        BaseConfigType config = null;
+        JAXBElement<BaseConfigType> config = null;
         try {
             if (role.equals(SAML2Constants.IDP_ROLE)) {
                 config = metaManager.getIDPSSOConfig(realm,
-                    samlAuthorityEntityID);
+                        samlAuthorityEntityID);
             } else if (role.equals(SAML2Constants.AUTHN_AUTH_ROLE)) {
                 config = metaManager.getAuthnAuthorityConfig(realm,
-                    samlAuthorityEntityID);
+                        samlAuthorityEntityID);
             } else if (role.equals(SAML2Constants.ATTR_AUTH_ROLE)) {
                 config = metaManager.getAttributeAuthorityConfig(realm,
-                    samlAuthorityEntityID);
+                        samlAuthorityEntityID);
             }
         } catch (SAML2MetaException sme) {
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message(
-                    "AssertionIDRequestUtil.getSSOConfig:", sme);
+                        "AssertionIDRequestUtil.getSSOConfig:", sme);
             }
         }
 
-        return SAML2Utils.fillInBasicAuthInfo(config, location); 
+        return SAML2Utils.fillInBasicAuthInfo(config, location);
     }
 
     private static Response sendAssertionIDRequestBySOAP(
-        AssertionIDRequest assertionIDRequest, String location, String realm,
-        String samlAuthorityEntityID, String role, RoleDescriptorType roled)
-        throws SAML2Exception {
+            AssertionIDRequest assertionIDRequest, String location, String realm,
+            String samlAuthorityEntityID, String role, RoleDescriptorType roled)
+            throws SAML2Exception {
 
         String aIDReqStr = assertionIDRequest.toXMLString(true, true);
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(
-                "AssertionIDRequestUtil.sendAssertionIDRequestBySOAP: " +
-                "assertionIDRequest = " + aIDReqStr);
+                    "AssertionIDRequestUtil.sendAssertionIDRequestBySOAP: " +
+                            "assertionIDRequest = " + aIDReqStr);
             SAML2Utils.debug.message(
-                "AssertionIDRequestUtil.sendAssertionIDRequestBySOAP: " +
-                "location = " + location);
+                    "AssertionIDRequestUtil.sendAssertionIDRequestBySOAP: " +
+                            "location = " + location);
         }
 
         location = fillInBasicAuthInfo(location, realm, samlAuthorityEntityID,
-            role); 
+                role);
 
         SOAPMessage resMsg = null;
         try {
             resMsg = SOAPCommunicator.getInstance().sendSOAPMessage(aIDReqStr, location, true);
         } catch (SOAPException se) {
             SAML2Utils.debug.error(
-                "AssertionIDRequestUtil.sendAssertionIDRequestBySOAP:", se);
+                    "AssertionIDRequestUtil.sendAssertionIDRequestBySOAP:", se);
             throw new SAML2Exception(
-                SAML2Utils.bundle.getString("errorSendingAssertionIDRequest"));
+                    SAML2Utils.bundle.getString("errorSendingAssertionIDRequest"));
         }
-        
+
         Element respElem = SOAPCommunicator.getInstance().getSamlpElement(resMsg, "Response");
         Response response =
-            ProtocolFactory.getInstance().createResponse(respElem);
-        
+                ProtocolFactory.getInstance().createResponse(respElem);
+
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(
-                "AssertionIDRequestUtil.sendAssertionIDRequestBySOAP: " +
-                "response = " + response.toXMLString(true, true));
+                    "AssertionIDRequestUtil.sendAssertionIDRequestBySOAP: " +
+                            "response = " + response.toXMLString(true, true));
         }
 
         verifyResponse(response, assertionIDRequest, samlAuthorityEntityID,
-            role, roled);
+                role, roled);
 
         return response;
     }
 
     private static void verifyResponse(Response response,
-        AssertionIDRequest assertionIDRequest, String samlAuthorityEntityID,
-        String role, RoleDescriptorType roled) throws SAML2Exception {
+            AssertionIDRequest assertionIDRequest, String samlAuthorityEntityID,
+            String role, RoleDescriptorType roled) throws SAML2Exception {
 
         String aIDReqID = assertionIDRequest.getID();
         if ((aIDReqID != null) &&
-            (!aIDReqID.equals(response.getInResponseTo()))) {
+                (!aIDReqID.equals(response.getInResponseTo()))) {
 
             throw new SAML2Exception(SAML2Utils.bundle.getString(
-                "invalidInResponseToAssertionIDRequest"));
+                    "invalidInResponseToAssertionIDRequest"));
         }
 
         Issuer respIssuer = response.getIssuer();
@@ -703,7 +704,7 @@ public class AssertionIDRequestUtil {
 
         if (!samlAuthorityEntityID.equals(respIssuer.getValue())) {
             throw new SAML2Exception(SAML2Utils.bundle.getString(
-                "responseIssuerMismatch"));
+                    "responseIssuerMismatch"));
         }
 
 
@@ -713,12 +714,12 @@ public class AssertionIDRequestUtil {
             boolean valid = response.isSignatureValid(signingCerts);
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message(
-                    "AssertionIDRequestUtil .verifyResponse: " +
-                    "Signature validity is : " + valid);
+                        "AssertionIDRequestUtil .verifyResponse: " +
+                                "Signature validity is : " + valid);
             }
             if (!valid) {
                 throw new SAML2Exception(SAML2Utils.bundle.getString(
-                    "invalidSignatureOnResponse"));
+                        "invalidSignatureOnResponse"));
             }
         } else {
             throw new SAML2Exception(SAML2Utils.bundle.getString("missingSigningCertAlias"));
@@ -727,42 +728,42 @@ public class AssertionIDRequestUtil {
     }
 
     private static AssertionIDRequestMapper getAssertionIDRequestMapper(
-        String realm, String samlAuthorityEntityID, String role)
-        throws SAML2Exception {
+            String realm, String samlAuthorityEntityID, String role)
+            throws SAML2Exception {
 
         String aidReqMapperName = null;
         AssertionIDRequestMapper aidReqMapper = null;
         try {
             aidReqMapperName = SAML2Utils.getAttributeValueFromSSOConfig(realm,
-                samlAuthorityEntityID, role,
-                SAML2Constants.ASSERTION_ID_REQUEST_MAPPER);
+                    samlAuthorityEntityID, role,
+                    SAML2Constants.ASSERTION_ID_REQUEST_MAPPER);
 
             if (aidReqMapperName == null) {
-                aidReqMapperName = 
-                    SAML2Constants.DEFAULT_ASSERTION_ID_REQUEST_MAPPER_CLASS;
+                aidReqMapperName =
+                        SAML2Constants.DEFAULT_ASSERTION_ID_REQUEST_MAPPER_CLASS;
                 if (SAML2Utils.debug.messageEnabled()) {
                     SAML2Utils.debug.message(
-                        "AssertionIDRequestUtil.getAssertionIDRequestMapper:" +
-                        " use "+ aidReqMapperName);
+                            "AssertionIDRequestUtil.getAssertionIDRequestMapper:" +
+                                    " use "+ aidReqMapperName);
                 }
             }
             aidReqMapper = (AssertionIDRequestMapper)
-                assertionIDRequestMapperCache.get(aidReqMapperName);
+                    assertionIDRequestMapperCache.get(aidReqMapperName);
             if (aidReqMapper == null) {
                 aidReqMapper = (AssertionIDRequestMapper)
-                    Class.forName(aidReqMapperName).newInstance();
+                        Class.forName(aidReqMapperName).newInstance();
                 assertionIDRequestMapperCache.put(aidReqMapperName,
-                    aidReqMapper);
+                        aidReqMapper);
             } else {
                 if (SAML2Utils.debug.messageEnabled()) {
                     SAML2Utils.debug.message(
-                        "AssertionIDRequestUtil.getAssertionIDRequestMapper:" +
-                        " got the AssertionIDRequestMapper from cache");
+                            "AssertionIDRequestUtil.getAssertionIDRequestMapper:" +
+                                    " got the AssertionIDRequestMapper from cache");
                 }
             }
         } catch (Exception ex) {
             SAML2Utils.debug.error(
-                "AssertionIDRequestUtil.getAssertionIDRequestMapper:", ex);
+                    "AssertionIDRequestUtil.getAssertionIDRequestMapper:", ex);
             throw new SAML2Exception(ex);
         }
 

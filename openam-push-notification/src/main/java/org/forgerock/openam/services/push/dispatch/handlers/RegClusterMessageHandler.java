@@ -54,7 +54,7 @@ public class RegClusterMessageHandler extends AbstractClusterMessageHandler {
     public void update(Token token, JsonValue content) throws CoreTokenException {
         token.setBlob(jsonSerialisation.serialise(content.getObject()).getBytes());
         token.setAttribute(PushNotificationConstants.CTS_ACCEPT_TOKEN_FIELD, ACCEPT_VALUE);
-        ctsPersistentStore.update(token);
+        ctsPersistentStore.upsert(token);
     }
 
     @Override

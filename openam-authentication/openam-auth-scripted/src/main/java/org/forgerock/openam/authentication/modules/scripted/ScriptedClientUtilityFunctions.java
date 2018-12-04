@@ -39,6 +39,11 @@ public class ScriptedClientUtilityFunctions {
                 "        if (submitted) {\n" +
                 "            return;\n" +
                 "        }\n" +
+                /*
+                 * It's intentional to directly trigger a click on the submit input as
+                 * invoking submit() upon a form will not trigger the submit handler.
+                 * @see https://javascript.info/forms-submit#method-submit
+                 */
                 "        document.querySelector(\"input[type=submit]\").click();\n" +
                 "        submitted = true;\n" +
                 "    }\n" +

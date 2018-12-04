@@ -24,31 +24,31 @@
  *
  * $Id: SPSessionListener.java,v 1.6 2009/09/23 22:28:32 bigfatrat Exp $
  *
- * Portions Copyrighted 2014-2015 ForgeRock AS.
+ * Portions Copyrighted 2014-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.logging.Level;
 
 import com.sun.identity.plugin.monitoring.FedMonAgent;
 import com.sun.identity.plugin.monitoring.FedMonSAML2Svc;
 import com.sun.identity.plugin.monitoring.MonitorManager;
+import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionListener;
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionProvider;
-import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.saml2.common.NameIDInfoKey;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
+import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.EndpointType;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
@@ -141,11 +141,11 @@ public class SPSessionListener implements SessionListener {
                             SAML2Utils.getRealm(
                                 SAML2MetaUtils.getRealmByMetaAlias(metaAlias));
 
-                    BaseConfigType spConfig =
+                    SPSSOConfigElement spConfig =
                                         sm.getSPSSOConfig(realm, spEntityID);
                     if (spConfig != null) {
-                        List spSessionSyncList =
-                            (List) SAML2MetaUtils.getAttributes(spConfig).
+                        List<String> spSessionSyncList =
+                            SAML2MetaUtils.getAttributes(spConfig).
                                 get(SAML2Constants.SP_SESSION_SYNC_ENABLED);
 
                         if (spEntityID != null &&
@@ -153,7 +153,7 @@ public class SPSessionListener implements SessionListener {
                             (spSessionSyncList.size() != 0)) {
                          
                              boolean spSessionSyncEnabled =
-                                ((String)spSessionSyncList.get(0)).
+                                spSessionSyncList.get(0).
                                       equals(SAML2Constants.TRUE)? true : false;
                              // Initiate SP SLO on SP Idle/Max
                              // session timeout only when Session Sync flag
@@ -232,7 +232,7 @@ public class SPSessionListener implements SessionListener {
     private static void initiateSPSingleLogout(String metaAlias, String realm, String binding,
             NameIDInfoKey nameIdInfoKey, SPFedSession fedSession, Map paramsMap)
             throws SAML2MetaException, SAML2Exception, SessionException {
-        IDPSSODescriptorElement idpsso = sm.getIDPSSODescriptor(realm, nameIdInfoKey.getRemoteEntityID());
+        IDPSSODescriptorType idpsso = sm.getIDPSSODescriptor(realm, nameIdInfoKey.getRemoteEntityID());
 
         if (idpsso == null) {
             String[] data = {nameIdInfoKey.getRemoteEntityID()};

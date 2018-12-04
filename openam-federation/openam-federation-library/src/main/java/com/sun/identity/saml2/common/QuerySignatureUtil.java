@@ -24,7 +24,7 @@
  *
  * $Id: QuerySignatureUtil.java,v 1.2 2008/06/25 05:47:45 qcheng Exp $
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -32,21 +32,21 @@ import static org.forgerock.http.util.Uris.urlDecodeQueryParameterNameOrValue;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import java.security.GeneralSecurityException;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.SignatureException;
-import java.security.InvalidKeyException;
 import java.security.cert.X509Certificate;
+import java.util.Set;
+import java.util.StringTokenizer;
 
-import com.sun.identity.shared.configuration.SystemPropertiesManager;
-import com.sun.identity.shared.encode.Base64;
 import org.apache.xml.security.Init;
 import org.apache.xml.security.algorithms.JCEMapper;
 import org.apache.xml.security.signature.XMLSignature;
 
-import java.security.NoSuchAlgorithmException;
+import com.sun.identity.shared.configuration.SystemPropertiesManager;
+import com.sun.identity.shared.encode.Base64;
 
 /**
  * The <code>QuerySignatureUtil</code> provides methods to
@@ -57,6 +57,7 @@ public class QuerySignatureUtil {
     private static final String SIGNATURE = "Signature";
 
     static {
+        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
         Init.init();
     }
 

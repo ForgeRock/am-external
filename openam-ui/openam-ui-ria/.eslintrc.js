@@ -13,10 +13,13 @@
  *
  * Copyright 2015-2018 ForgeRock AS.
  */
+
 module.exports = {
     env: {
         amd: true,
         browser: true,
+        es6: true,
+        mocha: true,
         node: true
     },
     extends: [
@@ -42,7 +45,8 @@ module.exports = {
         "promise/always-return": "off",
         "promise/catch-or-return": "off",
         "promise/no-callback-in-promise": "off",
-        "promise/no-nesting": "off"
+        "promise/no-nesting": "off",
+        "filenames/match-exported": ["error", null, "\\.test.generator$"]
     },
     settings: {
         react: {

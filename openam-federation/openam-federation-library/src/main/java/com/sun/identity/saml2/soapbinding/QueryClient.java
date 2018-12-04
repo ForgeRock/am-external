@@ -24,12 +24,33 @@
  *
  * $Id: QueryClient.java,v 1.9 2009/10/29 00:19:21 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2016 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  * Portions Copyrighted 2016 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.saml2.soapbinding;
 
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.newDate;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+
+import javax.xml.soap.SOAPConstants;
+import javax.xml.soap.SOAPException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.saml2.assertion.Assertion;
@@ -42,9 +63,9 @@ import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.entityconfig.XACMLAuthzDecisionQueryConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.XACMLPDPConfigElement;
-import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzServiceElement;
-import com.sun.identity.saml2.jaxb.metadata.XACMLPDPDescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.EndpointType;
+import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.XACMLPDPDescriptorType;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
@@ -54,31 +75,10 @@ import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.RequestAbstract;
 import com.sun.identity.saml2.protocol.Response;
 import com.sun.identity.saml2.protocol.impl.ResponseImpl;
-import com.sun.identity.xacml.saml2.XACMLAuthzDecisionQuery;
-import javax.xml.soap.SOAPException;
-import com.sun.identity.shared.jaxrpc.SOAPClient;
 import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.jaxrpc.SOAPClient;
 import com.sun.identity.shared.xml.XMLUtils;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.security.Key;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-import javax.xml.soap.SOAPConstants;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import com.sun.identity.xacml.saml2.XACMLAuthzDecisionQuery;
 
 /**
  * The <code>QueryClient</code> class provides Query Requester clients with
@@ -417,24 +417,20 @@ public class QueryClient {
         String classMethod = "QueryClient:getPDPEndPoint";
         if (saml2MetaManager != null)  {
             try {
-                XACMLPDPDescriptorElement pdpDescriptor =
+                XACMLPDPDescriptorType pdpDescriptor =
                         saml2MetaManager.
                         getPolicyDecisionPointDescriptor(null,
                         pdpEntityID);
                 if (pdpDescriptor != null) {
-                    List xacmlPDP = pdpDescriptor.getXACMLAuthzService();
+                    List<EndpointType> xacmlPDP = pdpDescriptor.getXACMLAuthzService();
                     if (xacmlPDP != null) {
-                        Iterator i = xacmlPDP.iterator();
+                        Iterator<EndpointType> i = xacmlPDP.iterator();
                         while (i.hasNext()) {
-                            Object o = (Object) i.next();
-                            if (o instanceof XACMLAuthzServiceElement) {
-                                XACMLAuthzServiceElement xType =
-                                        (XACMLAuthzServiceElement) o;
-                                endPoint = xType.getLocation();
-                                if (debug.messageEnabled()) {
-                                    debug.message(classMethod +
-                                            "EndPoint :" + endPoint);
-                                }
+                            EndpointType o = i.next();
+                            endPoint = o.getLocation();
+                            if (debug.messageEnabled()) {
+                                debug.message(classMethod +
+                                        "EndPoint :" + endPoint);
                             }
                             break;
                         }
@@ -457,7 +453,7 @@ public class QueryClient {
      * Returns the extended Policy Enforcement Point Configuration.
      *
      * @param realm the realm of the entity.
-     * @param pepEntityId identifier of the PEP.
+     * @param pepEntityID identifier of the PEP.
      * @return the <code>XACMLAuthzDecisionQueryConfigElement</code> object.
      * @exception <code>SAML2Exception</code> if there is an error retreiving
      *            the extended configuration.
@@ -490,7 +486,7 @@ public class QueryClient {
      * Returns the extended Policy Decision Point Configuration.
      *
      * @param realm the realm of the entity.
-     * @param pdpEntityId identifier of the PDP.
+     * @param pdpEntityID identifier of the PDP.
      * @return the <code>XACMLPDPConfigElement</code> object.
      * @exception <code>SAML2Exception</code> if there is an error retreiving
      *            the extended configuration.
@@ -614,7 +610,7 @@ public class QueryClient {
                 // validate Issuer  in Assertion
                 Iterator assertionIter = assertions.iterator();
                 Set<X509Certificate> verificationCerts = null;
-                XACMLPDPDescriptorElement pdpDesc = null;
+                XACMLPDPDescriptorType pdpDesc = null;
                 if (wantAssertionSigned) {
                     pdpDesc =
                             saml2MetaManager.getPolicyDecisionPointDescriptor(
@@ -801,7 +797,7 @@ public class QueryClient {
      */
     private static boolean wantAssertionSigned(String realm,String pepEntityID)
     throws SAML2MetaException {
-        XACMLAuthzDecisionQueryDescriptorElement
+        XACMLAuthzDecisionQueryDescriptorType
                 pepDescriptor  =
                 saml2MetaManager.
                 getPolicyEnforcementPointDescriptor(realm,
@@ -816,7 +812,6 @@ public class QueryClient {
      * @param xacmlQuery XACML Query
      * @param realm the entity's realm.
      * @param pepEntityID entity identifier of PEP.
-     * @param pdpEntityID entity identifier of PDP.
      * @throws <code>SAML2Exception</code> if error in verifying
      *         the signature.
      */
@@ -873,7 +868,7 @@ public class QueryClient {
         boolean valid;
         if (wantResponseSigned != null &&
                 wantResponseSigned.equalsIgnoreCase("true")) {
-            XACMLPDPDescriptorElement pdpDescriptor = saml2MetaManager.getPolicyDecisionPointDescriptor(null,
+            XACMLPDPDescriptorType pdpDescriptor = saml2MetaManager.getPolicyDecisionPointDescriptor(null,
                     pdpEntityID);
             Set<X509Certificate> signingCerts = KeyUtil.getPDPVerificationCerts(pdpDescriptor, pdpEntityID);
             if (!signingCerts.isEmpty()) {

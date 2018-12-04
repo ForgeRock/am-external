@@ -15,12 +15,14 @@
  */
 package org.forgerock.openam.service.datastore;
 
-import static com.google.inject.name.Names.named;
-
+import org.forgerock.openam.services.datastore.DataStoreConsistencyController;
+import org.forgerock.openam.services.datastore.DataStoreLookup;
+import org.forgerock.openam.services.datastore.DataStoreService;
 import org.forgerock.opendj.ldap.ConnectionFactory;
 
 import com.google.inject.PrivateModule;
-import com.sun.identity.shared.debug.Debug;
+import com.google.inject.Provides;
+import com.sun.identity.sm.SMSNotificationManager;
 
 /**
  * Guice module to bind the data store features together.
@@ -31,10 +33,25 @@ public final class DataStoreGuiceModule extends PrivateModule {
 
     @Override
     protected void configure() {
+        bind(ConnectionFactory.class).toProvider(DefaultConnectionFactoryProvider.class);
+        bind(DataStoreLookup.class).to(SmsDataStoreLookup.class);
+
         bind(DataStoreService.class).to(LdapDataStoreService.class);
+        bind(DataStoreServiceRegister.class).to(LdapDataStoreService.class);
+
+        bind(VolatileActionConsistencyController.class).to(ReentrantVolatileActionConsistencyController.class);
+        bind(DataStoreConsistencyController.class).to(ReentrantVolatileActionConsistencyController.class);
+
+        expose(DataStoreServiceRegister.class);
         expose(DataStoreService.class);
-        bind(ConnectionFactory.class).toProvider(DefaultConnectionFactoryService.class);
         expose(ConnectionFactory.class);
+        expose(DataStoreLookup.class);
+        expose(DataStoreConsistencyController.class);
+    }
+
+    @Provides
+    public Runnable getRefreshDataLayerAction() {
+        return () -> SMSNotificationManager.getInstance().allObjectsChanged();
     }
 
 }

@@ -14,12 +14,31 @@
  * Copyright 2018 ForgeRock AS.
  */
 
-const { resolve } = require("path");
-
-const babelLoader = (extension) => ({
+const babelLoader = () => ({
     loader: "babel-loader",
     options: {
-        "extends": resolve(process.cwd(), "config", "babel", `.${extension}.babelrc`)
+        babelrc: false,
+        cacheDirectory: true,
+        ignore: "libs/",
+        presets: [
+            "react",
+            ["env", {
+                targets: {
+                    android: 6,
+                    chrome: 62,
+                    edge: 25,
+                    firefox: 57,
+                    ie: 11,
+                    ios: 9,
+                    safari: 11
+                },
+                useBuiltIns: "usage"
+            }]
+        ],
+        plugins: [
+            "syntax-dynamic-import",
+            "transform-object-rest-spread"
+        ]
     }
 });
 

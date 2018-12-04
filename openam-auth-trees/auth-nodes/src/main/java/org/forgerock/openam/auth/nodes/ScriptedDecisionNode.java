@@ -13,7 +13,6 @@
  *
  * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
@@ -77,11 +76,24 @@ public class ScriptedDecisionNode implements Node {
     private static final Debug DEBUG = Debug.getInstance("amScript");
     private static final String LOGGER_VARIABLE_NAME = "logger";
 
-    interface Config {
+    /**
+     * Node Config Declaration.
+     */
+    public interface Config {
+        /**
+         * The script configuration.
+         *
+         * @return The script configuration.
+         */
         @Attribute(order = 100)
         @Script(AUTHENTICATION_TREE_DECISION_NODE_NAME)
         ScriptConfiguration script();
 
+        /**
+         * The list of possible outcomes.
+         *
+         * @return THe possible outcomes.
+         */
         @Attribute(order = 200)
         List<String> outcomes();
     }

@@ -31,25 +31,45 @@
 package com.sun.identity.saml2.profile;
 
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.currentTimeMillis;
+import static org.forgerock.openam.utils.Time.newDate;
 
-import com.sun.identity.saml2.common.AccountUtils;
-import com.sun.identity.saml2.common.NameIDInfo;
-import com.sun.identity.saml2.common.NewBoolean;
-import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.common.SAML2FailoverUtils;
-import com.sun.identity.saml2.common.SAML2InvalidNameIDPolicyException;
-import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.common.SOAPCommunicator;
-import com.sun.identity.shared.DateUtils;
-import com.sun.identity.shared.xml.XMLUtils;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.security.PrivateKey;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
 
-import com.sun.identity.cot.CircleOfTrustManager;
-import com.sun.identity.cot.CircleOfTrustDescriptor;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.soap.SOAPMessage;
+
+import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
+import org.forgerock.openam.saml2.audit.SAML2EventLogger;
+import org.forgerock.openam.utils.ClientUtils;
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.StringUtils;
+
 import com.sun.identity.cot.COTException;
+import com.sun.identity.cot.CircleOfTrustDescriptor;
+import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.multiprotocol.MultiProtocolUtils;
 import com.sun.identity.multiprotocol.SingleLogoutManager;
+import com.sun.identity.plugin.monitoring.FedMonAgent;
+import com.sun.identity.plugin.monitoring.FedMonSAML2Svc;
+import com.sun.identity.plugin.monitoring.MonitorManager;
+import com.sun.identity.plugin.session.SessionException;
+import com.sun.identity.plugin.session.SessionManager;
+import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.saml2.assertion.Assertion;
@@ -68,19 +88,27 @@ import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.assertion.Subject;
 import com.sun.identity.saml2.assertion.SubjectConfirmation;
 import com.sun.identity.saml2.assertion.SubjectConfirmationData;
+import com.sun.identity.saml2.common.AccountUtils;
+import com.sun.identity.saml2.common.NameIDInfo;
+import com.sun.identity.saml2.common.NewBoolean;
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2FailoverUtils;
+import com.sun.identity.saml2.common.SAML2InvalidNameIDPolicyException;
+import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.common.SOAPCommunicator;
 import com.sun.identity.saml2.ecp.ECPFactory;
 import com.sun.identity.saml2.ecp.ECPResponse;
 import com.sun.identity.saml2.idpdiscovery.IDPDiscoveryConstants;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.AffiliationDescriptorType;
-import com.sun.identity.saml2.jaxb.metadata.ArtifactResolutionServiceElement;
-import com.sun.identity.saml2.jaxb.metadata.AssertionConsumerServiceElement;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.logging.LogUtil;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.IndexedEndpointType;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.key.EncInfo;
 import com.sun.identity.saml2.key.KeyUtil;
+import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
@@ -89,6 +117,7 @@ import com.sun.identity.saml2.plugins.IDPAttributeMapper;
 import com.sun.identity.saml2.plugins.IDPAuthnContextInfo;
 import com.sun.identity.saml2.plugins.IDPAuthnContextMapper;
 import com.sun.identity.saml2.plugins.IDPECPSessionMapper;
+import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 import com.sun.identity.saml2.protocol.Artifact;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.NameIDPolicy;
@@ -96,36 +125,8 @@ import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.Response;
 import com.sun.identity.saml2.protocol.Status;
 import com.sun.identity.saml2.protocol.StatusCode;
-import com.sun.identity.plugin.monitoring.FedMonAgent;
-import com.sun.identity.plugin.monitoring.FedMonSAML2Svc;
-import com.sun.identity.plugin.monitoring.MonitorManager;
-import com.sun.identity.plugin.session.SessionProvider;
-import com.sun.identity.plugin.session.SessionManager;
-import com.sun.identity.plugin.session.SessionException;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
-import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
-import org.forgerock.openam.saml2.audit.SAML2EventLogger;
-import org.forgerock.openam.utils.ClientUtils;
-import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.openam.utils.StringUtils;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.security.PrivateKey;
-import java.util.LinkedHashSet;
-import java.util.logging.Level;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.xml.soap.SOAPMessage;
+import com.sun.identity.shared.DateUtils;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * The utility class is used by the identity provider to process
@@ -1548,7 +1549,7 @@ public class IDPSSOUtil {
                 spNameQualifier = recipientEntityID;
             }
         }
-        SPSSODescriptorElement spsso = getSPSSODescriptor(
+        SPSSODescriptorType spsso = getSPSSODescriptor(
                 realm, recipientEntityID, classMethod);
         if (spsso == null) {
             String[] data = {recipientEntityID};
@@ -1557,7 +1558,7 @@ public class IDPSSOUtil {
                     "metaDataError"));
         }
 
-        IDPSSODescriptorElement idpsso =
+        IDPSSODescriptorType idpsso =
                 metaManager.getIDPSSODescriptor(realm, idpEntityID);
         if (idpsso == null) {
             String[] data = {idpEntityID};
@@ -1848,16 +1849,16 @@ public class IDPSSOUtil {
             String realm,
             StringBuffer returnedBinding) throws SAML2Exception {
         String classMethod = "IDPSSOUtil.getDefaultACSurl: ";
-        SPSSODescriptorElement spSSODescriptorElement = getSPSSODescriptor(
+        SPSSODescriptorType spSSODescriptorElement = getSPSSODescriptor(
                 realm, spEntityID, classMethod);
-        List acsList = spSSODescriptorElement.getAssertionConsumerService();
-        AssertionConsumerServiceElement acs = null;
+        List<IndexedEndpointType> acsList = spSSODescriptorElement.getAssertionConsumerService();
+        IndexedEndpointType acs = null;
         String acsURL = null;
         String binding = null;
         String firstAcsURL = null;
         String firstBinding = null;
         for (int i = 0; i < acsList.size(); i++) {
-            acs = (AssertionConsumerServiceElement) acsList.get(i);
+            acs = acsList.get(i);
             if (acs.isIsDefault()) {
                 acsURL = acs.getLocation();
                 binding = acs.getBinding();
@@ -1893,13 +1894,13 @@ public class IDPSSOUtil {
             String realm,
             String acsURL) throws SAML2Exception {
         String classMethod = "IDPSSOUtil.getBindingForAcsUrl: ";
-        SPSSODescriptorElement spSSODescriptorElement = getSPSSODescriptor(
+        SPSSODescriptorType spSSODescriptorElement = getSPSSODescriptor(
                 realm, spEntityID, classMethod);
-        List acsList = spSSODescriptorElement.getAssertionConsumerService();
-        AssertionConsumerServiceElement acs = null;
+        List<IndexedEndpointType> acsList = spSSODescriptorElement.getAssertionConsumerService();
+        IndexedEndpointType acs = null;
         String binding = null;
         for (int i = 0; i < acsList.size(); i++) {
-            acs = (AssertionConsumerServiceElement) acsList.get(i);
+            acs = acsList.get(i);
             String location = acs.getLocation();
             if (location != null && location.equals(acsURL)) {
                 return acs.getBinding();
@@ -1928,18 +1929,18 @@ public class IDPSSOUtil {
             throws SAML2Exception {
 
         String classMethod = "IDPSSOUtil.getACSurlFromMetaByBinding: ";
-        SPSSODescriptorElement spSSODescriptorElement = getSPSSODescriptor(
+        SPSSODescriptorType spSSODescriptorElement = getSPSSODescriptor(
                 realm, spEntityID, classMethod);
-        List acsList = spSSODescriptorElement.getAssertionConsumerService();
+        List<IndexedEndpointType> acsList = spSSODescriptorElement.getAssertionConsumerService();
         String acsURL = null;
         String binding = null;
         String defaultAcsURL = null;
         String defaultBinding = null;
         String firstAcsURL = null;
         String firstBinding = null;
-        AssertionConsumerServiceElement acs = null;
+        IndexedEndpointType acs = null;
         for (int i = 0; i < acsList.size(); i++) {
-            acs = (AssertionConsumerServiceElement) acsList.get(i);
+            acs = acsList.get(i);
 
             binding = acs.getBinding();
             if (binding.equals(desiredBinding)) {
@@ -1998,9 +1999,9 @@ public class IDPSSOUtil {
 
         String classMethod = "IDPSSOUtil.getACSurlFromMetaByIndex: ";
 
-        SPSSODescriptorElement spSSODescriptorElement = getSPSSODescriptor(
+        SPSSODescriptorType spSSODescriptorElement = getSPSSODescriptor(
                 realm, spEntityID, classMethod);
-        List acsList = spSSODescriptorElement.getAssertionConsumerService();
+        List<IndexedEndpointType> acsList = spSSODescriptorElement.getAssertionConsumerService();
         int index;
         String acsURL = null;
         String binding = null;
@@ -2008,9 +2009,9 @@ public class IDPSSOUtil {
         String defaultBinding = null;
         String firstAcsURL = null;
         String firstBinding = null;
-        AssertionConsumerServiceElement acs = null;
+        IndexedEndpointType acs = null;
         for (int i = 0; i < acsList.size(); i++) {
-            acs = (AssertionConsumerServiceElement) acsList.get(i);
+            acs = acsList.get(i);
 
             index = acs.getIndex();
             binding = acs.getBinding();
@@ -2072,7 +2073,7 @@ public class IDPSSOUtil {
 
         String classMethod = "IDPSSOUtil.sendResponseArtifact: ";
 
-        IDPSSODescriptorElement idpSSODescriptorElement = null;
+        IDPSSODescriptorType idpSSODescriptorElement = null;
         try {
             idpSSODescriptorElement = metaManager.getIDPSSODescriptor(
                     realm, idpEntityID);
@@ -2095,9 +2096,8 @@ public class IDPSSOUtil {
                     SAML2Utils.bundle.getString("metaDataError"));
         }
 
-        ArtifactResolutionServiceElement ars =
-                (ArtifactResolutionServiceElement)
-                        idpSSODescriptorElement.getArtifactResolutionService().get(0);
+        IndexedEndpointType ars =
+                idpSSODescriptorElement.getArtifactResolutionService().get(0);
         if (ars == null) {
             SAML2Utils.debug.error(classMethod +
                     "Unable to get ArtifactResolutionServiceElement from meta.");
@@ -2580,7 +2580,7 @@ public class IDPSSOUtil {
             }
             return;
         }
-        SPSSODescriptorElement spSSODescriptorElement = getSPSSODescriptor(
+        SPSSODescriptorType spSSODescriptorElement = getSPSSODescriptor(
                 realm, spEntityID, classMethod);
         // get the encryption information
         EncInfo encInfo = KeyUtil.getEncInfo(spSSODescriptorElement,
@@ -2972,14 +2972,14 @@ public class IDPSSOUtil {
 
         boolean isValidACSurl = false;
         String classMethod = "IDPSSOUtil.isACSurlValidInMetadataSP: ";
-        SPSSODescriptorElement spSSODescriptorElement = getSPSSODescriptor(
+        SPSSODescriptorType spSSODescriptorElement = getSPSSODescriptor(
                 realm, spEntityID, classMethod);
 
-        List acsList = spSSODescriptorElement.getAssertionConsumerService();
-        AssertionConsumerServiceElement acs = null;
+        List<IndexedEndpointType> acsList = spSSODescriptorElement.getAssertionConsumerService();
+        IndexedEndpointType acs = null;
 
         for (int i = 0; i < acsList.size(); i++) {
-            acs = (AssertionConsumerServiceElement) acsList.get(i);
+            acs = acsList.get(i);
             String acsInMeta = acs.getLocation();
             if (acsInMeta.equalsIgnoreCase(acsURL)) {
                 isValidACSurl = true;
@@ -3006,7 +3006,7 @@ public class IDPSSOUtil {
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(method + ": realm - " + realm + "/: spEntityID - " + spEntityID);
         }
-        SPSSODescriptorElement spSSODescriptor = getSPSSODescriptor(spEntityID, realm, method);
+        SPSSODescriptorType spSSODescriptor = getSPSSODescriptor(spEntityID, realm, method);
         return spSSODescriptor.isWantAssertionsSigned();
     }
 
@@ -3018,11 +3018,11 @@ public class IDPSSOUtil {
      * @return <code>SPSSODescriptorElement</code> for the entity
      * @throws SAML2Exception if entity is not found
      */
-    private static SPSSODescriptorElement getSPSSODescriptor(String realm,
+    private static SPSSODescriptorType getSPSSODescriptor(String realm,
             String spEntityID, String classMethod)
             throws SAML2Exception {
        
-        SPSSODescriptorElement spSSODescriptor = null;
+        SPSSODescriptorType spSSODescriptor = null;
         if (metaManager == null) {
             SAML2Utils.debug.error(classMethod + "Unable to get meta manager.");
             throw new SAML2Exception(SAML2Utils.bundle.getString("errorMetaManager"));

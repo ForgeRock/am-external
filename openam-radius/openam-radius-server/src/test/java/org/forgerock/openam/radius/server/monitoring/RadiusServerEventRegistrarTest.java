@@ -12,13 +12,15 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server.monitoring;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.forgerock.guava.common.eventbus.EventBus;
 import org.testng.annotations.Test;
+
+import com.google.common.eventbus.EventBus;
 
 /**
  * Test methods for the <code>RadiusServerEventRegistrar</code> class.

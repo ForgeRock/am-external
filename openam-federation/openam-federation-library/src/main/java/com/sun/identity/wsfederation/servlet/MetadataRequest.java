@@ -24,6 +24,8 @@
  *
  * $Id: MetadataRequest.java,v 1.2 2009/10/28 23:59:00 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.wsfederation.servlet;
@@ -97,7 +99,7 @@ public class MetadataRequest extends WSFederationAction {
             }
         }
 
-        FederationElement fedElem = 
+        FederationElement fedElem =
             metaManager.getEntityDescriptor(realm, entityId);
 
         String metaXML = null;

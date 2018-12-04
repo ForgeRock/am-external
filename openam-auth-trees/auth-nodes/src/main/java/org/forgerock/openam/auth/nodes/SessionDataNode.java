@@ -42,7 +42,10 @@ import com.sun.identity.sm.RequiredValueValidator;
             configClass = SessionDataNode.Config.class)
 public class SessionDataNode extends SingleOutcomeNode {
 
-    interface Config {
+    /**
+     * Node Config Declaration.
+     */
+    public interface Config {
         /**
          * The session data key specifies the name of session data to get.
          *

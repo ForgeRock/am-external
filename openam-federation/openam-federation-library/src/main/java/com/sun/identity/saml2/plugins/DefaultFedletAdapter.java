@@ -24,28 +24,32 @@
  *
  * $Id: DefaultFedletAdapter.java,v 1.2 2009/06/17 03:09:13 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.saml2.plugins;
+
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import com.sun.identity.common.HttpURLConnectionManager;
 import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
+import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.protocol.LogoutRequest;
 import com.sun.identity.saml2.protocol.LogoutResponse;
 import com.sun.identity.shared.encode.URLEncDec;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.List;
 
 /**
  * The <code>DefaultFedletAdapter</code> class provides default implementation
@@ -100,12 +104,12 @@ public class DefaultFedletAdapter extends FedletAdapter {
         String method = "DefaultFedletAdapter:doFedletSLO:";
         try {
             if (logoutUrl == null) {
-                BaseConfigType spConfig = SAML2Utils.getSAML2MetaManager()
+                SPSSOConfigElement spConfig = SAML2Utils.getSAML2MetaManager()
                     .getSPSSOConfig("/", hostedEntityID);
-                List appLogoutURL = (List) SAML2MetaUtils.getAttributes(
+                List<String> appLogoutURL = SAML2MetaUtils.getAttributes(
                     spConfig).get(SAML2Constants.APP_LOGOUT_URL);
                 if ((appLogoutURL != null) && !appLogoutURL.isEmpty()) {
-                    logoutUrl = (String) appLogoutURL.get(0);
+                    logoutUrl = appLogoutURL.get(0);
                 }
             }
             if (logoutUrl == null) {
@@ -260,12 +264,12 @@ public class DefaultFedletAdapter extends FedletAdapter {
         String method = "DefaultFedletAdapter:onFedletSLOSuccessOrFailure:";
         try {
             if (logoutUrl == null) {
-                BaseConfigType spConfig = SAML2Utils.getSAML2MetaManager()
+                SPSSOConfigElement spConfig = SAML2Utils.getSAML2MetaManager()
                     .getSPSSOConfig("/", hostedEntityID);
-                List appLogoutURL = (List) SAML2MetaUtils.getAttributes(
+                List<String> appLogoutURL = SAML2MetaUtils.getAttributes(
                     spConfig).get(SAML2Constants.APP_LOGOUT_URL);
                 if ((appLogoutURL != null) && !appLogoutURL.isEmpty()) {
-                    logoutUrl = (String) appLogoutURL.get(0);
+                    logoutUrl = appLogoutURL.get(0);
                 }
             }
             if (logoutUrl == null) {

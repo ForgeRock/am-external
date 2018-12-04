@@ -24,7 +24,7 @@
  *
  * $Id: Subject.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 
 
@@ -80,7 +80,7 @@ public interface Subject {
      *
      * @return a list of subject confirmations
      */
-    public List getSubjectConfirmation();
+    public List<SubjectConfirmation> getSubjectConfirmation();
 
     /** 
      * Sets a list of subject confirmations
@@ -88,7 +88,7 @@ public interface Subject {
      * @param confirmations a list of subject confirmations
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setSubjectConfirmation(List confirmations)
+    public void setSubjectConfirmation(List<SubjectConfirmation> confirmations)
         throws SAML2Exception;
 
     /**

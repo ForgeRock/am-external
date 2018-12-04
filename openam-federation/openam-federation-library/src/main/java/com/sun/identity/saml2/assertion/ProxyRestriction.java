@@ -24,6 +24,7 @@
  *
  * $Id: ProxyRestriction.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -71,7 +72,7 @@ public interface ProxyRestriction extends ConditionAbstract {
      *
      *  @return a list of <code>String</code> represented audiences
      */
-    public List getAudience();
+    public List<String> getAudience();
 
     /**
      *  Sets the list of audiences to whom the asserting party permits
@@ -80,5 +81,5 @@ public interface ProxyRestriction extends ConditionAbstract {
      *  @param audiences a list of <code>String</code> represented audiences
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setAudience(List audiences) throws SAML2Exception;
+    public void setAudience(List<String> audiences) throws SAML2Exception;
 }

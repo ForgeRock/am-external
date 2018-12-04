@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-ui</artifactId>
-        <version>6.0.0.5</version>
+        <version>6.5.0</version>
     </parent>
 
     <artifactId>openam-ui-ria</artifactId>
@@ -61,8 +61,8 @@
                         </goals>
                         <phase>initialize</phase>
                         <configuration>
-                            <nodeVersion>v8.9.4</nodeVersion>
-                            <yarnVersion>v1.5.1</yarnVersion>
+                            <nodeVersion>v10.11.0</nodeVersion>
+                            <yarnVersion>v1.10.1</yarnVersion>
                             <nodeDownloadRoot>http://maven.forgerock.org/repo/forgerock-third-party-virtual/</nodeDownloadRoot>
                             <yarnDownloadRoot>http://maven.forgerock.org/repo/yarn-cache-local/</yarnDownloadRoot>
                         </configuration>
@@ -74,10 +74,7 @@
                         </goals>
                         <phase>initialize</phase>
                         <configuration>
-                            <arguments>install --mutex=file:/tmp/.yarn-mutex --non-interactive --pure-lockfile</arguments>
-                            <environmentVariables>
-                                <PHANTOMJS_CDNURL>http://maven.forgerock.org/repo/forgerock-third-party-virtual</PHANTOMJS_CDNURL>
-                            </environmentVariables>
+                            <arguments>install --ignore-optional --mutex=file:/tmp/.yarn-mutex --non-interactive --pure-lockfile</arguments>
                         </configuration>
                     </execution>
                     <execution>
@@ -97,7 +94,7 @@
                         </goals>
                         <phase>test</phase>
                         <configuration>
-                            <arguments>run test --single-run</arguments>
+                            <arguments>run test --quiet --reporter min</arguments>
                         </configuration>
                     </execution>
                 </executions>

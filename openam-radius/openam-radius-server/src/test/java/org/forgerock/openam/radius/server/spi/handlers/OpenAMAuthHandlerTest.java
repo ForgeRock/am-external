@@ -12,12 +12,16 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2017 ForgeRock AS.
+ * Portions Copyrighted 2017-2018 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server.spi.handlers;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.isA;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -26,7 +30,6 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
-import org.forgerock.guava.common.eventbus.EventBus;
 import org.forgerock.openam.radius.common.AccessRequest;
 import org.forgerock.openam.radius.common.AttributeSet;
 import org.forgerock.openam.radius.common.Authenticator;
@@ -43,6 +46,7 @@ import org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolderCa
 import org.forgerock.openam.radius.server.spi.handlers.amhandler.OpenAMAuthFactory;
 import org.testng.annotations.Test;
 
+import com.google.common.eventbus.EventBus;
 import com.sun.identity.authentication.AuthContext;
 import com.sun.identity.authentication.AuthContext.Status;
 import com.sun.identity.authentication.spi.AuthLoginException;

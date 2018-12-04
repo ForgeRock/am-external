@@ -11,11 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2018 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server.audit;
 
-import static org.forgerock.json.JsonValue.*;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -25,9 +27,6 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.forgerock.audit.events.AccessAuditEventBuilder.ResponseStatus;
-import org.forgerock.guava.common.base.Strings;
-import org.forgerock.guava.common.eventbus.EventBus;
-import org.forgerock.guava.common.eventbus.Subscribe;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.audit.AMAccessAuditEventBuilder;
 import org.forgerock.openam.audit.AuditConstants;
@@ -47,6 +46,9 @@ import org.forgerock.openam.radius.server.events.AuthRequestChallengedEvent;
 import org.forgerock.openam.radius.server.events.AuthRequestReceivedEvent;
 import org.forgerock.openam.radius.server.events.AuthRequestRejectedEvent;
 
+import com.google.common.base.Strings;
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import com.sun.identity.shared.debug.Debug;
 
 /**

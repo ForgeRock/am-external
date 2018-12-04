@@ -11,15 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2017 ForgeRock AS.
+ * Copyright 2013-2018 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
 
-import static org.mockito.BDDMockito.*;
+import static com.sun.identity.authentication.util.ISAuthConstants.MODULE_INSTANCE_NAME;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.anyBoolean;
+import static org.mockito.BDDMockito.anyCollection;
+import static org.mockito.BDDMockito.anyString;
+import static org.mockito.BDDMockito.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.testng.AssertJUnit.*;
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertSame;
+import static org.testng.AssertJUnit.assertTrue;
+import static org.testng.AssertJUnit.fail;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -97,6 +106,29 @@ public class PersistentCookieAuthModuleTest {
         assertSame(GENERATED_CONFIG, config);
         verify(persistentCookieWrapper).generateConfig(eq("0"), eq("300"), anyBoolean(), anyString(),
                 anyBoolean(), anyBoolean(), any(), anyCollection(), any());
+    }
+
+    @Test
+    public void shouldInitialiseAuthModuleWithModuleInstanceName() throws Exception {
+
+        //Given
+        Subject subject = new Subject();
+        Map sharedState = new HashMap();
+        Map options = new HashMap();
+
+        options.put("openam-auth-persistent-cookie-idle-time", new HashSet<Object>());
+        Set<Object> maxLifeSet = new HashSet<Object>();
+        maxLifeSet.add("5");
+        options.put("openam-auth-persistent-cookie-max-life", maxLifeSet);
+        options.put(MODULE_INSTANCE_NAME, "badger");
+
+        //When
+        Map<String, Object> config = persistentCookieAuthModule.generateConfig(subject, sharedState, options);
+
+        //Then
+        assertSame(GENERATED_CONFIG, config);
+        verify(persistentCookieWrapper).generateConfig(eq("0"), eq("300"), anyBoolean(), anyString(),
+                anyBoolean(), anyBoolean(), any(), anyCollection(), eq("badger"));
     }
 
     @Test

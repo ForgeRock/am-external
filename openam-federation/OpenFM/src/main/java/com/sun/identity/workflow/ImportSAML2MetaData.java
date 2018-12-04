@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2008 Sun Microsystems Inc. All Rights Reserved
@@ -24,30 +24,30 @@
  *
  * $Id: ImportSAML2MetaData.java,v 1.5 2008/07/08 01:12:01 exu Exp $
  *
- * Portions Copyrighted 2011-2016 ForgeRock AS.
+ * Portions Copyrighted 2011-2018 ForgeRock AS.
  */
 package com.sun.identity.workflow;
-
-import com.sun.identity.cot.COTException;
-import com.sun.identity.cot.CircleOfTrustManager;
-import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.meta.SAML2MetaException;
-import com.sun.identity.saml2.meta.SAML2MetaManager;
-import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
-import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.shared.xml.XMLUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 
-import org.forgerock.guava.common.base.Joiner;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.w3c.dom.Document;
+
+import com.sun.identity.cot.COTException;
+import com.sun.identity.cot.CircleOfTrustManager;
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
+import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
+import com.sun.identity.saml2.meta.SAML2MetaException;
+import com.sun.identity.saml2.meta.SAML2MetaManager;
+import com.sun.identity.saml2.meta.SAML2MetaUtils;
+import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * Import SAML2 Metadata.
@@ -80,13 +80,13 @@ public class ImportSAML2MetaData {
                 Object obj = SAML2MetaUtils.convertStringToJAXB(extended);
                 configElt = (obj instanceof EntityConfigElement) ? (EntityConfigElement)obj : null;
                 if (configElt != null) {
-                    List<? extends BaseConfigType> config =
-                            configElt.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
+                    List<JAXBElement<BaseConfigType>> config =
+                            configElt.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig();
                     if (!config.isEmpty()) {
-                        BaseConfigType bConfig = config.iterator().next();
-                        if (configElt.isHosted()) {
+                        JAXBElement<BaseConfigType> bConfig = config.iterator().next();
+                        if (configElt.getValue().isHosted()) {
                             // get the realm from the extended meta and use for import
-                            realm = SAML2MetaUtils.getRealmByMetaAlias(bConfig.getMetaAlias());
+                            realm = SAML2MetaUtils.getRealmByMetaAlias(bConfig.getValue().getMetaAlias());
                         }
                         List<String> cots = SAML2MetaUtils.getAttributes(bConfig).get(SAML2Constants.COT_LIST);
                         if (CollectionUtils.isNotEmpty(cots)) {
@@ -99,7 +99,7 @@ public class ImportSAML2MetaData {
                                 }
                             }
                             if (!invalidCots.isEmpty()) {
-                                String combinedCots = Joiner.on(", ").join(invalidCots);
+                                String combinedCots = String.join(", ", invalidCots);
                                 DEBUG.error("Unknown Circle of Trust(s): {} in extended metadata for realm: {}",
                                         combinedCots, realm);
                                 throw new WorkflowException("invalid-cot-extended-data", combinedCots, realm);

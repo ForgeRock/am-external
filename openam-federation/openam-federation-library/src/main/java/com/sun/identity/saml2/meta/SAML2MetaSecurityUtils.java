@@ -26,7 +26,6 @@
  *
  * Portions Copyrighted 2010-2018 ForgeRock AS.
  */
-
 package com.sun.identity.saml2.meta;
 
 import java.security.KeyStore;
@@ -37,6 +36,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 
 import org.apache.xml.security.keys.KeyInfo;
@@ -61,7 +61,7 @@ import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.ObjectFactory;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.KeyTypes;
 import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
@@ -82,15 +82,24 @@ public final class SAML2MetaSecurityUtils {
     private static KeyStore keyStore = null;
     private static boolean checkCert = true;
     private static boolean keyProviderInitialized = false;
+    public static final String NS_ENTITY_CONFIG = "urn:sun:fm:SAML:2.0:entityconfig";
+    public static final String NS_MD_ATTR = "urn:oasis:names:tc:SAML:metadata:attribute";
+    public static final String NS_MD_QUERY = "urn:oasis:names:tc:SAML:metadata:ext:query";
+    public static final String NS_MD_X509_QUERY = "urn:oasis:names:tc:SAML:metadata:X509:query";
     public static final String NS_META = "urn:oasis:names:tc:SAML:2.0:metadata";
+    public static final String NS_SAML = "urn:oasis:names:tc:SAML:2.0:assertion";
     public static final String NS_XMLSIG = "http://www.w3.org/2000/09/xmldsig#";
     public static final String NS_XMLENC = "http://www.w3.org/2001/04/xmlenc#";
-    public static final String NS_MD_QUERY =
-        "urn:oasis:names:tc:SAML:metadata:ext:query";
 
+    public static final String PREFIX_ENTITY_CONFIG = "config";
+    public static final String PREFIX_MD_ATTR = "mdattr";
+    public static final String PREFIX_MD_QUERY = "query";
+    public static final String PREFIX_MD_X509_QUERY = "x509qry";
+    public static final String PREFIX_META = "md";
+    public static final String PREFIX_SAML = "saml";
     public static final String PREFIX_XMLSIG = "ds";
     public static final String PREFIX_XMLENC = "xenc";
-    public static final String PREFIX_MD_QUERY = "query";
+
     public static final String TAG_KEY_INFO = "KeyInfo";
     public static final String TAG_KEY_DESCRIPTOR = "KeyDescriptor";
     public static final String TAG_ENTITY_DESCRIPTOR = "EntityDescriptor";
@@ -110,6 +119,7 @@ public final class SAML2MetaSecurityUtils {
             return;
         }
 
+        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
         org.apache.xml.security.Init.init();
 
         keyProvider = KeyUtil.getKeyProviderInstance();
@@ -163,13 +173,13 @@ public final class SAML2MetaSecurityUtils {
 
 
         SAML2MetaManager metaManager = new SAML2MetaManager();
-        EntityConfigElement cfgElem = metaManager.getEntityConfig(realm, descriptor.getEntityID());
+        EntityConfigElement cfgElem = metaManager.getEntityConfig(realm, descriptor.getValue().getEntityID());
         boolean isHosted;
         if (cfgElem == null) {
             //if there is no EntityConfig, this is considered as a remote entity
             isHosted = false;
         } else {
-            isHosted = cfgElem.isHosted();
+            isHosted = cfgElem.getValue().isHosted();
         }
 
         String signingCert = getRealmSetting(METADATA_SIGNING_KEY, realm);
@@ -455,14 +465,14 @@ public final class SAML2MetaSecurityUtils {
         String entityID, Set<String> certAliases, boolean isSigning, boolean isIDP,
         String encAlgo, int keySize) throws SAML2MetaException { 
         SAML2MetaManager metaManager = new SAML2MetaManager();
-        EntityConfigElement config = 
+        EntityConfigElement config =
             metaManager.getEntityConfig(realm, entityID);
-        if (!config.isHosted()) {
+        if (!config.getValue().isHosted()) {
             String[] args = {entityID, realm};
             throw new SAML2MetaException("entityNotHosted", args);
         }
         EntityDescriptorElement desp = metaManager.getEntityDescriptor(realm, entityID);
-        BaseConfigType baseConfig;
+        JAXBElement<BaseConfigType> baseConfig;
         RoleDescriptorType descriptor;
         if (isIDP) {
             baseConfig = SAML2MetaUtils.getIDPSSOConfig(config);
@@ -485,12 +495,12 @@ public final class SAML2MetaSecurityUtils {
             // remove key info
             removeKeyDescriptor(descriptor, isSigning);
             if (isSigning) {
-                setExtendedAttributeValue(baseConfig, SAML2Constants.SIGNING_CERT_ALIAS, null);
+                setExtendedAttributeValue(baseConfig.getValue(), SAML2Constants.SIGNING_CERT_ALIAS, null);
             } else {
-                setExtendedAttributeValue(baseConfig, SAML2Constants.ENCRYPTION_CERT_ALIAS, null);
+                setExtendedAttributeValue(baseConfig.getValue(), SAML2Constants.ENCRYPTION_CERT_ALIAS, null);
             }
         } else {
-            Set<KeyDescriptorType> keyDescriptors = new LinkedHashSet<>(certAliases.size());
+            Set<KeyDescriptorElement> keyDescriptors = new LinkedHashSet<>(certAliases.size());
             for (String certAlias : certAliases) {
                 keyDescriptors.add(getKeyDescriptor(certAlias, isSigning, encAlgo, keySize));
             }
@@ -498,66 +508,46 @@ public final class SAML2MetaSecurityUtils {
 
             // update extended metadata
             if (isSigning) {
-                setExtendedAttributeValue(baseConfig, SAML2Constants.SIGNING_CERT_ALIAS, certAliases);
+                setExtendedAttributeValue(baseConfig.getValue(), SAML2Constants.SIGNING_CERT_ALIAS, certAliases);
             } else {
-                setExtendedAttributeValue(baseConfig, SAML2Constants.ENCRYPTION_CERT_ALIAS, certAliases);
+                setExtendedAttributeValue(baseConfig.getValue(), SAML2Constants.ENCRYPTION_CERT_ALIAS, certAliases);
             }
         }
         metaManager.setEntityDescriptor(realm, desp);
         metaManager.setEntityConfig(realm, config);
     }
 
-    private static void updateKeyDescriptor(RoleDescriptorType desp, Set<KeyDescriptorType> keyDescriptors) {
-        String use = keyDescriptors.iterator().next().getUse();
-        List<KeyDescriptorType> keys = desp.getKeyDescriptor();
+    private static void updateKeyDescriptor(RoleDescriptorType desp, Set<KeyDescriptorElement> keyDescriptors) {
+        KeyTypes use = keyDescriptors.iterator().next().getValue().getUse();
+        List<KeyDescriptorElement> keys = desp.getKeyDescriptor();
 
-        Iterator<KeyDescriptorType> iterator = keys.iterator();
-        while (iterator.hasNext()) {
-            final KeyDescriptorType keyDescriptor = iterator.next();
-            if (keyDescriptor.getUse().equalsIgnoreCase(use)) {
-                iterator.remove();
-            }
-        }
+        keys.removeIf(keyDescriptor -> keyDescriptor.getValue().getUse().equals(use));
 
         desp.getKeyDescriptor().addAll(keyDescriptors);
     }
 
-    private static void removeKeyDescriptor(RoleDescriptorType desp,
-        boolean isSigningUse) {
-        List keys = desp.getKeyDescriptor();
-        for (Iterator iter = keys.iterator(); iter.hasNext();) {
-            KeyDescriptorElement key = (KeyDescriptorElement) iter.next();
-            String keyUse = "encryption";
-            if (isSigningUse) {
-                keyUse = "signing";
-            }
-            if ((key.getUse() != null) && 
-                key.getUse().equalsIgnoreCase(keyUse)) {
-                iter.remove();
-            }
-        }
+    private static void removeKeyDescriptor(RoleDescriptorType desp, boolean isSigningUse) {
+        List<KeyDescriptorElement> keys = desp.getKeyDescriptor();
+        KeyTypes use = isSigningUse ? KeyTypes.SIGNING : KeyTypes.ENCRYPTION;
+        keys.removeIf(key -> use.equals(key.getValue().getUse()));
     }
   
     private static void setExtendedAttributeValue(
         BaseConfigType config,
-        String attrName, Set attrVal) throws SAML2MetaException {
-        try {
-            List attributes = config.getAttribute();
-            for(Iterator iter = attributes.iterator(); iter.hasNext();) {
-                AttributeType avp = (AttributeType)iter.next();
-                if (avp.getName().trim().equalsIgnoreCase(attrName)) {
-                     iter.remove(); 
-                }
+        String attrName, Set attrVal) {
+        List attributes = config.getAttribute();
+        for(Iterator iter = attributes.iterator(); iter.hasNext();) {
+            AttributeType avp = (AttributeType)iter.next();
+            if (avp.getName().trim().equalsIgnoreCase(attrName)) {
+                 iter.remove();
             }
-            if (attrVal != null) {
-                ObjectFactory factory = new ObjectFactory();
-                AttributeType atype = factory.createAttributeType();
-                atype.setName(attrName);
-                atype.getValue().addAll(attrVal);
-                config.getAttribute().add(atype);
-            }
-        } catch (JAXBException e) {
-            throw new SAML2MetaException(e);
+        }
+        if (attrVal != null) {
+            ObjectFactory factory = new ObjectFactory();
+            AttributeType atype = factory.createAttributeType();
+            atype.setName(attrName);
+            atype.getValue().addAll(attrVal);
+            config.getAttribute().add(atype);
         }
     }
 
@@ -591,7 +581,7 @@ public final class SAML2MetaSecurityUtils {
                   .append("</EncryptionMethod>");
             }
             sb.append("</KeyDescriptor>");
-            return (KeyDescriptorElement) 
+            return (KeyDescriptorElement)
                 SAML2MetaUtils.convertStringToJAXB(sb.toString());
         } catch (JAXBException e) {
             throw new SAML2MetaException(e);

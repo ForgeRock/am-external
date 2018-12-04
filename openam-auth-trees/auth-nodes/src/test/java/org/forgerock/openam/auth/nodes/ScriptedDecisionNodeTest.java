@@ -13,7 +13,6 @@
  *
  * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
@@ -30,7 +29,6 @@ import static org.mockito.MockitoAnnotations.initMocks;
 import javax.script.Bindings;
 import javax.script.ScriptException;
 
-import org.forgerock.guava.common.collect.ImmutableList;
 import org.forgerock.guice.core.GuiceTestCase;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
@@ -47,6 +45,8 @@ import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableList;
 
 public class ScriptedDecisionNodeTest extends GuiceTestCase {
 

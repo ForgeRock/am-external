@@ -15,6 +15,7 @@
  */
 
 const { URL } = require("url");
+const webpackLog = require("webpack-log");
 const webpackMerge = require("webpack-merge");
 
 const babelLoader = require("../loaders/babelLoader");
@@ -27,7 +28,9 @@ const logColourInfo = require("../support/log/colour/info");
 
 const PROXY_TARGET_PORT = process.env.OPENAM_PORT || 8080;
 
-console.log(`Proxying to AM on port ${logColourInfo(PROXY_TARGET_PORT)}`);
+const log = webpackLog({ name: "wds" });
+
+log.info(`Proxying to AM on port ${logColourInfo(PROXY_TARGET_PORT)}`);
 module.exports = webpackMerge(common, {
     devServer: {
         compress: true,
@@ -48,11 +51,10 @@ module.exports = webpackMerge(common, {
         publicPath: "/openam/XUI/"
     },
     devtool: "cheap-module-eval-source-map",
+    mode: "development",
     module: {
         rules: [
-            loaders("js", [babelLoader("js"), eslintLoader({ emitWarning: true })]),
-            loaders("jsm", [babelLoader("jsm"), eslintLoader({ emitWarning: true })]),
-            loaders("jsx", [babelLoader("jsx"), eslintLoader({ emitWarning: true })]),
+            loaders(["js", "jsx"], [babelLoader(), eslintLoader({ emitWarning: true })]),
             loaders("css", [
                 {
                     loader: "file-loader",
@@ -86,8 +88,7 @@ module.exports = webpackMerge(common, {
             ])
         ]
     },
-    output: {
-        chunkFilename: "[name].js",
-        filename: "[name].js"
+    optimization: {
+        removeAvailableModules: false
     }
 });

@@ -24,14 +24,23 @@
  *
  * $Id: FSDefaultAttributeMapper.java,v 1.3 2008/06/25 05:46:53 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.federation.services;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.w3c.dom.Element;
+
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.federation.common.IFSConstants;
-import com.sun.identity.federation.jaxb.entityconfig.SPDescriptorConfigElement;
+import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.federation.meta.IDFFMetaException;
 import com.sun.identity.federation.meta.IDFFMetaManager;
 import com.sun.identity.federation.meta.IDFFMetaUtils;
@@ -40,11 +49,6 @@ import com.sun.identity.saml.assertion.Attribute;
 import com.sun.identity.saml.assertion.AttributeStatement;
 import com.sun.identity.saml.common.SAMLException;
 import com.sun.identity.shared.xml.XMLUtils;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import org.w3c.dom.Element;
 
 
 /**
@@ -87,7 +91,7 @@ public class FSDefaultAttributeMapper implements FSAttributeMapper {
         try {
             IDFFMetaManager metaManager = FSUtils.getIDFFMetaManager();
             if (metaManager != null) {
-                SPDescriptorConfigElement spConfig =
+                BaseConfigType spConfig =
                     metaManager.getSPDescriptorConfig("/", hostEntityId);
                 if (spConfig != null) {
                     Map attributes = IDFFMetaUtils.getAttributes(spConfig);

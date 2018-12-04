@@ -24,9 +24,21 @@
  *
  * $Id: GetIDPSPPairingInCOT.java,v 1.3 2009/01/09 17:42:55 veiming Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.workflow;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import com.sun.identity.cot.COTConstants;
 import com.sun.identity.cot.COTException;
@@ -38,15 +50,6 @@ import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Gets all IDP in a circle of trust.
@@ -99,7 +102,7 @@ public class GetIDPSPPairingInCOT
             for (Iterator i = hostedIDP.iterator(); i.hasNext();) {
                 String e = (String) i.next();
                 IDPSSOConfigElement cfg = mgr.getIDPSSOConfig(realm, e);
-                list.add(e + "(" + cfg.getMetaAlias() + ")");
+                list.add(e + "(" + cfg.getValue().getMetaAlias() + ")");
             }
             return list;
         } catch (SAML2MetaException ex) {
@@ -115,7 +118,7 @@ public class GetIDPSPPairingInCOT
             for (Iterator i = hostedSP.iterator(); i.hasNext();) {
                 String e = (String) i.next();
                 SPSSOConfigElement cfg = mgr.getSPSSOConfig(realm, e);
-                list.add(e + "(" + cfg.getMetaAlias() + ")");
+                list.add(e + "(" + cfg.getValue().getMetaAlias() + ")");
             }
             return list;
         } catch (SAML2MetaException ex) {
@@ -182,7 +185,7 @@ public class GetIDPSPPairingInCOT
             for (Iterator i = entities.iterator(); i.hasNext();) {
                 String entityId = (String) i.next();
                 EntityConfigElement elm = mgr.getEntityConfig(realm, entityId);
-                if (elm.isHosted() == hosted) {
+                if (elm.getValue().isHosted() == hosted) {
                     EntityDescriptorElement desc = mgr.getEntityDescriptor(
                         realm, entityId);
                     

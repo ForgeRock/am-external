@@ -1,0 +1,36 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+}}
+<div id="condition-management">
+    <ol id="dropOffArea" class="condition-management-group environment-area"></ol>
+
+    <a class="btn btn-default" role="button" id="addCondition" tabindex="0" data-add-condition>
+        <span class="fa fa-plus"></span> {{conditionName}}
+    </a>
+    <a class="btn btn-default" role="button" id="addOperator" tabindex="0" data-add-operator>
+        <span class="fa fa-plus"></span> {{t "console.authorization.policies.edit.addLogical"}}
+    </a>
+
+    <div class="alert alert-info one-child-only">
+        <div class="media">
+            <div class="media-left">
+                <i class="fa fa-info-circle"></i>
+            </div>
+            <div class="media-body">
+                {{t "console.authorization.policies.edit.canAcceptOneChild"}}
+            </div>
+        </div>
+    </div>
+</div>

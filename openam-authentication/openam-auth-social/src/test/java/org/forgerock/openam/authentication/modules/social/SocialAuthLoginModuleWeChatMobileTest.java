@@ -11,9 +11,8 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.authentication.modules.social;
 
 import static com.sun.identity.authentication.util.ISAuthConstants.FULL_LOGIN_URL;
@@ -25,16 +24,20 @@ import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.NONC
 import static org.forgerock.openam.authentication.modules.social.SocialAuthLoginModule.RESUME_FROM_REGISTRATION_REDIRECT_STATE;
 import static org.forgerock.openam.authentication.modules.social.SocialAuthLoginModuleWeChatMobile.OPENID;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isNull;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.function.Function;
@@ -43,14 +46,13 @@ import javax.security.auth.Subject;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.forgerock.guava.common.base.Optional;
-import org.forgerock.guava.common.collect.ImmutableMap;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.UserInfo;
-import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.authentication.modules.common.AMLoginModuleBinder;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.authentication.modules.oidc.JwtHandlerConfig;
+import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
+import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.promise.Promises;
@@ -59,6 +61,7 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.google.common.collect.ImmutableMap;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.RedirectCallback;
 import com.sun.identity.authentication.util.ISAuthConstants;
@@ -104,7 +107,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     @Mock
     private HttpServletResponse response;
     @Mock
-    private SocialAuthLoginModule.ClientTokenJwtGenerator clientTokenJwtGenerator;
+    private ClientTokenJwtGenerator clientTokenJwtGenerator;
     @Mock
     private ResourceBundle bundle;
 
@@ -204,7 +207,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         //given
         given(request.getHeader(AUTHORIZATION_HEADER)).willReturn(null);
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
-                .willReturn(Optional.absent());
+                .willReturn(Optional.empty());
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 
         //when
@@ -218,7 +221,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         //given
         given(request.getParameter(OPENID)).willReturn(null);
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
-                .willReturn(Optional.absent());
+                .willReturn(Optional.empty());
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 
         //when
@@ -267,7 +270,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
-                .willReturn(Optional.absent());
+                .willReturn(Optional.empty());
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
         given(config.getCfgCreateAccount()).willReturn(true);
         given(config.isCfgRegistrationServiceEnabled() ).willReturn(true);
@@ -286,7 +289,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
-                .willReturn(Optional.absent());
+                .willReturn(Optional.empty());
         given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn("user");
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
         given(config.getCfgCreateAccount()).willReturn(true);
@@ -303,7 +306,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
-                .willReturn(Optional.absent());
+                .willReturn(Optional.empty());
         given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn("user");
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
         given(config.getCfgCreateAccount()).willReturn(true);
@@ -336,7 +339,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     public void shouldFailWhenResumedFromRegistrationAndUserNotFound() throws Exception {
         //given
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
-                any(), anyMap())).willReturn(Optional.absent());
+                any(), anyMap())).willReturn(Optional.empty());
 
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 

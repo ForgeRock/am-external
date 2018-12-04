@@ -38,8 +38,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.StringUtils;
 
 import com.sun.identity.multiprotocol.MultiProtocolUtils;
 import com.sun.identity.multiprotocol.SingleLogoutManager;
@@ -55,11 +60,11 @@ import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2FailoverUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
+import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.SingleLogoutServiceElement;
+import com.sun.identity.saml2.jaxb.metadata.EndpointType;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
@@ -71,9 +76,6 @@ import com.sun.identity.saml2.protocol.Status;
 import com.sun.identity.saml2.protocol.StatusCode;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.xml.XMLUtils;
-import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
-import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.openam.utils.StringUtils;
 
 
 /**
@@ -288,7 +290,7 @@ public class IDPSingleLogout {
                 }
 
                 List extensionsList = LogoutUtil.getExtensionsList(paramsMap);
-                List<SingleLogoutServiceElement> slosList = getSPSLOServiceEndpoints(realm, spEntityID);
+                List<EndpointType> slosList = getSPSLOServiceEndpoints(realm, spEntityID);
 
                 // get IDP entity config in case of SOAP, for basic auth info
                 SPSSOConfigElement spConfig = sm.getSPSSOConfig(realm, spEntityID);
@@ -297,7 +299,7 @@ public class IDPSingleLogout {
                     idpSessionIndex = null;
                 }
 
-                SingleLogoutServiceElement logoutEndpoint = LogoutUtil.getMostAppropriateSLOServiceLocation(slosList,
+                EndpointType logoutEndpoint = LogoutUtil.getMostAppropriateSLOServiceLocation(slosList,
                         idpSession.getOriginatingLogoutRequestBinding());
                 if (logoutEndpoint == null) {
                     continue;
@@ -502,7 +504,7 @@ public class IDPSingleLogout {
                     throw new SAML2Exception(
                         SAML2Utils.bundle.getString("invalidSignInRequest"));
             }
-            IDPSSODescriptorElement idpsso =
+            IDPSSODescriptorType idpsso =
                 sm.getIDPSSODescriptor(realm, idpEntityID);
             String loc = null;
             if (idpsso != null) {
@@ -559,7 +561,7 @@ public class IDPSingleLogout {
 
         // this is the case where there is no more SP session
         // participant
-        SingleLogoutServiceElement endpoint = getLogoutResponseEndpoint(realm, spEntityID, binding);
+        EndpointType endpoint = getLogoutResponseEndpoint(realm, spEntityID, binding);
         binding = endpoint.getBinding();
         String location = getResponseLocation(endpoint);
         logoutRes.setDestination(XMLUtils.escapeSpecialCharacters(location));
@@ -608,9 +610,9 @@ public class IDPSingleLogout {
         }
     }
 
-    private static SingleLogoutServiceElement getLogoutResponseEndpoint(String realm, String spEntityID,
+    private static EndpointType getLogoutResponseEndpoint(String realm, String spEntityID,
             String binding) throws SAML2Exception {
-        SingleLogoutServiceElement endpoint =
+        EndpointType endpoint =
                 LogoutUtil.getMostAppropriateSLOServiceLocation(getSPSLOServiceEndpoints(realm, spEntityID), binding);
         if (endpoint == null) {
             debug.error("Unable to find the SP's single logout response service with " + binding + " binding");
@@ -623,7 +625,7 @@ public class IDPSingleLogout {
         return endpoint;
     }
 
-    private static String getResponseLocation(SingleLogoutServiceElement endpoint) {
+    private static String getResponseLocation(EndpointType endpoint) {
         String location = endpoint.getResponseLocation();
         if (StringUtils.isBlank(location)) {
             location = endpoint.getLocation();
@@ -636,7 +638,7 @@ public class IDPSingleLogout {
      */
     public static String getSingleLogoutLocation(String spEntityID, String realm, String binding)
             throws SAML2Exception {
-        List<SingleLogoutServiceElement> slosList = getSPSLOServiceEndpoints(realm, spEntityID);
+        List<EndpointType> slosList = getSPSLOServiceEndpoints(realm, spEntityID);
 
         String location = LogoutUtil.getSLOResponseServiceLocation(slosList, binding);
 
@@ -779,7 +781,7 @@ public class IDPSingleLogout {
                     throw new SAML2Exception(
                         SAML2Utils.bundle.getString("invalidSignInResponse"));
             }
-            IDPSSODescriptorElement idpsso =
+            IDPSSODescriptorType idpsso =
                 sm.getIDPSSODescriptor(realm, idpEntityID);
             String loc = null;
             if (idpsso != null) {
@@ -892,12 +894,12 @@ public class IDPSingleLogout {
                 Map paramsMap = new HashMap(request.getParameterMap());
                 paramsMap.put(SAML2Constants.ROLE, SAML2Constants.IDP_ROLE);
 
-                List<SingleLogoutServiceElement> slosList = getSPSLOServiceEndpoints(realm, spEntityID);
+                List<EndpointType> slosList = getSPSLOServiceEndpoints(realm, spEntityID);
                 List extensionsList = LogoutUtil.getExtensionsList(request.getParameterMap());
                 SPSSOConfigElement spConfig = sm.getSPSSOConfig(realm, spEntityID);
                 //When processing a logout response we must ensure that we try to use the original logout request
                 //binding to make sure asynchronous bindings have precedence over synchronous bindings.
-                SingleLogoutServiceElement logoutEndpoint = LogoutUtil.getMostAppropriateSLOServiceLocation(slosList,
+                EndpointType logoutEndpoint = LogoutUtil.getMostAppropriateSLOServiceLocation(slosList,
                         idpSession.getOriginatingLogoutRequestBinding());
                 if (logoutEndpoint == null) {
                     continue;
@@ -1089,9 +1091,9 @@ public class IDPSingleLogout {
 
                 session = idpSession.getSession();
                 // handle external application logout if configured
-                BaseConfigType idpConfig = SAML2Utils.getSAML2MetaManager()
+                IDPSSOConfigElement idpConfig = SAML2Utils.getSAML2MetaManager()
                     .getIDPSSOConfig(realm, idpEntityID);
-                List appLogoutURL = (List) SAML2MetaUtils.getAttributes(
+                List<String> appLogoutURL = SAML2MetaUtils.getAttributes(
                     idpConfig).get(SAML2Constants.APP_LOGOUT_URL);
                 if (debug.messageEnabled()) {
                     debug.message("IDPLogoutUtil.processLogoutRequest: " +
@@ -1099,7 +1101,7 @@ public class IDPSingleLogout {
                 }
                 if ((appLogoutURL != null) && (appLogoutURL.size() != 0)) {
                     SAML2Utils.postToAppLogout(request,
-                        (String) appLogoutURL.get(0), session);
+                        appLogoutURL.get(0), session);
                 }
 
                 List<NameIDandSPpair> list = idpSession.getNameIDandSPpairs();
@@ -1179,7 +1181,7 @@ public class IDPSingleLogout {
                         debug.message("IDPSingleLogout.processLogoutRequest: SP for " + sessionIndex + " is "
                                 + spEntityID);
                     }
-                    List<SingleLogoutServiceElement> slosList = getSPSLOServiceEndpoints(realm, spEntityID);
+                    List<EndpointType> slosList = getSPSLOServiceEndpoints(realm, spEntityID);
 
                     // get IDP entity config in case of SOAP,for basic auth info
                     SPSSOConfigElement spConfig = null;
@@ -1189,7 +1191,7 @@ public class IDPSingleLogout {
                     HashMap paramsMap = new HashMap();
                     paramsMap.put(SAML2Constants.ROLE, SAML2Constants.IDP_ROLE);
                     StringBuffer requestID = null;
-                    SingleLogoutServiceElement logoutEndpoint =
+                    EndpointType logoutEndpoint =
                             LogoutUtil.getMostAppropriateSLOServiceLocation(slosList,
                             idpSession.getOriginatingLogoutRequestBinding());
                     if (logoutEndpoint == null) {
@@ -1291,7 +1293,7 @@ public class IDPSingleLogout {
                 String sessUser =
                     SessionManager.getProvider().getPrincipalName(session);
                 boolean isSOAPInitiated = binding.equals(SAML2Constants.SOAP);
-                SingleLogoutServiceElement endpoint = getLogoutResponseEndpoint(realm, spEntity, binding);
+                EndpointType endpoint = getLogoutResponseEndpoint(realm, spEntity, binding);
                 String location = getResponseLocation(endpoint);
                 logRes.setDestination(XMLUtils.escapeSpecialCharacters(location));
                 debug.message("IDPSingleLogout.processLogReq : call MP");
@@ -1589,7 +1591,7 @@ public class IDPSingleLogout {
                 logoutReq.getID(), SAML2Utils.createIssuer(idpEntityID),
                 realm, SAML2Constants.IDP_ROLE,
                 logoutReq.getIssuer().getSPProvidedID());
-        SingleLogoutServiceElement endpoint = getLogoutResponseEndpoint(realm, spEntityID, binding);
+        EndpointType endpoint = getLogoutResponseEndpoint(realm, spEntityID, binding);
         binding = endpoint.getBinding();
         String location = getResponseLocation(endpoint);
         debug.message(classMethod + "Location found: " + location + " for binding " + binding);
@@ -1662,7 +1664,7 @@ public class IDPSingleLogout {
             debug.message("IDP initiated SLO Success");
             return false;
         }
-        List<SingleLogoutServiceElement> slosList = getSPSLOServiceEndpoints(realm, originatingLogoutSPEntityID);
+        List<EndpointType> slosList = getSPSLOServiceEndpoints(realm, originatingLogoutSPEntityID);
         String location = LogoutUtil.getSLOResponseServiceLocation(slosList, binding);
         if (location == null || location.isEmpty()) {
             location = LogoutUtil.getSLOServiceLocation(slosList, binding);
@@ -1761,11 +1763,11 @@ public class IDPSingleLogout {
      * @return a list of Single Logout Service elements
      * @throws SAML2Exception if there was a problem retrieving the SP SSO Descriptor Element
      */
-    public static List<SingleLogoutServiceElement> getSPSLOServiceEndpoints(
+    public static List<EndpointType> getSPSLOServiceEndpoints(
             final String realm,
             final String spEntityID) throws SAML2Exception {
         // get SPSSODescriptor
-        SPSSODescriptorElement spsso = sm.getSPSSODescriptor(realm, spEntityID);
+        SPSSODescriptorType spsso = sm.getSPSSODescriptor(realm, spEntityID);
 
         if (spsso == null) {
             String[] data = {spEntityID};

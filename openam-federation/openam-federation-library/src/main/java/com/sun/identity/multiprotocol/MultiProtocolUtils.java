@@ -24,14 +24,16 @@
  *
  * $Id: MultiProtocolUtils.java,v 1.4 2009/03/20 21:06:32 weisun2 Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
-
 package com.sun.identity.multiprotocol;
 
 import com.sun.identity.federation.common.IFSConstants;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionProvider;
+
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
@@ -105,7 +107,7 @@ public class MultiProtocolUtils {
                 SingleLogoutManager.FEDERATION_PROTOCOLS);
             if (SingleLogoutManager.debug.messageEnabled()) {
                 SingleLogoutManager.debug.message("MPUtils.addFedProtocol:"
-                + " current protocols=" + values);
+                + " current protocols=" + Arrays.toString(values));
             }
             if ((values == null) || (values.length == 0)) {
                 values = new String[] {protocol};
@@ -149,7 +151,7 @@ public class MultiProtocolUtils {
                 SingleLogoutManager.FEDERATION_PROTOCOLS);
             if (SingleLogoutManager.debug.messageEnabled()) {
                 SingleLogoutManager.debug.message("MPUtils.removeFedProtocol:"
-                + " current protocols=" + values);
+                + " current protocols=" + Arrays.toString(values));
             }
             if ((values == null) || (values.length == 0)) {
                 return;
@@ -290,7 +292,7 @@ public class MultiProtocolUtils {
                 SingleLogoutManager.FEDERATION_PROTOCOLS);
             if (SingleLogoutManager.debug.messageEnabled()) {
                 SingleLogoutManager.debug.message(
-                    "MultiProtocolUtils.usedInProtocol: protocols=" + vals);
+                    "MultiProtocolUtils.usedInProtocol: protocols=" + Arrays.toString(vals));
             }
             if ((vals != null) && (vals.length != 0)) {
                 for (int i = 0; i < vals.length; i++) {

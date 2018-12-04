@@ -24,6 +24,8 @@
  *
  * $Id: DefaultIDPAuthenticationMethodMapper.java,v 1.4 2009/10/28 23:58:59 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
@@ -90,7 +92,7 @@ public class DefaultIDPAuthenticationMethodMapper
             IDPSSOConfigElement config = 
                 WSFederationUtils.getMetaManager().getIDPSSOConfig(
                     realm, idpEntityID);
-            attrs = WSFederationMetaUtils.getAttributes(config);
+            attrs = WSFederationMetaUtils.getAttributes(config.getValue());
         } catch (WSFederationMetaException sme) {
             debug.error(classMethod +
                    "get IDPSSOConfig failed:", sme);

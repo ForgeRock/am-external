@@ -24,11 +24,13 @@
  *
  * $Id: StatusDetail.java,v 1.2 2008/06/25 05:47:58 qcheng Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol;
+
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.common.SAML2Exception;
@@ -58,15 +60,15 @@ import com.sun.identity.saml2.protocol.impl.StatusDetailImpl;
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
         defaultImpl = StatusDetailImpl.class)
 public interface StatusDetail {
-    
+
     /**
      * Returns the value of the Any property.
      *
      * @return A list containing objects of type <code>String</code>
      * @see #setAny(List)
      */
-    public java.util.List getAny();
-    
+    public List<String> getAny();
+
     /**
      * Sets the value of the Any property.
      *
@@ -75,8 +77,8 @@ public interface StatusDetail {
      * @throws SAML2Exception if the object is immutable
      * @see #getAny
      */
-    public void setAny(java.util.List anyList) throws SAML2Exception;
-    
+    public void setAny(List<String> anyList) throws SAML2Exception;
+
     /**
      * Returns the <code>StatusDetail</code> in an XML document String format
      * based on the <code>StatusDetail</code> schema described above.
@@ -86,12 +88,12 @@ public interface StatusDetail {
      *         <code>String</code>.
      */
     public String toXMLString() throws SAML2Exception;
-    
+
     /**
      * Returns the <code>StatusDetail</code> in an XML document String format
      * based on the <code>StatusDetail</code> schema described above.
      *
-     * @param includeNSPrefix Determines whether or not the namespace qualifier 
+     * @param includeNSPrefix Determines whether or not the namespace qualifier
      *        is prepended to the Element when converted
      * @param declareNS Determines whether or not the namespace is declared
      *        within the Element.
@@ -101,12 +103,12 @@ public interface StatusDetail {
      */
     public String toXMLString(boolean includeNSPrefix, boolean declareNS)
     throws SAML2Exception;
-    
+
     /**
      * Makes the obejct immutable
      */
     public void makeImmutable();
-    
+
     /**
      * Returns true if the object is mutable false otherwise
      *

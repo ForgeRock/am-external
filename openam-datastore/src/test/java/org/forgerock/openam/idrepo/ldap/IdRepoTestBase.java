@@ -50,6 +50,7 @@ import org.forgerock.opendj.ldif.LdifEntryReader;
 import org.forgerock.util.promise.Promise;
 import org.forgerock.util.thread.listener.ShutdownManager;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.AfterClass;
@@ -57,6 +58,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 
 @PrepareForTest(value = {IdRepoListener.class, WebtopNaming.class})
+@PowerMockIgnore({"javax.net.ssl.*"})
 public abstract class IdRepoTestBase extends PowerMockTestCase {
 
     protected static final String TEST1_GROUP = "test1";

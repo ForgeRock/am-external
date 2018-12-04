@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2008 Sun Microsystems Inc. All Rights Reserved
@@ -24,21 +24,36 @@
  *
  * $Id: CreateWSFedMetaDataTemplate.java,v 1.9 2009/12/14 23:42:49 mallas Exp $
  *
- * Portions Copyrighted 2016-2017 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
 package com.sun.identity.workflow;
 
+import java.io.StringWriter;
+import java.security.cert.CertificateEncodingException;
+import java.util.Map;
+
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+
 import com.sun.identity.cot.COTConstants;
 import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.shared.configuration.SystemPropertiesManager;
-import com.sun.identity.shared.Constants;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
+import com.sun.identity.shared.Constants;
+import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.wsfederation.common.WSFederationConstants;
+import com.sun.identity.wsfederation.jaxb.entityconfig.AttributeType;
 import com.sun.identity.wsfederation.jaxb.entityconfig.FederationConfigElement;
+import com.sun.identity.wsfederation.jaxb.entityconfig.FederationConfigType;
+import com.sun.identity.wsfederation.jaxb.entityconfig.IDPSSOConfigElement;
+import com.sun.identity.wsfederation.jaxb.entityconfig.SPSSOConfigElement;
+import com.sun.identity.wsfederation.jaxb.wsaddr.AttributedURIType;
+import com.sun.identity.wsfederation.jaxb.wsfederation.AttributeExtensibleURI;
 import com.sun.identity.wsfederation.jaxb.wsfederation.ClaimType;
 import com.sun.identity.wsfederation.jaxb.wsfederation.DisplayNameType;
 import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
+import com.sun.identity.wsfederation.jaxb.wsfederation.FederationType;
 import com.sun.identity.wsfederation.jaxb.wsfederation.SingleSignOutNotificationEndpointElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.TokenIssuerEndpointElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.TokenIssuerNameElement;
@@ -46,17 +61,9 @@ import com.sun.identity.wsfederation.jaxb.wsfederation.TokenSigningKeyInfoElemen
 import com.sun.identity.wsfederation.jaxb.wsfederation.TokenType;
 import com.sun.identity.wsfederation.jaxb.wsfederation.TokenTypesOfferedElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.UriNamedClaimTypesOfferedElement;
-import com.sun.identity.wsfederation.meta.WSFederationMetaUtils;
-import java.io.StringWriter;
-import java.security.cert.CertificateEncodingException;
-import java.util.Map;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import com.sun.identity.wsfederation.jaxb.wsse.SecurityTokenReferenceElement;
+import com.sun.identity.wsfederation.jaxb.wsse.SecurityTokenReferenceType;
 import com.sun.identity.wsfederation.jaxb.xmlsig.X509DataElement;
-import com.sun.identity.wsfederation.jaxb.xmlsig.X509DataType.X509Certificate;
-import com.sun.identity.wsfederation.jaxb.wsaddr.AttributedURIType;
+import com.sun.identity.wsfederation.meta.WSFederationMetaUtils;
 
 /**
  * Create WS Federation Meta Template.
@@ -76,18 +83,18 @@ public class CreateWSFedMetaDataTemplate {
             objFactory = 
             new com.sun.identity.wsfederation.jaxb.wsfederation.ObjectFactory();
 
-        FederationElement fed = objFactory.createFederationElement();
-        fed.setFederationID(entityId);
+        FederationElement fed = objFactory.createFederationElement(objFactory.createFederationType());
+        fed.getValue().setFederationID(entityId);
 
         String idpAlias = (String)mapParams.get(MetaTemplateParameters.P_IDP);
         if (idpAlias != null) {
-            addWSFedIdentityProviderTemplate(entityId, objFactory, fed, 
+            addWSFedIdentityProviderTemplate(entityId, objFactory, fed.getValue(),
                 mapParams, url);
         }
         
         String spAlias = (String)mapParams.get(MetaTemplateParameters.P_SP);
         if (spAlias != null) {
-            addWSFedServiceProviderTemplate(entityId, objFactory, fed, 
+            addWSFedServiceProviderTemplate(entityId, objFactory, fed.getValue(),
                 mapParams, url);
         }
 
@@ -102,10 +109,10 @@ public class CreateWSFedMetaDataTemplate {
         String entityId,
         com.sun.identity.wsfederation.jaxb.wsfederation.ObjectFactory 
         objFactory, 
-        FederationElement fed,
+        FederationType fed,
         Map mapParams,
         String url
-    ) throws JAXBException, CertificateEncodingException {
+    ) throws CertificateEncodingException {
         if (url == null) {
             url = getHostURL();
         }
@@ -123,43 +130,42 @@ public class CreateWSFedMetaDataTemplate {
                 dsObjectFactory = new 
                 com.sun.identity.wsfederation.jaxb.xmlsig.ObjectFactory();
 
-            TokenSigningKeyInfoElement tski = 
-                objFactory.createTokenSigningKeyInfoElement();
-            SecurityTokenReferenceElement str = 
-                secextObjFactory.createSecurityTokenReferenceElement();
-            X509DataElement x509Data = dsObjectFactory.createX509DataElement();
-            X509Certificate x509Cert = 
-                dsObjectFactory.createX509DataTypeX509Certificate();
-            x509Cert.setValue(
-                KeyUtil.getKeyProviderInstance().getX509Certificate(idpSCertAlias).getEncoded());
-            x509Data.getX509IssuerSerialOrX509SKIOrX509SubjectName().add(x509Cert);
+            TokenSigningKeyInfoElement tski = objFactory.createTokenSigningKeyInfoElement(
+                    objFactory.createTokenKeyInfoType());
+            SecurityTokenReferenceType str =
+                secextObjFactory.createSecurityTokenReferenceType();
+            X509DataElement x509Data = dsObjectFactory.createX509DataElement(dsObjectFactory.createX509DataType());
+            byte [] x509Cert =
+                KeyUtil.getKeyProviderInstance().getX509Certificate(idpSCertAlias).getEncoded();
+            x509Data.getValue().getX509IssuerSerialOrX509SKIOrX509SubjectName()
+                    .add(dsObjectFactory.createX509DataTypeX509CertificateElement(x509Cert));
             str.getAny().add(x509Data);
-            tski.setSecurityTokenReference(str);
+            tski.getValue().setSecurityTokenReference(str);
             fed.getAny().add(tski);
         }
         
-        TokenIssuerNameElement tin = objFactory.createTokenIssuerNameElement();
-        tin.setValue(entityId);
-        fed.getAny().add(tin);
+        AttributeExtensibleURI tokenValue = objFactory.createAttributeExtensibleURI();
+        tokenValue.setValue(entityId);
+        fed.getAny().add(objFactory.createTokenIssuerNameElement(tokenValue));
         
-        TokenIssuerEndpointElement tie = 
-            objFactory.createTokenIssuerEndpointElement();
         com.sun.identity.wsfederation.jaxb.wsaddr.ObjectFactory addrObjFactory =
             new com.sun.identity.wsfederation.jaxb.wsaddr.ObjectFactory();
+        TokenIssuerEndpointElement tie = objFactory.createTokenIssuerEndpointElement(
+                addrObjFactory.createEndpointReferenceType());
         AttributedURIType auri = addrObjFactory.createAttributedURIType();
         auri.setValue(url + "/WSFederationServlet" + maStr);
-        tie.setAddress(auri);        
+        tie.getValue().setAddress(auri);
         fed.getAny().add(tie);
         
-        TokenTypesOfferedElement tto = 
-            objFactory.createTokenTypesOfferedElement();
+        TokenTypesOfferedElement tto = objFactory.createTokenTypesOfferedElement(
+                objFactory.createTokenTypesOfferedType());
         TokenType tt = objFactory.createTokenType();
         tt.setUri(WSFederationConstants.URN_OASIS_NAMES_TC_SAML_11);
-        tto.getTokenType().add(tt);
+        tto.getValue().getTokenType().add(tt);
         fed.getAny().add(tto);
         
-        UriNamedClaimTypesOfferedElement uncto = 
-            objFactory.createUriNamedClaimTypesOfferedElement();
+        UriNamedClaimTypesOfferedElement uncto = objFactory.createUriNamedClaimTypesOfferedElement(
+                objFactory.createUriNamedClaimTypesOfferedType());
         ClaimType ct = objFactory.createClaimType();
         ct.setUri(WSFederationConstants.NAMED_CLAIM_TYPES[
             WSFederationConstants.NAMED_CLAIM_UPN]);
@@ -167,7 +173,7 @@ public class CreateWSFedMetaDataTemplate {
         dnt.setValue(WSFederationConstants.NAMED_CLAIM_DISPLAY_NAMES[
             WSFederationConstants.NAMED_CLAIM_UPN]);
         ct.setDisplayName(dnt);
-        uncto.getClaimType().add(ct);
+        uncto.getValue().getClaimType().add(ct);
         fed.getAny().add(uncto);
     }
     
@@ -175,7 +181,7 @@ public class CreateWSFedMetaDataTemplate {
         String entityId,
         com.sun.identity.wsfederation.jaxb.wsfederation.ObjectFactory 
         objFactory, 
-        FederationElement fed,
+        FederationType fed,
         Map mapParams,
         String url
     ) throws JAXBException {
@@ -185,24 +191,24 @@ public class CreateWSFedMetaDataTemplate {
         String spAlias = (String)mapParams.get(MetaTemplateParameters.P_SP);
         String maStr = buildMetaAliasInURI(spAlias);
         
-        TokenIssuerNameElement tin = objFactory.createTokenIssuerNameElement();
-        tin.setValue(entityId);
-        fed.getAny().add(tin);
+        AttributeExtensibleURI tokenValue = objFactory.createAttributeExtensibleURI();
+        tokenValue.setValue(entityId);
+        fed.getAny().add(objFactory.createTokenIssuerNameElement(tokenValue));
         
-        TokenIssuerEndpointElement tie = 
-            objFactory.createTokenIssuerEndpointElement();
         com.sun.identity.wsfederation.jaxb.wsaddr.ObjectFactory addrObjFactory =
             new com.sun.identity.wsfederation.jaxb.wsaddr.ObjectFactory();
+        TokenIssuerEndpointElement tie = objFactory.createTokenIssuerEndpointElement(
+                addrObjFactory.createEndpointReferenceType());
         AttributedURIType auri = addrObjFactory.createAttributedURIType();
         auri.setValue(url + "/WSFederationServlet" + maStr);
-        tie.setAddress(auri);        
+        tie.getValue().setAddress(auri);
         fed.getAny().add(tie);
 
-        SingleSignOutNotificationEndpointElement ssne = 
-            objFactory.createSingleSignOutNotificationEndpointElement();
+        SingleSignOutNotificationEndpointElement ssne = objFactory.createSingleSignOutNotificationEndpointElement(
+                addrObjFactory.createEndpointReferenceType());
         AttributedURIType ssneUri = addrObjFactory.createAttributedURIType();
         ssneUri.setValue(url + "/WSFederationServlet" + maStr);
-        ssne.setAddress(auri);        
+        ssne.getValue().setAddress(auri);
         fed.getAny().add(ssne);
     }
         
@@ -214,20 +220,20 @@ public class CreateWSFedMetaDataTemplate {
         com.sun.identity.wsfederation.jaxb.entityconfig.ObjectFactory 
             objFactory =
             new com.sun.identity.wsfederation.jaxb.entityconfig.ObjectFactory();
-        FederationConfigElement fedConfig =
-            objFactory.createFederationConfigElement();
+        FederationConfigElement fedConfig = objFactory.createFederationConfigElement(
+                objFactory.createFederationConfigType());
 
-        fedConfig.setFederationID(entityId);
-        fedConfig.setHosted(true);
+        fedConfig.getValue().setFederationID(entityId);
+        fedConfig.getValue().setHosted(true);
 
         String idpAlias = (String)mapParams.get(MetaTemplateParameters.P_IDP);
         if (idpAlias != null) {
-            buildWSFedIDPConfigTemplate(objFactory, fedConfig, mapParams);
+            buildWSFedIDPConfigTemplate(objFactory, fedConfig.getValue(), mapParams);
         }
         
         String spAlias = (String)mapParams.get(MetaTemplateParameters.P_SP);
         if (spAlias != null) {
-            buildWSFedSPConfigTemplate(objFactory, fedConfig, mapParams);
+            buildWSFedSPConfigTemplate(objFactory, fedConfig.getValue(), mapParams);
         }
 
         Marshaller m = jc.createMarshaller();
@@ -241,9 +247,9 @@ public class CreateWSFedMetaDataTemplate {
     private static void buildWSFedIDPConfigTemplate(
         com.sun.identity.wsfederation.jaxb.entityconfig.ObjectFactory 
         objFactory, 
-        FederationConfigElement fedConfig,
+        FederationConfigType fedConfig,
         Map mapParams
-    ) throws JAXBException {
+    ) {
         String idpAlias = (String)mapParams.get(MetaTemplateParameters.P_IDP);
         String idpSCertAlias = (String)mapParams.get(
             MetaTemplateParameters.P_IDP_S_CERT);
@@ -271,20 +277,18 @@ public class CreateWSFedMetaDataTemplate {
         };
 
         com.sun.identity.wsfederation.jaxb.entityconfig.IDPSSOConfigElement 
-            idpSSOConfig = objFactory.createIDPSSOConfigElement();
+            idpSSOConfig = objFactory.createIDPSSOConfigElement(objFactory.createBaseConfigType());
 
-        idpSSOConfig.setMetaAlias(idpAlias);
+        idpSSOConfig.getValue().setMetaAlias(idpAlias);
 
-        for ( int i = 0; i < configDefaults.length; i++ )
-        {
-            com.sun.identity.wsfederation.jaxb.entityconfig.AttributeElement 
-                attribute = objFactory.createAttributeElement();
-            attribute.setName(configDefaults[i][0]);
-            if (configDefaults[i][1] != null) {
-                attribute.getValue().add(configDefaults[i][1]);
+        for (String[] configDefault : configDefaults) {
+            AttributeType attribute = objFactory.createAttributeType();
+            attribute.setName(configDefault[0]);
+            if (configDefault[1] != null) {
+                attribute.getValue().add(configDefault[1]);
             }
 
-            idpSSOConfig.getAttribute().add(attribute);
+            idpSSOConfig.getValue().getAttribute().add(attribute);
         }
         
         fedConfig.getIDPSSOConfigOrSPSSOConfig().add(idpSSOConfig);
@@ -293,7 +297,7 @@ public class CreateWSFedMetaDataTemplate {
     private static void buildWSFedSPConfigTemplate(
         com.sun.identity.wsfederation.jaxb.entityconfig.ObjectFactory 
         objFactory,
-        FederationConfigElement fedConfig,
+        FederationConfigType fedConfig,
         Map mapParams
     ) throws JAXBException {
         String url = getHostURL();
@@ -332,20 +336,19 @@ public class CreateWSFedMetaDataTemplate {
         };
 
         com.sun.identity.wsfederation.jaxb.entityconfig.SPSSOConfigElement 
-            spSSOConfig = objFactory.createSPSSOConfigElement();
+            spSSOConfig = objFactory.createSPSSOConfigElement(objFactory.createBaseConfigType());
 
-        spSSOConfig.setMetaAlias(spAlias);
+        spSSOConfig.getValue().setMetaAlias(spAlias);
 
-        for ( int i = 0; i < configDefaults.length; i++ )
-        {
-            com.sun.identity.wsfederation.jaxb.entityconfig.AttributeElement 
-                attribute = objFactory.createAttributeElement();
-            attribute.setName(configDefaults[i][0]);
-            if (configDefaults[i][1] != null) {
-                attribute.getValue().add(configDefaults[i][1]);
+        for (String[] configDefault : configDefaults) {
+            AttributeType
+                    attribute = objFactory.createAttributeType();
+            attribute.setName(configDefault[0]);
+            if (configDefault[1] != null) {
+                attribute.getValue().add(configDefault[1]);
             }
 
-            spSSOConfig.getAttribute().add(attribute);
+            spSSOConfig.getValue().getAttribute().add(attribute);
         }
         
         fedConfig.getIDPSSOConfigOrSPSSOConfig().add(spSSOConfig);

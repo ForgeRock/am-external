@@ -24,6 +24,7 @@
  *
  * $Id: AdviceImpl.java,v 1.4 2008/06/25 05:47:42 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -56,11 +57,11 @@ import com.sun.identity.saml2.common.SAML2SDKUtils;
  */
 public class AdviceImpl implements Advice {
 
-    private List assertions = new ArrayList();
-    private List encryptedAssertions = new ArrayList();
-    private List assertionIDRefs = new ArrayList();
-    private List assertionURIRefs = new ArrayList();
-    private List additionalInfo = new ArrayList();
+    private List<Assertion> assertions = new ArrayList<>();
+    private List<EncryptedAssertion> encryptedAssertions = new ArrayList<>();
+    private List<AssertionIDRef> assertionIDRefs = new ArrayList<>();
+    private List<String> assertionURIRefs = new ArrayList<>();
+    private List<String> additionalInfo = new ArrayList<>();
     private boolean isMutable = true;
 
     public static String ADVICE_ELEMENT = "Advice";
@@ -183,7 +184,7 @@ public class AdviceImpl implements Advice {
      * 
      *  @return a list of <code>Assertion</code>
      */
-    public List getAssertions() {
+    public List<Assertion> getAssertions() {
         return assertions;
     }
 
@@ -193,7 +194,7 @@ public class AdviceImpl implements Advice {
      *  @param assertions a list of <code>Assertion</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setAssertions(List assertions) throws SAML2Exception {
+    public void setAssertions(List<Assertion> assertions) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));
@@ -206,7 +207,7 @@ public class AdviceImpl implements Advice {
      * 
      *  @return a list of <code>AssertionIDRef</code>
      */
-    public List getAssertionIDRefs() {
+    public List<AssertionIDRef> getAssertionIDRefs() {
         return assertionIDRefs;
     }
 
@@ -216,7 +217,7 @@ public class AdviceImpl implements Advice {
      *  @param idRefs a list of <code>AssertionIDRef</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setAssertionIDRefs(List idRefs) throws SAML2Exception {
+    public void setAssertionIDRefs(List<AssertionIDRef> idRefs) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));
@@ -252,7 +253,7 @@ public class AdviceImpl implements Advice {
      * 
      *  @return a list of <code>EncryptedAssertion</code>
      */
-    public List getEncryptedAssertions() {
+    public List<EncryptedAssertion> getEncryptedAssertions() {
         return encryptedAssertions;
     }
 
@@ -262,7 +263,7 @@ public class AdviceImpl implements Advice {
      *  @param encryptedAssertions a list of <code>EncryptedAssertion</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setEncryptedAssertions(List encryptedAssertions) 
+    public void setEncryptedAssertions(List<EncryptedAssertion> encryptedAssertions)
         throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(

@@ -24,32 +24,49 @@
  *
  * $Id: DiscoveryService.java,v 1.5 2008/12/05 00:18:30 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.liberty.ws.disco;
 
-import java.util.List;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
 import javax.xml.bind.JAXBException;
-import org.w3c.dom.*;
 
-import com.sun.identity.shared.xml.XMLUtils;
+import org.w3c.dom.Document;
+
 import com.sun.identity.liberty.ws.common.LogUtil;
 import com.sun.identity.liberty.ws.common.Status;
 import com.sun.identity.liberty.ws.common.wsse.BinarySecurityToken;
-import com.sun.identity.liberty.ws.security.*;
-import com.sun.identity.liberty.ws.soapbinding.*;
-import com.sun.identity.liberty.ws.interfaces.*;
-import com.sun.identity.liberty.ws.disco.plugins.*;
-import com.sun.identity.liberty.ws.disco.common.*;
-import com.sun.identity.liberty.ws.disco.jaxb.*;
+import com.sun.identity.liberty.ws.disco.common.DiscoConstants;
+import com.sun.identity.liberty.ws.disco.common.DiscoServiceManager;
+import com.sun.identity.liberty.ws.disco.common.DiscoUtils;
+import com.sun.identity.liberty.ws.disco.jaxb.EncryptedResourceIDType;
+import com.sun.identity.liberty.ws.disco.jaxb.InsertEntryType;
+import com.sun.identity.liberty.ws.disco.jaxb.ModifyResponseType;
+import com.sun.identity.liberty.ws.disco.jaxb.ModifyType;
+import com.sun.identity.liberty.ws.disco.jaxb.QueryType;
+import com.sun.identity.liberty.ws.disco.jaxb.RemoveEntryType;
+import com.sun.identity.liberty.ws.disco.jaxb.ResourceIDType;
+import com.sun.identity.liberty.ws.disco.jaxb.StatusType;
+import com.sun.identity.liberty.ws.disco.plugins.DiscoEntryHandler;
+import com.sun.identity.liberty.ws.interfaces.Authorizer;
+import com.sun.identity.liberty.ws.interfaces.ResourceIDMapper;
+import com.sun.identity.liberty.ws.security.SecurityTokenManager;
+import com.sun.identity.liberty.ws.soapbinding.Message;
+import com.sun.identity.liberty.ws.soapbinding.ProviderHeader;
+import com.sun.identity.liberty.ws.soapbinding.RequestHandler;
+import com.sun.identity.liberty.ws.soapbinding.SOAPBindingException;
+import com.sun.identity.liberty.ws.soapbinding.Utils;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * Handles Liberty discovery service protocol.
@@ -310,24 +327,18 @@ public final class DiscoveryService implements RequestHandler {
      *          identities that can be used in access control
      * @return ModifyResponseType which includes Status of the operation.
      */
-    private com.sun.identity.liberty.ws.disco.jaxb.ModifyResponseElement update(
+    private ModifyResponseType update(
                 com.sun.identity.liberty.ws.disco.jaxb.ModifyType modify,
                 com.sun.identity.liberty.ws.soapbinding.Message message)
                 throws JAXBException
     {
         DiscoUtils.debug.message("in update.");
-        ModifyResponseElement resp = null;
+        ModifyResponseType resp = null;
         StatusType status = null;
-        try {
-            resp =
-                DiscoUtils.getDiscoFactory().createModifyResponseElement();
-            status = DiscoUtils.getDiscoFactory().createStatusType();
-            resp.setStatus(status);
-        } catch (JAXBException je) {
-            DiscoUtils.debug.error("DiscoService.update: couldn't form "
-                + "ModifyResponse.");
-            throw je;
-        }
+        resp =
+            DiscoUtils.getDiscoFactory().createModifyResponseType();
+        status = DiscoUtils.getDiscoFactory().createStatusType();
+        resp.setStatus(status);
 
         String providerID = DiscoServiceManager.getDiscoProviderID();
         String resourceID = null;

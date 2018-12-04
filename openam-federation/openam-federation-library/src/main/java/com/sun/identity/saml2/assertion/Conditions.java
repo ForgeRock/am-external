@@ -50,7 +50,7 @@ public interface Conditions {
      * @return the time instant at which the subject can no longer 
      *    be confirmed.
      */
-    public Date getNotOnOrAfter();
+    Date getNotOnOrAfter();
 
     /**
      * Sets the time instant at which the subject can no longer 
@@ -60,35 +60,35 @@ public interface Conditions {
      *    be confirmed.
      * @exception SAML2Exception if the object is immutable
      */
-    public void setNotOnOrAfter(Date value) throws SAML2Exception;
+    void setNotOnOrAfter(Date value) throws SAML2Exception;
 
     /** 
      *  Returns a list of <code>Condition</code>
      * 
      *  @return a list of <code>Condition</code>
      */
-    public List getConditions();
+    List<Condition> getConditions();
  
     /** 
      *  Returns a list of <code>AudienceRestriction</code>
      * 
      *  @return a list of <code>AudienceRestriction</code>
      */
-    public List getAudienceRestrictions();
+    List<AudienceRestriction> getAudienceRestrictions();
  
     /** 
      *  Returns a list of <code>OneTimeUse</code>
      * 
      *  @return a list of <code>OneTimeUse</code>
      */
-    public List getOneTimeUses();
+    List<OneTimeUse> getOneTimeUses();
  
     /** 
      *  Returns a list of <code>ProxyRestriction</code>  
      * 
      *  @return a list of <code>ProxyRestriction</code>
      */
-    public List getProxyRestrictions();
+    List<ProxyRestriction> getProxyRestrictions();
  
     /** 
      *  Sets a list of <code>Condition</code>
@@ -96,7 +96,7 @@ public interface Conditions {
      *  @param conditions a list of <code>Condition</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setConditions(List conditions) throws SAML2Exception;
+    void setConditions(List<Condition> conditions) throws SAML2Exception;
  
     /** 
      *  Sets a list of <code>AudienceRestriction</code>
@@ -104,7 +104,7 @@ public interface Conditions {
      *  @param ars a list of <code>AudienceRestriction</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setAudienceRestrictions(List ars) throws SAML2Exception;
+    void setAudienceRestrictions(List<AudienceRestriction> ars) throws SAML2Exception;
  
     /** 
      *  Sets a list of <code>OneTimeUse</code>
@@ -112,7 +112,7 @@ public interface Conditions {
      *  @param oneTimeUses a list of <code>OneTimeUse</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setOneTimeUses(List oneTimeUses) throws SAML2Exception;
+    void setOneTimeUses(List<OneTimeUse> oneTimeUses) throws SAML2Exception;
  
     /** 
      *  Sets a list of <code>ProxyRestriction</code>  
@@ -120,14 +120,14 @@ public interface Conditions {
      *  @param prs a list of <code>ProxyRestriction</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setProxyRestrictions(List prs) throws SAML2Exception;
+    void setProxyRestrictions(List<ProxyRestriction> prs) throws SAML2Exception;
  
     /**
      * Returns the time instant before which the subject cannot be confirmed.
      *
      * @return the time instant before which the subject cannot be confirmed.
      */
-    public Date getNotBefore();
+    Date getNotBefore();
 
     /**
      * Sets the time instant before which the subject cannot 
@@ -137,7 +137,7 @@ public interface Conditions {
      *     be confirmed.
      * @exception SAML2Exception if the object is immutable
      */
-    public void setNotBefore(Date value) throws SAML2Exception;
+    void setNotBefore(Date value) throws SAML2Exception;
 
     /**
      * Return true if a specific Date falls within the validity 
@@ -147,7 +147,7 @@ public interface Conditions {
      * @return true if <code>someTime</code> is within the valid 
      * interval of the <code>Conditions</code>.     
      */
-    public boolean checkDateValidity(long someTime);
+    boolean checkDateValidity(long someTime);
 
     /**
      * Return true if a specific Date falls within the validity
@@ -158,7 +158,7 @@ public interface Conditions {
      * @return true if <code>someTime</code> is within the valid
      * interval of the <code>Conditions</code>.
      */
-    public boolean checkDateValidityWithSkew(long someTime, int skewTime);
+    boolean checkDateValidityWithSkew(long someTime, int skewTime);
 
    /**
     * Returns a String representation
@@ -169,7 +169,7 @@ public interface Conditions {
     * @return A String representation
     * @exception SAML2Exception if something is wrong during conversion
      */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
+   String toXMLString(boolean includeNSPrefix, boolean declareNS)
      throws SAML2Exception;
 
    /**
@@ -178,18 +178,18 @@ public interface Conditions {
     * @return A String representation
     * @exception SAML2Exception if something is wrong during conversion
     */
-    public String toXMLString() throws SAML2Exception;
+   String toXMLString() throws SAML2Exception;
 
    /**
     * Makes the object immutable
     */
-    public void makeImmutable();
+   void makeImmutable();
 
    /**
     * Returns true if the object is mutable
     *
     * @return true if the object is mutable
     */
-    public boolean isMutable();
+   boolean isMutable();
 
 }

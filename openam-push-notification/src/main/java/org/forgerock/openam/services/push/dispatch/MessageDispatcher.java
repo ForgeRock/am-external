@@ -25,7 +25,6 @@ import java.util.Set;
 
 import javax.inject.Named;
 
-import org.forgerock.guava.common.cache.Cache;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.openam.cts.CTSPersistentStore;
@@ -44,6 +43,7 @@ import org.forgerock.openam.utils.Time;
 import org.forgerock.util.Reject;
 import org.forgerock.util.promise.PromiseImpl;
 
+import com.google.common.cache.Cache;
 import com.sun.identity.shared.debug.Debug;
 
 /**

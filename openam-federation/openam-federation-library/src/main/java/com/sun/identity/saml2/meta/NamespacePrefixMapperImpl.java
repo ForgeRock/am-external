@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,14 +24,11 @@
  *
  * $Id: NamespacePrefixMapperImpl.java,v 1.3 2008/06/25 05:47:49 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
-
-
 package com.sun.identity.saml2.meta;
 
-import com.sun.xml.bind.marshaller.NamespacePrefixMapper;
-
-public class NamespacePrefixMapperImpl extends NamespacePrefixMapper {
+public class NamespacePrefixMapperImpl extends com.sun.xml.bind.marshaller.NamespacePrefixMapper {
 
     /**
      * Returns a preferred prefix for the given namespace URI.
@@ -68,19 +65,25 @@ public class NamespacePrefixMapperImpl extends NamespacePrefixMapper {
      *      If this method returns "" when requirePrefix=true, the return
      *      value will be ignored and the system will generate one.
      */
-    public String
-    getPreferredPrefix(
-        String namespaceUri,
-        String suggestion,
-        boolean requirePrefix
-    )
-    {
-        if (namespaceUri.equals(SAML2MetaSecurityUtils.NS_XMLSIG)) {
-            return SAML2MetaSecurityUtils.PREFIX_XMLSIG;
-        } else if (namespaceUri.equals(SAML2MetaSecurityUtils.NS_XMLENC)) {
-            return SAML2MetaSecurityUtils.PREFIX_XMLENC;
-        } else if (namespaceUri.equals(SAML2MetaSecurityUtils.NS_MD_QUERY)) {
+    @Override
+    public String getPreferredPrefix(String namespaceUri, String suggestion, boolean requirePrefix) {
+        switch (namespaceUri) {
+        case SAML2MetaSecurityUtils.NS_ENTITY_CONFIG:
+            return requirePrefix ? SAML2MetaSecurityUtils.PREFIX_ENTITY_CONFIG : "";
+        case SAML2MetaSecurityUtils.NS_MD_ATTR:
+            return SAML2MetaSecurityUtils.PREFIX_MD_ATTR;
+        case SAML2MetaSecurityUtils.NS_MD_QUERY:
             return SAML2MetaSecurityUtils.PREFIX_MD_QUERY;
+        case SAML2MetaSecurityUtils.NS_MD_X509_QUERY:
+            return SAML2MetaSecurityUtils.PREFIX_MD_X509_QUERY;
+        case SAML2MetaSecurityUtils.NS_META:
+            return requirePrefix ? SAML2MetaSecurityUtils.PREFIX_META : "";
+        case SAML2MetaSecurityUtils.NS_SAML:
+            return SAML2MetaSecurityUtils.PREFIX_SAML;
+        case SAML2MetaSecurityUtils.NS_XMLENC:
+            return SAML2MetaSecurityUtils.PREFIX_XMLENC;
+        case SAML2MetaSecurityUtils.NS_XMLSIG:
+            return SAML2MetaSecurityUtils.PREFIX_XMLSIG;
         }
 
         return suggestion;

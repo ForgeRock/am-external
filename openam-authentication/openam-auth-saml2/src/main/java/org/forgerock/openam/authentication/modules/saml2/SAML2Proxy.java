@@ -11,13 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2018 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-import static org.forgerock.openam.authentication.modules.saml2.Constants.*;
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.authentication.modules.saml2.Constants.AM_LOCATION_COOKIE;
+import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -28,7 +28,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.forgerock.guava.common.annotations.VisibleForTesting;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.SAML2Store;
@@ -36,6 +35,7 @@ import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.xui.XUIState;
 import org.owasp.esapi.ESAPI;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml2.assertion.Assertion;

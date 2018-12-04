@@ -11,18 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
-
 package org.forgerock.openam.auth.node.api;
 
 import static org.forgerock.openam.auth.node.api.Action.goTo;
 
 import java.util.List;
 
-import org.forgerock.guava.common.collect.ImmutableList;
 import org.forgerock.json.JsonValue;
 import org.forgerock.util.i18n.PreferredLocales;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Abstract node for nodes that always result in the same single outcome.

@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,23 +24,15 @@
  *
  * $Id: SAML2MetaCache.java,v 1.4 2008/07/08 01:08:43 exu Exp $
  *
+ * Portions Copyrighted 2010-2018 ForgeRock AS.
  */
-
- /*
- * Portions Copyrighted [2010] [ForgeRock AS]
- */
-
 package com.sun.identity.saml2.meta;
 
 import java.util.Hashtable;
 
-import com.sun.identity.shared.debug.Debug;
-
 import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadataattr.EntityAttributesType;
-import com.sun.identity.saml2.jaxb.metadataattr.EntityAttributesElement;
-import com.sun.identity.saml2.jaxb.metadataattr.ObjectFactory;
+import com.sun.identity.shared.debug.Debug;
 
 /**
  * The <code>SAML2MetaCache</code> provides metadata cache.
@@ -49,8 +41,8 @@ class SAML2MetaCache
 {
     private static Debug debug = SAML2MetaUtils.debug;
 
-    private static Hashtable descriptorCache = new Hashtable();
-    private static Hashtable configCache = new Hashtable();
+    private static Hashtable<String, EntityDescriptorElement> descriptorCache = new Hashtable<>();
+    private static Hashtable<String, EntityConfigElement> configCache = new Hashtable<>();
 
     private SAML2MetaCache() {
     }
@@ -67,8 +59,7 @@ class SAML2MetaCache
             String realm, String entityId) 
     {
         String cacheKey = buildCacheKey(realm, entityId);
-        EntityDescriptorElement descriptor =
-	    (EntityDescriptorElement)descriptorCache.get(cacheKey);
+        EntityDescriptorElement descriptor = descriptorCache.get(cacheKey);
         if (debug.messageEnabled()) {
             debug.message("SAML2MetaCache.getEntityDescriptor: cacheKey = " +
                           cacheKey + ", found = " + (descriptor != null));
@@ -82,9 +73,7 @@ class SAML2MetaCache
      * @param entityId ID of the entity to be retrieved. 
      * @param descriptor <code>EntityDescriptorElement</code> for the entity. 
      */
-    static void putEntityDescriptor(String realm, String entityId,
-            EntityDescriptorElement descriptor)
-    {
+    static void putEntityDescriptor(String realm, String entityId, EntityDescriptorElement descriptor) {
         String cacheKey = buildCacheKey(realm, entityId);
         if (descriptor != null) {
             if (debug.messageEnabled()) {
@@ -114,8 +103,7 @@ class SAML2MetaCache
             String realm, String entityId)
     {
         String cacheKey = buildCacheKey(realm, entityId);
-        EntityConfigElement config =
-	    (EntityConfigElement)configCache.get(cacheKey);
+        EntityConfigElement config = configCache.get(cacheKey);
         if (debug.messageEnabled()) {
             debug.message("SAML2MetaCache.getEntityConfig: cacheKey = " +
 			  cacheKey + ", found = " + (config != null));
@@ -130,7 +118,7 @@ class SAML2MetaCache
      * @param config <code>EntityConfigElement</code> object for the entity.
      */
     static void putEntityConfig(String realm, String entityId,
-        EntityConfigElement config) {
+            EntityConfigElement config) {
         String cacheKey = buildCacheKey(realm, entityId);
         if (config != null) {
             if (debug.messageEnabled()) {
@@ -155,15 +143,15 @@ class SAML2MetaCache
         if (debug.messageEnabled()) {
             debug.message("SAML2MetaCache.clear() called");
         }
-	descriptorCache.clear();
-	configCache.clear();
+        descriptorCache.clear();
+        configCache.clear();
     }
 
     /**
      * Build cache key for descriptorCache and configCache based on realm and
      * entity ID.
      * @param realm The realm under which the entity resides.
-     * @param entityID The entity ID or the name of circle of trust.
+     * @param entityId The entity ID or the name of circle of trust.
      * @return The cache key.
      */
     private static String buildCacheKey(String realm, String entityId) {

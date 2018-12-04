@@ -24,7 +24,7 @@
  *
  * $Id: FSDefaultSPAdapter.java,v 1.6 2008/06/25 05:49:54 qcheng Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
+ * Portions Copyrighted 2017-2018 ForgeRock AS.
  */
 
 package com.sun.identity.federation.plugins;
@@ -40,7 +40,7 @@ import com.sun.identity.federation.accountmgmt.FSAccountMgmtException;
 import com.sun.identity.federation.common.FederationException;
 import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.federation.common.IFSConstants;
-import com.sun.identity.federation.jaxb.entityconfig.SPDescriptorConfigElement;
+import com.sun.identity.federation.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.federation.message.FSAuthenticationStatement;
 import com.sun.identity.federation.message.FSAssertion;
 import com.sun.identity.federation.message.FSAuthnRequest;
@@ -171,22 +171,22 @@ public class FSDefaultSPAdapter implements FederationSPAdapter {
      * @param request servlet request
      * @param response servlet response
      * @param ssoToken user's SSO token
-     * @param authnRequest the original authentication request sent from SP 
+     * @param authnRequest the original authentication request sent from SP
      * @param authnResponse response from IDP if Browser POST or LECP profile
      *        is used for the request, value will be null if Browser Artifact
-     *        profile is used. 
+     *        profile is used.
      * @param samlResponse response from IDP if Browser Artifact profile is used
-     *        for the request, value will be null if Browser POST or LECP 
+     *        for the request, value will be null if Browser POST or LECP
      *        profile is used.
      * @exception FederationException if user want to fail the process.
      * @return true if browser redirection happened, false otherwise.
      */
     public boolean postSSOFederationSuccess(
-        String hostedEntityID, 
-        HttpServletRequest request, 
-        HttpServletResponse response, 
+        String hostedEntityID,
+        HttpServletRequest request,
+        HttpServletResponse response,
         Object ssoToken,
-        FSAuthnRequest authnRequest, 
+        FSAuthnRequest authnRequest,
         FSAuthnResponse authnResponse,
         FSResponse samlResponse
     ) throws FederationException {
@@ -201,7 +201,7 @@ public class FSDefaultSPAdapter implements FederationSPAdapter {
         } else {
             String nameIDPolicy = authnRequest.getNameIDPolicy();
             if (FSUtils.debug.messageEnabled()) {
-                FSUtils.debug.message("FSDefaultSPAdapter.postSuccess " 
+                FSUtils.debug.message("FSDefaultSPAdapter.postSuccess "
                     + nameIDPolicy);
             }
             if (nameIDPolicy.equals(IFSConstants.NAME_ID_POLICY_FEDERATED)) {
@@ -214,9 +214,9 @@ public class FSDefaultSPAdapter implements FederationSPAdapter {
             try {
                 // get name Identifier
                 String nameId = null;
-                List assertions = null; 
-                String idpEntityId = null; 
-                if (authnResponse != null) { 
+                List assertions = null;
+                String idpEntityId = null;
+                if (authnResponse != null) {
                     // POST profile
                     assertions = authnResponse.getAssertion();
                     idpEntityId = authnResponse.getProviderId();
@@ -224,13 +224,13 @@ public class FSDefaultSPAdapter implements FederationSPAdapter {
                     // Artifact profile
                     assertions = samlResponse.getAssertion();
                 }
-                FSAssertion assertion = 
+                FSAssertion assertion =
                     (FSAssertion) assertions.iterator().next();
                 if (idpEntityId == null) {
                     idpEntityId = assertion.getIssuer();
                 }
                 if (FSUtils.debug.messageEnabled()) {
-                    FSUtils.debug.message("FSAdapter.postSuccess: idp=" 
+                    FSUtils.debug.message("FSAdapter.postSuccess: idp="
                         + idpEntityId);
                 }
                 Iterator stmtIter = assertion.getStatement().iterator();
@@ -239,16 +239,16 @@ public class FSDefaultSPAdapter implements FederationSPAdapter {
                     int stmtType = statement.getStatementType();
                     if (stmtType == Statement.AUTHENTICATION_STATEMENT) {
                         FSAuthenticationStatement authStatement =
-                            (FSAuthenticationStatement) statement; 
-                        FSSubject subject = 
+                            (FSAuthenticationStatement) statement;
+                        FSSubject subject =
                             (FSSubject) authStatement.getSubject();
-                        NameIdentifier ni = 
+                        NameIdentifier ni =
                             subject.getIDPProvidedNameIdentifier();
                         if (ni == null) {
                             ni = subject.getNameIdentifier();
                         }
                         if (ni != null) {
-                            nameId = ni.getName();  
+                            nameId = ni.getName();
                         }
                         if (FSUtils.debug.messageEnabled()) {
                             FSUtils.debug.message("FSAdapter.postSuccess: "
@@ -268,7 +268,7 @@ public class FSDefaultSPAdapter implements FederationSPAdapter {
                 map.put("iplanet-am-user-federation-info-key", set);
 
                 AMIdentityRepository idRepo = new AMIdentityRepository(
-                    adminToken, 
+                    adminToken,
                     ((SSOToken) ssoToken).getProperty(
                         ISAuthConstants.ORGANIZATION));
                 IdSearchControl searchControl = new IdSearchControl();
@@ -285,14 +285,14 @@ public class FSDefaultSPAdapter implements FederationSPAdapter {
                     if (FSUtils.debug.messageEnabled()) {
                         FSUtils.debug.message("FSAdapter.postSuccess: found "
                             + amIdSet.size() + " federation with same ID as "
-                            + univId); 
+                            + univId);
                     }
                     String metaAlias = null;
                     try {
-                        IDFFMetaManager metaManager = 
+                        IDFFMetaManager metaManager =
                             new IDFFMetaManager(ssoToken);
                         if (metaManager != null) {
-                            SPDescriptorConfigElement spConfig =
+                            BaseConfigType spConfig =
                                 metaManager.getSPDescriptorConfig(
                                     realm, hostedEntityID);
                             if (spConfig != null) {

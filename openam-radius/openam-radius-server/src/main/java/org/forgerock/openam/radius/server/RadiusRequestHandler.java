@@ -12,16 +12,15 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- */
-/*
- * Portions copyright 2015-2017 ForgeRock AS
+ * Portions copyright 2015-2018 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server;
 
 import static org.forgerock.openam.audit.context.AuditRequestContext.setAuditRequestContext;
 
-import com.sun.identity.shared.debug.Debug;
-import org.forgerock.guava.common.eventbus.EventBus;
+import java.nio.ByteBuffer;
+import java.util.UUID;
+
 import org.forgerock.openam.audit.context.AuditRequestContext;
 import org.forgerock.openam.radius.common.AccessReject;
 import org.forgerock.openam.radius.common.AccessRequest;
@@ -38,8 +37,8 @@ import org.forgerock.openam.radius.server.spi.AccessRequestHandler;
 import org.forgerock.services.TransactionId;
 import org.joda.time.DateTime;
 
-import java.nio.ByteBuffer;
-import java.util.UUID;
+import com.google.common.eventbus.EventBus;
+import com.sun.identity.shared.debug.Debug;
 
 /**
  * Handles valid (ie: from approved clients) incoming radius access-request packets passing responsibility for

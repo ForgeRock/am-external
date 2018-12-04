@@ -24,18 +24,21 @@
  *
  * $Id: ExportSAML2MetaData.java,v 1.4 2009/09/21 17:27:04 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.workflow;
 
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+
+import javax.xml.bind.JAXBException;
+
 import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
-import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
-import javax.xml.bind.JAXBException;
 
 /**
  * Export SAML2 Metadata.

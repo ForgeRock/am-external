@@ -20,13 +20,13 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.forgerock.guava.common.cache.Cache;
-import org.forgerock.guava.common.cache.CacheBuilder;
 import org.forgerock.openam.cts.CTSPersistentStore;
 import org.forgerock.openam.cts.utils.JSONSerialisation;
 import org.forgerock.openam.rest.router.CTSPersistentStoreProxy;
 import org.forgerock.openam.services.push.MessageId;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.sun.identity.shared.debug.Debug;
 
 /**

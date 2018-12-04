@@ -11,6 +11,6 @@
         "include": [
             "src/main/js"
         ],
-        "includePattern": "\\.(js|jsm|jsx)$"
+        "includePattern": "\\.(js|jsx)$"
     }
 }

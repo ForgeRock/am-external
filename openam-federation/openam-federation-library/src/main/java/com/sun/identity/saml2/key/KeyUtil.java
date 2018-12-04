@@ -24,42 +24,48 @@
  *
  * $Id: KeyUtil.java,v 1.10 2009/08/28 23:42:14 exu Exp $
  *
- * Portions Copyrighted 2013-2016 ForgeRock AS.
+ * Portions Copyrighted 2013-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.key;
 
+import java.io.ByteArrayInputStream;
+import java.math.BigInteger;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.List;
 import java.util.Hashtable;
 import java.util.Iterator;
-import java.io.ByteArrayInputStream;
-import java.security.cert.CertificateFactory;
-import java.security.PublicKey;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import com.sun.identity.saml2.common.SAML2Utils;
+import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBIntrospector;
+
 import org.apache.xml.security.encryption.XMLCipher;
-
-import com.sun.identity.common.SystemConfigurationUtil;
-import com.sun.identity.saml2.common.SAML2SDKUtils;
-import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
-import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorType;
-import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
-import com.sun.identity.saml2.jaxb.xmlsig.*;
-import com.sun.identity.saml2.jaxb.xmlenc.*;
-
-import com.sun.identity.saml.common.SAMLConstants;
-import com.sun.identity.saml.xmlsig.KeyProvider;
-import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.XACMLPDPDescriptorElement;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
+
+import com.sun.identity.common.SystemConfigurationUtil;
+import com.sun.identity.saml.common.SAMLConstants;
+import com.sun.identity.saml.xmlsig.KeyProvider;
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
+import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.KeyTypes;
+import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.XACMLPDPDescriptorType;
+import com.sun.identity.saml2.jaxb.xmlenc.EncryptionMethodType;
+import com.sun.identity.saml2.jaxb.xmlsig.KeyInfoType;
+import com.sun.identity.saml2.jaxb.xmlsig.X509DataType;
+import com.sun.identity.saml2.meta.SAML2MetaUtils;
 
 /**
  * The <code>KeyUtil</code> provides methods to obtain
@@ -68,7 +74,7 @@ import org.forgerock.openam.utils.StringUtils;
  * and encryption related information
  */
 public class KeyUtil {
-    
+
     private static KeyProvider keyProvider = null;
 
     // key is EntityID|Role
@@ -78,31 +84,31 @@ public class KeyUtil {
     // key is EntityID|Role
     // value is X509Certificate
     protected static Map<String, Set<X509Certificate>> sigHash = new Hashtable<>();
-    
+
     static {
         try {
             keyProvider = (KeyProvider)Class.forName(SystemConfigurationUtil.getProperty(
-                SAMLConstants.KEY_PROVIDER_IMPL_CLASS,
-                SAMLConstants.JKS_KEY_PROVIDER)).newInstance();
+                    SAMLConstants.KEY_PROVIDER_IMPL_CLASS,
+                    SAMLConstants.JKS_KEY_PROVIDER)).newInstance();
         } catch (ClassNotFoundException cnfe) {
             SAML2SDKUtils.debug.error(
-                "KeyUtil static block:" +
-                " Couldn't find the class.",
-                cnfe);
+                    "KeyUtil static block:" +
+                            " Couldn't find the class.",
+                    cnfe);
             keyProvider = null;
         } catch (InstantiationException ie) {
             SAML2SDKUtils.debug.error(
-                "KeyUtil static block:" +
-                " Couldn't instantiate the key provider instance.",
-                ie);
+                    "KeyUtil static block:" +
+                            " Couldn't instantiate the key provider instance.",
+                    ie);
             keyProvider = null;
         } catch (IllegalAccessException iae) {
             SAML2SDKUtils.debug.error(
-                "KeyUtil static block:" +
-                " Couldn't access the default constructor.",
-                iae);
+                    "KeyUtil static block:" +
+                            " Couldn't access the default constructor.",
+                    iae);
             keyProvider = null;
-        }            
+        }
     }
 
     private KeyUtil() {
@@ -121,8 +127,8 @@ public class KeyUtil {
      * @param baseConfig <code>BaseConfigType</code> for the host entity
      * @return <code>String</code> for host entity's signing
      * certificate alias
-     */    
-    public static String getSigningCertAlias(BaseConfigType baseConfig) {
+     */
+    public static String getSigningCertAlias(JAXBElement<BaseConfigType> baseConfig) {
 
         Map map = SAML2MetaUtils.getAttributes(baseConfig);
         List list = (List)map.get(SAML2Constants.SIGNING_CERT_ALIAS);
@@ -153,7 +159,7 @@ public class KeyUtil {
      * @param baseConfig <code>BaseConfigType</code> for the host entity.
      * @return The Set of <code>PrivateKey</code>s for decrypting a message received by the hosted entity.
      */
-    public static Set<PrivateKey> getDecryptionKeys(BaseConfigType baseConfig) {
+    public static Set<PrivateKey> getDecryptionKeys(JAXBElement<BaseConfigType> baseConfig) {
         Map<String, List<String>> attrs = SAML2MetaUtils.getAttributes(baseConfig);
         List<String> aliases = attrs.get(SAML2Constants.ENCRYPTION_CERT_ALIAS);
         return getDecryptionKeys(aliases);
@@ -190,8 +196,8 @@ public class KeyUtil {
      * @param baseConfig <code>BaseConfigType</code> for the host entity
      * @return <code>PrivateKey</code> for decrypting a message received
      * by the host entity
-     */    
-    public static PrivateKey getDecryptionKey(BaseConfigType baseConfig) {
+     */
+    public static PrivateKey getDecryptionKey(JAXBElement<BaseConfigType> baseConfig) {
         return CollectionUtils.getFirstItem(getDecryptionKeys(baseConfig), null);
     }
 
@@ -218,30 +224,30 @@ public class KeyUtil {
         // else get it from meta
         if (roleDescriptor == null) {
             SAML2SDKUtils.debug.error(
-                classMethod+
-                "Null RoleDescriptorType input for entityID=" +
-                entityID + " in "+role+" role."
+                    classMethod+
+                            "Null RoleDescriptorType input for entityID=" +
+                            entityID + " in "+role+" role."
             );
             return null;
         }
-        List<KeyDescriptorType> keyDescriptors = getKeyDescriptors(roleDescriptor, SAML2Constants.SIGNING);
+        List<KeyDescriptorElement> keyDescriptors = getKeyDescriptors(roleDescriptor, SAML2Constants.SIGNING);
         if (keyDescriptors.isEmpty()) {
             SAML2SDKUtils.debug.error(
-                classMethod+
-                "No signing KeyDescriptor for entityID=" +
-                entityID + " in "+role+" role."
+                    classMethod+
+                            "No signing KeyDescriptor for entityID=" +
+                            entityID + " in "+role+" role."
             );
             return certificates;
         }
 
-        for (KeyDescriptorType keyDescriptor : keyDescriptors) {
+        for (KeyDescriptorElement keyDescriptor : keyDescriptors) {
             certificates.add(getCert(keyDescriptor));
         }
         if (certificates.isEmpty()) {
             SAML2SDKUtils.debug.error(
-                classMethod +
-                "No signing cert for entityID=" +
-                entityID + " in "+role+" role."
+                    classMethod +
+                            "No signing cert for entityID=" +
+                            entityID + " in "+role+" role."
             );
             return null;
         }
@@ -257,20 +263,20 @@ public class KeyUtil {
      * @param role entity's role
      * @return <code>EncInfo</code> which includes partner entity's
      * public key for wrapping the secret key, data encryption algorithm,
-     * and data encryption strength 
-     */        
+     * and data encryption strength
+     */
     public static EncInfo getEncInfo(
-        RoleDescriptorType roled,
-        String entityID,
-        String role
+            RoleDescriptorType roled,
+            String entityID,
+            String role
     ) {
 
         String classMethod = "KeyUtil.getEncInfo: ";
         if (SAML2SDKUtils.debug.messageEnabled()) {
             SAML2SDKUtils.debug.message(
-                classMethod +
-                "Entering... \nEntityID=" +
-                entityID + "\nRole="+role
+                    classMethod +
+                            "Entering... \nEntityID=" +
+                            entityID + "\nRole="+role
             );
         }
         // first try to get it from cache
@@ -282,48 +288,45 @@ public class KeyUtil {
         // else get it from meta
         if (roled == null) {
             SAML2SDKUtils.debug.error(
-                classMethod+
-                "Null RoleDescriptorType input for entityID=" +
-                entityID + " in "+role+" role."
+                    classMethod+
+                            "Null RoleDescriptorType input for entityID=" +
+                            entityID + " in "+role+" role."
             );
             return null;
         }
-        KeyDescriptorType kd =
-            getKeyDescriptor(roled, SAML2Constants.ENCRYPTION);
+        KeyDescriptorElement kd =
+                getKeyDescriptor(roled, SAML2Constants.ENCRYPTION);
         if (kd == null) {
             SAML2SDKUtils.debug.error(
-                classMethod+
-                "No encryption KeyDescriptor for entityID=" +
-                entityID + " in "+role+" role."
+                    classMethod+
+                            "No encryption KeyDescriptor for entityID=" +
+                            entityID + " in "+role+" role."
             );
             return null;
         }
         java.security.cert.X509Certificate cert = getCert(kd);
         if (cert == null) {
             SAML2SDKUtils.debug.error(
-                classMethod +
-                "No encryption cert for entityID=" +
-                entityID + " in "+role+" role."
+                    classMethod +
+                            "No encryption cert for entityID=" +
+                            entityID + " in "+role+" role."
             );
             return null;
         }
-        List emList = kd.getEncryptionMethod();
-        EncryptionMethodType em = null;
+        List<EncryptionMethodType> emList = kd.getValue().getEncryptionMethod();
+        EncryptionMethodType em;
         String algorithm = null;
         int keySize = 0;
-        if (emList != null && !emList.isEmpty()) {            
-            em = (EncryptionMethodType)emList.get(0);
+        if (emList != null && !emList.isEmpty()) {
+            em = emList.get(0);
             if (em != null) {
                 algorithm = em.getAlgorithm();
-                List cList = em.getContent();
+                List<Object> cList = em.getContent();
                 if (cList != null) {
-                    Iterator cIter = cList.iterator();
-                    while (cIter.hasNext()) {
-                        Object cObject = cIter.next();
-                        if (cObject instanceof EncryptionMethodType.KeySize) {
-                            keySize =
-                                ((EncryptionMethodType.KeySize)(cList.get(0))).
-                                    getValue().intValue();
+                    for (Object content : cList) {
+                        content = JAXBIntrospector.getValue(content);
+                        if (content instanceof BigInteger) {
+                            keySize = ((BigInteger) content).intValue();
                             break;
                         }
                     }
@@ -353,16 +356,16 @@ public class KeyUtil {
      * @param usage Type of the {@link KeyDescriptorType}s to be retrieved. Its value is "encryption" or "signing".
      * @return {@link KeyDescriptorType}s in {@link RoleDescriptorType} that matched the usage type.
      */
-    public static List<KeyDescriptorType> getKeyDescriptors(RoleDescriptorType roleDescriptor, String usage) {
-        List<KeyDescriptorType> keyDescriptors = roleDescriptor.getKeyDescriptor();
-        List<KeyDescriptorType> matches = new ArrayList<>(keyDescriptors.size());
-        List<KeyDescriptorType> keyDescriptorsWithoutUsage = new ArrayList<>(keyDescriptors.size());
+    public static List<KeyDescriptorElement> getKeyDescriptors(RoleDescriptorType roleDescriptor, String usage) {
+        List<KeyDescriptorElement> keyDescriptors = roleDescriptor.getKeyDescriptor();
+        List<KeyDescriptorElement> matches = new ArrayList<>(keyDescriptors.size());
+        List<KeyDescriptorElement> keyDescriptorsWithoutUsage = new ArrayList<>(keyDescriptors.size());
 
-        for (KeyDescriptorType keyDescriptor : keyDescriptors) {
-            String use = keyDescriptor.getUse();
-            if (StringUtils.isBlank(use)) {
+        for (KeyDescriptorElement keyDescriptor : keyDescriptors) {
+            KeyTypes use = keyDescriptor.getValue().getUse();
+            if (use == null) {
                 keyDescriptorsWithoutUsage.add(keyDescriptor);
-            } else if (use.trim().toLowerCase().equals(usage)) {
+            } else if (use.value().equals(usage)) {
                 matches.add(keyDescriptor);
             }
         }
@@ -372,7 +375,7 @@ public class KeyUtil {
     }
 
     /**
-     * Returns <code>KeyDescriptorType</code> from 
+     * Returns <code>KeyDescriptorType</code> from
      * <code>RoleDescriptorType</code>.
      * @param roled <code>RoleDescriptorType</code> which contains
      *                <code>KeyDescriptor</code>s.
@@ -381,11 +384,11 @@ public class KeyUtil {
      * @return KeyDescriptorType in <code>RoleDescriptorType</code> that matched
      *                the usage type.
      */
-    public static KeyDescriptorType getKeyDescriptor(
-        RoleDescriptorType roled,
-        String usage
+    public static KeyDescriptorElement getKeyDescriptor(
+            RoleDescriptorType roled,
+            String usage
     ) {
-        final List<KeyDescriptorType> keyDescriptors = getKeyDescriptors(roled, usage);
+        final List<KeyDescriptorElement> keyDescriptors = getKeyDescriptors(roled, usage);
         return CollectionUtils.getFirstItem(keyDescriptors, null);
     }
 
@@ -396,24 +399,24 @@ public class KeyUtil {
      *                <code>null</code> if no certificate is included.
      */
     public static java.security.cert.X509Certificate getCert(
-        KeyDescriptorType kd
+            KeyDescriptorElement kd
     ) {
 
         String classMethod = "KeyUtil.getCert: ";
-        KeyInfoType ki = kd.getKeyInfo();
+        KeyInfoType ki = kd.getValue().getKeyInfo();
         if (ki == null) {
             SAML2SDKUtils.debug.error(classMethod +
                     "No KeyInfo.");
-            
+
             return null;
         }
         //iterate and search the X509DataElement node
-        Iterator it = ki.getContent().iterator();
-        X509DataElement data = null;
+        Iterator<Object> it = ki.getContent().iterator();
+        X509DataType data = null;
         while ((data == null) && it.hasNext()) {
-            Object content = it.next();
-            if (content instanceof X509DataElement) {
-                data = (X509DataElement) content;
+            Object content = JAXBIntrospector.getValue(it.next());
+            if (content instanceof X509DataType) {
+                data = (X509DataType) content;
             }
         }
         if (data == null) {
@@ -422,41 +425,41 @@ public class KeyUtil {
         }
         //iterate and search the X509Certificate node
         it = data.getX509IssuerSerialOrX509SKIOrX509SubjectName().iterator();
-        com.sun.identity.saml2.jaxb.xmlsig.X509DataType.X509Certificate cert = null;
+        byte[] cert = null;
         while ((cert == null) && it.hasNext()) {
             Object content = it.next();
-            if (content instanceof 
-                com.sun.identity.saml2.jaxb.xmlsig.X509DataType.X509Certificate) {
-                cert = (com.sun.identity.saml2.jaxb.xmlsig.X509DataType.X509Certificate) content;
+            if (content instanceof JAXBElement
+                    && ((JAXBElement) content).getName().getLocalPart().equals(SAMLConstants.TAG_X509CERTIFICATE)) {
+                cert = (byte[]) JAXBIntrospector.getValue(content);
             }
         }
         if (cert == null) {
             SAML2SDKUtils.debug.error(classMethod + "No X509Certificate.");
             return null;
         }
-        byte[] bt = cert.getValue();
+        byte[] bt = cert;
         CertificateFactory cf = null;
         try {
             cf = CertificateFactory.getInstance("X.509");
         } catch (java.security.cert.CertificateException ce) {
             SAML2SDKUtils.debug.error(
-                classMethod +
-                "Unable to get CertificateFactory "+
-                "for X.509 type", ce);
+                    classMethod +
+                            "Unable to get CertificateFactory "+
+                            "for X.509 type", ce);
             return null;
-        }                
+        }
         ByteArrayInputStream bais = new ByteArrayInputStream(bt);
         java.security.cert.X509Certificate retCert = null;
         try {
             while (bais.available() > 0) {
-                retCert = (java.security.cert.X509Certificate) 
-                    cf.generateCertificate(bais);
+                retCert = (java.security.cert.X509Certificate)
+                        cf.generateCertificate(bais);
             }
         } catch (java.security.cert.CertificateException ce) {
             SAML2SDKUtils.debug.error(
-                classMethod +
-                "Unable to generate certificate from byte "+
-                "array input stream.", ce);
+                    classMethod +
+                            "Unable to generate certificate from byte "+
+                            "array input stream.", ce);
             return null;
         }
         return retCert;
@@ -469,7 +472,7 @@ public class KeyUtil {
      * @param entityID Policy Enforcement Point (PEP) entity identifier.
      * @return The Set of signing {@link X509Certificate}s for verifying the partner entity's signature.
      */
-    public static Set<X509Certificate> getPEPVerificationCerts(XACMLAuthzDecisionQueryDescriptorElement pepDescriptor,
+    public static Set<X509Certificate> getPEPVerificationCerts(XACMLAuthzDecisionQueryDescriptorType pepDescriptor,
             String entityID) {
         return getVerificationCerts(pepDescriptor, entityID, SAML2Constants.PEP_ROLE);
     }
@@ -478,24 +481,24 @@ public class KeyUtil {
      * Returns the encryption information which will be used in
      * encrypting messages intended for the partner entity.
      *
-     * @param pepDesc <code>XACMLAuthzDecisionQueryDescriptorElement</code> 
+     * @param pepDesc <code>XACMLAuthzDecisionQueryDescriptorElement</code>
      * for the partner entity
      * @param pepEntityID partner entity's ID
      * @return <code>EncInfo</code> which includes partner entity's
      * public key for wrapping the secret key, data encryption algorithm,
-     * and data encryption strength 
-     */        
+     * and data encryption strength
+     */
     public static EncInfo getPEPEncInfo(
-       XACMLAuthzDecisionQueryDescriptorElement pepDesc,String pepEntityID) {
+            XACMLAuthzDecisionQueryDescriptorType pepDesc,String pepEntityID) {
 
         String classMethod = "KeyUtil.getEncInfo: ";
         String role=SAML2Constants.PEP_ROLE;
-        
+
         if (SAML2SDKUtils.debug.messageEnabled()) {
             SAML2SDKUtils.debug.message(
-                classMethod +
-                "Entering... \nEntityID=" +
-                pepEntityID + "\nRole="+role
+                    classMethod +
+                            "Entering... \nEntityID=" +
+                            pepEntityID + "\nRole="+role
             );
         }
         // first try to get it from cache
@@ -507,24 +510,24 @@ public class KeyUtil {
         // else get it from meta
         if (pepDesc == null) {
             SAML2SDKUtils.debug.error(
-                classMethod+
-                "Null PEP Descriptor input for entityID=" +
-                pepEntityID + " in "+role+" role."
+                    classMethod+
+                            "Null PEP Descriptor input for entityID=" +
+                            pepEntityID + " in "+role+" role."
             );
             return null;
         }
-        KeyDescriptorType kd = getKeyDescriptor(pepDesc,SAML2Constants.ENCRYPTION);
+        KeyDescriptorElement kd = getKeyDescriptor(pepDesc,SAML2Constants.ENCRYPTION);
         if (kd == null) {
             SAML2SDKUtils.debug.error(
-                classMethod+
-                "No encryption KeyDescriptor for entityID=" +
-                pepEntityID + " in "+role+" role."
+                    classMethod+
+                            "No encryption KeyDescriptor for entityID=" +
+                            pepEntityID + " in "+role+" role."
             );
             return null;
         }
         return  getEncryptionInfo(kd,pepEntityID,role);
     }
-    
+
     /**
      * Returns the <code>EncInfo</code> from the <code>KeyDescriptor</code>.
      *
@@ -533,31 +536,29 @@ public class KeyUtil {
      * @param role the role of the entity . Value can be PEP or PDP.
      * @return <code>EncInfo</code> the encryption info.
      */
-    private static EncInfo getEncryptionInfo(KeyDescriptorType kd,
-                                             String entityID, String role) {
+    private static EncInfo getEncryptionInfo(KeyDescriptorElement kd,
+            String entityID, String role) {
         String classMethod = "KeyUtil:getEncryptionInfo:";
         java.security.cert.X509Certificate cert = getCert(kd);
         if (cert == null) {
             SAML2SDKUtils.debug.error(
-                classMethod +
-                "No encryption cert for entityID=" +
-                entityID + " in "+role+" role."
+                    classMethod +
+                            "No encryption cert for entityID=" +
+                            entityID + " in "+role+" role."
             );
             return null;
         }
-        List emList = kd.getEncryptionMethod();
+        List<EncryptionMethodType> emList = kd.getValue().getEncryptionMethod();
         EncryptionMethodType em = null;
         String algorithm = null;
         int keySize = 0;
-        if (emList != null && !emList.isEmpty()) {            
-            em = (EncryptionMethodType)emList.get(0);
+        if (emList != null && !emList.isEmpty()) {
+            em = emList.get(0);
             if (em != null) {
                 algorithm = em.getAlgorithm();
-                List cList = em.getContent();
+                List<Object> cList = em.getContent();
                 if (cList != null) {
-                    keySize =
-                        ((EncryptionMethodType.KeySize)(cList.get(0))).
-                        getValue().intValue();
+                    keySize = ((BigInteger) JAXBIntrospector.getValue(cList.get(0))).intValue();
                 }
             }
         }
@@ -584,7 +585,7 @@ public class KeyUtil {
      * @param entityID partner entity's ID.
      * @return The Set of signing {@link X509Certificate}s for verifying the partner entity's signature.
      */
-    public static Set<X509Certificate> getPDPVerificationCerts(XACMLPDPDescriptorElement pdpDescriptor,
+    public static Set<X509Certificate> getPDPVerificationCerts(XACMLPDPDescriptorType pdpDescriptor,
             String entityID) {
         return getVerificationCerts(pdpDescriptor, entityID, SAML2Constants.PDP_ROLE);
     }

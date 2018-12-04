@@ -24,12 +24,26 @@
  * 
  * $Id: SAML11RequestedSecurityToken.java,v 1.7 2009/12/14 23:42:48 mallas Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.profile;
 
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.currentTimeMillis;
+import static org.forgerock.openam.utils.Time.newDate;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import com.sun.identity.saml.assertion.Assertion;
 import com.sun.identity.saml.assertion.AttributeStatement;
@@ -55,17 +69,6 @@ import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
 import com.sun.identity.wsfederation.logging.LogUtil;
 import com.sun.identity.wsfederation.meta.WSFederationMetaManager;
 import com.sun.identity.wsfederation.meta.WSFederationMetaUtils;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 /**
  * SAML11RequestedSecurityToken represents a concrete RequestedSecurityToken -
@@ -198,7 +201,7 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
             Date notAfter = new Date(issueInstant.getTime() + period);
             WSFederationMetaManager metaManager =
                 WSFederationUtils.getMetaManager();
-            FederationElement idp = 
+            FederationElement idp =
                 metaManager.getEntityDescriptor(realm, idpEntityId);
 
             String issuer = metaManager.getTokenIssuerName(idp);
@@ -368,13 +371,11 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
         }
         
         String strWantAssertionSigned = 
-            WSFederationMetaUtils.getAttribute(spConfig, 
+            WSFederationMetaUtils.getAttribute(spConfig.getValue(),
             WSFederationConstants.WANT_ASSERTION_SIGNED);
         
         // By default, we want to sign assertions
-        boolean wantAssertionSigned = (strWantAssertionSigned != null)
-            ? Boolean.parseBoolean(strWantAssertionSigned)
-            : true;
+        boolean wantAssertionSigned = (strWantAssertionSigned == null) || Boolean.parseBoolean(strWantAssertionSigned);
 
         if ( wantAssertionSigned &&
             (!WSFederationUtils.isSignatureValid(assertion, realm, 

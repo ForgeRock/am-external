@@ -24,10 +24,12 @@
  *
  * $Id: DefaultIDPAuthnContextMapper.java,v 1.9 2008/11/10 22:57:02 veiming Exp $
  *
- * Portions Copyrighted 2011-2017 ForgeRock AS.
+ * Portions Copyrighted 2011-2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins;
+
+import static org.forgerock.openam.utils.AuthLevelUtils.authLevelToInt;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.AuthnContext;
@@ -207,7 +209,7 @@ public class DefaultIDPAuthnContextMapper
         }
         if ((authLevel != null) && (authLevel.length() != 0)) {
             try {
-                int level = Integer.parseInt(authLevel);
+                int level = authLevelToInt(authLevel);
                 Iterator iter = classRefLevelMap.keySet().iterator();
                 while (iter.hasNext()) {
                     String key = (String) iter.next();

@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
@@ -24,19 +24,19 @@
  *
  * $Id: WSFederationMetaUtils.java,v 1.5 2009/10/28 23:58:59 exu Exp $
  *
- * Portions Copyrighted 2012-2016 ForgeRock AS.
+ * Portions Copyrighted 2012-2018 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.meta;
 
-import com.sun.identity.wsfederation.jaxb.entityconfig.AttributeType;
-import com.sun.identity.wsfederation.jaxb.entityconfig.BaseConfigType;
+import static java.util.stream.Collectors.toMap;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -51,15 +51,15 @@ import javax.xml.bind.Unmarshaller;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
 
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.locale.Locale;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.wsfederation.common.WSFederationConstants;
-import com.sun.identity.wsfederation.jaxb.entityconfig.AttributeElement;
+import com.sun.identity.wsfederation.jaxb.entityconfig.AttributeType;
+import com.sun.identity.wsfederation.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.wsfederation.jaxb.entityconfig.IDPSSOConfigElement;
-
-import org.xml.sax.InputSource;
 
 /**
  * The <code>WSFederationMetaUtils</code> provides metadata related utility
@@ -226,18 +226,11 @@ public final class WSFederationMetaUtils {
      * put in a <code>Map</code>. The key is attribute name and the value is
      * a <code>List</code> of attribute values;
      * @param config the <code>BaseConfigType</code> object
-     * @return a attrbute value <code>Map</code>
+     * @return a attribute value <code>Map</code>
      */
-    public static Map<String,List<String>> getAttributes(BaseConfigType config) 
-    {
-        Map<String,List<String>> attrMap = new HashMap<String,List<String>>();
-        List list = config.getAttribute();
-        for(Iterator iter = list.iterator(); iter.hasNext();) {
-            AttributeType avp = (AttributeType)iter.next();
-            attrMap.put(avp.getName(), avp.getValue());
-        }
-
-        return attrMap;
+    public static Map<String, List<String>> getAttributes(BaseConfigType config) {
+        return config.getAttribute().stream()
+                .collect(toMap(AttributeType::getName, type -> new ArrayList<>(type.getValue())));
     }
 
     /**
@@ -267,15 +260,13 @@ public final class WSFederationMetaUtils {
             objFactory = 
             new com.sun.identity.wsfederation.jaxb.entityconfig.ObjectFactory();
 
-        List attributeList = config.getAttribute();
+        List<AttributeType> attributeList = config.getAttribute();
 
         attributeList.clear();
 
         // add the new content
-        for (String key : map.keySet())
-        {
-            AttributeElement
-                avp = objFactory.createAttributeElement();
+        for (String key : map.keySet()) {
+            AttributeType avp = objFactory.createAttributeType();
             avp.setName(key);
             avp.getValue().addAll(map.get(key));
             
@@ -291,9 +282,9 @@ public final class WSFederationMetaUtils {
      */
     public static String getAttribute(BaseConfigType config, String key)
     {
-        List<AttributeElement> list = config.getAttribute();
+        List<AttributeType> list = config.getAttribute();
 
-        for (AttributeElement avp : list) {
+        for (AttributeType avp : list) {
             if (avp.getName().equals(key)) {
                 return CollectionUtils.getFirstItem(avp.getValue());
             }
@@ -430,7 +421,7 @@ public final class WSFederationMetaUtils {
      * @return The Base URL of the OpenAM deployment.
      */
     public static String getEndpointBaseUrl(IDPSSOConfigElement idpConfig, HttpServletRequest request) {
-        String endpointBaseUrl = getAttribute(idpConfig, WSFederationConstants.ENDPOINT_BASE_URL);
+        String endpointBaseUrl = getAttribute(idpConfig.getValue(), WSFederationConstants.ENDPOINT_BASE_URL);
         if (StringUtils.isEmpty(endpointBaseUrl)) {
             endpointBaseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort()
                     + request.getContextPath();

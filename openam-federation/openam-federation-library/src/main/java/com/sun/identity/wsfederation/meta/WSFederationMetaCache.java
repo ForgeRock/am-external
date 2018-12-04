@@ -24,15 +24,15 @@
  *
  * $Id: WSFederationMetaCache.java,v 1.4 2009/10/28 23:58:59 exu Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 package com.sun.identity.wsfederation.meta;
 
-import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
 import java.util.Hashtable;
 
 import com.sun.identity.shared.debug.Debug;
-
 import com.sun.identity.wsfederation.jaxb.entityconfig.FederationConfigElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
 
@@ -56,7 +56,7 @@ class WSFederationMetaCache
      * Returns the standard metadata entity descriptor under the realm from
      * cache.
      * @param realm The realm under which the entity resides.
-     * @param entityId ID of the entity to be retrieved. 
+     * @param federationId ID of the entity to be retrieved.
      * @return <code>FederationElement</code> for the entity or null
      *         if not found. 
      */
@@ -74,8 +74,8 @@ class WSFederationMetaCache
     /**
      * Adds the standard metadata entity descriptor under the realm to cache.
      * @param realm The realm under which the entity resides.
-     * @param entityId ID of the entity to be retrieved. 
-     * @param descriptor <code>FederationElement</code> for the entity. 
+     * @param federationId ID of the entity to be retrieved.
+     * @param federation <code>FederationElement</code> for the entity.
      */
     static void putFederation(String realm, String federationId,
             FederationElement federation)
@@ -102,7 +102,7 @@ class WSFederationMetaCache
      * Returns extended entity configuration under the realm from cache.
      * @param realm The realm under which the entity resides.
      * @param entityId ID of the entity to be retrieved.
-     * @return <code>FederationConfigElement</code> object for the entity or 
+     * @return <code>FederationConfigElement</code> object for the entity or
      * null if not found.
      */
     static FederationConfigElement getEntityConfig(
@@ -155,7 +155,7 @@ class WSFederationMetaCache
      * Build cache key for federationCache and configCache based on realm and
      * entity ID.
      * @param realm The realm under which the entity resides.
-     * @param entityID The entity ID or the name of circle of trust.
+     * @param entityId The entity ID or the name of circle of trust.
      * @return The cache key.
      */
     private static String buildCacheKey(String realm, String entityId) {

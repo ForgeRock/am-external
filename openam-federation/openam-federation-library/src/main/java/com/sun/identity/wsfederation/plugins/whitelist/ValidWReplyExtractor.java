@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2018 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.plugins.whitelist;
 
@@ -45,9 +45,9 @@ public class ValidWReplyExtractor implements ValidDomainExtractor<ValidWReplyExt
 
 
             if (SAML2Constants.SP_ROLE.equalsIgnoreCase(entityInfo.role)) {
-                config = WSFederationUtils.getMetaManager().getSPSSOConfig(entityInfo.realm, entityInfo.entityID);
+                config = WSFederationUtils.getMetaManager().getSPSSOConfig(entityInfo.realm, entityInfo.entityID).getValue();
             } else {
-                config = WSFederationUtils.getMetaManager().getIDPSSOConfig(entityInfo.realm, entityInfo.entityID);
+                config = WSFederationUtils.getMetaManager().getIDPSSOConfig(entityInfo.realm, entityInfo.entityID).getValue();
             }
 
             if (config == null) {

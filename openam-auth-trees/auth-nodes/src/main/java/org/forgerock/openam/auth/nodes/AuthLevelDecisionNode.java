@@ -39,7 +39,15 @@ import com.google.inject.assistedinject.Assisted;
         configClass = AuthLevelDecisionNode.Config.class)
 public class AuthLevelDecisionNode extends AbstractDecisionNode {
 
-    interface Config {
+    /**
+     * Node Config Declaration.
+     */
+    public interface Config {
+        /**
+         * Auth Level.
+         *
+         * @return The auth level.
+         */
         @Attribute(order = 100)
         int authLevelRequirement();
     }

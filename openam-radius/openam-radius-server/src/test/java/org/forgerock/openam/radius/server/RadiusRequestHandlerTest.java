@@ -12,14 +12,22 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
+ * Portions copyright 2015-2018 ForgeRock AS.
  */
-/*
- * Portions copyright 2015 ForgeRock AS
- */
-
 package org.forgerock.openam.radius.server;
 
-import org.forgerock.guava.common.eventbus.EventBus;
+import static org.mockito.Mockito.isA;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+
 import org.forgerock.openam.radius.common.AccessAccept;
 import org.forgerock.openam.radius.common.AccessReject;
 import org.forgerock.openam.radius.common.Packet;
@@ -29,13 +37,7 @@ import org.forgerock.openam.radius.server.spi.handlers.AcceptAllHandler;
 import org.forgerock.openam.radius.server.spi.handlers.RejectAllHandler;
 import org.testng.annotations.Test;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-
-import static org.mockito.Matchers.isA;
-import static org.mockito.Mockito.*;
+import com.google.common.eventbus.EventBus;
 
 /**
  * Test for the <code>RadiusRequestHandler</code> class.
