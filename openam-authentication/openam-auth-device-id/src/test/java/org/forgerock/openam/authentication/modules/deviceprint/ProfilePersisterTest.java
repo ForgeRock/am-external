@@ -16,23 +16,19 @@
 
 package org.forgerock.openam.authentication.modules.deviceprint;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.iplanet.sso.SSOException;
-import com.sun.identity.idm.IdRepoException;
-
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.core.rest.devices.deviceprint.DeviceIdDao;
-import org.forgerock.openam.utils.JsonValueBuilder;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.field;
@@ -52,14 +48,15 @@ public class ProfilePersisterTest {
 
     private final String username = "username";
     private final String password = "password";
+    private final Set<String> userSearchAttributes = Collections.emptySet();
 
     @BeforeMethod
     public void setUp() {
 
         devicePrintDao = mock(DeviceIdDao.class);
 
-        profilePersister = new ProfilePersister(2, username, password,
-                devicePrintDao);
+        profilePersister = new ProfilePersister(2, username, password, devicePrintDao,
+                userSearchAttributes);
     }
 
     @Test
@@ -78,14 +75,15 @@ public class ProfilePersisterTest {
         List<JsonValue> profiles = new ArrayList<>();
         profiles.add(profileOne);
         profiles.add(profileTwo);
-        given(devicePrintDao.getDeviceProfiles(username, password)).willReturn(profiles);
+        given(devicePrintDao.getDeviceProfiles(username, password, userSearchAttributes)).willReturn(profiles);
 
         //When
         profilePersister.saveDevicePrint(devicePrintProfile);
 
         //Then
         ArgumentCaptor<List> profilesCaptor = ArgumentCaptor.forClass(List.class);
-        verify(devicePrintDao).saveDeviceProfiles(eq(username), eq(password), profilesCaptor.capture());
+        verify(devicePrintDao).saveDeviceProfiles(eq(username), eq(password), profilesCaptor.capture(),
+                ArgumentMatchers.eq(userSearchAttributes) );
         List<JsonValue> savedProfiles = profilesCaptor.getValue();
         assertThat(savedProfiles).hasSize(2);
         assertThat(savedProfiles.get(0)).isEqualTo(profileTwo);

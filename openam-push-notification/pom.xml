@@ -21,7 +21,7 @@
     <parent>
         <artifactId>openam</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>6.0.0.5</version>
+        <version>6.0.0.6</version>
     </parent>
 
     <properties>
@@ -64,9 +64,9 @@
     </dependencies>
 
     <repositories>
-        <repository>
-            <id>forgerock-private-releases</id>
-            <url>https://maven.forgerock.org/repo/private-releases</url>
-        </repository>
-    </repositories>
-</project>
+          <repository>
+              <id>forgerock-private-releases</id>
+              <url>https://maven.forgerock.org/repo/private-releases</url>
+          </repository>
+      </repositories>
+  </project>

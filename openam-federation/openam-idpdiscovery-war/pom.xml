@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-federation</artifactId>
-        <version>6.0.0.5</version>
+        <version>6.0.0.6</version>
     </parent>
 
     <!-- Component Definition -->
@@ -81,6 +81,7 @@
                         <nonFilteredFileExtension>7z</nonFilteredFileExtension>
                         <!-- See: http://en.wikipedia.org/wiki/List_of_file_formats -->
                     </nonFilteredFileExtensions>
+                    <attachClasses>true</attachClasses>
                 </configuration>
             </plugin>
         </plugins>

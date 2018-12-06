@@ -16,15 +16,15 @@
 <script src='https://www.google.com/recaptcha/api.js'></script>
 <script>
 function handleCaptchaCallback(response) {
-    var $ = require("jquery");
-    $("#captchaResponse :input[name=response]").val(response);
-    $("#captchaResponse").trigger("submit");
+    document.querySelector("#captchaResponse input[name=response]").value = response;
+    document.querySelector("#captchaResponse input[type=submit]").click();
 }
 </script>
 
 <style>
-.g-recaptcha>div>div {
+.g-recaptcha {
     display: inline-block;
+    margin: 0 auto;
 }
 </style>
 
@@ -34,4 +34,5 @@ function handleCaptchaCallback(response) {
 
 <form class="form" id="captchaResponse">
     <input type="hidden" name="response">
+    <input type="submit" class="hidden">
 </form>

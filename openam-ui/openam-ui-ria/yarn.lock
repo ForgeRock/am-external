@@ -5944,9 +5944,9 @@ react-dnd@2.5.4:
     lodash "^4.2.0"
     prop-types "^15.5.10"
 
-react-dom@16.0.0:
-  version "16.0.0"
-  resolved "http://maven.forgerock.org:80/repo/api/npm/npm-virtual/react-dom/-/react-dom-16.0.0.tgz#9cc3079c3dcd70d4c6e01b84aab2a7e34c303f58"
+react-dom@16.0.1:
+  version "16.0.1"
+  resolved "http://maven.forgerock.org:80/repo/api/npm/npm-virtual/react-dom/-/react-dom-16.0.1.tgz#bd2fc18d2bb81645cb807bb27a03a14d8b796e6d"
   dependencies:
     fbjs "^0.8.16"
     loose-envify "^1.1.0"
