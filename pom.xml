@@ -24,7 +24,7 @@
 
     <groupId>org.forgerock.am</groupId>
     <artifactId>openam-external</artifactId>
-<version>6.5.0</version>    
+    <version>6.5.0</version>
     <packaging>pom</packaging>
 
     <!-- Child Modules -->
@@ -39,10 +39,20 @@
     </modules>
 
     <repositories>
-      <repository>
-         <id>forgerock-build-dependencies</id>
+        <repository>
+            <id>forgerock-build-dependencies</id>
             <url>https://maven.forgerock.org/repo/forgerock-openam-6.5.0-dependencies</url>
-         </repository>
-      </repositories>
-  </project>
+        </repository>
+        <repository>
+            <id>forgerock-private-releases</id>
+            <url>https://maven.forgerock.org/repo/private-releases</url>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>forgerock-build-dependencies</id>
+            <url>https://maven.forgerock.org/repo/forgerock-openam-6.5.0-dependencies</url>
+        </pluginRepository>
+    </pluginRepositories>
+</project>
 
