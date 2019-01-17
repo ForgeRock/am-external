@@ -2353,6 +2353,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             }
         } else {
             String pSearchId = getPSearchId();
+            DJLDAPv3PersistentSearch pSearchToStop = null;
             synchronized (pSearchMap) {
                 DJLDAPv3PersistentSearch pSearch = pSearchMap.get(pSearchId);
                 if (pSearch == null) {
@@ -2361,10 +2362,13 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                     pSearch.removeMovedOrRenamedListener(this);
                     pSearch.removeListener(idRepoListener);
                     if (!pSearch.hasListeners()) {
-                        pSearch.stopSearch();
-                        pSearchMap.remove(pSearchId);
+                        pSearchToStop = pSearch;
+                        pSearchMap.remove(pSearchId, pSearch);
                     }
                 }
+            }
+            if (pSearchToStop != null) {
+                pSearchToStop.stopSearch();
             }
         }
         if (dnCacheEnabled) {

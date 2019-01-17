@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.forgerock.am.examples</groupId>
         <artifactId>openam-samples</artifactId>
-        <version>6.5.0</version>
+        <version>6.5.0.1</version>
     </parent>
 
     <artifactId>openam-example-api-descriptor</artifactId>

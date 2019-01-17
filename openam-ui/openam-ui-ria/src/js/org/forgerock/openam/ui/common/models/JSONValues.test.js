@@ -627,4 +627,34 @@ describe("org/forgerock/openam/ui/common/models/JSONValues", () => {
             expect(valuesWithNullifiedPasswords.raw["non.password.prop"]).to.be.eql("");
         });
     });
+
+    describe("#getEmptyValueKeys", () => {
+        const values = new JSONValues({
+            _id: "",
+            _type: {},
+            "a.property": "a1.value",
+            "b.property": ""
+        });
+
+        const schema = new JSONSchema({
+            type: "object",
+            properties: {
+                "a.property": {
+                    type: "string"
+                },
+                "b.property": {
+                    type: "string"
+                },
+                "c.property": {
+                    type: "string"
+                }
+            }
+        });
+
+        const emptyValueKeys = values.getEmptyValueKeys(schema);
+
+        it("returns an array of schema keys which had undefined or empty values", () => {
+            expect(emptyValueKeys).to.be.eql(["b.property", "c.property"]);
+        });
+    });
 });

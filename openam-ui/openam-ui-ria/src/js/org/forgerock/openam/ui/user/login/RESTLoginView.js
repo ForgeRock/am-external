@@ -267,10 +267,14 @@ const LoginView = AbstractView.extend({
         // CommonRoutesConfig login route. This needs to be removed as part of AME-11109.
         this.data.args = [undefined, this.data.fragmentParamString];
 
-        this.data.compositeQueryString = `&${urlParamsFromObject({
+        const queryObjectExclServiceParam = {
             ...parseParameters(URIUtils.getCurrentFragmentQueryString()),
             ...parseParameters(URIUtils.getCurrentQueryString())
-        })}`;
+        };
+        delete queryObjectExclServiceParam["service"];
+        this.data.queryStringExclServiceParam = "";
+        this.data.queryStringExclServiceParam = _.isEmpty(queryObjectExclServiceParam)
+            ? "" : `&${urlParamsFromObject(queryObjectExclServiceParam)}`;
 
         if (args) {
             auth.additional = addtionalArguments;

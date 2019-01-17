@@ -19,6 +19,7 @@ import static javax.security.auth.callback.ConfirmationCallback.OK_CANCEL_OPTION
 import static javax.security.auth.callback.TextOutputCallback.ERROR;
 import static javax.security.auth.callback.TextOutputCallback.INFORMATION;
 import static javax.security.auth.callback.TextOutputCallback.WARNING;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.HeartbeatTimeUnit.SECONDS;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMode.LDAP;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMode.LDAPS;
@@ -35,6 +36,7 @@ import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.TextOutputCallback;
 
+import org.apache.commons.lang.StringUtils;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -276,7 +278,7 @@ public class LdapDecisionNode implements Node {
         JsonValue newState = context.sharedState.copy();
         try {
             ldapUtil = initializeLDAP(context);
-            String userName = context.sharedState.get(SharedStateConstants.USERNAME).asString();
+            String userName = context.sharedState.get(USERNAME).asString();
             String userPassword = context.transientState.get(SharedStateConstants.PASSWORD).asString();
             if (isLogin(context)) {
                 logger.debug("processing login");
@@ -288,6 +290,10 @@ public class LdapDecisionNode implements Node {
                     if (ldapUtil.getUserAttributeValues().containsKey(USER_STATUS_ATTRIBUTE)) {
                         userStatus = ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE).iterator().next();
                     }
+                }
+                String username = getUserNameFromIdentity(ldapUtil.getUserId());
+                if (StringUtils.isNotEmpty(username)) {
+                    newState.put(USERNAME, username);
                 }
                 if (userStatus.equals(USER_STATUS_INACTIVE)) {
                     ldapUtil.setState(ModuleState.ACCOUNT_LOCKED);

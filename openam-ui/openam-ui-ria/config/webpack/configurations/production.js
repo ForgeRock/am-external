@@ -108,7 +108,7 @@ module.exports = webpackMerge(common, {
         ]
     },
     output: {
-        chunkFilename: "[id].[chunkhash].js",
+        chunkFilename: "[name].[chunkhash].js",
         filename: ({ chunk }) => {
             return ["main-authorize", "main-device"].includes(chunk.name)
                 ? "[name].js"

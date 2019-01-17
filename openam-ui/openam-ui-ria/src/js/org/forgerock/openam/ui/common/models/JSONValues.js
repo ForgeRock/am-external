@@ -189,7 +189,7 @@ export default class JSONValues {
         const keys = [];
 
         _.forIn(schema.raw.properties, (value, key) => {
-            if (isEmpty(this.raw[key])) {
+            if (!this.raw || isEmpty(this.raw[key])) {
                 keys.push(key);
             }
         });
