@@ -20,7 +20,7 @@ import Measure from "react-measure";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
 import classNames from "classnames";
-import { cloneDeep, contains, isEqual } from "lodash";
+import { cloneDeep, includes, isEqual } from "lodash";
 import { t } from "i18next";
 
 import {
@@ -99,7 +99,7 @@ class PageNodeList extends Component {
         }
         const invalidIds = [FAILURE_NODE_ID, START_NODE_ID, SUCCESS_NODE_ID];
         const invalidTypes = [INNER_TREE_NODE_TYPE, PAGE_NODE_TYPE];
-        if (contains(invalidIds, draggingNode.id) || contains(invalidTypes, draggingNode.type)) {
+        if (includes(invalidIds, draggingNode.id) || includes(invalidTypes, draggingNode.type)) {
             return false;
         }
         const pagePositions = store.getState().local.config.realm.authentication.trees.current.nodes.pages.positions;
@@ -200,7 +200,7 @@ const dropTarget = {
         const nodeType = monitor.getItem().nodeType;
         const draggingType = monitor.getItemType();
         const invalidNodeTypes = [FAILURE_NODE_TYPE, PAGE_NODE_TYPE, INNER_TREE_NODE_TYPE, SUCCESS_NODE_TYPE];
-        return draggingType === PAGE_CHILD_NODE_TYPE || !contains(invalidNodeTypes, nodeType);
+        return draggingType === PAGE_CHILD_NODE_TYPE || !includes(invalidNodeTypes, nodeType);
     }
 };
 

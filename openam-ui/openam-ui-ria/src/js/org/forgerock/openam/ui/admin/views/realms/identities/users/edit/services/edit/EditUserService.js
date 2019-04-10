@@ -14,7 +14,7 @@
  * Copyright 2018 ForgeRock AS.
  */
 
-import { findWhere, map, result } from "lodash";
+import { find, map, result } from "lodash";
 import { t } from "i18next";
 
 import { getAllTypes, getSchema, get as getUserService, remove, update } from
@@ -58,7 +58,7 @@ class EditUserService extends AbstractView {
             this.schema = new JSONSchema(schema);
             this.values = new JSONValues(service);
             this.data.type = t("console.identities.users.edit.services.edit.subtitle", {
-                type: result(findWhere(serviceTypes, { "_id": this.type }), "name")
+                type: result(find(serviceTypes, { "_id": this.type }), "name")
             });
 
             this.parentRender(() => {

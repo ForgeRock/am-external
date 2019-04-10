@@ -165,10 +165,10 @@ const AbstractUserProfileTab = AbstractView.extend({
                     } else {
                         return false;
                     }
-                }, this)
-                .map(function (attr) {
+                })
+                .map((attr) => {
                     return this.$el.find(`label[for=input-${attr}]`).text();
-                }, this)
+                })
                 .value();
 
             if (changedProtected.length === 0) {

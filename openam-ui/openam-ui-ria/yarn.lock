@@ -87,6 +87,13 @@
     lodash "^4.2.0"
     to-fast-properties "^2.0.0"
 
+"@forgerock/crest-js@2.1.1":
+  version "2.1.1"
+  resolved "https://registry.npmjs.org/@forgerock/crest-js/-/crest-js-2.1.1.tgz#cfc7b4964174ac57e8b778de8656a1f9a74b38d0"
+  integrity sha512-NRYNq6BtYxjuJvX5IJYgXVwy4kjshRLDts7viLaXatRIST6H6sOMX7JYFhnGpUDQMlGfuDdTdiv7qJny8XmmNg==
+  dependencies:
+    urijs "1.19.1"
+
 "@sinonjs/formatio@^2.0.0":
   version "2.0.0"
   resolved "https://registry.npmjs.org/@sinonjs/formatio/-/formatio-2.0.0.tgz#84db7e9eb5531df18a8c5e0bfb6e449e55e654b2"
@@ -4660,15 +4667,10 @@ lodash.upperfirst@4.3.1:
   resolved "http://maven.forgerock.org:80/repo/api/npm/npm-virtual/lodash.upperfirst/-/lodash.upperfirst-4.3.1.tgz#1365edf431480481ef0d1c68957a5ed99d49f7ce"
   integrity sha1-E2Xt9DFIBIHvDRxolXpe2Z1J984=
 
-lodash@3.10.1:
-  version "3.10.1"
-  resolved "http://maven.forgerock.org:80/repo/api/npm/npm-virtual/lodash/-/lodash-3.10.1.tgz#5bf45e8e49ba4189e17d482789dfd15bd140b7b6"
-  integrity sha1-W/Rejkm6QYnhfUgnid/RW9FAt7Y=
-
-lodash@^4.13.1, lodash@^4.17.3, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.2.0, lodash@^4.2.1, lodash@^4.3.0:
-  version "4.17.10"
-  resolved "http://maven.forgerock.org:80/repo/api/npm/npm-virtual/lodash/-/lodash-4.17.10.tgz#1b7793cf7259ea38fb3661d4d38b3260af8ae4e7"
-  integrity sha1-G3eTz3JZ6jj7NmHU04syYK+K5Oc=
+lodash@4.17.11, lodash@^4.13.1, lodash@^4.17.3, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.2.0, lodash@^4.2.1, lodash@^4.3.0:
+  version "4.17.11"
+  resolved "http://maven.forgerock.org:80/repo/api/npm/npm-virtual/lodash/-/lodash-4.17.11.tgz#b39ea6229ef607ecd89e2c8df12536891cac9b8d"
+  integrity sha1-s56mIp72B+zYniyN8SU2iRysm40=
 
 log-symbols@^2.1.0:
   version "2.2.0"
@@ -7858,6 +7860,11 @@ whatwg-encoding@^1.0.1, whatwg-encoding@^1.0.3:
   integrity sha1-V8I1vIZX6RTSTho5fTyC2u4Ka6M=
   dependencies:
     iconv-lite "0.4.19"
+
+whatwg-fetch@3.0.0:
+  version "3.0.0"
+  resolved "http://maven.forgerock.org:80/repo/api/npm/npm-virtual/whatwg-fetch/-/whatwg-fetch-3.0.0.tgz#fc804e458cc460009b1a2b966bc8817d2578aefb"
+  integrity sha1-/IBORYzEYACbGiuWa8iBfSV4rvs=
 
 whatwg-fetch@>=0.10.0:
   version "2.0.4"

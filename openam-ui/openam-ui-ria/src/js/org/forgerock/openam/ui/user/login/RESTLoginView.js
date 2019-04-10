@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -107,7 +107,7 @@ function routeToLoginUnavailable (fragmentParams) {
  * @returns {Boolean} if the callback "type" is present in the callbacks.
  */
 function hasCallback (callbacks, type) {
-    return _.some(callbacks, "type", type);
+    return _.some(callbacks, (callback) => callback.type === type);
 }
 
 const LoginView = AbstractView.extend({
@@ -254,6 +254,19 @@ const LoginView = AbstractView.extend({
         }
     },
 
+    getUrlWithoutNewSessionParameters () {
+        const paramsWithoutNewSession = (paramString, separator) => {
+            const params = parseParameters(paramString);
+            if (params.arg === "newsession") {
+                delete params.arg;
+            }
+            return _.isEmpty(params) ? "" : `${separator}${urlParamsFromObject(params)}`;
+        };
+        const query = paramsWithoutNewSession(URIUtils.getCurrentQueryString(), "?");
+        const fragment = paramsWithoutNewSession(URIUtils.getCurrentFragmentQueryString(), "&");
+        return `${URIUtils.getCurrentPathName()}${query}#login${fragment}`;
+    },
+
     render (args) {
         this.handleLegacyRealmFragmentParameter();
 
@@ -288,9 +301,13 @@ const LoginView = AbstractView.extend({
         }
 
         AuthNService.getRequirements().then(_.bind(function (reqs) {
-            // Clear out existing session if instructed
-            if (reqs.hasOwnProperty("tokenId") && params.arg === "newsession") {
-                logout();
+            const hasNewSessionParameter = reqs.hasOwnProperty("tokenId") && params.arg === "newsession";
+            if (hasNewSessionParameter) {
+                logout().then(() => {
+                    window.location.href = this.getUrlWithoutNewSessionParameters();
+                    return false;
+                });
+                return false;
             }
 
             // If simply by asking for the requirements, we end up with a token,
@@ -302,23 +319,28 @@ const LoginView = AbstractView.extend({
                 this.renderForm(reqs, params);
             }
         }, this), _.bind((error) => {
-            if (error) {
-                Messages.addMessage({
-                    type: Messages.TYPE_DANGER,
-                    message: error.message
-                });
+            if (_.has(error, "message")) {
+                Messages.addMessage({ type: Messages.TYPE_DANGER, message: error.message });
             }
 
-            /**
-             * We havent managed to get a successful responce from the server
-             * This could be due to many reasons, including that the params are incorrect
-             * For example requesting service=thewrongname. So here we use the RESTLoginHelper.filterUrlParams
-             * function to only return the params we which to save. The authIndexType and authIndexValue
-             * would normally only be applied when the user has logged in, so they should not contain invalid values
-             */
+            if (_.has(error, "detail.failureUrl") && !_.isEmpty(error.detail.failureUrl)) {
+                /**
+                 * If there is a login failure which has occurred without a login form submission, e.g. Zero Page Login
+                 * and a failureUrl is set (e.g. Failure URL node), route the user to that.
+                 */
+                window.location.href = error.detail.failureUrl;
+            } else {
+                /**
+                 * We haven't managed to get a successful response from the server
+                 * This could be due to many reasons, including that the params are incorrect
+                 * For example requesting service=thewrongname. So here we use the RESTLoginHelper.filterUrlParams
+                 * function to only return the params we wish to save. The authIndexType and authIndexValue
+                 * would normally only be applied when the user has logged in, so they should not contain invalid values
+                 */
 
-            const paramString = URIUtils.getCurrentFragmentQueryString();
-            routeToLoginUnavailable(RESTLoginHelper.filterUrlParams(parseParameters(paramString)));
+                const paramString = URIUtils.getCurrentFragmentQueryString();
+                routeToLoginUnavailable(RESTLoginHelper.filterUrlParams(parseParameters(paramString)));
+            }
         }, this));
     },
     renderForm (reqs, urlParams) {
@@ -327,7 +349,7 @@ const LoginView = AbstractView.extend({
         const usernamePasswordStages = ["DataStore1", "AD1", "JDBC1", "LDAP1", "Membership1", "RADIUS1"];
         const self = this;
 
-        this.userNamePasswordStage = _.contains(usernamePasswordStages, reqs.stage);
+        this.userNamePasswordStage = _.includes(usernamePasswordStages, reqs.stage);
 
         requirements.callbacks = [];
 
@@ -336,7 +358,7 @@ const LoginView = AbstractView.extend({
             let redirectCallback;
 
             if (element.type === "RedirectCallback") {
-                redirectCallback = _.object(_.map(element.output, (o) => {
+                redirectCallback = _.fromPairs(_.map(element.output, (o) => {
                     return [o.name, o.value];
                 }));
 
@@ -394,6 +416,10 @@ const LoginView = AbstractView.extend({
             requirements.callbacks.push(confirmationCallback);
         }
 
+        // This code is run each time a new callback is returned, so we need to check if the callbacks have changed
+        const haveCallbacksChanged = (reqs.callbacks && !this.reqs) || !_.isEqual(reqs.callbacks, this.reqs.callbacks);
+        const isPolling = this.pollingInProgress || hasCallback(reqs.callbacks, "PollingWaitCallback");
+
         this.reqs = reqs;
         this.data.reqs = requirements;
 
@@ -401,7 +427,7 @@ const LoginView = AbstractView.extend({
         // if yes then don't render the form until it fails one time
         if (urlParams.IDToken1 && Configuration.globalData.auth.autoLoginAttempts === 1) {
             Configuration.globalData.auth.autoLoginAttempts++;
-        } else if (!this.pollingInProgress || !hasCallback(reqs.callbacks, "PollingWaitCallback")) {
+        } else if (haveCallbacksChanged || !isPolling) {
             // OPENAM-9480: set the flag to false to indicate that the user moved to another stage
             // (e.g. back to first stage in case of failed push auth)
             this.pollingInProgress = false;

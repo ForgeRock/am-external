@@ -14,7 +14,7 @@
  * Copyright 2018 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
-import { findWhere, forEach, get, map, pluck, result } from "lodash";
+import { find, forEach, get, map, result } from "lodash";
 import { t } from "i18next";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
@@ -75,7 +75,7 @@ class ListUserServicesContainer extends Component {
     }
 
     handleDelete (items) {
-        const types = pluck(items, "_id");
+        const types = map(items, "_id");
         const realm = this.props.router.params[0];
         const userId = this.props.router.params[1];
 
@@ -133,7 +133,7 @@ ListUserServicesContainer = connectWithStore(ListUserServicesContainer,
         const types = get(state.remote.config.realm.identities.users.services.types, userId);
         const nextDescendants = get(state.remote.config.realm.identities.users.services.instances, userId);
         const instances = map(nextDescendants, (instance) => {
-            instance.name = result(findWhere(types, { "_id": instance._id }), "name");
+            instance.name = result(find(types, { "_id": instance._id }), "name");
             return instance;
         });
 

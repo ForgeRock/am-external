@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,7 +24,7 @@
  *
  * $Id: SessionProvider.java,v 1.7 2008/06/25 05:47:28 qcheng Exp $
  *
- * Portions Copyrighted 2014-2017 ForgeRock AS.
+ * Portions Copyrighted 2014-2018 ForgeRock AS.
  */
 
 package com.sun.identity.plugin.session;
@@ -132,6 +132,16 @@ public interface SessionProvider {
         HttpServletResponse response,   // in/out
         StringBuffer targetApplication  // in/out
     ) throws SessionException;
+
+    /**
+     * For the given user session, generate the appropriate SSO and load-balancer cookies in the response.
+     * Should be called as late in the process as possible to ensure that when using client-based sessions,
+     * any properties that have been set during processing are available when creating the SSO cookie.
+     * @param session the current user session
+     * @param request the request used to initiate the sign-on process
+     * @param response the response to add the cookies to
+     */
+    public void applyCookies(Object session, HttpServletRequest request, HttpServletResponse response);
 
     /**
      * Returns the corresponding session object.

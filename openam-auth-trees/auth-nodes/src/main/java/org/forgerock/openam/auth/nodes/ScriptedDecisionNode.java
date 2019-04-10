@@ -18,6 +18,7 @@ package org.forgerock.openam.auth.nodes;
 import static java.util.Collections.emptyList;
 import static org.forgerock.openam.auth.node.api.Action.goTo;
 import static org.forgerock.openam.scripting.ScriptConstants.AUTHENTICATION_TREE_DECISION_NODE_NAME;
+import static org.forgerock.openam.scripting.ScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.scripting.Script;
 import org.forgerock.openam.scripting.ScriptEvaluator;
 import org.forgerock.openam.scripting.ScriptObject;
@@ -72,9 +74,14 @@ public class ScriptedDecisionNode implements Node {
     private static final String HEADERS_IDENTIFIER = "requestHeaders";
     private static final String EXISTING_SESSION = "existingSession";
 
-    /** Debug logger instance used by scripts to log error/debug messages. */
-    private static final Debug DEBUG = Debug.getInstance("amScript");
+    private static final String SHARED_STATE_IDENTIFIER = "sharedState";
+    private static final String TRANSIENT_STATE_IDENTIFIER = "transientState";
+    private static final String OUTCOME_IDENTIFIER = "outcome";
+    private static final String ACTION_IDENTIFIER = "action";
+    private static final String HTTP_CLIENT_IDENTIFIER = "httpClient";
     private static final String LOGGER_VARIABLE_NAME = "logger";
+    private static final String REALM_IDENTIFIER = "realm";
+    private static final String CALLBACKS_IDENTIFIER = "callbacks";
 
     /**
      * Node Config Declaration.
@@ -98,15 +105,12 @@ public class ScriptedDecisionNode implements Node {
         List<String> outcomes();
     }
 
-    private static final String SHARED_STATE_IDENTIFIER = "sharedState";
-    private static final String OUTCOME_IDENTIFIER = "outcome";
-    private static final String HTTP_CLIENT_IDENTIFIER = "httpClient";
-
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final Logger logger = LoggerFactory.getLogger(ScriptedDecisionNode.class);
     private final Config config;
     private final ScriptEvaluator scriptEvaluator;
     private final Provider<SessionService> sessionServiceProvider;
     private final RestletHttpClient httpClient;
+    private final Realm realm;
 
     /**
      * Guice constructor.
@@ -115,16 +119,18 @@ public class ScriptedDecisionNode implements Node {
      * @param config The node configuration.
      * @param sessionServiceProvider provides Sessions.
      * @param httpClientFactory provides http clients.
+     * @param realm The realm the node is in, and that the request is targeting.
      * @throws NodeProcessException If there is an error reading the configuration.
      */
     @Inject
     public ScriptedDecisionNode(@Named(AUTHENTICATION_TREE_DECISION_NODE_NAME) ScriptEvaluator scriptEvaluator,
             @Assisted Config config, Provider<SessionService> sessionServiceProvider,
-            ScriptHttpClientFactory httpClientFactory) throws NodeProcessException {
+            ScriptHttpClientFactory httpClientFactory, @Assisted Realm realm) throws NodeProcessException {
         this.scriptEvaluator = scriptEvaluator;
         this.config = config;
         this.sessionServiceProvider = sessionServiceProvider;
         this.httpClient = getHttpClient(httpClientFactory);
+        this.realm = realm;
     }
 
     private RestletHttpClient getHttpClient(ScriptHttpClientFactory httpClientFactory) {
@@ -145,15 +151,32 @@ public class ScriptedDecisionNode implements Node {
                     config.script().getLanguage());
             Bindings binding = new SimpleBindings();
             binding.put(SHARED_STATE_IDENTIFIER, context.sharedState.getObject());
+            binding.put(TRANSIENT_STATE_IDENTIFIER, context.transientState.getObject());
+            binding.put(CALLBACKS_IDENTIFIER, context.getAllCallbacks());
             binding.put(HEADERS_IDENTIFIER, convertHeadersToModifiableObjects(context.request.headers));
-            binding.put(LOGGER_VARIABLE_NAME, DEBUG);
+            binding.put(LOGGER_VARIABLE_NAME, Debug.getInstance("scripts." + AUTHENTICATION_TREE_DECISION_NODE.name()
+                    + "." + config.script().getId()));
             binding.put(HTTP_CLIENT_IDENTIFIER, httpClient);
+            binding.put(REALM_IDENTIFIER, realm.asPath());
             if (!StringUtils.isEmpty(context.request.ssoTokenId)) {
                 binding.put(EXISTING_SESSION, getSessionProperties(context.request.ssoTokenId));
             }
             scriptEvaluator.evaluateScript(script, binding);
             logger.debug("script {} \n binding {}", script, binding);
 
+            Object actionResult = binding.get(ACTION_IDENTIFIER);
+            if (actionResult != null) {
+                if (actionResult instanceof Action) {
+                    Action action = (Action) actionResult;
+                    if (!action.sendingCallbacks() && !config.outcomes().contains(action.outcome)) {
+                        logger.warn("invalid script outcome {} in action", action.outcome);
+                        throw new NodeProcessException("Invalid outcome from script, '" + action.outcome + "'");
+                    }
+                    return action;
+                } else {
+                    logger.warn("Found an action result from scripted node, but it was not an Action object");
+                }
+            }
             Object rawResult = binding.get(OUTCOME_IDENTIFIER);
             if (rawResult == null || !(rawResult instanceof String)) {
                 logger.warn("script outcome error");

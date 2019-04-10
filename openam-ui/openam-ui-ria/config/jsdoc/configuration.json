@@ -9,7 +9,7 @@
     ],
     "source": {
         "include": [
-            "src/main/js"
+            "src/js"
         ],
         "includePattern": "\\.(js|jsx)$"
     }

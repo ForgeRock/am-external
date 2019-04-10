@@ -15,7 +15,7 @@
  */
 
 import { bindActionCreators } from "redux";
-import { findWhere, get, map, result } from "lodash";
+import { find, get, map, result } from "lodash";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
 
@@ -49,7 +49,7 @@ class NewUserServiceContainer extends Component {
                 this.props.setTemplate(template, serviceId);
                 this.props.setSchema(schema, serviceId);
                 this.setState({
-                    type: result(findWhere(serviceTypes, { "_id": serviceId }), "name"),
+                    type: result(find(serviceTypes, { "_id": serviceId }), "name"),
                     isFetching: false
                 });
             }, (response) => {

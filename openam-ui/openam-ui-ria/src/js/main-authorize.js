@@ -17,6 +17,7 @@
 import "./webpack/setWebpackPublicPath";
 import "babel-polyfill";
 import "regenerator-runtime/runtime";
+import "whatwg-fetch";
 
 import { each, isEmpty } from "lodash";
 import $ from "jquery";

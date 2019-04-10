@@ -14,7 +14,7 @@
  * Copyright 2017-2018 ForgeRock AS.
  */
 import {
-    chain, contains, findIndex, get, keys, map, mapValues, max, omit, pluck, reduce, round, size, union, values
+    chain, findIndex, get, includes, keys, map, mapValues, max, omit, reduce, round, size, union, values
 } from "lodash";
 import { DropTarget } from "react-dnd";
 import classNames from "classnames";
@@ -147,14 +147,14 @@ class Tree extends Component {
                 : measurement;
         });
 
-        const nodesWithConnectedInputs = reduce(pluck(this.props.nodes, "connections"),
+        const nodesWithConnectedInputs = reduce(map(this.props.nodes, "connections"),
             (result, connections) => union(result, values(connections)), []);
         const nodeComponents = map(omit(this.props.nodes, keys(this.props.nodesInPages)), (node, nodeId) => {
             const nodeProperties = this.props.localNodeProperties[this.state.draggingNodeId];
             const nodeType = get(nodeProperties, "_type._id");
             const measurement = measurements[nodeId];
             const createNode = NodeFactory[`create${node.nodeType}`] || NodeFactory.createNode;
-            return createNode(nodeId, node, measurement || { x: 0, y: 0 }, contains(nodesWithConnectedInputs, nodeId), {
+            return createNode(nodeId, node, measurement || { x: 0, y: 0 }, includes(nodesWithConnectedInputs, nodeId), {
                 draggingNode: this.state.draggingNodeId && {
                     id: this.state.draggingNodeId,
                     mouseX: this.state.mouseX,

@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2008 Sun Microsystems Inc. All Rights Reserved
@@ -24,7 +24,7 @@
  *
  * $Id: FedletSessionProvider.java,v 1.4 2008/08/06 17:28:17 exu Exp $
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 
 package com.sun.identity.plugin.session.impl;
@@ -107,7 +107,12 @@ public class FedletSessionProvider implements SessionProvider {
         debug.message("FedletSessionProvider.createSession(1) called " +info);
         return info.get(SessionProvider.PRINCIPAL_NAME);
     }
-    
+
+    @Override
+    public void applyCookies(Object session, HttpServletRequest request, HttpServletResponse response) {
+        debug.message("FedletSessionProvider.applyCookies called ");
+    }
+
     /**
      * May be used by both SP and IDP side for getting an existing
      * session given an session ID.

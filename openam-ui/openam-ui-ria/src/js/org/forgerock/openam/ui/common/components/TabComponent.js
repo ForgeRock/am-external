@@ -47,7 +47,7 @@ const TabComponent = Backbone.View.extend({
         if (_.isEmpty(options.tabs)) {
             throw new TypeError("[TabComponent] \"tabs\" argument is an empty Array.");
         }
-        _(options.tabs)
+        _.chain(options.tabs)
             .each(_.partial(has, "id"))
             .each(_.partial(has, "title"))
             .value();

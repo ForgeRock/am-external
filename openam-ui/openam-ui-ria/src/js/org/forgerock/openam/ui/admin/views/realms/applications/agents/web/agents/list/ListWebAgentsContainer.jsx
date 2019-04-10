@@ -14,7 +14,7 @@
  * Copyright 2017-2018 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
-import { isEqual, map, pluck, values } from "lodash";
+import { isEqual, map, values } from "lodash";
 import { t } from "i18next";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
@@ -84,7 +84,7 @@ class ListWebAgentsContainer extends Component {
     }
 
     handleDelete (items) {
-        const ids = pluck(items, "_id");
+        const ids = map(items, "_id");
         const realm = this.props.router.params[0];
 
         showConfirmationBeforeAction({

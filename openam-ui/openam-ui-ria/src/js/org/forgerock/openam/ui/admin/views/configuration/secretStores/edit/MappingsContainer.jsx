@@ -11,14 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
 import { forEach, sortBy, values } from "lodash";
 import { t } from "i18next";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
-import uuidv4 from "uuid/v4";
 
 import { addOrUpdate, set as setInstances, remove as removeInstance } from
     "store/modules/local/config/global/secretStores/instances/current/mappings/instances";
@@ -110,9 +109,8 @@ class MappingsContainer extends Component {
 
     async handleCreate (values) {
         const [type, typeId] = this.props.router.params;
-        const id = uuidv4();
         try {
-            const instance = await create(type, typeId, values, id);
+            const instance = await create(type, typeId, values, values.secretId);
             this.props.addOrUpdate(instance);
             Messages.addMessage({ message: t("console.secretStores.edit.mappings.mappingAdded") });
         } catch (error) {

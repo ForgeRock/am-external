@@ -37,6 +37,7 @@ class KeyValueField extends Component {
         this.state = initialState;
 
         this.handleAddClick = this.handleAddClick.bind(this);
+        this.handleAfterSaveCell = this.handleAfterSaveCell.bind(this);
         this.handleChangeKey = this.handleChangeKey.bind(this);
         this.handleChangeValue = this.handleChangeValue.bind(this);
         this.handleRowDelete = this.handleRowDelete.bind(this);
@@ -48,6 +49,13 @@ class KeyValueField extends Component {
 
     handleAddClick () {
         this.setState({ showAdd: false });
+    }
+
+    handleAfterSaveCell ({ key, value }) {
+        this.props.onChange({
+            ...this.props.formData,
+            [key]: value
+        });
     }
 
     handleChangeKey (event) {
@@ -146,11 +154,13 @@ class KeyValueField extends Component {
         return (
             <div className="key-value-field clearfix">
                 <ReactBootstrapTable
-                    cellEdit={ { mode: "click" } }
+                    cellEdit={ {
+                        afterSaveCell: this.handleAfterSaveCell,
+                        mode: "click"
+                    } }
                     condensed
                     data={ arrayData }
                     idField="key"
-                    onSelectedChange={ this.handleOnSelectedChange }
                     selectRow={ { hideSelectColumn: true } }
                     tableRef={ this.setRef }
                 >

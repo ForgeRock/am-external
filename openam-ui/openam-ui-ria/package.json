@@ -12,6 +12,7 @@
     "test": "mocha-webpack --opts config/mocha-webpack/configuration.opts"
   },
   "dependencies": {
+    "@forgerock/crest-js": "2.1.1",
     "ajv": "5.5.2",
     "babel-polyfill": "6.26.0",
     "backbone": "1.1.2",
@@ -36,7 +37,7 @@
     "jquery": "2.1.1",
     "jquery-i18next": "1.2.1",
     "jquery-sortable": "0.9.13",
-    "lodash": "3.10.1",
+    "lodash": "4.17.11",
     "moment": "2.22.2",
     "moment-duration-format": "2.2.2",
     "moment-timezone": "0.4.1",
@@ -62,6 +63,7 @@
     "spin.js": "4.0.0",
     "urijs": "1.19.1",
     "uuid": "3.3.2",
+    "whatwg-fetch": "3.0.0",
     "xdate": "0.8.2"
   },
   "devDependencies": {
@@ -114,5 +116,8 @@
     "webpack-log": "1.2.0",
     "webpack-merge": "4.1.4",
     "webpack-shell-plugin": "0.5.0"
+  },
+  "resolutions": {
+    "lodash": "4.17.11"
   }
 }

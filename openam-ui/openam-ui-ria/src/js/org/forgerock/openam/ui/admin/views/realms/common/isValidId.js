@@ -18,7 +18,7 @@
  * @module org/forgerock/openam/ui/admin/views/realms/common/isValidId
  */
 
-import { contains, endsWith, isEmpty, startsWith } from "lodash";
+import { endsWith, includes, isEmpty, startsWith } from "lodash";
 
 /**
   * Validates that the given Id satisfies the following conditions:
@@ -40,16 +40,16 @@ const isValidId = (id) => {
         endsWith(id, " ") ||
         startsWith(id, "#") ||
         startsWith(id, "\"") ||
-        contains(id, "\\") ||
-        contains(id, "/") ||
-        contains(id, "+") ||
-        contains(id, ";") ||
-        contains(id, ",") ||
-        contains(id, "%") ||
-        contains(id, "[") ||
-        contains(id, "]") ||
-        contains(id, "|") ||
-        contains(id, "?")) {
+        includes(id, "\\") ||
+        includes(id, "/") ||
+        includes(id, "+") ||
+        includes(id, ";") ||
+        includes(id, ",") ||
+        includes(id, "%") ||
+        includes(id, "[") ||
+        includes(id, "]") ||
+        includes(id, "|") ||
+        includes(id, "?")) {
         return false;
     }
 

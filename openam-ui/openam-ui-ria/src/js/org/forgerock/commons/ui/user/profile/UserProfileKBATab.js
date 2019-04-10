@@ -173,12 +173,12 @@ const UserProfileKBATab = AbstractUserProfileTab.extend({
         // cannot rely upon a particular named field in the form content,
         // so apply the logic to all fields found in the form
         return _(formContent)
-            .map(function (value, key) {
+            .map((value, key) => {
                 if (_.isArray(value)) {
                     return [
                         key,
                         _(value)
-                            .map(function (kbaPair, index) {
+                            .map((kbaPair, index) => {
                                 const newPair = {};
 
                                 // deleted pairs will be hidden
@@ -200,15 +200,15 @@ const UserProfileKBATab = AbstractUserProfileTab.extend({
                                     newPair.questionId = kbaPair.questionId;
                                 }
                                 return newPair;
-                            }, this)
+                            })
                             .compact()
                             .value()
                     ];
                 } else {
                     return [key, value];
                 }
-            }, this)
-            .object()
+            })
+            .fromPairs()
             .value();
     },
 
@@ -237,8 +237,8 @@ const UserProfileKBATab = AbstractUserProfileTab.extend({
             js2form(form,
                 // use the form structure to find out which fields are defined for the kba form...
                 _(form2js(form, ".", false))
-                    .map(function (value, key) {
-                    // omit the "answer" property from any array found there...
+                    .map((value, key) => {
+                        // omit the "answer" property from any array found there...
                         if (_.isArray(this.data.user[key])) {
                             return [
                                 key,
@@ -249,8 +249,8 @@ const UserProfileKBATab = AbstractUserProfileTab.extend({
                         } else {
                             return [key, this.data.user[key]];
                         }
-                    }, this)
-                    .object()
+                    })
+                    .fromPairs()
                     .value()
             );
 

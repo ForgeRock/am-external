@@ -15,7 +15,7 @@
  */
 
 import { createAction, handleActions } from "redux-actions";
-import { indexBy, omit } from "lodash";
+import { keyBy, omit } from "lodash";
 
 // Types
 const ADD_INSTANCE = "remote/config/realm/sts/rest/instances/ADD_INSTANCE";
@@ -35,5 +35,5 @@ export default handleActions({
         [action.payload._id]: action.payload
     }),
     [REMOVE_INSTANCE]: (state, action) => omit(state, action.payload._id),
-    [SET_INSTANCES]: (state, action) => indexBy(action.payload, "_id")
+    [SET_INSTANCES]: (state, action) => keyBy(action.payload, "_id")
 }, initialState);

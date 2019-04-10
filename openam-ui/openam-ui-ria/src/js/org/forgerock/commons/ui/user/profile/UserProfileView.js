@@ -93,7 +93,7 @@ const UserProfileView = AbstractView.extend({
             });
 
             // build the dynamically-registered tabs
-            $.when(..._.map(this.dynamicTabs, function (tab) {
+            $.when(..._.map(this.dynamicTabs, _.bind(function (tab) {
                 const promise = $.Deferred();
                 const tabDetail = tab.getTabDetail();
                 const tabPanel = $('<div role="tabpanel" class="tab-pane">');
@@ -112,7 +112,7 @@ const UserProfileView = AbstractView.extend({
                     promise.resolve();
                 }, this));
                 return promise;
-            }, this)).then(_.bind(function () {
+            }, this))).then(_.bind(function () {
                 const selectedTabId = this.$el.find(`form#${tabName}`).closest(".tab-pane").attr("id");
                 const selectedTab = this.$el.find(`ul.fr-profile-nav a[href='#${selectedTabId}']`);
 

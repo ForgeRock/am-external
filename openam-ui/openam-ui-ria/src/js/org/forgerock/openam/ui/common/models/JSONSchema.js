@@ -57,7 +57,7 @@ function isObjectType (object) {
 
 function groupTopLevelSimpleProperties (raw) {
     const collectionProperties = _(raw.properties)
-        .pick((property) => _.has(property, "properties"))
+        .pickBy((property) => _.has(property, "properties"))
         .keys()
         .value();
 
@@ -97,7 +97,7 @@ function throwOnNoSchemaRootType (schema) {
 * @returns {JSONSchema} JSONSchema new JSONSchema object
 */
 function ungroupCollectionProperties (raw, groupKey) {
-    const collectionProperties = _.pick(raw.properties[groupKey].properties, (value) => {
+    const collectionProperties = _.pickBy(raw.properties[groupKey].properties, (value) => {
         return value.type === "object" && _.has(value, "properties");
     });
 
@@ -198,7 +198,7 @@ export default class JSONSchema {
         }
     }
     getPasswordKeys () {
-        const passwordProperties = _.pick(this.raw.properties, (property) => {
+        const passwordProperties = _.pickBy(this.raw.properties, (property) => {
             const propertyPath = this.hasInheritance(property) ? "properties.value.format" : "format";
             return _.get(property, propertyPath) === "password";
         });
@@ -209,7 +209,7 @@ export default class JSONSchema {
         return _.mapValues(this.raw.properties, (property) => new JSONSchema(property));
     }
     getRequiredPropertyKeys () {
-        const requiredProperties = _.pick(this.raw.properties, (property) => {
+        const requiredProperties = _.pickBy(this.raw.properties, (property) => {
             const propertyPath = this.hasInheritance(property) ? "properties.value.required" : "required";
             return _.get(property, propertyPath) === true;
         });
@@ -256,9 +256,9 @@ export default class JSONSchema {
     removeUnrequiredNonDefaultProperties () {
         const schema = _.cloneDeep(this.raw);
         const defaultProperties = this.raw.defaultProperties;
-        schema.properties = _.pick(this.raw.properties, (property, key) => {
+        schema.properties = _.pickBy(this.raw.properties, (property, key) => {
             const required = this.hasInheritance(property) ? property.properties.value.required : property.required;
-            return _.contains(defaultProperties, key) || required;
+            return _.includes(defaultProperties, key) || required;
         });
         return new JSONSchema(schema);
     }

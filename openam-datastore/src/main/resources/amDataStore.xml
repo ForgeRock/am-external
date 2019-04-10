@@ -13,7 +13,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS. All Rights Reserved
+ * Copyright 2018-2019 ForgeRock AS. All Rights Reserved
  * 
 -->
 
@@ -31,18 +31,6 @@
                 <SubSchema name="dataStoreContainer" resourceName="USE-PARENT">
                     <SubSchema name="config" inheritance="multiple" i18nKey="dataStoreInstance">
                         <!-- validators -->
-                        <AttributeSchema name="HostnameValidator"
-                                         type="validator">
-                            <DefaultValues>
-                                <Value>org.forgerock.openam.sm.validation.HostnameValidator</Value>
-                            </DefaultValues>
-                        </AttributeSchema>
-                        <AttributeSchema name="PortValidator"
-                                         type="validator">
-                            <DefaultValues>
-                                <Value>org.forgerock.openam.sm.validation.PortValidator</Value>
-                            </DefaultValues>
-                        </AttributeSchema>
                         <AttributeSchema name="PositiveNumberValidator"
                                          type="validator">
                             <DefaultValues>
@@ -55,18 +43,12 @@
                                 <Value>com.sun.identity.sm.RequiredValueValidator</Value>
                             </DefaultValues>
                         </AttributeSchema>
-                        <AttributeSchema name="serverHostname"
+                        <AttributeSchema name="serverUrls"
                                          order="200"
-                                         type="single"
-                                         validator="RequiredValueValidator HostnameValidator"
-                                         i18nKey="serverHostname"/>
-                        <AttributeSchema name="serverPort"
-                                         order="300"
-                                         type="single"
-                                         syntax="number"
-                                         validator="RequiredValueValidator PortValidator"
-                                         i18nKey="serverPort">
-                        </AttributeSchema>
+                                         type="list"
+                                         uitype="orderedlist"
+                                         syntax="string"
+                                         i18nKey="serverUrls"/>
                         <AttributeSchema name="bindDN"
                                          order="400"
                                          type="single"
@@ -114,6 +96,16 @@
                                          type="single"
                                          syntax="boolean"
                                          i18nKey="startTls">
+                            <BooleanValues>
+                                <BooleanTrueValue i18nKey="i18nYes">true</BooleanTrueValue>
+                                <BooleanFalseValue i18nKey="i18nNo">false</BooleanFalseValue>
+                            </BooleanValues>
+                        </AttributeSchema>
+                        <AttributeSchema name="affinityEnabled"
+                                         order="1000"
+                                         type="single"
+                                         syntax="boolean"
+                                         i18nKey="affinityEnabled">
                             <BooleanValues>
                                 <BooleanTrueValue i18nKey="i18nYes">true</BooleanTrueValue>
                                 <BooleanFalseValue i18nKey="i18nNo">false</BooleanFalseValue>

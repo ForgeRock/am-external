@@ -11,14 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Arrays.asList;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.Map;
-
 import org.forgerock.openam.auth.node.api.AbstractNodeAmPlugin;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode;
@@ -27,8 +27,6 @@ import org.forgerock.openam.auth.nodes.webauthn.WebAuthnAuthenticationNode;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnRegistrationNode;
 import org.forgerock.openam.plugins.PluginException;
 
-import com.google.common.collect.ImmutableMap;
-
 /**
  * Core nodes installed by default with no engine dependencies.
  */
@@ -36,7 +34,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public String getPluginVersion() {
-        return "3.0.0";
+        return "4.0.0";
     }
 
     @Override
@@ -93,7 +91,10 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 MessageNode.class,
                 WebAuthnRegistrationNode.class,
                 WebAuthnAuthenticationNode.class,
-                RecoveryCodeDisplayNode.class)
+                RecoveryCodeDisplayNode.class),
+            "4.0.0", asList(
+                SocialOpenIdConnectNode.class,
+                MetadataNode.class)
         );
     }
 }

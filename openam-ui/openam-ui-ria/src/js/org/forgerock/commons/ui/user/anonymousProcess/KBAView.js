@@ -107,7 +107,7 @@ const KBAView = AbstractView.extend({
         const unSelectedQuestions = this.getUnSelectedQuestions();
 
         _.each(this.selectedQuestions, _.bind(function (questionView) {
-            const currentViewQuestion = _.findWhere(this.allQuestions, { id: questionView.getSelectedQuestionId() });
+            const currentViewQuestion = _.find(this.allQuestions, { id: questionView.getSelectedQuestionId() });
             const possibleQuestions = _.clone(unSelectedQuestions);
 
             if (currentViewQuestion) {
@@ -129,7 +129,7 @@ const KBAView = AbstractView.extend({
     },
 
     deleteQuestion (viewId) {
-        const questionView = _.findWhere(this.selectedQuestions, { id: viewId });
+        const questionView = _.find(this.selectedQuestions, { id: viewId });
 
         questionView.remove();
         this.selectedQuestions = _.without(this.selectedQuestions, questionView);

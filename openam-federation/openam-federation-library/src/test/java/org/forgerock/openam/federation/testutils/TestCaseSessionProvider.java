@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
 package org.forgerock.openam.federation.testutils;
 
@@ -19,13 +19,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.forgerock.openam.utils.Time;
-import org.forgerock.openam.utils.TimeDuration;
 
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionListener;
@@ -63,6 +59,11 @@ public class TestCaseSessionProvider implements SessionProvider {
                                 HttpServletResponse response,
                                 StringBuffer targetApplication) throws SessionException {
         return session;
+    }
+
+    @Override
+    public void applyCookies(Object session, HttpServletRequest request, HttpServletResponse response) {
+
     }
 
     @Override

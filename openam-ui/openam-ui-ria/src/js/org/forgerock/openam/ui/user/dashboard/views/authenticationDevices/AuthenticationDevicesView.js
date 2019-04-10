@@ -21,30 +21,46 @@ import i18next from "i18next";
 import {
     getAll as getAllPush,
     remove as removePush,
-    isMultiFactorAuthEnabled as isPushMultiFactorAuthEnabled,
-    setMultiFactorAuth as setPushMultiFactorAuth
+    isChecked as isPushChecked,
+    update as savePush
 } from "org/forgerock/openam/ui/user/dashboard/services/authenticationDevices/PushDeviceService";
 import {
     getAll as getAllWebAuthn,
     remove as removeWebAuthn
 } from "org/forgerock/openam/ui/user/dashboard/services/authenticationDevices/WebAuthnService";
-import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
 import {
     getAll as getAllOath,
     remove as removeOath,
-    isMultiFactorAuthEnabled as isOathMultiFactorAuthEnabled,
-    setMultiFactorAuth as setOathMultiFactorAuth
+    isChecked as isOathChecked,
+    update as saveOath
 } from "org/forgerock/openam/ui/user/dashboard/services/authenticationDevices/OathDeviceService";
+import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
+import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import renameDeviceDialog from
     "org/forgerock/openam/ui/user/dashboard/views/authenticationDevices/renameDeviceDialog";
 import multiFactorAuthDialog from
     "org/forgerock/openam/ui/user/dashboard/views/authenticationDevices/multiFactorAuthDialog";
-import Messages from "org/forgerock/commons/ui/common/components/Messages";
 
-const getAttributeFromElement = (element, attribute) => $(element).closest(`div[${attribute}]`).attr(attribute);
-const getUUIDFromElement = (element) => getAttributeFromElement(element, "data-device-uuid");
-const getTypeFromElement = (element) => getAttributeFromElement(element, "data-device-type");
-
+/*
+ * There are three types of Authentication devices, Push and Oath (which both behave the same in the UI), and WebAuthN.
+ * Each type has three states:
+ * 1: Authenticated - User has authenticated with a device of this type.
+ * 2: Active - User has a device of this type but has not authenticated with it.
+ * 3: None - User does not have a device of this type.
+ *
+ * Push and OATH devices:
+ * There can only be a maximum of one (of each) Push and OATH.
+ * Authenticated - The user will be able to change the MFA settings and delete the device. Once deleted they wll still
+ * be able to change the settings.
+ * Active/None - The user will still be premitted to view the current MFA settings for this type, but will not be able
+ * to change or delete anything.
+ *
+ * WebAuthN devices
+ * There is no limit to the number of WebAuthN devices.
+ * Authenticated - The user will be able to change the name and delete the device.
+ * Active - The devices of this type will be displayed but they cannot be deleted or renamed.
+ * None - No actions can be carried out on the device and nothing will be displayed.
+ */
 class AuthenticationDevicesPanel extends AbstractView {
     constructor () {
         super();
@@ -58,52 +74,63 @@ class AuthenticationDevicesPanel extends AbstractView {
     }
     handleDelete (event) {
         event.preventDefault();
-
-        const uuid = getUUIDFromElement(event.currentTarget);
-        const type = getTypeFromElement(event.currentTarget);
+        const { deviceType, deviceUuid } = $(event.currentTarget).data();
         let deleteFunc;
 
-        switch (type) {
+        switch (deviceType) {
             case "oath": deleteFunc = removeOath; break;
             case "push": deleteFunc = removePush; break;
             case "webauthn": deleteFunc = removeWebAuthn; break;
         }
 
-        deleteFunc(uuid).then(() => {
+        const username = Configuration.loggedUser.get("username");
+
+        deleteFunc(username, deviceUuid).then(() => {
             this.render();
-        }, (response) => {
-            Messages.addMessage({ type: Messages.TYPE_DANGER, response });
         });
     }
 
     handleEdit (event) {
         event.preventDefault();
+        const { deviceType, deviceManagementStatus, deviceName, deviceUuid } = $(event.currentTarget).data();
 
-        const uuid = getUUIDFromElement(event.currentTarget);
-        const device = _.find(this.data.devices, { uuid });
-        const type = getTypeFromElement(event.currentTarget);
-
-        switch (type) {
+        switch (deviceType) {
             case "oath":
                 multiFactorAuthDialog({
-                    isMultiFactorAuthEnabled: isOathMultiFactorAuthEnabled,
-                    setMultiFactorAuth: setOathMultiFactorAuth,
+                    deviceUuid,
+                    isChecked: isOathChecked,
+                    isReadOnly: !deviceManagementStatus,
+                    save: saveOath,
                     title: i18next.t("openam.authDevices.multiFactorAuthDialog.oath.title"),
                     label: i18next.t("openam.authDevices.multiFactorAuthDialog.oath.label"),
-                    description: i18next.t("openam.authDevices.multiFactorAuthDialog.oath.description")
+                    descriptions: {
+                        auth: i18next.t("openam.authDevices.multiFactorAuthDialog.oath.description.auth"),
+                        noAuth: i18next.t("openam.authDevices.common.noAuth", { deviceName }),
+                        noDevice: i18next.t("openam.authDevices.multiFactorAuthDialog.oath.description.noDevice")
+                    }
                 });
                 break;
             case "push":
                 multiFactorAuthDialog({
-                    isMultiFactorAuthEnabled: isPushMultiFactorAuthEnabled,
-                    setMultiFactorAuth: setPushMultiFactorAuth,
+                    deviceUuid,
+                    isChecked: isPushChecked,
+                    isReadOnly: !deviceManagementStatus,
+                    save: savePush,
                     title: i18next.t("openam.authDevices.multiFactorAuthDialog.push.title"),
                     label: i18next.t("openam.authDevices.multiFactorAuthDialog.push.label"),
-                    description: i18next.t("openam.authDevices.multiFactorAuthDialog.push.description")
+                    descriptions: {
+                        auth: i18next.t("openam.authDevices.multiFactorAuthDialog.push.description.auth"),
+                        noAuth: i18next.t("openam.authDevices.common.noAuth", { deviceName }),
+                        noDevice: i18next.t("openam.authDevices.multiFactorAuthDialog.push.description.noDevice")
+                    }
                 });
                 break;
             case "webauthn":
-                renameDeviceDialog(device, () => {
+                renameDeviceDialog({
+                    deviceName,
+                    deviceUuid,
+                    isReadOnly: !deviceManagementStatus
+                }, () => {
                     this.render();
                 });
                 break;
@@ -111,57 +138,39 @@ class AuthenticationDevicesPanel extends AbstractView {
     }
 
     render () {
-        /*
-         * There are three potential responses when making Oath and Push rest-calls.
-         * 1: A populated array indicates there is a device present (There can only one device for each).
-         * 2: An empty array indicates the user has signed in securely and has access to this endpoint, but does not
-         * have any devices registered. In this situation the user still needs to be able to change the mfa setting.
-         * 3: A 403 indicates the user has not signed in securely and does not have access to this endpoint.
-         */
-        const promisesCatcher = (promises) => promises.map((promise) => promise.catch(() => ({})));
-        /* FIXME AME-17153 Promise.all(...).then() is used here in place of finally(). This is due to a bug in babel
-         * https://github.com/babel/babel/issues/8297 where finally() is not working in Firefox. The workaround is to
-         * use .then() and a promise catcher which sends both resolved and rejected promises to the resolved function.
-        */
-        Promise.all(promisesCatcher([
-            getAllOath(), getAllPush(), getAllWebAuthn()
-        ])).then(([oathResponse, pushResponse, webAuthnResponse]) => {
-            const oathDevice = [];
-            const pushDevice = [];
-            const webAuthnDevices = [];
-
-            if (oathResponse.result) {
-                const device = {
-                    deviceName: i18next.t("openam.authDevices.ghostCards.oath"),
-                    type: "oath",
+        const username = Configuration.loggedUser.get("username");
+        Promise.all([getAllOath(username), getAllPush(username), getAllWebAuthn(username)])
+            .then(([allOath, allPush, allWebAuthn]) => {
+                const oathCard = {
                     icon: "clock-o",
-                    ..._.get(oathResponse, "result[0]", {})
+                    type: "oath",
+                    title: i18next.t("openam.authDevices.cards.oath"),
+                    deviceName: i18next.t("openam.authDevices.cards.noDevice"),
+                    ..._.get(allOath, "result[0]", {})
                 };
 
-                oathDevice.push(device);
-            }
-
-            if (pushResponse.result) {
-                const device = {
-                    deviceName: i18next.t("openam.authDevices.ghostCards.push"),
+                const pushCard = {
+                    icon: "shield",
                     type: "push",
-                    icon: "bell-o",
-                    ..._.get(pushResponse, "result[0]", {})
+                    title: i18next.t("openam.authDevices.cards.push"),
+                    deviceName: i18next.t("openam.authDevices.cards.noDevice"),
+                    ..._.get(allPush, "result[0]", {})
                 };
-                pushDevice.push(device);
-            }
 
-            if (!_.isEmpty(webAuthnResponse.result)) {
-                webAuthnDevices.push(
-                    ..._.map(webAuthnResponse.result, (device) => ({ ...device, type: "webauthn", icon: "shield" }))
-                );
-            }
+                const webAuthnCards = [
+                    ..._.map(allWebAuthn.result, (device) => ({
+                        icon: "shield",
+                        type: "webauthn",
+                        title: device.deviceName,
+                        ...device
+                    }))
+                ];
 
-            this.data.devices = [...oathDevice, ...pushDevice, ...webAuthnDevices];
-            this.parentRender(() => {
-                this.$el.find('[data-toggle="popover"]').popover();
+                this.data.devices = [oathCard, pushCard, ...webAuthnCards];
+                this.parentRender(() => {
+                    this.$el.find('[data-toggle="popover"]').popover();
+                });
             });
-        });
     }
 }
 

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -80,8 +80,11 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
     private static final String MINIMUM_CONNECTION_POOL = "minimumConnectionPool";
     private static final String MAXIMUM_CONNECTION_POOL = "maximumConnectionPool";
     private static final String SERVER_HOSTNAME = "serverHostname";
+    private static final String SERVER_URLS = "serverUrls";
     private static final String USE_SSL = "useSsl";
     private static final String USE_START_TLS = "useStartTls";
+    private static final String AFFINITY_ENABLED = "affinityEnabled";
+
 
     private final Provider<ConnectionFactory> defaultConnectionFactoryProvider;
     private final LdapConnectionFactoryProvider connectionFactoryProvider;
@@ -221,14 +224,14 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
             Map<String, Set<String>> attributes = dataStoreSubConfig.getAttributes();
 
             return DataStoreConfig.builder(dataStoreId)
-                    .withHostname(getMapAttr(attributes, SERVER_HOSTNAME))
+                    .withServerUrls(attributes.get(SERVER_URLS))
                     .withBindDN(getMapAttr(attributes, BIND_DN))
                     .withBindPassword(getMapAttr(attributes, BIND_PASSWORD))
-                    .withPort(parseInt(getMapAttr(attributes, SERVER_PORT)))
                     .withMinimumConnectionPool(parseInt(getMapAttr(attributes, MINIMUM_CONNECTION_POOL)))
                     .withMaximumConnectionPool(parseInt(getMapAttr(attributes, MAXIMUM_CONNECTION_POOL)))
                     .withUseSsl(getBooleanMapAttr(attributes, USE_SSL, false))
                     .withUseStartTLS(getBooleanMapAttr(attributes, USE_START_TLS, false))
+                    .withAffinityEnabled(getBooleanMapAttr(attributes, AFFINITY_ENABLED, false))
                     .build();
 
         } catch (SMSException | SSOException e) {

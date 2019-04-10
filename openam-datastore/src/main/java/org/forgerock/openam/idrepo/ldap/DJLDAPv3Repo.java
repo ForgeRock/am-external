@@ -11,13 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2018 ForgeRock AS.
+ * Copyright 2013-2019 ForgeRock AS.
  * Portions Copyright 2016 Nomura Research Institute, Ltd.
+ * Portions Copyrighted 2016 Agile Digital Engineering.
  */
 package org.forgerock.openam.idrepo.ldap;
 
 import static com.sun.identity.idm.IdType.USER;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.forgerock.openam.ldap.LDAPConstants.*;
+import static org.forgerock.openam.ldap.LDAPUtils.CACHED_POOL_OPTIONS;
 import static org.forgerock.opendj.ldap.LdapConnectionFactory.*;
 import static org.forgerock.openam.ldap.LDAPUtils.partiallyEscapeAssertionValue;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
@@ -36,7 +39,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
@@ -98,8 +100,6 @@ import org.forgerock.util.annotations.VisibleForTesting;
 import org.forgerock.util.query.QueryFilter;
 import org.forgerock.util.time.Duration;
 
-import com.iplanet.services.naming.ServerEntryNotFoundException;
-import com.iplanet.services.naming.WebtopNaming;
 import com.iplanet.services.util.Crypt;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.spi.AuthLoginException;
@@ -208,6 +208,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     private boolean isSecure = false;
     private boolean useStartTLS = false;
     private boolean beheraSupportEnabled = false;
+    private boolean adRecursiveGroupMembershipsEnabled = false;
     private boolean iotIdentitiesEnrichedAsOAuth2Client = false;
     private boolean proxiedAuthorizationEnabled = false;
 
@@ -226,27 +227,19 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             DEBUG.message("initialize invoked");
         }
         super.initialize(configParams);
-        String hostServerId = null;
-        String hostSiteId = "";
-        try {
-            hostServerId = WebtopNaming.getAMServerID();
-            hostSiteId = WebtopNaming.getSiteID(hostServerId);
-        } catch (ServerEntryNotFoundException senfe) {
-            if (DEBUG.warningEnabled()) {
-                DEBUG.warning("ServerEntryNotFoundException, hostServerId=" + hostServerId
-                        + ", hostSiteId=" + hostSiteId);
-            }
-        }
+
         dnCacheEnabled = CollectionHelper.getBooleanMapAttr(configMap, LDAP_DNCACHE_ENABLED, true);
         if (dnCacheEnabled) {
             int cacheSize = CollectionHelper.getIntMapAttr(configParams, LDAP_DNCACHE_SIZE, 1500, DEBUG);
             dnCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build();
         }
-        ldapServers = LDAPUtils.prioritizeServers(configParams.get(LDAP_SERVER_LIST), hostServerId, hostSiteId);
+
+        ldapServers = IdRepoUtils.getPrioritizedLDAPUrls(configParams.get(LDAP_SERVER_LIST));
 
         defaultSizeLimit = CollectionHelper.getIntMapAttr(configParams, LDAP_MAX_RESULTS, 100, DEBUG);
         defaultTimeLimit = CollectionHelper.getIntMapAttr(configParams, LDAP_TIME_LIMIT, 5, DEBUG);
         int maxPoolSize = CollectionHelper.getIntMapAttr(configParams, LDAP_CONNECTION_POOL_MAX_SIZE, 10, DEBUG);
+        int minPoolSize = CollectionHelper.getIntMapAttr(configParams, LDAP_CONNECTION_POOL_MIN_SIZE, 1, DEBUG);
 
         String username = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_USER_NAME);
         char[] password = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_PASSWORD, "").toCharArray();
@@ -260,8 +253,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         beheraSupportEnabled = CollectionHelper.getBooleanMapAttr(configMap, BEHERA_SUPPORT_ENABLED, false);
         iotIdentitiesEnrichedAsOAuth2Client = CollectionHelper.getBooleanMapAttr(configMap, IDENTITIES_ARE_ENRICHED_AS_OAUTH2CLIENTS,
                 false);
-        bindConnectionFactory = createConnectionFactory(null, null, maxPoolSize);
-        connectionFactory = createConnectionFactory(username, password, maxPoolSize);
+        bindConnectionFactory = createConnectionFactory(null, null, minPoolSize, maxPoolSize);
+        connectionFactory = createConnectionFactory(username, password, minPoolSize, maxPoolSize);
         passwordChangeConnectionFactory = createPasswordConnectionFactory(null,null,maxPoolSize);
 
         supportedTypesAndOperations =
@@ -330,6 +323,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 CollectionHelper.getMapAttr(configParams, LDAP_SEARCH_SCOPE), SearchScope.WHOLE_SUBTREE);
         roleScope = LDAPUtils.getSearchScope(
                 CollectionHelper.getMapAttr(configParams, LDAP_ROLE_SEARCH_SCOPE), SearchScope.WHOLE_SUBTREE);
+        adRecursiveGroupMembershipsEnabled = CollectionHelper.getBooleanMapAttr(configMap,
+            AD_LDAP_RECURSIVE_GROUP_MEMBERSHIP_ENABLED, false);
         if (configParams.containsKey(LDAP_ADAM_TYPE)) {
             helper = new ADAMHelper();
         } else if (configParams.containsKey(LDAP_AD_TYPE)) {
@@ -344,9 +339,12 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         }
     }
 
-    protected ConnectionFactory<Connection> createConnectionFactory(String username, char[] password, int maxPoolSize) {
+    protected ConnectionFactory<Connection> createConnectionFactory(String username, char[] password, int minPoolSize,
+        int maxPoolSize) {
+        int idleTimeout = LdapConnectionFactoryProvider.getIdleConnectionTime(DEBUG);
         Options ldapOptions = Options.defaultOptions()
-                .set(REQUEST_TIMEOUT, new Duration((long) defaultTimeLimit, TimeUnit.SECONDS));
+            .set(REQUEST_TIMEOUT, Duration.duration(defaultTimeLimit, SECONDS))
+            .set(CACHED_POOL_OPTIONS, new LDAPUtils.CachedPoolOptions(minPoolSize, maxPoolSize, idleTimeout, SECONDS));
         if (maxPoolSize == 1) {
             return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(
                     LDAPUtils.newFailoverConnectionFactory(
@@ -364,7 +362,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     protected ConnectionFactory<Connection> createPasswordConnectionFactory(String username, char[] password, int maxPoolSize) {
 
         Options ldapOptions = Options.defaultOptions()
-                .set(REQUEST_TIMEOUT, new Duration((long) defaultTimeLimit, TimeUnit.SECONDS));
+                .set(REQUEST_TIMEOUT, Duration.duration(defaultTimeLimit, SECONDS));
 
         return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(
                 LDAPUtils.newPasswordConnectionFactory(
@@ -1686,8 +1684,15 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     private Set<String> getGroupMemberships(String dn) throws IdRepoException {
         DEBUG.message("{}.{}: User: {}", DEBUG_CLASS_NAME, "getGroupMemberships", dn);
         Set<String> results = new HashSet<>();
-        if (memberOfAttr == null) {
-            Filter filter = Filter.and(groupSearchFilter, Filter.equality(uniqueMemberAttr, dn));
+        if (memberOfAttr == null || adRecursiveGroupMembershipsEnabled) {
+            Filter uniqueMemberFilter;
+            if (adRecursiveGroupMembershipsEnabled) {
+                uniqueMemberFilter = Filter.extensible(AD_LDAP_MATCHING_RULE_IN_CHAIN_OID, uniqueMemberAttr,
+                    dn, false);
+            } else {
+                uniqueMemberFilter = Filter.equality(uniqueMemberAttr, dn);
+            }
+            Filter filter = Filter.and(groupSearchFilter, uniqueMemberFilter);
             SearchRequest searchRequest =
                     LDAPRequests.newSearchRequest(getBaseDN(IdType.GROUP), defaultScope, filter, DN_ATTR);
             searchRequest.setTimeLimit(defaultTimeLimit);
@@ -2316,7 +2321,9 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             if (pSearch == null) {
                 String username = CollectionHelper.getMapAttr(configMap, LDAP_SERVER_USER_NAME);
                 char[] password = CollectionHelper.getMapAttr(configMap, LDAP_SERVER_PASSWORD, "").toCharArray();
-                pSearch = new DJLDAPv3PersistentSearch(configMap, createConnectionFactory(username, password, 1));
+                int minPoolSize = CollectionHelper.getIntMapAttr(configMap, LDAP_CONNECTION_POOL_MIN_SIZE, 1, DEBUG);
+                pSearch = new DJLDAPv3PersistentSearch(configMap, createConnectionFactory(username, password,
+                    Math.min(minPoolSize, 1), 1));
                 if (dnCacheEnabled) {
                     pSearch.addMovedOrRenamedListener(this);
                 }

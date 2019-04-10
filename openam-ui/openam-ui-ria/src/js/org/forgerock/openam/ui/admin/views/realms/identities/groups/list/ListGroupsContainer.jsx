@@ -14,7 +14,7 @@
  * Copyright 2018 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
-import { findIndex, isEqual, map, pluck, values } from "lodash";
+import { findIndex, isEqual, map, values } from "lodash";
 import { t } from "i18next";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
@@ -73,7 +73,7 @@ class ListGroupsContainer extends Component {
             });
         };
 
-        const ids = pluck(items, "_id");
+        const ids = map(items, "_id");
         hasGroupsUsers(realm, ids).then((hasExistingUsers) => {
             const message = hasExistingUsers
                 ? t("console.identities.groups.confirmDeleteSelectedWithUsers", { count: ids.length })

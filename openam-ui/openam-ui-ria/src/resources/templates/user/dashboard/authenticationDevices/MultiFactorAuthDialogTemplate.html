@@ -11,16 +11,19 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+  Copyright 2015-2019 ForgeRock AS. All Rights Reserved
 }}
-<p class="panel-description">{{description}}</p>
+<div class="clearfix">
+    <div class="alert {{#if isReadOnly}}alert-warning{{else}}alert-info{{/if}}" role="alert">
+        {{{description}}}
+    </div>
 <div class="form-horizontal">
-    <div class="form-group">
-        <label class="control-label col-sm-8" for="multiFactorAuth">{{label}}</label>
+    <div class="form-group clearfix">
+        <label class="control-label col-sm-8 {{#if isReadOnly}}text-muted{{/if}}" for="multiFactorAuth">{{label}}</label>
         <div class="col-sm-4">
             <div class="control-group">
                 <label class="am-toggle-switch">
-                    <input id="multiFactorAuth" {{#if isEnabled}} checked {{/if}} type="checkbox" />
+                    <input {{#if isReadOnly}}disabled{{/if}} id="multiFactorAuth" {{#if isChecked}} checked {{/if}} type="checkbox" />
                     <span />
                 </label>
             </div>

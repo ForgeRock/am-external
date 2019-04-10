@@ -14,14 +14,14 @@
  * Copyright 2015-2018 ForgeRock AS.
  */
 
-import { contains } from "lodash";
+import { includes } from "lodash";
 
 import { getVersion } from "org/forgerock/openam/ui/common/services/ServerService";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Footer from "org/forgerock/commons/ui/common/components/Footer";
 
 function isAdmin () {
-    return Configuration.loggedUser && contains(Configuration.loggedUser.uiroles, "ui-realm-admin");
+    return Configuration.loggedUser && includes(Configuration.loggedUser.uiroles, "ui-realm-admin");
 }
 
 const Component = Footer.extend({

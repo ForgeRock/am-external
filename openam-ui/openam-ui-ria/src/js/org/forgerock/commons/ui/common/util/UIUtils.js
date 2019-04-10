@@ -220,7 +220,7 @@ _.mixin({
      */
     "findByValues" (collection, property, values) {
         return _.filter(collection, (item) => {
-            return _.contains(values, item[property]);
+            return _.includes(values, item[property]);
         });
     },
 
@@ -240,7 +240,7 @@ _.mixin({
      */
     "removeByValues" (collection, property, values) {
         return _.reject(collection, (item) => {
-            return _.contains(values, item[property]);
+            return _.includes(values, item[property]);
         });
     },
 

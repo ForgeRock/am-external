@@ -58,7 +58,7 @@ class SessionsView extends Component {
     }
 
     handleInvalidateSessions (realm, sessions) {
-        const handles = _.pluck(sessions, "sessionHandle");
+        const handles = _.map(sessions, "sessionHandle");
 
         invalidateByHandles(handles).then(() => this.fetchSessionsByUsernameAndRealm(realm, this.state.username));
     }

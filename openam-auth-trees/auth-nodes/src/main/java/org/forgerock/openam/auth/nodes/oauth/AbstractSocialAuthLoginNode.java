@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.oauth;
 
@@ -27,39 +27,37 @@ import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.ATTRIBUTE
 import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.USER_INFO_SHARED_STATE_KEY;
 import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.USER_NAMES_SHARED_STATE_KEY;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.ResourceBundle;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.security.auth.callback.Callback;
-
-import org.forgerock.json.JsonValue;
-import org.forgerock.oauth.DataStore;
-import org.forgerock.oauth.OAuthClient;
-import org.forgerock.oauth.OAuthException;
-import org.forgerock.oauth.UserInfo;
-import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
-import org.forgerock.openam.auth.node.api.Node;
-import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.OutcomeProvider;
-import org.forgerock.openam.auth.node.api.SharedStateConstants;
-import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.util.i18n.PreferredLocales;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.collect.ImmutableList;
 import com.iplanet.am.util.SystemProperties;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.RedirectCallback;
 import com.sun.identity.shared.Constants;
+import java.net.URI;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Optional;
+import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+import java.util.ResourceBundle;
+import javax.security.auth.callback.Callback;
+import org.forgerock.json.JsonValue;
+import org.forgerock.json.jose.jwt.JwtClaimsSet;
+import org.forgerock.oauth.DataStore;
+import org.forgerock.oauth.OAuthClient;
+import org.forgerock.oauth.OAuthException;
+import org.forgerock.oauth.UserInfo;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.SharedStateConstants;
+import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.util.i18n.PreferredLocales;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class serves as a base for social authentication login node.
@@ -71,9 +69,9 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
     private static final String MAIL_KEY_MAPPING = "mail";
 
     private final AbstractSocialAuthLoginNode.Config config;
+    private final ProfileNormalizer profileNormalizer;
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OAuthClient client;
-    private final ProfileNormalizer profileNormalizer;
     private final SocialOAuth2Helper authModuleHelper;
 
     /**
@@ -151,10 +149,9 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
      * @param authModuleHelper a social oauth2 helper.
      * @param client The oauth client to use. That's the client responsible to deal with the oauth workflow.
      * @param profileNormalizer User profile normaliser
-     * @throws NodeProcessException if there is a problem during construction.
      */
     public AbstractSocialAuthLoginNode(AbstractSocialAuthLoginNode.Config config, SocialOAuth2Helper authModuleHelper,
-            OAuthClient client, ProfileNormalizer profileNormalizer) throws NodeProcessException {
+            OAuthClient client, ProfileNormalizer profileNormalizer) {
         this.config = config;
         this.authModuleHelper = authModuleHelper;
         this.client = client;
@@ -197,7 +194,7 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
     }
 
     private Callback prepareRedirectCallback(DataStore dataStore) throws NodeProcessException {
-        RedirectCallback redirectCallback = null;
+        RedirectCallback redirectCallback;
         try {
             URI uri = client.getAuthRedirect(dataStore, null, null).getOrThrow();
             redirectCallback = new RedirectCallback(uri.toString(), null, "GET");
@@ -210,7 +207,7 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
     }
 
     /*
-         1. Get the userInformation by calling the token endpoint to fetch the accesstoken and then call the
+         1. Get the userInformation by calling the token endpoint to fetch the access token and then call the
          userEndpoint.
          2. Parse the user information with the mapping supplied in the configuration to populate two map
             2.1 attributes are the user information to add the profile
@@ -228,8 +225,9 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
         try {
             UserInfo userInfo = getUserInfo(context);
 
-            attributes = profileNormalizer.getNormalisedAttributes(userInfo, null, config);
-            userNames = profileNormalizer.getNormalisedAccountAttributes(userInfo, null, config);
+            attributes = profileNormalizer.getNormalisedAttributes(userInfo, getJwtClaims(userInfo), config);
+            userNames = profileNormalizer.getNormalisedAccountAttributes(userInfo, getJwtClaims(userInfo), config);
+
             addLogIfTooManyUsernames(userNames, userInfo);
 
             user = authModuleHelper.userExistsInTheDataStore(context.sharedState.get("realm").asString(),
@@ -239,6 +237,16 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
         }
 
         return getAction(context, user, attributes, userNames);
+    }
+
+    /**
+     * Making this protected allows other Social Nodes (specifically the Social OpenId Connect node) to provide their
+     * own implementations.
+     * @param userInfo The user information.
+     * @return The jwt claims.
+     */
+    protected JwtClaimsSet getJwtClaims(UserInfo userInfo) {
+        return null;
     }
 
     private void addLogIfTooManyUsernames(Map<String, Set<String>> userNames, UserInfo userInfo) {

@@ -11,11 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 
 import _ from "lodash";
 
+import AdminConfig from "config/process/AdminConfig";
 import AMConfig from "config/process/AMConfig";
 import CommonConfig from "config/process/CommonConfig";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
@@ -28,7 +29,7 @@ const callRegisterListenerFromConfig = ({ processDescription, startEvent }) => {
 const ProcessConfiguration = {};
 
 ProcessConfiguration.loadEventHandlers = function () {
-    _.map([...AMConfig, ...CommonConfig], callRegisterListenerFromConfig);
+    _.map([...AdminConfig, ...AMConfig, ...CommonConfig], callRegisterListenerFromConfig);
     EventManager.sendEvent(Constants.EVENT_READ_CONFIGURATION_REQUEST);
 };
 

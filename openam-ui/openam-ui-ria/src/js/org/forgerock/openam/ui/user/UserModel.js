@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -146,7 +146,11 @@ var baseUrl = `${Constants.host}${Constants.context}/json`,
                 this.uiroles = user.roles;
             }
 
-            if (_.indexOf(user.roles, "ui-user") === -1) {
+            if (user.id.toLowerCase() === "amadmin" && !_.includes(this.uiroles, "ui-amadmin")) {
+                this.uiroles.push("ui-amadmin");
+            }
+
+            if (!_.includes(user.roles, "ui-user")) {
                 this.uiroles.push("ui-user");
             }
 
@@ -167,7 +171,7 @@ var baseUrl = `${Constants.host}${Constants.context}/json`,
          * @returns {Boolean}      Whether this model has any of the roles specified
          */
         hasRole (roles) {
-            return _.spread(_.partial(_.contains, this.uiroles))(arrayify(roles));
+            return _.spread(_.partial(_.includes, this.uiroles))(arrayify(roles));
         }
     });
 

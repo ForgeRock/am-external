@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 
-import { indexOf } from "lodash";
+import { has, indexOf } from "lodash";
 import $ from "jquery";
 
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
@@ -61,7 +61,7 @@ const processLoginRequest = (event) => {
         reason = reason ? reason : "authenticationFailed";
         EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, reason);
 
-        if (event.failureCallback) {
+        if (has(event, "failureCallback")) {
             event.failureCallback(reason);
         }
 

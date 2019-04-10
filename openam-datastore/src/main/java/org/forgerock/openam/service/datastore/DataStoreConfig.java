@@ -11,12 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 
 package org.forgerock.openam.service.datastore;
 
+import java.util.Set;
+
 import org.forgerock.openam.services.datastore.DataStoreId;
+import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.Reject;
 
 /**
@@ -27,37 +30,33 @@ import org.forgerock.util.Reject;
 final class DataStoreConfig {
 
     private final DataStoreId id;
-    private final String hostname;
-    private final int port;
+    private final Set<String> serverUrls;
     private final String bindDN;
     private final String bindPassword;
     private final int minimumConnectionPool;
     private final int maximumConnectionPool;
     private final boolean useSsl;
     private final boolean useStartTLS;
+    private final boolean affinityEnabled;
 
     private DataStoreConfig(Builder builder) {
         this.id = builder.id;
-        this.hostname = builder.hostname;
-        this.port = builder.port;
+        this.serverUrls = builder.serverUrls;
         this.bindDN = builder.bindDN;
         this.bindPassword = builder.bindPassword;
         this.minimumConnectionPool = builder.minimumConnectionPool;
         this.maximumConnectionPool = builder.maximumConnectionPool;
         this.useSsl = builder.useSsl;
         this.useStartTLS = builder.useStartTLS;
+        this.affinityEnabled = builder.affinityEnabled;
     }
 
     DataStoreId getId() {
         return id;
     }
 
-    String getHostname() {
-        return hostname;
-    }
-
-    int getPort() {
-        return port;
+    Set<String> getServerUrls() {
+        return serverUrls;
     }
 
     String getBindDN() {
@@ -84,6 +83,10 @@ final class DataStoreConfig {
         return useStartTLS;
     }
 
+    boolean isAffinityEnabled() {
+        return affinityEnabled;
+    }
+
     static Builder builder(DataStoreId id) {
         return new Builder(id);
     }
@@ -94,28 +97,22 @@ final class DataStoreConfig {
     static final class Builder {
 
         private final DataStoreId id;
-        private String hostname;
-        private int port;
         private String bindDN;
         private String bindPassword;
         private int minimumConnectionPool;
         private int maximumConnectionPool;
         private boolean useSsl;
         private boolean useStartTLS;
+        private boolean affinityEnabled;
+        private Set<String> serverUrls;
 
         Builder(DataStoreId id) {
             this.id = id;
         }
 
-        Builder withHostname(String hostname) {
-            Reject.ifBlank(hostname);
-            this.hostname = hostname;
-            return this;
-        }
-
-        Builder withPort(int port) {
-            Reject.ifTrue(port < 0);
-            this.port = port;
+        Builder withServerUrls(Set<String> serverUrls) {
+            Reject.ifTrue(CollectionUtils.isEmpty(serverUrls));
+            this.serverUrls = serverUrls;
             return this;
         }
 
@@ -150,6 +147,11 @@ final class DataStoreConfig {
 
         Builder withUseStartTLS(boolean useStartTLS) {
             this.useStartTLS = useStartTLS;
+            return this;
+        }
+
+        Builder withAffinityEnabled(boolean affinityEnabled) {
+            this.affinityEnabled = affinityEnabled;
             return this;
         }
 

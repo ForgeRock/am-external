@@ -14,7 +14,7 @@
  * Copyright 2017-2018 ForgeRock AS.
  */
 import { Creatable } from "react-select";
-import { map, pluck } from "lodash";
+import { map } from "lodash";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
 
@@ -27,7 +27,7 @@ class CreatableArrayInput extends Component {
     }
 
     handleOnChange (value) {
-        this.props.onChange(pluck(value, "value"));
+        this.props.onChange(map(value, "value"));
     }
 
     onShouldKeyDownEventCreateNewOption ({ keyCode }) {

@@ -117,7 +117,7 @@ URIUtils.getCurrentUrl = function() {
  */
 URIUtils.parseQueryString = function (queryString) {
     if (queryString) {
-        return _.object(_.map(queryString.split("&"), function (pair) {
+        return _.fromPairs(_.map(queryString.split("&"), function (pair) {
             return _.map(pair.split("=", 2), decodeURIComponent);
         }));
     }

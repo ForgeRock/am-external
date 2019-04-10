@@ -14,7 +14,7 @@
  * Copyright 2017-2018 ForgeRock AS.
  */
 import { createAction, handleActions } from "redux-actions";
-import { indexBy } from "lodash";
+import { keyBy } from "lodash";
 
 // Types
 const ADD_INSTANCE = "remote/config/realm/applications/agents/soapSts/agents/instances/ADD_INSTANCE";
@@ -31,5 +31,5 @@ export default handleActions({
         ...state,
         [action.payload._id]: action.payload
     }),
-    [SET_INSTANCES]: (state, action) => indexBy(action.payload, "_id")
+    [SET_INSTANCES]: (state, action) => keyBy(action.payload, "_id")
 }, initialState);

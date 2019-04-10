@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
 
-import { indexBy } from "lodash";
+import { keyBy } from "lodash";
 
 import getAllPaths from "./layout/getAllPaths";
 import getColumns from "./layout/getColumns";
@@ -46,7 +46,7 @@ const autoLayout = (entryNodeId, nodes, dimensions) => {
     const treeNodeMeasurements = getTreeNodePositions(columns, dimensions);
     const orphanMeasurements = getOrphanPositions(orphans, columns, dimensions);
 
-    return indexBy(treeNodeMeasurements.concat(orphanMeasurements), "id");
+    return keyBy(treeNodeMeasurements.concat(orphanMeasurements), "id");
 };
 
 export default autoLayout;

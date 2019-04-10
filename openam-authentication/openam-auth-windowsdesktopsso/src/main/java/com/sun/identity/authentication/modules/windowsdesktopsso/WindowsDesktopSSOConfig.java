@@ -24,7 +24,7 @@
  *
  * $Id: WindowsDesktopSSOConfig.java,v 1.3 2009/04/07 22:55:13 beomsuk Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
+ * Portions Copyrighted 2017-2018 ForgeRock AS.
  */
 
 
@@ -51,6 +51,7 @@ public class WindowsDesktopSSOConfig extends AMConfiguration {
     private String servicePrincipal = null;
     private String keytab = null;
     private String refreshConf = "false";
+    private boolean isInitiator = true;
 
     /**
      * Constructor
@@ -88,6 +89,14 @@ public class WindowsDesktopSSOConfig extends AMConfiguration {
     }
 
     /**
+     * The isInitiator config option. Default is true;
+     * @param isInitiator a Boolean value
+     */
+    public void setIsInitiator(Boolean isInitiator) {
+        this.isInitiator = isInitiator;
+    }
+
+    /**
      * Returns AppConfigurationEntry array for the application <I>appName</I>
      * using Kerberos module.
      *
@@ -98,6 +107,7 @@ public class WindowsDesktopSSOConfig extends AMConfiguration {
         if (appName.equals(defaultAppName)) {
             HashMap hashmap = new HashMap();
             hashmap.put("principal", servicePrincipal);
+            hashmap.put("isInitiator", Boolean.toString(isInitiator));
             if (kerberosModuleName.equalsIgnoreCase("com.ibm.security.auth.module.Krb5LoginModule")) {
                 hashmap.put("useKeytab", keytab);
                 hashmap.put("credsType", credsType);

@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
-import { each, findWhere, sortBy } from "lodash";
+import { each, find, sortBy } from "lodash";
 import $ from "jquery";
 
 import AbstractDelegate from "org/forgerock/commons/ui/common/main/AbstractDelegate";
@@ -214,7 +214,7 @@ AuthenticationService.authentication = {
             get (realm, type) {
                 // TODO: change this to a proper server-side call when OPENAM-7242 is implemented
                 return AuthenticationService.authentication.modules.types.all(realm)
-                    .then((response) => findWhere(response, { "_id": type }));
+                    .then((response) => find(response, { "_id": type }));
             }
         },
         schema (realm, type) {

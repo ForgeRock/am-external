@@ -21,6 +21,8 @@ import React, { Component } from "react";
 
 import FormGroupInput from "org/forgerock/openam/ui/admin/views/realms/common/FormGroupInput";
 import isValidId from "org/forgerock/openam/ui/admin/views/realms/common/isValidId";
+import isValidUrlWithPort
+    from "org/forgerock/openam/ui/admin/views/realms/applications/agents/common/isValidUrlWithPort";
 import isValidUrlWithPortAndPath
     from "org/forgerock/openam/ui/admin/views/realms/applications/agents/common/isValidUrlWithPortAndPath";
 
@@ -51,13 +53,13 @@ class NewJavaAgentForm extends Component {
 
     handleServerUrlChange (serverUrl) {
         this.setState({ serverUrl }, () => {
-            this.props.onServerUrlChange(isValidUrlWithPortAndPath(this.state.serverUrl) ? this.state.serverUrl : null);
+            this.props.onServerUrlChange(isValidUrlWithPort(this.state.serverUrl) ? this.state.serverUrl : null);
         });
     }
 
     render () {
         const isAgentUrlValid = isValidUrlWithPortAndPath(this.state.agentUrl);
-        const isServerUrlValid = isValidUrlWithPortAndPath(this.state.serverUrl);
+        const isServerUrlValid = isValidUrlWithPort(this.state.serverUrl);
         const isAgentIdValid = isValidId(this.state.agentId);
 
         return (

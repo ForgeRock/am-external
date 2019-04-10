@@ -17,6 +17,7 @@
 import "babel-polyfill";
 import "regenerator-runtime/runtime";
 
+import "whatwg-fetch";
 import $ from "jquery";
 
 import { getCurrentQueryParameters } from "org/forgerock/openam/ui/common/util/uri/query";

@@ -15,7 +15,7 @@
  */
 /* eslint-disable max-len */
 
-import _ from "lodash";
+import { upperFirst } from "lodash";
 
 const GlobalRoutes = {
     listAuthenticationSettings: {
@@ -164,8 +164,8 @@ const GlobalRoutes = {
 };
 
 // Add routes for "Server Edit" tree navigation
-_.each(["general", "security", "session", "sdk", "cts", "uma", "advanced", "directoryConfiguration"], (suffix) => {
-    GlobalRoutes[`editServer${_.capitalize(suffix)}`] = {
+["general", "security", "session", "sdk", "cts", "uma", "advanced", "directoryConfiguration"].forEach((suffix) => {
+    GlobalRoutes[`editServer${upperFirst(suffix)}`] = {
         view: () => import("org/forgerock/openam/ui/admin/views/deployment/servers/EditServerTreeNavigationView.js"),
         page: () => import("org/forgerock/openam/ui/admin/views/common/server/EditServerView.js"),
         url: new RegExp(`deployment/servers/([^/]+)/(${suffix})`),
@@ -177,8 +177,8 @@ _.each(["general", "security", "session", "sdk", "cts", "uma", "advanced", "dire
 });
 
 // Add routes for "Server Defaults" tree navigation
-_.each(["general", "security", "session", "sdk", "cts", "uma", "advanced"], (suffix) => {
-    GlobalRoutes[`editServerDefaults${_.capitalize(suffix)}`] = {
+["general", "security", "session", "sdk", "cts", "uma", "advanced"].forEach((suffix) => {
+    GlobalRoutes[`editServerDefaults${upperFirst(suffix)}`] = {
         view: () => import("org/forgerock/openam/ui/admin/views/configuration/server/EditServerDefaultsTreeNavigationView.js"),
         page: () => import("org/forgerock/openam/ui/admin/views/common/server/EditServerView.js"),
         url: new RegExp(`configure/(serverDefaults)/(${suffix})`),

@@ -21,8 +21,8 @@ import React, { Component } from "react";
 
 import FormGroupInput from "org/forgerock/openam/ui/admin/views/realms/common/FormGroupInput";
 import isValidId from "org/forgerock/openam/ui/admin/views/realms/common/isValidId";
-import isValidUrlWithPortAndPath
-    from "org/forgerock/openam/ui/admin/views/realms/applications/agents/common/isValidUrlWithPortAndPath";
+import isValidUrlWithPort
+    from "org/forgerock/openam/ui/admin/views/realms/applications/agents/common/isValidUrlWithPort";
 
 class NewWebAgentGroupForm extends Component {
     constructor (props) {
@@ -43,12 +43,12 @@ class NewWebAgentGroupForm extends Component {
 
     handleServerUrlChange (serverUrl) {
         this.setState({ serverUrl }, () => {
-            this.props.onServerUrlChange(isValidUrlWithPortAndPath(this.state.serverUrl) ? this.state.serverUrl : null);
+            this.props.onServerUrlChange(isValidUrlWithPort(this.state.serverUrl) ? this.state.serverUrl : null);
         });
     }
 
     render () {
-        const isServerUrlValid = isValidUrlWithPortAndPath(this.state.serverUrl);
+        const isServerUrlValid = isValidUrlWithPort(this.state.serverUrl);
         const isGroupIdValid = isValidId(this.state.groupId);
 
         return (

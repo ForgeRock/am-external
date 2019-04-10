@@ -14,7 +14,7 @@
  * Copyright 2017-2018 ForgeRock AS.
  */
 
-import { isEmpty, isEqual, omit, pluck } from "lodash";
+import { isEmpty, isEqual, map, omit } from "lodash";
 import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
@@ -36,8 +36,8 @@ class List extends Component {
 
     componentWillReceiveProps (nextProps) {
         const listHasChanged = !isEqual(
-            pluck(this.props.items, this.props.keyField).sort(),
-            pluck(nextProps.items, this.props.keyField).sort()
+            map(this.props.items, this.props.keyField).sort(),
+            map(nextProps.items, this.props.keyField).sort()
         );
 
         if (listHasChanged) {

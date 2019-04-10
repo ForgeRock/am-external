@@ -66,7 +66,7 @@ class CreateMappingModal extends Component {
                         ref={ this.setFormRef }
                         schema={ this.props.schema }
                         uiSchema={ { "aliases": { "ui:field": CustomAliasesField } } }
-                        validationMode={ "create" }
+                        validationMode="create"
                     />
                 </Modal.Body>
                 <Modal.Footer>

@@ -137,7 +137,7 @@ export default AbstractView.extend({
                 ]);
 
             self.data.options.availableResourceTypes = _.filter(resourceTypes.result,
-                (item) => _.contains(policySet.resourceTypeUuids, item.uuid));
+                (item) => _.includes(policySet.resourceTypeUuids, item.uuid));
             self.parentRender(() => { self.buildResourceTypeSelection(); });
         } else {
             const [policySet, allSubjects, allEnvironments, allUserAttributes, resourceTypes] =
@@ -150,10 +150,10 @@ export default AbstractView.extend({
                 ]);
 
             self.data.options.availableResourceTypes = _.filter(resourceTypes.result,
-                (item) => _.contains(policySet.resourceTypeUuids, item.uuid));
+                (item) => _.includes(policySet.resourceTypeUuids, item.uuid));
 
-            self.staticAttributes = _.where(self.model.attributes.resourceAttributes, { type: "Static" });
-            self.userAttributes = _.where(self.model.attributes.resourceAttributes, { type: "User" });
+            self.staticAttributes = _.filter(self.model.attributes.resourceAttributes, { type: "Static" });
+            self.userAttributes = _.filter(self.model.attributes.resourceAttributes, { type: "User" });
             self.customAttributes = _.difference(self.model.attributes.resourceAttributes,
                 self.staticAttributes, self.userAttributes);
             self.allUserAttributes = _.sortBy(allUserAttributes.result);

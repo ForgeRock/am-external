@@ -94,13 +94,13 @@ const GroupedJSONSchemaView = Backbone.View.extend({
             orderedSchemaValuePairs = _(orderedSchemaValuePairs)
                 .map(setDefaultPropertiesToRequiredAndEmpty)
                 .map(showEnablePropertyIfAllPropertiesHidden)
-                .omit(emptyProperties)
+                .omitBy(emptyProperties)
                 .value();
         } else if (this.options.showOnlyRequired) {
             orderedSchemaValuePairs = _(orderedSchemaValuePairs)
                 .map(setDefaultPropertiesToRequired)
                 .map(showEnablePropertyIfAllPropertiesHidden)
-                .omit(emptyProperties)
+                .omitBy(emptyProperties)
                 .value();
         }
 
@@ -108,9 +108,8 @@ const GroupedJSONSchemaView = Backbone.View.extend({
 
         this.subviews = _(orderedSchemaValuePairs)
             .map(createJSONEditorView)
-            .invoke("render")
-            .each((view) => { view.$el.appendTo(this.$el); })
-            .value();
+            .invokeMap("render")
+            .each((view) => { view.$el.appendTo(this.$el); });
 
         invokeOnRenderedAfterTimeout(this.options.onRendered);
 

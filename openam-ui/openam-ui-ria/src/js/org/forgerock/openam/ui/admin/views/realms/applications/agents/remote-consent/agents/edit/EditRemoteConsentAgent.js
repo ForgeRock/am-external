@@ -14,7 +14,7 @@
  * Copyright 2017-2018 ForgeRock AS.
  */
 
-import { cloneDeep, get, isEmpty, mapValues, pluck, startsWith } from "lodash";
+import { cloneDeep, get, isEmpty, map, mapValues, startsWith } from "lodash";
 import { t } from "i18next";
 import $ from "jquery";
 
@@ -38,7 +38,7 @@ const addGroupSelectionToSchema = (schema, groups) => {
     const agentgroupProperty = get(schema, AGENT_GROUP_PATH);
 
     if (agentgroupProperty) {
-        const responseIDs = pluck(groups.result, "_id");
+        const responseIDs = map(groups.result, "_id");
         const availableGroupsIDs = ["", ...responseIDs];
         const availableGroupsTitles = [
             t("common.form.unassigned"),

@@ -11,9 +11,19 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2018 ForgeRock AS. All Rights Reserved
+  Copyright 2018-2019 ForgeRock AS. All Rights Reserved
 }}
+{{#if device.isReadOnly}}
+<div class="alert alert-warning" role="alert">
+  <p>{{{description}}}</p>
+</div>
+<div class="form-group">
+  <label class="text-muted" for="deviceName">{{t "openam.authDevices.editDeviceDialog.deviceName"}}</label>
+  <input disabled type="text" value="{{device.deviceName}}" class="form-control" id="deviceName" placeholder="{{t 'openam.authDevices.editDeviceDialog.deviceName' }}" />
+</div>
+{{else}}
 <div class="form-group">
     <label for="deviceName">{{t "openam.authDevices.editDeviceDialog.deviceName"}}</label>
-    <input type="text" value="{{deviceName}}" class="form-control" id="deviceName" placeholder="{{t 'openam.authDevices.editDeviceDialog.deviceName' }}" />
+    <input type="text" value="{{device.deviceName}}" class="form-control" id="deviceName" placeholder="{{t 'openam.authDevices.editDeviceDialog.deviceName' }}" />
 </div>
+{{/if}}

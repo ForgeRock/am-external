@@ -11,13 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import ConditionAttrBaseView from "./ConditionAttrBaseView";
 import ConditionAttrStringTemplate from
     "templates/admin/views/realms/authorization/policies/conditions/ConditionAttrString";
-import Constants from "org/forgerock/openam/ui/common/util/Constants";
+import Constants from "org/forgerock/openam/ui/admin/utils/Constants";
 
 export default ConditionAttrBaseView.extend({
     template: ConditionAttrStringTemplate,

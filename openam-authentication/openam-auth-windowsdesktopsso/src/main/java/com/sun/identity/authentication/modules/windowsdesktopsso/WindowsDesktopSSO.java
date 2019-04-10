@@ -24,7 +24,7 @@
  *
  * $Id: WindowsDesktopSSO.java,v 1.7 2009/07/28 19:40:45 beomsuk Exp $
  *
- * Portions Copyrighted 2011-2017 ForgeRock AS.
+ * Portions Copyrighted 2011-2018 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.windowsdesktopsso;
@@ -78,6 +78,8 @@ public class WindowsDesktopSSO extends AMLoginModule {
     private static final String KDC       = ISAuthConstants.AUTH_ATTR_PREFIX + "windowsdesktopsso-kdc";
     private static final String RETURNREALM = ISAuthConstants.AUTH_ATTR_PREFIX + "windowsdesktopsso-returnRealm";
     private static final String LOOKUPUSER = ISAuthConstants.AUTH_ATTR_PREFIX + "windowsdesktopsso-lookupUserInRealm";
+    private static final String ISINITIATOR = ISAuthConstants.AUTH_ATTR_PREFIX +
+            "windowsdesktopsso-kerberos-isinitiator";
     private static final String SUBJECT   = "serviceSubject";
     
     private static final String ACCEPTED_REALMS_ATTR = ISAuthConstants.AUTH_ATTR_PREFIX 
@@ -94,6 +96,7 @@ public class WindowsDesktopSSO extends AMLoginModule {
     private Map    options    = null;
     private String confIndex  = null;
     private boolean lookupUserInRealm = false;
+    private boolean isInitiator = true;
     
     private Debug debug = Debug.getInstance(amAuthWindowsDesktopSSO);
     
@@ -516,6 +519,7 @@ public class WindowsDesktopSSO extends AMLoginModule {
         returnRealm = CollectionHelper.getBooleanMapAttr(options, RETURNREALM, false);
         lookupUserInRealm = CollectionHelper.getBooleanMapAttr(options, LOOKUPUSER, false);
         trustedKerberosRealms = getAcceptedKerberosRealms(options);
+        isInitiator = CollectionHelper.getBooleanMapAttr(options, ISINITIATOR, true );
 
         if (debug.messageEnabled()){
             debug.message("WindowsDesktopSSO params: \n" + 
@@ -525,7 +529,8 @@ public class WindowsDesktopSSO extends AMLoginModule {
                 "\nkdc server: " + kdcServer +
                 "\ndomain principal: " + returnRealm +
                 "\nLookup user in realm:" + lookupUserInRealm +
-                "\nAccepted Kerberos realms: " + trustedKerberosRealms);
+                "\nAccepted Kerberos realms: " + trustedKerberosRealms +
+                "\nisInitiator: " + isInitiator);
         }
 
         confIndex = getRequestOrg() + "/" +
@@ -604,6 +609,7 @@ public class WindowsDesktopSSO extends AMLoginModule {
             }
             wtc.setPrincipalName(servicePrincipalName);
             wtc.setKeyTab(keyTabFile);
+            wtc.setIsInitiator(isInitiator);
             Configuration.setConfiguration(wtc);
 
             // perform service authentication using JDK Kerberos module

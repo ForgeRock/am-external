@@ -11,14 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2019 ForgeRock AS.
  */
 
 import { Alert, Panel, Tab, Tabs } from "react-bootstrap";
 import { t } from "i18next";
 import React from "react";
 
-import Constants from "org/forgerock/openam/ui/common/util/Constants";
+import Constants from "org/forgerock/openam/ui/admin/utils/Constants";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 import ListCirclesOfTrustContainer from "./circlesoftrust/list/ListCirclesOfTrustContainer";
 import PageHeader from "components/PageHeader";

@@ -71,7 +71,12 @@ public class OAuthUtil  {
             // When XUI is in use the request URI points to the authenticate REST endpoint, which shouldn't be
             // presented to the end-user, hence we use the contextpath only and rely on index.html and the
             // XUIFilter to direct the user towards the XUI.
-            originalUrl.append(request.getContextPath());
+            if (request.getContextPath().isEmpty()) {
+                // handle the case when AM is deployed to the root context
+                originalUrl.append("/");
+            } else {
+                originalUrl.append(request.getContextPath());
+            }
             // The REST endpoint always exposes the realm parameter even if it is not actually present on the
             // query string (e.g. DNS alias or URI segment was used), so this logic here is just to make sure if
             // the realm parameter was not present on the querystring, then we add it there.

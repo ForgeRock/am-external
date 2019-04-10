@@ -24,7 +24,7 @@
  *
  * $Id: FMSigProvider.java,v 1.5 2009/05/09 15:43:59 mallas Exp $
  *
- *  Portions Copyrighted 2011-2018 ForgeRock AS.
+ *  Portions Copyrighted 2011-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.xmlsig;
 
@@ -45,6 +45,7 @@ import org.apache.xml.security.transforms.TransformationException;
 import org.apache.xml.security.transforms.Transforms;
 import org.apache.xml.security.utils.Constants;
 import org.apache.xml.security.utils.ElementProxy;
+import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.Reject;
 import org.w3c.dom.Document;
@@ -285,7 +286,7 @@ public final class FMSigProvider implements SigProvider {
                 certToUse = null;
             }
             if (certToUse != null && checkCert) {
-                if (!verificationCerts.contains(certToUse)) {
+                if ((CollectionUtils.isNotEmpty(verificationCerts)) && !verificationCerts.contains(certToUse)) {
                     SAML2SDKUtils.debug.error("{}The cert contained in the document is NOT trusted", classMethod);
                     throw new SAML2Exception(SAML2SDKUtils.bundle.getString("invalidCertificate"));
                 }

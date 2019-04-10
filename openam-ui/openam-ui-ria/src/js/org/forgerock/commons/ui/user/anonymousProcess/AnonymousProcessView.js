@@ -133,9 +133,12 @@ const AnonymousProcessView = AbstractView.extend({
     },
 
     setTranslationBase () {
-        _.each(["title", "completed", "failed", "tryAgain", "return"], function (key) {
-            this.data.i18n[key] = `${this.i18nBase}.${key}`;
-        }, this);
+        _.each(
+            ["title", "completed", "failed", "tryAgain", "return"],
+            _.bind(function (key) {
+                this.data.i18n[key] = `${this.i18nBase}.${key}`;
+            }, this)
+        );
     },
 
     restartProcess () {},

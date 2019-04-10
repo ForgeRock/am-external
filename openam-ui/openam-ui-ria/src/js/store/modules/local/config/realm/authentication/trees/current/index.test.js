@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2019 ForgeRock AS.
  */
 
 import { assign, cloneDeep, omit } from "lodash";
@@ -434,6 +434,11 @@ describe("store/modules/local/config/realm/authentication/trees/current/index", 
                 });
                 it("removes it from the tree", () => {
                     expect(newState.tree.nodes).to.not.have.property("pageNode");
+                });
+                it("removes any child nodes from the tree", () => {
+                    expect(newState.tree.nodes).to.not.have.property("childNode1");
+                    expect(newState.tree.nodes).to.not.have.property("childNode2");
+                    expect(newState.tree.nodes).to.not.have.property("childNode3");
                 });
             });
         });

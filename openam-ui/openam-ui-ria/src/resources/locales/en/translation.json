@@ -12,7 +12,9 @@
                 "deleteFail": "Failed to delete",
                 "duplicateItem": "Duplicate item",
                 "invalidItem": "Invalid item",
-                "changesSaved": "Changes saved"
+                "changesSaved": "Changes saved",
+                "parseError": "Unable to parse response. Please try again later.",
+                "requestError": "Network error. Check your internet connection."
             },
             "CommonMessages" : {
                 "authenticationFailed" : "User name/password combination is invalid.",
@@ -579,25 +581,35 @@
         },
         "authDevices": {
             "header": "Authentication Devices",
-            "ghostCards": {
-                "oath": "OATH Settings",
-                "push": "Push Settings"
+            "cards": {
+                "oath": "Oath Device",
+                "push": "Push Device",
+                "noDevice": "No registered device"
             },
             "multiFactorAuthDialog": {
                 "oath": {
-                    "title": "OATH Device Default Settings",
-                    "description": "Configure default settings for OATH devices",
-                    "label": "Enable multi-factor authentication using OATH"
+                    "title": "OATH Device Settings",
+                    "description" : {
+                        "noDevice": "This setting cannot be changed because you do not have any OATH devices.",
+                        "auth": "Configure default settings for OATH devices."
+                    },
+                    "label": "Multi-factor authentication using OATH enabled"
                 },
                 "push": {
-                    "title": "Push Device Default Settings",
-                    "description": "Configure default settings for Push devices",
-                    "label": "Enable multi-factor authentication using Push"
+                    "title": "Push Device Settings",
+                    "description" : {
+                        "noDevice": "This setting cannot be changed because you do not have any Push devices.",
+                        "auth": "Configure default settings for Push devices."
+                    },
+                    "label": "Multi-factor authentication using Push enabled"
                 }
             },
             "editDeviceDialog": {
                 "deviceName": "Device name",
-                "title": "Rename your device"
+                "title": "Rename Your Device"
+            },
+            "common": {
+                "noAuth": "This setting cannot be changed because you did not authenticate with your device: <b>__deviceName__</b>"
             }
         }
     },

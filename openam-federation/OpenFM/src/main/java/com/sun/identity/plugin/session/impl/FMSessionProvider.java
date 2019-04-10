@@ -24,10 +24,14 @@
  *
  * $Id: FMSessionProvider.java,v 1.23 2009/11/20 00:30:40 exu Exp $
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2018 ForgeRock AS.
  */
 
 package com.sun.identity.plugin.session.impl;
+
+import static com.sun.identity.authentication.client.AuthClientUtils.getCookieDomainsForRequest;
+import static com.sun.identity.shared.encode.CookieUtils.addCookieToResponse;
+import static com.sun.identity.shared.encode.CookieUtils.newCookie;
 
 import java.security.SecureRandom;
 import java.util.Collections;
@@ -48,7 +52,6 @@ import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
 import com.iplanet.sso.SSOTokenManager;
 import com.sun.identity.authentication.AuthContext;
-import com.sun.identity.authentication.client.AuthClientUtils;
 import com.sun.identity.authentication.service.AMAuthErrorCode;
 import com.sun.identity.authentication.service.AuthUtils;
 import com.sun.identity.authentication.spi.AuthLoginException;
@@ -62,7 +65,6 @@ import com.sun.identity.shared.Constants;
 import com.sun.identity.shared.StringUtils;
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.shared.encode.CookieUtils;
 import com.sun.identity.shared.locale.Locale;
 import com.sun.identity.sm.DNMapper;
 
@@ -281,13 +283,6 @@ public class FMSessionProvider implements SessionProvider {
         }
 
         if (response != null) {
-            setLoadBalancerCookie(request, response);
-            final Set<String> cookieDomains = AuthClientUtils.getCookieDomainsForRequest(request);
-            String value = ssoToken.getTokenID().toString();
-            for (String cookieDomain : cookieDomains) {
-                debug.message("cookieName={}, value={}, cookieDomain={}", cookieName, value, cookieDomain);
-                CookieUtils.addCookieToResponse(response, CookieUtils.newCookie(cookieName, value, "/", cookieDomain));
-            }
             if (urlRewriteEnabled && targetApplication != null) {
                 int n = targetApplication.length();
                 if (n > 0) {
@@ -314,7 +309,18 @@ public class FMSessionProvider implements SessionProvider {
         }
         return ssoToken;
     }
-    
+
+    @Override
+    public void applyCookies(Object session, HttpServletRequest request, HttpServletResponse response) {
+        setLoadBalancerCookie(request, response);
+        final Set<String> cookieDomains = getCookieDomainsForRequest(request);
+        final String value = ((SSOToken)session).getTokenID().toString();
+        for (String cookieDomain : cookieDomains) {
+            debug.message("cookieName={}, value={}, cookieDomain={}", cookieName, value, cookieDomain);
+            addCookieToResponse(response, newCookie(cookieName, value, "/", cookieDomain));
+        }
+    }
+
     /**
      * Sets a load balancer cookie in the suppled HTTP response. The load
      * balancer cookie's value is set per server instance and is used to

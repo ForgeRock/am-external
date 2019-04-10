@@ -13,7 +13,7 @@
  *
  * Copyright 2018 ForgeRock AS.
  */
-import { pluck } from "lodash";
+import { map } from "lodash";
 import { t } from "i18next";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
@@ -39,7 +39,7 @@ class EnumArrayInput extends Component {
 
     handleOnChange (value) {
         this.setState({
-            value: pluck(value, "key")
+            value: map(value, "key")
         }, () => {
             if (this.props.updateOnChange) {
                 this.props.onChange(this.state.value);

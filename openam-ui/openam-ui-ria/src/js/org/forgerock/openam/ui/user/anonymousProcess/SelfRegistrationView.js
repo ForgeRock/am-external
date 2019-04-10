@@ -14,14 +14,15 @@
  * Copyright 2015-2018 ForgeRock AS.
  */
 
-import _ from "lodash";
+import { assign, get } from "lodash";
 
-import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import AnonymousProcessView from "org/forgerock/openam/ui/user/anonymousProcess/AnonymousProcessView";
-import SelfRegistrationView from "org/forgerock/commons/ui/user/anonymousProcess/SelfRegistrationView";
-import KBAView from "org/forgerock/commons/ui/user/anonymousProcess/KBAView";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
+import Constants from "org/forgerock/openam/ui/common/util/Constants";
+import KBAView from "org/forgerock/commons/ui/user/anonymousProcess/KBAView";
 import RESTLoginView from "org/forgerock/openam/ui/user/login/RESTLoginView";
+import SelfRegistrationView from "org/forgerock/commons/ui/user/anonymousProcess/SelfRegistrationView";
+
 function shouldRouteToLoginView (response, destination) {
     return response.tag === "end" && destination === "login";
 }
@@ -35,11 +36,11 @@ function AMSelfRegistrationView () { }
 AMSelfRegistrationView.prototype = SelfRegistrationView;
 AMSelfRegistrationView.prototype.endpoint = Constants.SELF_SERVICE_REGISTER;
 
-_.extend(AMSelfRegistrationView.prototype, AnonymousProcessView.prototype);
+assign(AMSelfRegistrationView.prototype, AnonymousProcessView.prototype);
 
 AMSelfRegistrationView.prototype.renderProcessState = function (response) {
-    const destination = _.get(Configuration, "globalData.successfulUserRegistrationDestination");
-    const realm = _.get(Configuration, "globalData.realm", "");
+    const destination = get(Configuration, "globalData.successfulUserRegistrationDestination");
+    const realm = get(Configuration, "globalData.realm", "");
 
     if (shouldAutoLogin(response, destination)) {
         RESTLoginView.handleExistingSession(response.additions);

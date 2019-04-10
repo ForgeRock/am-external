@@ -17,7 +17,7 @@
 /**
  * @module org/forgerock/openam/ui/admin/services/realm/authentication/WebhookService
  */
-import { map, omit, startsWith } from "lodash";
+import { map, omitBy, startsWith } from "lodash";
 
 import AbstractDelegate from "org/forgerock/commons/ui/common/main/AbstractDelegate";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
@@ -28,7 +28,7 @@ const PATH = "/realm-config/webhooks";
 const HEADERS = { "Accept-API-Version": "protocol=2.0,resource=1.0" };
 
 function getCreateOrUpdatePayload (data) {
-    const omitReadOnlyProperties = (obj) => omit(obj, (prop, key) => startsWith(key, "_"));
+    const omitReadOnlyProperties = (obj) => omitBy(obj, (prop, key) => startsWith(key, "_"));
     return {
         ...omitReadOnlyProperties(data)
     };

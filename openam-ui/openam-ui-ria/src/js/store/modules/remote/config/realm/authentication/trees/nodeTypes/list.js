@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
 import { createAction, handleActions } from "redux-actions";
-import { indexBy } from "lodash";
+import { keyBy } from "lodash";
 
 // Types
 const SET = "remote/config/realm/authentication/trees/nodeTypes/list/SET";
@@ -25,5 +25,5 @@ export const set = createAction(SET);
 // Reducer
 const initialState = {};
 export default handleActions({
-    [SET]: (state, action) => indexBy(action.payload, "_id")
+    [SET]: (state, action) => keyBy(action.payload, "_id")
 }, initialState);

@@ -17,7 +17,7 @@
 /**
  * @module org/forgerock/openam/ui/admin/services/realm/identities/AllAuthenticatedService
  */
-import { omit, startsWith } from "lodash";
+import { omitBy, startsWith } from "lodash";
 
 import AbstractDelegate from "org/forgerock/commons/ui/common/main/AbstractDelegate";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
@@ -41,7 +41,7 @@ export function get (realm) {
 }
 
 export function update (realm, data) {
-    const omitReadOnlyProperties = (obj) => omit(obj, (prop, key) => startsWith(key, "_"));
+    const omitReadOnlyProperties = (obj) => omitBy(obj, (prop, key) => startsWith(key, "_"));
     return obj.serviceCall({
         url: fetchUrl("/groups/allauthenticatedusers", { realm }),
         type: "PUT",

@@ -35,7 +35,7 @@ const Form = function Form (element, schema, values) {
     this.values = values;
 
     // Attributes that are identifiable as passwords
-    const passwordProperties = _.where(schema.properties, { format: "password" });
+    const passwordProperties = _.filter(schema.properties, { format: "password" });
     this.passwordAttributes = _.map(passwordProperties, (property) => _.findKey(schema.properties, property));
 
     JSONEditor.plugins.selectize.enable = true;
@@ -83,8 +83,8 @@ const Form = function Form (element, schema, values) {
  * @returns {Object}          Filtered object
  */
 function filterEmptyAttributes (object, attributes) {
-    return _.omit(object, (value, key) => {
-        if (_.contains(attributes, key)) {
+    return _.omitBy(object, (value, key) => {
+        if (_.includes(attributes, key)) {
             return _.isEmpty(value);
         } else {
             return false;

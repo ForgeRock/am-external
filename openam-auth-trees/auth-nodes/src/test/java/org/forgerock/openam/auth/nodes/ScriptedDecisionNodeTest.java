@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2019 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -35,6 +35,8 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.core.realms.RealmTestHelper;
 import org.forgerock.openam.scripting.ScriptEvaluator;
 import org.forgerock.openam.scripting.ScriptObject;
 import org.forgerock.openam.scripting.SupportedScriptingLanguage;
@@ -44,10 +46,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
 
+@Listeners(RealmTestHelper.RealmFixture.class)
 public class ScriptedDecisionNodeTest extends GuiceTestCase {
 
     @Mock
@@ -62,6 +66,9 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     @Mock
     ScriptedDecisionNode.Config serviceConfig;
 
+    @RealmTestHelper.RealmHelper
+    static Realm mockRealm;
+
     ScriptedDecisionNode node;
 
     @BeforeMethod
@@ -72,7 +79,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
         given(scriptConfiguration.getLanguage()).willReturn(SupportedScriptingLanguage.JAVASCRIPT);
         given(serviceConfig.script()).willReturn(scriptConfiguration);
         given(serviceConfig.outcomes()).willReturn(ImmutableList.of("a", "b"));
-        node = new ScriptedDecisionNode(scriptEvaluator, serviceConfig, null, httpClientFactory);
+        node = new ScriptedDecisionNode(scriptEvaluator, serviceConfig, null, httpClientFactory, mockRealm);
     }
 
     @Test
@@ -90,16 +97,18 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     }
 
     @Test
-    public void scriptIsPassedSharedState() throws Exception {
+    public void scriptIsPassedState() throws Exception {
         given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
                 .will(answerWithOutcome("a"));
         JsonValue sharedState = json(object(field("foo", "bar")));
-        node.process(getContext(sharedState));
+        JsonValue transientState = json(object(field("fizz", "buzz")));
+        node.process(getContext(sharedState, transientState));
 
         ArgumentCaptor<Bindings> bindingCaptor = ArgumentCaptor.forClass(Bindings.class);
         verify(scriptEvaluator).evaluateScript(any(ScriptObject.class), bindingCaptor.capture());
 
         assertThat(bindingCaptor.getValue().get("sharedState")).isSameAs(sharedState.getObject());
+        assertThat(bindingCaptor.getValue().get("transientState")).isSameAs(transientState.getObject());
     }
 
     @Test
@@ -108,6 +117,61 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
                 .will(answerWithOutcome("a"));
         Action result = node.process(getContext());
 
+        assertThat(result.outcome).isEqualTo("a");
+    }
+
+    @Test
+    public void whenScriptSetsAnAction() throws Exception {
+        // Given
+        Action action = Action.goTo("a").build();
+        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+                .will(answerWithAction(action));
+
+        // When
+        Action result = node.process(getContext());
+
+        // Then
+        assertThat(result).isSameAs(action);
+    }
+
+    @Test(expectedExceptions = NodeProcessException.class)
+    public void whenScriptSetsAnActionWithInvalidOutcome() throws Exception {
+        // Given
+        Action action = Action.goTo("c").build();
+        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+                .will(answerWithAction(action));
+
+        // When
+        Action result = node.process(getContext());
+
+        // Then
+        assertThat(result).isSameAs(action);
+    }
+
+    @Test
+    public void whenScriptSetsAnActionAndOutcome() throws Exception {
+        // Given
+        Action action = Action.goTo("a").build();
+        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+                .will(answerWithActionAndOutcome("a", action));
+
+        // When
+        Action result = node.process(getContext());
+
+        // Then
+        assertThat(result).isSameAs(action);
+    }
+
+    @Test
+    public void whenActionIsNotCorrectType() throws Exception {
+        // Given
+        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+                .will(answerWithActionAndOutcome("a", new Object()));
+
+        // When
+        Action result = node.process(getContext());
+
+        // Then
         assertThat(result.outcome).isEqualTo("a");
     }
 
@@ -140,16 +204,33 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     }
 
     private TreeContext getContext() {
-        return getContext(json(object()));
+        return getContext(json(object()), json(object()));
     }
 
-    private TreeContext getContext(JsonValue sharedState) {
-        return new TreeContext(sharedState, new Builder().build(), emptyList());
+    private TreeContext getContext(JsonValue sharedState, JsonValue transientState) {
+        return new TreeContext(sharedState, transientState, new Builder().build(), emptyList());
     }
 
-    private static Answer<Object> answerWithOutcome(final Object outcome) {
+    private static Answer<Object> answerWithOutcome(Object outcome) {
         return invocationOnMock -> {
             Bindings bindings = invocationOnMock.getArgument(1);
+            bindings.put("outcome", outcome);
+            return null;
+        };
+    }
+
+    private static Answer<Object> answerWithAction(Object action) {
+        return invocationOnMock -> {
+            Bindings bindings = invocationOnMock.getArgument(1);
+            bindings.put("action", action);
+            return null;
+        };
+    }
+
+    private static Answer<Object> answerWithActionAndOutcome(Object outcome, Object action) {
+        return invocationOnMock -> {
+            Bindings bindings = invocationOnMock.getArgument(1);
+            bindings.put("action", action);
             bindings.put("outcome", outcome);
             return null;
         };

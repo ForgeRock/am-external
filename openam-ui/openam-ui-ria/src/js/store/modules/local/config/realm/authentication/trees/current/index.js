@@ -11,12 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2019 ForgeRock AS.
  */
 import PropTypes from "prop-types";
 import { combineReducers } from "redux";
 import { createAction } from "redux-actions";
-import { assign, chain, filter, keys, mapValues, omit, pairs, pick } from "lodash";
+import { assign, chain, filter, keys, mapValues, omit, omitBy, pickBy, toPairs } from "lodash";
 
 import { PAGE_NODE_TYPE } from "./nodes/static";
 import nodes, { propType as nodesType } from "./nodes";
@@ -55,7 +55,7 @@ export default function current (state = {}, action) {
                 .filter((n) => n._type._id === PAGE_NODE_TYPE)
                 .map((page) => page.nodes)
                 .flatten()
-                .concat(pairs(state.tree.nodes).map((pair) => assign({ _id: pair[0] }, pair[1])))
+                .concat(toPairs(state.tree.nodes).map((pair) => assign({ _id: pair[0] }, pair[1])))
                 .find((n) => n._id === action.payload.nodeId)
                 .omit(["connections", "_outcomes"])
                 .value();
@@ -86,7 +86,7 @@ export default function current (state = {}, action) {
                 tree: {
                     nodes: mapValues(omit(state.tree.nodes, action.payload.nodeId), (node) => ({
                         ...node,
-                        connections: omit(node.connections, (toNode) => toNode === action.payload.nodeId)
+                        connections: omitBy(node.connections, (toNode) => toNode === action.payload.nodeId)
                     }))
                 }
             });
@@ -142,7 +142,7 @@ export default function current (state = {}, action) {
             });
         case REMOVE_NODE: {
             const affectedNodes = [
-                ...keys(pick(state.nodes.pages.childnodes, (value) => value === action.payload)),
+                ...keys(pickBy(state.nodes.pages.childnodes, (value) => value === action.payload)),
                 action.payload
             ];
             return checkedActionResult(propType, action, state, {
@@ -157,15 +157,15 @@ export default function current (state = {}, action) {
                     }),
                     selected: (state.nodes.selected.id === action.payload) ? {} : state.nodes.selected,
                     pages: {
-                        childnodes: omit(state.nodes.pages.childnodes,
+                        childnodes: omitBy(state.nodes.pages.childnodes,
                             (value, key) => value === action.payload || key === action.payload),
                         positions: omit(state.nodes.pages.positions, [action.payload])
                     }
                 },
                 tree: {
-                    nodes: mapValues(omit(state.tree.nodes, [action.payload]), (node) => ({
+                    nodes: mapValues(omit(state.tree.nodes, affectedNodes), (node) => ({
                         ...node,
-                        connections: omit(node.connections, (toNode) => toNode === action.payload)
+                        connections: omitBy(node.connections, (toNode) => toNode === action.payload)
                     }))
                 }
             });

@@ -14,7 +14,7 @@
  * Copyright 2011-2018 ForgeRock AS.
  */
 
-import { each, every, find, get, has, isArray, isRegExp, keys, merge, partial, pick, some } from "lodash";
+import { each, every, find, get, has, isArray, isRegExp, keys, mergeWith, partial, pick, some } from "lodash";
 import $ from "jquery";
 
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
@@ -107,7 +107,7 @@ const findMatchingTheme = async function (realm, authenticationChain) {
 };
 
 const extendTheme = function (theme, parentTheme) {
-    return merge({}, parentTheme, theme, (objectValue, sourceValue) => {
+    return mergeWith({}, parentTheme, theme, (objectValue, sourceValue) => {
         // We don't want to merge arrays. If a theme has specified an array, it should be used verbatim.
         if (isArray(sourceValue)) {
             return sourceValue;

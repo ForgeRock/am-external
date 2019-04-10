@@ -42,7 +42,7 @@ export default ConditionAttrBaseView.extend({
         const weekdays = [];
         const self = this;
         let i = 0;
-        _.invoke(self.days, function () {
+        _.invokeMap(self.days, function () {
             weekdays[i] = {};
             weekdays[i].title = $.t(self.i18n.weekdays.key + this + self.i18n.weekdays.full);
             weekdays[i].value = $.t(self.i18n.weekdays.key + this + self.i18n.weekdays.short);

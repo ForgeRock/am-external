@@ -241,7 +241,8 @@ function hasAuthIndexChanged () {
  * @returns {Boolean} if a RedirectCallback is present in the last requirement callbacks.
  */
 function hasRedirectCallback (requirementList) {
-    return requirementList.length !== 0 && _.some(_.last(requirementList).callbacks, "type", "RedirectCallback");
+    return requirementList.length !== 0 &&
+        _.some(_.last(requirementList).callbacks, _.bind("type", "RedirectCallback"));
 }
 AuthNService.getRequirements = function (args) {
     if (get() && !hasRedirectCallback(requirementList)) {

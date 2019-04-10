@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
@@ -45,8 +45,6 @@ import com.sun.identity.wsfederation.meta.WSFederationMetaUtils;
 import com.sun.identity.wsfederation.plugins.SPAccountMapper;
 import com.sun.identity.wsfederation.plugins.SPAttributeMapper;
 import com.sun.identity.wsfederation.profile.RequestSecurityTokenResponse;
-import com.sun.identity.wsfederation.profile.RequestedSecurityToken;
-import com.sun.identity.wsfederation.profile.SPCache;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
@@ -207,14 +205,14 @@ public class RPSigninResponse extends WSFederationAction {
         
         try {
             SessionProvider sessionProvider = SessionManager.getProvider();
-            session = sessionProvider.createSession(sessionInfoMap,
-                    request, response, null);
-            SPACSUtils.setAttrMapInSession(sessionProvider, attrMap, 
-                session);
+            session = sessionProvider.createSession(sessionInfoMap, request, response, null);
+            SPACSUtils.setAttrMapInSession(sessionProvider, attrMap, session);
 
             String[] idpArray = {idpEntityId};
-            sessionProvider.setProperty(session, 
-                WSFederationConstants.SESSION_IDP, idpArray);
+            sessionProvider.setProperty(session, WSFederationConstants.SESSION_IDP, idpArray);
+            // Apply cookies at the end of the process to ensure that any session properties that have been added since
+            // first creating the session are available. This is key when using client-based sessions.
+            sessionProvider.applyCookies(session, request, response);
         } catch (SessionException se) {
             String[] data = {se.getLocalizedMessage(),realm, userName, 
                 authLevel};

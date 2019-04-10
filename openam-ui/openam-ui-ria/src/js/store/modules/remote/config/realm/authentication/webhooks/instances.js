@@ -14,7 +14,7 @@
  * Copyright 2018 ForgeRock AS.
  */
 import { createAction, handleActions } from "redux-actions";
-import { indexBy, omit } from "lodash";
+import { keyBy, omitBy } from "lodash";
 
 // Types
 const ADD = "remote/config/realm/authentication/webhooks/instances/ADD";
@@ -33,6 +33,6 @@ export default handleActions({
         ...state,
         [action.payload._id]: action.payload
     }),
-    [REMOVE]: (state, action) => omit(state, (instance) => instance._id === action.payload),
-    [SET]: (state, action) => indexBy(action.payload, "_id")
+    [REMOVE]: (state, action) => omitBy(state, (instance) => instance._id === action.payload),
+    [SET]: (state, action) => keyBy(action.payload, "_id")
 }, initialState);

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
 import { createAction, handleActions } from "redux-actions";
 import { chain, omit } from "lodash";
@@ -56,6 +56,6 @@ export default handleActions({
     [REMOVE_REALM]: addPathToAction((state, action) => omit(state, action.payload.path)),
     [SET_REALMS]: (state, action) => chain(action.payload)
         .map(addPayloadPath)
-        .indexBy("path")
+        .keyBy("path")
         .value()
 }, initialState);

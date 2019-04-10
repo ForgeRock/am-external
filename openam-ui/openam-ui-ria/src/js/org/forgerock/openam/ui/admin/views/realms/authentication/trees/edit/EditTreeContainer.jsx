@@ -11,12 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2019 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
 import {
-    chain, difference, each, every, filter, findKey, get, isEmpty, keys, map, mapValues, omit, pluck, pairs, reject,
-    union, values
+    chain, difference, each, every, filter, findKey, get, isEmpty, keys, map, mapValues, omit, reject,
+    toPairs, union, values
 } from "lodash";
 import { t } from "i18next";
 import PropTypes from "prop-types";
@@ -100,7 +100,7 @@ import withRouterPropType from "org/forgerock/commons/ui/common/components/hoc/w
 const containsNode = (tree, id) => {
     const connections = chain(tree.nodes)
         .values()
-        .pluck("connections")
+        .map("connections")
         .map((connections) => values(connections))
         .flatten()
         .value();
@@ -153,7 +153,7 @@ class EditTreeContainer extends Component {
         }).then((nodes) => {
             // Some of the nodes for rendering are in pages, not in the tree itself, so we need to load all the PageNode
             // properties too.
-            return Promise.all(pairs(nodes)
+            return Promise.all(toPairs(nodes)
                 .filter(([, node]) => node.nodeType === PAGE_NODE_TYPE)
                 .map(([id, page]) => {
                     return getNodeProperties(realm, page.nodeType, id).then((properties) => {
@@ -243,8 +243,14 @@ class EditTreeContainer extends Component {
                 ].concat(keys(this.props.nodesInPages)))
             }, this.props.tree._id);
 
-            const nodesToDelete = difference(keys(this.props.remoteNodes), union(keys(this.props.nodesInPages),
-                keys(this.props.localNodes)));
+            const nodesToDelete = difference(
+                keys(this.props.remoteNodes),
+                union(
+                    keys(this.props.nodesInPages),
+                    keys(this.props.localNodes)
+                )
+            );
+
             const nodeDeletePromises = map(nodesToDelete, (nodeId) =>
                 deleteNode(realm, this.props.remoteNodes[nodeId].nodeType, nodeId).then(() => {
                     this.props.removeNodePropertiesFromRemote(nodeId);
@@ -335,7 +341,10 @@ class EditTreeContainer extends Component {
     handleNodeSelect (id, type, name) {
         this.props.handleNodeSelect({ id, type });
 
-        if (!isStaticNodeType(type) && !this.props.localNodeProperties[id]) {
+        const nodeWithoutProperties = !isStaticNodeType(type) && !this.props.localNodeProperties[id];
+        const pageNodeWithoutSchema = type === PAGE_NODE_TYPE && !this.props.nodeTypeSchema[PAGE_NODE_TYPE];
+
+        if (pageNodeWithoutSchema || (nodeWithoutProperties)) {
             const realm = this.props.router.params[0];
             // See components/form/Form.jsx for more information.
             const transformPasswordFormat = (response) => {
@@ -407,8 +416,8 @@ class EditTreeContainer extends Component {
         } : properties;
         listNodeOutcomes(realm, outcomeProps, type).then((response) => {
             const currentOutcomes = this.props.localNodes[id]._outcomes;
-            const currentOutcomeKeys = pluck(currentOutcomes, "id");
-            const newOutcomeKeys = pluck(response, "id");
+            const currentOutcomeKeys = map(currentOutcomes, "id");
+            const newOutcomeKeys = map(response, "id");
 
             this.props.setNodeOutcomes(response, id);
             this.props.removeConnection(difference(currentOutcomeKeys, newOutcomeKeys), id);
@@ -478,6 +487,7 @@ EditTreeContainer.propTypes = {
     measurements: PropTypes.objectOf(PropTypes.object).isRequired,
     moveNodeToPage: PropTypes.func.isRequired,
     moveNodeToTree: PropTypes.func.isRequired,
+    nodeTypeSchema: PropTypes.objectOf(PropTypes.object).isRequired,
     nodeTypes: PropTypes.objectOf(PropTypes.object).isRequired,
     nodesInPages: PropTypes.objectOf(PropTypes.string).isRequired,
     remoteNodes: PropTypes.objectOf(PropTypes.object).isRequired,
@@ -515,6 +525,7 @@ EditTreeContainer = connectWithStore(EditTreeContainer,
             localNodes: state.local.config.realm.authentication.trees.current.tree.nodes,
             measurements: state.local.config.realm.authentication.trees.current.nodes.measurements,
             nodeTypes: state.remote.config.realm.authentication.trees.nodeTypes.list,
+            nodeTypeSchema: state.remote.config.realm.authentication.trees.nodeTypes.schema,
             nodesInPages: state.local.config.realm.authentication.trees.current.nodes.pages.childnodes,
             remoteNodes: state.remote.config.realm.authentication.trees.current.tree,
             selectedNode,

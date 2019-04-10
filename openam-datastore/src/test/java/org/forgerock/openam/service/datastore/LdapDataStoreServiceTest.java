@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -109,10 +109,9 @@ public final class LdapDataStoreServiceTest {
         given(containerServiceConfig.getSubConfig("some-data-store")).willReturn(dataStoreSubConfig);
         given(dataStoreSubConfig.getAttributes()).willReturn(ImmutableMap
                 .<String, Set<String>>builder()
-                .put("serverHostname", Collections.singleton("some.host.name"))
+                .put("serverUrls", Collections.singleton("some.host.name:1389"))
                 .put("bindDN", Collections.singleton("cn=Some User"))
                 .put("bindPassword", Collections.singleton("secret"))
-                .put("serverPort", Collections.singleton("1389"))
                 .put("useSsl", Collections.singleton("false"))
                 .put("useStartTls", Collections.singleton("false"))
                 .put("minimumConnectionPool", Collections.singleton("1"))

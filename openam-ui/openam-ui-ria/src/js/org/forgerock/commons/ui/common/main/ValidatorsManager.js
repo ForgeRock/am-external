@@ -47,9 +47,9 @@ ValidatorsManager.bindValidators = function (containerElement) {
         ValidatorsManager.bindValidatorsForField(containerElement, $(this));
     });
 
-    _.each(ValidatorsManager.afterBindValidators, function (fn) {
+    _.each(ValidatorsManager.afterBindValidators, _.bind(function (fn) {
         fn.apply(this, _arguments);
-    }, this);
+    }, this));
 };
 
 // array of functions to invoke (in order) after bindValidators is executed

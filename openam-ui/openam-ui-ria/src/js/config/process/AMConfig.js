@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 
 import _ from "lodash";
 
 import { exists, remove, setValidated, toHref, validateParam } from "org/forgerock/openam/ui/user/login/gotoUrl";
-import { global as legacyConsoleRedirectGlobal } from "org/forgerock/openam/ui/admin/utils/RedirectToLegacyConsole";
 import { hideAPILinksOnAPIDescriptionsDisabled, populateRealmsDropdown } from
     "org/forgerock/openam/ui/common/util/NavigationHelper";
 import { parseParameters } from "org/forgerock/openam/ui/common/util/uri/query";
@@ -90,11 +89,6 @@ export default [{
         }
     }
 }, {
-    startEvent: Constants.EVENT_REDIRECT_TO_JATO_FEDERATION,
-    processDescription () {
-        legacyConsoleRedirectGlobal.federation();
-    }
-}, {
     startEvent: Constants.EVENT_HANDLE_DEFAULT_ROUTE,
     processDescription () {
         const routerParams = {
@@ -104,7 +98,7 @@ export default [{
 
         if (!Configuration.loggedUser) {
             Router.routeTo(Router.configuration.routes.login, routerParams);
-        } else if (_.contains(Configuration.loggedUser.uiroles, "ui-realm-admin")) {
+        } else if (_.includes(Configuration.loggedUser.uiroles, "ui-realm-admin")) {
             Router.routeTo(Router.configuration.routes.realms, {
                 args: [],
                 ...routerParams

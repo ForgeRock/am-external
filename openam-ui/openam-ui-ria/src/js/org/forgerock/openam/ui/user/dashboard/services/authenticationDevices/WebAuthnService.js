@@ -14,53 +14,18 @@
  * Copyright 2018 ForgeRock AS.
  */
 
-import AbstractDelegate from "org/forgerock/commons/ui/common/main/AbstractDelegate";
-import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
-import Constants from "org/forgerock/openam/ui/common/util/Constants";
-import fetchUrl from "org/forgerock/openam/ui/common/services/fetchUrl";
-
 /**
- * @module org/forgerock/openam/ui/user/dashboard/services/authenticationDevices/WebAuthnService
- */
+  * @module org/forgerock/openam/ui/user/dashboard/services/authenticationDevices/WebAuthnService
+  */
+import { CRESTv2 } from "@forgerock/crest-js";
 
-const delegate = new AbstractDelegate(`${Constants.host}${Constants.context}/json`);
-const getPath = () => {
-    return `/users/${Configuration.loggedUser.get("username")}/devices/2fa/webauthn`;
-};
+import middleware from "api/crest/middleware";
+import spinner from "api/crest/spinner";
+import url from "api/crest/url";
 
-/**
- * getAll will either return an array of devices, or it will return a 403 if the user has not signed in securely
- * and does not have access to this endpoint.
- * Because we are using $.Deferred in place of Promise, the expected 403 causes the Promise.all function to fail early
- * and run it's finally block before all the Deferreds have completed. Adding the `async` here ensures the returned item
- * is a real Promise, which the promise.all.finally can handle properly.
- * @returns {Promise} promise that will contain the response
- */
-export async function getAll () {
-    return delegate.serviceCall({
-        url: fetchUrl(`${getPath()}?_queryFilter=true`),
-        headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
-        errorsHandlers: { "forbidden": { status: 403 } }
-    });
-}
+const resource = (username) =>
+    new CRESTv2(url(`/users/${encodeURIComponent(username)}/devices/2fa/webauthn`), { middleware: [middleware] });
 
-export function update (uuid, data) {
-    return delegate.serviceCall({
-        url: fetchUrl(`${getPath()}/${uuid}`),
-        type: "PUT",
-        headers: {
-            "Accept-API-Version": "protocol=1.0,resource=1.0",
-            "If-Match": "*"
-        },
-        data: JSON.stringify(data)
-    });
-}
-
-export function remove (uuid) {
-    return delegate.serviceCall({
-        url: fetchUrl(`${getPath()}/${uuid}`),
-        headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
-        suppressEvents: true,
-        method: "DELETE"
-    });
-}
+export const update = (username, uuid, body) => spinner(resource(username).update(uuid, body));
+export const remove = (username, uuid) => spinner(resource(username).delete(uuid));
+export const getAll = (username) => resource(username).queryFilter();

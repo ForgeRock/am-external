@@ -14,7 +14,7 @@
  * Copyright 2018 ForgeRock AS.
  */
 import { createAction, handleActions } from "redux-actions";
-import { findWhere, without } from "lodash";
+import { find, without } from "lodash";
 
 // Types
 const REMOVE_INSTANCE = "remote/config/realm/identities/users/services/instances/REMOVE_INSTANCE";
@@ -34,7 +34,7 @@ export default handleActions({
 
         return {
             ...state,
-            [action.meta.userId]: without(userServices, findWhere(userServices, { "_id": action.payload }))
+            [action.meta.userId]: without(userServices, find(userServices, { "_id": action.payload }))
         };
     },
     [SET_INSTANCES]: (state, action) => ({

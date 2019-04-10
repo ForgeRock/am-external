@@ -435,7 +435,12 @@ public class SAML2 extends AMLoginModule {
         final XUIState xuiState = InjectorHolder.getInstance(XUIState.class);
 
         if (xuiState.isXUIEnabled()) {
-            originalUrl.append(request.getContextPath());
+            if (request.getContextPath().isEmpty()) {
+                // handle the case when AM is deployed to the root context
+                originalUrl.append("/");
+            } else {
+                originalUrl.append(request.getContextPath());
+            }
         } else {
             originalUrl.append(request.getRequestURI());
         }

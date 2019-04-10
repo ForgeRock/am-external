@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 
 import "bootstrap";
@@ -19,6 +19,7 @@ import "bootstrap";
 import $ from "jquery";
 import _ from "lodash";
 
+import Constants from "org/forgerock/openam/ui/admin/utils/Constants";
 import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
@@ -48,6 +49,11 @@ const Navigation = {
             "i18nKey": "common.user.administration",
             "navGroup": "user",
             "visibleToRoles": ["ui-realm-admin"]
+        }, {
+            "event" : Constants.EVENT_AMADMIN_SECURITY_DIALOG,
+            "i18nKey": "common.user.changePassword",
+            "navGroup": "admin",
+            "visibleToRoles": ["ui-amadmin"]
         }, {
             "href": "#logout/",
             "i18nKey": "common.form.logout"
@@ -321,7 +327,7 @@ Navigation.init = function(callback) {
                but it is stored in different ways for different products.
             */
             if (Configuration.loggedUser) {
-                this.data.admin = _.contains(Configuration.loggedUser.uiroles, "ui-admin");
+                this.data.admin = _.includes(Configuration.loggedUser.uiroles, "ui-admin");
 
                 this.data.userBar = _.chain(Navigation.configuration.userBar)
                     .map(function (link) {
@@ -429,9 +435,9 @@ Navigation.init = function(callback) {
             if (navObj.dropdown === true) {
                 navElement.dropdown = true;
 
-                _.each(navObj.urls, function(obj){
+                _.each(navObj.urls, _.bind(function(obj){
                     subs.push(self.buildNavElement(obj, this.isCurrent(obj.url)));
-                }, this);
+                }, this));
 
                 navElement.urls = subs;
             }

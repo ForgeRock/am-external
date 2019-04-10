@@ -18,38 +18,65 @@ import $ from "jquery";
 import i18next from "i18next";
 
 import BootstrapDialog from "org/forgerock/commons/ui/common/components/BootstrapDialog";
+import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Messages from "org/forgerock/commons/ui/common/components/Messages";
 import MultiFactorAuthDialogTemplate
     from "templates/user/dashboard/authenticationDevices/MultiFactorAuthDialogTemplate";
 
-export default function ({ isMultiFactorAuthEnabled, setMultiFactorAuth, title, label, description }) {
-    isMultiFactorAuthEnabled().then(({ result }) => {
-        const isEnabled = result;
-        const template = MultiFactorAuthDialogTemplate({ isEnabled, label, description });
-        BootstrapDialog.show({
-            title,
-            cssClass: "devices-settings",
-            message: $(template),
-            buttons: [{
-                label: i18next.t("common.form.cancel"),
-                action (dialog) {
+const getDescription = (isReadOnly, deviceUuid, descriptions) => {
+    if (isReadOnly) {
+        return deviceUuid ? descriptions.noAuth : descriptions.noDevice;
+    } else {
+        return descriptions.auth;
+    }
+};
+
+const showDialog = (template, isReadOnly, title, username, save) => {
+    const cssClass = isReadOnly ? "btn-primary disabled" : "btn-primary";
+    BootstrapDialog.show({
+        buttons: [{
+            id: "modalCancelBtn",
+            action (dialog) {
+                dialog.close();
+            },
+            label: i18next.t("common.form.cancel")
+        }, {
+            action (dialog) {
+                const toggle = dialog.$modalBody.find("#multiFactorAuth");
+                const cancelBtn = dialog.getButton("modalCancelBtn");
+                cancelBtn.disable();
+                this.disable();
+                toggle.prop("disabled", true);
+                dialog.setClosable(false);
+                const isChecked = toggle.is(":checked");
+                save(username, isChecked).then(() => {
                     dialog.close();
-                }
-            }, {
-                label: i18next.t("common.form.save"),
-                cssClass: "btn-primary",
-                action (dialog) {
-                    const isEnabled = dialog.$modalBody.find("#multiFactorAuth").is(":checked");
-                    setMultiFactorAuth(isEnabled).then(() => {
-                        dialog.close();
-                        Messages.addMessage({ message: i18next.t("config.messages.AppMessages.changesSaved") });
-                    }, (response) => {
-                        Messages.addMessage({ type: Messages.TYPE_DANGER, response });
-                    });
-                }
-            }]
-        });
-    }, (response) => {
-        Messages.addMessage({ type: Messages.TYPE_DANGER, response });
+                    Messages.addMessage({ message: i18next.t("config.messages.CommonMessages.changesSaved") });
+                }, () => {
+                    cancelBtn.enable();
+                    this.enable();
+                    toggle.prop("disabled", false);
+                    dialog.setClosable(true);
+                });
+            },
+            cssClass,
+            disabled: isReadOnly,
+            label: i18next.t("common.form.save")
+        }],
+        cssClass: "devices-settings",
+        message: $(template),
+        title
+    });
+};
+
+export default function multiFactorAuthDialog (
+    { isChecked, isReadOnly, title, label, descriptions, deviceUuid, save }) {
+    const username = Configuration.loggedUser.get("username");
+
+    isChecked(username).then((isChecked) => {
+        const description = getDescription(isReadOnly, deviceUuid, descriptions);
+        const template = MultiFactorAuthDialogTemplate({ isChecked, isReadOnly, label, description });
+
+        showDialog(template, isReadOnly, title, username, save);
     });
 }

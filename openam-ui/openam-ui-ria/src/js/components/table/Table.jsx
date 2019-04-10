@@ -15,7 +15,7 @@
  */
 
 import { BootstrapTable } from "react-bootstrap-table";
-import { findWhere, pluck, without } from "lodash";
+import { find, map, without } from "lodash";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -25,7 +25,7 @@ const Table = ({ keyField, onRowClick, onSelectedChange, options = {}, selectedI
     const handleSelect = (row, isSelected) => {
         const selected = isSelected
             ? [...selectedItems, row]
-            : without(selectedItems, findWhere(selectedItems, { [keyField]: row[keyField] }));
+            : without(selectedItems, find(selectedItems, { [keyField]: row[keyField] }));
 
         onSelectedChange(selected);
     };
@@ -51,7 +51,7 @@ const Table = ({ keyField, onRowClick, onSelectedChange, options = {}, selectedI
                 mode: "checkbox",
                 onSelect: handleSelect,
                 onSelectAll: handleSelectAll,
-                selected: pluck(selectedItems, keyField)
+                selected: map(selectedItems, keyField)
             } }
             { ...restProps }
         />

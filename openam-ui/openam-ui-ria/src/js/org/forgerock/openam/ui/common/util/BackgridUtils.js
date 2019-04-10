@@ -300,7 +300,7 @@ BackgridUtils.sync = function (method, model, options) {
     }
 
     _.forIn(options.data, (val, key) => {
-        if (_.include(includeList, key)) {
+        if (_.includes(includeList, key)) {
             params.push(`${key}=${val}`);
         }
     });

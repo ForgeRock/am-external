@@ -16,6 +16,7 @@
 
 import "babel-polyfill";
 import "regenerator-runtime/runtime";
+import "whatwg-fetch";
 
 import ProcessConfiguration from "org/forgerock/commons/ui/common/main/ProcessConfiguration";
 import QRCodeReader from "org/forgerock/openam/server/util/QRCodeReader";

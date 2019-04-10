@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2017 ForgeRock AS. All Rights Reserved
+ * Copyright 2011-2018 ForgeRock AS. All Rights Reserved
  */
 
 package org.forgerock.openam.examples;
@@ -104,6 +104,11 @@ public class SampleAuth extends AMLoginModule {
         switch (state) {
 
             case STATE_BEGIN:
+                // Initialize Callback list if used in chain with
+                // iplanet-am-auth-shared-state-enabled=true
+                setForceCallbacksRead(true);
+                forceCallbacksInit();
+
                 // No time wasted here - simply modify the UI and
                 // proceed to next state
                 substituteUIStrings();

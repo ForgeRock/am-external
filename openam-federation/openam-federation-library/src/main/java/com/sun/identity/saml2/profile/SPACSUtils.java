@@ -1374,6 +1374,10 @@ public class SPACSUtils {
         }
         respInfo.setAssertion(authnAssertion);
 
+        // Apply cookies at the end of the process to ensure that any session properties that have been added since
+        // first creating the session are available. This is key when using client-based sessions.
+        sessionProvider.applyCookies(session, request, response);
+
         return session;
     }
 

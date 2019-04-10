@@ -15,7 +15,7 @@
  */
 
 import { bindActionCreators } from "redux";
-import { forEach, map, pluck, values } from "lodash";
+import { forEach, map, values } from "lodash";
 import { t } from "i18next";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
@@ -64,7 +64,7 @@ class ListSoapSTSContainer extends Component {
     }
 
     handleDelete (items) {
-        const ids = pluck(items, "_id");
+        const ids = map(items, "_id");
         const realm = this.props.router.params[0];
 
         showConfirmationBeforeAction({

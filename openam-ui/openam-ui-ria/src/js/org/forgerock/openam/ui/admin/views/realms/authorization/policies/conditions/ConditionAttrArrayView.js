@@ -112,7 +112,7 @@ export default ConditionAttrBaseView.extend({
                                 view.data.itemData.enforcementTimeZone = value ? value : DEFAULT_TIME_ZONE;
                             }
                         });
-                    } else if (_.contains(IDENTITY_TYPES, type)) {
+                    } else if (_.includes(IDENTITY_TYPES, type)) {
                         _.extend(options, {
                             placeholder: $.t(IDENTITY_PLACEHOLDER),
                             sortField: "value",
