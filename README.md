@@ -4,7 +4,7 @@ The contents of this file are subject to the terms of the Common Development and
 You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the specific language governing permission and limitations under the License.
 When distributing Covered Software, include this CDDL Header Notice in each file and include the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL Header, with the fields enclosed by brackets [] replaced by your own identifying information: "Portions copyright [year] [name of copyright owner]".
 
-Copyright 2017-2018 ForgeRock AS.
+Copyright 2017-2019 ForgeRock AS.
 -->
 
 # am-external
@@ -14,7 +14,15 @@ This repository contains OpenAM and AM source code that you can use to modify an
 
 Product Version   |  Branch Name
 ------------------|-----------------
+AM 6.5.1          |  releases/6.5.1
+AM 6.5.0.1        |  releases/6.5.0.1
 AM 6.5.0          |  releases/6.5.0
+AM 6.0.0.6        |  releases/6.0.0.6
+AM 6.0.0.5        |  releases/6.0.0.5
+AM 6.0.0.4        |  releases/6.0.0.4
+AM 6.0.0.3        |  releases/6.0.0.3
+AM 6.0.0.2        |  releases/6.0.0.2
+AM 6.0.0.1        |  releases/6.0.0.1
 AM 6.0.0          |  releases/6.0.0
 AM 5.5.1          |  releases/5.5.1
 AM 5.5.0          |  releases/5.5.0 
@@ -73,4 +81,3 @@ mvn clean install
 The code in this repository is licensed under the [CDDL license](https://forum.forgerock.com/cddlv1-0/) and may be used as the basis for your own projects.
 Enjoy!
 
-![ForgeRock Logo](https://www.forgerock.com/app/uploads/2017/02/forgerock-logo-400px-square-300x300.png) 
