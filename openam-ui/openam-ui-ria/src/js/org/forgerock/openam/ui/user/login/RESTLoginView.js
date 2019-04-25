@@ -254,6 +254,19 @@ const LoginView = AbstractView.extend({
         }
     },
 
+    getUrlWithoutNewSessionParameters () {
+        const paramsWithoutNewSession = (paramString, separator) => {
+            const params = parseParameters(paramString);
+            if (params.arg === "newsession") {
+                delete params.arg;
+            }
+            return _.isEmpty(params) ? "" : `${separator}${urlParamsFromObject(params)}`;
+        };
+        const query = paramsWithoutNewSession(URIUtils.getCurrentQueryString(), "?");
+        const fragment = paramsWithoutNewSession(URIUtils.getCurrentFragmentQueryString(), "&");
+        return `${URIUtils.getCurrentPathName()}${query}#login${fragment}`;
+    },
+
     render (args) {
         this.handleLegacyRealmFragmentParameter();
 
@@ -288,9 +301,13 @@ const LoginView = AbstractView.extend({
         }
 
         AuthNService.getRequirements().then(_.bind(function (reqs) {
-            // Clear out existing session if instructed
-            if (reqs.hasOwnProperty("tokenId") && params.arg === "newsession") {
-                logout();
+            const hasNewSessionParameter = reqs.hasOwnProperty("tokenId") && params.arg === "newsession";
+            if (hasNewSessionParameter) {
+                logout().then(() => {
+                    window.location.href = this.getUrlWithoutNewSessionParameters();
+                    return false;
+                });
+                return false;
             }
 
             // If simply by asking for the requirements, we end up with a token,

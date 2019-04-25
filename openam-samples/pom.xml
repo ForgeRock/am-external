@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-parent</artifactId>
-        <version>6.5.0.1</version>
+        <version>6.5.0.2</version>
     </parent>
 
     <groupId>org.forgerock.am.examples</groupId>
@@ -49,7 +49,7 @@
     <repositories>
       <repository>
          <id>forgerock-build-dependencies</id>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-6.5.0.1-dependencies</url>
+            <url>https://maven.forgerock.org/repo/forgerock-openam-6.5.0.2-dependencies</url>
          </repository>
       </repositories>
   </project>

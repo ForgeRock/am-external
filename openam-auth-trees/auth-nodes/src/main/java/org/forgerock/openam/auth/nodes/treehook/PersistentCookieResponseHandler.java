@@ -71,7 +71,7 @@ final class PersistentCookieResponseHandler {
                 Cookie cookie = createCookie(cookieName, cookieValue, domain, expiryDate, isSecure, isHttpOnly);
                 SetCookieHeader header = new SetCookieHeader(Collections.singletonList(cookie));
                 for (String headerValue : header.getValues()) {
-                    response.getHeaders().put(SET_COOKIE_HEADER_KEY, headerValue);
+                    response.getHeaders().add(SET_COOKIE_HEADER_KEY, headerValue);
                 }
             }
         } else {

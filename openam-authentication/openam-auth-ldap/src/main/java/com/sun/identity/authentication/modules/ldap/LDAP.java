@@ -24,13 +24,14 @@
  *
  * $Id: LDAP.java,v 1.17 2010/01/25 22:09:16 qcheng Exp $
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2019 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.ldap;
 
-import static org.forgerock.openam.utils.Time.*;
 import static com.sun.identity.authentication.service.AMAuthErrorCode.USERID_NOT_FOUND;
+import static org.forgerock.openam.utils.StringUtils.*;
+import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.authentication.spi.AMAuthCallBackImpl;
 import com.sun.identity.authentication.spi.AMAuthCallBackException;
@@ -61,6 +62,7 @@ import javax.security.auth.callback.PasswordCallback;
 import org.forgerock.openam.ldap.LDAPAuthUtils;
 import org.forgerock.openam.ldap.LDAPUtilException;
 import org.forgerock.openam.ldap.ModuleState;
+
 import org.forgerock.opendj.ldap.ResultCode;
 import org.forgerock.opendj.ldap.SearchScope;
 
@@ -351,37 +353,26 @@ public class LDAP extends AMLoginModule {
                     String confirmPassword = charToString(((PasswordCallback)
                     callbacks[2]).getPassword(), callbacks[2]);
 
-                    // check minimal password length requirement
-                    int newPasswordLength = 0;
-                    if (newPassword != null) {
-                        newPasswordLength = newPassword.length();
-                    }
-                    if (newPasswordLength < requiredPasswordLength) {
-                        if (debug.messageEnabled()) {
-                            debug.message("LDAP.process: new password less"
-                                + " than the minimal length of "
-                                + requiredPasswordLength);
-                        }
+                    if (isEmpty(oldPassword)) {
+                        debug.message("LDAP.process: old password is empty");
+                        newState = ModuleState.MUST_SUPPLY_OLD_PASSWORD;
+                    } else if (isNotEmpty(newPassword) &&  newPassword.length() < requiredPasswordLength) {
+                        debug.message("LDAP.process: new password less than the minimal length of {} ",
+                                 requiredPasswordLength);
                         newState = ModuleState.PASSWORD_MIN_CHARACTERS;
+                    } else {
+                        ldapUtil.changePassword(oldPassword, newPassword, confirmPassword);
+                        newState = ldapUtil.getState();
+                    }
+
+                    if (newState == ModuleState.PASSWORD_UPDATED_SUCCESSFULLY) {
+                        // log change password success
+                        getLoginState("LDAP").logSuccess("changePasswdSucceeded",
+                                "CHANGE_USER_PASSWORD_SUCCEEDED");
+                    } else {
                         // add log
                         getLoginState("LDAP").logFailed(newState.name(),
-                            "CHANGE_USER_PASSWORD_FAILED", false, null);
-                    } else {
-                        ldapUtil.changePassword(oldPassword, newPassword,
-                            confirmPassword);
-                        newState = ldapUtil.getState();
-
-                        if (newState ==
-                            ModuleState.PASSWORD_UPDATED_SUCCESSFULLY){
-                            // log change password success
-                            getLoginState("LDAP").logSuccess(
-                                "changePasswdSucceeded",
-                                "CHANGE_USER_PASSWORD_SUCCEEDED");
-                        } else {
-                            // add log
-                            getLoginState("LDAP").logFailed(newState.name(),
                                 "CHANGE_USER_PASSWORD_FAILED", false, null);
-                        }
                     }
                     processPasswordScreen(newState);
 
@@ -659,6 +650,10 @@ public class LDAP extends AMLoginModule {
                 break;
             case PASSWORD_TOO_YOUNG:
                 replaceHeader(LoginScreen.PASSWORD_CHANGE.intValue(), bundle.getString("pwdToYoung"));
+                currentState = LoginScreen.PASSWORD_CHANGE.intValue();
+                break;
+            case MUST_SUPPLY_OLD_PASSWORD:
+                replaceHeader(LoginScreen.PASSWORD_CHANGE.intValue(), bundle.getString("OldPwdError"));
                 currentState = LoginScreen.PASSWORD_CHANGE.intValue();
                 break;
             default:

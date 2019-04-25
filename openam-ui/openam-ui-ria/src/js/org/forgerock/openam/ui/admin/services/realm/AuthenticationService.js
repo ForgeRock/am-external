@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import { each, findWhere, sortBy } from "lodash";
@@ -107,7 +107,7 @@ AuthenticationService.authentication = {
                 chainData.authChainConfiguration = chainData.authChainConfiguration || [];
 
                 each(chainData.authChainConfiguration, (chainLink) => {
-                    moduleName = find(modulesData.result, { _id: chainLink.module });
+                    moduleName = findWhere(modulesData.result, { _id: chainLink.module });
                     // The server allows for deletion of modules that are in use within a chain. The chain itself
                     // will still have a reference to the deleted module.
                     // Below we are checking if the module is present. If it isn't the type is left undefined

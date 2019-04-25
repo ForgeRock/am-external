@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -24,6 +24,9 @@ import static org.forgerock.openam.auth.nodes.LdapDecisionNode.HeartbeatTimeUnit
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMode.LDAP;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMode.LDAPS;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMode.START_TLS;
+import static org.forgerock.openam.ldap.LDAPConstants.STATUS_ACTIVE;
+import static org.forgerock.openam.ldap.LDAPConstants.STATUS_INACTIVE;
+import static org.forgerock.openam.ldap.ModuleState.CHANGE_AFTER_RESET;
 
 import java.util.List;
 import java.util.Optional;
@@ -83,7 +86,7 @@ public class LdapDecisionNode implements Node {
     private static final Debug DEBUG = Debug.getInstance("amAuth");
     private static final String BUNDLE = "org/forgerock/openam/auth/nodes/LdapDecisionNode";
     private static final String USER_STATUS_ATTRIBUTE = "inetuserstatus";
-    private static final String USER_STATUS_INACTIVE = "Inactive";
+    private static final String LAST_MODULE_STATE = "lastModuleState";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final Config config;
     private final CoreWrapper coreWrapper;
@@ -284,9 +287,9 @@ public class LdapDecisionNode implements Node {
                 logger.debug("processing login");
                 ldapUtil.setDynamicProfileCreationEnabled(true);
                 ldapUtil.setUserAttributes(ImmutableSet.of(USER_STATUS_ATTRIBUTE));
-                String userStatus = USER_STATUS_INACTIVE;
+                String userStatus = STATUS_INACTIVE;
                 if (authenticateUser(ldapUtil, userName, userPassword)) {
-                    userStatus = "Active";
+                    userStatus = STATUS_ACTIVE;
                     if (ldapUtil.getUserAttributeValues().containsKey(USER_STATUS_ATTRIBUTE)) {
                         userStatus = ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE).iterator().next();
                     }
@@ -295,7 +298,7 @@ public class LdapDecisionNode implements Node {
                 if (StringUtils.isNotEmpty(username)) {
                     newState.put(USERNAME, username);
                 }
-                if (userStatus.equals(USER_STATUS_INACTIVE)) {
+                if (!userStatus.equals(STATUS_ACTIVE)) {
                     ldapUtil.setState(ModuleState.ACCOUNT_LOCKED);
                 }
                 action = processLogin(ldapUtil.getState(), newState, context);
@@ -374,9 +377,22 @@ public class LdapDecisionNode implements Node {
             logger.debug("Password change state :{}", passwordChangeState);
             action = processPasswordChange(passwordChangeState);
         } else {
-            action = goTo(LdapOutcome.TRUE);
+            if (userPasswordHasBeenReset(context)) {
+                action = goTo(LdapOutcome.CANCELLED);
+            } else {
+                action = goTo(LdapOutcome.TRUE);
+            }
         }
         return action;
+    }
+
+    private boolean userPasswordHasBeenReset(TreeContext context) {
+        if (context.sharedState.isDefined(LAST_MODULE_STATE)) {
+            String lastModuleState = context.sharedState.get(LAST_MODULE_STATE).asString();
+            return ModuleState.valueOf(lastModuleState) == CHANGE_AFTER_RESET;
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -487,6 +503,7 @@ public class LdapDecisionNode implements Node {
             break;
         case PASSWORD_RESET_STATE:
         case CHANGE_AFTER_RESET:
+            newState.put(LAST_MODULE_STATE, CHANGE_AFTER_RESET);
             loginResult = Action
                     .send(passwordChangeCallbacks(INFORMATION, bundle.getString("PasswordReset")));
             break;
@@ -700,7 +717,12 @@ public class LdapDecisionNode implements Node {
         /**
          * The ldap user's password has expired.
          */
-        EXPIRED
+        EXPIRED,
+        /**
+         * The user clicked the cancel button on the password change screen when either force-change-on-add or
+         * force-change-on-reset are 'true'.
+         */
+        CANCELLED
     }
 
     /**
@@ -715,6 +737,7 @@ public class LdapDecisionNode implements Node {
                     new Outcome(LdapOutcome.TRUE.name(), bundle.getString("trueOutcome")),
                     new Outcome(LdapOutcome.FALSE.name(), bundle.getString("falseOutcome")),
                     new Outcome(LdapOutcome.LOCKED.name(), bundle.getString("lockedOutcome")),
+                    new Outcome(LdapOutcome.CANCELLED.name(), bundle.getString("cancelledOutcome")),
                     new Outcome(LdapOutcome.EXPIRED.name(), bundle.getString("expiredOutcome")));
         }
     }

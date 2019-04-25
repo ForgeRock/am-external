@@ -20,7 +20,7 @@
 
    Copyright 2009 Sun Microsystems Inc. All Rights Reserved
 
-   Portions Copyrighted 2013-2016 ForgeRock AS.
+   Portions Copyrighted 2013-2019 ForgeRock AS.
    Portions Copyrighted 2014 Nomura Research Institute, Ltd
 --%>
 
@@ -35,6 +35,8 @@
 <%@ page import="java.util.Set" %>
 <%@ page import="com.sun.identity.cot.CircleOfTrustManager" %>
 <%@ page import="org.owasp.esapi.ESAPI"%>
+<%@ page import="com.sun.identity.cot.COTException" %>
+<%@ page import="com.sun.identity.saml2.common.SAML2Utils" %>
 
 <script>
 function checkEmptyResource() {
@@ -91,23 +93,25 @@ function checkEmptyResource() {
       <%
           try {
               CircleOfTrustManager cotManager = new CircleOfTrustManager();
-              Set members = cotManager.getAllCirclesOfTrust("/");
+              Set<String> members = cotManager.getAllCirclesOfTrust("/");
               if ((members == null) || members.isEmpty()) {
                   out.print("Misconfiguration - No circle of trust.");
               } else {
                   out.print("Circle of trust names: ");
                   boolean isFirst = true;
-                  for (Object member : members) {
+                  for (String member : members) {
                       if (isFirst) {
                           isFirst = false;
                       } else {
                           out.print(", ");
                       }
-                      out.print(member);
+                      out.print(ESAPI.encoder().encodeForHTML(member));
                   }
               }
-          } catch (Exception e) {
-              out.print(e.toString());
+          } catch (COTException e) {
+              String errorMessage = "Error reading Circles of Trust.";
+              SAML2Utils.debug.error(errorMessage, e);
+              out.print(errorMessage);
           }
       %>
       </td>

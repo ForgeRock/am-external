@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2018 ForgeRock AS.
+ * Copyright 2013-2019 ForgeRock AS.
  */
 
 package org.forgerock.openam.idrepo.ldap;
@@ -73,7 +73,7 @@ public abstract class IdRepoTestBase extends PowerMockTestCase {
     protected DJLDAPv3Repo idrepo = new DJLDAPv3Repo() {
         @Override
         protected org.forgerock.openam.sm.datalayer.api.ConnectionFactory<Connection>
-        createConnectionFactory(String username, char[] password, int maxPoolSize) {
+        createConnectionFactory(String username, char[] password, int minPoolSize, int maxPoolSize) {
             return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(new FakeConnectionFactory());
         }
 
