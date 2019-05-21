@@ -341,7 +341,7 @@ public class SAML2Utils extends SAML2SDKUtils {
                         }
                     } else {
                         debug.error(method + "InResponseTo attribute in Response"
-                                + " is invalid: " + inRespToResp + ", SAML2 failover is enabled");
+                                + " is invalid: " + inRespToResp + ", SAML2 failover is not enabled");
                         String[] data = {respID};
                         LogUtil.error(Level.INFO, LogUtil.INVALID_INRESPONSETO_RESPONSE, data, null);
                         throw new SAML2Exception(bundle.getString("invalidInResponseToInResponse"));

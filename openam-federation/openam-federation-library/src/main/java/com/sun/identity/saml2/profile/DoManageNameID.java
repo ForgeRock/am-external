@@ -24,7 +24,7 @@
  *
  * $Id: DoManageNameID.java,v 1.26 2009/11/24 21:53:27 madan_ranganath Exp $
  *
- * Portions copyright 2013-2018 ForgeRock AS.
+ * Portions copyright 2013-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -52,6 +52,7 @@ import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
 import com.sun.identity.saml2.common.SOAPCommunicator;
+import org.forgerock.openam.utils.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -1720,7 +1721,7 @@ public class DoManageNameID {
         throws SAML2Exception {
     
         NameIDInfo nameInfo = null;
-        if (affiliationID != null) {
+        if (StringUtils.isNotEmpty(affiliationID)) {
             AffiliationDescriptorType affiDesc =
                 metaManager.getAffiliationDescriptor(realm, affiliationID);
             if (affiDesc != null) {

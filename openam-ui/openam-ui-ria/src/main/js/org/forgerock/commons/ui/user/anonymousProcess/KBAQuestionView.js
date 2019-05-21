@@ -29,10 +29,10 @@ define([
         noBaseTemplate: true,
         CUSTOM_QUESTION: "customQuestion",
         events: {
-            "click  [data-delete-question]": "deleteQuestion",
+            "click [data-delete-question]": "deleteQuestion",
             "change [data-select-question]": "changeQuestion",
-            "blur   [data-custom-question]": "setCustomQuestion",
-            "blur   [data-answer]"         : "setAnswer"
+            "blur [data-custom-question]": "setCustomQuestion",
+            "keyup [data-answer]": "setAnswer"
         },
 
         /**

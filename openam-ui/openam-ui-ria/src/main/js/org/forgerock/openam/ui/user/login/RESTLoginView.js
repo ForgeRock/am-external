@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 
 define([
@@ -255,6 +255,19 @@ define([
             }
         },
 
+        getUrlWithoutNewSessionParameters () {
+            const paramsWithoutNewSession = (paramString, separator) => {
+                const params = query.parseParameters(paramString);
+                if (params.arg === "newsession") {
+                    delete params.arg;
+                }
+                return _.isEmpty(params) ? "" : `${separator}${query.urlParamsFromObject(params)}`;
+            };
+            const queryString = paramsWithoutNewSession(URIUtils.getCurrentQueryString(), "?");
+            const fragment = paramsWithoutNewSession(URIUtils.getCurrentFragmentQueryString(), "&");
+            return `${URIUtils.getCurrentPathName()}${queryString}#login${fragment}`;
+        },
+
         render (args) {
             this.handleLegacyRealmFragmentParameter();
 
@@ -285,9 +298,13 @@ define([
             }
 
             AuthNService.getRequirements().then(_.bind(function (reqs) {
-                // Clear out existing session if instructed
-                if (reqs.hasOwnProperty("tokenId") && params.arg === "newsession") {
-                    logout.default();
+                const hasNewSessionParameter = reqs.hasOwnProperty("tokenId") && params.arg === "newsession";
+                if (hasNewSessionParameter) {
+                    logout.default().then(() => {
+                        window.location.href = this.getUrlWithoutNewSessionParameters();
+                        return false;
+                    });
+                    return false;
                 }
 
                 // If simply by asking for the requirements, we end up with a token,
@@ -299,23 +316,27 @@ define([
                     this.renderForm(reqs, params);
                 }
             }, this), _.bind((error) => {
-                if (error) {
-                    Messages.addMessage({
-                        type: Messages.TYPE_DANGER,
-                        message: error.message
-                    });
+                if (_.has(error, "message")) {
+                    Messages.addMessage({ type: Messages.TYPE_DANGER, message: error.message });
                 }
+                if (_.has(error, "detail.failureUrl") && !_.isEmpty(error.detail.failureUrl)) {
+                    /**
+                     * If there is a login failure which has occurred without a login form submission, e.g. Zero Page Login
+                     * and a failureUrl is set (e.g. Failure URL node), route the user to that.
+                     */
+                    window.location.href = error.detail.failureUrl;
+                } else {
+                    /**
+                     * We haven't managed to get a successful response from the server
+                     * This could be due to many reasons, including that the params are incorrect
+                     * For example requesting service=thewrongname. So here we use the RESTLoginHelper.filterUrlParams
+                     * function to only return the params we wish to save. The authIndexType and authIndexValue
+                     * would normally only be applied when the user has logged in, so they should not contain invalid values
+                     */
 
-                /**
-                 * We havent managed to get a successful responce from the server
-                 * This could be due to many reasons, including that the params are incorrect
-                 * For example requesting service=thewrongname. So here we use the RESTLoginHelper.filterUrlParams
-                 * function to only return the params we which to save. The authIndexType and authIndexValue
-                 * would normally only be applied when the user has logged in, so they should not contain invalid values
-                 */
-
-                const paramString = URIUtils.getCurrentFragmentQueryString();
-                routeToLoginUnavailable(RESTLoginHelper.filterUrlParams(query.parseParameters(paramString)));
+                    const paramString = URIUtils.getCurrentFragmentQueryString();
+                    routeToLoginUnavailable(RESTLoginHelper.filterUrlParams(query.parseParameters(paramString)));
+                }
             }, this));
         },
         renderForm (reqs, urlParams) {

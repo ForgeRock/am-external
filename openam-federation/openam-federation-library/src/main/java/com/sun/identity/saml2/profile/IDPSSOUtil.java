@@ -113,6 +113,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.PrivateKey;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.logging.Level;
 import java.util.ArrayList;
@@ -1173,39 +1174,41 @@ public class IDPSSOUtil {
         }
         authnStatement.setAuthnInstant(authInstant);
 
-        AuthnContext authnContext = matchingAuthnContext;
-        if (authnContext == null) {
-            String authLevel = null;
-            try {
-                String[] values = sessionProvider.getProperty(
-                        session, SessionProvider.AUTH_LEVEL);
-                if (values != null && values.length != 0 &&
-                        values[0] != null && values[0].length() != 0) {
-                    authLevel = values[0];
-                }
-            } catch (Exception e) {
-                SAML2Utils.debug.error(classMethod +
-                        "exception retrieving auth level info from the session: ",
-                        e);
-                throw new SAML2Exception(
-                        SAML2Utils.bundle.getString("errorGettingAuthnStatement"));
-            }
-
-            IDPAuthnContextMapper idpAuthnContextMapper =
-                    getIDPAuthnContextMapper(realm, idpEntityID);
-
-            authnContext =
-                    idpAuthnContextMapper.getAuthnContextFromAuthLevel(
-                            authLevel, realm, idpEntityID);
-        }
-
         final Response idpResponse = (Response) request.getAttribute(SAML2Constants.SAML_PROXY_IDP_RESPONSE_KEY);
-        if (idpResponse != null) {
+
+        AuthnContext authnContext = matchingAuthnContext;
+        if (idpResponse == null) {
+            if (authnContext == null) {
+                String authLevel = null;
+                try {
+                    String[] values = sessionProvider.getProperty(
+                            session, SessionProvider.AUTH_LEVEL);
+                    if (values != null && values.length != 0 && StringUtils.isNotEmpty(values[0])) {
+                        authLevel = values[0];
+                    }
+                } catch (Exception e) {
+                    SAML2Utils.debug.error(classMethod + "exception retrieving auth level info from the session: ", e);
+                    throw new SAML2Exception(SAML2Utils.bundle.getString("errorGettingAuthnStatement"));
+                }
+
+                IDPAuthnContextMapper idpAuthnContextMapper =
+                        getIDPAuthnContextMapper(realm, idpEntityID);
+
+                authnContext =
+                        idpAuthnContextMapper.getAuthnContextFromAuthLevel(
+                                authLevel, realm, idpEntityID);
+            }
+        } else {
             // IdP proxy case: we already received an assertion from the remote IdP and now the IdP proxy is generating
             // a new SAML response for the SP.
+            SAML2Utils.debug.message("{} SAML Response from IdP present - IdP-Proxy case - fetching AuthContext",
+                classMethod);
+            SAML2Utils.debug.message("{} Using SAML response issued by {}", classMethod,
+                idpResponse.getIssuer().getValue());
             Set<String> authenticatingAuthorities = new LinkedHashSet<String>();
             final List<Assertion> assertions = idpResponse.getAssertion();
             if (CollectionUtils.isNotEmpty(assertions)) {
+                authnContext = getAuthContextFromAssertion(assertions.get(0));
                 for (Assertion assertion : assertions) {
                     authenticatingAuthorities.addAll(extractAuthenticatingAuthorities(assertion));
                 }
@@ -1216,13 +1219,15 @@ public class IDPSSOUtil {
                 authnContext.setAuthenticatingAuthority(new ArrayList<String>(authenticatingAuthorities));
             } else {
                 // Check for Encrypted Assertions
+                SAML2Utils.debug.message("{} no Assertion present, check for encrypted Assertion", classMethod);
                 final List<EncryptedAssertion> encryptedAssertions = idpResponse.getEncryptedAssertion();
                 if (CollectionUtils.isNotEmpty(encryptedAssertions)) {
                     boolean firstAssertion = true;
-                    String hostEntityId = metaManager.getEntityByMetaAlias(metaAlias);
-                    Set<PrivateKey> decryptionKeys = KeyUtil.getDecryptionKeys(metaManager.getSPSSOConfig(realm, hostEntityId));
-                    for (EncryptedAssertion encryptedAssertion : encryptedAssertions) {
-                        Assertion assertion = encryptedAssertion.decrypt(decryptionKeys);
+                    List<Assertion> decryptedAssertions = decryptAssertions(metaAlias, realm ,encryptedAssertions);
+                    if (CollectionUtils.isNotEmpty(decryptedAssertions)) {
+                        authnContext = getAuthContextFromAssertion(decryptedAssertions.get(0));
+                    }
+                    for (Assertion assertion : decryptedAssertions) {
                         authenticatingAuthorities.addAll(extractAuthenticatingAuthorities(assertion));
                         if (firstAssertion) {
                             authenticatingAuthorities.add(assertion.getIssuer().getValue());
@@ -1230,6 +1235,8 @@ public class IDPSSOUtil {
                         }
                     }
                     authnContext.setAuthenticatingAuthority(new ArrayList<String>(authenticatingAuthorities));
+                } else {
+                    SAML2Utils.debug.message("{} no Assertions present", classMethod);
                 }
             }
         }
@@ -1272,7 +1279,6 @@ public class IDPSSOUtil {
         }
         return authnStatement;
     }
-
 
     /**
      * Returns a <code>SAML AttributeStatement</code> object
@@ -3086,5 +3092,58 @@ public class IDPSSOUtil {
             }
         }
         return authenticatingAuthorities;
+    }
+
+    /**
+     * Obtain the AuthnContext from the provided assertion.
+     * Used in an IdP Proxy scenario to relay the AuthnContext from the IdP back to the SP.
+     * @param assertion The SAML Assertion to obtain the AuthnContext from.
+     * @return The AuthnContext.  Note that returned instance is mutable.
+     * @throws SAML2Exception If the setting of the AuthnContextClassRef fails.
+     */
+    private static AuthnContext getAuthContextFromAssertion(Assertion assertion) throws SAML2Exception {
+        AuthnContext authnContextFromAssertion = null;
+        final List<AuthnStatement> authnStatements = assertion.getAuthnStatements();
+        if (CollectionUtils.isNotEmpty(authnStatements)) {
+            SAML2Utils.debug.message("AuthStatements present - reading first one");
+            final AuthnStatement authnStatement = authnStatements.get(0);
+            final AuthnContext authnContext = authnStatement.getAuthnContext();
+            if (authnContext != null) {
+                final String authnContextClassRef = authnContext.getAuthnContextClassRef();
+                if (StringUtils.isNotEmpty(authnContextClassRef)) {
+                    SAML2Utils.debug.message("Setting AuthContextClassRef to <{}>", authnContextClassRef);
+                    // Obtain a new AuthnContext to guarantee that this is mutable
+                    authnContextFromAssertion = AssertionFactory.getInstance().createAuthnContext();
+                    authnContextFromAssertion.setAuthnContextClassRef(authnContextClassRef);
+                }
+            }
+        }
+        return authnContextFromAssertion;
+    }
+
+    /**
+     * Decrypt the provided encrypted SAML assertions.
+     * @param metaAlias The meta alias.
+     * @param realm The realm.
+     * @param encryptedAssertions List of encrypted assertions.
+     * @return A list of (decrypted) assertions.
+     * @throws SAML2Exception If the entity or SP config cannot be found or the decryption fails.
+     */
+    private static List<Assertion> decryptAssertions(String metaAlias, String realm,
+            List<EncryptedAssertion> encryptedAssertions) throws SAML2Exception {
+        SAML2Utils.debug.message("Decrypting Assertion for metaAlias <{}> in realm <{}>", metaAlias, realm);
+        List<Assertion> decryptedAssertions = Collections.emptyList();
+        if (CollectionUtils.isNotEmpty(encryptedAssertions)) {
+            decryptedAssertions = new ArrayList<>();
+            final String hostEntityId = metaManager.getEntityByMetaAlias(metaAlias);
+            final Set<PrivateKey> decryptionKeys = KeyUtil.getDecryptionKeys(
+                metaManager.getSPSSOConfig(realm, hostEntityId));
+            for (final EncryptedAssertion encryptedAssertion : encryptedAssertions) {
+                final Assertion decryptedAssertion = encryptedAssertion.decrypt(decryptionKeys);
+                SAML2Utils.debug.message("Decrypted Assertion");
+                decryptedAssertions.add(decryptedAssertion);
+            }
+        }
+        return decryptedAssertions;
     }
 }
