@@ -16,7 +16,6 @@
 
 import { isSessionValid } from "org/forgerock/openam/ui/user/services/SessionService";
 import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
-import AlertPartial from "partials/alerts/_Alert";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
@@ -25,16 +24,12 @@ import isRealmChanged from "org/forgerock/openam/ui/common/util/isRealmChanged";
 import logout from "org/forgerock/openam/ui/user/login/logout";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 
-function gotoLoginWithParams (args) {
+function removeUserAndGotoLogin (args) {
+    Configuration.setProperty("loggedUser", null);
     EventManager.sendEvent(Constants.EVENT_CHANGE_VIEW, {
         args,
         route: Router.configuration.routes.login
     });
-}
-
-function removeUserAndGotoLogin (args) {
-    Configuration.setProperty("loggedUser", null);
-    gotoLoginWithParams(args);
 }
 
 const SwitchRealmView = AbstractView.extend({
@@ -45,7 +40,7 @@ const SwitchRealmView = AbstractView.extend({
         "click [data-switch-realms]" : "onSwitchRealmsHandler"
     },
     partials: {
-        "alerts/_Alert": AlertPartial
+        "alerts/_Alert": "alerts/_Alert"
     },
     render () {
         this.data.fragmentParamString = getCurrentFragmentParamString();
@@ -62,10 +57,13 @@ const SwitchRealmView = AbstractView.extend({
     },
     onSwitchRealmsHandler (event) {
         event.preventDefault();
-        logout().then(() => {
-            EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "loggedOut");
-            gotoLoginWithParams(this.data.args);
-        });
+        const routeToLogin = () => {
+            EventManager.sendEvent(Constants.EVENT_CHANGE_VIEW, {
+                args : this.data.args,
+                route: Router.configuration.routes.login
+            });
+        };
+        logout().then(routeToLogin, routeToLogin);
     }
 });
 

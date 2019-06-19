@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
-import logout from "org/forgerock/openam/ui/user/login/logout";
+import removeLocalUserData from "org/forgerock/openam/ui/user/login/removeLocalUserData";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 
 /**
@@ -39,7 +39,7 @@ function stop () {
 }
 
 function validate (strategy, seconds) {
-    delay = setTimeout(() => {
+    delay = window.setTimeout(() => {
         strategy().then((seconds) => {
             /**
              * If we're within the window of 0 seconds left on the session but still monumentality valid,
@@ -50,11 +50,8 @@ function validate (strategy, seconds) {
             validate(strategy, adjustedSeconds);
         }, () => {
             stop();
-
-            // Invoke generic logout module to ensure Configuration.loggedUser is nullified
-            logout().then(() => {
-                Router.routeTo(Router.configuration.routes.sessionExpired, { trigger: true });
-            });
+            removeLocalUserData();
+            Router.routeTo(Router.configuration.routes.sessionExpired, { trigger: true });
         });
     }, seconds * ONE_SECOND_IN_MILLISECONDS);
 }
@@ -66,7 +63,9 @@ export default {
      * perform validation
      */
     start (strategy) {
-        if (delay) { throw new Error("Validator has already been started"); }
+        if (delay) {
+            stop();
+        }
 
         validate(strategy, 0);
     },

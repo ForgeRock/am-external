@@ -26,8 +26,6 @@
  *
  * Portions Copyrighted 2015-2016 ForgeRock AS.
  */
-
-
 package com.sun.identity.saml2.assertion.impl;
 
 import static org.forgerock.openam.utils.Time.*;
@@ -41,7 +39,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
 import java.text.ParseException;
-import java.security.Key;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Set;
@@ -61,6 +58,7 @@ import com.sun.identity.saml2.assertion.Subject;
 import com.sun.identity.saml2.assertion.Advice;
 import com.sun.identity.saml2.assertion.Conditions;
 import com.sun.identity.saml2.assertion.Issuer;
+import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.xmlenc.EncManager;
 import com.sun.identity.saml2.xmlsig.SigManager;
 
@@ -701,42 +699,12 @@ public class AssertionImpl implements Assertion {
         makeImmutable();  
     }
 
-    /**
-     * Returns an <code>EncryptedAssertion</code> object.
-     *
-     * @param recipientPublicKey Public key used to encrypt the data encryption
-     *                           (secret) key, it is the public key of the
-     *                           recipient of the XML document to be encrypted.
-     * @param dataEncAlgorithm Data encryption algorithm.
-     * @param dataEncStrength Data encryption strength.
-     * @param recipientEntityID Unique identifier of the recipient, it is used
-     *                          as the index to the cached secret key so that
-     *                          the key can be reused for the same recipient;
-     *                          It can be null in which case the secret key will
-     *                          be generated every time and will not be cached
-     *                          and reused. Note that the generation of a secret
-     *                          key is a relatively expensive operation.
-     * @return <code>EncryptedAssertion</code> object
-     * @throws SAML2Exception if error occurs during the encryption process.
-     */
     @Override
-    public EncryptedAssertion encrypt(
-        Key recipientPublicKey,
-        String dataEncAlgorithm,
-        int dataEncStrength,
-        String recipientEntityID
-    ) throws SAML2Exception {
-        
-        Element el = EncManager.getEncInstance().encrypt(
-            toXMLString(true, true),
-            recipientPublicKey,
-            dataEncAlgorithm,
-            dataEncStrength,
-            recipientEntityID,
-            "EncryptedAssertion"
-        );
-        return AssertionFactory.getInstance().
-            createEncryptedAssertion(el);
+    public EncryptedAssertion encrypt(EncryptionConfig encryptionConfig, String recipientEntityID)
+            throws SAML2Exception {
+        Element el = EncManager.getEncInstance().encrypt(toXMLString(true, true),
+                encryptionConfig, recipientEntityID, "EncryptedAssertion");
+        return AssertionFactory.getInstance().createEncryptedAssertion(el);
     }
 
     /**

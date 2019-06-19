@@ -40,14 +40,21 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBIntrospector;
+import javax.xml.namespace.QName;
 
+import org.apache.xml.security.Init;
+import org.apache.xml.security.algorithms.JCEMapper;
 import org.apache.xml.security.encryption.XMLCipher;
+import org.apache.xml.security.utils.EncryptionConstants;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
+import org.w3c.dom.Element;
 
 import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.saml.common.SAMLConstants;
@@ -63,9 +70,11 @@ import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.XACMLPDPDescriptorType;
 import com.sun.identity.saml2.jaxb.xmlenc.EncryptionMethodType;
+import com.sun.identity.saml2.jaxb.xmlsig.DigestMethodType;
 import com.sun.identity.saml2.jaxb.xmlsig.KeyInfoType;
 import com.sun.identity.saml2.jaxb.xmlsig.X509DataType;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
+import com.sun.identity.shared.configuration.SystemPropertiesManager;
 
 /**
  * The <code>KeyUtil</code> provides methods to obtain
@@ -75,17 +84,22 @@ import com.sun.identity.saml2.meta.SAML2MetaUtils;
  */
 public class KeyUtil {
 
+    private static final QName DIGEST_METHOD = new QName("http://www.w3.org/2000/09/xmldsig#", "DigestMethod");
+    private static final QName MGF = new QName("http://www.w3.org/2009/xmlenc11#", "MGF");
+    private static final QName OAEP_PARAMS = new QName("http://www.w3.org/2001/04/xmlenc#", "OAEPparams");
+
     private static KeyProvider keyProvider = null;
 
     // key is EntityID|Role
-    // value is EncInfo
-    protected static Hashtable encHash = new Hashtable();
+    private static Map<String, EncryptionConfig> encHash = new Hashtable<>();
 
     // key is EntityID|Role
     // value is X509Certificate
     protected static Map<String, Set<X509Certificate>> sigHash = new Hashtable<>();
 
     static {
+        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
+        Init.init();
         try {
             keyProvider = (KeyProvider)Class.forName(SystemConfigurationUtil.getProperty(
                     SAMLConstants.KEY_PROVIDER_IMPL_CLASS,
@@ -258,93 +272,39 @@ public class KeyUtil {
     /**
      * Returns the encryption information which will be used in
      * encrypting messages intended for the partner entity.
-     * @param roled <code>RoleDescriptor</code> for the partner entity
+     *
+     * @param roleDescriptor <code>RoleDescriptor</code> for the partner entity
      * @param entityID partner entity's ID
      * @param role entity's role
-     * @return <code>EncInfo</code> which includes partner entity's
+     * @return <code>EncryptionConfig</code> which includes partner entity's
      * public key for wrapping the secret key, data encryption algorithm,
      * and data encryption strength
      */
-    public static EncInfo getEncInfo(
-            RoleDescriptorType roled,
-            String entityID,
-            String role
-    ) {
-
-        String classMethod = "KeyUtil.getEncInfo: ";
+    public static EncryptionConfig getEncryptionConfig(RoleDescriptorType roleDescriptor, String entityID,
+            String role) {
+        String classMethod = "KeyUtil.getEncryptionConfig: ";
         if (SAML2SDKUtils.debug.messageEnabled()) {
-            SAML2SDKUtils.debug.message(
-                    classMethod +
-                            "Entering... \nEntityID=" +
-                            entityID + "\nRole="+role
-            );
+            SAML2SDKUtils.debug.message("{}Entering... \nEntityID={}\nRole={}", classMethod, entityID, role);
         }
         // first try to get it from cache
-        String index = entityID.trim()+"|"+role;
-        EncInfo encInfo = (EncInfo)encHash.get(index);
-        if (encInfo != null) {
-            return encInfo;
+        String index = entityID.trim() + "|" + role;
+        EncryptionConfig encryptionConfig = encHash.get(index);
+        if (encryptionConfig != null) {
+            return encryptionConfig;
         }
         // else get it from meta
-        if (roled == null) {
-            SAML2SDKUtils.debug.error(
-                    classMethod+
-                            "Null RoleDescriptorType input for entityID=" +
-                            entityID + " in "+role+" role."
-            );
+        if (roleDescriptor == null) {
+            SAML2SDKUtils.debug.error("{}Null RoleDescriptorType input for entityID={} in {} role.", classMethod,
+                    entityID, role);
             return null;
         }
-        KeyDescriptorElement kd =
-                getKeyDescriptor(roled, SAML2Constants.ENCRYPTION);
-        if (kd == null) {
-            SAML2SDKUtils.debug.error(
-                    classMethod+
-                            "No encryption KeyDescriptor for entityID=" +
-                            entityID + " in "+role+" role."
-            );
+        KeyDescriptorElement keyDescriptor = getKeyDescriptor(roleDescriptor, SAML2Constants.ENCRYPTION);
+        if (keyDescriptor == null) {
+            SAML2SDKUtils.debug.error("{}No encryption KeyDescriptor for entityID={} in {} role.", classMethod,
+                    entityID, role);
             return null;
         }
-        java.security.cert.X509Certificate cert = getCert(kd);
-        if (cert == null) {
-            SAML2SDKUtils.debug.error(
-                    classMethod +
-                            "No encryption cert for entityID=" +
-                            entityID + " in "+role+" role."
-            );
-            return null;
-        }
-        List<EncryptionMethodType> emList = kd.getValue().getEncryptionMethod();
-        EncryptionMethodType em;
-        String algorithm = null;
-        int keySize = 0;
-        if (emList != null && !emList.isEmpty()) {
-            em = emList.get(0);
-            if (em != null) {
-                algorithm = em.getAlgorithm();
-                List<Object> cList = em.getContent();
-                if (cList != null) {
-                    for (Object content : cList) {
-                        content = JAXBIntrospector.getValue(content);
-                        if (content instanceof BigInteger) {
-                            keySize = ((BigInteger) content).intValue();
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        if (algorithm == null || algorithm.length() == 0) {
-            algorithm = XMLCipher.AES_128;
-            keySize = 128;
-        }
-        PublicKey pk = cert.getPublicKey();
-        if (pk != null) {
-            encInfo = new EncInfo(pk, algorithm, keySize);
-        }
-        if (encInfo != null) {
-            encHash.put(index, encInfo);
-        }
-        return encInfo;
+        return getEncryptionConfig(keyDescriptor, entityID, role);
     }
 
     /**
@@ -484,98 +444,141 @@ public class KeyUtil {
      * @param pepDesc <code>XACMLAuthzDecisionQueryDescriptorElement</code>
      * for the partner entity
      * @param pepEntityID partner entity's ID
-     * @return <code>EncInfo</code> which includes partner entity's
+     * @return <code>EncryptionConfig</code> which includes partner entity's
      * public key for wrapping the secret key, data encryption algorithm,
      * and data encryption strength
      */
-    public static EncInfo getPEPEncInfo(
-            XACMLAuthzDecisionQueryDescriptorType pepDesc,String pepEntityID) {
-
-        String classMethod = "KeyUtil.getEncInfo: ";
-        String role=SAML2Constants.PEP_ROLE;
+    public static EncryptionConfig getPepEncryptionConfig(XACMLAuthzDecisionQueryDescriptorType pepDesc,
+            String pepEntityID) {
+        String classMethod = "KeyUtil.getEncryptionConfig: ";
+        String role = SAML2Constants.PEP_ROLE;
 
         if (SAML2SDKUtils.debug.messageEnabled()) {
-            SAML2SDKUtils.debug.message(
-                    classMethod +
-                            "Entering... \nEntityID=" +
-                            pepEntityID + "\nRole="+role
-            );
+            SAML2SDKUtils.debug.message(classMethod + "Entering... \nEntityID=" + pepEntityID + "\nRole="+role);
         }
         // first try to get it from cache
-        String index = pepEntityID.trim()+"|"+role;
-        EncInfo encInfo = (EncInfo)encHash.get(index);
-        if (encInfo != null) {
-            return encInfo;
+        String index = pepEntityID.trim() + "|" + role;
+        EncryptionConfig encryptionConfig = encHash.get(index);
+        if (encryptionConfig != null) {
+            return encryptionConfig;
         }
         // else get it from meta
         if (pepDesc == null) {
-            SAML2SDKUtils.debug.error(
-                    classMethod+
-                            "Null PEP Descriptor input for entityID=" +
-                            pepEntityID + " in "+role+" role."
-            );
+            SAML2SDKUtils.debug.error(classMethod + "Null PEP Descriptor input for entityID=" + pepEntityID + " in " + role
+                    + " role.");
             return null;
         }
-        KeyDescriptorElement kd = getKeyDescriptor(pepDesc,SAML2Constants.ENCRYPTION);
-        if (kd == null) {
-            SAML2SDKUtils.debug.error(
-                    classMethod+
-                            "No encryption KeyDescriptor for entityID=" +
-                            pepEntityID + " in "+role+" role."
-            );
+        KeyDescriptorElement keyDescriptor = getKeyDescriptor(pepDesc, SAML2Constants.ENCRYPTION);
+        if (keyDescriptor == null) {
+            SAML2SDKUtils.debug.error(classMethod + "No encryption KeyDescriptor for entityID=" + pepEntityID +
+                    " in " + role + " role.");
             return null;
         }
-        return  getEncryptionInfo(kd,pepEntityID,role);
+        return getEncryptionConfig(keyDescriptor, pepEntityID, role);
     }
 
     /**
-     * Returns the <code>EncInfo</code> from the <code>KeyDescriptor</code>.
+     * Returns the <code>EncryptionConfig</code> from the <code>KeyDescriptor</code>.
      *
-     * @param kd the M<code>KeyDescriptor</code> object.
-     * @param entityID the entity identfier
+     * @param keyDescriptor the M<code>KeyDescriptor</code> object.
+     * @param entityID the entity identifier
      * @param role the role of the entity . Value can be PEP or PDP.
-     * @return <code>EncInfo</code> the encryption info.
+     * @return <code>EncryptionConfig</code> the encryption info.
      */
-    private static EncInfo getEncryptionInfo(KeyDescriptorElement kd,
-            String entityID, String role) {
-        String classMethod = "KeyUtil:getEncryptionInfo:";
-        java.security.cert.X509Certificate cert = getCert(kd);
+    private static EncryptionConfig getEncryptionConfig(KeyDescriptorElement keyDescriptor, String entityID,
+            String role) {
+        String classMethod = "KeyUtil:getEncryptionConfig:";
+        X509Certificate cert = getCert(keyDescriptor);
         if (cert == null) {
-            SAML2SDKUtils.debug.error(
-                    classMethod +
-                            "No encryption cert for entityID=" +
-                            entityID + " in "+role+" role."
-            );
+            SAML2SDKUtils.debug.error(classMethod + "No encryption cert for entityID=" + entityID +
+                    " in " + role + " role.");
             return null;
         }
-        List<EncryptionMethodType> emList = kd.getValue().getEncryptionMethod();
-        EncryptionMethodType em = null;
-        String algorithm = null;
+        List<EncryptionMethodType> encryptionMethods = keyDescriptor.getValue().getEncryptionMethod();
+        String dataEncryptionAlgorithm = null;
+        String keyTransportAlgorithm = null;
+        RsaOaepConfig rsaOaepConfig = null;
         int keySize = 0;
-        if (emList != null && !emList.isEmpty()) {
-            em = emList.get(0);
-            if (em != null) {
-                algorithm = em.getAlgorithm();
-                List<Object> cList = em.getContent();
-                if (cList != null) {
-                    keySize = ((BigInteger) JAXBIntrospector.getValue(cList.get(0))).intValue();
+
+        for (EncryptionMethodType encryptionMethod : encryptionMethods) {
+            String alg = encryptionMethod.getAlgorithm();
+            String algorithmClass = JCEMapper.getAlgorithmClassFromURI(alg);
+            if (keyTransportAlgorithm == null
+                    && ("KeyTransport".equals(algorithmClass) || "SymmetricKeyWrap".equals(algorithmClass))) {
+                keyTransportAlgorithm = alg;
+                if (XMLCipher.RSA_OAEP.equals(alg)) {
+                    rsaOaepConfig = getRsaOaepConfig(encryptionMethod);
+                } else if (XMLCipher.RSA_OAEP_11.equals(alg)) {
+                    rsaOaepConfig = getRsaOaep11Config(encryptionMethod);
+                }
+            } else if (dataEncryptionAlgorithm == null && "BlockEncryption".equals(algorithmClass)) {
+                dataEncryptionAlgorithm = alg;
+                keySize = SAML2Utils.getKeySizeFromEncryptionMethod(encryptionMethod);
+            } else if (dataEncryptionAlgorithm != null && keyTransportAlgorithm != null) {
+                break;
+            }
+        }
+
+        if (StringUtils.isEmpty(dataEncryptionAlgorithm)) {
+            dataEncryptionAlgorithm = XMLCipher.AES_128;
+            keySize = 128;
+        }
+        PublicKey publicKey = cert.getPublicKey();
+        EncryptionConfig encryptionConfig = null;
+        if (publicKey != null) {
+            encryptionConfig = new EncryptionConfig(publicKey, dataEncryptionAlgorithm, keySize, keyTransportAlgorithm,
+                    Optional.ofNullable(rsaOaepConfig));
+        }
+        String index = entityID.trim()+"|"+role;
+        if (encryptionConfig != null) {
+            encHash.put(index, encryptionConfig);
+        }
+        return encryptionConfig;
+    }
+
+    private static RsaOaepConfig getRsaOaepConfig(EncryptionMethodType encryptionMethod) {
+        return getRsaOaepConfig(encryptionMethod, element -> EncryptionConstants.MGF1_SHA1);
+    }
+
+    private static RsaOaepConfig getRsaOaep11Config(EncryptionMethodType encryptionMethod) {
+        return getRsaOaepConfig(encryptionMethod,
+                element -> Optional.ofNullable(element)
+                        .map(e -> e.getAttribute("Algorithm"))
+                        .orElseGet(() -> SystemPropertiesManager.get(SAML2Constants.MASK_GENERATION_FUNCTION,
+                                EncryptionConstants.MGF1_SHA256)));
+    }
+
+    private static RsaOaepConfig getRsaOaepConfig(EncryptionMethodType encryptionMethod,
+            Function<Element, String> mgfFunction) {
+        Optional<String> digestMethod = Optional.empty();
+        Element mgfElement = null;
+        byte[] oaepParams = null;
+        if (encryptionMethod != null) {
+            List<Object> encryptionSettings = encryptionMethod.getContent();
+            for (Object encryptionSetting : encryptionSettings) {
+                if (encryptionSetting instanceof JAXBElement) {
+                    JAXBElement jaxbElement = (JAXBElement) encryptionSetting;
+                    if (DIGEST_METHOD.equals(jaxbElement.getName())) {
+                        digestMethod = Optional.of(jaxbElement)
+                                .map(JAXBIntrospector::getValue)
+                                .map(DigestMethodType.class::cast)
+                                .map(DigestMethodType::getAlgorithm);
+                    } else if (OAEP_PARAMS.equals(jaxbElement.getName())) {
+                        oaepParams = (byte[]) JAXBIntrospector.getValue(jaxbElement);
+                    }
+                } else if (encryptionSetting instanceof Element) {
+                    Element element = (Element) encryptionSetting;
+                    if (MGF.getNamespaceURI().equals(element.getNamespaceURI())
+                            && MGF.getLocalPart().equals(element.getLocalName())) {
+                        mgfElement = element;
+                    }
                 }
             }
         }
-        if (algorithm == null || algorithm.length() == 0) {
-            algorithm = XMLCipher.AES_128;
-            keySize = 128;
-        }
-        PublicKey pk = cert.getPublicKey();
-        EncInfo encInfo = null;
-        if (pk != null) {
-            encInfo = new EncInfo(pk, algorithm, keySize);
-        }
-        String index = entityID.trim()+"|"+role;
-        if (encInfo != null) {
-            encHash.put(index, encInfo);
-        }
-        return encInfo;
+        return new RsaOaepConfig(
+                digestMethod.orElseGet(() -> SystemPropertiesManager.get(SAML2Constants.DIGEST_ALGORITHM)),
+                mgfFunction.apply(mgfElement),
+                oaepParams);
     }
 
     /**

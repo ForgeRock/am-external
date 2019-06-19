@@ -51,6 +51,10 @@ const navData = [{
             icon: "fa-angle-right",
             route: "realmsApplicationsAgentsSoftwarePublisher"
         }, {
+            title: "console.navigation.applications-oauth2-trustedJwtIssuer.title",
+            icon: "fa-angle-right",
+            route: "realmsApplicationsOAuth2TrustedJwtIssuer"
+        }, {
             title: "console.navigation.applications-agents-web.title",
             icon: "fa-angle-right",
             route: "realmsApplicationsAgentsWeb"

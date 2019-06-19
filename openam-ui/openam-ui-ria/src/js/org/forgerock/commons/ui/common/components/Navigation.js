@@ -23,11 +23,8 @@ import Constants from "org/forgerock/openam/ui/admin/utils/Constants";
 import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
-import NavigationDropdownMenuPartial from "partials/navigation/_NavigationDropdownMenu";
 import NavigationFilter from "NavigationFilter";
-import NavigationLinkPartial from "partials/navigation/_NavigationLink";
 import Router from "org/forgerock/commons/ui/common/main/Router";
-import template from "templates/common/NavigationTemplate";
 
 const Navigation = {
     configuration: {
@@ -302,12 +299,12 @@ const hasNavbarRight = function (data) {
 Navigation.init = function(callback) {
     var CustomNavigation = AbstractView.extend({
         element: "#menu",
-        template,
+        template: "common/NavigationTemplate",
         noBaseTemplate: true,
         data: {},
         partials: {
-            "navigation/_NavigationDropdownMenu": NavigationDropdownMenuPartial,
-            "navigation/_NavigationLink": NavigationLinkPartial
+            "navigation/_NavigationDropdownMenu": "navigation/_NavigationDropdownMenu",
+            "navigation/_NavigationLink": "navigation/_NavigationLink"
         },
         events: {
             "click .event-link": "fireEvent"

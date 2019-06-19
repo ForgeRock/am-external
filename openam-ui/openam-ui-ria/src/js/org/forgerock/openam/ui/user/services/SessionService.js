@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2018 ForgeRock AS.
+ * Copyright 2014-2019 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -59,7 +59,7 @@ export const updateSessionInfo = () => {
 
 export const isSessionValid = () => getSessionInfo();
 
-export const logout = () => {
+export const logout = (options) => {
     const paramString = gotoExists() ? `&goto=${getGoto()}` : "";
     return obj.serviceCall({
         url: `?_action=logout${paramString}`,
@@ -71,6 +71,7 @@ export const logout = () => {
         errorsHandlers: {
             "Bad Request": { status: 400 },
             "Unauthorized": { status: 401 }
-        }
+        },
+        ...options
     });
 };

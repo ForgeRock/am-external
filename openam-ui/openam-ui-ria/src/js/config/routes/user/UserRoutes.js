@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 
 export default {
@@ -22,7 +22,7 @@ export default {
         forceUpdate: true,
         navGroup: "user"
     },
-    "profile": {
+    profile: {
         view: () => import("UserProfileView"),
         role: "ui-self-service-user",
         url: /^profile\/(.*)/,
@@ -33,7 +33,7 @@ export default {
     switchRealm: {
         view: () => import("org/forgerock/openam/ui/user/login/SwitchRealmView.js"),
         role: "ui-user",
-        url: /switchRealm(\/[^&]*)(&.+)?/,
+        url: /switchRealm([^&]*)(&.+)?/,
         pattern: "switchRealm?",
         defaults: [""],
         argumentNames: ["additionalParameters"]

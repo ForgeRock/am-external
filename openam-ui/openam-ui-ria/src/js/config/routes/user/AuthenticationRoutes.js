@@ -11,10 +11,8 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
-
-import Constants from "org/forgerock/openam/ui/common/util/Constants";
 
 export default {
     login: {
@@ -25,15 +23,11 @@ export default {
         argumentNames: ["realm", "additionalParameters"]
     },
     logout: {
-        event: Constants.EVENT_LOGOUT,
-        url: /^logout\/(.*)/
-    },
-    loggedOut: {
         view: () => import("org/forgerock/openam/ui/user/login/RESTLogoutView.js"),
-        url: /loggedOut([^&]+)?(&.+)?/,
-        pattern: "loggedOut??",
-        defaults: ["/", ""],
-        argumentNames: ["realm", "additionalParameters"]
+        url: /^logout(.*)/,
+        pattern: "logout?",
+        defaults: [""],
+        argumentNames: ["additionalParameters"]
     },
     loginFailure: {
         view: () => import("org/forgerock/openam/ui/user/login/LoginFailureView.js"),

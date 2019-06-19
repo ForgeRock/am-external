@@ -19,6 +19,7 @@ import java from "./java";
 import remoteConsent from "./remoteConsent";
 import soapSts from "./soapSts";
 import softwarePublisher from "./softwarePublisher";
+import trustedJwtIssuer from "./trustedJwtIssuer";
 import web from "./web";
 
 export default combineReducers({
@@ -26,5 +27,6 @@ export default combineReducers({
     remoteConsent,
     soapSts,
     softwarePublisher,
+    trustedJwtIssuer,
     web
 });

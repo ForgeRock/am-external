@@ -248,7 +248,7 @@ public class RadiusRequestHandler implements Runnable {
                 LOG.error("Received non Access-Request packet from RADIUS client '" + getClientName() + "'. Dropping.");
             }
         } catch (final Exception e) {
-            LOG.error("Unable to parse packet received from RADIUS client '" + getClientName() + "'. Dropping.", e);
+            LOG.warning("Unable to parse packet received from RADIUS client '" + getClientName() + "'. Dropping.", e);
         }
         LOG.message("Leaving RadiusRequestHandler.getValidPacket()");
         return requestPacket;
@@ -275,7 +275,7 @@ public class RadiusRequestHandler implements Runnable {
             // But the listener checks for md5 and UTF-8 encoding so that we should never run into the exceptions that
             // trigger a catastrophic event. So for completeness log it. If we ever see these then we can pass the
             // listener into this class and call its terminate() method in this case.
-            LOG.error("Catestrophic error processing a RADIUS request.", rre);
+            LOG.error("Catastrophic error processing a RADIUS request.", rre);
             eventBus.post(new PacketDroppedSilentlyEvent());
             break;
         case INVALID_RESPONSE:

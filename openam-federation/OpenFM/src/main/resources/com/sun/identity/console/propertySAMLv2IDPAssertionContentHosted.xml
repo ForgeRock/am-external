@@ -24,7 +24,7 @@
 
    $Id: propertySAMLv2IDPAssertionContentHosted.xml,v 1.6 2008/06/30 18:36:46 babysunil Exp $
 
-   Portions Copyrighted 2013-2018 ForgeRock AS.
+   Portions Copyrighted 2013-2019 ForgeRock AS.
 -->
 
 <!DOCTYPE propertysheet SYSTEM "propertysheet.dtd">
@@ -157,6 +157,19 @@
                         <attribute name="autoSubmit" value="false" />
                         <attribute name="localizeDisplayFieldValue" value="false" />
                     </cc>
+                </property>
+                <property>
+                    <label name="lblKeyTransportAlgorithm"
+                           defaultValue="samlv2.attribute.label.key.transport.algorithm"
+                           labelFor="keyTransportAlgorithm" />
+                    <cc name="keyTransportAlgorithm"
+                        tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag" >
+                        <attribute name="size" value="75" />
+                        <attribute name="autoSubmit" value="false" />
+                        <attribute name="localizeDisplayFieldValue" value="false" />
+                    </cc>
+                    <fieldhelp name="keyTransportAlgorithm.help"
+                               defaultValue="samlv2.attribute.label.key.transport.algorithm.help" />
                 </property>
             </ccgroup>
         </property>

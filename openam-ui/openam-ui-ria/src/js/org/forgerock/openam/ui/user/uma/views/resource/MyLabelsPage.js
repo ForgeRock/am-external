@@ -19,7 +19,6 @@ import $ from "jquery";
 import BasePage from "org/forgerock/openam/ui/user/uma/views/resource/BasePage";
 import BootstrapDialog from "org/forgerock/commons/ui/common/components/BootstrapDialog";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
-import DeleteLabelButtonPartial from "templates/user/uma/views/resource/_DeleteLabelButton";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import UMAService from "org/forgerock/openam/ui/user/uma/services/UMAService";
@@ -27,7 +26,7 @@ import UMAService from "org/forgerock/openam/ui/user/uma/services/UMAService";
 const MyLabelsPage = BasePage.extend({
     template: "user/uma/views/resource/MyLabelsPageTemplate",
     partials: {
-        "templates/user/uma/views/resource/_DeleteLabelButton": DeleteLabelButtonPartial
+        "uma/_DeleteLabelButton": "uma/_DeleteLabelButton"
     },
     events: {
         "click button#deleteLabel": "deleteLabel"

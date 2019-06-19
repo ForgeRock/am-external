@@ -28,7 +28,7 @@
                     <nav class="sidenav visible-xs-block">
                         <ol class="list-unstyled">
                             {{#each this.treeNavigation}}
-                                {{> templates/admin/views/common/navigation/_TreeNavigationLeaf identifier="side"}}
+                                {{> navigation/_TreeNavigationLeaf identifier="side"}}
                             {{/each}}
                         </ol>
                     </nav>
@@ -45,7 +45,7 @@
             <nav class="sidenav">
                 <ol class="list-unstyled">
                     {{#each this.treeNavigation}}
-                        {{> templates/admin/views/common/navigation/_TreeNavigationLeaf identifier="top"}}
+                        {{> navigation/_TreeNavigationLeaf identifier="top"}}
                     {{/each}}
                 </ol>
             </nav>

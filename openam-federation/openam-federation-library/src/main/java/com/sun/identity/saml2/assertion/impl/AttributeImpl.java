@@ -25,12 +25,8 @@
  * $Id: AttributeImpl.java,v 1.4 2008/06/25 05:47:42 qcheng Exp $
  *
  */
-
-
-
 package com.sun.identity.saml2.assertion.impl;
 
-import java.security.Key;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,6 +47,7 @@ import com.sun.identity.saml2.assertion.EncryptedAttribute;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.xmlenc.EncManager;
 
 /**
@@ -487,42 +484,12 @@ public class AttributeImpl implements Attribute {
         anyMap = value;
     }
 
-    /**
-     * Returns an <code>EncryptedAttribute</code> object.
-     *
-     * @param recipientPublicKey Public key used to encrypt the data encryption
-     *                           (secret) key, it is the public key of the
-     *                           recipient of the XML document to be encrypted.
-     * @param dataEncAlgorithm Data encryption algorithm.
-     * @param dataEncStrength Data encryption strength.
-     * @param recipientEntityID Unique identifier of the recipient, it is used
-     *                          as the index to the cached secret key so that
-     *                          the key can be reused for the same recipient;
-     *                          It can be null in which case the secret key will
-     *                          be generated every time and will not be cached
-     *                          and reused. Note that the generation of a secret
-     *                          key is a relatively expensive operation.
-     * @return <code>EncryptedAttribute</code> object
-     * @throws SAML2Exception if error occurs during the encryption process.
-     */
-    public EncryptedAttribute encrypt(
-        Key recipientPublicKey,
-        String dataEncAlgorithm,
-        int dataEncStrength,
-        String recipientEntityID)
-        
-        throws SAML2Exception
-    {
-        Element el = EncManager.getEncInstance().encrypt(
-            toXMLString(true, true),
-            recipientPublicKey,
-            dataEncAlgorithm,
-            dataEncStrength,
-            recipientEntityID,
-            "EncryptedAttribute"
-        );        
-        return AssertionFactory.getInstance().
-            createEncryptedAttribute(el);
+    @Override
+    public EncryptedAttribute encrypt(EncryptionConfig encryptionConfig, String recipientEntityID)
+            throws SAML2Exception {
+        Element el = EncManager.getEncInstance().encrypt(toXMLString(true, true), encryptionConfig,
+                recipientEntityID, "EncryptedAttribute");
+        return AssertionFactory.getInstance().createEncryptedAttribute(el);
     }
 
     /**

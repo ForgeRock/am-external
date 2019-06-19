@@ -34,7 +34,6 @@ import static org.forgerock.openam.utils.Time.newDate;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Date;
@@ -67,9 +66,8 @@ import com.sun.identity.saml2.common.SOAPCommunicator;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.saml2.jaxb.metadata.EndpointType;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
-import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
-import com.sun.identity.saml2.key.EncInfo;
+import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
@@ -1061,20 +1059,15 @@ public class LogoutUtil {
             return;
         }
 
-        EncInfo encryptInfo = null;
-        KeyDescriptorElement keyDescriptor = null;
+        EncryptionConfig encryptionConfig;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
             SPSSODescriptorType spSSODesc =
                     metaManager.getSPSSODescriptor(realm, remoteEntity);
-            keyDescriptor = KeyUtil.getKeyDescriptor(spSSODesc, "encryption");
-            encryptInfo = KeyUtil.getEncInfo(spSSODesc, remoteEntity,
-                    SAML2Constants.SP_ROLE);
+            encryptionConfig = KeyUtil.getEncryptionConfig(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
         } else {
             IDPSSODescriptorType idpSSODesc =
                     metaManager.getIDPSSODescriptor(realm, remoteEntity);
-            keyDescriptor = KeyUtil.getKeyDescriptor(idpSSODesc, "encryption");
-            encryptInfo = KeyUtil.getEncInfo(idpSSODesc, remoteEntity,
-                    SAML2Constants.IDP_ROLE);
+            encryptionConfig = KeyUtil.getEncryptionConfig(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
         }
 
         if (debug.messageEnabled()) {
@@ -1084,18 +1077,13 @@ public class LogoutUtil {
             debug.message(method + "remoteEntity is : " + remoteEntity);
         }
 
-        if (encryptInfo == null) {
+        if (encryptionConfig == null) {
             debug.error("NO meta data for encrypt Info.");
             throw new SAML2Exception(
                     SAML2Utils.bundle.getString("metaDataError"));
         }
 
-        X509Certificate certificate = KeyUtil.getCert(keyDescriptor);
-        PublicKey recipientPublicKey = certificate.getPublicKey();
-        EncryptedID encryptedID = nameID.encrypt(recipientPublicKey,
-                encryptInfo.getDataEncAlgorithm(),
-                encryptInfo.getDataEncStrength(),
-                remoteEntity);
+        EncryptedID encryptedID = nameID.encrypt(encryptionConfig, remoteEntity);
         request.setEncryptedID(encryptedID);
     }
 

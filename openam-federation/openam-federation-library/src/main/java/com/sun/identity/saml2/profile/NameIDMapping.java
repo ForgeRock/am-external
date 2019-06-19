@@ -61,7 +61,7 @@ import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.EndpointType;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
-import com.sun.identity.saml2.key.EncInfo;
+import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
@@ -471,18 +471,13 @@ public class NameIDMapping {
             roled = metaManager.getIDPSSODescriptor(realm, entityID);
         }
 
-        EncInfo encInfo = KeyUtil.getEncInfo(roled, entityID, role);
+        EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(roled, entityID, role);
         
-        if (encInfo == null) {
-            throw new SAML2Exception(
-                SAML2Utils.bundle.getString("UnableToFindEncryptKeyInfo"));
+        if (encryptionConfig == null) {
+            throw new SAML2Exception(SAML2Utils.bundle.getString("UnableToFindEncryptKeyInfo"));
         }
-        
-        EncryptedID encryptedID = nameID.encrypt(encInfo.getWrappingKey(), 
-            encInfo.getDataEncAlgorithm(), encInfo.getDataEncStrength(),
-            entityID);
 
-        return encryptedID;
+        return nameID.encrypt(encryptionConfig, entityID);
     }    
 
     private static void signNIMRequest(NameIDMappingRequest nimRequest, 

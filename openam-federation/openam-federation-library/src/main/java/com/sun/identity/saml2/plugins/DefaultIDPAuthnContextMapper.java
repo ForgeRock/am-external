@@ -24,7 +24,7 @@
  *
  * $Id: DefaultIDPAuthnContextMapper.java,v 1.9 2008/11/10 22:57:02 veiming Exp $
  *
- * Portions Copyrighted 2011-2018 ForgeRock AS.
+ * Portions Copyrighted 2011-2019 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins;
@@ -211,12 +211,17 @@ public class DefaultIDPAuthnContextMapper
             try {
                 int level = authLevelToInt(authLevel);
                 Iterator iter = classRefLevelMap.keySet().iterator();
+                int closestLevel = -1;
                 while (iter.hasNext()) {
                     String key = (String) iter.next();
                     Integer value = (Integer) classRefLevelMap.get(key);
                     if (value != null && (level == value.intValue())) {
                         classRef = key;
                         break;
+                    }
+                    if (value != null && (level > value.intValue()) && (closestLevel < value.intValue())) {
+                        closestLevel = value.intValue();
+                        classRef = key;
                     }
                 }
             } catch (NumberFormatException ne) {
@@ -228,11 +233,7 @@ public class DefaultIDPAuthnContextMapper
             }
         }
         if (classRef == null) {
-            classRef = (String)IDPCache.defaultClassRefHash.get(
-                idpEntityID + "|" + realm);
-            if (classRef == null) {
-                classRef = SAML2Constants.CLASSREF_PASSWORD_PROTECTED_TRANSPORT;
-            }
+            throw new SAML2Exception(SAML2Utils.bundle.getString("noAuthnContextMatch"));
         }
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(

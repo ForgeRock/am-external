@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -52,7 +52,10 @@ RESTLoginHelper.login = function (params, successCallback, errorCallback) {
                     }
                     successCallback(user);
                     AuthNService.resetProcess();
-                }, errorCallback);
+                }, () => {
+                    // Authentication successful, however the user is not authorised to access the session info.
+                    errorCallback("unauthorized");
+                });
             } else if (result.hasOwnProperty("authId")) {
                 // re-render login form for next set of required inputs
                 if (Router.currentRoute === Router.configuration.routes.login) {
@@ -79,29 +82,22 @@ RESTLoginHelper.login = function (params, successCallback, errorCallback) {
 };
 
 RESTLoginHelper.getLoggedUser = function (successCallback, errorCallback) {
-    const noSessionHandler = (xhr) => {
-        if (_.get(xhr, "responseJSON.code") === 404) {
-            errorCallback("loggedIn");
-        } else {
-            errorCallback();
-        }
-    };
-    // TODO AME-11593 Call to idFromSession is required to populate the fullLoginURL, which we use later to
-    // determine the parameters you logged in with. We should remove the support of fragment parameters and use
-    // persistent url query parameters instead.
-    ServiceInvoker.restCall({
-        url: `${Constants.host}${Constants.context}/json${
-            fetchUrl("/users?_action=idFromSession")}`,
-        headers: { "Accept-API-Version": "protocol=1.0,resource=2.0" },
-        type: "POST",
-        errorsHandlers: { "serverError": { status: "503" }, "unauthorized": { status: "401" } }
-    }).then((data) => {
-        Configuration.globalData.auth.fullLoginURL = data.fullLoginURL;
-    });
-
     return updateSessionInfo().then((data) => {
+        // TODO AME-11593 Call to idFromSession is required to populate the fullLoginURL, which we use later to
+        // determine the parameters you logged in with. We should remove the support of fragment parameters and use
+        // persistent url query parameters instead.
+        ServiceInvoker.restCall({
+            url: `${Constants.host}${Constants.context}/json${
+                fetchUrl("/users?_action=idFromSession")}`,
+            headers: { "Accept-API-Version": "protocol=1.0,resource=2.0" },
+            type: "POST",
+            errorsHandlers: { "serverError": { status: "503" }, "unauthorized": { status: "401" } }
+        }).then((data) => {
+            Configuration.globalData.auth.fullLoginURL = data.fullLoginURL;
+        });
+
         return UserModel.fetchById(data.username).then(successCallback);
-    }, noSessionHandler);
+    }, errorCallback);
 };
 
 RESTLoginHelper.getSuccessfulLoginUrlParams = function () {

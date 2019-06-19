@@ -107,7 +107,7 @@ import com.sun.identity.saml2.jaxb.metadata.AffiliationDescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.IndexedEndpointType;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
-import com.sun.identity.saml2.key.EncInfo;
+import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
@@ -304,6 +304,26 @@ public class IDPSSOUtil {
                 throw new SAML2Exception(
                         SAML2Utils.bundle.getString("invalidReceiver"));
             }
+        }
+
+        // Check to see if session upgrade is required
+        IDPAuthnContextMapper idpAuthnContextMapper = getIDPAuthnContextMapper(realm, idpEntityID);
+        IDPAuthnContextInfo contextInfo = idpAuthnContextMapper.getIDPAuthnContextInfo(authnReq, idpEntityID, realm);
+        Integer idpDefaultAuthLevel = contextInfo.getAuthnLevel();
+        SAML2Utils.debug.message("{}idpDefaultContextAuthLevel = {}", classMethod, idpDefaultAuthLevel);
+
+        String authLevel = getAuthLevel(session);
+        if (StringUtils.isNotEmpty(authLevel) && idpDefaultAuthLevel > Integer.parseInt(authLevel)) {
+            SAML2Utils.debug.message("{}Session authLevel is less than the Default Authentication " +
+                    "Context authLevel. Session upgrade is required.", classMethod);
+            try {
+                redirectAuthentication(request, response, authnReq, null, realm, idpEntityID, spEntityID);
+            } catch (IOException ioe) {
+                SAML2Utils.debug.error("{}Unable to redirect to authentication.", classMethod, ioe);
+                SAMLUtils.sendError(request, response, response.SC_INTERNAL_SERVER_ERROR, "UnableToRedirectToAuth",
+                        SAML2Utils.bundle.getString("UnableToRedirectToAuth"));
+            }
+            return;
         }
 
         if (authnReq == null && (session == null || !isValidSessionInRealm(realm, session))) {
@@ -1180,17 +1200,7 @@ public class IDPSSOUtil {
         AuthnContext authnContext = matchingAuthnContext;
         if (idpResponse == null) {
             if (authnContext == null) {
-                String authLevel = null;
-                try {
-                    String[] values = sessionProvider.getProperty(
-                            session, SessionProvider.AUTH_LEVEL);
-                    if (values != null && values.length != 0 && StringUtils.isNotEmpty(values[0])) {
-                        authLevel = values[0];
-                    }
-                } catch (Exception e) {
-                    SAML2Utils.debug.error(classMethod + "exception retrieving auth level info from the session: ", e);
-                    throw new SAML2Exception(SAML2Utils.bundle.getString("errorGettingAuthnStatement"));
-                }
+                String authLevel = getAuthLevel(session);
 
                 IDPAuthnContextMapper idpAuthnContextMapper =
                         getIDPAuthnContextMapper(realm, idpEntityID);
@@ -2581,9 +2591,9 @@ public class IDPSSOUtil {
         SPSSODescriptorType spSSODescriptorElement = getSPSSODescriptor(
                 realm, spEntityID, classMethod);
         // get the encryption information
-        EncInfo encInfo = KeyUtil.getEncInfo(spSSODescriptorElement,
-                spEntityID, SAML2Constants.SP_ROLE);
-        if (encInfo == null) {
+        EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(spSSODescriptorElement, spEntityID,
+                SAML2Constants.SP_ROLE);
+        if (encryptionConfig == null) {
             SAML2Utils.debug.error(classMethod +
                     "failed to get service provider encryption key info.");
             throw new SAML2Exception(
@@ -2595,9 +2605,7 @@ public class IDPSSOUtil {
                 signAssertion(realm, idpEntityID, assertion);
             }
             // we only encrypt the Assertion
-            EncryptedAssertion encryptedAssertion = assertion.encrypt(
-                    encInfo.getWrappingKey(), encInfo.getDataEncAlgorithm(),
-                    encInfo.getDataEncStrength(), spEntityID);
+            EncryptedAssertion encryptedAssertion = assertion.encrypt(encryptionConfig, spEntityID);
             if (encryptedAssertion == null) {
                 SAML2Utils.debug.error(classMethod +
                         "failed to encrypt the assertion.");
@@ -2625,10 +2633,7 @@ public class IDPSSOUtil {
                 if (nameID == null) {
                     return;
                 }
-                EncryptedID encryptedNameID = nameID.encrypt(
-                        encInfo.getWrappingKey(),
-                        encInfo.getDataEncAlgorithm(),
-                        encInfo.getDataEncStrength(), spEntityID);
+                EncryptedID encryptedNameID = nameID.encrypt(encryptionConfig, spEntityID);
                 if (encryptedNameID == null) {
                     SAML2Utils.debug.error(classMethod +
                             "failed to encrypt the NameID.");
@@ -2664,11 +2669,7 @@ public class IDPSSOUtil {
                         List eaList = new ArrayList();
                         for (int j = 0; j < aSize; j++) {
                             Attribute attribute = (Attribute) attributes.get(j);
-                            EncryptedAttribute encryptedAttribute =
-                                    attribute.encrypt(
-                                            encInfo.getWrappingKey(),
-                                            encInfo.getDataEncAlgorithm(),
-                                            encInfo.getDataEncStrength(), spEntityID);
+                            EncryptedAttribute encryptedAttribute = attribute.encrypt(encryptionConfig, spEntityID);
                             if (encryptedAttribute == null) {
                                 SAML2Utils.debug.error(classMethod +
                                         "failed to encrypt the Attribute.");
@@ -3137,5 +3138,28 @@ public class IDPSSOUtil {
             }
         }
         return decryptedAssertions;
+    }
+
+    /**
+     * Get the AuthLevel of the session.
+     * @param session The session object.
+     * @return the AuthLevel as a String.
+     * @throws SAML2Exception If authLevel cannot be retrieved from the session.
+     */
+    private static String getAuthLevel(Object session) throws SAML2Exception {
+        String classMethod = "IDPSSOUtil.getAuthLevel: ";
+        String authLevel = null;
+
+        try {
+            String[] values = sessionProvider.getProperty(session, SessionProvider.AUTH_LEVEL);
+            if (values != null && values.length != 0 && StringUtils.isNotEmpty(values[0])) {
+                authLevel = values[0];
+            }
+        } catch (SessionException se) {
+            SAML2Utils.debug.error("{}exception retrieving auth level info from the session: ", classMethod, se);
+            throw new SAML2Exception(SAML2Utils.bundle.getString("errorGettingAuthnStatement"));
+        }
+        SAML2Utils.debug.message("{}session authLevel = {}", classMethod, authLevel);
+        return authLevel;
     }
 }

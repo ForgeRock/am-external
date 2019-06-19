@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2019 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
@@ -83,6 +83,7 @@ public class OpenIdConnect extends AMLoginModule {
             throw new AuthLoginException(RESOURCE_BUNDLE_NAME, BUNDLE_KEY_MISSING_HEADER, null);
         }
 
+        logger.message("OpenIdConnect:process provided idtoken : {} ", jwtValue);
         JwtClaimsSet jwtClaims = jwtHandler.validateJwt(jwtValue);
 
         if (!JwtHandler.isIntendedForAudience(config.getAudienceName(), jwtClaims)) {
@@ -97,6 +98,7 @@ public class OpenIdConnect extends AMLoginModule {
         }
         principalName = mapPrincipal(jwtClaims);
         storeUsername(principalName);
+        logger.message("OpenIdConnect:process principal from jwt: {}", principalName);
 
         if (jwtClaims.isDefined(ProofOfPossession.CNF)) {
             sharedState.put("org.forgerock.openam.authentication.modules.jwtpop.cnf",

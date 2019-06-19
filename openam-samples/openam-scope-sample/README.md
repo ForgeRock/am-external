@@ -33,3 +33,6 @@ see <https://backstage.forgerock.com/docs/am/5/oauth2-guide#chap-oauth2-customiz
 Before building the sample scope validator plugin,
 update the `<openam.version>` property in the POM to match your OpenAM version.
 
+* * *
+The files in this sample project are licensed under the [CDDL License](https://forum.forgerock.com/cddlv1-0/) and as
+such may be used as a basis for your own projects.

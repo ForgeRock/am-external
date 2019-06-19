@@ -24,18 +24,18 @@
  *
  * $Id: Attribute.java,v 1.2 2008/06/25 05:47:40 qcheng Exp $
  *
- * Portions Copyrighted 2015-2018 ForgeRock AS.
+ * Portions Copyrighted 2015-2019 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion;
 
-import java.security.Key;
 import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.sun.identity.saml2.assertion.impl.AttributeImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.key.EncryptionConfig;
 
 /**
  * The <code>Attribute</code> element identifies an attribute by name and
@@ -189,24 +189,15 @@ public interface Attribute {
     /**
      * Returns an <code>EncryptedAttribute</code> object.
      *
-     * @param recipientPublicKey Public key used to encrypt the data encryption
-     *                           (secret) key, it is the public key of the
-     *                           recipient of the XML document to be encrypted.
-     * @param dataEncAlgorithm Data encryption algorithm.
-     * @param dataEncStrength Data encryption strength.
-     * @param recipientEntityID Unique identifier of the recipient, it is used
-     *                          as the index to the cached secret key so that
-     *                          the key can be reused for the same recipient;
-     *                          It can be null in which case the secret key will
-     *                          be generated every time and will not be cached
-     *                          and reused. Note that the generation of a secret
-     *                          key is a relatively expensive operation.
+     * @param encryptionConfig The encryption config.
+     * @param recipientEntityID Unique identifier of the recipient, it is used as the index to the cached secret key so
+     * that the key can be reused for the same recipient; It can be null in which case the secret key will be generated
+     * every time and will not be cached and reused. Note that the generation of a secret key is a relatively expensive
+     * operation.
      * @return <code>EncryptedAttribute</code> object
      * @throws SAML2Exception if error occurs during the encryption process.
      */
-    EncryptedAttribute encrypt(Key recipientPublicKey, String dataEncAlgorithm,
-                               int dataEncStrength, String recipientEntityID) throws SAML2Exception;
-    
+    EncryptedAttribute encrypt(EncryptionConfig encryptionConfig, String recipientEntityID) throws SAML2Exception;
  
     /**
      * Returns a String representation of the element.

@@ -21,8 +21,6 @@ import $ from "jquery";
 
 import AbstractUserProfileTab from "org/forgerock/commons/ui/user/profile/AbstractUserProfileTab";
 import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
-import basicInputPartial from "partials/form/_basicInput";
-import basicSaveResetPartial from "partials/form/_basicSaveReset";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
@@ -34,8 +32,8 @@ import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 const UserProfileView = AbstractView.extend({
     template: "user/UserProfileTemplate",
     partials: {
-        "form/_basicInput": basicInputPartial,
-        "form/_basicSaveReset": basicSaveResetPartial
+        "form/_basicInput": "form/_basicInput",
+        "form/_basicSaveReset": "form/_basicSaveReset"
     },
     events: {
         "click a[role=tab]": "updateRoute"

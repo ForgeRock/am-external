@@ -11,22 +11,37 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2019 ForgeRock AS.
  */
 
 /**
  * @module org/forgerock/openam/ui/user/login/logout
  */
 
-import $ from "jquery";
-import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import { logout as serviceLogout } from "org/forgerock/openam/ui/user/services/SessionService";
+import Constants from "org/forgerock/openam/ui/common/util/Constants";
+import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
+import removeLocalUserData from "org/forgerock/openam/ui/user/login/removeLocalUserData";
+
+/**
+ * @param {number} status The status attributre on the error.
+ * @returns {boolean} Does the status imply a network error?
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/status
+ */
+const isNetworkError = (status) => status === 0;
 
 const logout = () => {
-    Configuration.setProperty("loggedUser", null);
-
-    return serviceLogout().then(null, () => {
-        return $.Deferred().resolve();
+    return serviceLogout().then((response) => {
+        removeLocalUserData();
+        EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "loggedOut");
+        return response;
+    }, (error) => {
+        if (isNetworkError(error.status)) {
+            EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "serviceUnavailable");
+        } else {
+            removeLocalUserData();
+            return error;
+        }
     });
 };
 

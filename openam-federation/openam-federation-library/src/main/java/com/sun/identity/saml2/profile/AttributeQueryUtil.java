@@ -24,7 +24,7 @@
  *
  * $Id: AttributeQueryUtil.java,v 1.11 2009/07/24 22:51:48 madan_ranganath Exp $
  *
- * Portions copyright 2010-2018 ForgeRock AS.
+ * Portions Copyrighted 2010-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -74,7 +74,7 @@ import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.AttributeAuthorityDescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.AttributeServiceType;
 import com.sun.identity.saml2.jaxb.metadataextquery.AttributeQueryDescriptorType;
-import com.sun.identity.saml2.key.EncInfo;
+import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
@@ -819,14 +819,11 @@ public class AttributeQueryUtil {
 
         AttributeQueryDescriptorType aqd =
             metaManager.getAttributeQueryDescriptor(realm, requesterEntityID);
-        EncInfo encInfo = KeyUtil.getEncInfo(aqd, requesterEntityID,
-            SAML2Constants.ATTR_QUERY_ROLE);
+        EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(aqd, requesterEntityID,
+                SAML2Constants.ATTR_QUERY_ROLE);
 
-        Element el = EncManager.getEncInstance().encrypt(
-            assertion.toXMLString(true, true), encInfo.getWrappingKey(),
-            secretKey, encInfo.getDataEncAlgorithm(),
-            encInfo.getDataEncStrength(), requesterEntityID,
-            "EncryptedAssertion");
+        Element el = EncManager.getEncInstance().encrypt(assertion.toXMLString(true, true),
+                secretKey, encryptionConfig, requesterEntityID, "EncryptedAssertion");
 
         return AssertionFactory.getInstance().createEncryptedAssertion(el);
     }
@@ -1499,13 +1496,10 @@ public class AttributeQueryUtil {
             AttributeAuthorityDescriptorType aad =
                   metaManager.getAttributeAuthorityDescriptor("/", idpEntityID);
 
-            EncInfo encInfo = KeyUtil.getEncInfo(aad, idpEntityID,
-                                                 SAML2Constants.ATTR_AUTH_ROLE);            
+            EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(aad, idpEntityID,
+                    SAML2Constants.ATTR_AUTH_ROLE);
 
-            EncryptedID encryptedID = nameID.encrypt(encInfo.getWrappingKey(),
-                                                  encInfo.getDataEncAlgorithm(),
-                                                  encInfo.getDataEncStrength(),
-                                                  idpEntityID);
+            EncryptedID encryptedID = nameID.encrypt(encryptionConfig, idpEntityID);
             subject.setEncryptedID(encryptedID);
         }
     

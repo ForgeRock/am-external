@@ -11,10 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS. All Rights Reserved
+ * Copyright 2014-2019 ForgeRock AS. All Rights Reserved
  */
-
 package org.forgerock.openam.examples;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.forgerock.oauth2.core.AccessToken;
 import org.forgerock.oauth2.core.ClientRegistration;
@@ -23,14 +27,8 @@ import org.forgerock.oauth2.core.ScopeValidator;
 import org.forgerock.oauth2.core.Token;
 import org.forgerock.oauth2.core.UserInfoClaims;
 import org.forgerock.oauth2.core.exceptions.InvalidClientException;
-import org.forgerock.oauth2.core.exceptions.NotFoundException;
 import org.forgerock.oauth2.core.exceptions.ServerException;
 import org.forgerock.oauth2.core.exceptions.UnauthorizedClientException;
-
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Custom scope validators implement the
@@ -126,6 +124,21 @@ public class CustomScopeValidator implements ScopeValidator {
         return scopes;
     }
 
+    @Override
+    public Set<String> validateBackChannelAuthorizationScope(
+            ClientRegistration clientRegistration,
+            Set<String> requestedScopes,
+            OAuth2Request request) throws ServerException {
+
+        if (requestedScopes == null || requestedScopes.isEmpty()) {
+            return clientRegistration.getDefaultScopes();
+        }
+
+        Set<String> scopes = new HashSet<>(clientRegistration.getAllowedScopes());
+        scopes.retainAll(requestedScopes);
+        return scopes;
+    }
+
     /**
      * Set read and write permissions according to scope.
      *
@@ -180,5 +193,9 @@ public class CustomScopeValidator implements ScopeValidator {
             OAuth2Request request)
             throws ServerException, InvalidClientException {
         // No special handling
+    }
+
+    @Override
+    public void modifyAccessToken(AccessToken accessToken, OAuth2Request request) {
     }
 }

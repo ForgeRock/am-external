@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import { expect } from "chai";
@@ -24,9 +24,10 @@ import injector from "inject-loader!./RouteTo";
 describe("org/forgerock/openam/ui/common/RouteTo", () => {
     let Configuration;
     let EventManager;
+    let logout;
+    let logoutPromise;
     let Router;
     let RouteTo;
-    let SessionManager;
     let URIUtils;
 
     beforeEach(() => {
@@ -51,12 +52,12 @@ describe("org/forgerock/openam/ui/common/RouteTo", () => {
                         url: "loginUrl"
                     }
                 }
-            }
+            },
+            routeTo: sinon.stub()
         };
 
-        SessionManager = {
-            logout: sinon.stub()
-        };
+        logoutPromise = $.Deferred();
+        logout = sinon.stub().returns(logoutPromise);
 
         URIUtils = {
             getCurrentFragment: sinon.stub().returns("page")
@@ -65,8 +66,8 @@ describe("org/forgerock/openam/ui/common/RouteTo", () => {
         RouteTo = injector({
             "org/forgerock/commons/ui/common/main/Configuration": Configuration,
             "org/forgerock/commons/ui/common/main/EventManager": EventManager,
+            "org/forgerock/openam/ui/user/login/logout": logout,
             "org/forgerock/commons/ui/common/main/Router": Router,
-            "org/forgerock/commons/ui/common/main/SessionManager": SessionManager,
             "org/forgerock/commons/ui/common/util/URIUtils": URIUtils
         }).default;
     });
@@ -106,11 +107,9 @@ describe("org/forgerock/openam/ui/common/RouteTo", () => {
     });
 
     describe("#logout", () => {
-        let promise;
 
         beforeEach(() => {
-            promise = $.Deferred();
-            SessionManager.logout = sinon.stub().returns(promise);
+            logoutPromise.resolve();
             sinon.spy(RouteTo, "setGotoFragment");
         });
 
@@ -125,34 +124,20 @@ describe("org/forgerock/openam/ui/common/RouteTo", () => {
         });
 
         context("when logout is successful", () => {
-            it("sends EVENT_AUTHENTICATION_DATA_CHANGED event", () => {
-                promise.resolve();
-
+            it("invoked Router.routeTo login ", () => {
+                logoutPromise.resolve();
                 RouteTo.logout();
 
-                expect(EventManager.sendEvent).to.be.calledWith(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, {
-                    anonymousMode: true
-                });
-            });
-
-            it("sends EVENT_CHANGE_VIEW event", () => {
-                promise.resolve();
-
-                RouteTo.logout();
-
-                expect(EventManager.sendEvent).to.be.calledWith(Constants.EVENT_CHANGE_VIEW, {
-                    route: Router.configuration.routes.login
-                });
+                expect(Router.routeTo).to.be.calledWith(Router.configuration.routes.login, { trigger: true });
             });
         });
 
         context("when logout is unsuccessful", () => {
-            it("sends no events", () => {
-                promise.fail();
-
+            it("invoked Router.routeTo login", () => {
+                logoutPromise.resolve();
                 RouteTo.logout();
 
-                expect(EventManager.sendEvent).to.not.be.called;
+                expect(Router.routeTo).to.be.calledWith(Router.configuration.routes.login, { trigger: true });
             });
         });
     });

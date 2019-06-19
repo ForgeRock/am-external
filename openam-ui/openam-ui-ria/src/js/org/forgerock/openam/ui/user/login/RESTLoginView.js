@@ -229,29 +229,23 @@ const LoginView = AbstractView.extend({
         });
     },
 
-    /**
-    * Specifying realm as part of the fragment is not supported since 14.0.
-    * This function removes the realm parameter from the fragment and puts it into the query string.
-    * TODO: Should be removed once AME-11109 is resolved.
-    */
-    handleLegacyRealmFragmentParameter () {
-        const fragmentParameters = parseParameters(URIUtils.getCurrentFragmentQueryString());
-        const fragmentRealmParameter = fragmentParameters.realm;
+    // Specifying realm as part of the fragment is not supported since 14.0.
+    // This function removes the realm parameter from the fragment and puts it into the query string.
+    // TODO: Should be removed once AME-11109 is resolved.
+    moveLegacyRealmFragmentToQuery (fragmentParams) {
+        const fragmentRealm = fragmentParams.realm;
+        delete fragmentParams.realm;
 
-        if (fragmentRealmParameter) {
-            delete fragmentParameters.realm;
+        const fragmentWithoutRealm = `#login${
+            _.isEmpty(fragmentParams) ? "" : `&${urlParamsFromObject(fragmentParams)}`
+        }`;
 
-            const fragmentWithoutRealm = `#login${
-                _.isEmpty(fragmentParameters) ? "" : `&${urlParamsFromObject(fragmentParameters)}`
-            }`;
+        const queryStringWithUpdatedRealm = `?${urlParamsFromObject({
+            realm: fragmentRealm,
+            ...parseParameters(URIUtils.getCurrentQueryString())
+        })}`;
 
-            const queryStringWithUpdatedRealm = `?${urlParamsFromObject({
-                realm: fragmentRealmParameter,
-                ...parseParameters(URIUtils.getCurrentQueryString())
-            })}`;
-
-            location.href = `${URIUtils.getCurrentPathName()}${queryStringWithUpdatedRealm}${fragmentWithoutRealm}`;
-        }
+        return `${URIUtils.getCurrentPathName()}${queryStringWithUpdatedRealm}${fragmentWithoutRealm}`;
     },
 
     getUrlWithoutNewSessionParameters () {
@@ -268,7 +262,12 @@ const LoginView = AbstractView.extend({
     },
 
     render (args) {
-        this.handleLegacyRealmFragmentParameter();
+        const fragmentParams = parseParameters(URIUtils.getCurrentFragmentQueryString());
+
+        if (fragmentParams.realm) {
+            location.href = this.moveLegacyRealmFragmentToQuery(fragmentParams);
+            return;
+        }
 
         const addtionalArguments = args ? args[1] : undefined;
         let params = {};
@@ -281,7 +280,7 @@ const LoginView = AbstractView.extend({
         this.data.args = [undefined, this.data.fragmentParamString];
 
         const queryObjectExclServiceParam = {
-            ...parseParameters(URIUtils.getCurrentFragmentQueryString()),
+            ...fragmentParams,
             ...parseParameters(URIUtils.getCurrentQueryString())
         };
         delete queryObjectExclServiceParam["service"];
@@ -303,11 +302,13 @@ const LoginView = AbstractView.extend({
         AuthNService.getRequirements().then(_.bind(function (reqs) {
             const hasNewSessionParameter = reqs.hasOwnProperty("tokenId") && params.arg === "newsession";
             if (hasNewSessionParameter) {
+                const urlWithoutNewSessionParam = this.getUrlWithoutNewSessionParameters();
                 logout().then(() => {
-                    window.location.href = this.getUrlWithoutNewSessionParameters();
-                    return false;
+                    window.location.href = urlWithoutNewSessionParam;
+                }, () => {
+                    window.location.href = urlWithoutNewSessionParam;
                 });
-                return false;
+                return;
             }
 
             // If simply by asking for the requirements, we end up with a token,

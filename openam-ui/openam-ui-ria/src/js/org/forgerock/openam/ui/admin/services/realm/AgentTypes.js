@@ -24,3 +24,4 @@ export const REMOTE_CONSENT_AGENT = "RemoteConsentAgent";
 export const SOAP_STS_AGENT = "SoapSTSAgent";
 export const SOFTWARE_PUBLISHER = "SoftwarePublisher";
 export const WEB_AGENT = "WebAgent";
+export const TRUSTED_JWT_ISSUER = "TrustedJwtIssuer";

@@ -39,11 +39,13 @@ import java.util.Set;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 
+import org.apache.xml.security.encryption.XMLCipher;
 import org.apache.xml.security.keys.KeyInfo;
 import org.apache.xml.security.keys.storage.StorageResolver;
 import org.apache.xml.security.keys.storage.implementations.KeyStoreResolver;
 import org.apache.xml.security.signature.XMLSignature;
 import org.apache.xml.security.utils.Constants;
+import org.apache.xml.security.utils.EncryptionConstants;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -457,13 +459,14 @@ public final class SAML2MetaSecurityUtils {
      * @param encAlgo Encryption algorithm URI, this is applicable for
      *        encryption cert only.
      * @param keySize Encryption key size, this is applicable for
-     *        encryption cert only. 
+     *        encryption cert only.
+     * @param keyTransportAlgorithm The key transport algorithm, this is applicable for encryption cert only.
      * @throws SAML2MetaException if failed to update the certificate alias 
      *        for the entity.
      */
     public static void updateProviderKeyInfo(String realm,
         String entityID, Set<String> certAliases, boolean isSigning, boolean isIDP,
-        String encAlgo, int keySize) throws SAML2MetaException { 
+        String encAlgo, int keySize, String keyTransportAlgorithm) throws SAML2MetaException {
         SAML2MetaManager metaManager = new SAML2MetaManager();
         EntityConfigElement config =
             metaManager.getEntityConfig(realm, entityID);
@@ -502,7 +505,7 @@ public final class SAML2MetaSecurityUtils {
         } else {
             Set<KeyDescriptorElement> keyDescriptors = new LinkedHashSet<>(certAliases.size());
             for (String certAlias : certAliases) {
-                keyDescriptors.add(getKeyDescriptor(certAlias, isSigning, encAlgo, keySize));
+                keyDescriptors.add(getKeyDescriptor(certAlias, isSigning, encAlgo, keySize, keyTransportAlgorithm));
             }
             updateKeyDescriptor(descriptor, keyDescriptors);
 
@@ -551,12 +554,10 @@ public final class SAML2MetaSecurityUtils {
         }
     }
 
-    private static KeyDescriptorElement getKeyDescriptor(
-        String certAlias, boolean isSigning, String encAlgo, int keySize) 
-        throws SAML2MetaException {
-     
+    private static KeyDescriptorElement getKeyDescriptor(String certAlias, boolean isSigning, String encAlgo,
+            int keySize, String keyTransportAlgorithm) throws SAML2MetaException {
         try {
-            String certString = 
+            String certString =
                 SAML2MetaSecurityUtils.buildX509Certificate(certAlias);
             StringBuilder sb = new StringBuilder(4000);
             sb.append("<KeyDescriptor xmlns=\"urn:oasis:names:tc:SAML:2.0:metadata\" use=\"");
@@ -579,6 +580,19 @@ public final class SAML2MetaSecurityUtils {
                 sb.append("<KeySize xmlns=\"http://www.w3.org/2001/04/xmlenc#\">")
                   .append(keySize).append("</KeySize>\n")
                   .append("</EncryptionMethod>");
+            }
+            if (!isSigning && keyTransportAlgorithm != null) {
+                sb.append("<EncryptionMethod Algorithm=\"").append(keyTransportAlgorithm).append("\">\n")
+                        .append("<DigestMethod xmlns=\"http://www.w3.org/2000/09/xmldsig#\" Algorithm=\"")
+                        .append(SystemPropertiesManager.get(SAML2Constants.DIGEST_ALGORITHM, XMLCipher.SHA256))
+                        .append("\"/>\n");
+                if (XMLCipher.RSA_OAEP_11.equals(keyTransportAlgorithm)) {
+                    sb.append("<xenc11:MGF xmlns:xenc11=\"http://www.w3.org/2009/xmlenc11#\" Algorithm=\"")
+                            .append(SystemPropertiesManager.get(SAML2Constants.MASK_GENERATION_FUNCTION,
+                                    EncryptionConstants.MGF1_SHA256))
+                            .append("\"/>\n");
+                }
+                sb.append("</EncryptionMethod>");
             }
             sb.append("</KeyDescriptor>");
             return (KeyDescriptorElement)

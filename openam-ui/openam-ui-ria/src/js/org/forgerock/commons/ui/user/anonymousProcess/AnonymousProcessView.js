@@ -20,7 +20,6 @@ import form2js from "form2js/src/form2js";
 
 import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
 import AnonymousProcessDelegate from "org/forgerock/commons/ui/user/delegates/AnonymousProcessDelegate";
-import AnonymousProcessWrapper from "templates/user/AnonymousProcessWrapper";
 import ValidatorsManager from "org/forgerock/commons/ui/common/main/ValidatorsManager";
 
 /**
@@ -77,7 +76,7 @@ function walkTreeForFilterStrings (basicNode) {
 
 const AnonymousProcessView = AbstractView.extend({
     baseTemplate: "user/AnonymousProcessBaseTemplate",
-    template: AnonymousProcessWrapper,
+    template: "user/AnonymousProcessWrapper",
     events: {
         "submit form": "formSubmit",
         "click #restart": "restartProcess",

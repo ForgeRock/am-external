@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,13 +24,10 @@
  *
  * $Id: NameIDImpl.java,v 1.3 2008/06/25 05:47:44 qcheng Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2019 ForgeRock AS.
  */
-
-
 package com.sun.identity.saml2.assertion.impl;
 
-import java.security.Key;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -40,6 +37,7 @@ import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.xmlenc.EncManager;
 
 /**
@@ -117,42 +115,11 @@ public class NameIDImpl extends NameIDTypeImpl implements NameID {
         getValueAndAttributes(element);
     }
 
-    /**
-     * Returns an <code>EncryptedID</code> object.
-     *
-     * @param recipientPublicKey Public key used to encrypt the data encryption
-     *                           (secret) key, it is the public key of the
-     *                           recipient of the XML document to be encrypted.
-     * @param dataEncAlgorithm Data encryption algorithm.
-     * @param dataEncStrength Data encryption strength.
-     * @param recipientEntityID Unique identifier of the recipient, it is used
-     *                          as the index to the cached secret key so that
-     *                          the key can be reused for the same recipient;
-     *                          It can be null in which case the secret key will
-     *                          be generated every time and will not be cached
-     *                          and reused. Note that the generation of a secret
-     *                          key is a relatively expensive operation.
-     * @return <code>EncryptedID</code> object
-     * @throws SAML2Exception if error occurs during the encryption process.
-     */
-    public EncryptedID encrypt(
-        Key recipientPublicKey,
-        String dataEncAlgorithm,
-        int dataEncStrength,
-        String recipientEntityID)
-        
-        throws SAML2Exception
-    {
-        Element el = EncManager.getEncInstance().encrypt(
-            toXMLString(true, true),
-            recipientPublicKey,
-            dataEncAlgorithm,
-            dataEncStrength,
-            recipientEntityID,
-            "EncryptedID"
-        );
-        return AssertionFactory.getInstance().
-            createEncryptedID(el);
+    @Override
+    public EncryptedID encrypt(EncryptionConfig encryptionConfig, String recipientEntityID) throws SAML2Exception {
+        Element el = EncManager.getEncInstance().encrypt(toXMLString(true, true),
+                encryptionConfig, recipientEntityID, "EncryptedID");
+        return AssertionFactory.getInstance().createEncryptedID(el);
     }
     
    /**

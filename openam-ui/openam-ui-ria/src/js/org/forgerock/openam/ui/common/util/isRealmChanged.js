@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2018 ForgeRock AS.
+ * Copyright 2016-2019 ForgeRock AS.
  */
 
 /**
@@ -22,6 +22,11 @@ import store from "store";
 export default function isRealmChanged () {
     const sessionInfoIntendedRealm = store.getState().remote.info.realm;
     const authenticatedRealm = store.getState().local.session.realm;
+
+    if (!authenticatedRealm) {
+        // if the user is not authenticated to a realm then they have not changed realms
+        return false;
+    }
 
     return sessionInfoIntendedRealm !== authenticatedRealm;
 }

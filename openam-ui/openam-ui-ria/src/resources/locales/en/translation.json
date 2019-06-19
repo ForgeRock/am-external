@@ -212,6 +212,7 @@
                 "changeSiteIdentification" : "Change Site Identification"
             },
             "RestLogoutTemplate" : {
+                "loggingOut" : "Logging out...",
                 "loggedOut" : "You have been logged out."
             },
             "SessionExpiredTemplate" : {
@@ -284,7 +285,7 @@
             "complete" : "Complete",
             "confirm": "Confirm",
             "continue" : "Continue",
-            "copyright" : "Copyright &copy; 2010-2018 ForgeRock AS. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2019 ForgeRock AS. All rights reserved.",
             "create" : "Create",
             "createdAt" : "Created at",
             "createNew": "Create New",
@@ -747,6 +748,10 @@
             "applications-agents-softwarePublisher": {
                 "breadcrumb": "Applications - Agents - Software Publisher",
                 "title": "Software Publisher"
+            },
+            "applications-oauth2-trustedJwtIssuer": {
+                "breadcrumb": "Applications - Agents - Trusted JWT Issuer",
+                "title": "Trusted JWT Issuer"
             },
             "applications-agents-web": {
                 "breadcrumb": "Applications - Agents - Web",
@@ -1743,6 +1748,44 @@
                         },
                         "new": {
                             "title": "New Software Publisher Agent Group"
+                        }
+                    }
+                },
+                "trustedJwtIssuer": {
+                    "title": "Trusted JWT Issuer Agents",
+                    "agents": {
+                        "confirmDeleteSelected": "Are you sure you want to delete the selected Trusted JWT Issuer Agent?",
+                        "confirmDeleteSelected_plural": "Are you sure you want to delete the selected Trusted JWT Issuer Agents?",
+                        "list": {
+                            "callToAction": {
+                                "button": "Add Trusted JWT Issuer Agent",
+                                "description": "Configure Trusted JWT Issuer agents to register issuers of JWTs used in OAuth 2.0 JWT Bearer grant.",
+                                "title": "No Trusted JWT Issuer Agents configured."
+                            },
+                            "grid": ["Agent ID", "Group"]
+                        },
+                        "new": {
+                            "title": "New Trusted JWT Issuer Agent"
+                        },
+                        "edit": {
+                            "type": "Trusted JWT Issuer Agent"
+                        }
+                    },
+                    "groups": {
+                        "confirmDeleteSelected": "Are you sure you want to delete the selected Trusted JWT Issuer Agent Group?",
+                        "confirmDeleteSelected_plural": "Are you sure you want to delete the selected Trusted JWT Issuer Agent Groups?",
+                        "edit": {
+                            "type": "Trusted JWT Issuer Agent Group"
+                        },
+                        "list": {
+                            "callToAction": {
+                                "description": "Specify settings for multiple Trusted JWT Issuer agents by adding them to a group",
+                                "title": "No Trusted JWT Issuer Agent groups configured."
+                            },
+                            "grid": ["Group ID"]
+                        },
+                        "new": {
+                            "title": "New Trusted JWT Issuer Agent Group"
                         }
                     }
                 },

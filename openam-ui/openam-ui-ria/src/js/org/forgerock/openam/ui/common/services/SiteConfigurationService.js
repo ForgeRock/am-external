@@ -11,15 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2018 ForgeRock AS.
+ * Copyright 2014-2019 ForgeRock AS.
  */
 
-import $ from "jquery";
-
 import { getConfiguration } from "org/forgerock/openam/ui/common/services/ServerService";
-import { updateSessionInfo } from "org/forgerock/openam/ui/user/services/SessionService";
-import getCurrentFragmentParamString from "org/forgerock/openam/ui/common/util/uri/getCurrentFragmentParamString";
-import isRealmChanged from "org/forgerock/openam/ui/common/util/isRealmChanged";
 import unwrapDefaultExport from "org/forgerock/openam/ui/common/util/es6/unwrapDefaultExport";
 import UserProfileView from "UserProfileView";
 
@@ -44,30 +39,6 @@ SiteConfigurationService.getConfiguration = function (successCallback, errorCall
         setRequireMapConfig(response);
         successCallback(response);
     }, errorCallback);
-};
-
-/**
- * Checks if realm has changed. Redirects to switch realm page if so.
- * @returns {Promise} promise empty promise
- */
-SiteConfigurationService.checkForDifferences = function () {
-    const deferred = $.Deferred();
-
-    updateSessionInfo().then((sessionInfo) => {
-        if (isRealmChanged()) {
-            window.location.replace(`#switchRealm/${getCurrentFragmentParamString()}`);
-        }
-        deferred.resolve(sessionInfo);
-    }, (error) => {
-        if (error.status === 503) {
-            window.location.pathname = `${window.location.pathname}503.html`;
-            deferred.reject(error);
-        } else {
-            deferred.resolve();
-        }
-    });
-
-    return deferred;
 };
 
 export default SiteConfigurationService;

@@ -26,7 +26,6 @@
  *
  * Portions Copyrighted 2013-2017 ForgeRock AS.
  */
-
 package com.sun.identity.federation.common;
 
 import java.io.IOException;
@@ -43,6 +42,8 @@ import java.util.StringTokenizer;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -233,128 +234,78 @@ public class FSUtils {
              }
         }    
     }
-   
-/**
-     * Test if url in argument is
-     *  in  the same web container as current opensso web
-     * apps serving the request.
+
+    /**
+     * Test if url in argument is in the same web deployment URI as AM.
+     *
      * @param request HttpServletRequest
-     * @param url
+     * @param url The url to check.
      * @return true if request and url are in the same web container else false
      */
-    public static boolean isSameContainer(
-            HttpServletRequest request,
-            String url) {
-
+    public static boolean isSameContainer(HttpServletRequest request, String url) {
         boolean result = false;
-        FSUtils.debug.message("FSUtils.isSameContainer: called");
+        FSUtils.debug.message("isSameContainer called");
 
         try {
-            //get source host and port
             String sourceHost = request.getServerName();
             int sourcePort = request.getServerPort();
-            if (debug.messageEnabled()) {
-		FSUtils.debug.message("FSUtils.isSameContainer: " +
-                    "SourceHost=" + sourceHost + " SourcePort=" + sourcePort);
- 	    }
-            //get target host and port
+            FSUtils.debug.message("SourceHost={} SourcePort={}", sourceHost, sourcePort);
+
             URL target = new URL(url);
             String targetHost = target.getHost();
-            int targetPort = target.getPort();
-            if (debug.messageEnabled()) {
-		FSUtils.debug.message("FSUtils.isSameContainer: targetHost=" + 
-			targetHost + " targetPort=" + targetPort);
-            }
-            int index = url.indexOf(deploymentURI + "/");
-            if (!(sourceHost.equals(targetHost)) ||
-                    !(sourcePort == targetPort) ||
-                    !(index > 0)) {
-                if (debug.messageEnabled()) {
-			FSUtils.debug.message("FSUtils.isSameContainer: Source and "
-			 + "Target are not on the same container.");
-		}
+            int targetPort = target.getPort() != -1 ? target.getPort() : target.getDefaultPort();
+            FSUtils.debug.message("targetHost={} targetPort={}", targetHost, targetPort);
 
+            int index = url.indexOf(deploymentURI + "/");
+            if (request.getContextPath().isEmpty() || !sourceHost.equals(targetHost) || sourcePort != targetPort
+                    || index <= 0) {
+                FSUtils.debug.message("Source and Target may not be on the same container.");
             } else {
-                if (debug.messageEnabled()) {
-		FSUtils.debug.message("FSUtils.isSameContainer: Source and " +
-                        "Target are on the same container.");
-		}
+                FSUtils.debug.message("Source and Target are on the same container.");
                 result = true;
             }
         } catch (Exception ex) {
-            FSUtils.debug.error("FSUtils.isSameContainer: Exception occured", ex);
+            FSUtils.debug.error("Exception occurred", ex);
         }
         return result;
     }
  
     /**
-     * Forwards or redirects to a new URL. This method will do forwarding
-     * if the target url is in  the same web deployment URI as current web 
-     * apps. Otherwise will do redirecting.   
+     * Forwards or redirects to a new URL. This method will use
+     * {@link RequestDispatcher#forward(ServletRequest, ServletResponse)} if the target url is in the same web
+     * deployment URI as AM. Otherwise it will redirect.
+     *
      * @param request HttpServletRequest
      * @param response HttpServletResponse
      * @param url the target URL to be forwarded to redirected.  
      */
-    public static void forwardRequest(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        String url)
-    {
-        FSUtils.debug.message("FSUtils.forwardRequest: called");
+    public static void forwardRequest(HttpServletRequest request, HttpServletResponse response, String url) {
+        FSUtils.debug.message("forwardRequest called");
 
         try {
-            //get source host and port
-            String sourceHost = request.getServerName();            
-            int sourcePort = request.getServerPort();
-            FSUtils.debug.message("FSUtils.forwardRequest: " +
-                "SourceHost=" + sourceHost + " SourcePort="+ sourcePort);
-            //get target host and port
-            URL target = new URL(url);
-            String targetHost = target.getHost();
-            int targetPort = target.getPort();            
-            FSUtils.debug.message("FSUtils.forwardRequest: targetHost=" 
-                + targetHost + " targetPort=" + targetPort);
- 
-            /**
-             * IBM websphere is not able to handle forwards with long urls.
-             */ 
+            // IBM websphere is not able to handle forwards with long urls.
             boolean isWebSphere = false;
-            String container = SystemConfigurationUtil.getProperty(
-                Constants.IDENTITY_WEB_CONTAINER);
-            if (container != null && (container.indexOf("IBM") != -1)) {
-               isWebSphere = true;
+            String container = SystemConfigurationUtil.getProperty(Constants.IDENTITY_WEB_CONTAINER);
+            if (container != null && container.contains("IBM")) {
+                isWebSphere = true;
             }
-            
-                        
+
             int index = url.indexOf(deploymentURI + "/");
-            if( !(sourceHost.equals(targetHost)) || 
-                !(sourcePort == targetPort) || 
-                !(index > 0) || isWebSphere)
-            {
-                FSUtils.debug.message("FSUtils.forwardRequest: Source and " +
-                    "Target are not on the same container." + 
-                    "Redirecting to target");            
+            if (isWebSphere || !isSameContainer(request, url)) {
+                FSUtils.debug.message("Redirecting to target: {}", url);
                 response.sendRedirect(url);
-                return;
-            } else {      
-                String resource = url.substring(
-                    index + deploymentURI.length());
-                if (FSUtils.debug.messageEnabled()) {
-                    FSUtils.debug.message(
-                        "FSUtils.forwardRequest: Forwarding to :" + resource);
-                }  
-                RequestDispatcher dispatcher = 
-                    request.getRequestDispatcher(resource);
+            } else {
+                String resource = url.substring(index + deploymentURI.length());
+                FSUtils.debug.message("Forwarding to: {}", resource);
+                RequestDispatcher dispatcher = request.getRequestDispatcher(resource);
                 try {
                     dispatcher.forward(request, response);
                 } catch (Exception e) {
-                    FSUtils.debug.error("FSUtils.forwardRequest: Exception "
-                        + "occured while trying to forward to resource:" +
-                        resource , e);
+                    FSUtils.debug.message("Exception occurred while trying to forward to resource: {}", resource, e);
                 }
-            } 
+            }
         } catch (Exception ex) {
-            FSUtils.debug.error("FSUtils.forwardRequest: Exception occured",ex);
+            FSUtils.debug.error("Exception occured",ex);
         }
     }
 

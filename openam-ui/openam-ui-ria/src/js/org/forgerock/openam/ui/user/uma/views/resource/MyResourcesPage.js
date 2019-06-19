@@ -22,12 +22,11 @@ import BootstrapDialog from "org/forgerock/commons/ui/common/components/Bootstra
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 import UMAService from "org/forgerock/openam/ui/user/uma/services/UMAService";
-import UnshareAllResourcesButtonPartial from "templates/user/uma/views/resource/_UnshareAllResourcesButton";
 
 const MyResourcesPage = BasePage.extend({
     template: "user/uma/views/resource/MyResourcesPageTemplate",
     partials: {
-        "templates/user/uma/views/resource/_UnshareAllResourcesButton": UnshareAllResourcesButtonPartial
+        "uma/_UnshareAllResourcesButton": "uma/_UnshareAllResourcesButton"
     },
     events: {
         "click button#unshareAllResources": "unshareAllResources"

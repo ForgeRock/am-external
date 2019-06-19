@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,25 +24,21 @@
  *
  * $Id: NewIDImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
+ * Portions Copyrighted 2019 ForgeRock AS.
  */
-
-
 package com.sun.identity.saml2.protocol.impl;
 
-import java.security.Key;
-import com.sun.identity.shared.xml.XMLUtils;
-import com.sun.identity.saml2.assertion.EncryptedID;
-import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.common.SAML2SDKUtils;
-import com.sun.identity.saml2.protocol.NewID;
-import com.sun.identity.saml2.protocol.NewEncryptedID;
-import com.sun.identity.saml2.protocol.ProtocolFactory;
-import com.sun.identity.saml2.xmlenc.EncManager;
-
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.key.EncryptionConfig;
+import com.sun.identity.saml2.protocol.NewEncryptedID;
+import com.sun.identity.saml2.protocol.NewID;
+import com.sun.identity.saml2.protocol.ProtocolFactory;
+import com.sun.identity.saml2.xmlenc.EncManager;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /** 
  * This class identifies the new ID entitie in an 
@@ -131,41 +127,11 @@ public class NewIDImpl implements NewID {
         return xml.toString();
     }
 
-    /**
-     * Returns an <code>NewEncryptedID</code> object.
-     *
-     * @param recipientPublicKey Public key used to encrypt the data encryption
-     *                           (secret) key, it is the public key of the
-     *                           recipient of the XML document to be encrypted.
-     * @param dataEncAlgorithm Data encryption algorithm.
-     * @param dataEncStrength Data encryption strength.
-     * @param recipientEntityID Unique identifier of the recipient, it is used
-     *                          as the index to the cached secret key so that
-     *                          the key can be reused for the same recipient;
-     *                          It can be null in which case the secret key will
-     *                          be generated every time and will not be cached
-     *                          and reused. Note that the generation of a secret
-     *                          key is a relatively expensive operation.
-     * @return <code>NewEncryptedID</code> object
-     * @throws SAML2Exception if error occurs during the encryption process.
-     */
-    public NewEncryptedID encrypt(
-	Key recipientPublicKey,
-	String dataEncAlgorithm,
-	int dataEncStrength,
-	String recipientEntityID)
-	
-	throws SAML2Exception {
-	Element el = EncManager.getEncInstance().encrypt(
-	    toXMLString(true, true),
-	    recipientPublicKey,
-	    dataEncAlgorithm,
-	    dataEncStrength,
-	    recipientEntityID,
-	    "NewEncryptedID"
-	);
-	return ProtocolFactory.getInstance().
-	    createNewEncryptedID(el);
+    @Override
+    public NewEncryptedID encrypt(EncryptionConfig encryptionConfig, String recipientEntityID) throws SAML2Exception {
+        Element el = EncManager.getEncInstance().encrypt(toXMLString(true, true),
+                encryptionConfig, recipientEntityID, "NewEncryptedID");
+        return ProtocolFactory.getInstance().createNewEncryptedID(el);
     }
     
     void parseElement(Element element) {

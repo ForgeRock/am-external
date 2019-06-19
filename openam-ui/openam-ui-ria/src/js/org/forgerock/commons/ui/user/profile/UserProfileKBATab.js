@@ -17,12 +17,12 @@
 import _ from "lodash";
 import $ from "jquery";
 import form2js from "form2js/src/form2js";
+import Handlebars from "handlebars-template-loader/runtime";
 import js2form from "form2js/src/js2form";
 
 import AbstractUserProfileTab from "org/forgerock/commons/ui/user/profile/AbstractUserProfileTab";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import KBADelegate from "KBADelegate";
-import KBAItemPartial from "partials/profile/_kbaItem";
 import ValidatorsManager from "org/forgerock/commons/ui/common/main/ValidatorsManager";
 
 /**
@@ -40,7 +40,7 @@ const UserProfileKBATab = AbstractUserProfileTab.extend({
         "click .delete-KBA-question": "deleteKBAQuestion"
     }, AbstractUserProfileTab.prototype.events),
     partials: {
-        "profile/_kbaItem": KBAItemPartial
+        "profile/_kbaItem": "profile/_kbaItem"
     },
 
     /**
@@ -60,7 +60,7 @@ const UserProfileKBATab = AbstractUserProfileTab.extend({
         const form = $(e.target).closest("form");
         const newIndex = kbaItems.find(">li").length;
         kbaItems.append(
-            $("<li>").html(KBAItemPartial({
+            $("<li>").html(Handlebars.partials["profile/_kbaItem"]({
                 questions: this.data.predefinedQuestions,
                 index: newIndex,
                 isNew: true

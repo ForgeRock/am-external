@@ -2751,6 +2751,10 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             }
         }
         switch (resultCode.asEnum()) {
+            case AUTHORIZATION_DENIED:
+                DEBUG.message("Encountered authorization error: {}", ere.getResult().getDiagnosticMessageAsString());
+                throw newIdRepoException(resultCode, IdRepoErrorCode.PROXIED_AUTHZ_DENIED,
+                        new Object[]{CLASS_NAME, resultCode.intValue(), ere.getResult().getDiagnosticMessage()});
             case CONSTRAINT_VIOLATION:
                 throw new IdRepoFatalException(IdRepoBundle.BUNDLE_NAME, IdRepoErrorCode.LDAP_EXCEPTION,
                         ResultCode.CONSTRAINT_VIOLATION, new Object[]{CLASS_NAME, resultCode.intValue(),

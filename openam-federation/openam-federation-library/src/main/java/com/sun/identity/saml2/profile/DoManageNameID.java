@@ -24,7 +24,7 @@
  *
  * $Id: DoManageNameID.java,v 1.26 2009/11/24 21:53:27 madan_ranganath Exp $
  *
- * Portions copyright 2013-2018 ForgeRock AS.
+ * Portions copyright 2013-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -54,6 +54,7 @@ import javax.xml.soap.SOAPConnectionFactory;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
+import org.forgerock.openam.utils.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -81,7 +82,7 @@ import com.sun.identity.saml2.jaxb.metadata.AffiliationDescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.EndpointType;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
-import com.sun.identity.saml2.key.EncInfo;
+import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
@@ -1013,6 +1014,13 @@ public class DoManageNameID {
 
         NameID nameID = getNameIDFromMNIRequest(mniRequest, realm, 
             hostEntityID, hostRole);
+        if (nameID == null) {
+            debug.message("Null NameID");
+            logError("unknownPrincipal", LogUtil.UNKNOWN_PRINCIPAL,
+                    mniRequest.toXMLString(true, true));
+            return SAML2Utils.generateStatus(SAML2Constants.REQUESTER,
+                    SAML2Constants.UNKNOWN_PRINCIPAL, null);
+        }
         NameIDInfo oldNameIDInfo = getNameIDInfo(userID, hostEntityID,
             remoteEntityID, hostRole, realm, nameID.getSPNameQualifier(),
             true);
@@ -1024,7 +1032,8 @@ public class DoManageNameID {
 
         if (oldNameID == null) {
             // log manage name id failure
-            logError("unknownPrinciapl", LogUtil.UNKNOWN_PRINCIPAL, 
+            debug.message("Null oldNameID");
+            logError("unknownPrincipal", LogUtil.UNKNOWN_PRINCIPAL,
                 mniRequest.toXMLString(true, true));
             return SAML2Utils.generateStatus(SAML2Constants.REQUESTER,
                 SAML2Constants.UNKNOWN_PRINCIPAL, null);
@@ -1723,7 +1732,7 @@ public class DoManageNameID {
         throws SAML2Exception {
     
         NameIDInfo nameInfo = null;
-        if (affiliationID != null) {
+        if (StringUtils.isNotEmpty(affiliationID)) {
             AffiliationDescriptorType affiDesc =
                 metaManager.getAffiliationDescriptor(realm, affiliationID);
             if (affiDesc != null) {
@@ -1842,23 +1851,19 @@ public class DoManageNameID {
         mniRequest.setNameID(nameID);
 
         if (!needEncryptIt) {
-            if (debug.messageEnabled()) {
-                debug.message(method + "NamID doesn't need to be encrypted.");
-            }
+            debug.message("{} NameID doesn't need to be encrypted.", method);
             return;
         }
         
-        EncInfo encInfo = null;
+        EncryptionConfig encryptionConfig = null;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
             SPSSODescriptorType spSSODesc =
                 metaManager.getSPSSODescriptor(realm, remoteEntity);
-            encInfo = KeyUtil.getEncInfo(spSSODesc, remoteEntity,
-                SAML2Constants.SP_ROLE);
+            encryptionConfig = KeyUtil.getEncryptionConfig(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
         } else {
             IDPSSODescriptorType idpSSODesc =
                  metaManager.getIDPSSODescriptor(realm, remoteEntity);
-            encInfo = KeyUtil.getEncInfo(idpSSODesc, remoteEntity,
-                 SAML2Constants.IDP_ROLE);
+            encryptionConfig = KeyUtil.getEncryptionConfig(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
         }
 
         if (debug.messageEnabled()) {
@@ -1868,24 +1873,20 @@ public class DoManageNameID {
             debug.message(method + "remoteEntity is : " + remoteEntity);
         }
         
-        if (encInfo == null) {
+        if (encryptionConfig == null) {
             logError("UnableToFindEncryptKeyInfo", LogUtil.METADATA_ERROR,
                 null);
             throw new SAML2Exception(SAML2Utils.bundle.getString(
                 "UnableToFindEncryptKeyInfo"));
         }
         
-        EncryptedID encryptedID = nameID.encrypt(encInfo.getWrappingKey(),
-            encInfo.getDataEncAlgorithm(), encInfo.getDataEncStrength(), 
-            remoteEntity);
+        EncryptedID encryptedID = nameID.encrypt(encryptionConfig, remoteEntity);
         // This non-encrypted NameID will be removed just 
         // after saveMNIRequestInfo and just before it send to 
         mniRequest.setEncryptedID(encryptedID);
 
         if (newID != null) {
-            NewEncryptedID newEncID = newID.encrypt(encInfo.getWrappingKey(),
-                encInfo.getDataEncAlgorithm(), encInfo.getDataEncStrength(),
-                remoteEntity);
+            NewEncryptedID newEncID = newID.encrypt(encryptionConfig, remoteEntity);
             // This non-encrypted newID will be removed just 
             // after saveMNIRequestInfo and just before it send to 
             mniRequest.setNewEncryptedID(newEncID);
@@ -1903,7 +1904,7 @@ public class DoManageNameID {
         if (!needDecryptIt) {
             if (debug.messageEnabled()) {
                 debug.message("DoManageNameID.getNewIDFromMNIRequest: " +
-                    "NamID doesn't need to be decrypted.");
+                    "NameID doesn't need to be decrypted.");
                 debug.message("DoManageNameID.getNewIDFromMNIRequest: " +
                     "request is " + request);
             }
@@ -1932,9 +1933,7 @@ public class DoManageNameID {
             hostEntity, hostEntityRole);
         
         if (!needDecryptIt) {
-            if (debug.messageEnabled()) {
-                debug.message(method + "NamID doesn't need to be decrypted.");
-            }
+            debug.message("{} NameID doesn't need to be decrypted.", method);
             return request.getNameID();
         }
         

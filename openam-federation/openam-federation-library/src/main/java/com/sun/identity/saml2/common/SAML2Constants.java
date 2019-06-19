@@ -24,7 +24,7 @@
  *
  * $Id: SAML2Constants.java,v 1.44 2009/11/24 21:53:02 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2018 ForgeRock AS.
+ * Portions Copyrighted 2010-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -1663,4 +1663,9 @@ public interface SAML2Constants {
      * Attribute to be configured in SPSSOConfig for Audience elements.
      */
     public String AUDIENCE_URI = "audienceUri";
+
+    /**
+     * Property that determines which mask generation function algorithm should AM use.
+     */
+    String MASK_GENERATION_FUNCTION = "org.forgerock.openam.saml2.mask.generation.function.alg";
 }

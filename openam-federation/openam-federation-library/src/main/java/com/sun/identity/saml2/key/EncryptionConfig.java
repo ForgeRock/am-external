@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -22,40 +22,42 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * $Id: EncInfo.java,v 1.2 2008/06/25 05:47:48 qcheng Exp $
+ * $Id: EncryptionConfig.java,v 1.2 2008/06/25 05:47:48 qcheng Exp $
  *
+ * Portions Copyrighted 2019 ForgeRock AS.
  */
-
-
 package com.sun.identity.saml2.key;
 
 import java.security.Key;
+import java.util.Optional;
 
 /**
- * <code>EncInfo</code> is a class for keeping encryption information
- * such as the key-wrapping key, the data encryption algorithm, and
- * data encryption key strength.
+ * <code>EncryptionConfig</code> is a class for keeping encryption information such as the key-wrapping key, the data
+ * encryption algorithm, data encryption key strength and key transport algorithm in one place.
  */ 
-public class EncInfo {
+public class EncryptionConfig {
     
-    private Key wrappingKey = null;
-    private String dataEncAlgorithm = null;
-    private int dataEncStrength = 0;
+    private final Key wrappingKey;
+    private final String dataEncAlgorithm;
+    private final int dataEncStrength;
+    private final String keyTransportAlgorithm;
+    private final Optional<RsaOaepConfig> rsaOaepConfig;
 
     /**
-     * Constructor for <code>EncInfo</code>.
+     * Constructor for <code>EncryptionConfig</code>.
      * @param wrappingKey Key-wrapping key
      * @param dataEncAlgorithm Data encryption algorithm
      * @param dataEncStrength Data encryption key size
+     * @param keyTransportAlgorithm The key transport algorithm.
+     * @param rsaOaepConfig The optional RSA OAEP encryption related configuration.
      */
-    public EncInfo(
-        Key wrappingKey,
-        String dataEncAlgorithm,
-        int dataEncStrength) {
-        
+    public EncryptionConfig(Key wrappingKey, String dataEncAlgorithm, int dataEncStrength,
+            String keyTransportAlgorithm, Optional<RsaOaepConfig> rsaOaepConfig) {
         this.wrappingKey = wrappingKey;
         this.dataEncAlgorithm = dataEncAlgorithm;
         this.dataEncStrength = dataEncStrength;
+        this.keyTransportAlgorithm = keyTransportAlgorithm;
+        this.rsaOaepConfig = rsaOaepConfig;
     }
 
     /**
@@ -81,4 +83,22 @@ public class EncInfo {
     public int getDataEncStrength() {
         return dataEncStrength;
     }
-} 
+
+    /**
+     * Returns the key transport algorithm.
+     *
+     * @return The key transport algorithm.
+     */
+    public String getKeyTransportAlgorithm() {
+        return keyTransportAlgorithm;
+    }
+
+    /**
+     * Returns the optional RSA OAEP configuration.
+     *
+     * @return If the key transport algorithm is not RSA OAEP based encryption, this will be an empty optional object.
+     */
+    public Optional<RsaOaepConfig> getRsaOaepConfig() {
+        return rsaOaepConfig;
+    }
+}

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -20,7 +20,9 @@ import Backbone from "backbone";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
+import getCurrentFragmentParamString from "org/forgerock/openam/ui/common/util/uri/getCurrentFragmentParamString";
 import URIUtils from "org/forgerock/commons/ui/common/util/URIUtils";
+import isRealmChanged from "org/forgerock/openam/ui/common/util/isRealmChanged";
 
 /**
  * @exports org/forgerock/commons/ui/common/main/Router
@@ -97,6 +99,20 @@ Router.init = function(routes) {
                     return;
                 }
                 route = Router.configuration.routes.unauthorized;
+            }
+
+            if (isRealmChanged() &&
+                route !== Router.configuration.routes.switchRealm &&
+                route !== Router.configuration.routes.logout &&
+                route !== Router.configuration.routes.loginFailure) {
+                const args = [getCurrentFragmentParamString()];
+                Router.routeTo(Router.configuration.routes.switchRealm, { trigger: true, replace: true, args });
+                return;
+            }
+
+            if (route === Router.configuration.routes.sessionExpired && Configuration.loggedUser) {
+                EventManager.sendEvent(Constants.EVENT_HANDLE_DEFAULT_ROUTE);
+                return;
             }
 
             /**

@@ -11,12 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 
 import $ from "jquery";
 
+import { changeView } from "org/forgerock/commons/ui/common/main/ViewManager";
 import { init as i18nInit } from "org/forgerock/commons/ui/common/main/i18n/manager";
+import { hideAPILinksOnAPIDescriptionsDisabled, populateRealmsDropdown } from
+    "org/forgerock/openam/ui/common/util/NavigationHelper";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import CookieHelper from "org/forgerock/commons/ui/common/util/CookieHelper";
@@ -27,23 +30,34 @@ import KBAView from "org/forgerock/commons/ui/user/anonymousProcess/KBAView";
 import LoginHeader from "org/forgerock/commons/ui/common/components/LoginHeader";
 import Messages from "org/forgerock/commons/ui/common/components/Messages";
 import Navigation from "org/forgerock/commons/ui/common/components/Navigation";
+import RealmsService from "org/forgerock/openam/ui/admin/services/global/RealmsService";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import routes from "config/routes";
 import ServiceInvoker from "org/forgerock/commons/ui/common/main/ServiceInvoker";
+import ServicesService from "org/forgerock/openam/ui/admin/services/global/ServicesService";
 import SessionManager from "org/forgerock/commons/ui/common/main/SessionManager";
 import SiteConfigurator from "org/forgerock/commons/ui/common/SiteConfigurator";
+import SiteConfigurationService from "org/forgerock/openam/ui/common/services/SiteConfigurationService";
 import SpinnerManager from "org/forgerock/commons/ui/common/main/SpinnerManager";
 import UIUtils from "org/forgerock/commons/ui/common/util/UIUtils";
 import unwrapDefaultExport from "org/forgerock/openam/ui/common/util/es6/unwrapDefaultExport";
 import URIUtils from "org/forgerock/commons/ui/common/util/URIUtils";
-import { changeView } from "org/forgerock/commons/ui/common/main/ViewManager";
 
 const CommonConfig = [{
     startEvent: Constants.EVENT_APP_INITIALIZED,
     processDescription () {
-        const postSessionCheck = function () {
-            UIUtils.preloadInitialPartials();
+        const postSessionCheck = async function () {
+            await UIUtils.preloadInitialPartials();
             Router.init(routes);
+            if (!CookieHelper.cookiesEnabled()) {
+                location.href = "#enableCookies/";
+            }
+
+            if (Configuration.loggedUser && Configuration.loggedUser.hasRole("ui-realm-admin")) {
+                RealmsService.realms.all().then(populateRealmsDropdown);
+                const suppressError = { errorsHandlers : { "Forbidden": { status: 403 } } };
+                ServicesService.instance.get("rest", suppressError).then(hideAPILinksOnAPIDescriptionsDisabled);
+            }
         };
 
         i18nInit().then(() => {
@@ -53,9 +67,10 @@ const CommonConfig = [{
                 // TODO - replace with simplified event system as per CUI-110
                 EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, { anonymousMode: false })
                     .then(postSessionCheck);
-            }, () => {
-                if (!CookieHelper.cookiesEnabled()) {
-                    location.href = "#enableCookies/";
+            }, (error) => {
+                if (error && error.status === 503) {
+                    window.location.pathname = `${window.location.pathname}503.html`;
+                    return;
                 }
                 EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, { anonymousMode: true })
                     .then(postSessionCheck);
@@ -68,6 +83,26 @@ const CommonConfig = [{
         LoginHeader.render();
         Navigation.init();
         Footer.render();
+    }
+}, {
+    startEvent: Constants.EVENT_READ_CONFIGURATION_REQUEST,
+    processDescription () {
+        if (!Configuration.globalData) {
+            Configuration.setProperty("globalData", {});
+            Configuration.globalData.auth = {};
+        }
+
+        if (SiteConfigurator.initialized === false) {
+            SiteConfigurator.initialized = true;
+
+            SiteConfigurationService.getConfiguration((config) => {
+                SiteConfigurator.processConfiguration(config);
+                EventManager.sendEvent(Constants.EVENT_APP_INITIALIZED);
+            }, () => {
+                SiteConfigurator.processConfiguration({});
+                EventManager.sendEvent(Constants.EVENT_APP_INITIALIZED);
+            });
+        }
     }
 }, {
     startEvent: Constants.EVENT_AUTHENTICATION_DATA_CHANGED,
@@ -143,23 +178,22 @@ const CommonConfig = [{
             Configuration.setProperty("baseView", "");
             Configuration.setProperty("baseViewArgs", "");
 
-            return SiteConfigurator.configurePage(route, params).then(() => {
-                const promise = $.Deferred();
-                SpinnerManager.hideSpinner(10);
-                if (!fromRouter) {
-                    Router.routeTo(route, { trigger: true, args: params });
+            SpinnerManager.hideSpinner(10);
+            if (!fromRouter) {
+                Router.routeTo(route, { trigger: true, args: params });
+                return;
+            }
+
+            const promise = $.Deferred();
+            changeView(route.view, params, () => {
+                if (callback) {
+                    callback();
                 }
+                promise.resolve(view);
+            }, route.forceUpdate);
 
-                changeView(route.view, params, () => {
-                    if (callback) {
-                        callback();
-                    }
-                    promise.resolve(view);
-                }, route.forceUpdate);
-
-                Navigation.reload();
-                return promise;
-            });
+            Navigation.reload();
+            return promise;
         });
     }
 }, {

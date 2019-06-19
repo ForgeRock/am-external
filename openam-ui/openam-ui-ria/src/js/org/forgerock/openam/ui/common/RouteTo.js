@@ -11,14 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
+import logout from "org/forgerock/openam/ui/user/login/logout";
 import Router from "org/forgerock/commons/ui/common/main/Router";
-import SessionManager from "org/forgerock/commons/ui/common/main/SessionManager";
 import URIUtils from "org/forgerock/commons/ui/common/util/URIUtils";
 
 /**
@@ -47,14 +47,11 @@ const RouteTo = {
     logout () {
         RouteTo.setGotoFragment();
 
-        return SessionManager.logout().then(() => {
-            EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, {
-                anonymousMode: true
-            });
-            return EventManager.sendEvent(Constants.EVENT_CHANGE_VIEW, {
-                route: Router.configuration.routes.login
-            });
-        });
+        const routeToLogin = () => {
+            Router.routeTo(Router.configuration.routes.login, { trigger: true });
+        };
+
+        return logout().then(routeToLogin, routeToLogin);
     },
     loginDialog () {
         return EventManager.sendEvent(Constants.EVENT_SHOW_LOGIN_DIALOG);

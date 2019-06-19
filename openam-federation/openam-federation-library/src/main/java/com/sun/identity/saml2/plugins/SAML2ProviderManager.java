@@ -43,7 +43,7 @@ import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.SSODescriptorType;
-import com.sun.identity.saml2.key.EncInfo;
+import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
@@ -135,8 +135,8 @@ public class SAML2ProviderManager implements ProviderManager {
      * @return encryption certificate alias for specified provider.
      */
     public Key getEncryptionKey(String providerID) {
-        EncInfo encInfo = getEncInfo(providerID);
-        return (encInfo == null ? null : encInfo.getWrappingKey());
+        EncryptionConfig encryptionConfig = getEncInfo(providerID);
+        return (encryptionConfig == null ? null : encryptionConfig.getWrappingKey());
     }
 
     /**
@@ -145,8 +145,8 @@ public class SAML2ProviderManager implements ProviderManager {
      * @return encryption key size for specified provider.
      */
     public int getEncryptionKeyStrength(String providerID) {
-        EncInfo encInfo = getEncInfo(providerID);
-        return (encInfo == null ? 0 : encInfo.getDataEncStrength());
+        EncryptionConfig encryptionConfig = getEncInfo(providerID);
+        return (encryptionConfig == null ? 0 : encryptionConfig.getDataEncStrength());
     }
 
     /**
@@ -155,8 +155,8 @@ public class SAML2ProviderManager implements ProviderManager {
      * @return encryption key method for specified provider.
      */
     public String getEncryptionKeyAlgorithm(String providerID) {
-        EncInfo encInfo = getEncInfo(providerID);
-        return (encInfo == null ? null : encInfo.getDataEncAlgorithm());
+        EncryptionConfig encryptionConfig = getEncInfo(providerID);
+        return (encryptionConfig == null ? null : encryptionConfig.getDataEncAlgorithm());
     }
 
     /**
@@ -213,7 +213,7 @@ public class SAML2ProviderManager implements ProviderManager {
 
     }
 
-    private EncInfo getEncInfo(String providerID) {
+    private EncryptionConfig getEncInfo(String providerID) {
         SSODescriptorType ssod = null;
         try {
             ssod = metaManager.getSPSSODescriptor("/", providerID);
@@ -233,6 +233,6 @@ public class SAML2ProviderManager implements ProviderManager {
             return null;
         }
 
-        return KeyUtil.getEncInfo(ssod, providerID, SAML2Constants.SP_ROLE);
+        return KeyUtil.getEncryptionConfig(ssod, providerID, SAML2Constants.SP_ROLE);
     }
 }

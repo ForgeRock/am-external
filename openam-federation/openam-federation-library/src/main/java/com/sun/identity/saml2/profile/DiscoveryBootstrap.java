@@ -66,7 +66,7 @@ import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
-import com.sun.identity.saml2.key.EncInfo;
+import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.shared.Constants;
 
@@ -199,8 +199,7 @@ public class DiscoveryBootstrap {
                 IDPSSODescriptorType idpSSODesc = SAML2Utils
                     .getSAML2MetaManager().getIDPSSODescriptor(realm,
                     providerID);
-                EncInfo encInfo = KeyUtil.getEncInfo(idpSSODesc, wscID,
-                    SAML2Constants.IDP_ROLE);
+                EncryptionConfig encInfo = KeyUtil.getEncryptionConfig(idpSSODesc, wscID, SAML2Constants.IDP_ROLE);
 
                 NameIdentifier ni =
                     EncryptedNameIdentifier.getEncryptedNameIdentifier(

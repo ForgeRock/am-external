@@ -242,7 +242,7 @@ function hasAuthIndexChanged () {
  */
 function hasRedirectCallback (requirementList) {
     return requirementList.length !== 0 &&
-        _.some(_.last(requirementList).callbacks, _.bind("type", "RedirectCallback"));
+        _.some(_.last(requirementList).callbacks, "type", "RedirectCallback");
 }
 AuthNService.getRequirements = function (args) {
     if (get() && !hasRedirectCallback(requirementList)) {

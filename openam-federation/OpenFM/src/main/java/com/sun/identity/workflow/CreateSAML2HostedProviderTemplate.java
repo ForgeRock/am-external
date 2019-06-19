@@ -24,10 +24,13 @@
  *
  * $Id: CreateSAML2HostedProviderTemplate.java,v 1.29 2009/11/24 21:49:04 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2019 ForgeRock AS.
  */
-
 package com.sun.identity.workflow;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 import com.sun.identity.cot.COTConstants;
 import com.sun.identity.saml2.common.SAML2Constants;
@@ -37,9 +40,6 @@ import com.sun.identity.saml2.meta.SAML2MetaSecurityUtils;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.shared.Constants;
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Create SAML2 Hosted Provider Template.
@@ -590,18 +590,15 @@ public class CreateSAML2HostedProviderTemplate {
             attrqECertAlias = "";
         }        
 
-        buff.append(
-            "    <AttributeQueryConfig metaAlias=\"" + attrqAlias + "\">\n" +
-            "        <Attribute name=\"" + SAML2Constants.SIGNING_CERT_ALIAS +
-            "\">\n" +
-            "            <Value>" + attrqSCertAlias + "</Value>\n" +
-            "        </Attribute>\n" +
-            "        <Attribute name=\"" +
-            SAML2Constants.ENCRYPTION_CERT_ALIAS + "\">\n" +
-            "            <Value>" + attrqECertAlias + "</Value>\n" +
-            "        </Attribute>\n" +
-            "    </AttributeQueryConfig>\n"
-        );
+        buff
+                .append("    <AttributeQueryConfig metaAlias=\"").append(attrqAlias).append("\">\n")
+                .append("        <Attribute name=\"").append(SAML2Constants.SIGNING_CERT_ALIAS).append("\">\n")
+                .append("            <Value>").append(attrqSCertAlias).append("</Value>\n")
+                .append("        </Attribute>\n")
+                .append("        <Attribute name=\"").append(SAML2Constants.ENCRYPTION_CERT_ALIAS).append("\">\n")
+                .append("            <Value>").append(attrqECertAlias).append("</Value>\n")
+                .append("        </Attribute>\n")
+                .append("    </AttributeQueryConfig>\n");
     }
 
     private static void buildAuthnAuthorityConfigTemplate(

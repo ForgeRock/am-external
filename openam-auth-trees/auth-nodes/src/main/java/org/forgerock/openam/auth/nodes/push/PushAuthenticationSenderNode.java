@@ -16,7 +16,12 @@
 
 package org.forgerock.openam.auth.nodes.push;
 
-import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.*;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.CHALLENGE_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.LOADBALANCER_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MECHANISM_ID_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.TIME_TO_LIVE_KEY;
+import static org.forgerock.openam.oauth2.OAuth2Constants.Params.CIBA_BINDING_MESSAGE;
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT;
 
 import java.util.ArrayList;
@@ -26,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
@@ -241,17 +247,31 @@ public class PushAuthenticationSenderNode implements Node {
         }
     }
 
+    /**
+     * Checks for the presence of the binding_message property that comes with a Client Initiated Backchannel
+     * Authentication request, returning the value if present.
+     *
+     * @param context the current {@link TreeContext} which will provide access to request attributes.
+     * @return an {@link Optional} containing either the binding message or nothing.
+     */
+    private Optional<String> checkForBindingMessage(TreeContext context) {
+        String bindingMessage = (String) context.request.servletRequest.getAttribute(CIBA_BINDING_MESSAGE);
+        return Optional.ofNullable(bindingMessage);
+    }
+
     private String getLocalisedUserMessage(TreeContext context, Config config) {
-        PreferredLocales preferredLocales = context.request.locales;
-        Locale bestLocale = localeSelector.getBestLocale(preferredLocales, config.userMessage().keySet());
+        return checkForBindingMessage(context).orElseGet(() -> {
+            PreferredLocales preferredLocales = context.request.locales;
+            Locale bestLocale = localeSelector.getBestLocale(preferredLocales, config.userMessage().keySet());
 
-        if (bestLocale != null) {
-            return config.userMessage().get(bestLocale);
-        }
+            if (bestLocale != null) {
+                return config.userMessage().get(bestLocale);
+            }
 
-        ResourceBundle bundle = preferredLocales.getBundleInPreferredLocale(PushAuthenticationSenderNode.BUNDLE,
-                PushAuthenticationSenderNode.class.getClassLoader());
-        return bundle.getString("default.user.message");
+            ResourceBundle bundle = preferredLocales.getBundleInPreferredLocale(PushAuthenticationSenderNode.BUNDLE,
+                    PushAuthenticationSenderNode.class.getClassLoader());
+            return bundle.getString("default.user.message");
+        });
     }
 
     /**

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2019 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -21,6 +21,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.forgerock.guava.common.collect.ListMultimap;
 import org.forgerock.util.i18n.PreferredLocales;
@@ -72,10 +75,19 @@ public final class ExternalRequestContext {
      * The URL of the server.
      */
     public final String serverUrl;
+    /**
+     * The {@link HttpServletRequest} of the current authentication context.
+     */
+    public final HttpServletRequest servletRequest;
+    /**
+     * The {@link HttpServletResponse} of the current authentication context.
+     */
+    public final HttpServletResponse servletResponse;
 
     private ExternalRequestContext(com.google.common.collect.ListMultimap<String, String> headers,
             Map<String, String> cookies, PreferredLocales locales, String clientIp, String hostName, String ssoTokenId,
-            Map<String, String[]> parameters, String serverUrl) {
+            Map<String, String[]> parameters, String serverUrl, HttpServletRequest servletRequest,
+            HttpServletResponse servletResponse) {
         this.headers = new WrappedListMultimap<>(Multimaps.unmodifiableListMultimap(checkNotNull(headers)));
         this.cookies = Collections.unmodifiableMap(cookies);
         this.locales = checkNotNull(locales);
@@ -85,6 +97,8 @@ public final class ExternalRequestContext {
         this.parameters = Collections.unmodifiableMap(parameters.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> ImmutableList.copyOf(e.getValue()))));
         this.serverUrl = serverUrl;
+        this.servletRequest = servletRequest;
+        this.servletResponse = servletResponse;
     }
 
     /**
@@ -100,6 +114,8 @@ public final class ExternalRequestContext {
         private String ssoTokenId = null;
         private Map<String, String[]> parameters = ImmutableMap.of();
         private String serverUrl = null;
+        private HttpServletRequest servletRequest;
+        private HttpServletResponse servletResponse;
 
         /**
          * Sets the HTTP headers for the request.
@@ -189,13 +205,35 @@ public final class ExternalRequestContext {
         }
 
         /**
+         * Sets the {@link HttpServletRequest}.
+         *
+         * @param request the {@link HttpServletRequest}
+         * @return this builder.
+         */
+        public Builder servletRequest(HttpServletRequest request) {
+            this.servletRequest = request;
+            return this;
+        }
+
+        /**
+         * Sets the {@link HttpServletResponse}.
+         *
+         * @param response the {@link HttpServletResponse}
+         * @return this builder.
+         */
+        public Builder servletResponse(HttpServletResponse response) {
+            this.servletResponse = response;
+            return this;
+        }
+
+        /**
          * Creates a new {@link ExternalRequestContext} instance.
          *
          * @return A new instance of {@link ExternalRequestContext}.
          */
         public ExternalRequestContext build() {
             return new ExternalRequestContext(headers, cookies, locales, clientIp, hostName, ssoTokenId, parameters,
-                    serverUrl);
+                    serverUrl, servletRequest, servletResponse);
         }
     }
 }

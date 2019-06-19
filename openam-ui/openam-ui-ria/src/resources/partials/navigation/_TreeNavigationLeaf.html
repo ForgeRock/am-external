@@ -31,7 +31,7 @@
     {{#if children}}
         <ol class="collapse list-unstyled sidenav-submenu" id="{{href}}{{identifier}}">
         {{#each children}}
-            {{> templates/admin/views/common/navigation/_TreeNavigationLeaf identifier=../identifier }}
+            {{> navigation/_TreeNavigationLeaf identifier=../identifier }}
         {{/each}}
         </ol>
     {{/if}}

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import { expect } from "chai";
@@ -21,20 +21,28 @@ import injector from "inject-loader!./SessionValidator";
 import sinon from "sinon";
 
 describe("org/forgerock/openam/ui/common/sessions/SessionValidator", () => {
-    let logout;
+    let Router;
+    let removeLocalUserData;
     let Strategy;
     let validatePromise;
     let Validator;
 
     beforeEach(() => {
         validatePromise = $.Deferred();
-
         Strategy = sinon.stub().returns(validatePromise);
-
-        logout = sinon.stub().returns($.Deferred());
+        Router = {
+            routeTo: sinon.stub(),
+            configuration: {
+                routes: {
+                    sessionExpired: {}
+                }
+            }
+        };
+        removeLocalUserData = sinon.stub();
 
         Validator = injector({
-            "org/forgerock/openam/ui/user/login/logout": logout
+            "org/forgerock/commons/ui/common/main/Router" : Router,
+            "org/forgerock/openam/ui/user/login/removeLocalUserData" : removeLocalUserData
         }).default;
     });
 
@@ -58,14 +66,22 @@ describe("org/forgerock/openam/ui/common/sessions/SessionValidator", () => {
         });
 
         context("when strategy rejects", () => {
-            it("invokes #logout", () => {
+            it("invokes #Router.routeTo", () => {
                 validatePromise.reject();
-
                 Validator.start(Strategy);
-
                 clock.tick(1000);
 
-                expect(logout).to.be.calledOnce;
+                expect(Router.routeTo).to.be.calledOnce.calledWith(Router.configuration.routes.sessionExpired,
+                    { trigger: true }
+                );
+            });
+
+            it("invokes #removeLocalUserData", () => {
+                validatePromise.reject();
+                Validator.start(Strategy);
+                clock.tick(1000);
+
+                expect(removeLocalUserData).to.be.calledOnce;
             });
         });
 
@@ -74,20 +90,10 @@ describe("org/forgerock/openam/ui/common/sessions/SessionValidator", () => {
                 Validator.start(Strategy);
             });
 
-            it("throws error", () => {
-                expect(() => {
-                    Validator.start(Strategy);
-                }).to.throw(Error, "Validator has already been started");
-            });
-
-            context("when #stop has been invoked beforehand", () => {
-                it("doesn not throw error", () => {
-                    Validator.stop();
-
-                    expect(() => {
-                        Validator.start(Strategy);
-                    }).to.not.throw(Error);
-                });
+            it("only invokes the strategy once", () => {
+                Validator.start(Strategy);
+                clock.tick(1000);
+                expect(Strategy).be.calledOnce;
             });
         });
     });

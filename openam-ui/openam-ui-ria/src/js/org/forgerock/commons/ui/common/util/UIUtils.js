@@ -15,11 +15,12 @@
  */
 
 import _ from "lodash";
+import debug from "debug";
 import Handlebars from "handlebars-template-loader/runtime";
 
 import { getTheme } from "ThemeManager";
+import loadPartial from "org/forgerock/openam/ui/common/util/theme/loadPartial";
 import Router from "org/forgerock/commons/ui/common/main/Router";
-import unwrapDefaultExport from "org/forgerock/openam/ui/common/util/es6/unwrapDefaultExport";
 
 /**
  * @exports org/forgerock/commons/ui/common/util/UIUtils
@@ -86,25 +87,15 @@ UIUtils.renderTemplate = function (templateUrl, el, data, callback, mode, valida
 /**
  * Loads all the Handlebars partials defined in the "partialPaths" attribute of this module's configuration
  */
-UIUtils.preloadInitialPartials = function () {
-    getTheme().then((theme) => {
-        _.each(UIUtils.configuration.partialPaths, (partialPath, name) => {
-            const registerPartial = (partial) => Handlebars.registerPartial(name, partial);
-            const importDefaultPartial = (path) =>
-                import(`partials/${path}.html`).then(unwrapDefaultExport);
-            const importThemePartial = (themePath, partialPath) =>
-                import(`themes/${themePath}partials/${partialPath}.html`).then(unwrapDefaultExport);
+UIUtils.preloadInitialPartials = async function () {
+    const logger = debug("forgerock:am:user:view:partial");
 
-            if (theme.path) {
-                return importThemePartial(theme.path, partialPath).then(registerPartial, () => {
-                    console.log(`Loading custom partial "${partialPath}" failed. Falling back to default.`);
-                    importDefaultPartial(partialPath).then(registerPartial);
-                });
-            } else {
-                importDefaultPartial(partialPath).then(registerPartial);
-            }
-        });
-    });
+    logger("Preloading partials...");
+
+    const { path: themePath } = await getTheme();
+    await Promise.all(_.map(UIUtils.configuration.partialPaths, (path, name) => loadPartial(name, path, themePath)));
+
+    logger("Preloading partials complete.");
 };
 
 /**

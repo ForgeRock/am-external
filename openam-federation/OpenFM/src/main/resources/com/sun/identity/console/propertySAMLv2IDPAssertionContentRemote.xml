@@ -24,7 +24,7 @@
 
    $Id: propertySAMLv2IDPAssertionContentRemote.xml,v 1.5 2008/06/25 05:51:06 qcheng Exp $
 
-   Portions Copyrighted 2013-2018 ForgeRock AS.
+   Portions Copyrighted 2013-2019 ForgeRock AS.
 -->
 
 <!DOCTYPE propertysheet SYSTEM "propertysheet.dtd">
@@ -126,6 +126,13 @@
                            defaultValue="samlv2.attribute.label.algorithm" 
                            labelFor="Algorithm" />
                     <cc name="Algorithm" 
+                        tagclass="com.sun.web.ui.taglib.html.CCStaticTextFieldTag" />
+                </property>
+                <property>
+                    <label name="lblKeyTransportAlgorithm"
+                           defaultValue="samlv2.attribute.label.key.transport.algorithm"
+                           labelFor="keyTransportAlgorithm" />
+                    <cc name="keyTransportAlgorithm"
                         tagclass="com.sun.web.ui.taglib.html.CCStaticTextFieldTag" />
                 </property>
             </ccgroup>

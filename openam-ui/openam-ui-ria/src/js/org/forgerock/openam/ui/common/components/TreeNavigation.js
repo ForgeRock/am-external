@@ -19,8 +19,6 @@ import React from "react";
 import ReactDOM from "react-dom";
 
 import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
-import BreadcrumbTitlePartial from "partials/breadcrumb/_BreadcrumbTitle";
-import TreeNavigationLeafPartial from "templates/admin/views/common/navigation/_TreeNavigationLeaf";
 import TreeNavigationTemplate from "templates/admin/views/common/navigation/TreeNavigationTemplate";
 import unwrapDefaultExport from "org/forgerock/openam/ui/common/util/es6/unwrapDefaultExport";
 import URIUtils from "org/forgerock/commons/ui/common/util/URIUtils";
@@ -32,8 +30,8 @@ const isReactPage = (view) =>
 const TreeNavigation = AbstractView.extend({
     template: TreeNavigationTemplate,
     partials: {
-        "breadcrumb/_BreadcrumbTitle": BreadcrumbTitlePartial,
-        "templates/admin/views/common/navigation/_TreeNavigationLeaf": TreeNavigationLeafPartial
+        "breadcrumb/_BreadcrumbTitle": "breadcrumb/_BreadcrumbTitle",
+        "navigation/_TreeNavigationLeaf": "navigation/_TreeNavigationLeaf"
     },
     events: {
         "click .sidenav a[href]:not([data-toggle]):not([data-event])": "navigateToPage"

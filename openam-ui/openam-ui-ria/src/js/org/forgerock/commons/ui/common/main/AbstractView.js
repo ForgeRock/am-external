@@ -11,19 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 
 import _ from "lodash";
 import $ from "jquery";
 import Backbone from "backbone";
-import Handlebars from "handlebars-template-loader/runtime";
+import debug from "debug";
 
 import { getTheme } from "ThemeManager";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import DefaultBaseTemplate from "templates/common/DefaultBaseTemplate";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
+import loadPartial from "org/forgerock/openam/ui/common/util/theme/loadPartial"
+import loadTemplate from "org/forgerock/openam/ui/common/util/theme/loadTemplate";;
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import UIUtils from "org/forgerock/commons/ui/common/util/UIUtils";
 import unwrapDefaultExport from "org/forgerock/openam/ui/common/util/es6/unwrapDefaultExport";
@@ -61,7 +63,6 @@ function validationCompleted (formElement) {
 }
 
 export default Backbone.View.extend({
-
     /**
      * This params should be passed when creating new object, for example:
      * new View({el: "#someId", template: "templates/main.html"});
@@ -89,7 +90,9 @@ export default Backbone.View.extend({
      * Change content of 'el' element with 'viewTpl',
      * which is compiled using 'data' attributes.
      */
-    parentRender (callback) {
+    async parentRender (callback) {
+        const logger = debug("forgerock:am:user:view:template");
+
         this.callback = callback;
 
         const needsNewBaseTemplate = () => {
@@ -99,34 +102,33 @@ export default Backbone.View.extend({
             this.unlock();
         });
 
-        getTheme().then((theme) => {
-            this.data.theme = theme;
+        const theme = await getTheme();
+        this.data.theme = theme;
 
-            if (needsNewBaseTemplate()) {
-                const renderBaseTemplate = (baseTemplate) => {
-                    UIUtils.renderTemplate(
-                        baseTemplate,
-                        $("#wrapper"),
-                        _.extend({}, Configuration.globalData, this.data),
-                        _.bind(this.loadTemplate, this),
-                        "replace",
-                        needsNewBaseTemplate);
-                };
+        if (needsNewBaseTemplate()) {
+            const baseTemplatePath = _.isString(this.baseTemplate)
+                ? ` \`${this.baseTemplate}\` `
+                : " ";
+            logger(`Base template${baseTemplatePath}loading...`);
 
-                this.baseTemplate = unwrapDefaultExport(this.baseTemplate);
+            this.baseTemplate = await loadTemplate(this.baseTemplate, theme.path);
 
-                if (_.isFunction(this.baseTemplate)) {
-                    renderBaseTemplate(this.baseTemplate);
-                } else {
-                    this.loadThemedTemplate(this.baseTemplate).then(renderBaseTemplate);
-                }
-            } else {
-                this.loadTemplate();
-            }
-        });
+            UIUtils.renderTemplate(
+                this.baseTemplate,
+                $("#wrapper"),
+                _.extend({}, Configuration.globalData, this.data),
+                undefined,
+                "replace",
+                needsNewBaseTemplate
+            );
+
+            logger(`Base template${baseTemplatePath}loaded.`);
+        }
+
+        this.loadTemplate();
     },
 
-    loadTemplate () {
+    async loadTemplate () {
         var self = this,
             validateCurrent = function () {
                 if (!_.has(self, "route")) {
@@ -155,10 +157,8 @@ export default Backbone.View.extend({
             EventManager.sendEvent(Constants.EVENT_CHANGE_BASE_VIEW);
         }
 
-        _.each(this.partials, (partial, name) => {
-            partial = unwrapDefaultExport(partial);
-            Handlebars.registerPartial(name, partial);
-        });
+        const { path: themePath } = await getTheme();
+        await Promise.all(_.map(this.partials, (path, name) => loadPartial(name, path, themePath)));
 
         const renderTemplate = (template) => {
             UIUtils.renderTemplate(
@@ -183,22 +183,10 @@ export default Backbone.View.extend({
         }
     },
 
-    loadThemedTemplate (path) {
-        return getTheme().then((theme) => {
-            const importDefaultTemplate = (path) =>
-                import(`templates/${path}.html`).then(unwrapDefaultExport);
-            const importThemeTemplate = (themePath, templatePath) =>
-                import(`themes/${themePath}templates/${templatePath}.html`).then(unwrapDefaultExport);
+    async loadThemedTemplate (path) {
+        const { path: themePath } = await getTheme();
 
-            if (theme.path) {
-                return importThemeTemplate(theme.path, path).catch(() => {
-                    console.log(`Loading custom template "${path}" failed. Falling back to default.`);
-                    return importDefaultTemplate(path);
-                });
-            } else {
-                return importDefaultTemplate(path);
-            }
-        });
+        return await loadTemplate(path, themePath);
     },
 
     rebind () {

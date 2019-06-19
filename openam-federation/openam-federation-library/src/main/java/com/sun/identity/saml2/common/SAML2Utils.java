@@ -39,6 +39,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -70,6 +71,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBElement;
+import javax.xml.bind.JAXBIntrospector;
 import javax.xml.soap.MimeHeader;
 import javax.xml.soap.MimeHeaders;
 
@@ -122,6 +124,7 @@ import com.sun.identity.saml2.jaxb.metadata.EndpointType;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.IndexedEndpointType;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.xmlenc.EncryptionMethodType;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
@@ -4668,5 +4671,15 @@ public class SAML2Utils extends SAML2SDKUtils {
      */
     public static String getSingleValuedSessionProperty(Object session, String propertyName) throws SessionException {
         return SessionManager.getProvider().getProperty(session, propertyName)[0];
+    }
+
+    public static int getKeySizeFromEncryptionMethod(EncryptionMethodType encryptionMethod) {
+        return encryptionMethod.getContent().stream()
+                .map(JAXBIntrospector::getValue)
+                .filter(content -> content instanceof BigInteger)
+                .findFirst()
+                .map(BigInteger.class::cast)
+                .map(BigInteger::intValue)
+                .orElse(0);
     }
 }

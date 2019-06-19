@@ -59,7 +59,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.common.SOAPCommunicator;
 import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorType;
-import com.sun.identity.saml2.key.EncInfo;
+import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
@@ -417,7 +417,7 @@ public class QueryHandlerServlet extends HttpServlet {
                     getPolicyEnforcementPointDescriptor(realm,
                     pepEntityID);
             
-            EncInfo encInfo = null;
+            EncryptionConfig encryptionConfig = null;
             boolean wantAssertionSigned=pepDescriptor.isWantAssertionsSigned();
             
             if (debug.messageEnabled()) {
@@ -431,15 +431,10 @@ public class QueryHandlerServlet extends HttpServlet {
             if (wantAssertionEncrypted != null
                     && wantAssertionEncrypted.equalsIgnoreCase
                     (SAML2Constants.TRUE)) {
-                encInfo = KeyUtil.getPEPEncInfo(pepDescriptor,pepEntityID);
+                encryptionConfig = KeyUtil.getPepEncryptionConfig(pepDescriptor, pepEntityID);
                 
                 // encrypt the Assertion
-                EncryptedAssertion encryptedAssertion =
-                        assertion.encrypt(
-                        encInfo.getWrappingKey(),
-                        encInfo.getDataEncAlgorithm(),
-                        encInfo.getDataEncStrength(),
-                        pepEntityID);
+                EncryptedAssertion encryptedAssertion = assertion.encrypt(encryptionConfig, pepEntityID);
                 if (encryptedAssertion == null) {
                     debug.error(classMethod+"Assertion encryption failed.");
                     throw new SAML2Exception("FailedToEncryptAssertion");

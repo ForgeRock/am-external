@@ -20,11 +20,11 @@ import $ from "jquery";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import TreeNavigation from "org/forgerock/openam/ui/common/components/TreeNavigation";
 import UMAService from "org/forgerock/openam/ui/user/uma/services/UMAService";
-import NestedListPartial from "templates/user/uma/views/resource/_NestedList";
+
 var LabelTreeNavigationView = TreeNavigation.extend({
     template: "user/uma/views/resource/LabelTreeNavigationTemplate",
     partials: {
-        "templates/user/uma/views/resource/_NestedList": NestedListPartial
+        "uma/_NestedList": "uma/_NestedList"
     },
     findActiveNavItem (fragment) {
         var myLabelsRoute = Router.configuration.routes.umaResourcesMyLabelsResource,

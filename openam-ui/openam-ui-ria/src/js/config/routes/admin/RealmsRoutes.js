@@ -544,6 +544,52 @@ const RealmsRoutes = {
         navGroup: "admin",
         forceUpdate: true
     },
+    // Applications => OAuth 2.0 => Trusted JWT Issuer
+    "realmsApplicationsOAuth2TrustedJwtIssuer": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/trusted-jwt-issuer/TrustedJwtIssuerAgents.jsx"),
+        url: scopedByRealm("applications-oauth2-trustedJwtIssuer"),
+        pattern: "realms/?/applications-oauth2-trustedJwtIssuer",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsOAuth2TrustedJwtIssuerAgentsNew": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/trusted-jwt-issuer/agents/new/NewTrustedJwtIssuerAgentContainer.jsx"),
+        url: scopedByRealm("applications-oauth2-trustedJwtIssuer/agents/new"),
+        pattern: "realms/?/applications-oauth2-trustedJwtIssuer/agents/new",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsOAuth2TrustedJwtIssuerAgentsEdit": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/trusted-jwt-issuer/agents/edit/EditTrustedJwtIssuerAgent.js"),
+        url: scopedByRealm("applications-oauth2-trustedJwtIssuer/agents/edit/([^/]*)"),
+        pattern: "realms/?/applications-oauth2-trustedJwtIssuer/agents/edit/?",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsOAuth2TrustedJwtIssuerAgentGroupsNew": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/trusted-jwt-issuer/groups/new/NewTrustedJwtIssuerAgentGroupContainer.jsx"),
+        url: scopedByRealm("applications-oauth2-trustedJwtIssuer/groups/new"),
+        pattern: "realms/?/applications-oauth2-trustedJwtIssuer/groups/new",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsOAuth2TrustedJwtIssuerAgentGroupsEdit": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/trusted-jwt-issuer/groups/edit/EditTrustedJwtIssuerAgentGroup.js"),
+        url: scopedByRealm("applications-oauth2-trustedJwtIssuer/groups/edit/([^/]*)"),
+        pattern: "realms/?/applications-oauth2-trustedJwtIssuer/groups/edit/?",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
     "realmsApplicationsAgentsRemoteConsent": {
         view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
         page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/remote-consent/RemoteConsentAgents.jsx"),

@@ -16,79 +16,19 @@
 
 import _ from "lodash";
 
-import { exists, remove, setValidated, toHref, validateParam } from "org/forgerock/openam/ui/user/login/gotoUrl";
-import { hideAPILinksOnAPIDescriptionsDisabled, populateRealmsDropdown } from
-    "org/forgerock/openam/ui/common/util/NavigationHelper";
-import { parseParameters } from "org/forgerock/openam/ui/common/util/uri/query";
-import { removeRealm } from "store/modules/local/session";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
-import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 import Footer from "Footer";
 import LoginHeader from "org/forgerock/commons/ui/common/components/LoginHeader";
-import logout from "org/forgerock/openam/ui/user/login/logout";
 import MaxIdleTimeLeftStrategy from "org/forgerock/openam/ui/common/sessions/strategies/MaxIdleTimeLeftStrategy";
 import Queue from "org/forgerock/commons/ui/common/util/Queue";
-import RealmsService from "org/forgerock/openam/ui/admin/services/global/RealmsService";
+import removeLocalUserData from "org/forgerock/openam/ui/user/login/removeLocalUserData";
 import RESTLoginDialog from "org/forgerock/openam/ui/user/login/RESTLoginDialog";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import RouteTo from "org/forgerock/openam/ui/common/RouteTo";
-import ServicesService from "org/forgerock/openam/ui/admin/services/global/ServicesService";
 import SessionValidator from "org/forgerock/openam/ui/common/sessions/SessionValidator";
-import store from "store";
-import URIUtils from "org/forgerock/commons/ui/common/util/URIUtils";
 
 export default [{
-    startEvent: Constants.EVENT_LOGOUT,
-    processDescription () {
-        SessionValidator.stop();
-
-        const logoutSuccess = (response) => {
-            store.dispatch(removeRealm());
-            EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, { anonymousMode: true });
-
-            // Use logout response (if there is one) in preference to supplied goto param.
-            // Requires any post process url endpoint to redirect to the goto url after it completes
-            if (_.has(response, "goto")) {
-                window.location.href = decodeURIComponent(response.goto);
-            } else if (exists()) {
-                window.location.href = toHref();
-            } else {
-                EventManager.sendEvent(Constants.EVENT_CHANGE_VIEW, {
-                    route: Router.configuration.routes.loggedOut
-                });
-            }
-        };
-
-        const logoutFail = () => {
-            EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, { anonymousMode: true });
-            EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "unauthorized");
-
-            if (exists()) {
-                window.location.href = toHref();
-            } else {
-                EventManager.sendEvent(Constants.EVENT_CHANGE_VIEW, {
-                    route: Router.configuration.routes.login
-                });
-            }
-        };
-
-        const unvalidatedGotoParam = parseParameters(URIUtils.getCurrentFragment()).goto ||
-        parseParameters(URIUtils.getCurrentQueryString()).goto;
-        if (unvalidatedGotoParam) {
-            validateParam(unvalidatedGotoParam).then((validatedUrl) => {
-                setValidated(validatedUrl);
-                logout().then(logoutSuccess, logoutFail);
-            }, () => {
-                remove();
-                logout().then(logoutSuccess, logoutFail);
-            });
-        } else {
-            remove();
-            logout().then(logoutSuccess, logoutFail);
-        }
-    }
-}, {
     startEvent: Constants.EVENT_HANDLE_DEFAULT_ROUTE,
     processDescription () {
         const routerParams = {
@@ -121,13 +61,6 @@ export default [{
 
         if (Configuration.globalData[queueName]) {
             authenticatedCallback = Configuration.globalData[queueName].remove();
-        }
-
-        if (Configuration.loggedUser && Configuration.loggedUser.hasRole("ui-realm-admin")) {
-            RealmsService.realms.all().then(populateRealmsDropdown);
-            const suppressError = { errorsHandlers : { "Forbidden": { status: 403 } } };
-            ServicesService.instance.get("rest", suppressError)
-                .then(hideAPILinksOnAPIDescriptionsDisabled);
         }
 
         if (Configuration.loggedUser && Configuration.globalData.xuiUserSessionValidationEnabled &&
@@ -172,10 +105,8 @@ export default [{
                  * User may have sensetive information on screen so we exit them from the system when their session
                  * has expired with a message telling them as such
                  */
-                // TODO move the logout logic to the Session Expiry view
-                return logout().then(() => {
-                    Router.routeTo(Router.configuration.routes.sessionExpired, { trigger: true });
-                });
+                removeLocalUserData();
+                Router.routeTo(Router.configuration.routes.sessionExpired, { trigger: true });
             } else {
                 /**
                  * Admins are more likely to have work in-progress so they are presented with a login dialog to give

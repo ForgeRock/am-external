@@ -11,14 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import i18next from "i18next";
 
 import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
-import Constants from "org/forgerock/openam/ui/common/util/Constants";
-import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 import RESTLoginHelper from "org/forgerock/openam/ui/user/login/RESTLoginHelper";
 import removeOAuth2Goto from "org/forgerock/openam/ui/user/login/removeOAuth2Goto";
 import navigateThenRefresh from "org/forgerock/openam/ui/user/login/navigateThenRefresh";
@@ -42,9 +40,6 @@ const SessionExpiredView = AbstractView.extend({
         FIXME: Remove all session specific properties from the globalData object.
         */
         this.data.params = RESTLoginHelper.filterUrlParams(successfulLoginUrlParams);
-
-        EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, { anonymousMode: true });
-
         this.data.title = i18next.t("templates.user.SessionExpiredTemplate.sessionExpired");
         this.parentRender();
     }
