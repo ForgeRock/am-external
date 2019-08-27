@@ -69,7 +69,7 @@ class EditTrustedJwtIssuerAgentGroup extends AbstractView {
 
         const formData = this.jsonSchemaView.getData();
         update(this.realm, TRUSTED_JWT_ISSUER, formData, this.data.id).then(() => {
-            Messages.addMessage({ message: t("config.messages.CommonMessages.changesSaved") });
+            Messages.addMessage({ message: t("config.messages.AppMessages.changesSaved") });
         }, (response) => {
             Messages.addMessage({ response, type: Messages.TYPE_DANGER });
         });
@@ -80,7 +80,7 @@ class EditTrustedJwtIssuerAgentGroup extends AbstractView {
             message: t("console.common.confirmDeleteItem")
         }, () => {
             remove(this.realm, TRUSTED_JWT_ISSUER, [this.data.id]).then(() => {
-                Messages.addMessage({ message: t("config.messages.CommonMessages.changesSaved") });
+                Messages.addMessage({ message: t("config.messages.AppMessages.changesSaved") });
 
                 Router.routeTo(Router.configuration.routes.realmsApplicationsOAuth2TrustedJwtIssuer, {
                     args: [encodeURIComponent(this.realm)], trigger: true

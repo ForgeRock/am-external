@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import $ from "jquery";
@@ -51,7 +51,7 @@ const showDialog = (template, isReadOnly, title, username, save) => {
                 const isChecked = toggle.is(":checked");
                 save(username, isChecked).then(() => {
                     dialog.close();
-                    Messages.addMessage({ message: i18next.t("config.messages.CommonMessages.changesSaved") });
+                    Messages.addMessage({ message: i18next.t("config.messages.AppMessages.changesSaved") });
                 }, () => {
                     cancelBtn.enable();
                     this.enable();

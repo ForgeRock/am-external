@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import $ from "jquery";
@@ -51,7 +51,7 @@ const navData = [{
             icon: "fa-angle-right",
             route: "realmsApplicationsAgentsSoftwarePublisher"
         }, {
-            title: "console.navigation.applications-oauth2-trustedJwtIssuer.title",
+            title: "console.navigation.applications-agents-trustedJwtIssuer.title",
             icon: "fa-angle-right",
             route: "realmsApplicationsOAuth2TrustedJwtIssuer"
         }, {

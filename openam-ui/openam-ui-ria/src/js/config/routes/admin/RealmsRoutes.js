@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 /* eslint-disable max-len */
 
@@ -544,12 +544,12 @@ const RealmsRoutes = {
         navGroup: "admin",
         forceUpdate: true
     },
-    // Applications => OAuth 2.0 => Trusted JWT Issuer
+    // Applications => Agents => Trusted JWT Issuer
     "realmsApplicationsOAuth2TrustedJwtIssuer": {
         view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
         page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/trusted-jwt-issuer/TrustedJwtIssuerAgents.jsx"),
-        url: scopedByRealm("applications-oauth2-trustedJwtIssuer"),
-        pattern: "realms/?/applications-oauth2-trustedJwtIssuer",
+        url: scopedByRealm("applications-agents-trustedJwtIssuer"),
+        pattern: "realms/?/applications-agents-trustedJwtIssuer",
         role: "ui-realm-admin",
         navGroup: "admin",
         forceUpdate: true
@@ -557,8 +557,8 @@ const RealmsRoutes = {
     "realmsApplicationsOAuth2TrustedJwtIssuerAgentsNew": {
         view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
         page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/trusted-jwt-issuer/agents/new/NewTrustedJwtIssuerAgentContainer.jsx"),
-        url: scopedByRealm("applications-oauth2-trustedJwtIssuer/agents/new"),
-        pattern: "realms/?/applications-oauth2-trustedJwtIssuer/agents/new",
+        url: scopedByRealm("applications-agents-trustedJwtIssuer/agents/new"),
+        pattern: "realms/?/applications-agents-trustedJwtIssuer/agents/new",
         role: "ui-realm-admin",
         navGroup: "admin",
         forceUpdate: true
@@ -566,8 +566,8 @@ const RealmsRoutes = {
     "realmsApplicationsOAuth2TrustedJwtIssuerAgentsEdit": {
         view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
         page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/trusted-jwt-issuer/agents/edit/EditTrustedJwtIssuerAgent.js"),
-        url: scopedByRealm("applications-oauth2-trustedJwtIssuer/agents/edit/([^/]*)"),
-        pattern: "realms/?/applications-oauth2-trustedJwtIssuer/agents/edit/?",
+        url: scopedByRealm("applications-agents-trustedJwtIssuer/agents/edit/([^/]*)"),
+        pattern: "realms/?/applications-agents-trustedJwtIssuer/agents/edit/?",
         role: "ui-realm-admin",
         navGroup: "admin",
         forceUpdate: true
@@ -575,8 +575,8 @@ const RealmsRoutes = {
     "realmsApplicationsOAuth2TrustedJwtIssuerAgentGroupsNew": {
         view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
         page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/trusted-jwt-issuer/groups/new/NewTrustedJwtIssuerAgentGroupContainer.jsx"),
-        url: scopedByRealm("applications-oauth2-trustedJwtIssuer/groups/new"),
-        pattern: "realms/?/applications-oauth2-trustedJwtIssuer/groups/new",
+        url: scopedByRealm("applications-agents-trustedJwtIssuer/groups/new"),
+        pattern: "realms/?/applications-agents-trustedJwtIssuer/groups/new",
         role: "ui-realm-admin",
         navGroup: "admin",
         forceUpdate: true
@@ -584,8 +584,8 @@ const RealmsRoutes = {
     "realmsApplicationsOAuth2TrustedJwtIssuerAgentGroupsEdit": {
         view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
         page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/trusted-jwt-issuer/groups/edit/EditTrustedJwtIssuerAgentGroup.js"),
-        url: scopedByRealm("applications-oauth2-trustedJwtIssuer/groups/edit/([^/]*)"),
-        pattern: "realms/?/applications-oauth2-trustedJwtIssuer/groups/edit/?",
+        url: scopedByRealm("applications-agents-trustedJwtIssuer/groups/edit/([^/]*)"),
+        pattern: "realms/?/applications-agents-trustedJwtIssuer/groups/edit/?",
         role: "ui-realm-admin",
         navGroup: "admin",
         forceUpdate: true

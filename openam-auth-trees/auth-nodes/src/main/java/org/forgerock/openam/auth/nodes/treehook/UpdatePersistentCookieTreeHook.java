@@ -11,11 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2019 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.treehook;
 
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -25,8 +26,10 @@ import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.http.protocol.Cookie;
 import org.forgerock.http.protocol.Request;
 import org.forgerock.http.protocol.Response;
+import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.openam.auth.node.api.TreeHook;
 import org.forgerock.openam.auth.node.api.TreeHookException;
+import org.forgerock.openam.auth.nodes.jwt.PersistentJwtProvider;
 import org.forgerock.openam.auth.nodes.PersistentCookieDecisionNode;
 import org.forgerock.openam.auth.nodes.jwt.InvalidPersistentJwtException;
 import org.forgerock.openam.auth.nodes.jwt.PersistentJwtStringSupplier;
@@ -44,6 +47,7 @@ public class UpdatePersistentCookieTreeHook implements TreeHook {
     private final Request request;
     private final Response response;
     private final PersistentCookieDecisionNode.Config config;
+    private final PersistentJwtProvider persistentJwtProvider;
     private final PersistentJwtStringSupplier persistentJwtStringSupplier;
     private final PersistentCookieResponseHandler persistentCookieResponseHandler;
     private final Logger logger = LoggerFactory.getLogger("amAuth");
@@ -61,6 +65,7 @@ public class UpdatePersistentCookieTreeHook implements TreeHook {
         this.request = request;
         this.response = response;
         this.config = config;
+        this.persistentJwtProvider = InjectorHolder.getInstance(PersistentJwtProvider.class);
         this.persistentJwtStringSupplier = InjectorHolder.getInstance(PersistentJwtStringSupplier.class);
         this.persistentCookieResponseHandler = InjectorHolder.getInstance(PersistentCookieResponseHandler.class);
     }
@@ -72,9 +77,13 @@ public class UpdatePersistentCookieTreeHook implements TreeHook {
         Cookie originalJwt = getJwtCookie(request, config.persistentCookieName());
         if (originalJwt != null) {
             String jwtString;
+            Date expirationTime;
             try {
                 jwtString = persistentJwtStringSupplier.getUpdatedJwt(originalJwt.getValue(), orgName,
                         String.valueOf(config.hmacSigningKey()), config.idleTimeout().to(TimeUnit.HOURS));
+                Jwt jwt = persistentJwtProvider.getValidDecryptedJwt(jwtString, orgName,
+                        String.valueOf(config.hmacSigningKey()));
+                expirationTime = jwt.getClaimsSet().getExpirationTime();
             } catch (InvalidPersistentJwtException e) {
                 logger.error("Invalid jwt", e);
                 throw new TreeHookException(e);
@@ -82,7 +91,7 @@ public class UpdatePersistentCookieTreeHook implements TreeHook {
 
             if (jwtString != null && !jwtString.isEmpty()) {
                 persistentCookieResponseHandler.setCookieOnResponse(response, request, config.persistentCookieName(),
-                        jwtString, originalJwt.getExpires(), config.useSecureCookie(), config.useHttpOnlyCookie());
+                        jwtString, expirationTime, config.useSecureCookie(), config.useHttpOnlyCookie());
             }
         }
     }

@@ -77,7 +77,7 @@ class ListTrustedJwtIssuerAgentGroupsContainer extends Component {
                 { count: ids.length })
         }, () => {
             remove(realm, TRUSTED_JWT_ISSUER, ids).then(() => {
-                Messages.addMessage({ message: t("config.messages.CommonMessages.changesSaved") });
+                Messages.addMessage({ message: t("config.messages.AppMessages.changesSaved") });
                 this.props.pagination.onDataDelete(ids.length);
             }, (response) => {
                 Messages.addMessage({ response, type: Messages.TYPE_DANGER });

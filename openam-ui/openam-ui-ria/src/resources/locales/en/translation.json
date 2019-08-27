@@ -749,7 +749,7 @@
                 "breadcrumb": "Applications - Agents - Software Publisher",
                 "title": "Software Publisher"
             },
-            "applications-oauth2-trustedJwtIssuer": {
+            "applications-agents-trustedJwtIssuer": {
                 "breadcrumb": "Applications - Agents - Trusted JWT Issuer",
                 "title": "Trusted JWT Issuer"
             },

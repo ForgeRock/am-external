@@ -27,7 +27,7 @@
  */
 
 /*
- * Portions Copyrighted [2011] [ForgeRock AS]
+ * Portions Copyrighted [2011-2019] [ForgeRock AS]
  */
 package com.sun.identity.authentication.modules.nt;
 
@@ -210,7 +210,7 @@ public class NT extends AMLoginModule {
         File tmpFile = null;
         try {
             // Create the tmpFile
-            tmpFile = File.createTempFile(userName,"pwd");
+            tmpFile = File.createTempFile("username","pwd");
             FileOutputStream fw = new FileOutputStream(tmpFile);
             OutputStreamWriter dos = new OutputStreamWriter(fw, "ISO-8859-1");
             dos.write("username = " + userName + "\n");
