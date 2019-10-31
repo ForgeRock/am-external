@@ -42,6 +42,12 @@
                     validatorUrl: null,
                     requestInterceptor: function (request) {
                         /**
+                         * Prevents cross-origin requests.
+                         * @see https://developer.mozilla.org/en-US/docs/Web/API/Request/mode
+                         */
+                        request.mode = "same-origin";
+
+                        /**
                         * Removes invalid # component from path. e.g.
                         * Given `/applications#1.0_query_filter?_queryFilter=true` removes
                         * `#1.0_query_filter`.

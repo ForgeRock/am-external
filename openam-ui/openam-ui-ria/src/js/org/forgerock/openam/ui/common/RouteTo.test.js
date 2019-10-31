@@ -107,7 +107,6 @@ describe("org/forgerock/openam/ui/common/RouteTo", () => {
     });
 
     describe("#logout", () => {
-
         beforeEach(() => {
             logoutPromise.resolve();
             sinon.spy(RouteTo, "setGotoFragment");
@@ -124,20 +123,24 @@ describe("org/forgerock/openam/ui/common/RouteTo", () => {
         });
 
         context("when logout is successful", () => {
-            it("invoked Router.routeTo login ", () => {
+            it("invoked Router.routeTo login ", (done) => {
                 logoutPromise.resolve();
-                RouteTo.logout();
 
-                expect(Router.routeTo).to.be.calledWith(Router.configuration.routes.login, { trigger: true });
+                RouteTo.logout().then(() => {
+                    expect(Router.routeTo).to.be.calledWith(Router.configuration.routes.login, { trigger: true });
+                    done();
+                });
             });
         });
 
         context("when logout is unsuccessful", () => {
-            it("invoked Router.routeTo login", () => {
-                logoutPromise.resolve();
-                RouteTo.logout();
+            it("invoked Router.routeTo login", (done) => {
+                logoutPromise.reject();
 
-                expect(Router.routeTo).to.be.calledWith(Router.configuration.routes.login, { trigger: true });
+                RouteTo.logout().then(() => {
+                    expect(Router.routeTo).to.be.calledWith(Router.configuration.routes.login, { trigger: true });
+                    done();
+                });
             });
         });
     });

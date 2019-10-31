@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 
 if (!window.PublicKeyCredential) {
@@ -28,7 +28,7 @@ var publicKey = {
     },
     // User:
     user: {
-        id: Uint8Array.from("{userId}", c=>c.charCodeAt(0)),
+        id: Uint8Array.from("{userId}", function (c) { return c.charCodeAt(0) }),
         name: "{userName}",
         displayName: "{userName}"
     },
@@ -41,7 +41,7 @@ var publicKey = {
     authenticatorSelection: {authenticatorSelection}
 };
 
-navigator.credentials.create({publicKey})
+navigator.credentials.create({publicKey: publicKey})
     .then(function (newCredentialInfo) {
         var rawId = newCredentialInfo.id;
         var clientData = String.fromCharCode.apply(null, new Uint8Array(newCredentialInfo.response.clientDataJSON));

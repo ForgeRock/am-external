@@ -35,7 +35,7 @@
     "i18next": "11.6.0",
     "i18next-browser-languagedetector": "2.2.3",
     "i18next-xhr-backend": "1.5.1",
-    "jquery": "2.1.1",
+    "jquery": "3.4.1",
     "jquery-i18next": "1.2.1",
     "jquery-sortable": "0.9.13",
     "lodash": "4.17.14",
@@ -119,6 +119,7 @@
     "webpack-shell-plugin": "0.5.0"
   },
   "resolutions": {
+    "jquery-sortable/jquery": "3.4.1",
     "lodash": "4.17.14"
   }
 }

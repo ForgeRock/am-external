@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ * Copyright 2015-2019 ForgeRock AS. All Rights Reserved
  * 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-ui</artifactId>
-        <version>6.5.2.1</version>
+        <version>6.5.2.2</version>
     </parent>
 
     <artifactId>openam-ui-ria</artifactId>
@@ -63,8 +63,8 @@
                         <configuration>
                             <nodeVersion>v10.11.0</nodeVersion>
                             <yarnVersion>v1.10.1</yarnVersion>
-                            <nodeDownloadRoot>http://maven.forgerock.org/repo/forgerock-third-party-virtual/</nodeDownloadRoot>
-                            <yarnDownloadRoot>http://maven.forgerock.org/repo/yarn-cache-local/</yarnDownloadRoot>
+                            <nodeDownloadRoot>https://maven.forgerock.org/repo/forgerock-third-party-virtual/</nodeDownloadRoot>
+                            <yarnDownloadRoot>https://maven.forgerock.org/repo/yarn-cache-local/</yarnDownloadRoot>
                         </configuration>
                     </execution>
                     <execution>

@@ -24,8 +24,8 @@ import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import DefaultBaseTemplate from "templates/common/DefaultBaseTemplate";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
-import loadPartial from "org/forgerock/openam/ui/common/util/theme/loadPartial"
-import loadTemplate from "org/forgerock/openam/ui/common/util/theme/loadTemplate";;
+import loadPartial from "org/forgerock/openam/ui/common/util/theme/loadPartial";
+import loadTemplate from "org/forgerock/openam/ui/common/util/theme/loadTemplate";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import UIUtils from "org/forgerock/commons/ui/common/util/UIUtils";
 import unwrapDefaultExport from "org/forgerock/openam/ui/common/util/es6/unwrapDefaultExport";
@@ -37,28 +37,16 @@ import ValidatorsManager from "org/forgerock/commons/ui/common/main/ValidatorsMa
  */
 
 /**
-  Internal helper method shared by the default implementations of
-  validationSuccessful and validationFailed
-*/
-function validationStarted (event) {
-    if (!event || !event.target) {
-        return $.Deferred().reject();
-    }
-
-    return $.Deferred().resolve($(event.target));
-}
-
-/**
   Sets the enabled state of the submit button based on the validation status of the provided form
 */
 function validationCompleted (formElement) {
-    var button = formElement.find("input[type=submit]");
+    let button = formElement.find("input[type=submit]");
 
     if (!button.length) {
         button = formElement.find("#submit");
     }
     if (button.length) {
-        button.prop('disabled', !ValidatorsManager.formValidated(formElement));
+        button.prop("disabled", !ValidatorsManager.formValidated(formElement));
     }
 }
 
@@ -129,24 +117,24 @@ export default Backbone.View.extend({
     },
 
     async loadTemplate () {
-        var self = this,
-            validateCurrent = function () {
-                if (!_.has(self, "route")) {
-                    return true;
-                } else if (!self.route.url.length && URIUtils.getCurrentFragment().replace(/^#/, '') === "") {
-                    return true;
-                } else if (self.route === Router.configuration.routes.login) {
-                    /**
+        const self = this;
+        const validateCurrent = function () {
+            if (!_.has(self, "route")) {
+                return true;
+            } else if (!self.route.url.length && URIUtils.getCurrentFragment().replace(/^#/, "") === "") {
+                return true;
+            } else if (self.route === Router.configuration.routes.login) {
+                /**
                      * Determines if the current route is a login route, in which case allow the route  to execute.
                      * This is due to OpenAM's requirement for two views rendering being rendered at the same time
                      * (an arbitrary view and a session expiry login dialog view layered above) where the route and
                      * the hash don't match.
                      */
-                    return true;
-                } else {
-                    return URIUtils.getCurrentFragment().replace(/^#/, '').match(self.route.url);
-                }
-            };
+                return true;
+            } else {
+                return URIUtils.getCurrentFragment().replace(/^#/, "").match(self.route.url);
+            }
+        };
 
         this.setElement($(this.element));
         this.$el.unbind();
@@ -168,7 +156,7 @@ export default Backbone.View.extend({
                 self.callback ? _.bind(self.callback, self) : _.noop(),
                 self.mode,
                 validateCurrent);
-        }
+        };
 
         self.template = unwrapDefaultExport(self.template);
 
@@ -205,15 +193,12 @@ export default Backbone.View.extend({
      * and can be overridden per-view as needed.
      */
     validationSuccessful (event) {
-        validationStarted(event)
-        .then(function (input) {
-            if (input.data()["bs.popover"]) {
-                input.popover('destroy');
-            }
-            input.parents(".form-group").removeClass('has-feedback has-error');
-            return input.closest("form");
-        })
-        .then(validationCompleted);
+        const input = $(event.target);
+        if (input.data()["bs.popover"]) {
+            input.popover("destroy");
+        }
+        input.parents(".form-group").removeClass("has-feedback has-error");
+        validationCompleted(input.closest("form"));
     },
 
     /**
@@ -225,32 +210,29 @@ export default Backbone.View.extend({
      *                           failure
      */
     validationFailed (event, details) {
-        validationStarted(event)
-        .then(function (input) {
-            input.parents(".form-group").addClass('has-feedback has-error');
-            if (input.data()["bs.popover"]) {
-                input.data('bs.popover').options.content = '<i class="fa fa-exclamation-circle"></i> '
-                    + details.failures.join('<br><i class="fa fa-exclamation-circle"></i> ');
-            } else {
-                input.popover({
-                    validationMessage: details.failures,
-                    animation: false,
-                    content: '<i class="fa fa-exclamation-circle"></i> '
-                    + details.failures.join('<br><i class="fa fa-exclamation-circle"></i> '),
-                    trigger:'focus hover',
-                    placement:'top',
-                    html: 'true',
-                    template: '<div class="popover popover-error help-block" role="tooltip">' +
-                        '<div class="arrow"></div><h3 class="popover-title"></h3>' +
-                        '<div class="popover-content"></div></div>'
-                });
-            }
-            if (input.is(":focus")) {
-                input.popover("show");
-            }
-            return input.closest("form");
-        })
-        .then(validationCompleted);
+        const input = $(event.target);
+        input.parents(".form-group").addClass("has-feedback has-error");
+        if (input.data()["bs.popover"]) {
+            input.data("bs.popover").options.content = `<i class="fa fa-exclamation-circle"></i> ${
+                details.failures.join('<br><i class="fa fa-exclamation-circle"></i> ')}`;
+        } else {
+            input.popover({
+                validationMessage: details.failures,
+                animation: false,
+                content: `<i class="fa fa-exclamation-circle"></i> ${
+                    details.failures.join('<br><i class="fa fa-exclamation-circle"></i> ')}`,
+                trigger:"focus hover",
+                placement:"top",
+                html: "true",
+                template: '<div class="popover popover-error help-block" role="tooltip">' +
+                    '<div class="arrow"></div><h3 class="popover-title"></h3>' +
+                    '<div class="popover-content"></div></div>'
+            });
+        }
+        if (input.is(":focus")) {
+            input.popover("show");
+        }
+        validationCompleted(input.closest("form"));
     },
 
     // legacy; needed here to prevent breakage of views which have an event registered for this function

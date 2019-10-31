@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 import $ from "jquery";
 import _ from "lodash";
@@ -109,7 +109,7 @@ AuthNService.begin = function (options) {
                     type: Messages.TYPE_DANGER
                 };
             }
-            return errorBody;
+            throw errorBody;
         });
 };
 AuthNService.handleRequirements = function (requirements) {
@@ -255,11 +255,10 @@ AuthNService.getRequirements = function (args) {
         });
     } else if (requirementList.length === 0 || hasRealmChanged() || hasAuthIndexChanged()) {
         AuthNService.resetProcess();
-        return AuthNService.begin(args)
-            .then((requirements) => {
-                AuthNService.handleRequirements(requirements);
-                return requirements;
-            }, (error) => error);
+        return AuthNService.begin(args).then((requirements) => {
+            AuthNService.handleRequirements(requirements);
+            return requirements;
+        });
     } else {
         return $.Deferred().resolve(requirementList[requirementList.length - 1]);
     }

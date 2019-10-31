@@ -24,7 +24,7 @@
  *
  * $Id: Cert.java,v 1.14 2009/03/13 20:54:42 beomsuk Exp $
  *
- * Portions Copyrighted 2013-2018 ForgeRock AS.
+ * Portions Copyrighted 2013-2019 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.cert;
@@ -257,8 +257,8 @@ public class Cert extends AMLoginModule {
                 options, "iplanet-am-auth-cert-gw-cert-auth-enabled");
             certParamName = CollectionHelper.getMapAttr(
                 options,"sunAMHttpParamName");
-
-            String client = getLoginState("process").getClient();
+            HttpServletRequest servletRequest = getHttpServletRequest();
+            String client = servletRequest.getRemoteAddr();
             portal_gw_cert_auth_enabled = false;
             if (gwCertAuth == null || gwCertAuth.equals("") 
                                 || gwCertAuth.equalsIgnoreCase("none")) {
