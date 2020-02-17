@@ -24,7 +24,7 @@
  *
  * $Id: KeyUtil.java,v 1.10 2009/08/28 23:42:14 exu Exp $
  *
- * Portions Copyrighted 2013-2018 ForgeRock AS.
+ * Portions Copyrighted 2013-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.key;
 
@@ -200,7 +200,7 @@ public class KeyUtil {
                 SAML2SDKUtils.debug.error(classMethod + "keyProvider was null.");
             }
         } else {
-            SAML2SDKUtils.debug.error(classMethod + "passed aliases list was null.");
+            SAML2SDKUtils.debug.message("{}passed aliases list was null.", classMethod);
         }
 
         return decryptionKeys;

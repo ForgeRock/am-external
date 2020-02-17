@@ -450,22 +450,20 @@ public class IDPSSOUtil {
                 SAML2Utils.debug.message("SessionIndex for this SSOToken is not local, forwarding the request to: "
                         + remoteServiceURL);
             }
-            String redirectUrl = null;
-            String outputData = null;
-            String responseCode = null;
-            HashMap<String, String> remoteRequestData =
+
+            Map<String, String> remoteRequestData =
                     SAML2Utils.sendRequestToOrigServer(request, response, remoteServiceURL);
-            if (remoteRequestData != null && !remoteRequestData.isEmpty()) {
-                redirectUrl = remoteRequestData.get(SAML2Constants.AM_REDIRECT_URL);
-                outputData = remoteRequestData.get(SAML2Constants.OUTPUT_DATA);
-                responseCode = remoteRequestData.get(SAML2Constants.RESPONSE_CODE);
+            if (!remoteRequestData.isEmpty()) {
+                String redirectUrl = remoteRequestData.get(SAML2Constants.AM_REDIRECT_URL);
+                String outputData = remoteRequestData.get(SAML2Constants.OUTPUT_DATA);
+                String responseCode = remoteRequestData.get(SAML2Constants.RESPONSE_CODE);
 
                 try {
                     if (redirectUrl != null && !redirectUrl.isEmpty()) {
                         response.sendRedirect(redirectUrl);
                     } else {
                         if (responseCode != null) {
-                            response.setStatus(Integer.valueOf(responseCode));
+                            response.setStatus(Integer.parseInt(responseCode));
                         }
                         // no redirect, perhaps an error page, return the content
                         if (outputData != null && !outputData.isEmpty()) {
@@ -476,9 +474,7 @@ public class IDPSSOUtil {
                         }
                     }
                 } catch (IOException ioe) {
-                    if (SAML2Utils.debug.messageEnabled()) {
-                        SAML2Utils.debug.message("IDPSSOUtil.sendResponseToACS() error in Request Routing", ioe);
-                    }
+                    SAML2Utils.debug.error("Unable to replay crosstalk response", ioe);
                 }
                 return;
             }

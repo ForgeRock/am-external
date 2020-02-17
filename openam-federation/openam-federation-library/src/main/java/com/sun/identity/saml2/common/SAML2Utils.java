@@ -22,7 +22,7 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2018 ForgeRock AS.
+ * Portions Copyrighted 2010-2019 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.common;
@@ -35,6 +35,7 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -4225,7 +4226,7 @@ public class SAML2Utils extends SAML2SDKUtils {
         IDPSSODescriptorType descriptor = saml2MetaManager.getIDPSSODescriptor(realm, idpEntityID);
         if (descriptor == null) {
             debug.error("{} Unable to retrieve metadata in realm {} with entityID {}", classMethod, realm, idpEntityID);
-            throw new ServerFaultException(SAML2Utils.bundle.getString("metaDataError"));
+            throw new ServerFaultException("metaDataError");
         }
 
         if (SAML2Constants.SSO_SERVICE.equals(profile)) {
@@ -4233,7 +4234,7 @@ public class SAML2Utils extends SAML2SDKUtils {
 
             if (CollectionUtils.isEmpty(ssoList)) {
                 debug.error("{} SSO List from entityID {} was empty or NULL.", classMethod, idpEntityID);
-                throw new ServerFaultException(SAML2Utils.bundle.getString("ssoServiceNotfound"));
+                throw new ServerFaultException("ssoServiceNotfound");
             }
             if (StringUtils.isNotEmpty(reqBinding)) {
                 for (EndpointType ssoEndpoint : ssoList) {
@@ -4363,8 +4364,8 @@ public class SAML2Utils extends SAML2SDKUtils {
         }
 
         // Open URL connection
-        HttpURLConnection conn = null;
-        String strCookies = null;
+        HttpURLConnection conn;
+        String strCookies;
 
         try {
             URL sloRoutingURL = new URL(sloServerUrl);
@@ -4395,7 +4396,10 @@ public class SAML2Utils extends SAML2SDKUtils {
             }
 
             conn.setRequestProperty("Host", request.getHeader("host"));
-            conn.setRequestProperty(SAMLConstants.ACCEPT_LANG_HEADER, request.getHeader(SAMLConstants.ACCEPT_LANG_HEADER));
+            String acceptLanguageHeader = request.getHeader(SAMLConstants.ACCEPT_LANG_HEADER);
+            if (StringUtils.isNotEmpty(acceptLanguageHeader)) {
+                conn.setRequestProperty(SAMLConstants.ACCEPT_LANG_HEADER, acceptLanguageHeader);
+            }
 
             // do the remote connection
             if (isGET) {
@@ -4411,56 +4415,38 @@ public class SAML2Utils extends SAML2SDKUtils {
                 if (debug.messageEnabled()) {
                     debug.message(classMethod + "DATA to be SENT: " + data);
                 }
-                OutputStreamWriter writer = null;
-                try {
-                    writer = new OutputStreamWriter(conn.getOutputStream());
+                try (OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream())) {
                     writer.write(data);
                 } catch (IOException ioe) {
-                    debug.error(classMethod + "Could not write to the destination", ioe);
-                } finally {
-                    writer.close();
+                    debug.error("Could not write to the destination", ioe);
                 }
             }
             // Receiving input from Original Federation server...
             if (debug.messageEnabled()) {
-                debug.message(classMethod + "RECEIVING DATA ... ");
-                debug.message(classMethod + "Response Code: " + conn.getResponseCode());
-                debug.message(classMethod + "Response Message: " + conn.getResponseMessage());
-                debug.message(classMethod + "Follow redirect : " + HttpURLConnection.getFollowRedirects());
+                debug.message("RECEIVING DATA ... ");
+                debug.message("Response Code: {}", conn.getResponseCode());
+                debug.message("Response Message: {}", conn.getResponseMessage());
+                debug.message("Follow redirect : {}", HttpURLConnection.getFollowRedirects());
             }
 
             // Input from Original servlet...
-            StringBuilder in_buf = new StringBuilder();
-            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
-            int len;
-            char[] buf = new char[1024];
-
-            while ((len = in.read(buf, 0, buf.length)) != -1) {
-                in_buf.append(buf, 0, len);
-            }
-
-            String in_string = in_buf.toString();
-
-            if (debug.messageEnabled()) {
-                debug.message(classMethod + "Received response data : " + in_string);
-            }
-
-            origRequestData.put(SAML2Constants.OUTPUT_DATA, in_string);
+            origRequestData.put(SAML2Constants.RESPONSE_CODE, Integer.toString(conn.getResponseCode()));
+            InputStream is = conn.getErrorStream() == null ? conn.getInputStream() : conn.getErrorStream();
+            String crossTalkResponse = IOUtils.readStream(is);
+            debug.message("Received response data:\n{}", crossTalkResponse);
+            origRequestData.put(SAML2Constants.OUTPUT_DATA, crossTalkResponse);
 
             String redirect_url = conn.getHeaderField(LOCATION);
 
             if (redirect_url != null) {
                 origRequestData.put(SAML2Constants.AM_REDIRECT_URL, redirect_url);
             }
-            origRequestData.put(SAML2Constants.RESPONSE_CODE, Integer.toString(conn.getResponseCode()));
 
             // retrieves cookies from the response
             Map headers = conn.getHeaderFields();
             processCookies(headers, request, response);
         } catch (Exception ex) {
-            if (debug.messageEnabled()) {
-                debug.message(classMethod + "send exception : ", ex);
-            }
+            debug.error("An error occurred while performing crosstalk.", ex);
         }
 
         return origRequestData;

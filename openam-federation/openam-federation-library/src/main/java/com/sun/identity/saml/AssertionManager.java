@@ -24,7 +24,7 @@
  *
  * $Id: AssertionManager.java,v 1.13 2010/01/09 19:41:06 qcheng Exp $
  *
- * Portions Copyrighted 2013-2017 ForgeRock AS.
+ * Portions Copyrighted 2013-2019 ForgeRock AS.
  */
 
 package com.sun.identity.saml;
@@ -750,8 +750,11 @@ public final class AssertionManager {
                     "nullSessionProvider"));
             }
             token = sessionProvider.getSession(id);
-            authMethod = (String) sessionProvider.getProperty(
-                token, SessionProvider.AUTH_METHOD)[0];
+            String[] authMethods = (String[]) sessionProvider.getProperty(
+                token, SessionProvider.AUTH_METHOD);
+            if (authMethods != null && authMethods.length >= 1) {
+                authMethod = authMethods[0];
+            }
             String authSSOInstant = (String)
                 sessionProvider.getProperty(token,"authInstant")[0]; 
             if (authSSOInstant == null || authSSOInstant.equals("")) {

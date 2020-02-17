@@ -10,8 +10,8 @@
  * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
- *
- * Copyright 2018 ForgeRock AS.
+ * 
+ * Copyright 2018-2020 ForgeRock AS. All Rights Reserved
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -169,6 +169,7 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         scriptContext.put("challenge", Arrays.toString(challengeBytes));
         scriptContext.put("acceptableCredentials", clientScriptUtilities.getDevicesAsJavaScript(devices));
         scriptContext.put("timeout", String.valueOf(config.timeout() * 1000));
+        scriptContext.put("relyingPartyId", rpId);
         authScript = MapFormat.format(authScript, scriptContext);
 
         if (context.getCallback(ConfirmationCallback.class)

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS. All Rights Reserved
  */
 
 if (!window.PublicKeyCredential) {
@@ -24,6 +24,7 @@ var acceptableCredentials = [
 ];
 
 var options = {
+    rpId: "{relyingPartyId}",
     challenge: new Uint8Array({challenge}).buffer,
     timeout: {timeout},
     allowCredentials: acceptableCredentials

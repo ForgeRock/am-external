@@ -24,7 +24,7 @@
  *
  * $Id: IPSigninRequest.java,v 1.8 2009/10/28 23:59:00 exu Exp $
  *
- * Portions Copyrighted 2014-2018 ForgeRock AS.
+ * Portions Copyrighted 2014-2019 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.servlet;
@@ -273,9 +273,12 @@ public class IPSigninRequest extends WSFederationAction {
             throw new WSFederationException(WSFederationUtils.bundle.getString("unableToFindSPConfiguration"));
         }
 
-        String authMethod;
+        String authMethod = null;
         try {
-            authMethod = WSFederationUtils.sessionProvider.getProperty(session, SessionProvider.AUTH_METHOD)[0];
+            String[] authMethods = WSFederationUtils.sessionProvider.getProperty(session, SessionProvider.AUTH_METHOD);
+            if (authMethods != null && authMethods.length >= 1) {
+                authMethod = authMethods[0];
+            }
         } catch (SessionException se) {
             throw new WSFederationException(se);
         }
