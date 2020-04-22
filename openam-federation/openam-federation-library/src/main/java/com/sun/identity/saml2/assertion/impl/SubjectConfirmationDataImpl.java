@@ -24,6 +24,7 @@
  *
  * $Id: SubjectConfirmationDataImpl.java,v 1.5 2008/11/10 22:57:01 veiming Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -43,6 +44,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.shared.DateUtils;
 import com.sun.identity.saml2.assertion.SubjectConfirmationData;
@@ -54,9 +56,9 @@ import com.sun.identity.saml2.common.SAML2SDKUtils;
 /**
  *  The <code>SubjectConfirmationData</code> specifies additional data
  *  that allows the subject to be confirmed or constrains the circumstances
- *  under which the act of subject confirmation can take place. Subejct
+ *  under which the act of subject confirmation can take place. Subject
  *  confirmation takes place when a relying party seeks to verify the
- *  relationship between an entity presenting the assertion and the 
+ *  relationship between an entity presenting the assertion and the
  *  subject of the assertion's claims.
  */
 public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
@@ -75,7 +77,7 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
     }
 
     public SubjectConfirmationDataImpl(Element element) throws SAML2Exception {
-            parseElement(element);
+        parseElement(element);
         makeImmutable();
     }
 
@@ -93,37 +95,36 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
         if (element == null) {
             if (SAML2SDKUtils.debug.messageEnabled()) {
                 SAML2SDKUtils.debug.message("parseElement: "
-                    + "Input is null.");
+                        + "Input is null.");
             }
             throw new SAML2Exception(
-                      SAML2SDKUtils.bundle.getString("nullInput"));
+                    SAML2SDKUtils.bundle.getString("nullInput"));
         }
-        
+
         // Make sure this is an SubjectConfirmationData.
         String tag = element.getLocalName();
         if ((tag == null) || (!tag.equals(elementName))) {
             if (SAML2SDKUtils.debug.messageEnabled()) {
                 SAML2SDKUtils.debug.message("parseElement: "
-                    + "not SubjectConfirmationData.");
+                        + "not SubjectConfirmationData.");
             }
             throw new SAML2Exception(
-                      SAML2SDKUtils.bundle.getString("wrongInput"));
+                    SAML2SDKUtils.bundle.getString("wrongInput"));
         }
 
         // handle the attributes of <SubjectConfirmationData> element
-        NamedNodeMap attrs = ((Node)element).getAttributes();
+        NamedNodeMap attrs = ((Node) element).getAttributes();
         parseAttributes(attrs);
         parseContent(element);
     }
-    
+
     /**
-     *  Parse and sets content values 
+     * Parse and sets content values
      *
-     *  @param element Element for this class object 
+     * @param element Element for this class object
      */
-    protected void parseContent(Element element) 
-    throws SAML2Exception
-    {
+    protected void parseContent(Element element)
+            throws SAML2Exception {
         if (element == null) {
             return;
         }
@@ -145,13 +146,12 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
     }
 
     /**
-     *  Sets all the attribute values 
+     * Sets all the attribute values
      *
-     *  @param attrs Map table has attribute name and value pairs 
+     * @param attrs Map table has attribute name and value pairs
      */
-    protected void parseAttributes(NamedNodeMap attrs) 
-    throws SAML2Exception
-    {
+    protected void parseAttributes(NamedNodeMap attrs)
+            throws SAML2Exception {
         if (attrs == null) {
             return;
         }
@@ -173,7 +173,7 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
                 } else if (attrName.equals("Recipient")) {
                     recipient = attrValue;
                 } else if (attrName.equals("xsi:type")) {
-                    contentType = attrValue;    
+                    contentType = attrValue;
                 } else {
                     continue;
                 }
@@ -184,20 +184,20 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
             }
 
             throw new SAML2Exception(
-                      SAML2SDKUtils.bundle.getString("wrongInput"));
+                    SAML2SDKUtils.bundle.getString("wrongInput"));
         }
     }
-    
+
     /**
      * Returns the time instant at which the subject can no longer be
      * confirmed
      *
      * @return the time instant at which the subject can no longer be
-     *  confirmed
+     * confirmed
      * @see #setNotOnOrAfter(Date)
      */
     public Date getNotOnOrAfter() {
-            return notOnOrAfter;
+        return notOnOrAfter;
     }
 
     /**
@@ -205,61 +205,58 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
      * confirmed
      *
      * @param value the time instant at which the subject can no longer be
-     * confirmed
-     * @exception SAML2Exception if the object is immutable
+     *              confirmed
+     * @throws SAML2Exception if the object is immutable
      * @see #getNotOnOrAfter
      */
-    public void setNotOnOrAfter(Date value) throws SAML2Exception
-    {
+    public void setNotOnOrAfter(Date value) throws SAML2Exception {
         if (!mutable) {
-           throw new SAML2Exception(
+            throw new SAML2Exception(
                     SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
         notOnOrAfter = value;
     }
-    
+
 
     /**
-     *  Returns the ID of a SAML protocol message in response to which
-     *  an attesting entity can present the assertion
+     * Returns the ID of a SAML protocol message in response to which
+     * an attesting entity can present the assertion
      *
-     *  @return the ID of a SAML protocol message in response to which
-     *  an attesting entity can present the assertion
-     *  @see #setInResponseTo(String)
+     * @return the ID of a SAML protocol message in response to which
+     * an attesting entity can present the assertion
+     * @see #setInResponseTo(String)
      */
-    public String getInResponseTo()
-    {
+    public String getInResponseTo() {
         return inResponseTo;
     }
 
     /**
-     *  Sets the ID of a SAML protocol message in response to which
-     *  an attesting entity can present the assertion
+     * Sets the ID of a SAML protocol message in response to which
+     * an attesting entity can present the assertion
      *
-     *  @param value the ID of a SAML protocol message in response to which
-     *  an attesting entity can present the assertion
-     *  @exception SAML2Exception if the object is immutable
-     *  @see #getInResponseTo
+     * @param value the ID of a SAML protocol message in response to which
+     *              an attesting entity can present the assertion
+     * @throws SAML2Exception if the object is immutable
+     * @see #getInResponseTo
      */
-    public void setInResponseTo(String value) throws SAML2Exception
-    {
+    public void setInResponseTo(String value) throws SAML2Exception {
         if (!mutable) {
-           throw new SAML2Exception(
+            throw new SAML2Exception(
                     SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
         inResponseTo = value;
     }
 
     /**
-     * Returns a list of arbitrary XML elements to be added to this 
-     * <code>SubejctConfirmationData</code> object.
+     * Returns a list of arbitrary XML elements to be added to this
+     * <code>SubjectConfirmationData</code> object.
      *
-     * @return a list of arbitrary XML elements to be added to this 
-     * <code>SubejctConfirmationData</code> object.
+     * @return a list of arbitrary XML elements to be added to this
+     * <code>SubjectConfirmationData</code> object.
      * @see #setContent(List)
      */
-    public List getContent()
-    {
+    @JsonSerialize(contentUsing = SubjectConfirmationDataContentFieldSerializer.class)
+    public List getContent() {
         if (content == null) {
             content = new ArrayList();
         }
@@ -267,18 +264,17 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
     }
 
     /**
-     * Sets a list of arbitrary XML elements to be added to this 
-     * <code>SubejctConfirmationData</code> object.
+     * Sets a list of arbitrary XML elements to be added to this
+     * <code>SubjectConfirmationData</code> object.
      *
-     * @param value a list of arbitrary XML elements to be added to this 
-     * <code>SubejctConfirmationData</code> object.
-     * @exception SAML2Exception if the object is immutable
+     * @param value a list of arbitrary XML elements to be added to this
+     *              <code>SubjectConfirmationData</code> object.
+     * @throws SAML2Exception if the object is immutable
      * @see #getContent()
      */
-    public void setContent(List value) throws SAML2Exception
-    {
+    public void setContent(List value) throws SAML2Exception {
         if (!mutable) {
-           throw new SAML2Exception(
+            throw new SAML2Exception(
                     SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
 
@@ -286,31 +282,29 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
     }
 
     /**
-     *  Returns the URI specifying the entity or location to which an
-     *  attesting entity can present the assertion 
+     * Returns the URI specifying the entity or location to which an
+     * attesting entity can present the assertion
      *
-     *  @return the URI specifying the entity or location to which an
-     *  attesting entity can present the assertion 
-     *  @see #setRecipient(String)
+     * @return the URI specifying the entity or location to which an
+     * attesting entity can present the assertion
+     * @see #setRecipient(String)
      */
-    public String getRecipient()
-    {
+    public String getRecipient() {
         return recipient;
     }
 
     /**
-     *  Sets the URI specifying the entity or location to which an
-     *  attesting entity can present the assertion 
+     * Sets the URI specifying the entity or location to which an
+     * attesting entity can present the assertion
      *
-     *  @param value the URI specifying the entity or location to which an
-     *  attesting entity can present the assertion 
-     *  @exception SAML2Exception if the object is immutable
-     *  @see #getRecipient
+     * @param value the URI specifying the entity or location to which an
+     *              attesting entity can present the assertion
+     * @throws SAML2Exception if the object is immutable
+     * @see #getRecipient
      */
-    public void setRecipient(String value) throws SAML2Exception
-    {
+    public void setRecipient(String value) throws SAML2Exception {
         if (!mutable) {
-           throw new SAML2Exception(
+            throw new SAML2Exception(
                     SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
 
@@ -318,86 +312,81 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
     }
 
     /**
-     *  Returns the time instant before which the subject cannot be confirmed
+     * Returns the time instant before which the subject cannot be confirmed
      *
-     *  @return the time instant before which the subject cannot be confirmed
-     *  @see #setNotBefore(Date)
+     * @return the time instant before which the subject cannot be confirmed
+     * @see #setNotBefore(Date)
      */
-    public Date getNotBefore()
-    {
+    public Date getNotBefore() {
         return notBefore;
     }
 
     /**
-     *  Sets the time instant before which the subject cannot be confirmed
+     * Sets the time instant before which the subject cannot be confirmed
      *
-     *  @param value the time instant before which the subject cannot
-     *         be confirmed
-     *  @exception SAML2Exception if the object is immutable
-     *  @see #getNotBefore
+     * @param value the time instant before which the subject cannot
+     *              be confirmed
+     * @throws SAML2Exception if the object is immutable
+     * @see #getNotBefore
      */
-    public void setNotBefore(Date value) throws SAML2Exception
-    {
+    public void setNotBefore(Date value) throws SAML2Exception {
         if (!mutable) {
-           throw new SAML2Exception(
+            throw new SAML2Exception(
                     SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
         notBefore = value;
     }
 
     /**
-     *  Returns the network address/location from which an attesting 
-     *  entity can present the assertion 
+     * Returns the network address/location from which an attesting
+     * entity can present the assertion
      *
-     *  @return the network address/location from which an attesting 
-     *  entity can present the assertion 
-     *  @see #setAddress(String)
+     * @return the network address/location from which an attesting
+     * entity can present the assertion
+     * @see #setAddress(String)
      */
-    public String getAddress()
-    {
+    public String getAddress() {
         return address;
     }
 
     /**
-     *  Sets the network address/location from which an attesting 
-     *  entity can present the assertion 
+     * Sets the network address/location from which an attesting
+     * entity can present the assertion
      *
-     *  @param value the network address/location from which an attesting 
-     *  entity can present the assertion 
-     *  @exception SAML2Exception if the object is immutable
-     *  @see #getAddress
+     * @param value the network address/location from which an attesting
+     *              entity can present the assertion
+     * @throws SAML2Exception if the object is immutable
+     * @see #getAddress
      */
-    public void setAddress(String value) throws SAML2Exception
-    {
+    public void setAddress(String value) throws SAML2Exception {
         if (!mutable) {
-           throw new SAML2Exception(
+            throw new SAML2Exception(
                     SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
 
         address = value;
     }
-    
+
     /**
-     *  Returns the content type attribute     
+     * Returns the content type attribute
      *
-     *  @return the content type attribute     
-     *  @see #setContentType(String)
+     * @return the content type attribute
+     * @see #setContentType(String)
      */
-    public String getContentType()
-    {
+    public String getContentType() {
         return contentType;
     }
-    
+
     /**
-     *  Sets the content type attribute.
+     * Sets the content type attribute.
      *
-     *  @param attribute attribute type value for the content that will be 
-     *         added
-     *  @throws SAML2Exception if the object is immutable
+     * @param attribute attribute type value for the content that will be
+     *                  added
+     * @throws SAML2Exception if the object is immutable
      */
     public void setContentType(String attribute) throws SAML2Exception {
         if (!mutable) {
-           throw new SAML2Exception(
+            throw new SAML2Exception(
                     SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
         contentType = attribute;
@@ -407,30 +396,29 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
      * Returns a String representation of the element
      *
      * @return A String representation
-     * @exception SAML2Exception if something is wrong during conversion
+     * @throws SAML2Exception if something is wrong during conversion
      */
-     public String toXMLString() throws SAML2Exception
-     {
-         return toXMLString(true, false);
-     }
+    public String toXMLString() throws SAML2Exception {
+        return toXMLString(true, false);
+    }
 
     /**
      * Returns a String representation of the element
+     *
      * @param includeNSPrefix Determines whether the namespace qualifier is
-     *        prepended to the Element when converted
-     * @param declareNS Determines whether the namespace is declared
-     *        within the Element.
+     *                        prepended to the Element when converted
+     * @param declareNS       Determines whether the namespace is declared
+     *                        within the Element.
      * @return A String representation
-     * @exception SAML2Exception if something is wrong during conversion
+     * @throws SAML2Exception if something is wrong during conversion
      */
-     public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-     throws SAML2Exception
-     {
+    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
         StringBuffer xml = new StringBuffer();
 
-        String NS="";
-        String appendNS="";
-            
+        String NS = "";
+        String appendNS = "";
+
         if (declareNS) {
             NS = SAML2Constants.ASSERTION_DECLARE_STR;
         }
@@ -443,82 +431,81 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
         xml.append(getElementValue(includeNSPrefix, declareNS));
         xml.append("</").append(appendNS).append(elementName).append(">");
 
-        return xml.toString();    
-     }
-    
+        return xml.toString();
+    }
+
     /**
      * Returns a String representation of the element value
+     *
      * @param includeNSPrefix Determines whether the namespace qualifier is
-     *        prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
+     *                        prepended to the Element when converted
+     * @param declareNS       Determines whether or not the namespace is declared
+     *                        within the Element.
      * @return A String representation
-     * @exception SAML2Exception if something is wrong during conversion
+     * @throws SAML2Exception if something is wrong during conversion
      */
     protected String getElementValue(boolean includeNSPrefix, boolean declareNS)
-     throws SAML2Exception
-    {
+            throws SAML2Exception {
         StringBuffer xml = new StringBuffer();
 
         if (notOnOrAfter != null) {
             xml.append("NotOnOrAfter=\"");
-            xml.append(DateUtils.toUTCDateFormat(notOnOrAfter));        
-            xml.append("\" ");        
+            xml.append(DateUtils.toUTCDateFormat(notOnOrAfter));
+            xml.append("\" ");
         }
-        
+
         if (inResponseTo != null) {
             xml.append("InResponseTo=\"");
-            xml.append(inResponseTo);        
-            xml.append("\" ");        
+            xml.append(inResponseTo);
+            xml.append("\" ");
         }
-        
+
         if (recipient != null) {
             xml.append("Recipient=\"");
-            xml.append(recipient);        
-            xml.append("\" ");        
+            xml.append(recipient);
+            xml.append("\" ");
         }
-        
+
         if (notBefore != null) {
             xml.append("NotBefore=\"");
-            xml.append(DateUtils.toUTCDateFormat(notBefore));        
-            xml.append("\" ");        
+            xml.append(DateUtils.toUTCDateFormat(notBefore));
+            xml.append("\" ");
         }
-        
+
         if (address != null) {
             xml.append("Address=\"");
-            xml.append(address);        
-            xml.append("\" ");        
+            xml.append(address);
+            xml.append("\" ");
         }
-        
-        if(contentType != null) {
+
+        if (contentType != null) {
             xml.append(SAML2Constants.XSI_DECLARE_STR).append(" ")
-               .append("xsi:type=\"")
-               .append(contentType)
-               .append("\" ");
+                    .append("xsi:type=\"")
+                    .append(contentType)
+                    .append("\" ");
         }
-        
+
         xml.append(">");
-        
+
         if (!getContent().isEmpty()) {
             Iterator it = getContent().iterator();
-            while (it.hasNext()){
+            while (it.hasNext()) {
                 Object obj = it.next();
-                if(obj instanceof Element) {
-                   xml.append(XMLUtils.print((Element)obj)).append(" ");                   
-                } else if(obj instanceof String) {
-                    xml.append((String)obj);
+                if (obj instanceof Element) {
+                    xml.append(XMLUtils.print((Element) obj)).append(" ");
+                } else if (obj instanceof String) {
+                    xml.append((String) obj);
                 }
             }
         }
-                
-        return xml.toString();    
-     }
 
-   /**
-    * Makes the object immutable
-    */
-    public void makeImmutable()
-    {
+        return xml.toString();
+    }
+
+    /**
+     * Makes the object immutable
+     */
+    public void makeImmutable() {
         if (!mutable) {
             return;
         }
@@ -530,14 +517,12 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
         }
     }
 
-   /**
-    * Returns true if the object is mutable
-    *
-    * @return true if the object is mutable
-    */
-    public boolean isMutable()
-    {
+    /**
+     * Returns true if the object is mutable
+     *
+     * @return true if the object is mutable
+     */
+    public boolean isMutable() {
         return mutable;
     }
-
 }

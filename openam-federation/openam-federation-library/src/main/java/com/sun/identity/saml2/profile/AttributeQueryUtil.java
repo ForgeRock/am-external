@@ -24,7 +24,7 @@
  *
  * $Id: AttributeQueryUtil.java,v 1.11 2009/07/24 22:51:48 madan_ranganath Exp $
  *
- * Portions copyright 2010-2017 ForgeRock AS.
+ * Portions copyright 2010-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -1378,7 +1378,7 @@ public class AttributeQueryUtil {
         if (validResp) {
             // Return back the AttributeMap
             if (samlResp != null) {
-                List<Object> assertions;
+                List<?> assertions;
                 if (wantNameIDEncrypted) {
                     assertions = samlResp.getEncryptedAssertion();
                 } else {

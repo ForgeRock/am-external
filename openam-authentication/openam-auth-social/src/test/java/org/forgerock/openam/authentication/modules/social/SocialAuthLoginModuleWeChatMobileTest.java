@@ -170,7 +170,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         String dataStoreId = "data_store_id";
         given(dataStore.getId()).willReturn(dataStoreId);
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.of("user"));
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 
@@ -188,7 +188,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     public void shouldAddOriginalUrlToSession() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.of("user"));
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 
@@ -232,7 +232,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     public void shouldSucceedWhenUserIsPresent() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.of("user"));
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 
@@ -248,7 +248,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     public void shouldSaveAttributesToSessionOnSuccessWhenConfigured() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.of("user"));
         given(config.getSaveAttributesToSessionFlag()).willReturn(true);
         given(profileNormalizer.getNormalisedAttributes(userInfo, null))
@@ -266,7 +266,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     public void shouldReturnResumeRegistrationStateWhenConfiguredToUseRegistrationService() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.absent());
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
         given(config.getCfgCreateAccount()).willReturn(true);
@@ -285,9 +285,9 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     public void shouldSucceedWhenConfiguredToProvisionLocally() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.absent());
-        given(authModuleHelper.provisionUser(anyString(), any(AccountProvider.class), anyMap())).willReturn("user");
+        given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn("user");
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
         given(config.getCfgCreateAccount()).willReturn(true);
 
@@ -302,9 +302,9 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     public void shouldSucceedWhenConfiguredToUseAnonymousUser() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.absent());
-        given(authModuleHelper.provisionUser(anyString(), any(AccountProvider.class), anyMap())).willReturn("user");
+        given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn("user");
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
         given(config.getCfgCreateAccount()).willReturn(true);
         given(config.getMapToAnonymousUser()).willReturn(true);
@@ -321,7 +321,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     public void shouldSucceedWhenResumedFromRegistrationAndUserFound() throws Exception {
         //given
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
-                any(AccountProvider.class), anyMap())).willReturn(Optional.of("user"));
+                any(), anyMap())).willReturn(Optional.of("user"));
 
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 
@@ -336,7 +336,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     public void shouldFailWhenResumedFromRegistrationAndUserNotFound() throws Exception {
         //given
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
-                any(AccountProvider.class), anyMap())).willReturn(Optional.absent());
+                any(), anyMap())).willReturn(Optional.absent());
 
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 

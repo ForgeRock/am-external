@@ -24,7 +24,7 @@
  *
  * $Id: FSLoginHelper.java,v 1.5 2008/06/25 05:46:54 qcheng Exp $
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015-2020 ForgeRock AS.
  */
 
 package com.sun.identity.federation.services;
@@ -60,6 +60,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import javax.servlet.http.HttpServletRequest;
+
+import org.owasp.esapi.ESAPI;
 
 /**
  * Helper class for handling login process at Service Provider.
@@ -726,6 +728,10 @@ public class FSLoginHelper {
       
         try {
             String metaAlias = request.getParameter("metaAlias");
+            if (!ESAPI.validator().isValidInput("HTTP Parameter Value: " + metaAlias,
+                    metaAlias,"HTTPParameterValue", 2000, false)) {
+                metaAlias = "";
+            }
             //FSServiceUtils.getMetaAlias(request);
             setMetaInfo(metaAlias, null);
             FSAuthnRequest authnRequest = null;

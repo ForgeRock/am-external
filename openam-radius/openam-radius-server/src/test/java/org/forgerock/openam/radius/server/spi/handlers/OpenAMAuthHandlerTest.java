@@ -12,11 +12,11 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
+ * Portions Copyrighted 2017 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server.spi.handlers;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
@@ -63,7 +63,7 @@ public class OpenAMAuthHandlerTest {
      * @throws AuthLoginException - should not happen.
      * @throws IOException - should not happen.
      */
-    @Test(enabled = true)
+    @Test()
     public void handle() throws RadiusProcessingException, AuthLoginException, IOException {
         // given
         final Callback pagePropCallback = new PagePropertiesCallback("test_module", null, null, 0, null, false, null);

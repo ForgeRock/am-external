@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2017 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 define([
     "jquery",
@@ -94,7 +94,16 @@ define([
         return obj.serviceCall(serviceCall).then((requirements) => requirements,
             (jqXHR) => {
                 // some auth processes might throw an error fail immediately
-                const errorBody = $.parseJSON(jqXHR.responseText);
+                let errorBody;
+                try {
+                    errorBody = $.parseJSON(jqXHR.responseText);
+                } catch (parseErr) {
+                    console.warn(parseErr);
+                    return {
+                        message: $.t("config.messages.CommonMessages.unknown"),
+                        type: Messages.TYPE_DANGER
+                    };
+                }
                 // if the error body contains an authId, then we might be able to
                 // continue on after this error to the next module in the chain
                 if (errorBody.hasOwnProperty("authId")) {
@@ -236,8 +245,16 @@ define([
         return _.get(auth, "urlParams.authIndexType") !== _.get(knownAuth, "urlParams.authIndexType") ||
             _.get(auth, "urlParams.authIndexValue") !== _.get(knownAuth, "urlParams.authIndexValue");
     }
+    /**
+     * Checks if a RedirectCallback is present in the "callbacks" object of the provided requirementList.
+     * @param {Array.<Object>} requirementList list of requirements to check.
+     * @returns {Boolean} if a RedirectCallback is present in the last requirement callbacks.
+     */
+    function hasRedirectCallback (requirementList) {
+        return requirementList.length !== 0 && _.some(_.last(requirementList).callbacks, "type", "RedirectCallback");
+    }
     obj.getRequirements = function (args) {
-        if (AuthenticationToken.get()) {
+        if (AuthenticationToken.get() && !hasRedirectCallback(requirementList)) {
             const paramsWithAuthToken = _.extend({ authId: AuthenticationToken.get() },
                 Configuration.globalData.auth.urlParams);
             AuthenticationToken.remove();

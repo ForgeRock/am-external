@@ -64,7 +64,7 @@ public class PersistentCookieAuthModuleTest {
 
         persistentCookieWrapper = mock(PersistentCookieModuleWrapper.class);
         given(persistentCookieWrapper.generateConfig(anyString(), anyString(), anyBoolean(), anyString(), anyBoolean(),
-                anyBoolean(), anyString(), anySetOf(String.class), anyString()))
+                anyBoolean(), any(), anyCollection(), any()))
                 .willReturn(GENERATED_CONFIG);
 
         persistentCookieAuthModule = new PersistentCookieAuthModule(coreWrapper, persistentCookieWrapper);
@@ -96,7 +96,7 @@ public class PersistentCookieAuthModuleTest {
         //Then
         assertSame(GENERATED_CONFIG, config);
         verify(persistentCookieWrapper).generateConfig(eq("0"), eq("300"), anyBoolean(), anyString(),
-                anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class), anyString());
+                anyBoolean(), anyBoolean(), any(), anyCollection(), any());
     }
 
     @Test
@@ -118,7 +118,7 @@ public class PersistentCookieAuthModuleTest {
         //Then
         assertSame(GENERATED_CONFIG, config);
         verify(persistentCookieWrapper).generateConfig(eq("60"), eq("0"), anyBoolean(), anyString(),
-                anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class), anyString());
+                anyBoolean(), anyBoolean(), any(), anyCollection(), any());
     }
 
     @Test
@@ -142,7 +142,7 @@ public class PersistentCookieAuthModuleTest {
         //Then
         assertSame(GENERATED_CONFIG, config);
         verify(persistentCookieWrapper).generateConfig(eq("60"), eq("300"), anyBoolean(), anyString(),
-                anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class), anyString());
+                anyBoolean(), anyBoolean(), any(), anyCollection(), any());
     }
 
 
@@ -162,7 +162,7 @@ public class PersistentCookieAuthModuleTest {
         //Then
         assertSame(GENERATED_CONFIG, config);
         verify(persistentCookieWrapper).generateConfig(anyString(), anyString(), eq(true), anyString(),
-                anyBoolean(), anyBoolean(), anyString(), anySetOf(String.class), anyString());
+                anyBoolean(), anyBoolean(), any(), anyCollection(), any());
     }
 
     @Test

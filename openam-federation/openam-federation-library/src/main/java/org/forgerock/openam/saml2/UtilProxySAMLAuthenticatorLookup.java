@@ -11,10 +11,25 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.openam.utils.Time;
+
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.identity.multiprotocol.MultiProtocolUtils;
 import com.sun.identity.multiprotocol.SingleLogoutManager;
 import com.sun.identity.plugin.monitoring.FedMonAgent;
@@ -28,6 +43,7 @@ import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.logging.LogUtil;
+import com.sun.identity.saml2.plugins.IDPAuthnContextInfo;
 import com.sun.identity.saml2.profile.CacheObject;
 import com.sun.identity.saml2.profile.ClientFaultException;
 import com.sun.identity.saml2.profile.IDPCache;
@@ -37,25 +53,19 @@ import com.sun.identity.saml2.profile.ServerFaultException;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.NameIDPolicy;
 import com.sun.identity.saml2.protocol.Response;
-import org.forgerock.openam.audit.AMAuditEventBuilderUtils;
-import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.openam.utils.StringUtils;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.PrintWriter;
-import java.util.logging.Level;
+import com.sun.identity.shared.DateUtils;
+import com.sun.identity.shared.configuration.SystemPropertiesManager;
 
 /**
  * An implementation of A SAMLAuthenticatorLookup that uses the Util classes to make the federation connection.
  */
 public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAuthenticatorLookup {
 
-    private final HttpServletRequest request;
-    private final HttpServletResponse response;
-
-    private final IDPSSOFederateRequest data;
     private final PrintWriter out;
+    private final static String SKEW_ALLOWANCE_PARAM =
+            "org.forgerock.openam.saml2.authenticatorlookup.skewAllowance";
+    private final long SKEW_ALLOWANCE;
+    private final int SKEW_ALLOWANCE_DEFAULT = 60;
 
     /**
      * Creates a new UtilProxySAMLAuthenticatorLookup
@@ -65,14 +75,12 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
      * @param response the http response object.
      * @param out the output.
      */
-    public UtilProxySAMLAuthenticatorLookup(final IDPSSOFederateRequest data,
-                                            final HttpServletRequest request,
-                                            final HttpServletResponse response,
-                                            final PrintWriter out) {
-        this.data = data;
+    public UtilProxySAMLAuthenticatorLookup(IDPSSOFederateRequest data, HttpServletRequest request,
+            HttpServletResponse response, PrintWriter out) {
+        super(request, response, data);
         this.out = out;
-        this.request = request;
-        this.response = response;
+        this.SKEW_ALLOWANCE = TimeUnit.SECONDS.toMillis
+                (SystemPropertiesManager.getAsInt((SKEW_ALLOWANCE_PARAM), SKEW_ALLOWANCE_DEFAULT));
     }
 
     @Override
@@ -106,6 +114,17 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
         data.setRelayState((String) IDPCache.relayStateCache.get(data.getRequestID()));
 
         if (!isSessionValid(sessionProvider)) {
+            return;
+        }
+
+        if (!isForceAuthValid(sessionProvider)) {
+            try {
+                IDPSSOUtil.redirectAuthentication(request, response, data.getAuthnRequest(), null, data.getRealm(),
+                        data.getIdpEntityID(), data.getSpEntityID(), true);
+            } catch (IOException | SAML2Exception ex) {
+                SAML2Utils.debug.error(classMethod + "Unable to redirect to authentication.", ex);
+                throw new ServerFaultException(data.getIdpAdapter(), "UnableToRedirectToAuth", ex.getMessage());
+            }
             return;
         }
 
@@ -181,6 +200,45 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
 
     }
 
+    /**
+     * Validate that the AuthN Request ForceAuthN setting is honoured
+     * @param sessionProvider Session Provider
+     * @return true if AuthInstant is before the system current time.
+     * @throws SessionException is there is a problem getting the session property
+     */
+    private boolean isForceAuthValid(SessionProvider sessionProvider) throws SessionException {
+
+        if (data.getAuthnRequest() != null && (Boolean.TRUE.equals(data.getAuthnRequest().isForceAuthn())) &&
+                (!Boolean.TRUE.equals(data.getAuthnRequest().isPassive()))) {
+            Date authInstant = null;
+            try {
+                String[] values = sessionProvider.getProperty(
+                        data.getSession(), SessionProvider.AUTH_INSTANT);
+                if (values != null && values.length != 0 &&
+                        values[0] != null && values[0].length() != 0) {
+                    authInstant = DateUtils.stringToDate(values[0]);
+                }
+            } catch (ParseException e) {
+                SAML2Utils.debug.warning("Exception retrieving AuthInstant from the session: ", e);
+            }
+            if (authInstant == null) {
+                SAML2Utils.debug.error("AuthInstant is null failing ForceAuth check");
+                return false;
+            }
+            Date currentTime = Time.newDate(Time.currentTimeMillis());
+            SAML2Utils.debug.message("Verifying isForceAuthValid time check AuthInstant {} currentTime {}  " +
+                            "SKEW_ALLOWANCE {} ",
+                    authInstant, currentTime, SKEW_ALLOWANCE);
+            authInstant = new Date(authInstant.getTime() + SKEW_ALLOWANCE);
+            if (authInstant.before(currentTime)) {
+                SAML2Utils.debug.message("AuthnRequest specified ForceAuth but session is older than current system " +
+                        "time and skew");
+                return false;
+            }
+        }
+        return true;
+    }
+
     private void authNotAvailable() throws ServerFaultException {
         final String classMethod = "UtilProxySAMLAuthenticatorLookup.authNotavailable";
 
@@ -217,16 +275,17 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
             IDPSSOUtil.sendResponse(request, response, out, acsBinding, spEntityID, data.getIdpEntityID(),
                     data.getIdpMetaAlias(), data.getRealm(), data.getRelayState(), acsURL, res, data.getSession());
         } catch (SAML2Exception sme) {
-            SAML2Utils.debug.error(classMethod + "an error occured while sending error response", sme);
+            SAML2Utils.debug.error(classMethod + "an error occurred while sending error response", sme);
             throw new ServerFaultException(data.getIdpAdapter(), "UnableToGetAuthnReq");
         }
 
     }
 
-    private boolean isSessionValid(SessionProvider sessionProvider) throws ServerFaultException,
+    @VisibleForTesting
+    boolean isSessionValid(SessionProvider sessionProvider) throws ServerFaultException,
             ClientFaultException, SessionException {
 
-        final String classMethod = "UtilProxySAMLAuthenticatorLookup.validteSesison";
+        final String classMethod = "UtilProxySAMLAuthenticatorLookup.isSessionValid: ";
 
         // Let's verify if the session belongs to the proper realm
         boolean isValidSessionInRealm = data.getSession() != null &&
@@ -273,7 +332,13 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
             }
         }
 
+        IDPAuthnContextInfo idpAuthnContextInfo = getIdpAuthnContextInfo();
+        if (isSessionUpgrade(idpAuthnContextInfo, data.getSession())) {
+            SAML2Utils.debug.message("{}The session upgrade requested by the SP was not completed by the end user {}",
+                    classMethod, sessionProvider.getPrincipalName(data.getSession()));
+            throw new ClientFaultException(data.getIdpAdapter(), SSO_OR_FEDERATION_ERROR);
+        }
+
         return true;
     }
-
 }

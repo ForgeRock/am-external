@@ -24,16 +24,14 @@
  *
  * $Id: AssertionIDRequestUtil.java,v 1.8 2009/06/12 22:21:40 mallas Exp $
  *
- * Portions Copyrighted 2013-2017 ForgeRock AS.
+ * Portions Copyrighted 2013-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
 import static org.forgerock.openam.utils.Time.*;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -317,7 +315,7 @@ public class AssertionIDRequestUtil {
         response.addHeader("Cache-Control", "no-cache, no-store");
         response.addHeader("Pragma", "no-cache");
 
-        String content = null;
+        String content;
         try {
             content = assertion.toXMLString(true, true);
         } catch (SAML2Exception ex) {
@@ -330,39 +328,12 @@ public class AssertionIDRequestUtil {
                 "invalidAssertion", ex.getMessage());
             return;
         }
-
-        byte[] bytes = null;
-        try {
-            bytes = content.getBytes("UTF-8");
-        } catch(UnsupportedEncodingException ueex) {
-            if (SAML2Utils.debug.messageEnabled()) {
-                SAML2Utils.debug.message("AssertionIDRequestUtil." +
-                "processAssertionIDRequestURI:", ueex);
-            }
-            SAMLUtils.sendError(request, response, 
-                HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                "unsupportedEncoding", ueex.getMessage());
-            return;
-        }
-        response.setContentLength(bytes.length);
-
-        BufferedOutputStream bos = null;
-        try {
-            bos = new BufferedOutputStream(response.getOutputStream());
-            bos.write(bytes, 0, bytes.length);
-        } catch (IOException ioex) {
-            SAML2Utils.debug.error("AssertionIDRequestUtil." +
-                "processAssertionIDRequestURI:", ioex);
-        } finally {
-            if (bos != null) {
-                try {
-                    bos.close();
-                } catch (IOException ioex) {
-                    SAML2Utils.debug.error("AssertionIDRequestUtil." +
-                        "processAssertionIDRequestURI:", ioex);
-                }
-            }
-        }
+        // The Content-Length header is defined as the number of octets, but special characters in a string with
+        // UTF-8 encoding are likely to result in two octets so take this into account by setting content-length as the
+        // number of bytes rather than just the content's length.
+        // https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.13
+        response.setContentLength(content.getBytes("UTF-8").length);
+        response.getWriter().println(content);
     }
 
     /**

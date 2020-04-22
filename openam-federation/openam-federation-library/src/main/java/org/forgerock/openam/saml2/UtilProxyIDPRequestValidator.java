@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2018 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
@@ -43,7 +43,7 @@ import org.forgerock.openam.utils.StringUtils;
  */
 public class UtilProxyIDPRequestValidator implements IDPRequestValidator {
     private final Debug debug;
-    private final String reqBinding;
+    private String reqBinding;
     private final SAML2MetaManager saml2MetaManager;
 
     /**
@@ -91,11 +91,13 @@ public class UtilProxyIDPRequestValidator implements IDPRequestValidator {
      *
      * @param idpMetaAlias Non null meta alias
      * @param realm the realm for the entity identifier
+     * @param isFromECP whether the validator will be validating a request from an ecp
      * @return Non null String containing the entity identifier
      * @throws ServerFaultException If unable to read the IDP Entity ID from the realm meta.
      * @throws ClientFaultException If the client requested an invalid binding for this IDP.
      */
-    public String getIDPEntity(String idpMetaAlias, String realm) throws ServerFaultException, ClientFaultException {
+    public String getIDPEntity(String idpMetaAlias, String realm, boolean isFromECP) throws ServerFaultException, ClientFaultException {
+        String classMethod = "UtilProxyIDPRequestValidator.getIDPEntity: ";
         String idpEntityID;
 
         try {
@@ -106,20 +108,21 @@ public class UtilProxyIDPRequestValidator implements IDPRequestValidator {
                 throw new ClientFaultException("nullIDPEntityID");
             }
 
-            boolean profileEnabled = SAML2Utils.isIDPProfileBindingSupported(
-                    realm, idpEntityID, SAML2Constants.SSO_SERVICE, reqBinding);
-
-            if (!profileEnabled) {
-                debug.error("SSO Binding {} is not enabled for {}", reqBinding, idpEntityID);
-                LogUtil.error(Level.INFO, LogUtil.BINDING_NOT_SUPPORTED, new String[]{ idpEntityID, reqBinding }, null);
-                throw new ClientFaultException("unsupportedBinding");
+            if (isFromECP) {
+                if (!SAML2Utils.isIDPProfileBindingSupported(realm, idpEntityID, SAML2Constants.SSO_SERVICE, reqBinding)) {
+                    // When in ECP mode, can only be a SOAP binding, so we cannot change binding type.
+                    debug.error("{}SSO Binding {} is not enabled for {}", classMethod, reqBinding, idpEntityID);
+                    LogUtil.error(Level.INFO, LogUtil.BINDING_NOT_SUPPORTED, new String[] {idpEntityID, reqBinding}, null);
+                    throw new ClientFaultException("unsupportedBinding");
+                }
+            } else {
+                this.reqBinding = SAML2Utils.getIDPProfileBinding(realm, idpEntityID, SAML2Constants.SSO_SERVICE, reqBinding);
             }
         } catch (SAML2MetaException sme) {
-            debug.error("Unable to get IDP Entity ID from meta: {}", sme.getMessage());
+            debug.error("{}Unable to get IDP Entity ID from meta: {}", classMethod, sme.getMessage());
             LogUtil.error(Level.INFO, LogUtil.IDP_METADATA_ERROR, new String[]{ idpMetaAlias }, null);
             throw new ServerFaultException("nullIDPEntityID", sme.getMessage());
         }
-
         return idpEntityID;
     }
 

@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 import { createAction, handleActions } from "redux-actions";
-import { chain, omit } from "lodash";
+import { chain, omit, omitBy } from "lodash";
 
 // Types
 const ADD_OR_UPDATE = "local/authentication/trees/list/ADD_OR_UPDATE";
@@ -33,10 +33,10 @@ export default handleActions({
         ...state,
         [action.payload._id]: omit(action.payload, "nodes")
     }),
-    [REMOVE]: (state, action) => omit(state, (instance) => instance._id === action.payload),
+    [REMOVE]: (state, action) => omitBy(state, (instance) => instance._id === action.payload),
     [SET]: (state, action) =>
         chain(action.payload)
             .map((tree) => omit(tree, "nodes"))
-            .indexBy("_id")
+            .keyBy("_id")
             .value()
 }, initialState);

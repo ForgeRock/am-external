@@ -24,7 +24,7 @@
 
    $Id: propertySAMLv2SPAssertionContentHosted.xml,v 1.7 2008/08/05 22:23:58 babysunil Exp $
 
-   Portions Copyrighted 2010-2015 ForgeRock AS.
+   Portions Copyrighted 2010-2018 ForgeRock AS.
 -->
 
 <!DOCTYPE propertysheet SYSTEM "propertysheet.dtd">
@@ -269,7 +269,7 @@
                 <attribute name="autoSubmit" value="false" />
                 <attribute name="localizeDisplayFieldValue" value="false" />
             </cc>
-            <fieldhelp name="helpAssertionInterval" defaultValue="samlv2idp.IDPAassertionNotBeforeTimeSkew.help.inSeconds" />
+            <fieldhelp name="helpAssertionInterval" defaultValue="samlv2sp.attribute.help.spassertiontimeskew" />
         </property>
     </section>
     <section name="auth" defaultValue="samlv2idp.provider.section.title.basicauth" >
@@ -299,7 +299,7 @@
                            defaultValue="samlv2sp.attribute.label.spbasicauthpassword"
                            labelFor="basicAuthPassword" />
                     <cc name="basicAuthPassword" 
-                        tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag" >
+                        tagclass="com.sun.web.ui.taglib.html.CCPasswordTag" >
                         <attribute name="size" value="15" />
                         <attribute name="autoSubmit" value="false" />
                         <attribute name="localizeDisplayFieldValue" value="false" />

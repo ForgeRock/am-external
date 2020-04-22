@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2018 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.scripted;
 
@@ -19,10 +19,12 @@ import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.*;
 import com.sun.identity.shared.debug.Debug;
 import org.forgerock.openam.scripting.api.ScriptedIdentity;
+import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.Reject;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -31,7 +33,7 @@ import java.util.Set;
 public class ScriptIdentityRepository {
     private static final Debug DEBUG = Debug.getInstance("ScriptedModuleIdentityRepository");
     private AMIdentityRepository identityRepository;
-
+    private Set<String> userSearchAttributes = Collections.emptySet();
     /**
      * Constructor for <code>ScriptIdentityRepository</code> object
      *
@@ -40,6 +42,18 @@ public class ScriptIdentityRepository {
     public ScriptIdentityRepository(AMIdentityRepository identityRepository) {
         Reject.ifNull(identityRepository);
         this.identityRepository = identityRepository;
+    }
+
+    /**
+     * Constructor for <code>ScriptIdentityRepository</code> object
+     *
+     * @param identityRepository   The AmIdentityRepository object used to retrieve/persist user information
+     * @param userSearchAttributes The Alias Search Attribute values
+     */
+    public ScriptIdentityRepository(AMIdentityRepository identityRepository, Set<String> userSearchAttributes) {
+        Reject.ifNull(identityRepository);
+        this.identityRepository = identityRepository;
+        this.userSearchAttributes = userSearchAttributes;
     }
 
     /**
@@ -105,7 +119,18 @@ public class ScriptIdentityRepository {
             if (searchResults != null) {
                 results = searchResults.getSearchResults();
             }
-            if (results.isEmpty()) {
+            if (CollectionUtils.isEmpty(results) && CollectionUtils.isNotEmpty(userSearchAttributes)) {
+                DEBUG.message("ScriptedModule.getIdentity: searching user identity with alternative attributes: {} ",
+                        userSearchAttributes);
+                final Map<String, Set<String>> searchAVP = CollectionUtils.toAvPairMap(userSearchAttributes, userName);
+                idsc.setSearchModifiers(IdSearchOpModifier.OR, searchAVP);
+                // workaround as data store always adds 'user-naming-attribute' to searchfilter
+                searchResults = identityRepository.searchIdentities(IdType.USER, "*", idsc);
+                if (searchResults != null) {
+                    results = searchResults.getSearchResults();
+                }
+            }
+            if (CollectionUtils.isEmpty(results)) {
                 DEBUG.error("ScriptedModule.getIdentity : User " + userName + " is not found");
             } else if (results.size() > 1) {
                 DEBUG.error("ScriptedModule.getIdentity : More than one user found for the userName " + userName);

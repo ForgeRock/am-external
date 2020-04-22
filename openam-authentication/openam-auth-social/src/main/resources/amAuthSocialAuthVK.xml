@@ -95,9 +95,9 @@
                                  syntax="string"
                                  i18nKey="am.social.auth.scope"
                                  order="800">
-                    <ExampleValue>
+                    <DefaultValues>
                         <Value>email</Value>
-                    </ExampleValue>
+                    </DefaultValues>
                 </AttributeSchema>
                 <AttributeSchema name="ssoProxyUrl"
                                  type="single"
@@ -386,9 +386,9 @@
                                      validator="RequiredValueValidator"
                                      i18nKey="am.social.auth.scope"
                                      order="800">
-                        <ExampleValue>
+                        <DefaultValues>
                             <Value>email</Value>
-                        </ExampleValue>
+                        </DefaultValues>
                     </AttributeSchema>
                     <AttributeSchema name="ssoProxyUrl"
                                      type="single"

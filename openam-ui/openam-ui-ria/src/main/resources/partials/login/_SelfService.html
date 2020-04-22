@@ -11,17 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
 -->
 {{#if showForgotten}}
 <nav class="text-center clearfix remember-forgot" role="navigation">
     <ul>
         {{#if showForgotUserName}}
-            <li><a href="{{{urlTo 'forgotUsername' args}}}">{{t "templates.user.LoginTemplate.forgotUsername"}}</a></li>
+            <li><a href="{{routeTo 'forgotUsername'}}{{fragmentParamString}}">{{t "templates.user.LoginTemplate.forgotUsername"}}</a></li>
         {{/if}}
 
         {{#if showForgotPassword}}
-            <li><a href="{{{urlTo 'passwordReset' args}}}">{{t "templates.user.LoginTemplate.resetPassword"}}</a></li>
+            <li><a href="{{routeTo 'passwordReset'}}{{fragmentParamString}}">{{t "templates.user.LoginTemplate.resetPassword"}}</a></li>
         {{/if}}
     </ul>
 </nav>
@@ -30,6 +30,6 @@
 {{#if showSelfRegistration}}
 <div class="toggle-login-register">
     <hr>
-    {{t "templates.login.newHere" }} <a href="{{{urlTo 'selfRegistration' args}}}">{{t "templates.login.createAccount" }}</a>
+    {{t "templates.login.newHere" }} <a href="{{routeTo 'selfRegistration'}}{{fragmentParamString}}">{{t "templates.login.createAccount" }}</a>
 </div>
 {{/if}}

@@ -130,7 +130,7 @@ public class SAMLPOSTProfileServlet extends HttpServlet {
             SAMLUtils.sendError(request, response,
                 response.SC_BAD_REQUEST,
                 "targetForbidden",
-                SAMLUtils.bundle.getString("targetForbidden") + " " + target);
+                SAMLUtils.bundle.getString("targetForbidden"));
             return;
         }
         

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2020 ForgeRock AS.
  */
 
 /**
@@ -42,11 +42,11 @@ define([
 ], (_) => {
     function groupTopLevelSimpleValues (raw) {
         const collectionProperties = _(raw)
-            .pick((property) => _.isObject(property) && !_.isArray(property))
+            .pickBy((property) => _.isObject(property) && !_.isArray(property))
             .keys()
             .value();
 
-        const simplePropertiesToGroup = _.omit(raw, (prop, key) => {
+        const simplePropertiesToGroup = _.omitBy(raw, (prop, key) => {
             return _.startsWith(key, "_") || key === "defaults" || collectionProperties.indexOf(key) !== -1;
         });
 
@@ -70,7 +70,7 @@ define([
     * @returns {JSONValues} JSONValues object with new value set
     */
     function ungroupCollectionProperties (raw, groupKey) {
-        const collectionProperties = _.pick(raw[groupKey], (value) => {
+        const collectionProperties = _.pickBy(raw[groupKey], (value) => {
             return _.isObject(value) && !_.isArray(value);
         });
 

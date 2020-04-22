@@ -24,7 +24,7 @@
  *
  * $Id: SPSSOFederate.java,v 1.29 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2011-2017 ForgeRock AS.
+ * Portions Copyrighted 2011-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -75,8 +75,9 @@ import com.sun.identity.saml2.protocol.RequestedAuthnContext;
 import com.sun.identity.saml2.protocol.Scoping;
 import com.sun.identity.shared.datastruct.OrderedSet;
 import com.sun.identity.shared.xml.XMLUtils;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -656,9 +657,10 @@ public class SPSSOFederate {
                 SAML2Utils.putHeaders(reply.getMimeHeaders(), response);
                 response.setContentType(PAOSConstants.PAOS_MIME_TYPE);
                 // Write out the message on the response stream
-                OutputStream os = response.getOutputStream();
-                reply.writeTo(os);
-                os.flush();
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                reply.writeTo(stream);
+                response.getWriter().println(stream.toString("UTF-8"));
+                response.getWriter().flush();
             } catch (SOAPException soapex) {
                 SAML2Utils.debug.error("SPSSOFederate.initiateECPRequest",
                     soapex);

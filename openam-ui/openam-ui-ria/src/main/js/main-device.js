@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 require.config({
@@ -25,9 +25,9 @@ require.config({
     },
     paths: {
         "handlebars": "libs/handlebars-4.0.5",
-        "i18next": "libs/i18next-1.7.3-min",
-        "jquery": "libs/jquery-2.1.1-min",
-        "lodash": "libs/lodash-3.10.1-min",
+        "i18next": "libs/i18next-1.10.3-standard",
+        "jquery": "libs/jquery-2.1.1-patched",
+        "lodash": "libs/lodash-4.17.15-min",
         "redux": "libs/redux-3.5.2-min",
         "redux-actions": "libs/redux-actions-2.0.1-min",
         "text": "libs/text-2.0.15"

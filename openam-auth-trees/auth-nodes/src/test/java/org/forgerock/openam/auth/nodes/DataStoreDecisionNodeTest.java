@@ -43,6 +43,7 @@ import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.AMIdentityRepository;
 
 public class DataStoreDecisionNodeTest {
@@ -55,12 +56,17 @@ public class DataStoreDecisionNodeTest {
     @InjectMocks
     DataStoreDecisionNode node;
 
+    @Mock
+    AMIdentity amIdentity;
+
     @BeforeMethod
-    public void setup() {
+    public void setup() throws Exception {
         node = null;
         initMocks(this);
-        given(coreWrapper.convertRealmNameToOrgName(any(String.class))).willReturn("org=name");
-        given(coreWrapper.getAMIdentityRepository(any(String.class))).willReturn(identityRepository);
+        given(coreWrapper.convertRealmNameToOrgName(any())).willReturn("org=name");
+        given(coreWrapper.getAMIdentityRepository(any())).willReturn(identityRepository);
+        given(amIdentity.isActive()).willReturn(true);
+        given(coreWrapper.getIdentity(any(String.class), any())).willReturn(amIdentity);
     }
 
     @Test

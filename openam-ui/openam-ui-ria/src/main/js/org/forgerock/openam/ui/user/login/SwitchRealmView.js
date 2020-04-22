@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2017 ForgeRock AS.
+ * Copyright 2011-2018 ForgeRock AS.
  */
 
 define([
@@ -54,7 +54,8 @@ define([
             "partials/alerts/_Alert.html"
         ],
         render () {
-            this.data.args = [getCurrentFragmentParamString()];
+            this.data.fragmentParamString = getCurrentFragmentParamString();
+            this.data.args = [this.data.fragmentParamString];
 
             if (isRealmChanged()) {
                 SessionService.isSessionValid().then(

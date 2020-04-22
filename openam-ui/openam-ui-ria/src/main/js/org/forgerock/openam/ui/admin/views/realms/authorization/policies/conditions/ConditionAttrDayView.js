@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 define([
@@ -39,7 +39,7 @@ define([
 
         getWeekDays () {
             var weekdays = [], i = 0, self = this;
-            _.invoke(self.days, function () {
+            _.invokeMap(self.days, function () {
                 weekdays[i] = {};
                 weekdays[i].title = $.t(self.i18n.weekdays.key + this + self.i18n.weekdays.full);
                 weekdays[i].value = $.t(self.i18n.weekdays.key + this + self.i18n.weekdays.short);

@@ -11,9 +11,9 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
-import { chain, contains, findIndex, map, mapValues, max, pluck, reduce, round, size, union, values } from "lodash";
+import { chain, findIndex, includes, map, mapValues, max, reduce, round, size, union, values } from "lodash";
 import { DropTarget } from "react-dnd";
 import classNames from "classnames";
 import React, { Component, PropTypes } from "react";
@@ -135,7 +135,7 @@ class Tree extends Component {
                 : measurement;
         });
 
-        const nodesWithConnectedInputs = reduce(pluck(this.props.nodes, "connections"),
+        const nodesWithConnectedInputs = reduce(map(this.props.nodes, "connections"),
             (result, connections) => union(result, values(connections)), []);
 
         const nodeComponents = map(this.props.nodes, (node, nodeId) => {
@@ -145,7 +145,7 @@ class Tree extends Component {
             return (
                 <Node
                     id={ nodeId }
-                    isInputConnected={ contains(nodesWithConnectedInputs, nodeId) }
+                    isInputConnected={ includes(nodesWithConnectedInputs, nodeId) }
                     isSelected={ nodeId === this.props.selectedNodeId }
                     key={ nodeId }
                     node={ node }

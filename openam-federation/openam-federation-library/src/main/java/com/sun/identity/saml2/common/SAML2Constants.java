@@ -24,7 +24,7 @@
  *
  * $Id: SAML2Constants.java,v 1.44 2009/11/24 21:53:02 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -1648,6 +1648,11 @@ public interface SAML2Constants {
      * property name used to store whether or not saml single logout in enabled.
      */
     String SINGLE_LOGOUT = "openam.saml.singlelogout.enabled";
+
+    /**
+     * Property name used to store location of saml single logout url
+     */
+    String SINGLE_LOGOUT_URL = "openam.saml.singlelogout.url";
 
     /**
      * Default Value for the SAML2 Server Port

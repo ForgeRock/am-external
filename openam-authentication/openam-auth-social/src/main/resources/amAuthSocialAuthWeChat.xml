@@ -96,9 +96,9 @@
                                  syntax="string"
                                  i18nKey="am.social.auth.scope"
                                  order="900">
-                    <ExampleValue>
+                    <DefaultValues>
                         <Value>snsapi_login</Value>
-                    </ExampleValue>
+                    </DefaultValues>
                 </AttributeSchema>
                 <AttributeSchema name="scopeDelimiter"
                                  type="single"
@@ -408,9 +408,9 @@
                                      validator="RequiredValueValidator"
                                      i18nKey="am.social.auth.scope"
                                      order="900">
-                        <ExampleValue>
+                        <DefaultValues>
                             <Value>snsapi_login</Value>
-                        </ExampleValue>
+                        </DefaultValues>
                     </AttributeSchema>
                     <AttributeSchema name="scopeDelimiter"
                                      type="single"

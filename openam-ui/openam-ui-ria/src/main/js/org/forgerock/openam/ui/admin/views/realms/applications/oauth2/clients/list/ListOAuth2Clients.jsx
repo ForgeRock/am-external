@@ -11,11 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
 import { Panel } from "react-bootstrap";
-import { isEmpty, isEqual, pluck } from "lodash";
+import { isEmpty, isEqual, map } from "lodash";
 import { t } from "i18next";
 import { TableHeaderColumn } from "react-bootstrap-table";
 import React, { Component, PropTypes } from "react";
@@ -36,8 +36,8 @@ class ListOAuth2Clients extends Component {
 
     componentWillReceiveProps (nextProps) {
         const clientsSetHasChanged = !isEqual(
-            pluck(this.props.clients, "_id").sort(),
-            pluck(nextProps.clients, "_id").sort()
+            map(this.props.clients, "_id").sort(),
+            map(nextProps.clients, "_id").sort()
         );
 
         if (clientsSetHasChanged) {

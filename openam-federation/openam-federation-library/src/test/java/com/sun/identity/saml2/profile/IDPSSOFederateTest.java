@@ -66,7 +66,7 @@ public class IDPSSOFederateTest {
     @BeforeMethod
     public void initMocks() throws ServerFaultException, ClientFaultException {
         MockitoAnnotations.initMocks(this);
-        when(actorFactory.getIDPRequestValidator(Mockito.anyString(), anyBoolean())).thenReturn(validator);
+        when(actorFactory.getIDPRequestValidator(any(), anyBoolean())).thenReturn(validator);
         when(actorFactory.getSAMLAuthenticator(
                 any(IDPSSOFederateRequest.class),
                 any(HttpServletRequest.class),

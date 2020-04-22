@@ -141,7 +141,7 @@ public class ScriptedDecisionNodeTest {
 
     private static Answer<Object> answerWithOutcome(final Object outcome) {
         return invocationOnMock -> {
-            Bindings bindings = invocationOnMock.getArgumentAt(1, Bindings.class);
+            Bindings bindings = invocationOnMock.getArgument(1);
             bindings.put("outcome", outcome);
             return null;
         };

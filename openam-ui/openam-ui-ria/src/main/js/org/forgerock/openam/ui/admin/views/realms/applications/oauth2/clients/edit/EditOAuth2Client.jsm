@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
-import { chain, cloneDeep, get, isEmpty, pluck } from "lodash";
+import { chain, cloneDeep, get, isEmpty, map } from "lodash";
 import { t } from "i18next";
 import $ from "jquery";
 
@@ -48,7 +48,7 @@ const addGroupSelectionToSchema = (schema, groups) => {
     const agentgroupProperty = get(schema, `[0].${AGENT_GROUP_PATH}`);
 
     if (agentgroupProperty) {
-        const responseIDs = pluck(groups[0].result, "_id");
+        const responseIDs = map(groups[0].result, "_id");
         const availableGroupsIDs = ["", ...responseIDs];
         const availableGroupsTitles = [
             t("console.applications.oauth2.clients.edit.unassigned"),

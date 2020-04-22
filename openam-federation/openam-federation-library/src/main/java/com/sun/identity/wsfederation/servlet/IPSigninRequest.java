@@ -24,13 +24,23 @@
  *
  * $Id: IPSigninRequest.java,v 1.8 2009/10/28 23:59:00 exu Exp $
  *
- * Portions Copyrighted 2014-2017 ForgeRock AS.
+ * Portions Copyrighted 2014-2020 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.servlet;
 
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.logging.Level;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.owasp.esapi.ESAPI;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.multiprotocol.MultiProtocolUtils;
@@ -52,13 +62,6 @@ import com.sun.identity.wsfederation.meta.WSFederationMetaManager;
 import com.sun.identity.wsfederation.meta.WSFederationMetaUtils;
 import com.sun.identity.wsfederation.profile.IDPSSOUtil;
 import com.sun.identity.wsfederation.profile.RequestSecurityTokenResponse;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.logging.Level;
-import javax.servlet.ServletException;
-import org.owasp.esapi.ESAPI;
-
 /**
  * This class implements the sign-in request for the identity provider.
  */
@@ -273,9 +276,12 @@ public class IPSigninRequest extends WSFederationAction {
             throw new WSFederationException(WSFederationUtils.bundle.getString("unableToFindSPConfiguration"));
         }
 
-        String authMethod;
+        String authMethod = null;
         try {
-            authMethod = WSFederationUtils.sessionProvider.getProperty(session, SessionProvider.AUTH_METHOD)[0];
+            String[] authMethods = WSFederationUtils.sessionProvider.getProperty(session, SessionProvider.AUTH_METHOD);
+            if (authMethods != null && authMethods.length >= 1) {
+                authMethod = authMethods[0];
+            }
         } catch (SessionException se) {
             throw new WSFederationException(se);
         }
@@ -355,10 +361,10 @@ public class IPSigninRequest extends WSFederationAction {
             debug.message(classMethod + "wresult before encoding: " + wresult);
         }
         
-        request.setAttribute(WSFederationConstants.POST_ACTION, ESAPI.encoder().encodeForHTML(targetURL));
+        request.setAttribute(WSFederationConstants.POST_ACTION, targetURL);
         request.setAttribute(WSFederationConstants.POST_WA, WSFederationConstants.WSIGNIN10);
-        request.setAttribute(WSFederationConstants.POST_WCTX, ESAPI.encoder().encodeForHTML(wctx));
-        request.setAttribute(WSFederationConstants.POST_WRESULT, ESAPI.encoder().encodeForHTML(wresult));
+        request.setAttribute(WSFederationConstants.POST_WCTX, wctx);
+        request.setAttribute(WSFederationConstants.POST_WRESULT, wresult);
         request.getRequestDispatcher("/wsfederation/jsp/post.jsp").forward(request, response);
     }
 

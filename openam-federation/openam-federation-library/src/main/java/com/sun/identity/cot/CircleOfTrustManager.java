@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,7 +24,7 @@
  *
  * $Id: CircleOfTrustManager.java,v 1.13 2009/10/28 23:58:56 exu Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
 package com.sun.identity.cot;
 
@@ -32,7 +32,6 @@ import javax.xml.bind.JAXBException;
 import com.sun.identity.federation.meta.IDFFCOTUtils;
 import com.sun.identity.federation.meta.IDFFMetaException;
 import com.sun.identity.federation.meta.IDFFMetaManager;
-import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -48,7 +47,6 @@ import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.wsfederation.meta.WSFederationCOTUtils;
 import com.sun.identity.wsfederation.meta.WSFederationMetaException;
 import com.sun.identity.wsfederation.meta.WSFederationMetaManager;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashMap;
 
@@ -268,10 +266,9 @@ public class CircleOfTrustManager {
      * @return Set of names of all circle of trusts.
      * @throws COTException if unable to read circle of trust.
      */
-    public Set getAllCirclesOfTrust(String realm)
-    throws COTException {
+    public Set<String> getAllCirclesOfTrust(String realm) throws COTException {
         Set valueSet = null;
-        Set cotSet = new HashSet();
+        Set<String> cotSet = new HashSet<>();
         if (realm == null) {
             realm = COTConstants.ROOT_REALM;
         }

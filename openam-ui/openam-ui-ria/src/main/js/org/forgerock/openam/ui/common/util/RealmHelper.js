@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2020 ForgeRock AS.
  */
 
 define([
@@ -79,13 +79,19 @@ define([
      */
     obj.decorateURIWithSubRealm = function (uri) {
         var persisted = Configuration.globalData,
+
             persistedSubRealm = persisted && persisted.auth ? persisted.auth.subRealm : "",
-            subRealm = persistedSubRealm ? `${persistedSubRealm}/` : "";
+            subRealm = persistedSubRealm ? `${persistedSubRealm}/` : "",
+            nextRealm = "";
 
         if (persisted &&
             persisted.auth &&
             (persisted.auth.subRealm === undefined || persisted.auth.subRealm === null)) {
-            console.warn("Unable to decorate URI, Configuration.globalData.auth.subRealm not yet set");
+            nextRealm = obj.getRealm();
+            subRealm = nextRealm ? `${nextRealm}/` : "";
+            if (subRealm === "") {
+                console.warn("Unable to decorate URI, Configuration.globalData.auth.subRealm not yet set");
+            }
         }
 
         uri = uri.replace("__subrealm__/", subRealm);
@@ -132,7 +138,7 @@ define([
                 ["login", "passwordReset", "continuePasswordReset", "register", "continueRegister"],
             subRealm;
 
-        if (page && _.include(subRealmSpecifiablePages, page)) {
+        if (page && _.includes(subRealmSpecifiablePages, page)) {
             subRealm = subRealmSplit.join("/").split("&")[0];
             subRealm = subRealm.slice(-1) === "/" ? subRealm.slice(0, -1) : subRealm;
         } else if (Configuration.globalData.auth.subRealm) {

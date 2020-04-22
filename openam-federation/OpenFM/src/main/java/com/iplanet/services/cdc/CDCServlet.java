@@ -60,7 +60,6 @@ import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.agent.TokenRestrictionResolver;
 import org.forgerock.openam.identity.idm.AMIdentityRepositoryFactory;
 import org.forgerock.openam.utils.StringUtils;
-import org.owasp.esapi.ESAPI;
 
 import com.iplanet.dpro.session.SessionException;
 import com.iplanet.dpro.session.TokenRestriction;
@@ -879,8 +878,8 @@ public class CDCServlet extends HttpServlet {
             response.setHeader("Pragma", "no-cache");
             response.setHeader(RESPONSE_HEADER_ALERT, RESPONSE_HEADER_ALERT_VALUE);
 
-            request.setAttribute("destURL", ESAPI.encoder().encodeForHTML(destURL));
-            request.setAttribute("authnResponse", ESAPI.encoder().encodeForHTML(b64Resp));
+            request.setAttribute("destURL", destURL);
+            request.setAttribute("authnResponse", b64Resp);
             RequestDispatcher rd
                     = request.getRequestDispatcher("config/federation/default/cdclogin.jsp");
             rd.forward(request, response);

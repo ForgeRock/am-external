@@ -18,19 +18,12 @@ package org.forgerock.openam.authentication.modules.social;
 
 import static com.google.inject.name.Names.named;
 
-import java.io.IOException;
-
 import org.forgerock.http.Handler;
-import org.forgerock.http.HttpApplicationException;
-import org.forgerock.http.handler.HttpClientHandler;
-import org.forgerock.util.thread.listener.ShutdownListener;
-import org.forgerock.util.thread.listener.ShutdownManager;
+import org.forgerock.openam.shared.guice.CloseableHttpClientHandlerProvider;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Inject;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.name.Named;
+import com.google.inject.Scopes;
+import com.google.inject.name.Names;
 import com.sun.identity.shared.debug.Debug;
 
 /**
@@ -43,26 +36,9 @@ public class SocialAuthGuiceModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(Debug.class).annotatedWith(named("amSocialAuth")).toInstance(Debug.getInstance("amSocialAuth"));
+        bind(Handler.class).annotatedWith(Names.named("SocialAuthClientHandler"))
+                                     .toProvider(CloseableHttpClientHandlerProvider.class)
+                                     .in(Scopes.SINGLETON);
     }
 
-    @Provides
-    @Inject
-    @Singleton
-    @Named("SocialAuthClientHandler")
-    public Handler getHttpClientHandler(ShutdownManager shutdownManager,
-            @Named("amSocialAuth") Debug debug) throws HttpApplicationException {
-        HttpClientHandler handler = new HttpClientHandler();
-        shutdownManager.addShutdownListener(new ShutdownListener() {
-            @Override
-            public void shutdown() {
-                try {
-                    handler.close();
-                } catch (IOException e) {
-                    //Ignore, handler may have already been closed.
-                    debug.message("Unable to close the HttpClientHandler", e);
-                }
-            }
-        });
-        return handler;
-    }
 }

@@ -24,12 +24,13 @@
  *
  * $Id: NT.java,v 1.6 2009/03/03 06:00:35 si224302 Exp $
  *
- */
-
-/*
- * Portions Copyrighted [2011] [ForgeRock AS]
+ * Portions Copyrighted 2011-2019 ForgeRock AS
  */
 package com.sun.identity.authentication.modules.nt;
+
+import static java.nio.file.attribute.AclEntryPermission.READ_DATA;
+import static java.nio.file.attribute.AclEntryPermission.READ_NAMED_ATTRS;
+import static java.nio.file.attribute.AclEntryPermission.SYNCHRONIZE;
 
 import com.iplanet.am.util.SystemProperties;
 import com.sun.identity.shared.Constants;
@@ -40,11 +41,22 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.UserPrincipal;
 import java.security.Principal;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.ResourceBundle;
 import java.util.Map;
 import javax.security.auth.Subject;
@@ -210,7 +222,8 @@ public class NT extends AMLoginModule {
         File tmpFile = null;
         try {
             // Create the tmpFile
-            tmpFile = File.createTempFile(userName,"pwd");
+            tmpFile = File.createTempFile("username","pwd");
+            lockDownFilePermissions(tmpFile.toPath());
             FileOutputStream fw = new FileOutputStream(tmpFile);
             OutputStreamWriter dos = new OutputStreamWriter(fw, "ISO-8859-1");
             dos.write("username = " + userName + "\n");
@@ -364,5 +377,28 @@ public class NT extends AMLoginModule {
         domain = null;
         userName = null;
         smbConfFileName = null; 
+    }
+
+    /**
+     * Ensure that the given file is only readable by ourselves.
+     *
+     * @param file the file to lockdown permissions for.
+     */
+    private static void lockDownFilePermissions(Path file) throws IOException {
+        PosixFileAttributeView posixView = Files.getFileAttributeView(file, PosixFileAttributeView.class);
+        AclFileAttributeView aclView = Files.getFileAttributeView(file, AclFileAttributeView.class);
+
+        if (posixView != null) {
+            posixView.setPermissions(EnumSet.of(PosixFilePermission.OWNER_READ));
+        }
+        if (aclView != null) {
+            UserPrincipal owner = Files.getOwner(file);
+            AclEntry acl = AclEntry.newBuilder()
+                    .setPrincipal(owner)
+                    .setType(AclEntryType.ALLOW)
+                    .setPermissions(READ_DATA, READ_NAMED_ATTRS, SYNCHRONIZE)
+                    .build();
+            aclView.setAcl(Collections.singletonList(acl));
+        }
     }
 }

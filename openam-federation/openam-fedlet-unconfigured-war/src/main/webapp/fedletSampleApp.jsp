@@ -24,7 +24,7 @@
 
    $Id: fedletSampleApp.jsp,v 1.15 2010/01/08 21:56:58 vimal_67 Exp $
 
-   Portions Copyrighted 2013-2017 ForgeRock AS.
+   Portions Copyrighted 2013-2019 ForgeRock AS.
 --%><%@page
 import="com.sun.identity.saml2.common.SAML2Exception,
 com.sun.identity.saml2.common.SAML2Constants,
@@ -34,15 +34,17 @@ com.sun.identity.saml2.profile.SPACSUtils,
 com.sun.identity.saml2.protocol.Response,
 com.sun.identity.saml2.assertion.NameID,
 com.sun.identity.saml.common.SAMLUtils,
-com.sun.identity.shared.encode.URLEncDec,
 com.sun.identity.plugin.session.SessionException,
 java.io.IOException,
 java.io.PrintWriter,
 java.util.Iterator,
 java.util.Map,
 java.util.HashSet,
-java.util.Set"
-%><%
+java.util.Set,
+org.forgerock.http.util.Uris,
+org.owasp.esapi.ESAPI"
+%>
+<%
     // BEGIN : following code is a must for Fedlet (SP) side application
     Map map;
     try {
@@ -79,7 +81,7 @@ java.util.Set"
 <head>
     <title>Fedlet Sample Application</title>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-    <link rel="stylesheet" type="text/css" href="<%= deployuri %>/com_sun_web_ui/css/css_ns6up.css" />
+    <link rel="stylesheet" type="text/css" href="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/css/css_ns6up.css" />
 </head>
 
 <body>
@@ -92,10 +94,10 @@ java.util.Set"
 <table width="100%" border="0" cellpadding="0" cellspacing="0" class="MstTblBot" title="">
 <tbody><tr>
 <td class="MstTdTtl" width="99%">
-<div class="MstDivTtl"><img name="ProdName" src="<%= deployuri %>/console/images/PrimaryProductName.png" alt="" /></div></td><td class="MstTdLogo" width="1%"><img name="RMRealm.mhCommon.BrandLogo" src="<%= deployuri %>/com_sun_web_ui/images/other/javalogo.gif" alt="Java(TM) Logo" border="0" height="55" width="31" /></td></tr></tbody></table>
-<table class="MstTblEnd" border="0" cellpadding="0" cellspacing="0" width="100%"><tbody><tr><td><img name="RMRealm.mhCommon.EndorserLogo" src="<%= deployuri %>/com_sun_web_ui/images/masthead/masthead-sunname.gif" alt="Sun(TM) Microsystems,
+<div class="MstDivTtl"><img name="ProdName" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/console/images/PrimaryProductName.png" alt="" /></div></td><td class="MstTdLogo" width="1%"><img name="RMRealm.mhCommon.BrandLogo" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/other/javalogo.gif" alt="Java(TM) Logo" border="0" height="55" width="31" /></td></tr></tbody></table>
+<table class="MstTblEnd" border="0" cellpadding="0" cellspacing="0" width="100%"><tbody><tr><td><img name="RMRealm.mhCommon.EndorserLogo" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/masthead/masthead-sunname.gif" alt="Sun(TM) Microsystems,
 Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></table></div><div class="SkpMedGry1"><a name="SkipAnchor2089" id="SkipAnchor2089"></a></div>
-<div class="SkpMedGry1"><a href="#SkipAnchor4928"><img src="<%= deployuri %>/com_sun_web_ui/images/other/dot.gif" alt="Jump Over Tab Navigation Area. Current Selection is: Access Control" border="0" height="1" width="1" /></a></div>
+<div class="SkpMedGry1"><a href="#SkipAnchor4928"><img src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/other/dot.gif" alt="Jump Over Tab Navigation Area. Current Selection is: Access Control" border="0" height="1" width="1" /></a></div>
 <%
     String relayUrl = (String) map.get(SAML2Constants.RELAY_STATE);
     if ((relayUrl != null) && (relayUrl.length() != 0)) {
@@ -118,26 +120,26 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
     String value = nameId.getValue();
     String format = nameId.getFormat();
     out.println("<br><br><b>Single Sign-On successful with IDP " 
-        + entityID + ".</b>");
+        + ESAPI.encoder().encodeForHTML(entityID) + ".</b>");
     out.println("<br><br>");
     out.println("<table border=0>");
     if (format != null) {
         out.println("<tr>");
         out.println("<td valign=top><b>Name ID format: </b></td>");
-        out.println("<td>" + format + "</td>");
+        out.println("<td>" + ESAPI.encoder().encodeForHTML(format) + "</td>");
         out.println("</tr>");
     }
     if (value != null) {
         out.println("<tr>");
         out.println("<td valign=top><b>Name ID value: </b></td>");
-        out.println("<td>" + value + "</td>");
+        out.println("<td>" + ESAPI.encoder().encodeForHTML(value) + "</td>");
         out.println("</tr>");
     }    
     String sessionIndex = (String) map.get(SAML2Constants.SESSION_INDEX);
     if (sessionIndex != null) {
         out.println("<tr>");
         out.println("<td valign=top><b>SessionIndex: </b></td>");
-        out.println("<td>" + sessionIndex + "</td>");
+        out.println("<td>" + ESAPI.encoder().encodeForHTML(sessionIndex) + "</td>");
         out.println("</tr>");
     }    
     
@@ -153,7 +155,7 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
             if ((attrVals != null) && !attrVals.isEmpty()) {
                 Iterator it = attrVals.iterator();
                 while (it.hasNext()) {
-                    out.println(attrName + "=" + it.next() + "<br>");
+                    out.println(ESAPI.encoder().encodeForHTML(attrName + "=" + it.next()) + "<br>");
                 }
             }
         }
@@ -171,19 +173,19 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
     out.println("<span style='display:none;' id=subj><br><textarea rows=10 cols=100>" + subject.toXMLString(true, true) + "</textarea></span>");
 
     if ((relayUrl != null) && (relayUrl.length() != 0)) {
-        out.println("<br><br>Click <a href=\"" + relayUrl 
+        out.println("<br><br>Click <a href=\"" + ESAPI.encoder().encodeForHTMLAttribute(relayUrl)
             + "\">here</a> to redirect to final destination.");
     }
 
     out.print("<p><p>");
     out.println("<br><b>Test Attribute Query:</b></br>");
     out.print("<p><p>");
-    out.print("<b><a href="+deployuri+"/fedletAttrQuery.jsp?nameIDValue="+value+"&idpEntityID="+entityID+"&spEntityID="+spEntityID+">Fedlet Attribute Query </a></b>");
+    out.print("<b><a href="+ESAPI.encoder().encodeForHTMLAttribute(deployuri)+"/fedletAttrQuery.jsp?nameIDValue="+ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(value))+"&idpEntityID="+ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(entityID))+"&spEntityID="+ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(spEntityID))+">Fedlet Attribute Query</a></b>");
     out.print("<p><p>");
 
     out.println("<br><b>Test XACML Policy Decision Query:</b></br>");
     out.print("<p><p>");
-    out.print("<b><a href="+deployuri+"/fedletXACMLQuery.jsp?nameIDValue="+value+"&idpEntityID="+entityID+"&spEntityID="+spEntityID+">Fedlet XACML Query </a></b>");
+    out.print("<b><a href="+ESAPI.encoder().encodeForHTMLAttribute(deployuri)+"/fedletXACMLQuery.jsp?nameIDValue="+ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(value))+"&idpEntityID="+ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(entityID))+"&spEntityID="+ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(spEntityID))+">Fedlet XACML Query </a></b>");
     out.print("<p><p>");
 
     Map idpMap = getIDPBaseUrlAndMetaAlias(entityID, deployuri);
@@ -192,13 +194,13 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
     String fedletBaseUrl = getFedletBaseUrl(spEntityID, deployuri);
     out.println("<br><b>Test Single Logout:</b></br>");
     if (idpMetaAlias != null) {
-        out.println("<br><b><a href=\"" + idpBaseUrl + "/IDPSloInit?metaAlias=" + idpMetaAlias + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:SOAP&RelayState=" + fedletBaseUrl + "/index.jsp\">Run Identity Provider initiated Single Logout using SOAP binding</a></b></br>");
-        out.println("<br><b><a href=\"" + idpBaseUrl + "/IDPSloInit?metaAlias=" + idpMetaAlias + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect&RelayState=" + fedletBaseUrl + "/index.jsp\">Run Identity Provider initiated Single Logout using HTTP Redirect binding</a></b></br>");
-        out.println("<br><b><a href=\"" + idpBaseUrl + "/IDPSloInit?metaAlias=" + idpMetaAlias + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST&RelayState=" + fedletBaseUrl + "/index.jsp\">Run Identity Provider initiated Single Logout using HTTP POST binding</a></b></br>");
+        out.println("<br><b><a href=\"" + ESAPI.encoder().encodeForHTMLAttribute(idpBaseUrl) + "/IDPSloInit?metaAlias=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(idpMetaAlias)) + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:SOAP&RelayState=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(fedletBaseUrl)) + "/index.jsp\">Run Identity Provider initiated Single Logout using SOAP binding</a></b></br>");
+        out.println("<br><b><a href=\"" + ESAPI.encoder().encodeForHTMLAttribute(idpBaseUrl) + "/IDPSloInit?metaAlias=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(idpMetaAlias)) + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect&RelayState=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(fedletBaseUrl)) + "/index.jsp\">Run Identity Provider initiated Single Logout using HTTP Redirect binding</a></b></br>");
+        out.println("<br><b><a href=\"" + ESAPI.encoder().encodeForHTMLAttribute(idpBaseUrl) + "/IDPSloInit?metaAlias=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(idpMetaAlias)) + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST&RelayState=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(fedletBaseUrl)) + "/index.jsp\">Run Identity Provider initiated Single Logout using HTTP POST binding</a></b></br>");
     }
-    out.println("<br><b><a href=\"" + fedletBaseUrl + "/fedletSloInit?spEntityID=" + URLEncDec.encode(spEntityID) + "&idpEntityID=" + URLEncDec.encode(entityID) + "&NameIDValue=" + URLEncDec.encode(value) + "&SessionIndex=" + URLEncDec.encode(sessionIndex) + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:SOAP&RelayState=" + URLEncDec.encode(fedletBaseUrl + "/index.jsp") + "\">Run Fedlet initiated Single Logout using SOAP binding</a></b></br>");
-    out.println("<br><b><a href=\"" + fedletBaseUrl + "/fedletSloInit?spEntityID=" + URLEncDec.encode(spEntityID) + "&idpEntityID=" + URLEncDec.encode(entityID) + "&NameIDValue=" + URLEncDec.encode(value) + "&SessionIndex=" + URLEncDec.encode(sessionIndex) + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect&RelayState=" + URLEncDec.encode(fedletBaseUrl + "/index.jsp") + "\">Run Fedlet initiated Single Logout using HTTP Redirect binding</a></b></br>");
-    out.println("<br><b><a href=\"" + fedletBaseUrl + "/fedletSloInit?spEntityID=" + URLEncDec.encode(spEntityID) + "&idpEntityID=" + URLEncDec.encode(entityID) + "&NameIDValue=" + URLEncDec.encode(value) + "&SessionIndex=" + URLEncDec.encode(sessionIndex) + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST&RelayState=" + URLEncDec.encode(fedletBaseUrl + "/index.jsp") + "\">Run Fedlet initiated Single Logout using HTTP POST binding</a></b></br>");
+    out.println("<br><b><a href=\"" + ESAPI.encoder().encodeForHTMLAttribute(fedletBaseUrl) + "/fedletSloInit?spEntityID=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(spEntityID)) + "&idpEntityID=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(entityID)) + "&NameIDValue=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(value)) + "&SessionIndex=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(sessionIndex)) + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:SOAP&RelayState=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(fedletBaseUrl + "/index.jsp")) + "\">Run Fedlet initiated Single Logout using SOAP binding</a></b></br>");
+    out.println("<br><b><a href=\"" + ESAPI.encoder().encodeForHTMLAttribute(fedletBaseUrl) + "/fedletSloInit?spEntityID=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(spEntityID)) + "&idpEntityID=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(entityID)) + "&NameIDValue=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(value)) + "&SessionIndex=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(sessionIndex)) + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect&RelayState=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(fedletBaseUrl + "/index.jsp")) + "\">Run Fedlet initiated Single Logout using HTTP Redirect binding</a></b></br>");
+    out.println("<br><b><a href=\"" + ESAPI.encoder().encodeForHTMLAttribute(fedletBaseUrl) + "/fedletSloInit?spEntityID=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(spEntityID)) + "&idpEntityID=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(entityID)) + "&NameIDValue=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(value)) + "&SessionIndex=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(sessionIndex)) + "&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST&RelayState=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(fedletBaseUrl + "/index.jsp")) + "\">Run Fedlet initiated Single Logout using HTTP POST binding</a></b></br>");
 %>
 <script>
 function toggleDisp(id)

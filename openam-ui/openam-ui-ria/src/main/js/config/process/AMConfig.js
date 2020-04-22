@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2017 ForgeRock AS.
+ * Copyright 2011-2020 ForgeRock AS.
  */
 
 define([
@@ -45,11 +45,12 @@ define([
                 EventManager.sendEvent(Constants.EVENT_AUTHENTICATION_DATA_CHANGED, { anonymousMode: true });
                 delete Configuration.gotoURL;
 
-                if (gotoUrl.exists()) {
-                    window.location.href = gotoUrl.toHref();
-                } else if (_.has(response, "goto")) {
-                    // The response.goto comes from the "Logout Location" that can be configured in SAML2
+                // Use logout response (if there is one) in preference to supplied goto param.
+                // Requires any post process url endpoint to redirect to the goto url after it completes
+                if (_.has(response, "goto")) {
                     window.location.href = decodeURIComponent(response.goto);
+                } else if (gotoUrl.exists()) {
+                    window.location.href = gotoUrl.toHref();
                 } else {
                     EventManager.sendEvent(Constants.EVENT_CHANGE_VIEW, {
                         route: Router.configuration.routes.loggedOut
@@ -201,7 +202,7 @@ define([
 
             if (!Configuration.loggedUser) {
                 Router.routeTo(Router.configuration.routes.login, routerParams);
-            } else if (_.contains(Configuration.loggedUser.uiroles, "ui-realm-admin")) {
+            } else if (_.includes(Configuration.loggedUser.uiroles, "ui-realm-admin")) {
                 Router.routeTo(Router.configuration.routes.realms, {
                     args: [],
                     ...routerParams

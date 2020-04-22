@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,7 +24,7 @@
  *
  * $Id: Attribute.java,v 1.4 2008/09/03 22:28:40 weisun2 Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
+ * Portions Copyrighted 2017-2019 ForgeRock AS.
  */
 package com.sun.identity.saml.assertion;
 
@@ -46,8 +46,8 @@ import com.sun.identity.shared.xml.XMLUtils;
  * @supported.all.api 
  */
 public class Attribute extends AttributeDesignator {
-    protected  List _attributeValue; 
-    
+    protected  List<Element> _attributeValue;
+
     /**
      * Constructs an attribute element from an existing XML block.
      *
@@ -139,7 +139,7 @@ public class Attribute extends AttributeDesignator {
                     if (tagName.equals("AttributeValue") &&
                         tagNS.equals(SAMLConstants.assertionSAMLNameSpaceURI)) {
                         if (_attributeValue == null) {
-                            _attributeValue = new ArrayList(); 
+                            _attributeValue = new ArrayList<>();
                         }
                         if (!(_attributeValue.add((Element)currentNode))){
                             if (SAMLUtilsCommon.debug.messageEnabled()) {
@@ -185,7 +185,7 @@ public class Attribute extends AttributeDesignator {
      * @exception SAMLException if there is an error in the sender or in the
      *            element definition.
      */
-    public Attribute(String name, String nameSpace, List values) 
+    public Attribute(String name, String nameSpace, List<Element> values)
                                                     throws SAMLException {
         super(name, nameSpace);  
         if (values == null || values.isEmpty()) {
@@ -197,13 +197,13 @@ public class Attribute extends AttributeDesignator {
                       SAMLUtilsCommon.bundle.getString("nullInput")); 
         }       
         if (_attributeValue == null) {
-            _attributeValue = new ArrayList();                 
+            _attributeValue = new ArrayList<>();
         }
         // Make sure this is a list of AttributeValue
-        Iterator iter = values.iterator();  
+        Iterator<Element> iter = values.iterator();
         String tag = null; 
         while (iter.hasNext()) {
-            tag = ((Element) iter.next()).getLocalName(); 
+            tag = iter.next().getLocalName();
             if ((tag == null) || (!tag.equals("AttributeValue"))) {
                 if (SAMLUtilsCommon.debug.messageEnabled()) {
                     SAMLUtilsCommon.debug.message(
@@ -248,7 +248,7 @@ public class Attribute extends AttributeDesignator {
      * <code>AttributeValue</code> block.
      * @throws SAMLException If there was an error.
      */
-    public  List getAttributeValue()  throws SAMLException {
+    public  List<Element> getAttributeValue()  throws SAMLException {
         return _attributeValue; 
     }
     
@@ -279,7 +279,7 @@ public class Attribute extends AttributeDesignator {
                         sb.toString().trim(),
                         SAMLUtilsCommon.debug).getDocumentElement();
             if (_attributeValue == null) {
-                _attributeValue = new ArrayList(); 
+                _attributeValue = new ArrayList<>();
             }
             if (!(_attributeValue.add(ele))){
                 if (SAMLUtilsCommon.debug.messageEnabled()) {
@@ -323,7 +323,7 @@ public class Attribute extends AttributeDesignator {
         }
         try {
             if (_attributeValue == null) {
-                _attributeValue = new ArrayList(); 
+                _attributeValue = new ArrayList<>();
             }
             if (!(_attributeValue.add(element))){
                 if (SAMLUtilsCommon.debug.messageEnabled()) {
@@ -374,12 +374,10 @@ public class Attribute extends AttributeDesignator {
         result.append("<").append(prefix).append("Attribute").append(uri).
                append(" AttributeName=\"").append(_attributeName).
                append("\" AttributeNamespace=\"").append(_attributeNameSpace).
-               append("\">\n");         
-        
-        Iterator iter = _attributeValue.iterator();  
-        while (iter.hasNext()) {
-            result.append(XMLUtils.printAttributeValue((Element)iter.next(), 
-                          prefix)).append("\n"); 
+               append("\">\n");
+
+        for (Element element : _attributeValue) {
+            result.append(XMLUtils.printAttributeValue(element, prefix)).append("\n");
         }
         result.append("</").append(prefix).append("Attribute>\n");
         return result.toString();

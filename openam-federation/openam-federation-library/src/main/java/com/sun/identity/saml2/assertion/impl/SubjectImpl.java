@@ -24,6 +24,7 @@
  *
  * $Id: SubjectImpl.java,v 1.3 2008/06/25 05:47:44 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -56,7 +57,7 @@ import com.sun.identity.saml2.common.SAML2SDKUtils;
 
 public class SubjectImpl implements Subject {
 
-    private List subjectConfirmations = new ArrayList();
+    private List<SubjectConfirmation> subjectConfirmations = new ArrayList<>();
     private BaseID baseId = null;
     private NameID nameId = null;
     private EncryptedID encryptedId = null;
@@ -258,7 +259,7 @@ public class SubjectImpl implements Subject {
      *
      * @return a list of subject confirmations
      */
-    public List getSubjectConfirmation() {
+    public List<SubjectConfirmation> getSubjectConfirmation() {
         return subjectConfirmations;
     }
 
@@ -268,7 +269,7 @@ public class SubjectImpl implements Subject {
      * @param confirmations a list of subject confirmations
      * @exception SAML2Exception if the object is immutable
      */
-    public void setSubjectConfirmation(List confirmations) 
+    public void setSubjectConfirmation(List<SubjectConfirmation> confirmations)
         throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(

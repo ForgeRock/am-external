@@ -11,13 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
 /**
  * @module org/forgerock/openam/ui/admin/services/realm/authentication/TreeService
  */
-import { map, mapValues, omit, startsWith } from "lodash";
+import { map, mapValues, omitBy, startsWith } from "lodash";
 
 import AbstractDelegate from "org/forgerock/commons/ui/common/main/AbstractDelegate";
 import Constants from "org/forgerock/commons/ui/common/util/Constants";
@@ -29,7 +29,7 @@ const PATH = "/realm-config/authentication/authenticationtrees/trees";
 const HEADERS = { "Accept-API-Version": "protocol=2.0,resource=1.0" };
 
 function getCreateOrUpdatePayload (data) {
-    const omitReadOnlyProperties = (obj) => omit(obj, (prop, key) => startsWith(key, "_"));
+    const omitReadOnlyProperties = (obj) => omitBy(obj, (prop, key) => startsWith(key, "_"));
     return {
         ...omitReadOnlyProperties(data),
         nodes: mapValues(data.nodes, (node) => omitReadOnlyProperties(node))

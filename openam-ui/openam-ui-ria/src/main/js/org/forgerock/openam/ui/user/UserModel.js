@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 define([
@@ -170,7 +170,7 @@ define([
              * @returns {Boolean}      Whether this model has any of the roles specified
              */
             hasRole (roles) {
-                return _.spread(_.partial(_.contains, this.uiroles))(arrayify(roles));
+                return _.spread(_.partial(_.includes, this.uiroles))(arrayify(roles));
             }
         });
     return new UserModel();

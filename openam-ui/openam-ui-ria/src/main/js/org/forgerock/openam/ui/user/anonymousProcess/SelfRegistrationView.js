@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 define([
@@ -36,7 +36,7 @@ define([
     AMSelfRegistrationView.prototype = SelfRegistrationView;
     AMSelfRegistrationView.prototype.endpoint = Constants.SELF_SERVICE_REGISTER;
 
-    _.extend(AMSelfRegistrationView.prototype, AnonymousProcessView.prototype);
+    _.assign(AMSelfRegistrationView.prototype, AnonymousProcessView.prototype);
 
     AMSelfRegistrationView.prototype.renderProcessState = function (response) {
         const destination = _.get(Configuration, "globalData.successfulUserRegistrationDestination");

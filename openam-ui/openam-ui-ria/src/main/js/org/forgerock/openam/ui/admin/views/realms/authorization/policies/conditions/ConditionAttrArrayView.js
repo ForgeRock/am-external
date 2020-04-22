@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 define([
@@ -110,7 +110,7 @@ define([
                                     view.data.itemData.enforcementTimeZone = value ? value : DEFAULT_TIME_ZONE;
                                 }
                             });
-                        } else if (_.contains(IDENTITY_TYPES, type)) {
+                        } else if (_.includes(IDENTITY_TYPES, type)) {
                             _.extend(options, {
                                 placeholder: $.t(IDENTITY_PLACEHOLDER),
                                 sortField: "value",

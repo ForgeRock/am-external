@@ -24,7 +24,7 @@
  *
  * $Id: IDPSingleLogout.java,v 1.28 2009/11/25 01:20:47 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2016 ForgeRock AS.
+ * Portions Copyrighted 2010-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -583,7 +583,7 @@ public class IDPSingleLogout {
                 retStatus = sloManager.doIDPSingleLogout(set, uid, request,
                     response, false, false, SingleLogoutManager.SAML2, realm,
                     idpEntityID, spEntityID, relayState, logoutReq.toString(),
-                    logoutRes.toXMLString(), getLogoutStatus(logoutRes));
+                    logoutRes.toXMLString(true, true), getLogoutStatus(logoutRes));
             }
         } catch (SessionException e) {
             // ignore as session might not be valid
@@ -815,7 +815,7 @@ public class IDPSingleLogout {
             if (logoutResp != null && location != null &&
                 spEntity != null && idpEntity !=null) {
                 LogoutUtil.sendSLOResponse(response, request, logoutResp, location,
-                    relayState, "/", spEntity, SAML2Constants.SP_ROLE,
+                    relayState, realm, spEntity, SAML2Constants.SP_ROLE,
                     idpEntity, binding);
                 return true;
             }
@@ -1718,7 +1718,7 @@ public class IDPSingleLogout {
                     debug.message("IDPSingleLogout.sendLastResponse: MP/Http");
                     retStatus = sloManager.doIDPSingleLogout(set, uid, request, response, false, true,
                             SingleLogoutManager.SAML2, realm, idpEntityID, originatingLogoutSPEntityID, relayState,
-                            null, logoutRes.toXMLString(), getLogoutStatus(logoutRes));
+                            null, logoutRes.toXMLString(true, true), getLogoutStatus(logoutRes));
                 }
             } catch (SessionException e) {
                 // ignore as session might not be valid

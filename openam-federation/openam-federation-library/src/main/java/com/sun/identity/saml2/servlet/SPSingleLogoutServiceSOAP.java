@@ -24,7 +24,7 @@
  *
  * $Id: SPSingleLogoutServiceSOAP.java,v 1.9 2009/10/14 23:59:45 exu Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 
 
@@ -42,15 +42,14 @@ import com.sun.identity.saml2.protocol.LogoutRequest;
 import com.sun.identity.saml2.protocol.LogoutResponse;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml.common.SAMLUtils;
-import java.io.OutputStream;
-import java.io.InputStream;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.ServletException;
-import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 import org.w3c.dom.Element;
@@ -117,9 +116,10 @@ public class SPSingleLogoutServiceSOAP extends HttpServlet {
                 resp.setStatus(HttpServletResponse.SC_OK);
                 SAML2Utils.putHeaders(reply.getMimeHeaders(), resp);
                 // Write out the message on the response stream
-                OutputStream os = resp.getOutputStream();
-                reply.writeTo(os);
-                os.flush();
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                reply.writeTo(stream);
+                resp.getWriter().println(stream.toString("UTF-8"));
+                resp.getWriter().flush();
             } else {
                 // Form SOAP fault
                 resp.setStatus( HttpServletResponse.SC_NO_CONTENT);

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2019 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
@@ -20,6 +20,7 @@ import javax.inject.Inject;
 import java.net.URL;
 import java.security.AccessController;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.common.HttpURLConnectionManager;
@@ -38,12 +39,12 @@ public class OpenIdResolverCacheImpl implements OpenIdResolverCache {
 
     private static Debug logger = Debug.getInstance("amAuth");
     private final OpenIdResolverFactory openIdResolverFactory;
-    private final ConcurrentHashMap<String, OpenIdResolver> resolverMap;
+    private final ConcurrentMap<String, ConcurrentMap<String, OpenIdResolver>> resolverMap;
 
     @Inject
     OpenIdResolverCacheImpl(OpenIdResolverFactory openIdResolverFactory) {
         this.openIdResolverFactory = openIdResolverFactory;
-        resolverMap = new ConcurrentHashMap<String, OpenIdResolver>();
+        resolverMap = new ConcurrentHashMap<>();
         addServiceListener();
     }
 
@@ -62,34 +63,76 @@ public class OpenIdResolverCacheImpl implements OpenIdResolverCache {
         }
     }
 
-    public OpenIdResolver getResolverForIssuer(String cryptoContextDefinitionValue) {
-        return resolverMap.get(cryptoContextDefinitionValue);
+    /**
+     * {@inheritDoc}
+     */
+    public OpenIdResolver getResolverForIssuer(String issuer, String cryptoContextDefinitionValue) {
+        ConcurrentMap<String, OpenIdResolver> issuerMap = resolverMap.get(issuer);
+        if (issuerMap == null) {
+            return null;
+        }
+        return issuerMap.get(cryptoContextDefinitionValue);
     }
 
     /**
-    It is possible that two callers are calling this method at once. I want to leverage the uncontested reads
-    of the ConcurrentHashMap, and I don't want to synchronize the writes to the ConcurrentHashMap above the
-    synchronization applied by the CHM in puts. The drawback of this approach is the possible redundant creation of
-    a OpenIdResolver if two concurrent calls target the currently-uncreated OpenIdResolver, but the redundant creation will
-    only occur once.
-     @see org.forgerock.openam.authentication.modules.oidc.OpenIdResolverCache
+     * {@inheritDoc}
      */
     @Override
     public OpenIdResolver createResolver(String issuerFromJwk, String cryptoContextType, String cryptoContextValue,
                                          URL cryptoContextValueUrl) throws FailedToLoadJWKException {
-        OpenIdResolver newResolver;
+
+        ConcurrentMap<String, OpenIdResolver> issuerMap = resolverMap.get(issuerFromJwk);
+        if (issuerMap == null) {
+            issuerMap = new ConcurrentHashMap<>();
+            ConcurrentMap<String, OpenIdResolver> existingIssuerMap = resolverMap.putIfAbsent(issuerFromJwk, issuerMap);
+            if (existingIssuerMap != null) {
+                issuerMap = existingIssuerMap;
+            }
+        }
+
+        OpenIdResolver existingResolver = issuerMap.get(cryptoContextValue);
+        if (existingResolver != null) {
+            return existingResolver;
+        }
+
+        OpenIdResolver newResolver =
+                createNewResolver(issuerFromJwk, cryptoContextType, cryptoContextValue, cryptoContextValueUrl);
+        existingResolver = issuerMap.putIfAbsent(cryptoContextValue, newResolver);
+        if (existingResolver != null) {
+            return existingResolver;
+        } else {
+            return newResolver;
+        }
+    }
+
+
+    /**
+     * Create a new resolver.
+     * @param issuerFromJwk Issuer.
+     * @param cryptoContextType The crypto context value type.
+     * @param cryptoContextValue The crypto context value.
+     * @param cryptoContextValueUrl The crypto context url.
+     * @return OpenIdResolver.
+     * @throws FailedToLoadJWKException
+     */
+    private OpenIdResolver createNewResolver(String issuerFromJwk, String cryptoContextType, String cryptoContextValue,
+                                         URL cryptoContextValueUrl) throws FailedToLoadJWKException {
         if (OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_CLIENT_SECRET.equals(cryptoContextType)) {
-            newResolver = openIdResolverFactory.createSharedSecretResolver(issuerFromJwk, cryptoContextValue);
+            return openIdResolverFactory.createSharedSecretResolver(issuerFromJwk, cryptoContextValue);
+
         } else if (OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_CONFIG_URL.equals(cryptoContextType)) {
-            newResolver = openIdResolverFactory.createFromOpenIDConfigUrl(cryptoContextValueUrl);
+            OpenIdResolver newResolver = openIdResolverFactory.createFromOpenIDConfigUrl(cryptoContextValueUrl);
             //check is only relevant in this block, as issuer is specified in the json blob referenced by url.
             if (!issuerFromJwk.equals(newResolver.getIssuer())) {
                 throw new IllegalStateException("The specified issuer, " + issuerFromJwk + ", does not match the issuer, "
                         + newResolver.getIssuer() + " referenced by the configuration url, " + cryptoContextValue);
             }
+            return newResolver;
+
         } else if (OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_JWK_URL.equals(cryptoContextType)) {
-            newResolver = openIdResolverFactory.createJWKResolver(issuerFromJwk, cryptoContextValueUrl,
+            return openIdResolverFactory.createJWKResolver(issuerFromJwk, cryptoContextValueUrl,
                     HttpURLConnectionManager.getReadTimeout(), HttpURLConnectionManager.getConnectTimeout());
+
         } else {
             /*
             Should not enter this block, as the cryptoContextType was validated to be of the three expected types in
@@ -97,11 +140,7 @@ public class OpenIdResolverCacheImpl implements OpenIdResolverCache {
              */
             throw new IllegalArgumentException("The specified cryptoContextType, " + cryptoContextType + " was unexpected!");
         }
-        OpenIdResolver oldResolver;
-        if ((oldResolver = resolverMap.putIfAbsent(cryptoContextValue, newResolver)) != null) {
-            return oldResolver;
-        }
-        return newResolver;
+
     }
 
     /**

@@ -16,15 +16,15 @@
 
 package org.forgerock.openam.authentication.modules.oidc;
 
-import org.forgerock.json.jose.jwt.JwtClaimsSet;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.fest.assertions.Assertions.assertThat;
+import org.forgerock.json.jose.jwt.JwtClaimsSet;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Test;
 
 public class JwtAttributeMapperTest {
     private static final String EMAIL = "email";

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2018 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -34,6 +34,10 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.idrepo.ldap.IdentityNotFoundException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.InvalidPasswordException;
 import com.sun.identity.idm.AMIdentityRepository;
@@ -52,6 +56,7 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
     }
 
     private final CoreWrapper coreWrapper;
+    private final Logger logger = LoggerFactory.getLogger("amAuth");
 
     /**
      * Guice constructor.
@@ -76,11 +81,17 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
         JsonValue newState = context.sharedState.copy();
         try {
             success = idrepo.authenticate(callbacks);
+            boolean isActive = coreWrapper.getIdentity(nameCallback.getName(),
+                    context.sharedState.get(REALM).asString()).isActive();
+            success = success && isActive;
         } catch (InvalidPasswordException e) {
             // Ignore. Success is already false!
         } catch (IdentityNotFoundException e) {
-            newState.remove(USERNAME);
+            logger.warn("invalid username error");
         } catch (IdRepoException | AuthLoginException e) {
+            throw new NodeProcessException(e);
+        } catch (SSOException e) {
+            logger.warn("Exception checking user status");
             throw new NodeProcessException(e);
         }
         newState.remove(PASSWORD);

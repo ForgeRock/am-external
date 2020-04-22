@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2020 ForgeRock AS.
  */
 
 define([
@@ -126,7 +126,7 @@ define([
 
                     options.allResourceTypes = resourceTypes;
                     options.availableResourceTypes = _.filter(resourceTypes, function (item) {
-                        return !_.contains(self.data.entity.resourceTypeUuids, item.uuid);
+                        return !_.includes(self.data.entity.resourceTypeUuids, item.uuid);
                     });
 
                     options.selectedResourceTypes = _.findByValues(options.allResourceTypes, "uuid",

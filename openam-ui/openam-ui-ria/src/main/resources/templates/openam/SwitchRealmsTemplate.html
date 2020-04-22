@@ -11,7 +11,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+  Copyright 2016-2018 ForgeRock AS. All Rights Reserved
 }}
 <div class="container">
     <div class="col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3 text-center">
@@ -21,7 +21,7 @@
         {{> alerts/_Alert text="common.user.switchRealm.description" type="info" }}
         {{!-- Although the view handles the link in the button below, the href remains so that the user can see where
               the link will take them. Equally the button contains the js so that the savvy user can see what it does --}}
-        <a data-switch-realms class="btn btn-primary btn-block" href="{{{urlTo 'login' args}}}">{{t 'common.user.switchRealm.leave'}}</a>
+        <a data-switch-realms class="btn btn-primary btn-block" href="{{routeTo 'login'}}{{fragmentParamString}}">{{t 'common.user.switchRealm.leave'}}</a>
         <button class="btn btn-default btn-block" onclick="window.history.back(-1)">{{t 'common.user.switchRealm.goBack'}}</button>
     </div>
 </div>

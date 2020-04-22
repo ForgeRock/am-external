@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2018 ForgeRock AS.
  */
 
 define([
@@ -24,14 +24,14 @@ define([
 
     obj.getTrustedDevices = function () {
         return obj.serviceCall({
-            url: fetchUrl.default(`/users/${Configuration.loggedUser.get("uid")}/devices/trusted/?_queryId=*`),
+            url: fetchUrl.default(`/users/${Configuration.loggedUser.get("username")}/devices/trusted/?_queryId=*`),
             headers: { "Cache-Control": "no-cache", "Accept-API-Version": "protocol=1.0,resource=1.0" }
         });
     };
 
     obj.deleteTrustedDevice = function (id) {
         return obj.serviceCall({
-            url: fetchUrl.default(`/users/${Configuration.loggedUser.get("uid")}/devices/trusted/${id}`),
+            url: fetchUrl.default(`/users/${Configuration.loggedUser.get("username")}/devices/trusted/${id}`),
             type: "DELETE",
             headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" }
         });

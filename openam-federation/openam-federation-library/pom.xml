@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2017 ForgeRock AS. All Rights Reserved
+ * Copyright 2011-2018 ForgeRock AS. All Rights Reserved
  * 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-federation</artifactId>
-        <version>5.5.1</version>
+        <version>5.5.2</version>
     </parent>
 
     <!-- Component Definition -->
@@ -42,6 +42,33 @@
                         <com.sun.identity.systemconfiguration>com.sun.identity.configuration.FedLibSystemProperties</com.sun.identity.systemconfiguration>
                     </systemPropertyVariables>
                 </configuration>
+                <!--
+                    Broken into multiple executions to support some tests running independently of other tests due
+                    to system properties being set which, depending on the order of execution, will cause false results.
+                    For example: com.sun.identity.saml.assertion.AssertionSigningIgnoreLineBreaksTest
+                -->
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/AssertionSigningIgnoreLineBreaksTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>not-forked-tests</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>**/AssertionSigningIgnoreLineBreaksTest.java</include>
+                            </includes>
+                            <reuseForks>false</reuseForks>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
         <testResources>
@@ -145,11 +172,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.santuario</groupId>
        	    <artifactId>xmlsec</artifactId>
         </dependency>
@@ -185,11 +207,6 @@
             <artifactId>openam-idpdiscovery</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.easytesting</groupId>
-            <artifactId>fest-assert</artifactId>
-        </dependency>
-        
         <dependency>
             <groupId>com.google.inject</groupId>
             <artifactId>guice</artifactId>

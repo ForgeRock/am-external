@@ -20,7 +20,7 @@
 
   Copyright 2009 Sun Microsystems Inc. All Rights Reserved
 
-   Portions Copyrighted 2013-2016 ForgeRock AS.
+   Portions Copyrighted 2013-2019 ForgeRock AS.
 --%>
 
 
@@ -48,7 +48,7 @@
 <head>
     <title>Sample Fedlet XACML Query Application</title>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-    <link rel="stylesheet" type="text/css" href="<%= deployuri %>/com_sun_web_ui/css/css_ns6up.css" />
+    <link rel="stylesheet" type="text/css" href="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri)%>/com_sun_web_ui/css/css_ns6up.css" />
 </head>
 
 <body>
@@ -61,10 +61,10 @@
 <table width="100%" border="0" cellpadding="0" cellspacing="0" class="MstTblBot" title="">
 <tbody><tr>
 <td class="MstTdTtl" width="99%">
-<div class="MstDivTtl"><img name="ProdName" src="<%= deployuri %>/console/images/PrimaryProductName.png" alt="" /></div></td><td class="MstTdLogo" width="1%"><img name="RMRealm.mhCommon.BrandLogo" src="<%= deployuri %>/com_sun_web_ui/images/other/javalogo.gif" alt="Java(TM) Logo" border="0" height="55" width="31" /></td></tr></tbody></table>
-<table class="MstTblEnd" border="0" cellpadding="0" cellspacing="0" width="100%"><tbody><tr><td><img name="RMRealm.mhCommon.EndorserLogo" src="<%= deployuri %>/com_sun_web_ui/images/masthead/masthead-sunname.gif" alt="Sun(TM) Microsystems,
+<div class="MstDivTtl"><img name="ProdName" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri)%>/console/images/PrimaryProductName.png" alt="" /></div></td><td class="MstTdLogo" width="1%"><img name="RMRealm.mhCommon.BrandLogo" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/other/javalogo.gif" alt="Java(TM) Logo" border="0" height="55" width="31" /></td></tr></tbody></table>
+<table class="MstTblEnd" border="0" cellpadding="0" cellspacing="0" width="100%"><tbody><tr><td><img name="RMRealm.mhCommon.EndorserLogo" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri)%>/com_sun_web_ui/images/masthead/masthead-sunname.gif" alt="Sun(TM) Microsystems,
 Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></table></div><div class="SkpMedGry1"><a name="SkipAnchor2089" id="SkipAnchor2089"></a></div>
-<div class="SkpMedGry1"><a href="#SkipAnchor4928"><img src="<%= deployuri %>/com_sun_web_ui/images/other/dot.gif" alt="Jump Over Tab Navigation Area. Current Selection is: Access Control" border="0" height="1" width="1" /></a></div>
+<div class="SkpMedGry1"><a href="#SkipAnchor4928"><img src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri)%>/com_sun_web_ui/images/other/dot.gif" alt="Jump Over Tab Navigation Area. Current Selection is: Access Control" border="0" height="1" width="1" /></a></div>
 
 
 <%
@@ -113,13 +113,13 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
 <th>Policy Decision</th>
 </tr>
 <%
-       if(resource!=null) resource = ESAPI.encoder().encodeForHTML(resource);
+       resource = ESAPI.encoder().encodeForHTML(resource);
        out.println("<tr>");
        out.println("<td>"); 
        out.println(resource);
        out.println("</td>"); 
        out.println("<td>"); 
-       out.println(policy_decision);
+       out.println(ESAPI.encoder().encodeForHTML(policy_decision));
        out.println("</td>"); 
 %>
 </table>

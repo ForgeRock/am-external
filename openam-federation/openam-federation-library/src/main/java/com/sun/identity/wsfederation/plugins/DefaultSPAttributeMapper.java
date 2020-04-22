@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
@@ -24,9 +24,8 @@
  *
  * $Id: DefaultSPAttributeMapper.java,v 1.3 2008/06/25 05:48:07 qcheng Exp $
  *
+ * Portions Copyrighted 2017 ForgeRock AS.
  */
-
-
 package com.sun.identity.wsfederation.plugins;
 
 import com.sun.identity.saml.assertion.Attribute;
@@ -39,9 +38,10 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.Iterator;
+
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.StringUtils;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 
 /**
@@ -49,15 +49,13 @@ import org.w3c.dom.Node;
  * <code>SPAttributeMapper</code> for mapping the assertion attributes
  * to local attributes configured in the provider configuration.
  */
-public class DefaultSPAttributeMapper extends DefaultAttributeMapper 
-     implements SPAttributeMapper {
+public class DefaultSPAttributeMapper extends DefaultAttributeMapper implements SPAttributeMapper {
 
     /**
      * Constructor.
      */
     public DefaultSPAttributeMapper() { 
         debug.message("DefaultSPAttributeMapper.constructor");
-        role = SP;
     }
 
     /**
@@ -70,65 +68,53 @@ public class DefaultSPAttributeMapper extends DefaultAttributeMapper
      * @param realm realm name.
      * @return a map of mapped attribute value pair. This map has the
      *         key as the attribute name and the value as the attribute value
-     * @exception WSFederationException if any failure.
+     * @throws WSFederationException for any failures.
      */ 
-    public Map getAttributes(
-        List attributes,
+    public Map<String, Set<String>> getAttributes(
+        List<Attribute> attributes,
         String userID,
         String hostEntityID,
         String remoteEntityID, 
         String realm
     ) throws WSFederationException {
 
-        if(attributes == null || attributes.size() == 0) {
-           throw new WSFederationException(bundle.getString(
-                 "nullAttributes")); 
+        if (CollectionUtils.isEmpty(attributes)) {
+           throw new WSFederationException(bundle.getString("nullAttributes"));
         }
 
-        if(hostEntityID == null) {
-           throw new WSFederationException(bundle.getString(
-                 "nullHostEntityID"));
+        if (hostEntityID == null) {
+           throw new WSFederationException(bundle.getString("nullHostEntityID"));
         }
 
-        if(realm == null) {
-           throw new WSFederationException(bundle.getString(
-                 "nullRealm"));
+        if (realm == null) {
+           throw new WSFederationException(bundle.getString("nullRealm"));
         }
  
-        Map<String,Set<String>> map = new HashMap<String,Set<String>>();
-        Map configMap = getConfigAttributeMap(realm, hostEntityID);
-
-        for(Iterator iter = attributes.iterator(); iter.hasNext();) {
-
-            Attribute attribute = (Attribute)iter.next();
-            Set<String> values = new HashSet(); 
+        Map<String, Set<String>> attributeMap = new HashMap<>(attributes.size());
+        Map<String, String> configMap = getConfigAttributeMap(realm, hostEntityID, SP);
+        for (Attribute attribute : attributes) {
+            Set<String> values = new HashSet<>();
             try {
-                List attrValues = attribute.getAttributeValue();
-                for(Iterator iter2 = attrValues.iterator(); iter2.hasNext();) {
-                    Element attrValue = (Element)iter2.next();
+                List<Element> attrValues = attribute.getAttributeValue();
+                for (Element attrValue : attrValues) {
                     values.add(XMLUtils.getElementValue(attrValue));
                 }
             } catch (SAMLException se) {
                 throw new WSFederationException(se);
             }
             String attributeName = attribute.getAttributeName();
-
-            String localAttribute = (String)configMap.get(attributeName);
-            if(localAttribute == null || localAttribute.length()== 0) {
+            String localAttribute = configMap.get(attributeName);
+            if (StringUtils.isEmpty(localAttribute)) {
                 localAttribute = attributeName;
             }
-
-            Set<String> existingValues = map.get(localAttribute);
-            if ( existingValues != null )
-            {
+            Set<String> existingValues = attributeMap.get(localAttribute);
+            if (existingValues != null) {
                 existingValues.addAll(values);
-            }
-            else
-            {
-                map.put(localAttribute, values);  
+            } else {
+                attributeMap.put(localAttribute, values);
             }
         }
-        return map;
+        return attributeMap;
     }
 
 }

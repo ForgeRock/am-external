@@ -11,11 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 define([
     "lodash",
+    "org/forgerock/commons/ui/common/components/Messages",
     "org/forgerock/commons/ui/common/main/EventManager",
     "org/forgerock/commons/ui/common/main/Router",
     "org/forgerock/commons/ui/common/util/URIUtils",
@@ -26,8 +27,8 @@ define([
     "org/forgerock/openam/ui/common/util/uri/getCurrentFragmentParamString",
     "org/forgerock/openam/ui/common/util/uri/query",
     "store/index"
-], (_, EventManager, Router, URIUtils, AnonymousProcessView, AnonymousProcessDelegate, fetchUrl, Constants,
-    getCurrentFragmentParamString, query, store) => { // eslint-disable-line padded-blocks
+], (_, Messages, EventManager, Router, URIUtils, AnonymousProcessView, AnonymousProcessDelegate, fetchUrl,
+    Constants, getCurrentFragmentParamString, query, store) => { // eslint-disable-line padded-blocks
 
     function getNextRoute (endpoint) {
         if (endpoint === Constants.SELF_SERVICE_REGISTER) {
@@ -42,6 +43,10 @@ define([
         return params.token;
     }
 
+    function isSelfRegistrationFlow (endpoint) {
+        return endpoint.indexOf(Constants.SELF_SERVICE_REGISTER) !== -1;
+    }
+
     return AnonymousProcessView.extend({
 
         render () {
@@ -51,18 +56,29 @@ define([
                 realm: store.default.getState().remote.info.realm
             });
 
-            if (!this.delegate || Router.currentRoute !== nextRoute) {
-                this.setDelegate(`json${endpoint}`, fragmentParams.token);
+            if (!this.service || Router.currentRoute !== nextRoute) {
+                this.setService(`json${endpoint}`, fragmentParams.token);
             }
-
             if (isFromEmailLink(fragmentParams)) {
-                this.submitDelegate(fragmentParams, () => {
-                    Router.routeTo(nextRoute, { trigger: true });
+                this.submitService(fragmentParams, (response) => {
+                    let routeTo = nextRoute;
+                    const status = _.get(response, "status");
+                    const isFailure = status && status.success === false;
+                    if (isFailure && isSelfRegistrationFlow(endpoint)) {
+                        const errorMessage = this.getRegistrationError(status.code, status.reason);
+                        // If no specific user registration msg, generic message (based on response code) will be used
+                        if (errorMessage) {
+                            Messages.addMessage({ message: errorMessage, type: Messages.TYPE_DANGER });
+                        }
+                        routeTo = Router.currentRoute;
+                    }
+                    Router.routeTo(routeTo, { trigger: true });
                 });
             } else {
+                this.data.fragmentParamString = getCurrentFragmentParamString.default();
                 // TODO: The first undefined argument is the deprecated realm which is defined in the
                 // CommonRoutesConfig login route. This needs to be removed as part of AME-11109.
-                this.data.args = [undefined, getCurrentFragmentParamString.default()];
+                this.data.args = [undefined, this.data.fragmentParamString];
                 this.setTranslationBase();
                 this.parentRender();
             }
@@ -70,7 +86,7 @@ define([
 
         restartProcess (e) {
             e.preventDefault();
-            delete this.delegate;
+            delete this.delegateService;
             delete this.stateData;
 
             EventManager.sendEvent(Constants.EVENT_CHANGE_VIEW, {

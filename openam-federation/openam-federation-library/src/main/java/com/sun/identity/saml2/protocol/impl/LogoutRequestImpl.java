@@ -24,6 +24,7 @@
  *
  * $Id: LogoutRequestImpl.java,v 1.3 2008/06/25 05:47:59 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -69,7 +70,7 @@ implements LogoutRequest {
     private EncryptedID encryptedId;
     private NameID nameId;
     private BaseID baseId;
-    private List sessionIndexList;
+    private List<String> sessionIndexList;
     
     /**
      * Constructs the <code>LogoutRequest</code> Object.
@@ -252,7 +253,7 @@ implements LogoutRequest {
      * @return A list containing objects of type <code>java.lang.String</code>
      * @see #setSessionIndex(List)
      */
-    public java.util.List getSessionIndex() {
+    public java.util.List<String> getSessionIndex() {
         return sessionIndexList;
     }
     

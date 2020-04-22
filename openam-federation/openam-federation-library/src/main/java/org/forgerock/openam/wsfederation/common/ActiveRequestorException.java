@@ -17,6 +17,7 @@ package org.forgerock.openam.wsfederation.common;
 
 import java.util.Locale;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.xml.namespace.QName;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.SOAPConstants;
@@ -38,6 +39,7 @@ public class ActiveRequestorException extends WSFederationException {
     private static final Debug DEBUG = Debug.getInstance("libWSFederation");
     private final QName faultCode;
     private final String key;
+    private int statusCode = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
 
     private ActiveRequestorException(QName faultCode, String key, String... args) {
         super(WSFederationConstants.BUNDLE_NAME, key, args);
@@ -96,5 +98,25 @@ public class ActiveRequestorException extends WSFederationException {
             DEBUG.error("An error occurred while creating SOAP fault", se);
             return null;
         }
+    }
+
+    /**
+     * Returns the HTTP status that should be used when returning SOAP Fault on HTTP response.
+     *
+     * @return this with status code set
+     */
+    public ActiveRequestorException setStatusCode(int status) {
+        statusCode = status;
+        return this;
+    }
+
+    /**
+     * Returns the HTTP status that should be used when returning SOAP Fault on HTTP response.
+     * Unless changed by {@link #setStatusCode(int)}, it returns status code (500).
+     *
+     * @return The HTTP status that should be returned by the SOAP Fault.
+     */
+    public int getStatusCode() {
+        return statusCode;
     }
 }

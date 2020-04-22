@@ -26,7 +26,7 @@
 
 --%>
 <%--
-   Portions Copyrighted 2012-2013 ForgeRock Inc
+   Portions Copyrighted 2012-2019 ForgeRock AS.
    Portions Copyrighted 2012 Open Source Solution Technology Corporation
 --%>
 
@@ -42,7 +42,8 @@ com.sun.identity.saml2.idpdiscovery.IDPDiscoveryWARConfigurator,
 com.sun.identity.saml2.idpdiscovery.SystemProperties,
 java.io.*,
 java.security.AccessController,
-java.util.Properties"
+java.util.Properties,
+org.owasp.esapi.ESAPI"
 %>
 
 <%
@@ -62,7 +63,7 @@ java.util.Properties"
     File configF = new File(configFile);
     if (configF.exists()) {
         errorMsg = "The IDP Discpvery Service have already been configued.<br>"
-            + "Configuration file : " + configFile + "<br><p><br>";
+            + "Configuration file : " + ESAPI.encoder().encodeForHTML(configFile) + "<br><p><br>";
         // reinitialize properties
         SystemProperties.initializeProperties(configFile);
         configured = true;
@@ -103,8 +104,7 @@ java.util.Properties"
                     configurator.setIDPDiscoveryConfig(configFile);
                 } catch (IOException ioex) {
                     ioex.printStackTrace();
-                    errorMsg = "Unable to create sample AMConfig.properties " +
-                       "file: " + ioex.getMessage();
+                    errorMsg = "Unable to create sample AMConfig.properties file: check log for details";
                 }
                 configured = true;
             } else {
@@ -163,7 +163,7 @@ java.util.Properties"
 
     <tr>
     <td>Debug directory</td>
-    <td><input name="debugDir" type="text" size="20" value="<%= debugDir == null ? "" : debugDir %>" /></td>
+    <td><input name="debugDir" type="text" size="20" value="<%= debugDir == null ? "" : ESAPI.encoder().encodeForHTML(debugDir) %>" /></td>
     </tr>
     <tr>
     <td>Debug Level:</td>
@@ -185,7 +185,7 @@ java.util.Properties"
     </tr>
     <tr>
     <td>Cookie Domain:</td>
-    <td><input name="cookieDomain" type="text" size="20" value="<%= cookieDomain == null ? "" : cookieDomain %>" /></td>
+    <td><input name="cookieDomain" type="text" size="20" value="<%= cookieDomain == null ? "" : ESAPI.encoder().encodeForHTML(cookieDomain) %>" /></td>
     </tr>
     <tr>
     <td>Secure Cookie:</td>
@@ -231,8 +231,8 @@ java.util.Properties"
 <%
 } else {
 %>
-IDP Discovery servce is successfully configured.<br>
-Configuration property is created at <%= configFile %><br>
+IDP Discovery service is successfully configured.<br>
+Configuration property is created at <%= ESAPI.encoder().encodeForHTML(configFile) %><br>
 <br>
 <p>
 <%

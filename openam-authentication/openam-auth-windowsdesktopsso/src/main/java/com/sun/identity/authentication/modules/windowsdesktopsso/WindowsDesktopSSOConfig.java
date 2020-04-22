@@ -24,6 +24,7 @@
  *
  * $Id: WindowsDesktopSSOConfig.java,v 1.3 2009/04/07 22:55:13 beomsuk Exp $
  *
+ * Portions Copyrighted 2017-2020 ForgeRock AS.
  */
 
 
@@ -34,9 +35,10 @@ import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 
 import com.iplanet.am.util.SystemProperties;
+import com.sun.identity.authentication.config.AMConfiguration;
 import com.sun.identity.shared.Constants;
 
-public class WindowsDesktopSSOConfig extends Configuration {
+public class WindowsDesktopSSOConfig extends AMConfiguration {
     public static final String defaultAppName = 
         "com.sun.identity.authentication.windowsdesktopsso";
     private static final String kerberosModuleName = 
@@ -49,6 +51,7 @@ public class WindowsDesktopSSOConfig extends Configuration {
     private String servicePrincipal = null;
     private String keytab = null;
     private String refreshConf = "false";
+    private boolean isInitiator = true;
 
     /**
      * Constructor
@@ -56,6 +59,7 @@ public class WindowsDesktopSSOConfig extends Configuration {
      * @param config
      */
     public WindowsDesktopSSOConfig(Configuration config) {
+        super(config);
         this.config = config;
     }
 
@@ -85,6 +89,14 @@ public class WindowsDesktopSSOConfig extends Configuration {
     }
 
     /**
+     * The isInitiator config option. Default is true;
+     * @param isInitiator a Boolean value
+     */
+    public void setIsInitiator(Boolean isInitiator) {
+        this.isInitiator = isInitiator;
+    }
+
+    /**
      * Returns AppConfigurationEntry array for the application <I>appName</I>
      * using Kerberos module.
      *
@@ -97,9 +109,14 @@ public class WindowsDesktopSSOConfig extends Configuration {
             hashmap.put("principal", servicePrincipal);
             if (kerberosModuleName.equalsIgnoreCase("com.ibm.security.auth.module.Krb5LoginModule")) {
                 hashmap.put("useKeytab", keytab);
-                hashmap.put("credsType", credsType);
                 hashmap.put("refreshKrb5Config", "false");
+                if (isInitiator && "acceptor".equalsIgnoreCase(credsType)) {
+                    hashmap.put("credsType", "both");
+                } else {
+                    hashmap.put("credsType", credsType);
+                }
             } else {
+                hashmap.put("isInitiator", Boolean.toString(isInitiator));
                 hashmap.put("storeKey", "true");
                 hashmap.put("useKeyTab", "true");
                 hashmap.put("keyTab", keytab);

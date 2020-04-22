@@ -24,10 +24,12 @@
  *
  * $Id: DefaultIDPAuthnContextMapper.java,v 1.9 2008/11/10 22:57:02 veiming Exp $
  *
- * Portions Copyrighted 2011-2016 ForgeRock AS.
+ * Portions Copyrighted 2011-2019 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins;
+
+import static org.forgerock.openam.utils.AuthLevelUtils.authLevelToInt;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.AuthnContext;
@@ -127,17 +129,21 @@ public class DefaultIDPAuthnContextMapper
             // Let's find an exact match, and break early if we do. If we find non-exact matches, then let's return
             // the first one, but only if there is no exact match amongst the rest of the classrefs.
             for (String requestedClassRef : requestedClassRefs) {
-                // In case the comparison is 'better', the exact match will not be sufficient.
+                // For exact, min, max comparison, the ideal is to return the requested authncontext, if available
                 if (!"better".equals(comparison) && classRefSchemesMap.containsKey(requestedClassRef)) {
                     classRef = requestedClassRef;
                     break;
-                } else if (classRef != null) {
+                } else {
                     List<String> singleClassRef = Collections.singletonList(requestedClassRef);
                     for (String configuredRef : classRefSchemesMap.keySet()) {
                         if (isAuthnContextMatching(singleClassRef, configuredRef, comparison, realm, idpEntityID)) {
                             classRef = configuredRef;
                             break;
                         }
+                    }
+                    if (StringUtils.isNotEmpty(classRef)) {
+                        // First one that satisfies min, max, better than criteria is returned
+                        break;
                     }
                 }
             }
@@ -203,14 +209,19 @@ public class DefaultIDPAuthnContextMapper
         }
         if ((authLevel != null) && (authLevel.length() != 0)) {
             try {
-                int level = Integer.parseInt(authLevel);
+                int level = authLevelToInt(authLevel);
                 Iterator iter = classRefLevelMap.keySet().iterator();
+                int closestLevel = -1;
                 while (iter.hasNext()) {
                     String key = (String) iter.next();
                     Integer value = (Integer) classRefLevelMap.get(key);
                     if (value != null && (level == value.intValue())) {
                         classRef = key;
                         break;
+                    }
+                    if (value != null && (level > value.intValue()) && (closestLevel < value.intValue())) {
+                        closestLevel = value.intValue();
+                        classRef = key;
                     }
                 }
             } catch (NumberFormatException ne) {
@@ -222,11 +233,7 @@ public class DefaultIDPAuthnContextMapper
             }
         }
         if (classRef == null) {
-            classRef = (String)IDPCache.defaultClassRefHash.get(
-                idpEntityID + "|" + realm);
-            if (classRef == null) {
-                classRef = SAML2Constants.CLASSREF_PASSWORD_PROTECTED_TRANSPORT;
-            }
+            throw new SAML2Exception(SAML2Utils.bundle.getString("noAuthnContextMatch"));
         }
         if (SAML2Utils.debug.messageEnabled()) {
             SAML2Utils.debug.message(

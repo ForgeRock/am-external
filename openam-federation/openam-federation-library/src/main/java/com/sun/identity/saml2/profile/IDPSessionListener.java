@@ -24,7 +24,7 @@
  *
  * $Id: IDPSessionListener.java,v 1.10 2009/09/23 22:28:31 bigfatrat Exp $
  *
- * Portions Copyrighted 2014-2015 ForgeRock AS.
+ * Portions Copyrighted 2014-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -232,16 +232,18 @@ public class IDPSessionListener
             IDPCache.idpSessionsByIndices.remove(sessionIndex);
             IDPCache.authnContextCache.remove(sessionIndex);
             String  sessID = sessionProvider.getSessionID(session);
-            if (IDPCache.idpSessionsBySessionID.get(sessID) != null) {
-                IDPCache.idpSessionsBySessionID.remove(sessID);
-                if ((agent != null) && agent.isRunning() && (saml2Svc != null)){
-                    saml2Svc.setIdpSessionCount(
-		        (long)IDPCache.idpSessionsBySessionID.size());
+            if (sessID != null) {
+                if (IDPCache.idpSessionsBySessionID.get(sessID) != null) {
+                    IDPCache.idpSessionsBySessionID.remove(sessID);
+                    if ((agent != null) && agent.isRunning() && (saml2Svc != null)){
+                        saml2Svc.setIdpSessionCount(
+		            (long)IDPCache.idpSessionsBySessionID.size());
+                    }
                 }
-            }
            
-            if (IDPCache.spSessionPartnerBySessionID.get(sessID) != null) {
-                IDPCache.spSessionPartnerBySessionID.remove(sessID);
+                if (IDPCache.spSessionPartnerBySessionID.get(sessID) != null) {
+                    IDPCache.spSessionPartnerBySessionID.remove(sessID);
+                }
             }
 
             // This failing should not cause the whole process to fail

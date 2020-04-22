@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2020 ForgeRock AS.
  */
 
 /**
@@ -26,7 +26,7 @@ import URIUtils from "org/forgerock/commons/ui/common/util/URIUtils";
  * @returns {Object} An Object of key value pairs
  */
 export function parseParameters (paramString) {
-    const object = _.isEmpty(paramString) ? {} : _.object(_.map(paramString.split("&"), (pair) => {
+    const object = _.isEmpty(paramString) ? {} : _.fromPairs(_.map(paramString.split("&"), (pair) => {
         const key = pair.substring(0, pair.indexOf("="));
         const value = pair.substring(pair.indexOf("=") + 1);
         return [key, value];

@@ -166,72 +166,7 @@ public class OAuth extends AMLoginModule {
 
         switch (state) {
             case ISAuthConstants.LOGIN_START: {
-                config.validateConfiguration();
-                serverName = request.getServerName();
-                StringBuilder originalUrl = getOriginalUrl(request);
-
-                // Find the domains for which we are configured
-
-                String ProviderLogoutURL = config.getLogoutServiceUrl();
-
-                String csrfStateTokenId = RandomStringUtils.randomAlphanumeric(32);
-                String csrfState = createAuthorizationState();
-                Token csrfStateToken = new Token(csrfStateTokenId, TokenType.GENERIC);
-                csrfStateToken.setAttribute(CoreTokenField.STRING_ONE, csrfState);
-
-                String nonce = null;
-                if (config.isOpenIDConnect()) {
-                    nonce = newNonceValue();
-                    csrfStateToken.setAttribute(CoreTokenField.STRING_TWO, nonce);
-                }
-
-                long expiryTime = currentTimeMillis() + TimeUnit.MINUTES.toMillis(maxDefaultIdleTime);
-                Calendar expiryTimeStamp = TimeUtils.fromUnixTime(expiryTime, TimeUnit.MILLISECONDS);
-                csrfStateToken.setExpiryTimestamp(expiryTimeStamp);
-
-                try {
-                    ctsStore.create(csrfStateToken);
-                } catch (CoreTokenException e) {
-                    OAuthUtil.debugError("OAuth.process(): Authorization redirect failed to be sent because the state "
-                            + "could not be stored");
-                    throw new AuthLoginException("OAuth.process(): Authorization redirect failed to be sent because "
-                            + "the state could not be stored", e);
-                }
-
-                // Set the return URL Cookie
-                // Note: The return URL cookie from the RedirectCallback can not
-                // be used because the framework changes the order of the 
-                // parameters in the query. OAuth2 requires an identical URL 
-                // when retrieving the token
-                for (String domain : AuthClientUtils.getCookieDomainsForRequest(request)) {
-                    CookieUtils.addCookieToResponse(response,
-                            CookieUtils.newCookie(COOKIE_PROXY_URL, proxyURL, "/", domain));
-                    CookieUtils.addCookieToResponse(response,
-                            CookieUtils.newCookie(COOKIE_ORIG_URL, originalUrl.toString(), "/", domain));
-                    CookieUtils.addCookieToResponse(response,
-                            CookieUtils.newCookie(NONCE_TOKEN_ID, csrfStateTokenId, "/", domain));
-                    if (ProviderLogoutURL != null && !ProviderLogoutURL.isEmpty()) {
-                        CookieUtils.addCookieToResponse(response,
-                                CookieUtils.newCookie(COOKIE_LOGOUT_URL, ProviderLogoutURL, "/", domain));
-                    }
-                }
-
-                // The Proxy is used to return with a POST to the module
-                setUserSessionProperty(ISAuthConstants.FULL_LOGIN_URL, originalUrl.toString());
-
-                String authServiceUrl = config.getAuthServiceUrl(proxyURL, csrfState, nonce);
-                OAuthUtil.debugMessage("OAuth.process(): New RedirectURL=" + authServiceUrl);
-
-                Callback[] callbacks1 = getCallback(2);
-                RedirectCallback rc = (RedirectCallback) callbacks1[0];
-                RedirectCallback rcNew = new RedirectCallback(authServiceUrl,
-                        null,
-                        "GET",
-                        rc.getStatusParameter(),
-                        rc.getRedirectBackUrlCookieName());
-                rcNew.setTrackingCookie(true);
-                replaceCallback(2, 0, rcNew);
-                return GET_OAUTH_TOKEN_STATE;
+                return loginToOIDCProvider(request, response);
             }
 
             case GET_OAUTH_TOKEN_STATE: {
@@ -269,12 +204,17 @@ public class OAuth extends AMLoginModule {
 
                 try {
                     Token csrfStateToken = ctsStore.read(OAuthUtil.findCookie(request, NONCE_TOKEN_ID));
-                    ctsStore.deleteAsync(csrfStateToken);
-                    String expectedCsrfState = csrfStateToken.getAttribute(CoreTokenField.STRING_ONE);
-                    if (!expectedCsrfState.equals(csrfState)) {
-                        OAuthUtil.debugError("OAuth.process(): Authorization call-back failed because the state parameter "
-                                + "contained an unexpected value");
-                        throw new AuthLoginException(BUNDLE_NAME, "incorrectState", null);
+                    try {
+                        if (csrfStateToken == null
+                                || !csrfState.equals(csrfStateToken.getAttribute(CoreTokenField.STRING_ONE))) {
+                            OAuthUtil.debugWarning("OAuth.process(): Authorization call-back failed " +
+                                    "because the state parameter contained an unexpected value");
+                            return loginToOIDCProvider(request, response);
+                        }
+                    } finally {
+                        if (csrfStateToken != null) {
+                            ctsStore.deleteAsync(csrfStateToken);
+                        }
                     }
 
                     validateInput("code", code, "HTTPParameterValue", 2000, false);
@@ -406,6 +346,75 @@ public class OAuth extends AMLoginModule {
         }
         
         throw new AuthLoginException(BUNDLE_NAME, "unknownState", null);
+    }
+
+    private int loginToOIDCProvider(HttpServletRequest request, HttpServletResponse response) throws AuthLoginException {
+        config.validateConfiguration();
+        serverName = request.getServerName();
+        StringBuilder originalUrl = getOriginalUrl(request);
+
+        // Find the domains for which we are configured
+
+        String ProviderLogoutURL = config.getLogoutServiceUrl();
+
+        String csrfStateTokenId = RandomStringUtils.randomAlphanumeric(32);
+        String csrfState = createAuthorizationState();
+        Token csrfStateToken = new Token(csrfStateTokenId, TokenType.GENERIC);
+        csrfStateToken.setAttribute(CoreTokenField.STRING_ONE, csrfState);
+
+        String nonce = null;
+        if (config.isOpenIDConnect()) {
+            nonce = newNonceValue();
+            csrfStateToken.setAttribute(CoreTokenField.STRING_TWO, nonce);
+        }
+
+        long expiryTime = currentTimeMillis() + TimeUnit.MINUTES.toMillis(maxDefaultIdleTime);
+        Calendar expiryTimeStamp = TimeUtils.fromUnixTime(expiryTime, TimeUnit.MILLISECONDS);
+        csrfStateToken.setExpiryTimestamp(expiryTimeStamp);
+
+        try {
+            ctsStore.create(csrfStateToken);
+        } catch (CoreTokenException e) {
+            OAuthUtil.debugError("OAuth.process(): Authorization redirect failed to be sent because the state "
+                    + "could not be stored");
+            throw new AuthLoginException("OAuth.process(): Authorization redirect failed to be sent because "
+                    + "the state could not be stored", e);
+        }
+
+        // Set the return URL Cookie
+        // Note: The return URL cookie from the RedirectCallback can not
+        // be used because the framework changes the order of the
+        // parameters in the query. OAuth2 requires an identical URL
+        // when retrieving the token
+        for (String domain : AuthClientUtils.getCookieDomainsForRequest(request)) {
+            CookieUtils.addCookieToResponse(response,
+                    CookieUtils.newCookie(COOKIE_PROXY_URL, proxyURL, "/", domain));
+            CookieUtils.addCookieToResponse(response,
+                    CookieUtils.newCookie(COOKIE_ORIG_URL, originalUrl.toString(), "/", domain));
+            CookieUtils.addCookieToResponse(response,
+                    CookieUtils.newCookie(NONCE_TOKEN_ID, csrfStateTokenId, "/", domain));
+            if (ProviderLogoutURL != null && !ProviderLogoutURL.isEmpty()) {
+                CookieUtils.addCookieToResponse(response,
+                        CookieUtils.newCookie(COOKIE_LOGOUT_URL, ProviderLogoutURL, "/", domain));
+            }
+        }
+
+        // The Proxy is used to return with a POST to the module
+        setUserSessionProperty(ISAuthConstants.FULL_LOGIN_URL, originalUrl.toString());
+
+        String authServiceUrl = config.getAuthServiceUrl(proxyURL, csrfState, nonce);
+        OAuthUtil.debugMessage("OAuth.process(): New RedirectURL=" + authServiceUrl);
+
+        Callback[] callbacks1 = getCallback(2);
+        RedirectCallback rc = (RedirectCallback) callbacks1[0];
+        RedirectCallback rcNew = new RedirectCallback(authServiceUrl,
+                null,
+                "GET",
+                rc.getStatusParameter(),
+                rc.getRedirectBackUrlCookieName());
+        rcNew.setTrackingCookie(true);
+        replaceCallback(2, 0, rcNew);
+        return GET_OAUTH_TOKEN_STATE;
     }
 
     /**

@@ -287,7 +287,9 @@ public class OAuthConf {
             postParameters.put(PARAM_REDIRECT_URI, OAuthUtil.oAuthEncode(authServiceURL));
             postParameters.put(PARAM_CLIENT_SECRET, clientSecret);
             postParameters.put(PARAM_CODE, OAuthUtil.oAuthEncode(code));
-            postParameters.put(PARAM_STATE, csrfState);
+            if (isMixUpMitigationEnabled()) {
+                postParameters.put(PARAM_STATE, csrfState);
+            }
             postParameters.put(PARAM_GRANT_TYPE, OAuth2Constants.TokenEndpoint.AUTHORIZATION_CODE);
 
         } catch (UnsupportedEncodingException ex) {

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2019 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
@@ -89,7 +89,7 @@ public class JwtHandler {
             } else if (signedJwt.getHeader().getAlgorithm().getAlgorithmType().equals(JwsAlgorithmType.HMAC)) {
                 throw new AuthLoginException(RESOURCE_BUNDLE_NAME, BUNDLE_KEY_INVALID_SIGNING_ALG, null);
             } else if (StringUtils.isNotEmpty(config.getCryptoContextValue())) {
-                resolver = openIdResolverCache.getResolverForIssuer(config.getCryptoContextValue());
+                resolver = openIdResolverCache.getResolverForIssuer(jwtClaimSetIssuer, config.getCryptoContextValue());
             }
             if (resolver == null) {
                 String cryptoContextValue;

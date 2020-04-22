@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2017 ForgeRock AS.
+ * Copyright 2011-2020 ForgeRock AS.
  */
 
 require.config({
@@ -35,13 +35,13 @@ require.config({
     paths: {
         "autosizeInput": "libs/jquery.autosize.input.min",
 
-        "backbone"           : "libs/backbone-1.1.2-min",
-        "backbone.paginator" : "libs/backbone.paginator.min-2.0.2-min",
-        "backbone-relational": "libs/backbone-relational-0.9.0-min",
+        "backbone"           : "libs/backbone-1.4.0-min",
+        "backbone.paginator" : "libs/backbone.paginator.min-2.0.8-min",
+        "backbone-relational": "libs/backbone-relational-0.10.0-min",
 
-        "backgrid"          : "libs/backgrid.min-0.3.5-min",
-        "backgrid-filter"   : "libs/backgrid-filter.min-0.3.5-min",
-        "backgrid.paginator": "libs/backgrid-paginator-0.3.5-custom.min",
+        "backgrid"          : "libs/backgrid-custom.min",
+        "backgrid-filter"   : "libs/backgrid-filter.min-0.3.7-min",
+        "backgrid.paginator": "libs/backgrid-paginator-custom.min",
         "backgrid-selectall": "libs/backgrid-select-all-0.3.5-min",
 
         "bootstrap"               : "libs/bootstrap-3.3.5-custom",
@@ -55,13 +55,13 @@ require.config({
         "form2js"          : "libs/form2js-2.0-769718a",
         "get-node-dimensions": "libs/get-node-dimensions.min",
         "handlebars"       : "libs/handlebars-4.0.5",
-        "i18next"          : "libs/i18next-1.7.3-min",
-        "jquery"           : "libs/jquery-2.1.1-min",
+        "i18next"          : "libs/i18next-1.10.3-standard",
+        "jquery"           : "libs/jquery-2.1.1-patched",
         "js2form"          : "libs/js2form-2.0-769718a",
         "jsonEditor"       : "libs/jsoneditor-0.7.23-custom",
-        "lodash"           : "libs/lodash-3.10.1-min",
+        "lodash"           : "libs/lodash-4.17.15-min",
         "microplugin"      : "libs/microplugin-0.0.3",
-        "moment"           : "libs/moment-2.18.1-min",
+        "moment"           : "libs/moment-2.20.1-min",
         "popoverclickaway" : "libs/popover-clickaway",
         "qrcode"           : "libs/qrcode-1.0.0-min",
         "react-bootstrap-table": "libs/react-bootstrap-table-3.1.6-min",

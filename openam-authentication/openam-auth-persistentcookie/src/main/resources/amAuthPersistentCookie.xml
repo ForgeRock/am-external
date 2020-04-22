@@ -26,6 +26,13 @@
             resourceName="persistentcookie">
 
             <Organization>
+                <AttributeSchema name="SigningKeyValidator"
+                                 type="validator"
+                                 syntax="string">
+                    <DefaultValues>
+                        <Value>org.forgerock.openam.authentication.modules.persistentcookie.validation.SigningKeyValidator</Value>
+                    </DefaultValues>
+                </AttributeSchema>
                 <AttributeSchema
                         name="openam-auth-persistent-cookie-idle-time"
                         type="single" syntax="number_range" rangeStart="0" rangeEnd="2147483647"
@@ -80,9 +87,14 @@
                         <Value>true</Value>
                     </DefaultValues>
                 </AttributeSchema>
-                <AttributeSchema name="openam-auth-persistent-cookie-hmac-key" type="single" syntax="password"
-                    i18nKey="a006"
-                    order="600" resourceName="hmacKey">
+                <AttributeSchema
+                        name="openam-auth-persistent-cookie-hmac-key"
+                        type="single"
+                        syntax="password"
+                        i18nKey="a006"
+                        order="600"
+                        validator="SigningKeyValidator"
+                        resourceName="hmacKey">
                     <DefaultValues>
                         <Value>@256_BIT_RANDOM_SECURE@</Value>
                     </DefaultValues>
@@ -94,6 +106,13 @@
                     </DefaultValues>
                 </AttributeSchema>
                 <SubSchema name="serverconfig" inheritance="multiple" resourceName="USE-PARENT">
+                    <AttributeSchema name="SigningKeyValidator"
+                                     type="validator"
+                                     syntax="string">
+                        <DefaultValues>
+                            <Value>org.forgerock.openam.authentication.modules.persistentcookie.validation.SigningKeyValidator</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
                     <AttributeSchema
                             name="openam-auth-persistent-cookie-idle-time"
                             type="single" syntax="number_range" rangeStart="0" rangeEnd="2147483647"
@@ -148,9 +167,14 @@
                             <Value>true</Value>
                         </DefaultValues>
                     </AttributeSchema>
-                    <AttributeSchema name="openam-auth-persistent-cookie-hmac-key" type="single" syntax="password"
-                        i18nKey="a006"
-                        order="600" resourceName="hmacKey">
+                    <AttributeSchema
+                            name="openam-auth-persistent-cookie-hmac-key"
+                            type="single"
+                            syntax="password"
+                            i18nKey="a006"
+                            order="600"
+                            validator="SigningKeyValidator"
+                            resourceName="hmacKey">
                         <DefaultValues>
                             <Value>@256_BIT_RANDOM_SECURE@</Value>
                         </DefaultValues>

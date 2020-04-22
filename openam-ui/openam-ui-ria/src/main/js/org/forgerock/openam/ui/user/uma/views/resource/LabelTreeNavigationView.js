@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 define([
@@ -57,7 +57,7 @@ define([
             this.callback = callback;
 
             UMAService.labels.all().done(function (data) {
-                if (!_.any(data.result, function (label) {
+                if (!_.some(data.result, function (label) {
                     return label.name.toLowerCase() === "starred";
                 })) {
                     UMAService.labels.create("starred", "STAR");

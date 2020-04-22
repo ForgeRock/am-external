@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2018 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.deviceprint;
@@ -25,7 +25,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+
+import com.sun.identity.authentication.spi.AuthLoginException;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.core.rest.devices.deviceprint.DeviceIdDao;
@@ -39,6 +42,7 @@ import org.forgerock.openam.utils.StringUtils;
 class ProfilePersister {
 
     private static final String DEBUG_NAME = "amAuthDeviceIdSave";
+    private static final String BUNDLE_NAME = "amAuthDeviceIdSave";
     private static final Debug DEBUG = Debug.getInstance(DEBUG_NAME);
 
     private final DeviceIdDao devicesDao;
@@ -46,6 +50,7 @@ class ProfilePersister {
     private final int maxProfilesAllowed;
     private final String username;
     private final String realm;
+    private final Set<String> userSearchAttributes;
 
     /**
      * Constructs a new ProfilePersister instance.
@@ -53,21 +58,25 @@ class ProfilePersister {
      * @param maxProfilesAllowed The maximum device print profiles a user is allowed.
      * @param username The username.
      * @param realm The realm.
+     * @param userSearchAttributes Search alias attributes
      * @param devicesDao An instance of the DeviceIdDao.
      */
-    ProfilePersister(int maxProfilesAllowed, String username, String realm, DeviceIdDao devicesDao) {
+    ProfilePersister(int maxProfilesAllowed, String username, String realm, DeviceIdDao devicesDao,
+            Set<String> userSearchAttributes) {
         this.maxProfilesAllowed = maxProfilesAllowed;
         this.username = username;
         this.realm = realm;
         this.devicesDao = devicesDao;
+        this.userSearchAttributes = userSearchAttributes;
     }
 
     /**
      * Saves the device print as a new profile, with a generated name.
      *
      * @param devicePrint The device print.
+     * @throws AuthLoginException If the profile save fails.
      */
-    void saveDevicePrint(Map<String, Object> devicePrint) {
+    void saveDevicePrint(Map<String, Object> devicePrint) throws AuthLoginException {
         saveDevicePrint(null, devicePrint);
     }
 
@@ -75,11 +84,12 @@ class ProfilePersister {
      * Saves the device print as a new profile, with the specified name.
      *
      * @param devicePrint The device print.
+     * @throws AuthLoginException If the profile save fails.
      */
-    void saveDevicePrint(String deviceName, Map<String, Object> devicePrint) {
+    void saveDevicePrint(String deviceName, Map<String, Object> devicePrint) throws AuthLoginException  {
 
         try {
-            List<JsonValue> profiles = devicesDao.getDeviceProfiles(username, realm);
+            List<JsonValue> profiles = devicesDao.getDeviceProfiles(username, realm, userSearchAttributes);
 
             while (profiles.size() >= maxProfilesAllowed) {
                 DEBUG.message("Removing oldest user profile due to maximum profiles stored quantity");
@@ -97,9 +107,10 @@ class ProfilePersister {
 
             profiles.add(JsonValue.json(profile));
 
-            devicesDao.saveDeviceProfiles(username, realm, profiles);
+            devicesDao.saveDeviceProfiles(username, realm, profiles, userSearchAttributes);
         } catch (Exception e) {
             DEBUG.error("Cannot get User's Device Print Profiles attribute. " + e);
+            throw new AuthLoginException(BUNDLE_NAME, "deviceprofilesavefail", null, e);
         }
     }
 

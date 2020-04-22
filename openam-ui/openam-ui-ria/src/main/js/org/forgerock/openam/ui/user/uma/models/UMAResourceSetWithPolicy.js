@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 define([
@@ -67,7 +67,7 @@ define([
             parse: true
         }],
         toggleStarred (starredLabelId) {
-            var isStarred = _.contains(this.get("labels"), starredLabelId);
+            var isStarred = _.includes(this.get("labels"), starredLabelId);
 
             if (isStarred) {
                 this.set("labels", _.reject(this.get("labels"), function (label) {

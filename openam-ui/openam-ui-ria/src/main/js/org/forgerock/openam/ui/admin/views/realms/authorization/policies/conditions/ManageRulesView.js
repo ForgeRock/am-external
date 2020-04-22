@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2020 ForgeRock AS.
  */
 
 define([
@@ -85,7 +85,7 @@ define([
         buildList () {
             var self = this,
                 newRule = null,
-                operators = _.pluck(this.data.operators, "title"),
+                operators = _.map(this.data.operators, "title"),
                 properties = null;
 
             function buildListItem (data, container) {
@@ -94,7 +94,7 @@ define([
                 }
 
                 _.each(data, function (item) {
-                    if (item && _.contains(operators, item.type)) {
+                    if (item && _.includes(operators, item.type)) {
                         newRule = new OperatorRulesView();
                         newRule.render(self.data, container, self.idPrefix + self.idCount, self.idCount === 0);
                         newRule.setValue(item.type);
@@ -128,7 +128,7 @@ define([
              * one or less, the root logical will be striped from the json before it is saved.
              */
 
-            if (!this.localEntity || _.contains(operators, this.localEntity.type) === false) {
+            if (!this.localEntity || _.includes(operators, this.localEntity.type) === false) {
                 properties = _.clone(this.localEntity);
                 this.localEntity = { type: "AND" };
                 this.localEntity[this.properties] = [properties];

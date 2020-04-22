@@ -24,8 +24,12 @@ module.exports = function (grunt) {
             swagger: {
                 files: [{
                     expand: true,
-                    cwd: "node_modules/swagger-ui/dist/",
-                    src: ["swagger-ui.js", "css/*", "fonts/*", "images/*", "lang/*", "lib/*"],
+                    cwd: "node_modules/swagger-ui-dist/",
+                    src: [
+                        "swagger-ui-bundle.js",
+                        "swagger-ui-standalone-preset.js",
+                        "swagger-ui.css"
+                    ],
                     dest: compiledDirectory
                 }],
                 options: {
@@ -35,7 +39,7 @@ module.exports = function (grunt) {
             swaggerThemes: {
                 files: [{
                     expand: true,
-                    cwd: "node_modules/swagger-ui-themes/themes/",
+                    cwd: "node_modules/swagger-ui-themes/themes/3.x/",
                     src: ["theme-flattop.css"],
                     dest: compiledDirectory
                 }]

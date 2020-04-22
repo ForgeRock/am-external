@@ -16,15 +16,16 @@
 
 package org.forgerock.openam.authentication.modules.oidc;
 
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.forgerock.openam.utils.CollectionUtils.asOrderedSet;
+import static org.forgerock.openam.utils.CollectionUtils.asSet;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static org.fest.assertions.Assertions.*;
-import static org.forgerock.openam.utils.CollectionUtils.*;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.Test;
 
 
 public class OpenIdConnectConfigTest {

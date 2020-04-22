@@ -24,7 +24,7 @@
  *
  * $Id: DefaultLibrarySPAccountMapper.java,v 1.12 2009/03/12 20:34:45 huacui Exp $
  *
- * Portions Copyrighted 2013-2015 ForgeRock AS.
+ * Portions Copyrighted 2013-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -99,9 +99,8 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
         NameID nameID;
         EncryptedID encryptedID = assertion.getSubject().getEncryptedID();
 
-        Set<PrivateKey> decryptionKeys = null;
+        Set<PrivateKey> decryptionKeys = KeyUtil.getDecryptionKeys(getSSOConfig(realm, hostEntityID));
         if (encryptedID != null) {
-            decryptionKeys = KeyUtil.getDecryptionKeys(getSSOConfig(realm, hostEntityID));
             nameID = encryptedID.decrypt(decryptionKeys);
         } else {
             nameID = assertion.getSubject().getNameID();

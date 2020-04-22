@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2020 ForgeRock AS.
  */
 
 /**
@@ -57,7 +57,7 @@ define([
 
     function groupTopLevelSimpleProperties (raw) {
         const collectionProperties = _(raw.properties)
-            .pick((property) => _.has(property, "properties"))
+            .pickBy((property) => _.has(property, "properties"))
             .keys()
             .value();
 
@@ -97,7 +97,7 @@ define([
     * @returns {JSONSchema} JSONSchema new JSONSchema object
     */
     function ungroupCollectionProperties (raw, groupKey) {
-        const collectionProperties = _.pick(raw.properties[groupKey].properties, (value) => {
+        const collectionProperties = _.pickBy(raw.properties[groupKey].properties, (value) => {
             return value.type === "object" && _.has(value, "properties");
         });
 
@@ -198,7 +198,7 @@ define([
             }
         }
         getPasswordKeys () {
-            const passwordProperties = _.pick(this.raw.properties, (property) => {
+            const passwordProperties = _.pickBy(this.raw.properties, (property) => {
                 const propertyPath = this.hasInheritance(property) ? "properties.value.format" : "format";
                 return _.get(property, propertyPath) === "password";
             });
@@ -209,7 +209,7 @@ define([
             return _.mapValues(this.raw.properties, (property) => new JSONSchema(property));
         }
         getRequiredPropertyKeys () {
-            const requiredProperties = _.pick(this.raw.properties, (property) => {
+            const requiredProperties = _.pickBy(this.raw.properties, (property) => {
                 const propertyPath = this.hasInheritance(property) ? "properties.value.required" : "required";
                 return _.get(property, propertyPath) === true;
             });
@@ -252,8 +252,8 @@ define([
         removeUnrequiredNonDefaultProperties () {
             const schema = _.cloneDeep(this.raw);
             const defaultProperties = this.raw.defaultProperties;
-            schema.properties = _.pick(this.raw.properties, (property, key) => {
-                return _.contains(defaultProperties, key) || property.required;
+            schema.properties = _.pickBy(this.raw.properties, (property, key) => {
+                return _.includes(defaultProperties, key) || property.required;
             });
             return new JSONSchema(schema);
         }

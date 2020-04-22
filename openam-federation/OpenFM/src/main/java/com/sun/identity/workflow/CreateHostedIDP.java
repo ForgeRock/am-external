@@ -24,9 +24,12 @@
  *
  * $Id: CreateHostedIDP.java,v 1.9 2008/06/25 05:50:01 qcheng Exp $
  *
+ * Portions Copyrighted 2019 ForgeRock AS.
  */
 
 package com.sun.identity.workflow;
+
+import static com.google.common.html.HtmlEscapers.htmlEscaper;
 
 import com.sun.identity.cot.COTException;
 import com.sun.identity.saml2.common.SAML2Constants;
@@ -88,8 +91,8 @@ public class CreateHostedIDP
                     createExtendedDataTemplate(entityId, map,
                     getRequestURL(params));
             } catch (SAML2MetaException e) {
-                return e.getMessage();
-            }
+                //return error message with escaped html tags
+                return htmlEscaper().escape(e.getMessage());            }
         }
 
         String[] results = ImportSAML2MetaData.importData(

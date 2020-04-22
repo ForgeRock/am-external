@@ -24,7 +24,7 @@
  *
  * $Id: SAML2MetaUtils.java,v 1.9 2009/09/21 17:28:12 exu Exp $
  *
- * Portions Copyrighted 2010-2015 ForgeRock AS.
+ * Portions Copyrighted 2010-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.meta;
 
@@ -766,10 +766,21 @@ public final class SAML2MetaUtils {
 
                     String newTag = type.substring(0, type.length() - 4);
 
+                    String extraNS = "";
+                    if (newTag.contains(":")) {
+                        String prefix = newTag.substring(0, newTag.indexOf(":"));
+                        String nsvalue = child.getAttributeNS(SAML2Constants.NS_XML, prefix);
+                        if (!SAML2MetaSecurityUtils.NS_MD_QUERY.equals(nsvalue)) {
+                            extraNS = " " + SAML2Constants.NAMESPACE_PREFIX + ":" + prefix +
+                               SAML2Constants.EQUAL + SAML2Constants.QUOTE +
+                               SAML2MetaSecurityUtils.NS_MD_QUERY + SAML2Constants.QUOTE;
+                       }
+                    }
+
                     String xmlstr = XMLUtils.print(child);
                     int index = xmlstr.indexOf(
                         SAML2MetaConstants.ROLE_DESCRIPTOR);
-                    xmlstr = "<" + newTag + xmlstr.substring(index +
+                    xmlstr = "<" + newTag + extraNS + xmlstr.substring(index +
                         SAML2MetaConstants.ROLE_DESCRIPTOR.length());
                     if (!xmlstr.endsWith("/>")) {
                         index = xmlstr.lastIndexOf("</");

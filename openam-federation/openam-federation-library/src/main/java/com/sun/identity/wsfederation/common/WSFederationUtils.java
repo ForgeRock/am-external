@@ -24,7 +24,7 @@
  *
  * $Id: WSFederationUtils.java,v 1.6 2009/10/28 23:58:58 exu Exp $
  *
- * Portions Copyrighted 2015-2016 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.common;
 
@@ -275,7 +275,7 @@ public class WSFederationUtils {
     public static boolean isSignatureValid(Assertion assertion, String realm, 
         String issuer)
     {
-        boolean valid = false;
+        boolean valid;
 
         String signedXMLString = assertion.toString(true,true);
         String id = assertion.getAssertionID();
@@ -285,17 +285,12 @@ public class WSFederationUtils {
                 metaManager.getEntityDescriptor(realm, issuer);
             X509Certificate cert = KeyUtil.getVerificationCert(idp, issuer, 
                 true);
-            XMLSignatureManager manager = XMLSignatureManager.getInstance();
-            valid = SigManager.getSigInstance().verify(
-                signedXMLString, id, Collections.singleton(cert));
-        } catch (WSFederationMetaException ex) {
-            valid = false;
-        } catch (SAML2Exception ex) {
+            valid = SigManager.getSigInstance().verify(signedXMLString, "AssertionID", id, Collections.singleton(cert));
+        } catch (WSFederationMetaException | SAML2Exception ex) {
             valid = false;
         }
-        
-        if ( ! valid )
-        {
+
+        if (!valid) {
             String[] data = {LogUtil.isErrorLoggable(Level.FINER) ? 
                 signedXMLString : id,
                 realm, issuer

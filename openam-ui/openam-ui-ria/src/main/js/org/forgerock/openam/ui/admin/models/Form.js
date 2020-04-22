@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 /**
@@ -33,7 +33,7 @@ define([
         this.values = values;
 
         // Attributes that are identifiable as passwords
-        const passwordProperties = _.where(schema.properties, { format: "password" });
+        const passwordProperties = _.filter(schema.properties, { format: "password" });
         this.passwordAttributes = _.map(passwordProperties, (property) => _.findKey(schema.properties, property));
 
         JSONEditor.plugins.selectize.enable = true;
@@ -82,8 +82,8 @@ define([
      * @returns {Object}          Filtered object
      */
     function filterEmptyAttributes (object, attributes) {
-        return _.omit(object, function (value, key) {
-            if (_.contains(attributes, key)) {
+        return _.omitBy(object, function (value, key) {
+            if (_.includes(attributes, key)) {
                 return _.isEmpty(value);
             } else {
                 return false;

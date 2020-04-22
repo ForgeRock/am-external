@@ -26,7 +26,7 @@ const obj = new AbstractDelegate(`${Constants.host}${Constants.context}/json`);
 
 export function getByUsernameStartsWith (realm, username) {
     return obj.serviceCall({
-        url: fetchUrl(`/users?_queryId=${username}*`, { realm }),
+        url: fetchUrl(`/users?_queryId=${encodeURIComponent(username)}*`, { realm }),
         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" }
     }).then((response) => response.result);
 }

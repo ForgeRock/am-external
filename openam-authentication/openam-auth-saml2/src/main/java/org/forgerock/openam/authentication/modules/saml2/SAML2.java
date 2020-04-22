@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2018 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
@@ -84,6 +84,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.SAML2Store;
+import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.xui.XUIState;
@@ -622,12 +623,16 @@ public class SAML2 extends AMLoginModule {
         //if we support single logout sp inititated from the auth module's resulting session
         setUserSessionProperty(SAML2Constants.SINGLE_LOGOUT, String.valueOf(singleLogoutEnabled));
 
-        if (singleLogoutEnabled) { //we also need to store the relay state
+        if (singleLogoutEnabled && StringUtils.isNotEmpty(sloRelayState)) { //we also need to store the relay state
             setUserSessionProperty(SAML2Constants.RELAY_STATE, sloRelayState);
+            // RelayState property name is not unique and can be overwritten in session, so also store separately
+            setUserSessionProperty(SAML2Constants.SINGLE_LOGOUT_URL, sloRelayState);
         }
 
         //we need the following for idp initiated slo as well as sp, so always include it
-        setUserSessionProperty(SAML2Constants.SESSION_INDEX, sessionIndex);
+        if (sessionIndex != null) {
+            setUserSessionProperty(SAML2Constants.SESSION_INDEX, sessionIndex);
+        }
         setUserSessionProperty(SAML2Constants.IDPENTITYID, entityName);
         setUserSessionProperty(SAML2Constants.SPENTITYID, SPSSOFederate.getSPEntityId(metaAlias));
         setUserSessionProperty(SAML2Constants.METAALIAS, metaAlias);
@@ -678,12 +683,14 @@ public class SAML2 extends AMLoginModule {
             Set<String> value = attrMap.get(name);
             StringBuilder toStore = new StringBuilder();
 
-            // | is defined as the property value delimiter, cf FMSessionProvider#setProperty
-            for (String toAdd : value) {
-                toStore.append(com.sun.identity.shared.StringUtils.getEscapedValue(toAdd))
+            if (CollectionUtils.isNotEmpty(value)) {
+                // | is defined as the property value delimiter, cf FMSessionProvider#setProperty
+                for (String toAdd : value) {
+                    toStore.append(com.sun.identity.shared.StringUtils.getEscapedValue(toAdd))
                         .append(PROPERTY_VALUES_SEPARATOR);
+                }
+                toStore.deleteCharAt(toStore.length() - 1);
             }
-            toStore.deleteCharAt(toStore.length() - 1);
             setUserSessionProperty(name, toStore.toString());
         }
     }

@@ -96,6 +96,7 @@ public class ActiveRequest extends WSFederationAction {
      * Processes the incoming SOAP request {@link #parseAndValidateRequest(SOAPMessage, IDPSSOConfigElement) parsing
      * and validating the request}, and then authenticating the end-user using a customizable {@link WsFedAuthenticator}
      * implementation. In case of a successful login, a SAML1.1 RequestedSecurityToken is returned in a SOAP message.
+     * In case of a SOAPFault, the HTTP response status may be taken from {@link ActiveRequestorException}
      *
      * @throws ServletException If there was a problem whilst rendering the response.
      * @throws IOException If there was an IO error whilst working with the request or response.
@@ -139,6 +140,7 @@ public class ActiveRequest extends WSFederationAction {
         MimeHeaders headers = SOAPCommunicator.getInstance().getHeaders(request);
         SOAPMessage soapFault;
         SSOToken ssoToken = null;
+        int httpStatus = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
         try (InputStream is = request.getInputStream()) {
             SOAPMessage soapMessage = MessageFactory.newInstance(SOAPConstants.SOAP_1_2_PROTOCOL)
                     .createMessage(headers, is);
@@ -173,6 +175,7 @@ public class ActiveRequest extends WSFederationAction {
         } catch (ActiveRequestorException are) {
             DEBUG.message("An error occurred while processing the Active Request", are);
             soapFault = are.getSOAPFault();
+            httpStatus = are.getStatusCode();
         } catch (SOAPException | WSFederationException ex) {
             DEBUG.error("An unexpected error occurred while processing the SOAP message", ex);
             soapFault = newReceiverException(ex).getSOAPFault();
@@ -192,7 +195,7 @@ public class ActiveRequest extends WSFederationAction {
                 if (soapFault.saveRequired()) {
                     soapFault.saveChanges();
                 }
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.setStatus(httpStatus);
                 SAML2Utils.putHeaders(soapFault.getMimeHeaders(), response);
                 os = response.getOutputStream();
                 soapFault.writeTo(os);
@@ -238,17 +241,21 @@ public class ActiveRequest extends WSFederationAction {
 
         final String stsEndpoint = WSFederationMetaUtils.getEndpointBaseUrl(idpConfig, request)
                 + "/WSFederationServlet/sts/metaAlias" + idpConfig.getMetaAlias();
-        final Date expiresDate;
-        try {
-            expiresDate = DateUtils.stringToDate(expires);
-        } catch (ParseException pe) {
-            throw newSenderException("invalidOrExpiredRequest");
+        Date expiresDate = null;
+        if (expires != null) {
+            try {
+                expiresDate = DateUtils.stringToDate(expires);
+            } catch (ParseException pe) {
+                throw newSenderException("invalidOrExpiredRequest");
+            }
+        } else {
+            DEBUG.warning("The Expires attribute was not provided, can't validate if request has expired.");
         }
         if (!ACTION.equals(action)) {
             throw newSenderException("invalidValueForElement", "wsa:Action");
         } else if (StringUtils.isEmpty(username) || password.length == 0) {
             throw newSenderException("unableToAuthenticate");
-        } else if (newDate().after(expiresDate)) {
+        } else if (expiresDate != null && newDate().after(expiresDate)) {
             throw newSenderException("timeInvalid");
         } else {
             try {
@@ -295,13 +302,21 @@ public class ActiveRequest extends WSFederationAction {
     private void extractSecurityDetails(Element element) throws WSFederationException {
         username = getSingleElement(element, WSSE_NAMESPACE, "Username");
         password = getSingleElement(element, WSSE_NAMESPACE, "Password").toCharArray();
-        expires = getSingleElement(element, WSU_NAMESPACE, "Expires");
+        expires = getSingleElement(element, WSU_NAMESPACE, "Expires", true);
     }
 
     private String getSingleElement(Element element, String namespaceURI, String localName)
             throws WSFederationException {
+        return getSingleElement(element, namespaceURI, localName, false);
+    }
+
+    private String getSingleElement(Element element, String namespaceURI, String localName, boolean optional)
+            throws WSFederationException {
         NodeList nodeList = element.getElementsByTagNameNS(namespaceURI, localName);
         if (nodeList.getLength() == 0) {
+            if (optional) {
+                return null;
+            }
             throw newSenderException("missingElement", localName, namespaceURI);
         } else if (nodeList.getLength() > 1) {
             throw newSenderException("tooManyElements", localName, namespaceURI);

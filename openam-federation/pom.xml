@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam</artifactId>
-        <version>5.5.1</version>
+        <version>5.5.2</version>
     </parent>
 
     <!-- Component Definition -->
@@ -41,10 +41,10 @@
         <module>OpenFM</module>
     </modules>
     <repositories>
-        <repository>
-            <id>forgerock-private-releases</id>
-            <url>https://maven.forgerock.org/repo/private-releases</url>
-        </repository>
-    </repositories>
-</project>
+          <repository>
+              <id>forgerock-private-releases</id>
+              <url>https://maven.forgerock.org/repo/private-releases</url>
+          </repository>
+      </repositories>
+  </project>
 

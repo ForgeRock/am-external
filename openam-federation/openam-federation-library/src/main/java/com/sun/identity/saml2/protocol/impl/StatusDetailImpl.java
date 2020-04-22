@@ -24,6 +24,7 @@
  *
  * $Id: StatusDetailImpl.java,v 1.2 2008/06/25 05:48:01 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -49,10 +50,10 @@ import org.w3c.dom.NodeList;
  */
 
 public class StatusDetailImpl implements StatusDetail {
-    
+
     private boolean isMutable = false;
-    private List statusDetailList = null;
-    
+    private List<String> statusDetailList = null;
+
     /**
      * Constructs the <code>StatusDetail</code> Object.
      *
@@ -60,18 +61,18 @@ public class StatusDetailImpl implements StatusDetail {
     public StatusDetailImpl() {
         isMutable=true;
     }
-    
+
     /**
      * Constructs the <code>StatusDetail</code> Object.
      *
      * @param element the Document Element of <code>StatusDetail</code> object.
      * @throws SAML2Exception if <code>StatusDetail</code> cannot be created.
      */
-    
+
     public StatusDetailImpl(Element element) throws SAML2Exception {
         parseElement(element);
     }
-    
+
     /**
      * Constructs the <code>StatusDetail</code> Object.
      *
@@ -87,7 +88,7 @@ public class StatusDetailImpl implements StatusDetail {
         }
         parseElement(xmlDocument.getDocumentElement());
     }
-    
+
     /**
      * Sets the <code>StatusDetail</code> object.
      *
@@ -95,7 +96,7 @@ public class StatusDetailImpl implements StatusDetail {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAny()
      */
-    public void setAny(List value) throws SAML2Exception {
+    public void setAny(List<String> value) throws SAML2Exception {
         if (isMutable) {
             this.statusDetailList = value;
         } else {
@@ -103,17 +104,17 @@ public class StatusDetailImpl implements StatusDetail {
             SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
     }
-    
+
     /**
      * Returns the list of <code>StatusDetail</code> object.
      *
      * @return a List of XML Strings <code>StatusDetail</code> objects.
      * @see #setAny(List)
      */
-    public List getAny() {
+    public List<String> getAny() {
         return statusDetailList;
     }
-    
+
     /**
      * Returns the <code>StatusDetail</code> in an XML document String format
      * based on the <code>StatusDetail</code> schema described above.
@@ -125,12 +126,12 @@ public class StatusDetailImpl implements StatusDetail {
     public String toXMLString() throws SAML2Exception {
         return toXMLString(true,false);
     }
-    
+
     /**
      * Returns the <code>StatusDetail</code> in an XML document String format
      * based on the <code>StatusDetail</code> schema described above.
      *
-     * @param includeNSPrefix Determines whether or not the namespace qualifier 
+     * @param includeNSPrefix Determines whether or not the namespace qualifier
      *        is prepended to the Element when converted
      * @param declareNS Determines whether or not the namespace is declared
      *        within the Element.
@@ -152,7 +153,7 @@ public class StatusDetailImpl implements StatusDetail {
                 xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
             }
             xmlString.append(SAML2Constants.END_TAG);
-            
+
             Iterator sdIterator = statusDetailList.iterator();
             while (sdIterator.hasNext()) {
                 String sdString = (String) sdIterator.next();
@@ -163,12 +164,12 @@ public class StatusDetailImpl implements StatusDetail {
             .append(SAML2Constants.SAML2_END_TAG)
             .append(SAML2Constants.STATUS_DETAIL)
             .append(SAML2Constants.END_TAG);
-            
+
             xmlStr = xmlString.toString();
         }
         return xmlStr;
     }
-    
+
     /**
      * Makes this object immutable.
      */
@@ -177,7 +178,7 @@ public class StatusDetailImpl implements StatusDetail {
             isMutable = false;
         }
     }
-    
+
     /**
      * Returns value true if object is mutable.
      *
@@ -186,7 +187,7 @@ public class StatusDetailImpl implements StatusDetail {
     public boolean isMutable() {
         return isMutable;
     }
-    
+
     /* Parses the <code>StatusDetail</code> Element. */
     private void parseElement(Element element) {
         NodeList nList = element.getChildNodes();
@@ -205,5 +206,5 @@ public class StatusDetailImpl implements StatusDetail {
                 Collections.unmodifiableList(statusDetailList);
             }
         }
-    }   
+    }
 }

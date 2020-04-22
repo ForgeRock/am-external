@@ -24,12 +24,15 @@
  *
  * $Id: SubjectLocality.java,v 1.2 2008/06/25 05:47:42 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
 
 package com.sun.identity.saml2.assertion;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.sun.identity.saml2.assertion.impl.SubjectLocalityImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /**
@@ -41,7 +44,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  * &lt;complexType name="SubjectLocalityType">
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
- *       &lt;attribute name="Address" 
+ *       &lt;attribute name="Address"
  *       type="{http://www.w3.org/2001/XMLSchema}string" />
  *       &lt;attribute name="DNSName"
  *       type="{http://www.w3.org/2001/XMLSchema}string" />
@@ -52,20 +55,21 @@ import com.sun.identity.saml2.common.SAML2Exception;
  *
  * @supported.all.api
  */
+@JsonDeserialize(as=SubjectLocalityImpl.class)
 public interface SubjectLocality {
-    
+
     /**
      * Makes the object immutable.
      */
-    public void makeImmutable();
+    void makeImmutable();
 
     /**
      * Returns the mutability of the object.
      *
-     * @return <code>true</code> if the object is mutable; 
+     * @return <code>true</code> if the object is mutable;
      *                <code>false</code> otherwise.
      */
-    public boolean isMutable();
+    boolean isMutable();
 
     /**
      * Returns the value of the <code>DNSName</code> attribute.
@@ -73,7 +77,7 @@ public interface SubjectLocality {
      * @return the value of the <code>DNSName</code> attribute.
      * @see #setDNSName(String)
      */
-    public String getDNSName();
+    String getDNSName();
 
     /**
      * Sets the value of the <code>DNSName</code> attribute.
@@ -82,7 +86,7 @@ public interface SubjectLocality {
      * @throws SAML2Exception if the object is immutable.
      * @see #getDNSName()
      */
-    public void setDNSName(String value)
+    void setDNSName(String value)
         throws SAML2Exception;
 
     /**
@@ -91,7 +95,7 @@ public interface SubjectLocality {
      * @return the value of the <code>Address</code> attribute.
      * @see #setAddress(String)
      */
-    public String getAddress();
+    String getAddress();
 
     /**
      * Sets the value of the <code>Address</code> attribute.
@@ -100,7 +104,7 @@ public interface SubjectLocality {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAddress()
      */
-    public void setAddress(String value)
+    void setAddress(String value)
         throws SAML2Exception;
 
     /**
@@ -110,7 +114,7 @@ public interface SubjectLocality {
      *         By default name space name is prepended to the element name.
      * @throws SAML2Exception if the object does not conform to the schema.
      */
-    public String toXMLString()
+    String toXMLString()
         throws SAML2Exception;
 
     /**
@@ -124,6 +128,6 @@ public interface SubjectLocality {
      * @return A string containing the valid XML for this element
      * @throws SAML2Exception if the object does not conform to the schema.
      */
-    public String toXMLString(boolean includeNS, boolean declareNS)
+    String toXMLString(boolean includeNS, boolean declareNS)
         throws SAML2Exception;
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2018 ForgeRock AS.
  */
 
 /**
@@ -32,7 +32,7 @@ define([
      * @returns {Promise} promise that will contain the response
      */
     obj.remove = function (uuid) {
-        const loggedUserUid = Configuration.loggedUser.get("uid");
+        const loggedUserUid = Configuration.loggedUser.get("username");
         return obj.serviceCall({
             url: fetchUrl.default(`/users/${loggedUserUid}/devices/2fa/oath/${uuid}`),
             headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
@@ -47,7 +47,7 @@ define([
      * @returns {Promise} promise that will contain the response
      */
     obj.setDevicesOathSkippable = function (skip) {
-        const loggedUserUid = Configuration.loggedUser.get("uid");
+        const loggedUserUid = Configuration.loggedUser.get("username");
         const skipOption = { value: skip };
         return obj.serviceCall({
             url: fetchUrl.default(`/users/${loggedUserUid}/devices/2fa/oath?_action=skip`),
@@ -63,7 +63,7 @@ define([
      * @returns {Promise} promise that will contain the response
      */
     obj.checkDevicesOathSkippable = function () {
-        const loggedUserUid = Configuration.loggedUser.get("uid");
+        const loggedUserUid = Configuration.loggedUser.get("username");
         return obj.serviceCall({
             url: fetchUrl.default(`/users/${loggedUserUid}/devices/2fa/oath?_action=check`),
             headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
@@ -79,7 +79,7 @@ define([
      * @returns {Promise} promise that will contain the response
      */
     obj.getAll = function () {
-        const loggedUserUid = Configuration.loggedUser.get("uid");
+        const loggedUserUid = Configuration.loggedUser.get("username");
         return obj.serviceCall({
             url: fetchUrl.default(`/users/${loggedUserUid}/devices/2fa/oath?_queryFilter=true`),
             headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },

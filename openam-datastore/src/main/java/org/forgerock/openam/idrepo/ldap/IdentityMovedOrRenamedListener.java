@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2018 ForgeRock AS.
  */
 
 package org.forgerock.openam.idrepo.ldap;
@@ -27,6 +27,8 @@ public interface IdentityMovedOrRenamedListener {
      * Called if an identity has been renamed or moved within the identity store.
      *
      * @param previousDN The DN of the identity before the move or rename
+     * @param identitySearchAttrValue The search attribute value of the entry
+     * @param identityNamingAttrValue The naming/authn attribute value of the entry
      */
-    void identityMovedOrRenamed(Dn previousDN);
+    void identityMovedOrRenamed(Dn previousDN, String identitySearchAttrValue, String identityNamingAttrValue);
 }

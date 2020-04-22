@@ -15,22 +15,23 @@
  */
 package com.sun.identity.saml2.profile;
 
-import com.sun.identity.saml2.meta.SAML2MetaManager;
-import com.sun.identity.shared.debug.Debug;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.mock;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.forgerock.openam.saml2.IDPRequestValidator;
 import org.forgerock.openam.saml2.UtilProxyIDPRequestValidator;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.servlet.http.HttpServletRequest;
-
-import static org.fest.assertions.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.mock;
+import com.sun.identity.saml2.meta.SAML2MetaManager;
+import com.sun.identity.shared.debug.Debug;
 
 /**
- * Note: Tests are excluding {@link IDPRequestValidator#getIDPEntity(String, String, SAML2MetaManager)}
- * and {@link IDPRequestValidator#getIDPAdapter(String, String)} because they are currently untestable.
+ * Note: Tests are excluding {@link IDPRequestValidator#getIDPAdapter(String, String)} because it is currently
+ * untestable.
  */
 public class IDPRequestValidatorTest {
     private HttpServletRequest mockRequest;

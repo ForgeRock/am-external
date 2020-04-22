@@ -49,7 +49,8 @@
                 "errorDeletingNotification" : "Error deleting notification.",
                 "errorFetchingNotifications" : "Error Fetching notifications.",
                 "identityNoSpace" : "Identity names may not have a space <br> character at the beginning or end.",
-                "selfRegistrationDisabled"  : "Self Registration is disabled."
+                "selfRegistrationDisabled"  : "Self Registration is disabled.",
+                "registerDataInvalid" : "One or more user account values are invalid."
             },
             "AdminMessages" : {
                 "cannotDeleteYourself" : "You can't delete yourself",
@@ -274,7 +275,7 @@
             "complete" : "Complete",
             "confirm": "Confirm",
             "continue" : "Continue",
-            "copyright" : "Copyright &copy; 2010-2017 ForgeRock AS. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2020 ForgeRock AS. All rights reserved.",
             "create" : "Create",
             "createdAt" : "Created at",
             "createNew": "Create New",
@@ -409,11 +410,12 @@
             },
             "forgotUsername" : {
                 "title" : "Retrieve Your Username",
-                "checkEmail" : "An email containing your username has been sent to your account.",
+                "checkEmail" : "Check your email to retrieve your username.",
                 "failed": "Unable to retrieve your username",
                 "found": "Username found:",
                 "tryAgain": "Try Finding Your Username Again",
-                "answerQuestions": "Answer the security questions below to retrieve your username."
+                "answerQuestions": "Answer the security questions below to retrieve your username.",
+                "completed": "Forgot Username flow completed"
             },
             "kba" : {
                 "description": "Select __numberOfQuestions__ or more security questions below. These questions will help us verify your identity if you forget your password.",
@@ -580,7 +582,7 @@
             "deviceDetailsDialog": {
                 "recoveryCodes": "Recovery codes",
                 "deviceName": "Device name",
-                "copyRecoveryCodes": "Keep a copy of these codes in a safe place. You will need to use one of your recovery codes to authenticate if you lose your device."
+                "copyRecoveryCodes": "Keep a copy of these codes in a safe place. You will need to use one of your recovery codes to authenticate if you lose your device. They will only visible if you have authenticated using your device"
             }
         }
     },
@@ -1391,9 +1393,9 @@
         "sessions": {
             "search": {
                 "intro": "Find sessions by entering a username.",
-                "noResults": "No users found",
                 "placeholder": "Username",
                 "searchPrompt": "Type to search",
+                "searchForPrompt": "Search for \"__label__\"",
                 "title": "Username"
             },
             "table": {

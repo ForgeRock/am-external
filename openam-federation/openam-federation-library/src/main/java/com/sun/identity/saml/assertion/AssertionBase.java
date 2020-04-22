@@ -24,12 +24,11 @@
  *
  * $Id: AssertionBase.java,v 1.2 2008/06/25 05:47:31 qcheng Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
-
-  
 package com.sun.identity.saml.assertion;
 
+import static com.sun.identity.shared.xml.XMLUtils.removeLineBreaksIfEnabled;
 import static org.forgerock.openam.utils.Time.*;
 
 import com.sun.identity.shared.DateUtils;
@@ -934,9 +933,7 @@ public abstract class AssertionBase {
         if (signed && (signatureString != null)) {
             xml.append(signatureString);
         }
-        String o = SAMLUtilsCommon.makeEndElementTagXML("Assertion", includeNS);
-        xml.append(o);
-        return xml.toString();
+        xml.append(SAMLUtilsCommon.makeEndElementTagXML("Assertion", includeNS));
+        return removeLineBreaksIfEnabled(xml.toString());
     }
-
 }

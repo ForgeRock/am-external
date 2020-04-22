@@ -27,7 +27,7 @@
  */
 
 /*
- * Portions Copyrighted 2013-2016 ForgeRock AS.
+ * Portions Copyrighted 2013-2019 ForgeRock AS.
  */
 
 package com.sun.identity.saml.xmlsig;
@@ -38,6 +38,7 @@ import org.forgerock.openam.utils.AMKeyProvider;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
+import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -220,6 +221,11 @@ public class JKSKeyProvider implements KeyProvider {
      */
     public Certificate getCertificate (java.security.PublicKey publicKey) {
         return keyProvider.getCertificate(publicKey);
+    }
+
+    @Override
+    public KeyPair getKeyPair(String certAlias) {
+        return keyProvider.getKeyPair(certAlias);
     }
 
     @Override

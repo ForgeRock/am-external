@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS. All Rights Reserved
+ * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
 -->
 <div class="form-group">
     <hr>
@@ -21,7 +21,7 @@
             {{#each socialImplementations}}
                 <li>
                     <a
-                        href="?service={{authnChain}}{{{../compositeQueryString}}}{{urlTo 'login'}}"
+                        href="?service={{authnChain}}{{../queryStringExclServiceParam}}{{routeTo 'login'}}"
                         title="{{displayName}}"
                     >
                         <img alt="{{displayName}}" src="{{iconPath}}" width="50px" height="50px" />

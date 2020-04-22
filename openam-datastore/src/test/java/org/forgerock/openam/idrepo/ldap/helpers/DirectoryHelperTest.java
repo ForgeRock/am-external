@@ -15,12 +15,9 @@
  */
 package org.forgerock.openam.idrepo.ldap.helpers;
 
-import com.sun.identity.idm.IdType;
-import org.testng.annotations.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import static org.fest.assertions.Assertions.*;
-import org.forgerock.openam.utils.CollectionUtils;
-import static org.forgerock.openam.utils.CollectionUtils.*;
+import org.testng.annotations.Test;
 
 public class DirectoryHelperTest {
 

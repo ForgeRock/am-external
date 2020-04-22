@@ -16,12 +16,11 @@
 
 package org.forgerock.openam.authentication.modules.common;
 
-import static org.mockito.BDDMockito.any;
-import static org.mockito.BDDMockito.eq;
 import static org.mockito.BDDMockito.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.testng.AssertJUnit.*;
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertTrue;
 
 import java.security.Principal;
 import java.util.HashMap;
@@ -29,7 +28,6 @@ import java.util.Map;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.message.AuthStatus;
 import javax.security.auth.message.MessageInfo;
@@ -98,7 +96,7 @@ public class JaspiAuthLoginModuleTest {
         jaspiAuthLoginModule.init(subject, sharedState, options);
 
         //Then
-        verify(jaspiAuthWrapper).initialize(any(CallbackHandler.class), eq(config));
+        verify(jaspiAuthWrapper).initialize(any(), eq(config));
     }
 
     @Test

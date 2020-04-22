@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2020 ForgeRock AS.
  */
 
 define([
@@ -140,7 +140,7 @@ define([
                 $.when(this.policySetModelPromise, this.resourceTypesPromise).done(
                     (policySetModel, resourceTypes) => {
                         self.data.options.availableResourceTypes = _.filter(resourceTypes[0].result,
-                            (item) => _.contains(policySetModel[0].resourceTypeUuids, item.uuid));
+                            (item) => _.includes(policySetModel[0].resourceTypeUuids, item.uuid));
                         self.parentRender(() => { self.buildResourceTypeSelection(); });
                     });
             } else {
@@ -154,10 +154,10 @@ define([
                     const policySet = policySetModel[0];
 
                     self.data.options.availableResourceTypes = _.filter(resourceTypes[0].result,
-                        (item) => _.contains(policySet.resourceTypeUuids, item.uuid));
+                        (item) => _.includes(policySet.resourceTypeUuids, item.uuid));
 
-                    self.staticAttributes = _.where(self.model.attributes.resourceAttributes, { type: "Static" });
-                    self.userAttributes = _.where(self.model.attributes.resourceAttributes, { type: "User" });
+                    self.staticAttributes = _.filter(self.model.attributes.resourceAttributes, { type: "Static" });
+                    self.userAttributes = _.filter(self.model.attributes.resourceAttributes, { type: "User" });
                     self.customAttributes = _.difference(self.model.attributes.resourceAttributes,
                         self.staticAttributes, self.userAttributes);
                     self.allUserAttributes = _.sortBy(allUserAttributes[0].result);

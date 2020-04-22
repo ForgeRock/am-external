@@ -22,13 +22,64 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2019 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.common;
 
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.currentTimeMillis;
+import static org.forgerock.openam.utils.Time.newDate;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.soap.MimeHeader;
+import javax.xml.soap.MimeHeaders;
+
+import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
+import org.forgerock.openam.saml2.SAML2Store;
+import org.forgerock.openam.saml2.plugins.ValidRelayStateExtractor;
+import org.forgerock.openam.saml2.plugins.ValidRelayStateExtractor.SAMLEntityInfo;
+import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.IOUtils;
+import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.util.Reject;
 
 import com.sun.identity.common.HttpURLConnectionManager;
 import com.sun.identity.common.SystemConfigurationException;
@@ -68,6 +119,7 @@ import com.sun.identity.saml2.jaxb.metadata.AssertionConsumerServiceElement;
 import com.sun.identity.saml2.jaxb.metadata.EndpointType;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.SingleSignOnServiceElement;
 import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
@@ -88,6 +140,7 @@ import com.sun.identity.saml2.profile.CacheCleanUpScheduler;
 import com.sun.identity.saml2.profile.IDPCache;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
 import com.sun.identity.saml2.profile.SPCache;
+import com.sun.identity.saml2.profile.ServerFaultException;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.RequestAbstract;
@@ -102,54 +155,6 @@ import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.encode.CookieUtils;
 import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.logging.Level;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.xml.soap.MimeHeader;
-import javax.xml.soap.MimeHeaders;
-import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
-import org.forgerock.openam.saml2.SAML2Store;
-import org.forgerock.openam.saml2.plugins.ValidRelayStateExtractor;
-import org.forgerock.openam.saml2.plugins.ValidRelayStateExtractor.SAMLEntityInfo;
-import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;
-import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.openam.utils.IOUtils;
-import org.forgerock.openam.utils.StringUtils;
-import org.owasp.esapi.ESAPI;
 
 /**
  * The <code>SAML2Utils</code> contains utility methods for SAML 2.0
@@ -598,7 +603,25 @@ public class SAML2Utils extends SAML2SDKUtils {
                 checkAudience(assertion.getConditions(),
                         hostEntityId,
                         assertionID);
-                checkConditions(assertion.getConditions(), hostEntityId, assertionID);
+
+                String assertionSkewTimeStr = getAttributeValueFromSPSSOConfig(spConfig,
+                        SAML2Constants.ASSERTION_TIME_SKEW);
+                int assertionSkewTime = 0;
+                if (StringUtils.isNotBlank(assertionSkewTimeStr)) {
+                    try {
+                        assertionSkewTime = Integer.parseInt(assertionSkewTimeStr);
+                        if (debug.messageEnabled()) {
+                            debug.message("{}Assertion skew time from config: {}", method, assertionSkewTime);
+                        }
+                    } catch (NumberFormatException nfe) {
+                        debug.error("{}SP SSO config: {}", method, nfe);
+                    }
+                } else {
+                    debug.message("{}Assertion skew time from config is null", method);
+                }
+
+                checkConditions(assertion.getConditions(), hostEntityId, assertionID, assertionSkewTime);
+
                 if (smap == null) {
                     smap = fillMap(authnStmts,
                             subject,
@@ -872,7 +895,17 @@ public class SAML2Utils extends SAML2SDKUtils {
         }
     }
 
-    private static void checkConditions(Conditions conditions, String hostEntityId, String assertionID) throws SAML2Exception {
+    /**
+     * Checks the assertion conditions NotBefore and NotOnOrAfter values.
+     *
+     * @param conditions The assertion conditions.
+     * @param hostEntityId The ID of the hostEntity.
+     * @param assertionID The ID of the asserion.
+     * @param assertionSkewTime Assertion skew time in seconds.
+     * @throws SAML2Exception If there was a condition error.
+     */
+    private static void checkConditions(Conditions conditions, String hostEntityId, String assertionID,
+            int assertionSkewTime) throws SAML2Exception {
         String method = "SAML2Utils.checkConditions: ";
         if (conditions == null) {
             debug.message("{}Conditions is missing from Assertion", method);
@@ -898,8 +931,8 @@ public class SAML2Utils extends SAML2SDKUtils {
                 debug.message("{}NotBefore Condition = {}", method, notBefore);
             }
         }
-        
-        if (!conditions.checkDateValidity(currentTimeMillis())) {
+
+        if (!conditions.checkDateValidityWithSkew(currentTimeMillis(), assertionSkewTime)) {
             debug.message("{}The assertion does not meet NotOnOrAfter or NotBefore condition.", method);
             String[] data = {assertionID};
             LogUtil.error(Level.INFO, LogUtil.DATE_CONDITION_NOT_MET, data, null);
@@ -2152,8 +2185,8 @@ public class SAML2Utils extends SAML2SDKUtils {
                                                         String hostEntityId,
                                                         String entityRole,
                                                         String attrName) {
+        String method = "getAttributeValueFromSSOConfig : ";
         if (debug.messageEnabled()) {
-            String method = "getAttributeValueFromSSOConfig : ";
             debug.message(method + "realm - " + realm);
             debug.message(method + "hostEntityId - " + hostEntityId);
             debug.message(method + "entityRole - " + entityRole);
@@ -2161,12 +2194,11 @@ public class SAML2Utils extends SAML2SDKUtils {
         }
         List value = (List) getAllAttributeValueFromSSOConfig(realm,
                 hostEntityId, entityRole, attrName);
-        if (debug.messageEnabled()) {
-            debug.message("getAttributeValueFromSSOConfig: values=" + value);
-        }
-        if ((value != null) && !value.isEmpty()) {
+        if (CollectionUtils.isNotEmpty(value)) {
+            debug.message("{}values = {}", method, Arrays.toString(value.toArray()));
             return (String) value.get(0);
         } else {
+            debug.message("{}values = null", method);
             return null;
         }
     }
@@ -3184,10 +3216,10 @@ public class SAML2Utils extends SAML2SDKUtils {
      */
     public static boolean verifyDestination(String destination,
                                             String location) {
-        /* Note: 
+        /* Note:
         Here we assume there is one endpoint per protocol. In future,
-        we may support more than one endpoint per protocol. The caller 
-        code should change accordingly. 
+        we may support more than one endpoint per protocol. The caller
+        code should change accordingly.
         */
         return ((location != null) && (location.length() != 0) &&
                 (destination != null) && (destination.length() != 0) &&
@@ -3668,11 +3700,11 @@ public class SAML2Utils extends SAML2SDKUtils {
                                     String SAMLmessageName, String SAMLmessageValue, String relayStateName,
                                     String relayStateValue, String targetURL) throws SAML2Exception {
 
-        request.setAttribute("TARGET_URL", ESAPI.encoder().encodeForHTML(targetURL));
-        request.setAttribute("SAML_MESSAGE_NAME", ESAPI.encoder().encodeForHTML(SAMLmessageName));
-        request.setAttribute("SAML_MESSAGE_VALUE", ESAPI.encoder().encodeForHTML(SAMLmessageValue));
-        request.setAttribute("RELAY_STATE_NAME", ESAPI.encoder().encodeForHTML(relayStateName));
-        request.setAttribute("RELAY_STATE_VALUE", ESAPI.encoder().encodeForHTML(relayStateValue));
+        request.setAttribute("TARGET_URL", targetURL);
+        request.setAttribute("SAML_MESSAGE_NAME", SAMLmessageName);
+        request.setAttribute("SAML_MESSAGE_VALUE", SAMLmessageValue);
+        request.setAttribute("RELAY_STATE_NAME", relayStateName);
+        request.setAttribute("RELAY_STATE_VALUE", relayStateValue);
         request.setAttribute("SAML_POST_KEY", bundle.getString("samlPostKey"));
 
         response.setHeader("Pragma", "no-cache");
@@ -4168,7 +4200,64 @@ public class SAML2Utils extends SAML2SDKUtils {
     }
 
     /**
-     * Convenience method to validate a SAML2 relay state (goto) URL, often called from a JSP.
+     * Return profile binding if supported by an IDP, otherwise return most appropriate binding.
+     *
+     * @param realm       Realm the IDP is in.
+     * @param idpEntityID IDP entity id.
+     * @param profile     name of the profile/service
+     * @param reqBinding     Requested binding to be returned or null if no binding requested.
+     * @return the binding
+     * @throws SAML2Exception if we cannot get the IDPSSODescriptor from the saml2MetaManager.
+     * @throws ServerFaultException if the code for the requested profile is not implemented.
+     */
+    public static String getIDPProfileBinding(String realm, String idpEntityID, String profile, String reqBinding)
+        throws SAML2MetaException, ServerFaultException {
+        Reject.ifNull(saml2MetaManager);
+        Reject.ifNull(realm);
+        Reject.ifNull(idpEntityID);
+        Reject.ifNull(profile);
+        final String classMethod = "SAML2Utils.getIDPProfileBinding:";
+
+        IDPSSODescriptorElement descriptor = saml2MetaManager.getIDPSSODescriptor(realm, idpEntityID);
+        if (descriptor == null) {
+            debug.error("{} Unable to retrieve metadata in realm {} with entityID {}", classMethod, realm, idpEntityID);
+            throw new ServerFaultException("metaDataError");
+        }
+
+        if (SAML2Constants.SSO_SERVICE.equals(profile)) {
+            List<SingleSignOnServiceElement> ssoList = descriptor.getSingleSignOnService();
+
+            if (CollectionUtils.isEmpty(ssoList)) {
+                debug.error("{} SSO List from entityID {} was empty or NULL.", classMethod, idpEntityID);
+                throw new ServerFaultException("ssoServiceNotfound");
+            }
+            if (StringUtils.isNotEmpty(reqBinding)) {
+                for (SingleSignOnServiceElement ssoEndpoint : ssoList) {
+                    if (reqBinding.equals(ssoEndpoint.getBinding())) {
+                        debug.message("{} Requested SSO binding {} found for idpEntityID {}", classMethod, reqBinding,  idpEntityID);
+                        return reqBinding;
+                    }
+                }
+            }
+            debug.message("{} Requested SSO binding {} not found for idpEntityID {}", classMethod, reqBinding,  idpEntityID);
+            String newBinding = null;
+            for (SingleSignOnServiceElement ssoEndpoint : ssoList) {
+                newBinding = ssoEndpoint.getBinding();
+                if ((newBinding.equals(SAML2Constants.HTTP_POST)) || (newBinding.equals(SAML2Constants.HTTP_REDIRECT))) {
+                    break;
+                }
+            }
+            debug.message("{} Changing SSO Binding from {} to {} for SSO request for idpEntityID {}",
+                classMethod, reqBinding, newBinding, idpEntityID);
+            return newBinding;
+        } else {
+            debug.error("{} Service {} is not supported in this method.", classMethod, profile);
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * Convenience method to validate a SAML2 relay state (goto) URL, called from a JSP.
      *
      * @param request    Used to help establish the realm and hostEntityID.
      * @param relayState The URL to validate.
@@ -4176,16 +4265,31 @@ public class SAML2Utils extends SAML2SDKUtils {
      * @return <code>true</code> if the relayState is valid.
      */
     public static boolean isRelayStateURLValid(HttpServletRequest request, String relayState, String role) {
+        return isRelayStateURLValid(request, relayState, role, false);
+    }
+
+    /**
+     * Convenience method to validate a SAML2 relay state (goto) URL, called from a JSP.
+     *
+     * @param request    Used to help establish the realm and hostEntityID.
+     * @param relayState The URL to validate.
+     * @param role       The role of the caller.
+     * @param inclESAPIValidation Whether to also include an OWASP ESAPI validation of the url.
+     * This will fail if included for redirect urls that include %20, e.g. an OAuth 2 authorize flow url scope param.
+     * @return <code>true</code> if the relayState is valid.
+     */
+    public static boolean isRelayStateURLValid(HttpServletRequest request, String relayState, String role,
+            boolean inclESAPIValidation) {
         String metaAlias = SAML2MetaUtils.getMetaAliasByUri(request.getRequestURI());
         if (metaAlias == null) {
             //try to acquire the metaAlias from request parameter
             metaAlias = request.getParameter(SAML2MetaManager.NAME_META_ALIAS_IN_URI);
         }
-        return isRelayStateURLValid(metaAlias, relayState, role);
+        return isRelayStateURLValid(metaAlias, relayState, role, inclESAPIValidation);
     }
 
     /**
-     * Convenience method to validate a SAML2 relay state (goto) URL, often called from a JSP.
+     * Convenience method to validate a SAML2 relay state (goto) URL, called from a JSP.
      *
      * @param metaAlias  The metaAlias of the hosted entity.
      * @param relayState The URL to validate.
@@ -4193,6 +4297,21 @@ public class SAML2Utils extends SAML2SDKUtils {
      * @return <code>true</code> if the relayState is valid.
      */
     public static boolean isRelayStateURLValid(String metaAlias, String relayState, String role) {
+        return isRelayStateURLValid(metaAlias, relayState, role, false);
+    }
+
+    /**
+     * Convenience method to validate a SAML2 relay state (goto) URL, called from a JSP.
+     *
+     * @param metaAlias  The metaAlias of the hosted entity.
+     * @param relayState The URL to validate.
+     * @param role       The role of the caller.
+     * @param inclESAPIValidation Whether to also include an OWASP ESAPI validation of the url.
+     * This will fail if included for redirect urls that include %20, e.g. an OAuth 2 authorize flow url scope param.
+     * @return <code>true</code> if the relayState is valid.
+     */
+    public static boolean isRelayStateURLValid(String metaAlias, String relayState, String role,
+            boolean inclESAPIValidation) {
         boolean result = false;
 
         if (metaAlias != null) {
@@ -4200,7 +4319,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             try {
                 String hostEntityID = saml2MetaManager.getEntityByMetaAlias(metaAlias);
                 if (hostEntityID != null) {
-                    validateRelayStateURL(realm, hostEntityID, relayState, role);
+                    validateRelayStateURL(realm, hostEntityID, relayState, role, inclESAPIValidation);
                     result = true;
                 }
             } catch (SAML2Exception e) {
@@ -4235,11 +4354,32 @@ public class SAML2Utils extends SAML2SDKUtils {
             String hostEntityId,
             String relayState,
             String role) throws SAML2Exception {
+        validateRelayStateURL(orgName, hostEntityId, relayState, role, false);
+    }
+
+    /**
+     * Validates the Relay State URL against a list of valid Relay State
+     * URLs created on the hosted service provider.
+     *
+     * @param orgName      realm or organization name the provider resides in.
+     * @param hostEntityId Entity ID of the hosted provider.
+     * @param relayState   Relay State URL.
+     * @param role         IDP/SP Role.
+     * @param inclESAPIValidation Whether to perform OWASP ESAPI checking for the url.
+     * This will fail if included for redirect urls that include %20, e.g. an OAuth 2 authorize flow url scope param.
+     * @throws SAML2Exception if the processing failed.
+     */
+    public static void validateRelayStateURL(
+            String orgName,
+            String hostEntityId,
+            String relayState,
+            String role,
+            boolean inclESAPIValidation) throws SAML2Exception {
 
         // Check for the validity of the RelayState URL.
         if (relayState != null && !relayState.isEmpty()) {
             if (!RELAY_STATE_VALIDATOR.isRedirectUrlValid(relayState,
-                    SAMLEntityInfo.from(orgName, hostEntityId, role))) {
+                    SAMLEntityInfo.from(orgName, hostEntityId, role), inclESAPIValidation)) {
                 throw new SAML2Exception(SAML2Utils.bundle.getString("invalidRelayStateUrl"));
             }
         }
@@ -4270,8 +4410,8 @@ public class SAML2Utils extends SAML2SDKUtils {
         }
 
         // Open URL connection
-        HttpURLConnection conn = null;
-        String strCookies = null;
+        HttpURLConnection conn;
+        String strCookies;
 
         try {
             URL sloRoutingURL = new URL(sloServerUrl);
@@ -4302,7 +4442,10 @@ public class SAML2Utils extends SAML2SDKUtils {
             }
 
             conn.setRequestProperty("Host", request.getHeader("host"));
-            conn.setRequestProperty(SAMLConstants.ACCEPT_LANG_HEADER, request.getHeader(SAMLConstants.ACCEPT_LANG_HEADER));
+            String acceptLanguageHeader = request.getHeader(SAMLConstants.ACCEPT_LANG_HEADER);
+            if (StringUtils.isNotEmpty(acceptLanguageHeader)) {
+                conn.setRequestProperty(SAMLConstants.ACCEPT_LANG_HEADER, acceptLanguageHeader);
+            }
 
             // do the remote connection
             if (isGET) {
@@ -4318,56 +4461,38 @@ public class SAML2Utils extends SAML2SDKUtils {
                 if (debug.messageEnabled()) {
                     debug.message(classMethod + "DATA to be SENT: " + data);
                 }
-                OutputStreamWriter writer = null;
-                try {
-                    writer = new OutputStreamWriter(conn.getOutputStream());
+                try (OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream())) {
                     writer.write(data);
                 } catch (IOException ioe) {
-                    debug.error(classMethod + "Could not write to the destination", ioe);
-                } finally {
-                    writer.close();
+                    debug.error("Could not write to the destination", ioe);
                 }
             }
             // Receiving input from Original Federation server...
             if (debug.messageEnabled()) {
-                debug.message(classMethod + "RECEIVING DATA ... ");
-                debug.message(classMethod + "Response Code: " + conn.getResponseCode());
-                debug.message(classMethod + "Response Message: " + conn.getResponseMessage());
-                debug.message(classMethod + "Follow redirect : " + HttpURLConnection.getFollowRedirects());
+                debug.message("RECEIVING DATA ... ");
+                debug.message("Response Code: {}", conn.getResponseCode());
+                debug.message("Response Message: {}", conn.getResponseMessage());
+                debug.message("Follow redirect : {}", HttpURLConnection.getFollowRedirects());
             }
 
             // Input from Original servlet...
-            StringBuilder in_buf = new StringBuilder();
-            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
-            int len;
-            char[] buf = new char[1024];
-
-            while ((len = in.read(buf, 0, buf.length)) != -1) {
-                in_buf.append(buf, 0, len);
-            }
-
-            String in_string = in_buf.toString();
-
-            if (debug.messageEnabled()) {
-                debug.message(classMethod + "Received response data : " + in_string);
-            }
-
-            origRequestData.put(SAML2Constants.OUTPUT_DATA, in_string);
+            origRequestData.put(SAML2Constants.RESPONSE_CODE, Integer.toString(conn.getResponseCode()));
+            InputStream is = conn.getErrorStream() == null ? conn.getInputStream() : conn.getErrorStream();
+            String crossTalkResponse = IOUtils.readStream(is);
+            debug.message("Received response data:\n{}", crossTalkResponse);
+            origRequestData.put(SAML2Constants.OUTPUT_DATA, crossTalkResponse);
 
             String redirect_url = conn.getHeaderField(LOCATION);
 
             if (redirect_url != null) {
                 origRequestData.put(SAML2Constants.AM_REDIRECT_URL, redirect_url);
             }
-            origRequestData.put(SAML2Constants.RESPONSE_CODE, Integer.toString(conn.getResponseCode()));
 
             // retrieves cookies from the response
             Map headers = conn.getHeaderFields();
             processCookies(headers, request, response);
         } catch (Exception ex) {
-            if (debug.messageEnabled()) {
-                debug.message(classMethod + "send exception : ", ex);
-            }
+            debug.error("An error occurred while performing crosstalk.", ex);
         }
 
         return origRequestData;
@@ -4431,7 +4556,7 @@ public class SAML2Utils extends SAML2SDKUtils {
                         }
 
                         /* decode the cookie if it is already URLEncoded,
-                         * we have to pass non URLEncoded cookie to 
+                         * we have to pass non URLEncoded cookie to
                          * createCookie method
                          */
                         if (isURLEncoded(nameOfValue)) {

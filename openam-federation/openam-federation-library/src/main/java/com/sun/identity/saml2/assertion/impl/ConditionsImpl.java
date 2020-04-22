@@ -24,6 +24,7 @@
  *
  * $Id: ConditionsImpl.java,v 1.3 2008/06/25 05:47:43 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -37,6 +38,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import java.text.ParseException;
 
 import com.sun.identity.shared.xml.XMLUtils;
@@ -59,10 +61,10 @@ import com.sun.identity.shared.DateUtils;
 public class ConditionsImpl implements Conditions {
 
     private Date notOnOrAfter;
-    private List conditions = new ArrayList();
-    private List audienceRestrictions = new ArrayList();
-    private List oneTimeUses = new ArrayList();
-    private List proxyRestrictions = new ArrayList();
+    private List<Condition> conditions = new ArrayList();
+    private List<AudienceRestriction> audienceRestrictions = new ArrayList();
+    private List<OneTimeUse> oneTimeUses = new ArrayList();
+    private List<ProxyRestriction> proxyRestrictions = new ArrayList();
     private Date notBefore;
     private boolean isMutable = true;
 
@@ -234,7 +236,7 @@ public class ConditionsImpl implements Conditions {
      * 
      *  @return a list of <code>Condition</code>
      */
-    public List getConditions() {
+    public List<Condition> getConditions() {
         return conditions;
     }
  
@@ -243,7 +245,7 @@ public class ConditionsImpl implements Conditions {
      * 
      *  @return a list of <code>AudienceRestriction</code>
      */
-    public List getAudienceRestrictions() {
+    public List<AudienceRestriction> getAudienceRestrictions() {
         return audienceRestrictions;
     }
  
@@ -252,7 +254,7 @@ public class ConditionsImpl implements Conditions {
      * 
      *  @return a list of <code>OneTimeUse</code>
      */
-    public List getOneTimeUses() {
+    public List<OneTimeUse> getOneTimeUses() {
         return oneTimeUses;
     }
  
@@ -261,7 +263,7 @@ public class ConditionsImpl implements Conditions {
      * 
      *  @return a list of <code>ProxyRestriction</code>
      */
-    public List getProxyRestrictions() {
+    public List<ProxyRestriction> getProxyRestrictions() {
         return proxyRestrictions;
     }
  
@@ -271,7 +273,7 @@ public class ConditionsImpl implements Conditions {
      *  @param conditions a list of <code>Condition</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setConditions(List conditions) throws SAML2Exception {
+    public void setConditions(List<Condition> conditions) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));
@@ -285,7 +287,7 @@ public class ConditionsImpl implements Conditions {
      *  @param ars a list of <code>AudienceRestriction</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setAudienceRestrictions(List ars) throws SAML2Exception {
+    public void setAudienceRestrictions(List<AudienceRestriction> ars) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));
@@ -299,7 +301,7 @@ public class ConditionsImpl implements Conditions {
      *  @param oneTimeUses a list of <code>OneTimeUse</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setOneTimeUses(List oneTimeUses) throws SAML2Exception {
+    public void setOneTimeUses(List<OneTimeUse> oneTimeUses) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));
@@ -313,7 +315,7 @@ public class ConditionsImpl implements Conditions {
      *  @param prs a list of <code>ProxyRestriction</code>
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setProxyRestrictions(List prs) throws SAML2Exception {
+    public void setProxyRestrictions(List<ProxyRestriction> prs) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));
@@ -347,28 +349,44 @@ public class ConditionsImpl implements Conditions {
    }
 
     /**
-     * Return true if a specific Date falls within the validity 
+     * Return true if a specific Date falls within the validity
      * interval of this set of conditions.
      *
+     * @param someTime Any time in milliseconds.
+     * @return true if <code>someTime</code> is within the valid
+     * interval of the <code>Conditions</code>.
+     */
+    public boolean checkDateValidity(long someTime) {
+        return checkDateValidityWithSkew(someTime, 0);
+    }
+
+    /**
+     * Return true if a specific Date falls within the validity 
+     * interval of this set of conditions and skew.
+     *
      * @param someTime Any time in milliseconds. 
+     * @param skewTime Skew time in seconds. 
      * @return true if <code>someTime</code> is within the valid 
      * interval of the <code>Conditions</code>.     
      */
-    public boolean checkDateValidity(long someTime) {
+    public boolean checkDateValidityWithSkew(long someTime, int skewTime) {
+
+        long skewTimeMillis = TimeUnit.SECONDS.toMillis(skewTime);
+
         if (notBefore == null ) {
             if (notOnOrAfter == null) {
                 return true;
             } else {
-                if (someTime < notOnOrAfter.getTime()) {
+                if (someTime < (notOnOrAfter.getTime()) + skewTimeMillis) {
                     return true;
                 }
             }
         } else if (notOnOrAfter == null ) {
-            if (someTime >= notBefore.getTime()) {
+            if (someTime >= (notBefore.getTime() - skewTimeMillis)) {
                 return true;
             }
-        } else if ((someTime >= notBefore.getTime()) && 
-            (someTime < notOnOrAfter.getTime()))
+        } else if ((someTime >= (notBefore.getTime() - skewTimeMillis)) && 
+            (someTime < (notOnOrAfter.getTime()) + skewTimeMillis))
         {
             return true; 
         }

@@ -15,15 +15,14 @@
  */
 package org.forgerock.openam.idrepo.ldap;
 
-import com.sun.identity.idm.IdRepoListener;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.forgerock.openam.utils.MapHelper;
 import org.powermock.api.mockito.PowerMockito;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import static org.fest.assertions.Assertions.assertThat;
-import static org.testng.Assert.fail;
-
+import com.sun.identity.idm.IdRepoListener;
 
 public class PSearchRepoTest  extends IdRepoTestBase {
 

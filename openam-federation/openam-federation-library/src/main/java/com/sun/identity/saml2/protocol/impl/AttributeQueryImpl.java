@@ -24,6 +24,7 @@
  *
  * $Id: AttributeQueryImpl.java,v 1.3 2008/06/25 05:47:59 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
@@ -48,7 +49,7 @@ import com.sun.identity.shared.xml.XMLUtils;
 public class AttributeQueryImpl
     extends SubjectQueryAbstractImpl implements AttributeQuery {
 
-    protected List attributes;
+    protected List<Attribute> attributes;
 
     /**
      * Constructor to create <code>AttributeQuery</code> Object .
@@ -62,8 +63,8 @@ public class AttributeQueryImpl
      * Constructor to create <code>AttributeQuery</code> Object.
      *
      * @param element the Document Element Object.
-     * @throws SAML2Exception if error creating <code>AttributeQuery</code> 
-     *     Object. 
+     * @throws SAML2Exception if error creating <code>AttributeQuery</code>
+     *     Object.
      */
     public AttributeQueryImpl(Element element) throws SAML2Exception {
         parseDOMElement(element);
@@ -77,11 +78,11 @@ public class AttributeQueryImpl
      * Constructor to create <code>AttributeQuery</code> Object.
      *
      * @param xmlString the XML String.
-     * @throws SAML2Exception if error creating <code>AttributeQuery</code> 
-     *     Object. 
+     * @throws SAML2Exception if error creating <code>AttributeQuery</code>
+     *     Object.
      */
     public AttributeQueryImpl(String xmlString) throws SAML2Exception {
-        Document xmlDocument = 
+        Document xmlDocument =
             XMLUtils.toDOMDocument(xmlString,SAML2SDKUtils.debug);
         if (xmlDocument == null) {
             throw new SAML2Exception(
@@ -94,24 +95,24 @@ public class AttributeQueryImpl
         }
     }
 
-    /** 
-     * Returns <code>Attribute</code> objects. 
+    /**
+     * Returns <code>Attribute</code> objects.
      *
-     * @return the <code>Attribute</code> objects. 
+     * @return the <code>Attribute</code> objects.
      * @see #setAttributes(List)
      */
     public List getAttributes() {
         return attributes;
     }
-  
-    /** 
-     * Sets the <code>Attribute</code> objects. 
+
+    /**
+     * Sets the <code>Attribute</code> objects.
      *
-     * @param attributes the new <code>Attribute</code> objects. 
+     * @param attributes the new <code>Attribute</code> objects.
      * @throws SAML2Exception if the object is immutable.
      * @see #getAttributes
      */
-    public void setAttributes(List attributes) throws SAML2Exception {
+    public void setAttributes(List<Attribute> attributes) throws SAML2Exception {
          if (!isMutable) {
             throw new SAML2Exception(
                     SAML2SDKUtils.bundle.getString("objectImmutable"));
@@ -140,22 +141,22 @@ public class AttributeQueryImpl
         }
     }
 
-    /** 
+    /**
      * Parses attributes of the Docuemnt Element for this object.
-     * 
+     *
      * @param element the Document Element of this object.
      * @throws SAML2Exception if error parsing the Document Element.
-     */ 
+     */
     protected void parseDOMAttributes(Element element) throws SAML2Exception {
         super.parseDOMAttributes(element);
     }
 
-    /** 
+    /**
      * Parses child elements of the Docuemnt Element for this object.
-     * 
+     *
      * @param iter the child elements iterator.
      * @throws SAML2Exception if error parsing the Document Element.
-     */ 
+     */
     protected void parseDOMChileElements(ListIterator iter)
         throws SAML2Exception {
         super.parseDOMChileElements(iter);

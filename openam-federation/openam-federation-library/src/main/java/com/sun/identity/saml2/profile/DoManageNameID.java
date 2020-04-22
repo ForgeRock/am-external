@@ -24,7 +24,7 @@
  *
  * $Id: DoManageNameID.java,v 1.26 2009/11/24 21:53:27 madan_ranganath Exp $
  *
- * Portions copyright 2013-2017 ForgeRock AS.
+ * Portions copyright 2013-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -32,8 +32,8 @@ import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
@@ -52,6 +52,7 @@ import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
 import com.sun.identity.saml2.common.SOAPCommunicator;
+import org.forgerock.openam.utils.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -861,9 +862,10 @@ public class DoManageNameID {
             response.setStatus(HttpServletResponse.SC_OK);
             SAML2Utils.putHeaders(reply.getMimeHeaders(), response);
             // Write out the message on the response stream
-            OutputStream os = response.getOutputStream();
-            reply.writeTo(os);
-            os.flush();
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            reply.writeTo(stream);
+            response.getWriter().println(stream.toString("UTF-8"));
+            response.getWriter().flush();
         } else {
             logError("errorObtainResponse", 
                                  LogUtil.CANNOT_INSTANTIATE_MNI_RESPONSE, null);
@@ -1009,6 +1011,13 @@ public class DoManageNameID {
 
         NameID nameID = getNameIDFromMNIRequest(mniRequest, realm, 
             hostEntityID, hostRole);
+        if (nameID == null) {
+            debug.message("Null NameID");
+            logError("unknownPrincipal", LogUtil.UNKNOWN_PRINCIPAL,
+                    mniRequest.toXMLString(true, true));
+            return SAML2Utils.generateStatus(SAML2Constants.REQUESTER,
+                    SAML2Constants.UNKNOWN_PRINCIPAL, null);
+        }
         NameIDInfo oldNameIDInfo = getNameIDInfo(userID, hostEntityID,
             remoteEntityID, hostRole, realm, nameID.getSPNameQualifier(),
             true);
@@ -1020,7 +1029,8 @@ public class DoManageNameID {
 
         if (oldNameID == null) {
             // log manage name id failure
-            logError("unknownPrinciapl", LogUtil.UNKNOWN_PRINCIPAL, 
+            debug.message("Null oldNameID");
+            logError("unknownPrincipal", LogUtil.UNKNOWN_PRINCIPAL,
                 mniRequest.toXMLString(true, true));
             return SAML2Utils.generateStatus(SAML2Constants.REQUESTER,
                 SAML2Constants.UNKNOWN_PRINCIPAL, null);
@@ -1719,7 +1729,7 @@ public class DoManageNameID {
         throws SAML2Exception {
     
         NameIDInfo nameInfo = null;
-        if (affiliationID != null) {
+        if (StringUtils.isNotEmpty(affiliationID)) {
             AffiliationDescriptorType affiDesc =
                 metaManager.getAffiliationDescriptor(realm, affiliationID);
             if (affiDesc != null) {
@@ -1838,9 +1848,7 @@ public class DoManageNameID {
         mniRequest.setNameID(nameID);
 
         if (!needEncryptIt) {
-            if (debug.messageEnabled()) {
-                debug.message(method + "NamID doesn't need to be encrypted.");
-            }
+            debug.message("{} NameID doesn't need to be encrypted.", method);
             return;
         }
         
@@ -1899,7 +1907,7 @@ public class DoManageNameID {
         if (!needDecryptIt) {
             if (debug.messageEnabled()) {
                 debug.message("DoManageNameID.getNewIDFromMNIRequest: " +
-                    "NamID doesn't need to be decrypted.");
+                    "NameID doesn't need to be decrypted.");
                 debug.message("DoManageNameID.getNewIDFromMNIRequest: " +
                     "request is " + request);
             }
@@ -1928,9 +1936,7 @@ public class DoManageNameID {
             hostEntity, hostEntityRole);
         
         if (!needDecryptIt) {
-            if (debug.messageEnabled()) {
-                debug.message(method + "NamID doesn't need to be decrypted.");
-            }
+            debug.message("{} NameID doesn't need to be decrypted.", method);
             return request.getNameID();
         }
         

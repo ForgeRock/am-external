@@ -11,9 +11,9 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
-import { mapValues, omit } from "lodash";
+import { mapValues, omit, omitBy } from "lodash";
 import { combineReducers } from "redux";
 import { createAction } from "redux-actions";
 
@@ -43,7 +43,7 @@ export default function current (state = {}, action) {
                 },
                 tree: mapValues(omit(state.tree, [action.payload]), (node) => ({
                     ...node,
-                    connections: omit(node.connections, (toNode) => toNode === action.payload)
+                    connections: omitBy(node.connections, (toNode) => toNode === action.payload)
                 }))
             };
         case REMOVE_CURRENT_TREE:

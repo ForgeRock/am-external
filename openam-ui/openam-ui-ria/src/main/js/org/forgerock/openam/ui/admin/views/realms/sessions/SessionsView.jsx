@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2020 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -43,6 +43,8 @@ const fetchUsersByPartialUsername = _.debounce((realm, username, callback) => {
     }
 }, 300);
 
+const searchForPrompt = (label) => t("console.sessions.search.searchForPrompt", { label });
+
 class SessionsView extends Component {
     constructor (props) {
         super(props);
@@ -56,7 +58,7 @@ class SessionsView extends Component {
     }
 
     handleInvalidateSessions (realm, sessions) {
-        const handles = _.pluck(sessions, "sessionHandle");
+        const handles = _.map(sessions, "sessionHandle");
 
         invalidateByHandles(handles).then(() => this.fetchSessionsByUsernameAndRealm(realm, this.state.username));
     }
@@ -98,21 +100,19 @@ class SessionsView extends Component {
         return (
             <div>
                 <PageHeader title={ t("console.sessions.title") } />
-
                 <PageDescription>{ t("console.sessions.search.intro") }</PageDescription>
 
                 <FormGroup controlId="findAUser">
                     <ControlLabel srOnly>{ t("console.sessions.search.title") }</ControlLabel>
-                    <Select.Async
+                    <Select.AsyncCreatable
                         autoload={ false }
                         inputProps={ {
                             id: "findAUser"
                         } }
-                        isLoading
                         loadOptions={ _.partial(fetchUsersByPartialUsername, realm) }
-                        noResultsText={ t("console.sessions.search.noResults") }
                         onChange={ _.partial(this.handleSelectAsyncOnChange, realm) }
                         placeholder={ t("console.sessions.search.placeholder") }
+                        promptTextCreator={ searchForPrompt }
                         searchPromptText={ t("console.sessions.search.searchPrompt") }
                         value={ this.state.username }
                     />

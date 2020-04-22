@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2017 ForgeRock AS.
+ * Copyright 2013-2018 ForgeRock AS.
  */
 
 package org.forgerock.openam.idrepo.ldap.psearch;
@@ -47,6 +47,7 @@ public class DJLDAPv3PersistentSearch extends LDAPv3PersistentSearch<IdRepoListe
     private final SearchResultEntryHandler resultEntryHandler = new PSearchResultEntryHandler();
     private final Set<IdentityMovedOrRenamedListener> movedOrRenamedListenerSet = new HashSet<>(1);
     private final String usersSearchAttributeName;
+    private final String usersNamingAttributeName;
 
     /**
      * Creates a new DJLDAPv3PersistentSearch using the provided configuration data and connection factory.
@@ -63,8 +64,10 @@ public class DJLDAPv3PersistentSearch extends LDAPv3PersistentSearch<IdRepoListe
                                 Filter.objectClassPresent()), LDAPUtils
                         .getSearchScope(CollectionHelper.getMapAttr(configMap, LDAP_PERSISTENT_SEARCH_SCOPE),
                                 SearchScope.WHOLE_SUBTREE), factory,
-                CollectionHelper.getMapAttr(configMap, LDAP_USER_SEARCH_ATTR));
+                CollectionHelper.getMapAttr(configMap, LDAP_USER_SEARCH_ATTR),
+                CollectionHelper.getMapAttr(configMap, LDAP_USER_NAMING_ATTR));
         usersSearchAttributeName = CollectionHelper.getMapAttr(configMap, LDAP_USER_SEARCH_ATTR);
+        usersNamingAttributeName = CollectionHelper.getMapAttr(configMap, LDAP_USER_NAMING_ATTR);
     }
 
     /**
@@ -118,15 +121,18 @@ public class DJLDAPv3PersistentSearch extends LDAPv3PersistentSearch<IdRepoListe
         @Override
         public boolean handle(SearchResultEntry entry, String dn, Dn previousDn, PersistentSearchChangeType type) {
             if (type != null) {
+                String identitySearchAttrValue = entry.parseAttribute(usersSearchAttributeName).asString();
+                String identityNamingAttrValue = entry.parseAttribute(usersNamingAttributeName).asString();
                 if (previousDn != null) {
                     for (IdentityMovedOrRenamedListener listener : movedOrRenamedListenerSet) {
-                        listener.identityMovedOrRenamed(previousDn);
+                        listener.identityMovedOrRenamed(previousDn, identitySearchAttrValue, identityNamingAttrValue);
                     }
                 }
 
                 if (PersistentSearchChangeType.DELETE.equals(type)) {
                     for (IdentityMovedOrRenamedListener listener : movedOrRenamedListenerSet) {
-                        listener.identityMovedOrRenamed(entry.getName());
+                        listener.identityMovedOrRenamed(entry.getName(), identitySearchAttrValue,
+                            identityNamingAttrValue);
                     }
                 }
 

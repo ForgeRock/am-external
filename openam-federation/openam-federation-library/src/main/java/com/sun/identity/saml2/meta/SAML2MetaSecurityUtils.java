@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,7 +24,7 @@
  *
  * $Id: SAML2MetaSecurityUtils.java,v 1.6 2009/06/08 23:43:18 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2016 ForgeRock AS.
+ * Portions Copyrighted 2010-2019 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.meta;
@@ -32,53 +32,45 @@ package com.sun.identity.saml2.meta;
 import java.security.KeyStore;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import javax.xml.bind.JAXBException;
 
-import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorType;
-import com.sun.identity.saml2.jaxb.metadata.SSODescriptorType;
+import org.apache.xml.security.keys.KeyInfo;
+import org.apache.xml.security.keys.storage.StorageResolver;
+import org.apache.xml.security.keys.storage.implementations.KeyStoreResolver;
+import org.apache.xml.security.signature.XMLSignature;
+import org.apache.xml.security.utils.Constants;
+import org.forgerock.openam.federation.util.XmlSecurity;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import org.apache.xml.security.keys.KeyInfo;
-import org.apache.xml.security.keys.storage.implementations.KeyStoreResolver;
-import org.apache.xml.security.keys.storage.StorageResolver;
-import org.apache.xml.security.signature.XMLSignature;
-import org.apache.xml.security.utils.Constants;
-
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.shared.locale.Locale;
-import com.sun.identity.shared.configuration.SystemPropertiesManager;
-import com.sun.identity.shared.xml.XMLUtils;
-import com.sun.identity.shared.xml.XPathAPI;
-import com.sun.identity.shared.encode.Base64;
-
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.saml.xmlsig.XMLSignatureException;
 import com.sun.identity.saml.xmlsig.XMLSignatureManager;
-
+import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.jaxb.entityconfig.AttributeType;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
-import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement; 
-import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
+import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.ObjectFactory;
-import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorElement;
+import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorElement;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.key.KeyUtil;
+import com.sun.identity.shared.configuration.SystemPropertiesManager;
+import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.encode.Base64;
+import com.sun.identity.shared.locale.Locale;
+import com.sun.identity.shared.xml.XMLUtils;
+import com.sun.identity.shared.xml.XPathAPI;
 
 /**
  * The <code>SAML2MetaUtils</code> provides metadata security related util
@@ -118,8 +110,7 @@ public final class SAML2MetaSecurityUtils {
         if (keyProviderInitialized) {
             return;
         }
-
-        org.apache.xml.security.Init.init();
+        XmlSecurity.init();
 
         keyProvider = KeyUtil.getKeyProviderInstance();
         if (keyProvider != null) {
@@ -278,8 +269,6 @@ public final class SAML2MetaSecurityUtils {
 
             try {
                 XMLSignature signature = new XMLSignature(sigElement, "");
-                signature.addResourceResolver (
-                        new com.sun.identity.saml.xmlsig.OfflineResolver());
                 KeyInfo ki = signature.getKeyInfo ();
 
                 X509Certificate x509cert = null;

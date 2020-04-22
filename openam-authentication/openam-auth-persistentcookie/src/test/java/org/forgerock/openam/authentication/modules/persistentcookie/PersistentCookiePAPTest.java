@@ -16,16 +16,15 @@
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
 
-import static org.mockito.BDDMockito.anyString;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.testng.AssertJUnit.*;
+import static org.testng.AssertJUnit.assertEquals;
 
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import javax.security.auth.message.MessageInfo;
 import javax.servlet.http.HttpServletRequest;
@@ -57,8 +56,8 @@ public class PersistentCookiePAPTest {
                 ServiceConfigManager serviceConfigManager = mock(ServiceConfigManager.class);
                 ServiceConfig serviceConfig = mock(ServiceConfig.class);
                 given(serviceConfig.getAttributes()).willReturn(Collections.singletonMap("iplanet-am-auth-key-alias",
-                        (Set<String>) Sets.newHashSet("str")));
-                given(serviceConfigManager.getOrganizationConfig(anyString(), anyString())).willReturn(serviceConfig);
+                        Sets.newHashSet("str")));
+                given(serviceConfigManager.getOrganizationConfig(any(), any())).willReturn(serviceConfig);
                 return serviceConfigManager;
             }
         };

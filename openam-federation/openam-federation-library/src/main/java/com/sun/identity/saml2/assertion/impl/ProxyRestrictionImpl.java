@@ -24,6 +24,7 @@
  *
  * $Id: ProxyRestrictionImpl.java,v 1.2 2008/06/25 05:47:44 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -44,12 +45,12 @@ import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 
 /**
- *  The <code>ProxyRestriction</code> specifies limitations that the 
+ *  The <code>ProxyRestriction</code> specifies limitations that the
  *  asserting party imposes on relying parties that in turn wish to
- *  act as asserting parties and issue subsequent assertions of their 
+ *  act as asserting parties and issue subsequent assertions of their
  *  own on the basis of the information contained in the original
  *  assertion. A relying party acting as an asserting party must not
- *  issue an assertion that itself violates the restrictions specified 
+ *  issue an assertion that itself violates the restrictions specified
  *  in this condition on the basis of an assertion containing such
  *  a condition.
  */
@@ -57,20 +58,20 @@ public class ProxyRestrictionImpl implements ProxyRestriction {
 
     private int count;
     private boolean isMutable = true;
-    private List audiences = new ArrayList();
+    private List<String> audiences = new ArrayList<>();
 
     public static final String PROXY_RESTRICTION_ELEMENT = "ProxyRestriction";
     public static final String COUNT_ATTR = "Count";
     public static final String AUDIENCE_ELEMENT = "Audience";
 
-   /** 
+   /**
     * Default constructor
     */
     public ProxyRestrictionImpl() {
     }
 
     /**
-     * This constructor is used to build <code>ProxyRestriction</code> 
+     * This constructor is used to build <code>ProxyRestriction</code>
      * object from a XML string.
      *
      * @param xml A <code>java.lang.String</code> representing
@@ -92,8 +93,8 @@ public class ProxyRestrictionImpl implements ProxyRestriction {
     }
 
     /**
-     * This constructor is used to build <code>ProxyRestriction</code> 
-     * object from a block of existing XML that has already been built 
+     * This constructor is used to build <code>ProxyRestriction</code>
+     * object from a block of existing XML that has already been built
      * into a DOM.
      *
      * @param element A <code>org.w3c.dom.Element</code> representing
@@ -112,7 +113,7 @@ public class ProxyRestrictionImpl implements ProxyRestriction {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "invalid_element"));
         }
-        String elemName = element.getLocalName(); 
+        String elemName = element.getLocalName();
         if (elemName == null) {
             SAML2SDKUtils.debug.error(
                 "ProxyRestrictionImpl.processElement(): local name missing");
@@ -141,16 +142,16 @@ public class ProxyRestrictionImpl implements ProxyRestriction {
                     "invalid_count_number"));
             }
         }
-                
+
         // starts processing subelements
         NodeList nodes = element.getChildNodes();
         int numOfNodes = nodes.getLength();
         if (numOfNodes < 1) {
             return;
         }
-    
+
         int nextElem = 0;
-        while (nextElem < numOfNodes) { 
+        while (nextElem < numOfNodes) {
             Node child = (Node)nodes.item(nextElem);
             if (child.getNodeType() == Node.ELEMENT_NODE) {
                 String childName = child.getLocalName();
@@ -170,7 +171,7 @@ public class ProxyRestrictionImpl implements ProxyRestriction {
             nextElem++;
         }
     }
- 
+
     /**
      *  Returns the maximum number of indirections that the asserting
      *  party permits to exist between this assertion and an assertion
@@ -200,18 +201,18 @@ public class ProxyRestrictionImpl implements ProxyRestriction {
                 "AudienceRestrictionImpl.setCount(): count is negative");
             throw new SAML2Exception(SAML2SDKUtils.bundle.
                  getString("negative_count_number"));
-        }   
+        }
         count = value;
     }
 
     /**
-     *  Returns the list of audiences to whom the asserting party 
-     *  permits new assertions to be issued on the basis of this 
+     *  Returns the list of audiences to whom the asserting party
+     *  permits new assertions to be issued on the basis of this
      *  assertion.
      *
      *  @return a list of <code>String</code> represented audiences
      */
-    public List getAudience() {
+    public List<String> getAudience() {
         return audiences;
     }
 
@@ -222,19 +223,19 @@ public class ProxyRestrictionImpl implements ProxyRestriction {
      *  @param audiences a list of <code>String</code> represented audiences
      *  @exception SAML2Exception if the object is immutable
      */
-    public void setAudience(List audiences) throws SAML2Exception {
+    public void setAudience(List<String> audiences) throws SAML2Exception {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));
         }
         this.audiences = audiences;
     }
- 
+
    /**
     * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace 
+    * @param includeNSPrefix Determines whether or not the namespace
     *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is 
+    * @param declareNS Determines whether or not the namespace is
     *        declared within the Element.
     * @return A String representation
     * @exception SAML2Exception if something is wrong during conversion

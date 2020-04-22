@@ -24,7 +24,7 @@
  *
  * $Id: NameIDMappingServiceSOAP.java,v 1.6 2009/10/14 23:59:44 exu Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.servlet;
@@ -39,15 +39,13 @@ import com.sun.identity.saml2.protocol.NameIDMappingRequest;
 import com.sun.identity.saml2.protocol.NameIDMappingResponse;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml.common.SAMLUtils;
-import java.io.OutputStream;
-import java.io.InputStream;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.ServletException;
-import javax.xml.soap.MessageFactory;
-import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 import org.w3c.dom.Element;
@@ -113,9 +111,10 @@ public class NameIDMappingServiceSOAP extends HttpServlet {
                 }
                 resp.setStatus(HttpServletResponse.SC_OK);
                 SAML2Utils.putHeaders(reply.getMimeHeaders(), resp);
-                OutputStream os = resp.getOutputStream();
-                reply.writeTo(os);
-                os.flush();
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                reply.writeTo(stream);
+                resp.getWriter().println(stream.toString("UTF-8"));
+                resp.getWriter().flush();
             }
         } catch (SAML2Exception ex) {
             SAML2Utils.debug.error("NameIDMappingServiceSOAP", ex);

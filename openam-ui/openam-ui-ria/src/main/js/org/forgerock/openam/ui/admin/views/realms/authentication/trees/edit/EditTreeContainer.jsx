@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
-import { chain, difference, each, every, findKey, isEmpty, keys, map, omit, pluck, values } from "lodash";
+import { chain, difference, each, every, findKey, isEmpty, keys, map, omit, values } from "lodash";
 import React, { Component, PropTypes } from "react";
 import uuidv4 from "uuid";
 
@@ -63,7 +63,7 @@ import withRouterPropType from "org/forgerock/commons/ui/common/components/hoc/w
 const containsNode = (tree, id) => {
     const connections = chain(tree.nodes)
         .values()
-        .pluck("connections")
+        .map("connections")
         .map((connections) => values(connections))
         .flatten()
         .value();
@@ -235,8 +235,8 @@ class EditTreeContainer extends Component {
             const realm = this.props.router.params[0];
             listNodeOutcomes(realm, properties, type).then((response) => {
                 const currentOutcomes = this.props.localNodes[id]._outcomes;
-                const currentOutcomeKeys = pluck(currentOutcomes, "id");
-                const newOutcomeKeys = pluck(response, "id");
+                const currentOutcomeKeys = map(currentOutcomes, "id");
+                const newOutcomeKeys = map(response, "id");
 
                 this.props.setNodeOutcomes(response, id);
                 this.props.removeConnection(difference(currentOutcomeKeys, newOutcomeKeys), id);

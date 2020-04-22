@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-authentication</artifactId>
-        <version>5.5.1</version>
+        <version>5.5.2</version>
     </parent>
 
     <!-- Component Definition -->
@@ -33,12 +33,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-        </dependency>
-        <dependency>
-        	<groupId>org.forgerock.am</groupId>
-        	<artifactId>openam-radius-common</artifactId>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-radius-common</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2017 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -167,14 +167,14 @@ public class OAuthProxy  {
     private static StringBuilder input(String name, String value) {
         return new StringBuilder()
             .append("<input type=\"hidden\" name=\"")
-            .append(name).append("\" value=\"")
-            .append(value).append("\"/>\n");
+            .append(ESAPI.encoder().encodeForHTMLAttribute(name)).append("\" value=\"")
+            .append(ESAPI.encoder().encodeForHTMLAttribute(value)).append("\"/>\n");
     }
  
     private static String getError(String message) {
         StringBuffer html = new StringBuffer();
         html.append("<html>\n").append("<body>\n")
-            .append("<h1>\n").append(message).append("</h1>\n")
+            .append("<h1>\n").append(ESAPI.encoder().encodeForHTML(message)).append("</h1>\n")
             .append("</body>\n").append("</html>\n");
         return html.toString();
     }

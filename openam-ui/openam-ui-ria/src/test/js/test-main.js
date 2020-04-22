@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 (function () {
@@ -30,13 +30,13 @@
             }
         },
         paths: {
-            "backbone": "/base/target/dependencies/libs/backbone-1.1.2-min",
+            "backbone": "/base/target/dependencies/libs/backbone-1.4.0-min",
             "chai": "/base/node_modules/chai/chai",
             "handlebars": "/base/target/dependencies/libs/handlebars-4.0.5",
-            "jquery": "/base/target/dependencies/libs/jquery-2.1.1-min",
-            "lodash": "/base/target/dependencies/libs/lodash-3.10.1-min",
-            "i18next": "/base/target/dependencies/libs/i18next-1.7.3-min",
-            "moment": "/base/target/dependencies/libs/moment-2.18.1-min",
+            "jquery": "/base/target/dependencies/libs/jquery-2.1.1-patched",
+            "lodash": "/base/target/dependencies/libs/lodash-4.17.15-min",
+            "i18next": "/base/target/dependencies/libs/i18next-1.10.3-standard",
+            "moment": "/base/target/dependencies/libs/moment-2.20.1-min",
             "redux": "/base/target/XUI/libs/redux-3.5.2-min",
             "redux-actions": "/base/target/XUI/libs/redux-actions-2.0.1-min",
             "sinon-chai": "/base/node_modules/sinon-chai/lib/sinon-chai",

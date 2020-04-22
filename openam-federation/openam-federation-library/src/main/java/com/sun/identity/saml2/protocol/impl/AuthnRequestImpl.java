@@ -24,6 +24,8 @@
  *
  * $Id: AuthnRequestImpl.java,v 1.8 2009/06/09 20:28:32 exu Exp $
  *
+ * Portions Copyrighted 2019 ForgeRock AS.
+ *
  */
 
 
@@ -471,7 +473,7 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 
 	if (declareNS) {
 	    xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR)
-		     .append(SAML2Constants.NEWLINE);
+		     .append(SAML2Constants.SPACE);
 		    
        }
 

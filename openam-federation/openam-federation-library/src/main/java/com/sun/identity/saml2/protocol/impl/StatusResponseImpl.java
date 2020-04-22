@@ -24,7 +24,7 @@
  *
  * $Id: StatusResponseImpl.java,v 1.4 2008/06/25 05:48:01 qcheng Exp $
  *
- * Portions Copyrighted 2015-2016 ForgeRock AS.
+ * Portions Copyrighted 2015-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.protocol.impl;
 
@@ -394,7 +394,7 @@ public abstract class StatusResponseImpl implements StatusResponse {
         
         if (declareNS) {
             xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR)
-            .append(SAML2Constants.NEWLINE);
+            .append(SAML2Constants.SPACE);
             
         }
         

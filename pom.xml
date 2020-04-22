@@ -24,7 +24,7 @@
 
     <groupId>org.forgerock.am</groupId>
     <artifactId>openam-external</artifactId>
-<version>5.5.1</version>    
+<version>5.5.2</version>    
     <packaging>pom</packaging>
 
     <!-- Child Modules -->
@@ -38,7 +38,7 @@
         <module>openam-datastore</module>
     </modules>
 
-    <repositories>
+<!--    <repositories>
         <repository>
             <id>forgerock-private-releases</id>
             <name>ForgeRock Private Release Repository</name>
@@ -47,6 +47,6 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-    </repositories>    
+    </repositories>    -->
 </project>
 

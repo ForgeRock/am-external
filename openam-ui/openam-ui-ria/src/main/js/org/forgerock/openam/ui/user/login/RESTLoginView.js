@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2017 ForgeRock AS.
+ * Copyright 2011-2020 ForgeRock AS.
  */
 
 define([
@@ -109,19 +109,15 @@ define([
      * @returns {Boolean} if the callback "type" is present in the callbacks.
      */
     function hasCallback (callbacks, type) {
-        return _.some(callbacks, "type", type);
-    }
-
-    function getFragmentParamString () {
-        const params = URIUtils.getCurrentFragmentQueryString();
-        return _.isEmpty(params) ? "" : `&${params}`;
+        return _.some(callbacks, function (callback) {
+            return callback.type === type;
+        });
     }
 
     var LoginView = AbstractView.extend({
         template: "templates/openam/RESTLoginTemplate.html",
         genericTemplate: "templates/openam/RESTLoginTemplate.html",
         baseTemplate: "templates/common/LoginBaseTemplate.html",
-
         data: {},
         events: {
             "click input[type=submit]": "formSubmit"
@@ -225,6 +221,7 @@ define([
                 failureCallback () {
                     // enabled the login button if login failure
                     $(e.currentTarget).prop("disabled", false);
+                    $("input[type='password']").val("");
                     // If its not the first stage then render the Login Unavailable view with link back to login screen.
                     if (Configuration.globalData.auth.currentStage > 1) {
                         let fragmentParams = URIUtils.getCurrentFragmentQueryString();
@@ -263,6 +260,19 @@ define([
             }
         },
 
+        getUrlWithoutNewSessionParameters () {
+            const paramsWithoutNewSession = (paramString, separator) => {
+                const params = query.parseParameters(paramString);
+                if (params.arg === "newsession") {
+                    delete params.arg;
+                }
+                return _.isEmpty(params) ? "" : `${separator}${query.urlParamsFromObject(params)}`;
+            };
+            const queryString = paramsWithoutNewSession(URIUtils.getCurrentQueryString(), "?");
+            const fragment = paramsWithoutNewSession(URIUtils.getCurrentFragmentQueryString(), "&");
+            return `${URIUtils.getCurrentPathName()}${queryString}#login${fragment}`;
+        },
+
         render (args) {
             this.handleLegacyRealmFragmentParameter();
 
@@ -270,14 +280,19 @@ define([
             let params = {};
             const auth = Configuration.globalData.auth;
 
+            this.data.fragmentParamString = getCurrentFragmentParamString();
+
             // TODO: The first undefined argument is the deprecated realm which is defined in the
             // CommonRoutesConfig login route. This needs to be removed as part of AME-11109.
-            this.data.args = [undefined, getFragmentParamString()];
+            this.data.args = [undefined, this.data.fragmentParamString];
 
-            this.data.compositeQueryString = `&${query.urlParamsFromObject({
+            const queryObjectExclServiceParam = {
                 ...query.parseParameters(URIUtils.getCurrentFragmentQueryString()),
                 ...query.parseParameters(URIUtils.getCurrentQueryString())
-            })}`;
+            };
+            delete queryObjectExclServiceParam["service"];
+            this.data.queryStringExclServiceParam = _.isEmpty(queryObjectExclServiceParam)
+                ? "" : `&${query.urlParamsFromObject(queryObjectExclServiceParam)}`;
 
             if (args) {
                 auth.additional = addtionalArguments;
@@ -291,9 +306,13 @@ define([
             }
 
             AuthNService.getRequirements().then(_.bind(function (reqs) {
-                // Clear out existing session if instructed
-                if (reqs.hasOwnProperty("tokenId") && params.arg === "newsession") {
-                    logout.default();
+                const hasNewSessionParameter = reqs.hasOwnProperty("tokenId") && params.arg === "newsession";
+                if (hasNewSessionParameter) {
+                    logout.default().then(() => {
+                        window.location.href = this.getUrlWithoutNewSessionParameters();
+                        return false;
+                    });
+                    return false;
                 }
 
                 // If simply by asking for the requirements, we end up with a token,
@@ -313,23 +332,27 @@ define([
                     });
                 }
             }, this), _.bind(function (error) {
-                if (error) {
-                    Messages.addMessage({
-                        type: Messages.TYPE_DANGER,
-                        message: error.message
-                    });
+                if (_.has(error, "message")) {
+                    Messages.addMessage({ type: Messages.TYPE_DANGER, message: error.message });
                 }
+                if (_.has(error, "detail.failureUrl") && !_.isEmpty(error.detail.failureUrl)) {
+                    /**
+                     * If there is a login failure which has occurred without a login form submission, e.g. Zero Page Login
+                     * and a failureUrl is set (e.g. Failure URL node), route the user to that.
+                     */
+                    window.location.href = error.detail.failureUrl;
+                } else {
+                    /**
+                     * We haven't managed to get a successful response from the server
+                     * This could be due to many reasons, including that the params are incorrect
+                     * For example requesting service=thewrongname. So here we use the RESTLoginHelper.filterUrlParams
+                     * function to only return the params we wish to save. The authIndexType and authIndexValue
+                     * would normally only be applied when the user has logged in, so they should not contain invalid values
+                     */
 
-                /**
-                 * We havent managed to get a successful responce from the server
-                 * This could be due to many reasons, including that the params are incorrect
-                 * For example requesting service=thewrongname. So here we use the RESTLoginHelper.filterUrlParams
-                 * function to only return the params we which to save. The authIndexType and authIndexValue
-                 * would normally only be applied when the user has logged in, so they should not contain invalid values
-                 */
-
-                const paramString = URIUtils.getCurrentFragmentQueryString();
-                routeToLoginUnavailable(RESTLoginHelper.filterUrlParams(query.parseParameters(paramString)));
+                    const paramString = URIUtils.getCurrentFragmentQueryString();
+                    routeToLoginUnavailable(RESTLoginHelper.filterUrlParams(query.parseParameters(paramString)));
+                }
             }, this));
         },
         renderForm (reqs, urlParams) {
@@ -339,7 +362,7 @@ define([
                 template,
                 self = this;
 
-            this.userNamePasswordStage = _.contains(usernamePasswordStages, reqs.stage);
+            this.userNamePasswordStage = _.includes(usernamePasswordStages, reqs.stage);
 
             requirements.callbacks = [];
 
@@ -348,7 +371,7 @@ define([
                 let redirectCallback;
 
                 if (element.type === "RedirectCallback") {
-                    redirectCallback = _.object(_.map(element.output, (o) => {
+                    redirectCallback = _.fromPairs(_.map(element.output, (o) => {
                         return [o.name, o.value];
                     }));
 

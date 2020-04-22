@@ -24,7 +24,7 @@
  *
  * $Id: EncryptedAttributeImpl.java,v 1.2 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions copyright 2014-2015 ForgeRock AS.
+ * Portions copyright 2014-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
 
@@ -82,6 +82,12 @@ public class EncryptedAttributeImpl implements EncryptedAttribute {
                       SAML2SDKUtils.bundle.getString("wrongInput"));
         }
         
+    }
+
+    /**
+     * Class constructor.
+     */
+    EncryptedAttributeImpl() {
     }
 
     /**

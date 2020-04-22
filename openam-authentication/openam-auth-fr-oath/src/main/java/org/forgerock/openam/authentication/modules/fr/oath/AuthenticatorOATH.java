@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2012-2017 ForgeRock AS.
+ * Copyright 2012-2018 ForgeRock AS.
  * Portions Copyrighted 2014-2015 Nomura Research Institute, Ltd.
  */
 
@@ -392,8 +392,13 @@ public class AuthenticatorOATH extends AMLoginModule {
                     return LOGIN_NO_DEVICE;
                 }
             } else {
-                replaceHeader(LOGIN_SAVED_DEVICE, MODULE_NAME);
-                return LOGIN_SAVED_DEVICE;
+                if (isOptional) {
+                    replaceHeader(LOGIN_OPT_DEVICE, MODULE_NAME);
+                    return LOGIN_OPT_DEVICE;
+                } else {
+                    replaceHeader(LOGIN_SAVED_DEVICE, MODULE_NAME);
+                    return LOGIN_SAVED_DEVICE;
+                }
             }
         }
     }

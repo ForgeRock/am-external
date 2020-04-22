@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2017 ForgeRock AS. All Rights Reserved
+ * 
+-->
+
+<EntityConfig entityID="openam-saml2-idp" hosted="true" xmlns="urn:sun:fm:SAML:2.0:entityconfig">
+    <IDPSSOConfig metaAlias="/idp">
+        <Attribute name="description">
+            <Value/>
+        </Attribute>
+        <Attribute name="signingCertAlias">
+            <Value>test</Value>
+        </Attribute>
+        <Attribute name="encryptionCertAlias">
+            <Value/>
+        </Attribute>
+        <Attribute name="basicAuthOn">
+            <Value>false</Value>
+        </Attribute>
+        <Attribute name="basicAuthUser">
+            <Value/>
+        </Attribute>
+        <Attribute name="basicAuthPassword">
+            <Value/>
+        </Attribute>
+        <Attribute name="autofedEnabled">
+            <Value>false</Value>
+        </Attribute>
+        <Attribute name="autofedAttribute">
+            <Value/>
+        </Attribute>
+        <Attribute name="assertionEffectiveTime">
+            <Value>600</Value>
+        </Attribute>
+        <Attribute name="idpAuthncontextMapper">
+            <Value>com.sun.identity.saml2.plugins.DefaultIDPAuthnContextMapper</Value>
+        </Attribute>
+        <Attribute name="idpAuthncontextClassrefMapping">
+            <Value>urn:oasis:names:tc:SAML:2.0:ac:classes:Kerberos|10|</Value>
+            <Value>urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport|5||default</Value>
+            <Value>urn:oasis:names:tc:SAML:2.0:ac:classes:X509|20|</Value>
+        </Attribute>
+        <Attribute name="idpAccountMapper">
+            <Value>com.sun.identity.saml2.plugins.DefaultIDPAccountMapper</Value>
+        </Attribute>
+        <Attribute name="idpDisableNameIDPersistence">
+            <Value>false</Value>
+        </Attribute>
+        <Attribute name="idpAttributeMapper">
+            <Value>com.sun.identity.saml2.plugins.DefaultIDPAttributeMapper</Value>
+        </Attribute>
+        <Attribute name="assertionIDRequestMapper">
+            <Value>com.sun.identity.saml2.plugins.DefaultAssertionIDRequestMapper</Value>
+        </Attribute>
+        <Attribute name="nameIDFormatMap">
+            <Value>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress=mail</Value>
+            <Value>urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName=</Value>
+            <Value>urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName=</Value>
+            <Value>urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos=</Value>
+            <Value>urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified=</Value>
+        </Attribute>
+        <Attribute name="idpECPSessionMapper">
+            <Value>com.sun.identity.saml2.plugins.DefaultIDPECPSessionMapper</Value>
+        </Attribute>
+        <Attribute name="attributeMap"/>
+        <Attribute name="wantNameIDEncrypted">
+            <Value/>
+        </Attribute>
+        <Attribute name="wantArtifactResolveSigned">
+            <Value/>
+        </Attribute>
+        <Attribute name="wantLogoutRequestSigned">
+            <Value/>
+        </Attribute>
+        <Attribute name="wantLogoutResponseSigned">
+            <Value/>
+        </Attribute>
+        <Attribute name="wantMNIRequestSigned">
+            <Value/>
+        </Attribute>
+        <Attribute name="wantMNIResponseSigned">
+            <Value/>
+        </Attribute>
+        <Attribute name="cotlist">
+            <Value>TestCOT</Value>
+        </Attribute>
+        <Attribute name="discoveryBootstrappingEnabled">
+            <Value>false</Value>
+        </Attribute>
+        <Attribute name="assertionCacheEnabled">
+            <Value>false</Value>
+        </Attribute>
+        <Attribute name="assertionNotBeforeTimeSkew">
+            <Value>600</Value>
+        </Attribute>
+        <Attribute name="saeAppSecretList"/>
+        <Attribute name="saeIDPUrl">
+            <Value>http://openam.example.com:8080/openam/idpsaehandler/metaAlias/idp</Value>
+        </Attribute>
+        <Attribute name="AuthUrl">
+            <Value/>
+        </Attribute>
+        <Attribute name="appLogoutUrl">
+            <Value/>
+        </Attribute>
+        <Attribute name="idpSessionSyncEnabled">
+            <Value>false</Value>
+        </Attribute>
+        <Attribute name="relayStateUrlList"/>
+    </IDPSSOConfig>
+</EntityConfig>

@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
-import { pluck, without } from "lodash";
+import { map, without } from "lodash";
 import { BootstrapTable } from "react-bootstrap-table";
 import React, { PropTypes } from "react";
 
@@ -27,7 +27,7 @@ const Table = ({ idField, onRowClick, onSelectedChange, selectedIds, tableRef, .
 
         onSelectedChange(selected);
     };
-    const handleSelectAll = (isSelected, rows) => onSelectedChange(isSelected ? pluck(rows, idField) : []);
+    const handleSelectAll = (isSelected, rows) => onSelectedChange(isSelected ? map(rows, idField) : []);
 
     return (
         <BootstrapTable

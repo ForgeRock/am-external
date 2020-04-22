@@ -19,6 +19,7 @@ import static org.forgerock.openam.scripting.ScriptConstants.EMPTY_SCRIPT_SELECT
 import static org.forgerock.openam.scripting.ScriptConstants.ScriptContext.AUTHENTICATION_SERVER_SIDE;
 
 import java.security.Principal;
+import java.util.Collections;
 import java.util.Map;
 
 import javax.script.Bindings;
@@ -51,6 +52,8 @@ import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.sm.DNMapper;
+
+import java.util.Set;
 
 /**
  * An authentication module that allows users to authenticate via a scripting language
@@ -93,6 +96,7 @@ public class Scripted extends AMLoginModule {
     private RestletHttpClient httpClient;
     private ScriptIdentityRepository identityRepository;
     protected Map<String, Object> sharedState;
+    private Set<String> userSearchAttributes = Collections.emptySet();
 
     /**
      * {@inheritDoc}
@@ -109,11 +113,16 @@ public class Scripted extends AMLoginModule {
         scriptEvaluator = getScriptEvaluator();
         clientSideScriptEnabled = getClientSideScriptEnabled();
         httpClient = getHttpClient();
-        identityRepository  = getScriptIdentityRepository();
+        try {
+            userSearchAttributes = getUserAliasList();
+        } catch (final AuthLoginException ale) {
+            DEBUG.warning("Scripted.init: unable to retrieve search attributes", ale);
+        }
+        identityRepository = getScriptIdentityRepository(userSearchAttributes);
     }
 
-    private ScriptIdentityRepository getScriptIdentityRepository() {
-        return new ScriptIdentityRepository(getAmIdentityRepository());
+    private ScriptIdentityRepository getScriptIdentityRepository(Set<String> userSearchAttributes) {
+        return new ScriptIdentityRepository(getAmIdentityRepository(), userSearchAttributes);
     }
 
     private AMIdentityRepository getAmIdentityRepository() {

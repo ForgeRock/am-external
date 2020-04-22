@@ -24,7 +24,7 @@
  *
  * $Id: LogoutRequest.java,v 1.2 2008/06/25 05:47:56 qcheng Exp $
  *
- * Portions Copyrighted 2016 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
 
 
@@ -72,7 +72,7 @@ import com.sun.identity.saml2.protocol.impl.LogoutResponseImpl;
         defaultImpl = LogoutRequestImpl.class)
 public interface LogoutRequest
 extends com.sun.identity.saml2.protocol.RequestAbstract {
-    
+
     /**
      * Returns the value of the notOnOrAfter property.
      *
@@ -80,18 +80,18 @@ extends com.sun.identity.saml2.protocol.RequestAbstract {
      * @see #setNotOnOrAfter(Date)
      */
     public java.util.Date getNotOnOrAfter();
-    
+
     /**
      * Sets the value of the notOnOrAfter property.
      *
-     * @param value <code>java.util.Date</code> value of the notOnOrAfter 
+     * @param value <code>java.util.Date</code> value of the notOnOrAfter
      * property to be set
      *
      * @throws SAML2Exception if the object is immutable
      * @see #getNotOnOrAfter
      */
     public void setNotOnOrAfter(java.util.Date value) throws SAML2Exception;
-    
+
     /**
      * Returns the value of the reason property.
      *
@@ -99,7 +99,7 @@ extends com.sun.identity.saml2.protocol.RequestAbstract {
      * @see #setReason(String)
      */
     public java.lang.String getReason();
-    
+
     /**
      * Sets the value of the reason property.
      *
@@ -108,7 +108,7 @@ extends com.sun.identity.saml2.protocol.RequestAbstract {
      * @see #getReason
      */
     public void setReason(java.lang.String value) throws SAML2Exception;
-    
+
     /**
      * Returns the value of the encryptedID property.
      *
@@ -116,7 +116,7 @@ extends com.sun.identity.saml2.protocol.RequestAbstract {
      * @see #setEncryptedID(EncryptedID)
      */
     public com.sun.identity.saml2.assertion.EncryptedID getEncryptedID();
-    
+
     /**
      * Sets the value of the encryptedID property.
      *
@@ -128,7 +128,7 @@ extends com.sun.identity.saml2.protocol.RequestAbstract {
     public void setEncryptedID(
     com.sun.identity.saml2.assertion.EncryptedID value)
     throws SAML2Exception;
-    
+
     /**
      * Returns the value of the nameID property.
      *
@@ -136,7 +136,7 @@ extends com.sun.identity.saml2.protocol.RequestAbstract {
      * @see #setNameID(NameID)
      */
     public com.sun.identity.saml2.assertion.NameID getNameID();
-    
+
     /**
      * Sets the value of the nameID property.
      *
@@ -146,7 +146,7 @@ extends com.sun.identity.saml2.protocol.RequestAbstract {
      */
     public void setNameID(com.sun.identity.saml2.assertion.NameID value)
     throws SAML2Exception;
-    
+
     /**
      * Returns the value of the baseID property.
      *
@@ -154,7 +154,7 @@ extends com.sun.identity.saml2.protocol.RequestAbstract {
      * @see #setBaseID(BaseID)
      */
     public com.sun.identity.saml2.assertion.BaseID getBaseID();
-    
+
     /**
      * Sets the value of the baseID property.
      *
@@ -164,23 +164,23 @@ extends com.sun.identity.saml2.protocol.RequestAbstract {
      */
     public void setBaseID(com.sun.identity.saml2.assertion.BaseID value)
     throws SAML2Exception;
-    
+
     /**
      * Returns the value of the SessionIndex property.
      *
      * @return list containing objects of type <code>java.lang.String</code>
      * @see #setSessionIndex(List)
      */
-    public java.util.List getSessionIndex();
-    
+    public java.util.List<String> getSessionIndex();
+
     /**
      * Sets the value of the SessionIndex property.
      *
-     * @param sessionIndexList list containing objects of 
+     * @param sessionIndexList list containing objects of
      *        type <code>java.lang.String</code>
      * @throws SAML2Exception if the object is immutable
      * @see #getSessionIndex
      */
-    public void setSessionIndex(java.util.List sessionIndexList)
+    public void setSessionIndex(java.util.List<String> sessionIndexList)
     throws SAML2Exception;
 }

@@ -16,12 +16,15 @@
 package com.sun.identity.saml2.profile;
 
 import static com.sun.identity.saml2.common.SAML2Constants.*;
-import com.sun.identity.saml2.jaxb.metadata.SingleLogoutServiceElement;
-import com.sun.identity.saml2.jaxb.metadata.impl.SingleLogoutServiceElementImpl;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.ArrayList;
 import java.util.List;
-import static org.fest.assertions.Assertions.*;
+
 import org.testng.annotations.Test;
+
+import com.sun.identity.saml2.jaxb.metadata.SingleLogoutServiceElement;
+import com.sun.identity.saml2.jaxb.metadata.impl.SingleLogoutServiceElementImpl;
 
 @Test
 public class SLOLocationTest {

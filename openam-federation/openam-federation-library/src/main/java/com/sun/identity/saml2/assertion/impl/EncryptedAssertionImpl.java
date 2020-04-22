@@ -24,7 +24,7 @@
  *
  * $Id: EncryptedAssertionImpl.java,v 1.2 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions copyright 2014-2015 ForgeRock AS.
+ * Portions copyright 2014-2018 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
 
@@ -45,8 +45,8 @@ import com.sun.identity.saml2.xmlenc.EncManager;
 /**
  * The <code>EncryptedAssertion</code> represents an assertion in
  * encrypted fashion, as defined by the XML Encryption Syntax and
- * Processing specification [XMLEnc]. The EncryptedAssertion contains 
- * an <code>EncryptedData</code> and zero or more 
+ * Processing specification [XMLEnc]. The EncryptedAssertion contains
+ * an <code>EncryptedData</code> and zero or more
  * <code>EncryptedKey</code>s.
  */
 public class EncryptedAssertionImpl extends EncryptedElementImpl implements EncryptedAssertion {
@@ -54,16 +54,15 @@ public class EncryptedAssertionImpl extends EncryptedElementImpl implements Encr
 
     // used by the constructors.
     private void parseElement(Element element)
-        throws SAML2Exception
-    {
+            throws SAML2Exception {
         // make sure that the input xml block is not null
         if (element == null) {
             if (SAML2SDKUtils.debug.messageEnabled()) {
                 SAML2SDKUtils.debug.message("EncryptedAssertionImpl."
-                    + "parseElement: Input is null.");
+                        + "parseElement: Input is null.");
             }
             throw new SAML2Exception(
-                      SAML2SDKUtils.bundle.getString("nullInput"));
+                    SAML2SDKUtils.bundle.getString("nullInput"));
         }
 
         // Make sure this is an EncryptedAssertion.
@@ -71,22 +70,27 @@ public class EncryptedAssertionImpl extends EncryptedElementImpl implements Encr
         tag = element.getLocalName();
         if ((tag == null) || (!tag.equals(elementName))) {
             if (SAML2SDKUtils.debug.messageEnabled()) {
-                SAML2SDKUtils.debug.message("EncryptedAssertionImpl." 
-                     + "parseElement: not EncryptedAssertion.");
+                SAML2SDKUtils.debug.message("EncryptedAssertionImpl."
+                        + "parseElement: not EncryptedAssertion.");
             }
             throw new SAML2Exception(
-                      SAML2SDKUtils.bundle.getString("wrongInput"));
+                    SAML2SDKUtils.bundle.getString("wrongInput"));
         }
-        
+
+    }
+
+    /**
+     * Default Class constructor
+     */
+    EncryptedAssertionImpl() {
     }
 
     /**
      * Class constructor with <code>EncryptedAssertion</code> in
      * <code>Element</code> format.
      */
-    public EncryptedAssertionImpl(Element element) 
-    throws SAML2Exception
-    {
+    public EncryptedAssertionImpl(Element element)
+            throws SAML2Exception {
         parseElement(element);
         xmlString = XMLUtils.print(element);
     }
@@ -96,12 +100,11 @@ public class EncryptedAssertionImpl extends EncryptedElementImpl implements Encr
      * format.
      */
     public EncryptedAssertionImpl(String xmlString)
-    throws SAML2Exception
-    {
+            throws SAML2Exception {
         Document doc = XMLUtils.toDOMDocument(xmlString, SAML2SDKUtils.debug);
         if (doc == null) {
             throw new SAML2Exception(
-                SAML2SDKUtils.bundle.getString("errorObtainingElement"));
+                    SAML2SDKUtils.bundle.getString("errorObtainingElement"));
         }
         parseElement(doc.getDocumentElement());
         this.xmlString = xmlString;

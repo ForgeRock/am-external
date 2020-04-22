@@ -25,21 +25,22 @@
  * $Id: AssertionIDRequest.java,v 1.2 2008/06/25 05:47:56 qcheng Exp $
  *
  *
- * Portions Copyrighted 2016 ForgeRock AS.
+ * Portions Copyrighted 2016-2018 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.sun.identity.saml2.assertion.AssertionIDRef;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.protocol.impl.AssertionIDRequestImpl;
 import java.util.List;
 
 /**
  * This class represents the AssertionIDRequestType complex type.
- * <p>The following schema fragment specifies the expected 	
- * content contained within this java content object. 	
+ * <p>The following schema fragment specifies the expected
+ * content contained within this java content object.
  * <p>
  * <pre>
  * &lt;complexType name="AssertionIDRequestType">
@@ -52,7 +53,7 @@ import java.util.List;
  *   &lt;/complexContent>
  * &lt;/complexType>
  * </pre>
- * 
+ *
  * @supported.all.api
  */
 
@@ -60,20 +61,20 @@ import java.util.List;
         defaultImpl = AssertionIDRequestImpl.class)
 public interface AssertionIDRequest extends RequestAbstract {
 
-    /** 
+    /**
      * Returns a list of <code>AssertionIDRef</code> objects.
      *
      * @return list of <code>AssertionIDRef</code> objects.
      * @see #setAssertionIDRefs(List)
      */
-    public List getAssertionIDRefs();
+    public List<AssertionIDRef> getAssertionIDRefs();
 
-    /** 
+    /**
      * Sets a list of <code>AssertionIDRef</code> Objects.
      *
      * @param assertionIDRefs the list of <code>AssertionIDRef</code> objects.
      * @throws SAML2Exception if the object is immutable.
      * @see #getAssertionIDRefs
      */
-    public void setAssertionIDRefs(List assertionIDRefs) throws SAML2Exception;
+    public void setAssertionIDRefs(List<AssertionIDRef> assertionIDRefs) throws SAML2Exception;
 }

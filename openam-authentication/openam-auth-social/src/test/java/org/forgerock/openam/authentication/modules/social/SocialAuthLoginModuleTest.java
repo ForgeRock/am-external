@@ -48,12 +48,11 @@ import org.forgerock.guava.common.collect.ImmutableMap;
 import org.forgerock.json.JsonValue;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.UserInfo;
-import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.authentication.modules.common.AMLoginModuleBinder;
-import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.authentication.modules.oauth2.EmailGateway;
 import org.forgerock.openam.authentication.modules.oauth2.NoEmailSentException;
 import org.forgerock.openam.authentication.modules.oidc.JwtHandlerConfig;
+import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.promise.Promises;
@@ -238,7 +237,7 @@ public class SocialAuthLoginModuleTest {
         given(client.handlePostAuth(eq(dataStore), anyMap())).willReturn(Promises.newResultPromise(jsonValue));
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
 
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.of(user));
 
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
@@ -262,7 +261,7 @@ public class SocialAuthLoginModuleTest {
         given(dataStore.retrieveData())
                 .willReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
 
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.absent());
 
         given(config.getCfgCreateAccount()).willReturn(true);
@@ -291,9 +290,9 @@ public class SocialAuthLoginModuleTest {
         given(dataStore.retrieveData())
                 .willReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
 
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.absent());
-        given(authModuleHelper.provisionUser(anyString(), any(AccountProvider.class), anyMap())).willReturn(user);
+        given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
 
         given(profileNormalizer.getNormalisedAttributes(userInfo, null))
                 .willReturn(ImmutableMap.of("name", CollectionUtils.asSet(user)));
@@ -326,9 +325,9 @@ public class SocialAuthLoginModuleTest {
         given(dataStore.retrieveData())
                 .willReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
 
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.absent());
-        given(authModuleHelper.provisionUser(anyString(), any(AccountProvider.class), anyMap())).willReturn(user);
+        given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
 
         given(profileNormalizer.getNormalisedAttributes(userInfo, null))
                 .willReturn(ImmutableMap.of("name", CollectionUtils.asSet(user)));
@@ -361,9 +360,9 @@ public class SocialAuthLoginModuleTest {
         given(dataStore.retrieveData())
                 .willReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
 
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.absent());
-        given(authModuleHelper.provisionUser(anyString(), any(AccountProvider.class), anyMap())).willReturn(user);
+        given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
 
         given(profileNormalizer.getNormalisedAttributes(userInfo, null))
                 .willReturn(ImmutableMap.of("name", CollectionUtils.asSet(user)));
@@ -390,7 +389,7 @@ public class SocialAuthLoginModuleTest {
     public void shouldSucceedWhenResumedFromRegistrationAndUserFound() throws Exception {
         //given
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
-                any(AccountProvider.class), anyMap())).willReturn(Optional.of("user"));
+                any(), anyMap())).willReturn(Optional.of("user"));
 
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 
@@ -405,7 +404,7 @@ public class SocialAuthLoginModuleTest {
     public void shouldFailWhenResumedFromRegistrationAndUserNotFound() throws Exception {
         //given
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
-                any(AccountProvider.class), anyMap())).willReturn(Optional.absent());
+                any(), anyMap())).willReturn(Optional.absent());
 
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 
@@ -424,7 +423,7 @@ public class SocialAuthLoginModuleTest {
         given(dataStore.retrieveData())
                 .willReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
 
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
+        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.absent());
 
         given(config.getCfgCreateAccount()).willReturn(true);
@@ -529,19 +528,19 @@ public class SocialAuthLoginModuleTest {
         given(confirmationCallback.getSelectedIndex()).willReturn(0);
         given(nameCallback.getName()).willReturn("activationCode");
         given(authModuleHelper.getRandomData()).willReturn("activationCode");
-        given(authModuleHelper.isValidActivationCodeReturned(anyString(), anyString())).willReturn(true);
+        given(authModuleHelper.isValidActivationCodeReturned(any(), anyString())).willReturn(true);
         given(binder.getCallback(CREATE_USER_STATE))
                 .willReturn(new Callback[] {nameCallback, nameCallback, confirmationCallback});
         given(profileNormalizer.getNormalisedAttributes(userInfo, null))
                 .willReturn(ImmutableMap.of("name", CollectionUtils.asSet(user)));
-        given(authModuleHelper.provisionUser(anyString(), any(AccountProvider.class), anyMap())).willReturn(user);
+        given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 
         //when
         int nextState = module.process(null, CREATE_USER_STATE);
 
         //then
-        verify(binder, times(1)).storeUsernamePasswd(eq(user), isNull(String.class));
+        verify(binder, times(1)).storeUsernamePasswd(eq(user), isNull());
         assertThat(nextState).isEqualTo(LOGIN_SUCCEED);
     }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
@@ -24,7 +24,7 @@
  *
  * $Id: WSFederationMetaManager.java,v 1.8 2009/10/28 23:58:59 exu Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2018 ForgeRock AS.
  */
 
 
@@ -46,6 +46,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import javax.xml.bind.JAXBException;
+
+import org.forgerock.openam.utils.StringUtils;
 
 import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.cot.COTException;
@@ -850,29 +852,26 @@ public class WSFederationMetaManager {
         return metaAliases;
     }
 
-    private void removeFromCircleOfTrust(BaseConfigType config, 
-        String realm, String federationId) {
+    private void removeFromCircleOfTrust(final BaseConfigType config, final String realm, final String federationId) {
+        final String classMethod = "WSFederationMetaManager.removeFromCircleOfTrust:";
         try {
             if (config != null) {
-                Map attr = WSFederationMetaUtils.getAttributes(config);
-                List cotAttr = (List) attr.get(SAML2Constants.COT_LIST);
-                List cotList = new ArrayList(cotAttr) ; 
-                if ((cotList != null) && !cotList.isEmpty()) {
-                    for (Iterator iter = cotList.iterator(); 
-                        iter.hasNext();) {
-                        String a = ((String) iter.next()).trim();
-                        if (a.length() > 0) {
-                            cotm.removeCircleOfTrustMember(realm, 
-                                       a, COTConstants.WS_FED,federationId);
+                final List<String> cots = WSFederationMetaUtils.getAttributes(config).get(SAML2Constants.COT_LIST);
+                for (String cot : cots) {
+                    if (StringUtils.isNotEmpty(cot)) {
+                        try {
+                            cotm.removeCircleOfTrustMember(realm, cot, COTConstants.WS_FED, federationId);
+                        } catch (COTException e) {
+                            // Don't fail on invalid COTs in the extended metadata to avoid floating entities in the COT
+                            debug.warning("{} Error while removing entity {} from COT {}.",
+                                    classMethod, federationId, cot, e);
                         }
-                     }               
-                 }
-             }
-         } catch (Exception e) {
-             debug.error("WSFederationMetaManager.removeFromCircleOfTrust:" +
-                "Error while removing entity" + federationId + "from COT.",
-                e);
-         }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            debug.error("{} Error while removing entity {} from COT.", classMethod, federationId, e);
+        }
     }
 
     /**

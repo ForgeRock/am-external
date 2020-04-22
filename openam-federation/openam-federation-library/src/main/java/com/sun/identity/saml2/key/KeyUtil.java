@@ -24,7 +24,7 @@
  *
  * $Id: KeyUtil.java,v 1.10 2009/08/28 23:42:14 exu Exp $
  *
- * Portions Copyrighted 2013-2016 ForgeRock AS.
+ * Portions Copyrighted 2013-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.key;
 
@@ -58,6 +58,8 @@ import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.XACMLPDPDescriptorElement;
+
+import org.forgerock.openam.federation.util.XmlSecurity;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 
@@ -80,6 +82,7 @@ public class KeyUtil {
     protected static Map<String, Set<X509Certificate>> sigHash = new Hashtable<>();
     
     static {
+        XmlSecurity.init();
         try {
             keyProvider = (KeyProvider)Class.forName(SystemConfigurationUtil.getProperty(
                 SAMLConstants.KEY_PROVIDER_IMPL_CLASS,
@@ -180,7 +183,7 @@ public class KeyUtil {
                 SAML2SDKUtils.debug.error(classMethod + "keyProvider was null.");
             }
         } else {
-            SAML2SDKUtils.debug.error(classMethod + "passed aliases list was null.");
+            SAML2SDKUtils.debug.message("{}passed aliases list was null.", classMethod);
         }
 
         return decryptionKeys;

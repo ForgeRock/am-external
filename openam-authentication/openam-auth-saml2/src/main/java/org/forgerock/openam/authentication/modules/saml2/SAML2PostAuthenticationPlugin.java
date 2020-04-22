@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2018 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
@@ -22,6 +22,7 @@ import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.spi.AMPostAuthProcessInterface;
 import com.sun.identity.authentication.spi.AuthenticationException;
+import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionProvider;
@@ -58,6 +59,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.SAML2Store;
+import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.xui.XUIState;
 import org.owasp.esapi.ESAPI;
 import org.owasp.esapi.errors.EncodingException;
@@ -70,9 +72,6 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
 
     private static final Debug DEBUG = Debug.getInstance(AM_AUTH_SAML2);
     private static final SAML2MetaManager META_MANAGER = SAML2Utils.getSAML2MetaManager();
-
-    private static final String SLO_SESSION_LOCATION = "saml2SLOLoc";
-    private static final String SLO_SESSION_REFERENCE = "saml2SLORef";
 
     /**
      * Default Constructor.
@@ -97,17 +96,8 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
                                SSOToken ssoToken) {
 
         try {
-            final String metaAlias = ssoToken.getProperty(SAML2Constants.METAALIAS);
-            final String sessionIndex = ssoToken.getProperty(SAML2Constants.SESSION_INDEX);
             final String spEntityId = ssoToken.getProperty(SAML2Constants.SPENTITYID);
-            final String idpEntityId = ssoToken.getProperty(SAML2Constants.IDPENTITYID);
-            final String nameIdXML = ssoToken.getProperty(SAML2Constants.NAMEID);
-            final NameID nameId = new NameIDImplWithoutSPNameQualifier(nameIdXML);
-            final boolean isTransient = Boolean.parseBoolean(ssoToken.getProperty(Constants.IS_TRANSIENT));
-            final String requestId = ssoToken.getProperty(Constants.REQUEST_ID);
             final SessionProvider sessionProvider = SessionManager.getProvider();
-            final NameIDInfo info = new NameIDInfo(spEntityId, idpEntityId, nameId, SAML2Constants.SP_ROLE, false);
-            final String ssOutEnabled = ssoToken.getProperty(SAML2Constants.SINGLE_LOGOUT);
             final String cacheKey = ssoToken.getProperty(Constants.CACHE_KEY);
             final String realm =
                     DNMapper.orgNameToRealmName(ssoToken.getProperty(com.sun.identity.shared.Constants.ORGANIZATION));
@@ -122,14 +112,8 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
                 throw new SAML2Exception("Unable to retrieve response map from data cache.");
             }
 
-            if (Boolean.parseBoolean(ssOutEnabled)) {
-                setupSingleLogOut(ssoToken, metaAlias, sessionIndex, spEntityId, idpEntityId, nameId);
-            }
-
-            configureIdpInitSLO(sessionProvider, ssoToken, sessionIndex, metaAlias, info, isTransient, requestId);
             configurePostSSO(spEntityId, realm, request, response, ssoToken, sessionProvider, data.getResponseInfo(),
                     cacheKey);
-            clearSession(ssoToken);
         } catch (SAML2Exception | SessionException | SSOException | SAML2TokenRepositoryException e) {
             //debug warning and fall through
             DEBUG.warning("Error saving SAML assertion information in memory. SLO not configured for this session.", e);
@@ -168,8 +152,8 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
                 info, IDPProxyUtil.isIDPProxyEnabled(requestID), isTransient);
     }
 
-    private void setupSingleLogOut(SSOToken ssoToken, String metaAlias, String sessionIndex, String spEntityId,
-                                   String idpEntityId, NameID nameId)
+    private String setupSingleLogOut(SSOToken ssoToken, String metaAlias, String sessionIndex, String spEntityId,
+        String idpEntityId, NameID nameId, HttpServletRequest servletRequest)
             throws SSOException, SAML2Exception, SessionException {
         final SAML2MetaManager sm = new SAML2MetaManager();
         final String realm = SAML2MetaUtils.getRealmByMetaAlias(metaAlias);
@@ -190,32 +174,65 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
         if (logoutEndpoint == null) {
             DEBUG.warning("Unable to determine SLO endpoint. Aborting SLO attempt. Please note this PAP "
                 + "only supports HTTP-Redirect as a valid binding.");
-            return;
+            return null;
         }
 
         final LogoutRequest logoutReq = createLogoutRequest(metaAlias, realm, idpEntityId,
                 logoutEndpoint, nameId, sessionIndex);
 
-        //survival time is one hours
-        final long sessionExpireTime = currentTimeMillis() / 1000 + SPCache.interval; //counted in seconds
-
         final String sloRequestXMLString = logoutReq.toXMLString(true, true);
-        final String redirect = getRedirectURL(sloRequestXMLString, relayState, realm, idpEntityId,
+        String sloRelayState = relayState;
+        // If the end user has included a goto param on the logout url, then the logout processing will either
+        // have set this as a request attribute or in the session
+        String gotoParam = (String) servletRequest.getAttribute(ISAuthConstants.GOTO_PARAM);
+        if (StringUtils.isEmpty(gotoParam)) {
+            gotoParam = ssoToken.getProperty(ISAuthConstants.GOTO_PARAM);
+        }
+        if (StringUtils.isNotEmpty(gotoParam)) {
+            sloRelayState = gotoParam;
+        }
+        final String redirect = getRedirectURL(sloRequestXMLString, sloRelayState, realm, idpEntityId,
                 logoutEndpoint.getLocation(), spEntityId);
 
         if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
             try {
+                // Cache survival time is 10 mins
+                final long sessionExpireTime = currentTimeMillis() / 1000 + SPCache.interval; //counted in seconds
                 SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(logoutReq.getID(), logoutReq, sessionExpireTime);
             } catch (SAML2TokenRepositoryException e) {
                 DEBUG.warning("Unable to set SLO redirect location. Aborting SLO attempt.");
-                return;
+                return null;
             }
         } else {
             SAML2Store.saveTokenWithKey(logoutReq.getID(), logoutReq);
         }
 
-        ssoToken.setProperty(SLO_SESSION_LOCATION, logoutEndpoint.getLocation());
-        ssoToken.setProperty(SLO_SESSION_REFERENCE, redirect);
+        final XUIState xuiState = InjectorHolder.getInstance(XUIState.class);
+        final StringBuilder logoutLocation = new StringBuilder();
+        if (StringUtils.isNotEmpty(logoutEndpoint.getLocation())) {
+            logoutLocation.append(logoutEndpoint.getLocation());
+        }
+        if (StringUtils.isNotEmpty(redirect)) {
+            if (xuiState.isXUIEnabled()) {
+                try {
+                    logoutLocation.append(ESAPI.encoder().encodeForURL(redirect));
+                } catch (EncodingException e) {
+                    DEBUG.warning("Failed to encode redirect url for SLO, using unencoded instead.", e);
+                    logoutLocation.append(redirect);
+                }
+            } else {
+                logoutLocation.append(redirect);
+            }
+        }
+        if (StringUtils.isEmpty(logoutLocation.toString())) {
+            // IdP SLO not possible, but can still redirect to SAML Authn module Single Logout URL, if set
+            DEBUG.error("SAML2 PAP :: Unable to perform single logout, enabled but no IdP SLO endpoint set");
+            String singleLogoutURL = ssoToken.getProperty(SAML2Constants.SINGLE_LOGOUT_URL);
+            if (StringUtils.isNotEmpty(singleLogoutURL)) {
+                logoutLocation.append(singleLogoutURL);
+            }
+        }
+        return logoutLocation.toString();
     }
 
     /**
@@ -245,18 +262,27 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
             throws AuthenticationException {
         try {
             final String ssOutEnabled = ssoToken.getProperty(SAML2Constants.SINGLE_LOGOUT);
+            final String metaAlias = ssoToken.getProperty(SAML2Constants.METAALIAS);
+            final String sessionIndex = ssoToken.getProperty(SAML2Constants.SESSION_INDEX);
+            final String spEntityId = ssoToken.getProperty(SAML2Constants.SPENTITYID);
+            final String idpEntityId = ssoToken.getProperty(SAML2Constants.IDPENTITYID);
+            final boolean isTransient = Boolean.parseBoolean(ssoToken.getProperty(Constants.IS_TRANSIENT));
+            final String requestId = ssoToken.getProperty(Constants.REQUEST_ID);
+            final String nameIdXML = ssoToken.getProperty(SAML2Constants.NAMEID);
+            final NameID nameId = new NameIDImplWithoutSPNameQualifier(nameIdXML);
+            final NameIDInfo info = new NameIDInfo(spEntityId, idpEntityId, nameId, SAML2Constants.SP_ROLE, false);
+            final SessionProvider sessionProvider = SessionManager.getProvider();
+
             if (Boolean.parseBoolean(ssOutEnabled)) {
-                final XUIState xuiState = InjectorHolder.getInstance(XUIState.class);
-                final StringBuilder logoutLocation = new StringBuilder();
-                logoutLocation.append(ssoToken.getProperty(SLO_SESSION_LOCATION));
-                if (xuiState.isXUIEnabled()) {
-                    logoutLocation.append(ESAPI.encoder().encodeForURL(ssoToken.getProperty(SLO_SESSION_REFERENCE)));
-                } else {
-                    logoutLocation.append(ssoToken.getProperty(SLO_SESSION_REFERENCE));
+                String sloURL = setupSingleLogOut(ssoToken, metaAlias, sessionIndex, spEntityId, idpEntityId,
+                    nameId, request);
+                if (StringUtils.isNotEmpty(sloURL)) {
+                    request.setAttribute(AMPostAuthProcessInterface.POST_PROCESS_LOGOUT_URL, sloURL);
                 }
-                request.setAttribute(AMPostAuthProcessInterface.POST_PROCESS_LOGOUT_URL, logoutLocation.toString());
             }
-        } catch (EncodingException | SSOException e) {
+            configureIdpInitSLO(sessionProvider, ssoToken, sessionIndex, metaAlias, info, isTransient, requestId);
+            clearSession(ssoToken);
+        } catch (SSOException | SessionException | SAML2Exception e) {
             //debug warning and fall through
             DEBUG.warning("Error loading SAML assertion information in memory. SLO failed for this session.", e);
         }
@@ -322,5 +348,4 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
 
         return (sloURL.contains("?") ? "&" : "?") + signedQueryString;
     }
-
 }

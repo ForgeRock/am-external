@@ -94,7 +94,6 @@ public class Saml2SessionUpgradeHandler implements SessionUpgradeHandler {
                 idpSession.setSession(newSSOToken);
                 if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
                     try {
-                        SAML2FailoverUtils.deleteSAML2Token(sessionIndex);
                         long expirationTime;
                         try {
                             expirationTime = TimeUnit.MINUTES.toSeconds(newSession.getMaxSessionTime());

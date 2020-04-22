@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
 package org.forgerock.openam.saml2.plugins;
 
@@ -46,13 +46,14 @@ public class DefaultWsFedAuthenticator implements WsFedAuthenticator {
     @Override
     public SSOToken authenticate(HttpServletRequest request, HttpServletResponse response, SOAPMessage soapMessage,
             String realm, String username, char[] password) throws ActiveRequestorException {
+        ActiveRequestorException exception = null;
         try {
             AuthContext authContext = new AuthContext(realm);
             authContext.login(request, response);
 
             while (authContext.hasMoreRequirements()) {
                 Callback[] callbacks = authContext.getRequirements();
-                if (callbacks == null || callbacks.length == 0) {
+                if (callbacks == null) {
                     continue;
                 }
                 List<Callback> missing = new ArrayList<>();
@@ -69,13 +70,18 @@ public class DefaultWsFedAuthenticator implements WsFedAuthenticator {
                 }
 
                 if (missing.size() > 0) {
-                    throw ActiveRequestorException.newSenderException("unableToAuthenticate");
+                    throw newSenderException();
                 }
                 authContext.submitRequirements(callbacks);
             }
 
             if (AuthContext.Status.SUCCESS.equals(authContext.getStatus())) {
                 return authContext.getSSOToken();
+            } else if (AuthContext.Status.FAILED.equals(authContext.getStatus())) {
+                exception = newSenderException().setStatusCode(HttpServletResponse.SC_UNAUTHORIZED);
+            } else {
+                // Server-side error
+                exception = newReceiverException();
             }
         } catch (AuthLoginException ale) {
             DEBUG.error("An error occurred while trying to authenticate the end-user", ale);
@@ -83,6 +89,14 @@ public class DefaultWsFedAuthenticator implements WsFedAuthenticator {
             DEBUG.error("An error occurred while trying to obtain the session ID during authentication", l10nm);
         }
 
-        throw ActiveRequestorException.newSenderException("unableToAuthenticate");
+        throw (exception != null)? exception : newSenderException();
+    }
+
+    private ActiveRequestorException newSenderException() {
+        return ActiveRequestorException.newSenderException("unableToAuthenticate");
+    }
+
+    private ActiveRequestorException newReceiverException() {
+        return ActiveRequestorException.newReceiverException("unableToAuthenticate");
     }
 }

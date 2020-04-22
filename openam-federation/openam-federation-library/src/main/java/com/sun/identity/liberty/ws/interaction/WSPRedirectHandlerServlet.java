@@ -71,6 +71,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.TransformerException;
+import org.owasp.esapi.ESAPI;
 import org.xml.sax.SAXException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -613,7 +614,7 @@ public class WSPRedirectHandlerServlet extends HttpServlet {
             out.println("<head><title>WSPRedirectHandler</title></head>");
             out.println("<body>");
             out.println("WSPRedirectHandler - Interaction Error");
-            out.println(message);
+            out.println(ESAPI.encoder().encodeForHTML(message));
             out.println("</body>");
             out.println("</html>");
         } else { //a wml client

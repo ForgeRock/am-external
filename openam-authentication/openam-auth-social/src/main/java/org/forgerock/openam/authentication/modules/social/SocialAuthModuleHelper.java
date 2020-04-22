@@ -20,7 +20,6 @@ import static com.iplanet.am.util.SecureRandomManager.getSecureRandom;
 import static com.sun.identity.authentication.spi.AMLoginModule.getAMIdentityRepository;
 import static com.sun.identity.shared.encode.CookieUtils.newCookie;
 import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.BUNDLE_NAME;
-import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.CREATE_USER_STATE;
 import static org.forgerock.openam.utils.Time.getTimeService;
 
 import java.security.SecureRandom;
@@ -35,8 +34,6 @@ import org.apache.commons.lang.StringUtils;
 import org.forgerock.guava.common.base.Optional;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.http.Handler;
-import org.forgerock.http.HttpApplicationException;
-import org.forgerock.http.handler.HttpClientHandler;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthClientConfiguration;
 import org.forgerock.oauth.OAuthException;

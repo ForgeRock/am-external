@@ -15,14 +15,26 @@
  */
 package org.forgerock.openam.saml2;
 
-import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.logging.LogUtil;
 import java.util.Map;
 import java.util.logging.Level;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.sun.identity.plugin.session.SessionException;
+import com.sun.identity.plugin.session.SessionManager;
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.logging.LogUtil;
+import com.sun.identity.saml2.plugins.IDPAuthnContextInfo;
+import com.sun.identity.saml2.plugins.IDPAuthnContextMapper;
+import com.sun.identity.saml2.profile.IDPSSOUtil;
+import com.sun.identity.saml2.profile.ServerFaultException;
+
+/**
+ * This is an abstract class for SAML processing that provides utility methods for its subclasses.
+ */
 public abstract class SAMLBase {
 
     protected static final String INDEX = "index";
@@ -34,12 +46,103 @@ public abstract class SAMLBase {
     protected static final String METADATA_ERROR = "metaDataError";
     protected static final String SSO_OR_FEDERATION_ERROR = "UnableToDOSSOOrFederation";
 
+    protected final HttpServletRequest request;
+    protected final HttpServletResponse response;
+    protected final IDPSSOFederateRequest data;
+
+    /**
+     * Constructor to initialize the state of SAMLBase.
+     *
+     * @param request The HTTP request.
+     * @param response The HTTP response.
+     * @param data The SAML request data.
+     */
+    protected SAMLBase(HttpServletRequest request, HttpServletResponse response, IDPSSOFederateRequest data) {
+        this.request = request;
+        this.response = response;
+        this.data = data;
+    }
+
     protected void logAccess(String logId, Level logLevel, String... data) {
         LogUtil.access(logLevel, logId, data);
     }
 
     protected void logError(Level logLevel, String logId, Object session, Map properties, String... data) {
         LogUtil.error(logLevel, logId, data, session, properties);
+    }
+
+    /**
+     * Retrieves the authn context mapping info for the currently processed SAML authentication request.
+     *
+     * @return The authn context mapping info.
+     * @throws ServerFaultException If the authn context mapper is not available.
+     */
+    protected IDPAuthnContextInfo getIdpAuthnContextInfo() throws ServerFaultException {
+        String classMethod = "SAMLBase.getIdpAuthnContextInfo: ";
+        IDPAuthnContextMapper idpAuthnContextMapper = null;
+        try {
+            idpAuthnContextMapper = IDPSSOUtil.getIDPAuthnContextMapper(data.getRealm(), data.getIdpEntityID());
+        } catch (SAML2Exception sme) {
+            SAML2Utils.debug.error(classMethod, sme);
+        }
+        if (idpAuthnContextMapper == null) {
+            SAML2Utils.debug.error("{}Unable to get IDPAuthnContextMapper from meta.", classMethod);
+            throw new ServerFaultException(data.getIdpAdapter(), METADATA_ERROR);
+        }
+
+        IDPAuthnContextInfo idpAuthnContextInfo = null;
+        try {
+            idpAuthnContextInfo = idpAuthnContextMapper.getIDPAuthnContextInfo(data.getAuthnRequest(),
+                    data.getIdpEntityID(), data.getRealm());
+        } catch (SAML2Exception sme) {
+            SAML2Utils.debug.error(classMethod, sme);
+        }
+        return idpAuthnContextInfo;
+    }
+
+    /**
+     * <p>
+     * Iterates through the RequestedAuthnContext from the Service Provider and checks if user has already authenticated
+     * with a sufficient authentication level.
+     * </p>
+     * <p>
+     * If RequestAuthnContext is not found in the authenticated AuthnContext then session upgrade will be performed.
+     * </p>
+     *
+     * @return true if the requester needs to re-authenticate.
+     */
+    protected static boolean isSessionUpgrade(IDPAuthnContextInfo idpAuthnContextInfo, Object session) {
+        String classMethod = "SAMLBase.isSessionUpgrade: ";
+
+        if (session != null) {
+            // Get the Authentication Context required
+            String authnClassRef = idpAuthnContextInfo.getAuthnContext().getAuthnContextClassRef();
+            // Get the AuthN level associated with the Authentication Context
+            int authnLevel = idpAuthnContextInfo.getAuthnLevel();
+
+            SAML2Utils.debug.message("{}Requested AuthnContext: authnClassRef={} authnLevel={}", classMethod,
+                    authnClassRef, authnLevel);
+
+            int sessionAuthnLevel = 0;
+
+            try {
+                final String strAuthLevel = SessionManager.getProvider().getProperty(session,
+                        SAML2Constants.AUTH_LEVEL)[0];
+                if (strAuthLevel.contains(":")) {
+                    String[] realmAuthLevel = strAuthLevel.split(":", 2);
+                    sessionAuthnLevel = Integer.parseInt(realmAuthLevel[1]);
+                } else {
+                    sessionAuthnLevel = Integer.parseInt(strAuthLevel);
+                }
+                SAML2Utils.debug.message("{}Current session Authentication Level: {}", classMethod, sessionAuthnLevel);
+            } catch (SessionException se) {
+                SAML2Utils.debug.error("{}Couldn't get the session Auth Level", classMethod, se);
+            }
+
+            return authnLevel > sessionAuthnLevel;
+        } else {
+            return true;
+        }
     }
 
     protected boolean preSingleSignOn(HttpServletRequest request, HttpServletResponse response, IDPSSOFederateRequest data) {

@@ -168,6 +168,7 @@ public class SubjectConfirmationImpl implements SubjectConfirmation {
             if (childName.equals(SUBJECT_CONFIRMATION_DATA_ELEMENT)) {
                 subjectConfirmationData = AssertionFactory.getInstance().
                     createSubjectConfirmationData((Element)child);
+                return;
             } else if (childName.equals(BASE_ID_ELEMENT)) {
                 baseId = AssertionFactory.getInstance().
                          createBaseID((Element)child);
@@ -183,6 +184,24 @@ public class SubjectConfirmationImpl implements SubjectConfirmation {
                     + "unexpected subelement " + childName);
                 throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                       "unexpected_subelement"));
+            }
+        }
+
+        if (++nextElem >= numOfNodes) {
+            return;
+        }
+        child = (Node)nodes.item(nextElem);
+        childName = child.getLocalName();
+        if (childName != null) {
+            if (childName.equals(SUBJECT_CONFIRMATION_DATA_ELEMENT)) {
+                subjectConfirmationData = AssertionFactory.getInstance().
+                        createSubjectConfirmationData((Element) child);
+            } else {
+                SAML2SDKUtils.debug.error(
+                        "SubjectConfirmationImpl.processElement(): "
+                                + "unexpected subelement " + childName);
+                throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
+                        "unexpected_subelement"));
             }
         }
     }

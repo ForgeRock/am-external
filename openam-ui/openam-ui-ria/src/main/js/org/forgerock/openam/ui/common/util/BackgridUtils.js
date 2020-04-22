@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 define([
@@ -303,7 +303,7 @@ define([
         }
 
         _.forIn(options.data, function (val, key) {
-            if (_.include(includeList, key)) {
+            if (_.includes(includeList, key)) {
                 params.push(`${key}=${val}`);
             }
         });

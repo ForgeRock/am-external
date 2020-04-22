@@ -24,6 +24,7 @@
  *
  * $Id: IDPListImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -53,38 +54,38 @@ import org.w3c.dom.NodeList;
  */
 
 public class IDPListImpl implements IDPList {
-    
-    private List idpEntryList = null;
+
+    private List<IDPEntry> idpEntryList = null;
     private GetComplete getComplete;
     private boolean isMutable=false;
-    
+
     /**
      * Constructor creates the <code>IDPList</code> Object.
      */
-    
+
     public IDPListImpl() {
         isMutable=true;
     }
-    
+
     /**
      * Constructor to create the <code>IDPList</code> Object.
      *
      * @param element Document Element of <code>IDPList</code> Object.
      * @throws SAML2Exception if <code>IDPList<code> cannot be created.
      */
-    
+
     public IDPListImpl(Element element) throws SAML2Exception {
         parseElement(element);
     }
-    
+
     /**
      * Constructor to create the <code>IDPList</code> Object.
      *
-     * @param xmlString the XML String Representation of 
+     * @param xmlString the XML String Representation of
      *        <code>IDPList</code> Object.
      * @throws SAML2Exception if <code>IDPList<code> cannot be created.
      */
-    
+
     public IDPListImpl(String xmlString) throws SAML2Exception {
         Document xmlDocument =
                 XMLUtils.toDOMDocument(xmlString,SAML2SDKUtils.debug);
@@ -94,17 +95,17 @@ public class IDPListImpl implements IDPList {
         }
         parseElement(xmlDocument.getDocumentElement());
     }
-    
+
     /**
      * Returns the list of <code>IDPEntry</code> Objects.
      *
      * @return the list of <code>IDPEntry</code> objects.
      * @see #setIDPEntries(List)
      */
-    public List getIDPEntries() {
+    public List<IDPEntry> getIDPEntries() {
         return idpEntryList ;
     }
-    
+
     /**
      * Sets the list of <code>IDPEntry</code> Objects.
      *
@@ -112,7 +113,7 @@ public class IDPListImpl implements IDPList {
      * @throws SAML2Exception if the object is immutable.
      * @see #getIDPEntries
      */
-    public void setIDPEntries(List idpEntryList) throws SAML2Exception {
+    public void setIDPEntries(List<IDPEntry> idpEntryList) throws SAML2Exception {
         if (isMutable) {
             this.idpEntryList = idpEntryList;
         } else {
@@ -120,7 +121,7 @@ public class IDPListImpl implements IDPList {
                     SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
     }
-    
+
     /**
      * Returns the <code>GetComplete</code> Object.
      *
@@ -130,7 +131,7 @@ public class IDPListImpl implements IDPList {
     public GetComplete getGetComplete() {
         return getComplete;
     }
-    
+
     /**
      * Sets the <code>GetComplete<code> Object.
      *
@@ -138,7 +139,7 @@ public class IDPListImpl implements IDPList {
      * @throws SAML2Exception if the object is immutable.
      * @see #getGetComplete
      */
-    
+
     public void setGetComplete(GetComplete getComplete) throws SAML2Exception {
         if (isMutable) {
             this.getComplete = getComplete;
@@ -147,7 +148,7 @@ public class IDPListImpl implements IDPList {
                     SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
     }
-    
+
     /**
      * Returns a String representation of this Object.
      *
@@ -157,7 +158,7 @@ public class IDPListImpl implements IDPList {
     public String toXMLString() throws SAML2Exception {
         return toXMLString(true,false);
     }
-    
+
     /**
      * Returns a String representation of this Object.
      *
@@ -168,7 +169,7 @@ public class IDPListImpl implements IDPList {
      * @return the String representation of this Object.
      * @throws SAML2Exception cannot create String object.
      **/
-    
+
     public String toXMLString(boolean includeNSPrefix,boolean declareNS)
     throws SAML2Exception {
         validateIDPEntryList(idpEntryList);
@@ -178,17 +179,17 @@ public class IDPListImpl implements IDPList {
             xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
         }
         xmlString.append(SAML2Constants.IDPLIST).append(SAML2Constants.SPACE);
-        
+
         if (declareNS) {
             xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
         }
         xmlString.append(SAML2Constants.END_TAG)
         .append(SAML2Constants.NEWLINE);
-        
+
         if ((idpEntryList == null) || (idpEntryList.isEmpty())) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("noIDPEntry"));
         }
-        
+
         Iterator i = idpEntryList.iterator();
         while (i.hasNext()) {
             IDPEntry idpEntry = (IDPEntry)i.next();
@@ -202,16 +203,16 @@ public class IDPListImpl implements IDPList {
             xmlString.append(getComplete.toXMLString(includeNSPrefix,declareNS))
             .append(SAML2Constants.NEWLINE);
         }
-        
+
         xmlString.append(SAML2Constants.SAML2_END_TAG)
         .append(SAML2Constants.IDPLIST)
         .append(SAML2Constants.END_TAG);
-        
-        
+
+
         return xmlString.toString();
     }
-    
-    
+
+
     /**
      * Makes this object immutable.
      */
@@ -226,14 +227,14 @@ public class IDPListImpl implements IDPList {
 		    }
 		}
 	    }
-        
+
 	    if ((getComplete != null) && (getComplete.isMutable())) {
 		getComplete.makeImmutable();
 	    }
             isMutable=false;
 	}
     }
-    
+
     /**
      * Returns true if object is mutable.
      *
@@ -242,12 +243,12 @@ public class IDPListImpl implements IDPList {
     public boolean isMutable() {
         return isMutable;
     }
-    
+
     /* Parse the IDPList Element */
     void parseElement(Element element) throws SAML2Exception {
-        
+
         ProtocolFactory protoFactory = ProtocolFactory.getInstance();
-        
+
         // Get the IDPEntry Element, can be 1 or more
 	NodeList nList = element.getChildNodes();
 
@@ -255,7 +256,7 @@ public class IDPListImpl implements IDPList {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("noIDPEntry"));
         }
 	if (idpEntryList == null) {
-	    idpEntryList = new ArrayList();
+	    idpEntryList = new ArrayList<>();
 	}
 	for (int i = 0; i < nList.getLength(); i++) {
             Node childNode = nList.item(i);
@@ -265,10 +266,10 @@ public class IDPListImpl implements IDPList {
 		    validateIDPEntry();
 		    idpEntryList.add(
 		        protoFactory.createIDPEntry(XMLUtils.print(childNode)));
-                } else if (cName.equals(SAML2Constants.GETCOMPLETE)) { 
+                } else if (cName.equals(SAML2Constants.GETCOMPLETE)) {
 			validateGetComplete();
                 	Element getCompleteElement = (Element)childNode;
-			getComplete = 
+			getComplete =
 		    	   protoFactory.createGetComplete(getCompleteElement);
 		}
 	    }
@@ -276,9 +277,9 @@ public class IDPListImpl implements IDPList {
 	validateIDPEntryList(idpEntryList);
 	idpEntryList=Collections.unmodifiableList(idpEntryList);
     }
-    
+
     /* Validates the existance of IDPEntries */
-    private void validateIDPEntryList(List idpEntryList) throws SAML2Exception {
+    private void validateIDPEntryList(List<IDPEntry> idpEntryList) throws SAML2Exception {
         if ((idpEntryList == null) || (idpEntryList.isEmpty())) {
             SAML2SDKUtils.debug.message("IDPEntry Object is required");
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("noIDPEntry"));
@@ -289,14 +290,14 @@ public class IDPListImpl implements IDPList {
     private void validateIDPEntry() throws SAML2Exception {
 	if (getComplete != null) {
 	    if (SAML2SDKUtils.debug.messageEnabled()) {
-		SAML2SDKUtils.debug.message("IDPList Element should be the " 
+		SAML2SDKUtils.debug.message("IDPList Element should be the "
 				     + "first element" );
 	    }
             throw new SAML2Exception(
                         SAML2SDKUtils.bundle.getString("invalidProxyCount"));
         }
     }
-       
+
     /* Validate the existance of GetComplete Object. */
     private void validateGetComplete() throws SAML2Exception {
 	if (getComplete != null) {

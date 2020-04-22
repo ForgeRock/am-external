@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 define([
@@ -206,7 +206,7 @@ define([
 
         onRowSelect (model, selected) {
             if (selected) {
-                if (!_.contains(this.data.selectedUUIDs, model.id)) {
+                if (!_.includes(this.data.selectedUUIDs, model.id)) {
                     this.data.selectedUUIDs.push(model.id);
                 }
             } else {

@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 import { createAction, handleActions } from "redux-actions";
-import { indexBy, omit } from "lodash";
+import { keyBy, omit } from "lodash";
 
 // Types
 const ADD_INSTANCE = "remote/oauth2/groups/instances/ADD_INSTANCE";
@@ -34,5 +34,5 @@ export default handleActions({
         [action.payload._id]: action.payload
     }),
     [REMOVE_INSTANCE]: (state, action) => omit(state, action.payload._id),
-    [SET_INSTANCES]: (state, action) => indexBy(action.payload, "_id")
+    [SET_INSTANCES]: (state, action) => keyBy(action.payload, "_id")
 }, initialState);

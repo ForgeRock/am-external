@@ -16,15 +16,14 @@
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.BDDMockito.anyString;
-import static org.mockito.BDDMockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.testng.AssertJUnit.*;
+import static org.testng.AssertJUnit.assertEquals;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 import org.forgerock.guava.common.collect.Sets;
 import org.forgerock.jaspi.modules.session.jwt.JwtSessionModule;
@@ -60,8 +59,8 @@ public class PersistentCookieWrapperTest {
                 ServiceConfigManager serviceConfigManager = mock(ServiceConfigManager.class);
                 ServiceConfig serviceConfig = mock(ServiceConfig.class);
                 given(serviceConfig.getAttributes()).willReturn(Collections.singletonMap("iplanet-am-auth-key-alias",
-                                (Set<String>)Sets.newHashSet(KEY_ALIAS)));
-                given(serviceConfigManager.getOrganizationConfig(anyString(), anyString())).willReturn(serviceConfig);
+                        Sets.newHashSet(KEY_ALIAS)));
+                given(serviceConfigManager.getOrganizationConfig(any(), any())).willReturn(serviceConfig);
                 return serviceConfigManager;
             }
         };

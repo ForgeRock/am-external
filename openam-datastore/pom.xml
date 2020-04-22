@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam</artifactId>
-        <version>5.5.1</version>
+        <version>5.5.2</version>
     </parent>
 
     <artifactId>openam-datastore</artifactId>
@@ -40,26 +40,18 @@
             <artifactId>openam-ldap-utils</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.powermock</groupId>
-            <artifactId>powermock-api-mockito</artifactId>
+            <artifactId>powermock-api-mockito2</artifactId>
         </dependency>
         <dependency>
             <groupId>org.powermock</groupId>
             <artifactId>powermock-module-testng</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.easytesting</groupId>
-            <artifactId>fest-assert</artifactId>
-        </dependency>
     </dependencies>
     <repositories>
-        <repository>
-            <id>forgerock-private-releases</id>
-            <url>https://maven.forgerock.org/repo/private-releases</url>
-        </repository>
-    </repositories>
-</project>
+          <repository>
+              <id>forgerock-private-releases</id>
+              <url>https://maven.forgerock.org/repo/private-releases</url>
+          </repository>
+      </repositories>
+  </project>

@@ -24,23 +24,28 @@
  *
  * $Id: BaseID.java,v 1.2 2008/06/25 05:47:40 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
+ *
  */
 
 
 package com.sun.identity.saml2.assertion;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.sun.identity.saml2.assertion.impl.BaseIDImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /**
- *  The <code>BaseID</code> is an extension point that allows 
+ *  The <code>BaseID</code> is an extension point that allows
  *  applications to add new kinds of identifiers.
  *  @supported.all.api
  */
+@JsonDeserialize(as=BaseIDImpl.class)
 public interface BaseID extends BaseIDAbstract {
 
    /**
     * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace 
+    * @param includeNSPrefix Determines whether or not the namespace
     *        qualifier is
     *        prepended to the Element when converted
     * @param declareNS Determines whether or not the namespace is declared

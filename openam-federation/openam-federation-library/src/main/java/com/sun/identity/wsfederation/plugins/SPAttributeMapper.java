@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
@@ -24,11 +24,14 @@
  *
  * $Id: SPAttributeMapper.java,v 1.3 2008/06/25 05:48:07 qcheng Exp $
  *
+ * Portions Copyrighted 2019 ForgeRock AS.
  */
 
 
 package com.sun.identity.wsfederation.plugins;
+import java.util.Set;
 
+import com.sun.identity.saml.assertion.Attribute;
 import com.sun.identity.wsfederation.common.WSFederationException;
 
 
@@ -66,8 +69,8 @@ public interface SPAttributeMapper {
      *        SAML <code>Attribute</code> list. 
      * @exception WSFederationException if any failure.
      */
-    public java.util.Map getAttributes(
-        java.util.List attributes,
+    public java.util.Map<String, Set<String>> getAttributes(
+        java.util.List<Attribute> attributes,
         java.lang.String userID,
         java.lang.String hostEntityID,
         java.lang.String remoteEntityID,

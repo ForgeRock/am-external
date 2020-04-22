@@ -16,10 +16,16 @@
 
 package org.forgerock.openam.authentication.modules.deviceprint;
 
-import com.iplanet.sso.SSOException;
-import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.IdRepoException;
-import com.sun.identity.sm.SMSException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.forgerock.json.JsonValue.*;
+import static org.forgerock.openam.utils.Time.newDate;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.InternalServerErrorException;
@@ -30,6 +36,7 @@ import org.forgerock.openam.core.rest.devices.services.deviceprint.DeviceIdServi
 import org.mockito.ArgumentCaptor;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import com.sun.identity.idm.AMIdentity;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -69,7 +76,7 @@ public class DeviceIdDaoTest {
     }
 
     @Test
-    public void shouldGetProfiles() throws IOException, IdRepoException, SSOException, SMSException {
+    public void shouldGetProfiles() throws Exception {
 
         //Given
         given(mockServiceFactory.create("realm")).willReturn(mockDeviceService);
@@ -86,7 +93,7 @@ public class DeviceIdDaoTest {
     }
 
     @Test
-    public void shouldSaveProfiles() throws IOException, IdRepoException, SSOException, SMSException {
+    public void shouldSaveProfiles() throws Exception {
 
         //Given
         List<JsonValue> profiles = new ArrayList<>();
@@ -115,6 +122,27 @@ public class DeviceIdDaoTest {
         verify(mockAMIdentity, times(1)).store();
     }
 
+
+    @Test(expectedExceptions = InternalServerErrorException.class)
+    public void shouldThrowDevicePersistenceExceptionIfNoUserNamer() throws Exception {
+
+        //When
+        devicePrintDao.getDeviceProfiles(null, realm);
+
+        // Then - DevicePersistenceException exception;
+
+    }
+
+    @Test(expectedExceptions = InternalServerErrorException.class)
+    public void shouldThrowDevicePersistenceExceptionIfNoUserNamerOverloadedMethod() throws Exception {
+        // Test the overloaded method.
+        //When
+        devicePrintDao.getDeviceProfiles(null, realm, Collections.emptySet());
+
+        // Then - DevicePersistenceException exception;
+
+    }
+
     private class DeviceIdDaoMockedGetIdentity extends DeviceIdDao {
 
         /**
@@ -127,8 +155,13 @@ public class DeviceIdDaoTest {
         }
 
         @Override
-        protected AMIdentity getIdentity(String userName, String realm) throws InternalServerErrorException {
+        protected AMIdentity getIdentity(String userName, String realm, Set<String> userSearchAttributes) {
             return mockAMIdentity;
+        }
+
+        @Override
+        protected Set<String> getUserAliasList(String realm) {
+            return Collections.emptySet();
         }
     }
 }

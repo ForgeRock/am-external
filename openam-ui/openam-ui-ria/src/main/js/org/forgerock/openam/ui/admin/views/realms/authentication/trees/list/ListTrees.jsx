@@ -11,9 +11,9 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
-import { isEqual, pluck } from "lodash";
+import { isEqual, map } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
 import { TableHeaderColumn } from "react-bootstrap-table";
@@ -35,8 +35,8 @@ class ListTrees extends Component {
     }
 
     componentWillReceiveProps (nextProps) {
-        const currentIds = pluck(this.props.trees, "_id");
-        const nextIds = pluck(nextProps.trees, "_id");
+        const currentIds = map(this.props.trees, "_id");
+        const nextIds = map(nextProps.trees, "_id");
 
         if (!isEqual(currentIds.sort(), nextIds.sort())) {
             this.setState({ selectedIds: [] });

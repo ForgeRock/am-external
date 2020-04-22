@@ -62,7 +62,7 @@ import org.forgerock.openam.services.push.sns.SnsMessageResourceRouteProvider;
  * <p>If a new exposed service or CREST endpoint is added, the location of this should be advertised via an appropriate
  * mapping in the {@link #getMessageTypeEndpoint(MessageType)} method.</p>
  *
- * @see AbstractPushNotificationDelegate;
+ * @see AbstractPushNotificationDelegate
  *
  * @supported.all.api
  */

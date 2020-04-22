@@ -24,6 +24,7 @@
  *
  * $Id: AuthzDecisionStatement.java,v 1.2 2008/06/25 05:47:40 qcheng Exp $
  *
+ * Portions Copyrighted 2018 ForgeRock AS.
  */
 
 
@@ -69,7 +70,7 @@ public interface AuthzDecisionStatement extends Statement {
      * @return List of <code>Action</code>(s) of the statement.
      * @see #setAction(List)
      */
-    public List getAction();
+    public List<Action> getAction();
 
     /**
      * Sets the <code>Action</code>(s) of the statement.
@@ -78,7 +79,7 @@ public interface AuthzDecisionStatement extends Statement {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAction()
      */
-    public void setAction(List value)
+    public void setAction(List<Action> value)
         throws SAML2Exception;
 
     /**

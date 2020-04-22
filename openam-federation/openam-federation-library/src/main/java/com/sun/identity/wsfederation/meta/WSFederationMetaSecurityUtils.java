@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
@@ -24,14 +24,13 @@
  *
  * $Id: WSFederationMetaSecurityUtils.java,v 1.6 2009/10/28 23:58:59 exu Exp $
  *
- * Portions Copyrighted 2011-2016 ForgeRock AS
+ * Portions Copyrighted 2011-2019 ForgeRock AS
  */
 package com.sun.identity.wsfederation.meta;
 
 import java.security.KeyStore;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -39,35 +38,33 @@ import java.util.Set;
 
 import javax.xml.bind.JAXBException;
 
+import org.apache.xml.security.keys.KeyInfo;
+import org.apache.xml.security.keys.storage.StorageResolver;
+import org.apache.xml.security.keys.storage.implementations.KeyStoreResolver;
+import org.apache.xml.security.signature.XMLSignature;
+import org.apache.xml.security.utils.Constants;
+import org.forgerock.openam.federation.util.XmlSecurity;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import org.apache.xml.security.keys.KeyInfo;
-import org.apache.xml.security.keys.storage.implementations.KeyStoreResolver;
-import org.apache.xml.security.keys.storage.StorageResolver;
-import org.apache.xml.security.signature.XMLSignature;
-import org.apache.xml.security.utils.Constants;
-
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.shared.locale.Locale;
-import com.sun.identity.shared.configuration.SystemPropertiesManager;
-import com.sun.identity.shared.encode.Base64;
-import com.sun.identity.shared.xml.XPathAPI;
-
 import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.key.KeyUtil;
-
+import com.sun.identity.shared.configuration.SystemPropertiesManager;
+import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.encode.Base64;
+import com.sun.identity.shared.locale.Locale;
+import com.sun.identity.shared.xml.XPathAPI;
 import com.sun.identity.wsfederation.jaxb.entityconfig.AttributeType;
+import com.sun.identity.wsfederation.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.wsfederation.jaxb.entityconfig.FederationConfigElement;
 import com.sun.identity.wsfederation.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.wsfederation.jaxb.entityconfig.ObjectFactory;
 import com.sun.identity.wsfederation.jaxb.entityconfig.SPSSOConfigElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.TokenSigningKeyInfoElement;
-import com.sun.identity.wsfederation.jaxb.entityconfig.BaseConfigType;
 
 /**
  * The <code>WSFederationMetaUtils</code> provides metadata security related 
@@ -103,7 +100,7 @@ public final class WSFederationMetaSecurityUtils {
             return;
         }
 
-        org.apache.xml.security.Init.init();
+        XmlSecurity.init();
 
         keyProvider = KeyUtil.getKeyProviderInstance();
         if (keyProvider != null) {
@@ -273,8 +270,6 @@ public final class WSFederationMetaSecurityUtils {
 
             try {
                 XMLSignature signature = new XMLSignature(sigElement, "");
-                signature.addResourceResolver (
-                        new com.sun.identity.saml.xmlsig.OfflineResolver());
                 KeyInfo ki = signature.getKeyInfo ();
 
                 X509Certificate x509cert = null;

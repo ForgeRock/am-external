@@ -24,7 +24,7 @@
  *
  * $Id: IDPSingleSignOnServiceSOAP.java,v 1.3 2009/10/14 23:59:44 exu Exp $
  *
- * Portions Copyrighted 2013-2015 ForgeRock AS.
+ * Portions Copyrighted 2013-2018 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.servlet;
@@ -36,8 +36,8 @@ import com.sun.identity.saml2.common.SOAPCommunicator;
 import com.sun.identity.saml2.profile.FederatedSSOException;
 import com.sun.identity.saml2.profile.IDPSSOFederate;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -93,10 +93,10 @@ public class IDPSingleSignOnServiceSOAP extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_OK);
                 SAML2Utils.putHeaders(soapFault.getMimeHeaders(), response);
                 // Write out the message on the response stream
-                try (OutputStream os = response.getOutputStream()) {
-                    soapFault.writeTo(os);
-                    os.flush();
-                }
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                soapFault.writeTo(stream);
+                response.getWriter().println(stream.toString("UTF-8"));
+                response.getWriter().flush();
             } else {
                 response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             }

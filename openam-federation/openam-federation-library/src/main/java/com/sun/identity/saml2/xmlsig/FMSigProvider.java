@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,9 +24,8 @@
  *
  * $Id: FMSigProvider.java,v 1.5 2009/05/09 15:43:59 mallas Exp $
  *
- *  Portions Copyrighted 2011-2016 ForgeRock AS.
+ *  Portions Copyrighted 2011-2019 ForgeRock AS.
  */
-
 package com.sun.identity.saml2.xmlsig;
 
 import java.security.PrivateKey;
@@ -36,31 +35,32 @@ import java.util.Set;
 
 import javax.xml.xpath.XPathException;
 
-import org.forgerock.openam.utils.StringUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.Element;
-
-import org.apache.xml.security.utils.Constants;
 import org.apache.xml.security.c14n.Canonicalizer;
 import org.apache.xml.security.exceptions.XMLSecurityException;
-import org.apache.xml.security.signature.XMLSignature;
-import org.apache.xml.security.signature.XMLSignatureException;
 import org.apache.xml.security.keys.KeyInfo;
 import org.apache.xml.security.keys.keyresolver.KeyResolverException;
-import org.apache.xml.security.transforms.Transforms;
+import org.apache.xml.security.signature.XMLSignature;
+import org.apache.xml.security.signature.XMLSignatureException;
 import org.apache.xml.security.transforms.TransformationException;
+import org.apache.xml.security.transforms.Transforms;
+import org.apache.xml.security.utils.Constants;
 import org.apache.xml.security.utils.ElementProxy;
+import org.forgerock.openam.federation.util.XmlSecurity;
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.util.Reject;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
+import com.sun.identity.saml.common.SAMLConstants;
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.shared.xml.XPathAPI;
-
-import com.sun.identity.saml.common.SAMLConstants;
-import com.sun.identity.saml2.common.SAML2SDKUtils;
-import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.common.SAML2Utils;
 
 /**
  * <code>FMSigProvider</code> is an class for signing
@@ -78,7 +78,7 @@ public final class FMSigProvider implements SigProvider {
     private static boolean checkCert = true;
 
     static {
-        org.apache.xml.security.Init.init();
+        XmlSecurity.init();
 
 	c14nMethod = SystemPropertiesManager.get(
 	    SAML2Constants.CANONICALIZATION_METHOD,
@@ -186,8 +186,6 @@ public final class FMSigProvider implements SigProvider {
 	} else {
 	    root.insertBefore(sig.getElement(), nextSibling);
 	}
-	sig.getSignedInfo().addResourceResolver(   
-	    new com.sun.identity.saml.xmlsig.OfflineResolver()); 
 	Transforms transforms = new Transforms(doc);
 	try {
 	    transforms.addTransform(
@@ -229,93 +227,68 @@ public final class FMSigProvider implements SigProvider {
         return sig.getElement();   
     }
 
-    public boolean verify(
-	String xmlString,
-	String idValue,
-	Set<X509Certificate> verificationCerts
-    ) throws SAML2Exception {
+    @Override
+    public boolean verify(String xmlString, String idValue, Set<X509Certificate> verificationCerts)
+            throws SAML2Exception {
+        return verify(xmlString, SAML2Constants.ID, idValue, verificationCerts);
+    }
 
+    @Override
+    public boolean verify(String xmlString, String idAttribute, String idValue, Set<X509Certificate> verificationCerts)
+            throws SAML2Exception {
+        Reject.ifNull(idAttribute);
         String classMethod = "FMSigProvider.verify: ";
-        if (xmlString == null ||
-                xmlString.length() == 0 ||
-                idValue == null ||
-                idValue.length() == 0) {
-
-            SAML2SDKUtils.debug.error(
-                    classMethod +
-                            "Either input xmlString or idValue is null.");
-            throw new SAML2Exception(
-                    SAML2SDKUtils.bundle.getString("nullInput"));
+        if (StringUtils.isEmpty(xmlString) || StringUtils.isEmpty(idValue)) {
+            SAML2SDKUtils.debug.error("{}Either input xmlString or idValue is null.", classMethod);
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("nullInput"));
         }
-        Document doc =
-                XMLUtils.toDOMDocument(xmlString, SAML2SDKUtils.debug);
+        Document doc = XMLUtils.toDOMDocument(xmlString, SAML2SDKUtils.debug);
         if (doc == null) {
-            throw new SAML2Exception(
-                    SAML2SDKUtils.bundle.getString(
-                            "errorObtainingElement")
-            );
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
         }
-        Element nscontext =
-                org.apache.xml.security.utils.XMLUtils.
-                        createDSctx(doc, "ds", Constants.SignatureSpecNS);
-        Element sigElement = null;
+        Element nscontext = org.apache.xml.security.utils.XMLUtils.createDSctx(doc, "ds", Constants.SignatureSpecNS);
+        Element sigElement;
         try {
-            sigElement = (Element) XPathAPI.selectSingleNode(
-                    doc,
-                    "//ds:Signature[1]", nscontext);
+            sigElement = (Element) XPathAPI.selectSingleNode(doc, "/*/ds:Signature", nscontext);
         } catch (XPathException te) {
             throw new SAML2Exception(te);
         }
-        Element refElement;
+        Element reference;
         try {
-            refElement = (Element) XPathAPI.selectSingleNode(
-                    doc,
-                    "//ds:Reference[1]", nscontext);
+            reference = (Element) XPathAPI.selectSingleNode(doc, "/*/ds:Signature/ds:SignedInfo/ds:Reference",
+                    nscontext);
         } catch (XPathException te) {
             throw new SAML2Exception(te);
         }
-        String refUri = refElement.getAttribute("URI");
-        String signedId = ((Element) sigElement.getParentNode()).getAttribute(SAML2Constants.ID);
-        if (refUri == null || signedId == null || !refUri.substring(1).equals(signedId)) {
-            SAML2SDKUtils.debug.error(classMethod + "Signature reference ID does "
-                    + "not match with element ID");
+        String refUri = reference.getAttribute("URI");
+        String signedId = ((Element) sigElement.getParentNode()).getAttribute(idAttribute);
+        if (refUri == null || !idValue.equals(signedId) || !refUri.substring(1).equals(signedId)) {
+            SAML2SDKUtils.debug.error("{}Signature reference ID does not match with element ID", classMethod);
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("uriNoMatchWithId"));
         }
 
-        doc.getDocumentElement().setIdAttribute(SAML2Constants.ID, true);
-        XMLSignature signature = null;
+        doc.getDocumentElement().setIdAttribute(idAttribute, true);
+        XMLSignature signature;
         try {
-            signature = new
-                    XMLSignature((Element) sigElement, "");
-        } catch (XMLSignatureException sige) {
-            throw new SAML2Exception(sige);
+            signature = new XMLSignature(sigElement, "");
         } catch (XMLSecurityException xse) {
             throw new SAML2Exception(xse);
         }
-        signature.addResourceResolver(
-                new com.sun.identity.saml.xmlsig.
-                        OfflineResolver());
         KeyInfo ki = signature.getKeyInfo();
         X509Certificate certToUse = null;
         if (ki != null && ki.containsX509Data()) {
             try {
                 certToUse = ki.getX509Certificate();
             } catch (KeyResolverException kre) {
-                SAML2SDKUtils.debug.error(
-                        classMethod +
-                                "Could not obtain a certificate " +
-                                "from inside the document."
-                );
+                SAML2SDKUtils.debug.error("{}Could not obtain a certificate from inside the document.", classMethod);
                 certToUse = null;
             }
             if (certToUse != null && checkCert) {
-                if (!verificationCerts.contains(certToUse)) {
-                    SAML2SDKUtils.debug.error(classMethod + "The cert contained in the document is NOT trusted");
+                if ((CollectionUtils.isNotEmpty(verificationCerts)) && !verificationCerts.contains(certToUse)) {
+                    SAML2SDKUtils.debug.error("{}The cert contained in the document is NOT trusted", classMethod);
                     throw new SAML2Exception(SAML2SDKUtils.bundle.getString("invalidCertificate"));
                 }
-                if (SAML2SDKUtils.debug.messageEnabled()) {
-                    SAML2SDKUtils.debug.message(classMethod + "The cert contained in the document is trusted");
-                }
+                SAML2SDKUtils.debug.message("{}The cert contained in the document is trusted", classMethod);
             }
         }
 
@@ -324,13 +297,11 @@ public final class FMSigProvider implements SigProvider {
         }
 
         if (!isValidSignature(signature, verificationCerts)) {
-            SAML2SDKUtils.debug.error(classMethod + "Signature verification failed.");
+            SAML2SDKUtils.debug.error("{}Signature verification failed.", classMethod);
             return false;
         }
 
-        if (SAML2SDKUtils.debug.messageEnabled()) {
-            SAML2SDKUtils.debug.message(classMethod + "Signature verification successful.");
-        }
+        SAML2SDKUtils.debug.message("{}Signature verification successful.", classMethod);
         return true;
     }
 

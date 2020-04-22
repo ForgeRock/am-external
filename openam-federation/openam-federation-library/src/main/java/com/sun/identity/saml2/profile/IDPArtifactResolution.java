@@ -24,16 +24,16 @@
  *
  * $Id: IDPArtifactResolution.java,v 1.13 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2012-2017 ForgeRock AS.
+ * Portions Copyrighted 2012-2019 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
 
 import static org.forgerock.openam.utils.Time.newDate;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.HashMap;
@@ -159,7 +159,7 @@ public class IDPArtifactResolution {
             sendSoapResponse(request, response, onMessage(message, request, response, realm, idpEntityID));
         } catch (SAML2Exception se) {
             SAML2Utils.debug.error("{}SAML2 error", classMethod, se);
-            sendSoapFault(request, response, SAML2Constants.SERVER_FAULT, "unableToCreateArtifactResponse");
+            sendSoapFault(request, response, SAML2Constants.SERVER_FAULT, "UnableToCreateArtifactResponse");
         } catch (SOAPException | IOException ex) {
             SAML2Utils.debug.error("{}SOAP error", classMethod, ex);
             String[] data = { idpEntityID };
@@ -186,9 +186,10 @@ public class IDPArtifactResolution {
                 response.setStatus(HttpServletResponse.SC_OK);
                 putHeaders(reply.getMimeHeaders(), response);
 
-                OutputStream outputStream = response.getOutputStream();
-                reply.writeTo(outputStream);
-                outputStream.flush();
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                reply.writeTo(stream);
+                response.getWriter().println(stream.toString("UTF-8"));
+                response.getWriter().flush();
             } else {
                 response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             }
@@ -383,13 +384,7 @@ public class IDPArtifactResolution {
                     if (SAML2Utils.debug.messageEnabled()) {
                         SAML2Utils.debug.message("Artifact=" + artStr);
                     }
-                    String tmp = (String) SAML2FailoverUtils.retrieveSAML2Token(artStr);
-                    res = ProtocolFactory.getInstance().createResponse(tmp);
-                } catch (SAML2Exception e) {
-                    SAML2Utils.debug.error(classMethod + " SAML2 ERROR!!!", e);
-                    return SOAPCommunicator.getInstance().createSOAPFault(
-                            SAML2Constants.CLIENT_FAULT,
-                            "UnableToFindResponseInRepo", null);
+                    res = (Response) SAML2FailoverUtils.retrieveSAML2Token(artStr);
                 } catch (SAML2TokenRepositoryException se) {
                     SAML2Utils.debug.error(classMethod + " There was a problem reading the response "
                             + "from the SAML2 Token Repository using artStr:" + artStr, se);

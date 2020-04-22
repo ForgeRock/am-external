@@ -26,7 +26,7 @@
 
     $Id: amAuthWindowsDesktopSSO.xml,v 1.4 2008/06/25 05:45:41 qcheng Exp $
 
-    Portions Copyrighted 2011-2015 ForgeRock AS.
+    Portions Copyrighted 2011-2018 ForgeRock AS.
 -->
 
 <!DOCTYPE ServicesConfiguration
@@ -117,6 +117,20 @@
                     resourceName="trustedKerberosRealms">
                     <DefaultValues/>
                 </AttributeSchema>
+                <AttributeSchema name="iplanet-am-auth-windowsdesktopsso-kerberos-isinitiator"
+                    type="single"
+                    syntax="boolean"
+                    i18nKey="a109"
+                    order="900"
+                    resourceName="kerberosServiceIsinitiator">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>true</Value>
+                    </DefaultValues>
+                </AttributeSchema>
                 <SubSchema name="serverconfig" inheritance="multiple" resourceName="USE-PARENT">
                         <AttributeSchema name="iplanet-am-auth-windowsdesktopsso-principal-name"
                         type="single"
@@ -191,7 +205,21 @@
                         order="700"
                         resourceName="trustedKerberosRealms">
                         <DefaultValues/>
-                    </AttributeSchema>                    
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-windowsdesktopsso-kerberos-isinitiator"
+                        type="single"
+                        syntax="boolean"
+                        i18nKey="a109"
+                        order="900"
+                        resourceName="kerberosServiceIsinitiator">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>true</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
                 </SubSchema>
             </Organization>
         </Schema>

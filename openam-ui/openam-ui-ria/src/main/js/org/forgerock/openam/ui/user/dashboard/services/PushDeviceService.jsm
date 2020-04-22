@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2018 ForgeRock AS.
  */
 
 import AbstractDelegate from "org/forgerock/commons/ui/common/main/AbstractDelegate";
@@ -21,7 +21,7 @@ import fetchUrl from "org/forgerock/openam/ui/common/services/fetchUrl";
 
 const delegate = new AbstractDelegate(`${Constants.host}${Constants.context}/json`);
 const getPath = function () {
-    return `/users/${Configuration.loggedUser.get("uid")}/devices/push/`;
+    return `/users/${Configuration.loggedUser.get("username")}/devices/push/`;
 };
 
 export function getAll () {

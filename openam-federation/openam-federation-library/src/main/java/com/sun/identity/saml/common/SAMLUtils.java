@@ -24,7 +24,7 @@
  *
  * $Id: SAMLUtils.java,v 1.16 2010/01/09 19:41:06 qcheng Exp $
  *
- * Portions Copyrighted 2012-2017 ForgeRock AS.
+ * Portions Copyrighted 2012-2019 ForgeRock AS.
  */
 
 package com.sun.identity.saml.common;
@@ -56,7 +56,13 @@ import java.security.MessageDigest;
 import java.net.URL;
 import java.net.MalformedURLException;
 
-import org.w3c.dom.*;
+import org.apache.xml.security.c14n.Canonicalizer;
+import org.forgerock.openam.federation.util.XmlSecurity;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 
 import com.sun.identity.common.PeriodicGroupRunnable;
 import com.sun.identity.common.ScheduleableGroupAction;
@@ -135,7 +141,7 @@ public class SAMLUtils  extends SAMLUtilsCommon {
     private static Object ssoToken;
  
     static {
-        org.apache.xml.security.Init.init();
+        XmlSecurity.init();
         if (SystemConfigurationUtil.isServerMode()) {
             long period = ((Integer) SAMLServiceManager.getAttribute(
                         SAMLConstants.CLEANUP_INTERVAL_NAME)).intValue() * 1000;

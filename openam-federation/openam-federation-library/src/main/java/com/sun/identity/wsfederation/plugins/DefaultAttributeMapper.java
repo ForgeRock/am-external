@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
@@ -24,9 +24,8 @@
  *
  * $Id: DefaultAttributeMapper.java,v 1.4 2009/10/28 23:58:59 exu Exp $
  *
+ * Portions Copyrighted 2017 ForgeRock AS.
  */
-
-
 package com.sun.identity.wsfederation.plugins;
 
 import com.sun.identity.shared.debug.Debug;
@@ -44,105 +43,84 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.ResourceBundle;
 import java.util.StringTokenizer;
-import java.util.Iterator;
 import java.util.Collections;
 
+import org.forgerock.openam.utils.CollectionUtils;
+
 /**
- * This class <code>DefaultAttribute</code> is the base class for 
- * <code>DefaultSPAttributeMapper</code> and 
- * <code>DefaultIDPAttributeMapper</code> for sharing the common 
- * functionalities.
+ * This class <code>DefaultAttribute</code> is the base class for
+ * <code>DefaultSPAttributeMapper</code> and
+ * <code>DefaultIDPAttributeMapper</code> for sharing the common
+ * functionality.
  */
 public class DefaultAttributeMapper {
 
     protected static Debug debug = WSFederationUtils.debug;
     protected static ResourceBundle bundle = WSFederationUtils.bundle;
-    protected static DataStoreProvider dsProvider = 
-        WSFederationUtils.dsProvider;
+    protected static DataStoreProvider dsProvider = WSFederationUtils.dsProvider;
     protected static final String IDP = "IDP";
     protected static final String SP = "SP";
-    protected String role = null;
-
-    /**
-     * Constructor.
-     */
-    public DefaultAttributeMapper() {}
 
     /**
      * Returns the attribute map by parsing the configured map in hosted
      * provider configuration
+     *
      * @param realm realm name.
-     * @param hostEntityID <code>EntityID</code> of the hosted provider.
+     * @param entityId <code>EntityID</code> of the provider to lookup.
+     * @param role either SP or IDP.
      * @return a map of local attributes configuration map.
-     *        This map will have a key as the SAML attribute name and the value
-     *        is the local attribute. 
-     * @exception <code>WSFederationException</code> if any failured.
+     * This map will have a key as the SAML attribute name and the value
+     * is the local attribute.
+     * @throws WSFederationException for any failures.
      */
-    public Map getConfigAttributeMap(
-         String realm, String hostEntityID) throws WSFederationException {
+    public Map<String, String> getConfigAttributeMap(String realm, String entityId, String role)
+            throws WSFederationException {
 
-        if(realm == null) {
-           throw new WSFederationException(bundle.getString(
-             "nullRealm"));
+        if (realm == null) {
+            throw new WSFederationException(bundle.getString("nullRealm"));
         }
 
-        if(hostEntityID == null) {
-           throw new WSFederationException(bundle.getString(
-             "nullHostEntityID"));
+        if (entityId == null) {
+            throw new WSFederationException(bundle.getString("nullHostEntityID"));
         }
+
+        final String debugClass = "DefaultAttributeMapper.getConfigAttributeMap:";
 
         try {
-            BaseConfigType config = null;
-            if(role.equals(SP)) {
-               config = WSFederationUtils.getMetaManager().getSPSSOConfig(
-                   realm, hostEntityID);
+            BaseConfigType config;
+            if (SP.equals(role)) {
+                config = WSFederationUtils.getMetaManager().getSPSSOConfig(realm, entityId);
             } else {
-               config = WSFederationUtils.getMetaManager().getIDPSSOConfig(
-                   realm, hostEntityID);
+                config = WSFederationUtils.getMetaManager().getIDPSSOConfig(realm, entityId);
             }
 
-            if(config == null) {
-               if(debug.warningEnabled()) {
-                  debug.warning("DefaultAttributeMapper.getConfigAttribute" +
-                  "Map: configuration is not defined.");
-               }
-               return Collections.EMPTY_MAP;
+            if (config == null) {
+                debug.warning("{} configuration is not defined for entityId {} in realm.", debugClass, entityId, realm);
+                return Collections.emptyMap();
             }
 
-            Map attribConfig = WSFederationMetaUtils.getAttributes(config);
-            List mappedAttributes = 
-                 (List)attribConfig.get(SAML2Constants.ATTRIBUTE_MAP);
+            Map<String, List<String>> attribConfig = WSFederationMetaUtils.getAttributes(config);
+            List<String> mappedAttributes = attribConfig.get(SAML2Constants.ATTRIBUTE_MAP);
 
-            if(mappedAttributes == null || mappedAttributes.size() == 0) {
-               if(debug.messageEnabled()) {
-                  debug.message("DefaultAttributeMapper.getConfigAttributeMap:"
-                  + "Attribute map is not defined for entity: " + hostEntityID);
-               }
-               return Collections.EMPTY_MAP; 
+            if (CollectionUtils.isEmpty(mappedAttributes)) {
+                debug.message("{} Attribute map is not defined for entity: {}", debugClass, entityId);
+                return Collections.emptyMap();
             }
-            Map map = new HashMap();
-
-            for(Iterator iter = mappedAttributes.iterator(); iter.hasNext();) {
-                String entry = (String)iter.next();
-
-                if(entry.indexOf("=") == -1) {
-                   if(debug.messageEnabled()) {
-                      debug.message("DefaultAttributeMapper.getConfig" +
-                      "AttributeMap: Invalid entry." + entry);
-                   }
-                   continue;
+            Map<String, String> map = new HashMap<>();
+            for (String mappedAttribute : mappedAttributes) {
+                if (!mappedAttribute.contains("=")) {
+                    debug.message("{} Invalid entry. {}", debugClass, mappedAttribute);
+                    continue;
                 }
 
-                StringTokenizer st = new StringTokenizer(entry, "="); 
+                StringTokenizer st = new StringTokenizer(mappedAttribute, "=");
                 map.put(st.nextToken(), st.nextToken());
             }
             return map;
 
-        } catch(WSFederationMetaException sme) {
-            debug.error("DefaultAttributeMapper.getConfigAttributeMap: " +
-            "Meta Exception", sme);
+        } catch (WSFederationMetaException sme) {
+            debug.error("{} Meta Exception", debugClass, sme);
             throw new WSFederationException(sme);
-
         }
     }
 

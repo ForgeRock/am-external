@@ -16,20 +16,22 @@
 
 package org.forgerock.openam.idrepo.ldap;
 
-import com.sun.identity.idm.IdRepo;
-import com.sun.identity.idm.IdRepoErrorCode;
-import com.sun.identity.idm.IdRepoException;
-import com.sun.identity.idm.IdType;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.forgerock.openam.ldap.LDAPConstants.ROLE_DN_ATTR;
+import static org.forgerock.openam.utils.CollectionUtils.asSet;
+import static org.testng.Assert.fail;
+
 import java.util.Map;
 import java.util.Set;
-import static org.fest.assertions.Assertions.*;
-import static org.forgerock.openam.ldap.LDAPConstants.*;
-import static org.forgerock.openam.utils.CollectionUtils.*;
-import static org.testng.Assert.fail;
 
 import org.forgerock.openam.utils.MapHelper;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import com.sun.identity.idm.IdRepo;
+import com.sun.identity.idm.IdRepoErrorCode;
+import com.sun.identity.idm.IdRepoException;
+import com.sun.identity.idm.IdType;
 
 public class DSEERepoTest extends IdRepoTestBase {
 

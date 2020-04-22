@@ -24,13 +24,16 @@
  *
  * $Id: RPSigninRequest.java,v 1.9 2009/11/03 00:48:54 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015-2020 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.servlet;
 
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.*;
+
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.StringUtils;
 
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.shared.DateUtils;
@@ -134,25 +137,22 @@ public class RPSigninRequest extends WSFederationAction {
             WSFederationMetaUtils.getAttributes(spConfig);
 
         String accountRealmSelection = 
-                spConfigAttributes.get(
-                com.sun.identity.wsfederation.common.WSFederationConstants.
-                ACCOUNT_REALM_SELECTION).get(0);
+                CollectionUtils.getFirstItem(spConfigAttributes.get(
+                com.sun.identity.wsfederation.common.WSFederationConstants.ACCOUNT_REALM_SELECTION));
         if ( accountRealmSelection == null )
         {
             accountRealmSelection = 
                 WSFederationConstants.ACCOUNT_REALM_SELECTION_DEFAULT;
         }
-        String accountRealmCookieName = 
-            spConfigAttributes.get(WSFederationConstants.
-            ACCOUNT_REALM_COOKIE_NAME).get(0);
+        String accountRealmCookieName =
+                CollectionUtils.getFirstItem(spConfigAttributes.get(WSFederationConstants.ACCOUNT_REALM_COOKIE_NAME));
         if ( accountRealmCookieName == null )
         {
             accountRealmCookieName = 
                 WSFederationConstants.ACCOUNT_REALM_COOKIE_NAME_DEFAULT;
         }
         String homeRealmDiscoveryService = 
-            spConfigAttributes.get(
-            WSFederationConstants.HOME_REALM_DISCOVERY_SERVICE).get(0);
+            CollectionUtils.getFirstItem(spConfigAttributes.get(WSFederationConstants.HOME_REALM_DISCOVERY_SERVICE));
 
         if (debug.messageEnabled()) {
             debug.message(classMethod+"account realm selection method is " + 
@@ -221,7 +221,7 @@ public class RPSigninRequest extends WSFederationAction {
             // Got the issuer name from the cookie/UA string - let's see if 
             // we know the entity ID
             idpEntityId = 
-                metaManager.getEntityByTokenIssuerName(null, 
+                metaManager.getEntityByTokenIssuerName(spRealm,
                 idpIssuerName);
         }
 
@@ -254,7 +254,7 @@ public class RPSigninRequest extends WSFederationAction {
         FederationElement idp = null;
         if ( idpEntityId != null )
         {
-            idp = metaManager.getEntityDescriptor(null,
+            idp = metaManager.getEntityDescriptor(spRealm,
                 idpEntityId);
         }
         
@@ -264,6 +264,10 @@ public class RPSigninRequest extends WSFederationAction {
 
         // If we still don't know the IdP, redirect to home realm discovery
         if (idp == null) {
+            if (StringUtils.isEmpty(homeRealmDiscoveryService)) {
+                debug.error("Invalid Home Realm Discovery Service specified");
+                throw new WSFederationException("invalidHomeRealmDiscoveryService");
+            }
             StringBuffer url = new StringBuffer(homeRealmDiscoveryService);
             url.append("?wreply=");
             url.append(urlEncodeQueryParameterNameOrValue(request.getRequestURL().toString()));

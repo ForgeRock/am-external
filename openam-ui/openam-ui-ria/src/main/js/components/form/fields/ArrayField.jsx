@@ -11,15 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
 import { Creatable } from "react-select";
-import { map, pluck } from "lodash";
+import { map } from "lodash";
 import React, { PropTypes } from "react";
 
 const ArrayField = ({ formData, onChange, ...restProps }) => {
-    const handleOnChange = (value) => onChange(pluck(value, "value"));
+    const handleOnChange = (value) => onChange(map(value, "value"));
 
     return (
         <Creatable
