@@ -30,6 +30,7 @@ AM 6.0.0.3        |  releases/6.0.0.3
 AM 6.0.0.2        |  releases/6.0.0.2
 AM 6.0.0.1        |  releases/6.0.0.1
 AM 6.0.0          |  releases/6.0.0
+AM 5.5.2          |  releases/5.5.2
 AM 5.5.1          |  releases/5.5.1
 AM 5.5.0          |  releases/5.5.0 
 AM 5.1.1          |  releases/14.1.1  
