@@ -29,10 +29,14 @@
     <artifactId>openam-post-auth-sample</artifactId>
 
      <repositories>
-        <repository>
-            <id>forgerock-private-releases</id>
-            <url>https://maven.forgerock.org/repo/private-releases</url>
-        </repository>
+         <repository>
+             <id>forgerock-build-dependencies</id>
+             <name>ForgeRock Private Release Repository</name>
+             <url>http://maven.forgerock.org/repo/forgerock-openam-5.5.2-dependencies</url>
+             <snapshots>
+                 <enabled>false</enabled>
+             </snapshots>
+         </repository>
     </repositories>
 
     <dependencies>
