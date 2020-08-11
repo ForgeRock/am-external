@@ -1,0 +1,32 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "${project.version}",
+    "entityType" : "PageNode",
+    "entityId" : "20237b34-26cb-4a0b-958f-abb422290d42",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "20237b34-26cb-4a0b-958f-abb422290d42",
+    "pageDescription" : {
+      "en" : "Enter current password"
+    },
+    "nodes" : [ {
+      "_id" : "e43b0af6-1c4c-472f-9641-6be5319e62b4",
+      "nodeType" : "ValidatedPasswordNode",
+      "displayName" : "Platform Password"
+    } ],
+    "pageHeader" : {
+      "en" : "Verify Existing Password"
+    },
+    "_type" : {
+      "_id" : "PageNode",
+      "name" : "Page Node",
+      "collection" : true
+    },
+    "_outcomes" : [ {
+      "id" : "outcome",
+      "displayName" : "Outcome"
+    } ]
+  }
+}

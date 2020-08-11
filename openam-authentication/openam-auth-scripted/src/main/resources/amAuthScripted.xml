@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2014-2020 ForgeRock AS. All Rights Reserved
+ * 
+-->
+<!DOCTYPE ServicesConfiguration
+    PUBLIC "=//iPlanet//Service Management Services (SMS) 1.0 DTD//EN" "jar://com/sun/identity/sm/sms.dtd">
+
+<ServicesConfiguration>
+    <Service name="iPlanetAMAuthScriptedService" version="1.0">
+        <Schema
+            serviceHierarchy="/DSAMEConfig/authentication/iPlanetAMAuthScriptedService"
+            i18nFileName="amAuthScripted"
+            revisionNumber="1"
+            i18nKey="iplanet-am-auth-scripted-service-description"
+            resourceName="scripted">
+
+            <Global><!-- Left empty to clear out global from previous version --></Global>
+
+            <Organization>
+                <AttributeSchema name="iplanet-am-auth-scripted-client-script-enabled"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="a101"
+                                 order="100"
+                                 resourceName="clientScriptEnabled">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>true</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="iplanet-am-auth-scripted-client-script"
+                                 type="single_choice"
+                                 uitype="scriptSelect"
+                                 propertiesViewBeanURL="../ui-admin/%23realms/{0}/scripts/edit/{1}"
+                                 syntax="string"
+                                 i18nKey="a102"
+                                 order="200"
+                                 resourceName="clientScript">
+                    <ChoiceValues>
+                        <ChoiceValuesClassName className="org.forgerock.openam.scripting.service.ScriptChoiceValues">
+                            <AttributeValuePair>
+                                <Attribute name="ContextId"/>
+                                <Value>AUTHENTICATION_CLIENT_SIDE</Value>
+                            </AttributeValuePair>
+                        </ChoiceValuesClassName>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>@NoScriptDefined@</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="iplanet-am-auth-scripted-server-script"
+                                 type="single_choice"
+                                 uitype="scriptSelect"
+                                 propertiesViewBeanURL="../ui-admin/%23realms/{0}/scripts/edit/{1}"
+                                 syntax="string"
+                                 i18nKey="a104"
+                                 order="300"
+                                 resourceName="serverScript">
+                    <ChoiceValues>
+                        <ChoiceValuesClassName className="org.forgerock.openam.scripting.service.ScriptChoiceValues">
+                            <AttributeValuePair>
+                                <Attribute name="ContextId"/>
+                                <Value>AUTHENTICATION_SERVER_SIDE</Value>
+                            </AttributeValuePair>
+                        </ChoiceValuesClassName>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>@GlobalServerSideAuthModuleScriptId@</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="iplanet-am-auth-scripted-auth-level"
+                                 type="single"
+                                 syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+                                 i18nKey="a500"
+                                 order="400"
+                                 resourceName="authenticationLevel">
+                    <DefaultValues>
+                        <Value>1</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <SubSchema name="serverconfig" inheritance="multiple" realmCloneable="no" resourceName="USE-PARENT">
+                    <AttributeSchema name="iplanet-am-auth-scripted-client-script-enabled"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="a101"
+                                     order="100"
+                                     resourceName="clientScriptEnabled">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>true</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-scripted-client-script"
+                                     type="single_choice"
+                                     uitype="scriptSelect"
+                                     propertiesViewBeanURL="../ui-admin/%23realms/{0}/scripts/edit/{1}"
+                                     syntax="string"
+                                     i18nKey="a102"
+                                     order="200"
+                                     resourceName="clientScript">
+                        <ChoiceValues>
+                            <ChoiceValuesClassName className="org.forgerock.openam.scripting.service.ScriptChoiceValues">
+                                <AttributeValuePair>
+                                    <Attribute name="ContextId"/>
+                                    <Value>AUTHENTICATION_CLIENT_SIDE</Value>
+                                </AttributeValuePair>
+                            </ChoiceValuesClassName>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>@NoScriptDefined@</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-scripted-server-script"
+                                     type="single_choice"
+                                     uitype="scriptSelect"
+                                     propertiesViewBeanURL="../ui-admin/%23realms/{0}/scripts/edit/{1}"
+                                     syntax="string"
+                                     i18nKey="a104"
+                                     order="300"
+                                     resourceName="serverScript">
+                        <ChoiceValues>
+                            <ChoiceValuesClassName className="org.forgerock.openam.scripting.service.ScriptChoiceValues">
+                                <AttributeValuePair>
+                                    <Attribute name="ContextId"/>
+                                    <Value>AUTHENTICATION_SERVER_SIDE</Value>
+                                </AttributeValuePair>
+                            </ChoiceValuesClassName>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>@GlobalServerSideAuthModuleScriptId@</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="iplanet-am-auth-scripted-auth-level"
+                                     type="single"
+                                     syntax="number_range" rangeStart="0" rangeEnd="2147483647"
+                                     i18nKey="a500"
+                                     order="400"
+                                     resourceName="authenticationLevel">
+                        <DefaultValues>
+                            <Value>1</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                </SubSchema>
+            </Organization>
+        </Schema>
+    </Service>
+</ServicesConfiguration>

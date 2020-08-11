@@ -1,0 +1,77 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2011-2019 ForgeRock AS.
+ */
+
+import { has, map, omitBy } from "lodash";
+import $ from "jquery";
+
+const EventManager = {};
+const eventRegistry = {};
+const subscriptions = {};
+
+EventManager.sendEvent = function (eventId, event) {
+    return $.when.apply($,
+        map(eventRegistry[eventId], (eventHandler) => {
+            const promise = $.Deferred();
+            window.setTimeout(() => {
+                $.when(eventHandler(event)).always(promise.resolve);
+            });
+            return promise;
+        })
+
+    ).then(
+        () => {
+            let promise;
+            if (has(subscriptions, eventId)) {
+                promise = subscriptions[eventId];
+                delete subscriptions[eventId];
+                promise.resolve();
+            }
+            return;
+        }
+    );
+};
+
+EventManager.registerListener = function (eventId, callback) {
+    if (!has(eventRegistry, eventId)) {
+        eventRegistry[eventId] = [callback];
+    } else {
+        eventRegistry[eventId].push(callback);
+    }
+};
+
+EventManager.unregisterListener = function (eventId, callbackToRemove) {
+    if (has(eventRegistry, eventId)) {
+        if (callbackToRemove !== undefined) {
+            eventRegistry[eventId] = omitBy(eventRegistry[eventId], (callback) => {
+                return callback === callbackToRemove;
+            });
+        } else {
+            delete eventRegistry[eventId];
+        }
+    }
+};
+
+/**
+ * Returns a promise that will be resolved the next time the provided eventId has completed processing.
+ */
+EventManager.whenComplete = function (eventId) {
+    if (!has(subscriptions, eventId)) {
+        subscriptions[eventId] = $.Deferred();
+    }
+    return subscriptions[eventId];
+};
+
+export default EventManager;

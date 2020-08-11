@@ -1,0 +1,15 @@
+{
+  "_id": "kba",
+  "kbaPropertyName": "kbaInfo",
+  "minimumAnswersToDefine": 2,
+  "minimumAnswersToVerify": 1,
+  "questions": {
+    "1": {
+      "en": "Question One?",
+      "fr": "Question Une?"
+    },
+    "2": {
+      "en": "Question Two?"
+    }
+  }
+}

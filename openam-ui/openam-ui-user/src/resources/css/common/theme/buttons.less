@@ -1,0 +1,57 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2019 ForgeRock AS.
+ */
+
+/*
+Buttons style
+*/
+
+.btn-primary.disabled, .btn-primary[disabled] {
+    background-color: @base-theme-color;
+    border-color: darken(@base-theme-color, 5%);
+}
+
+.btn-toolbar {
+    border-bottom: 1px solid #ddd;
+}
+
+/*
+  Dark secondary button style
+*/
+
+.fr-btn-secondary {
+    background-color:  #f7f7f7;
+    border-color: #ccc;
+    color: #333;
+
+    .fa {
+        color: #333;
+    }
+
+    &:focus, &.focus,
+    &:active, &.active,
+    &:hover {
+        color: #333;
+        background-color: #e6e6e6;
+        border-color: #adadad;
+    }
+}
+
+
+li.btn-group.active .fr-btn-secondary {
+    color: #333;
+    background-color: #e6e6e6;
+    border-color: #adadad;
+}

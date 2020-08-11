@@ -1,0 +1,103 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2019 ForgeRock AS.
+ */
+
+.login {
+    .remember-forgot {
+        margin: 20px 0;
+        ul {
+            padding: 0;
+            margin: 0;
+            list-style-type: none;
+            li {
+                display: block;
+                margin-bottom: 10px;
+
+                @media (min-width: @screen-xs) {
+                    display: inline;
+                    margin-bottom: 0;
+                }
+
+                a {
+                    margin: 0 20px;
+                }
+            }
+        }
+    }
+
+    .toggle-login-register {
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .remember-forgot {
+        .forgot-password {
+            float: right;
+            padding: 0;
+        }
+
+        .checkbox {
+            margin: 0;
+        }
+    }
+}
+
+label.separator {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    font-size: 16px;
+    margin: 0 0 15px 0;
+    width: 100%;
+    height: auto;
+}
+label.separator:before {
+    content: "";
+    margin: 0 auto;
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: -1;
+}
+label.separator span {
+    padding: 0 10px;
+}
+
+/**
+ * label elements that accompany inputs have "sr-only" and "separator" classes applied to them to ensure that in IE9
+ * there are labels visible to the user due to "placeholder" attributes not rendering in IE9. The following rule turns
+ * these more prominent labels off in non-IE9 browsers that are able to correctly render "placeholder".
+ */
+body:not(.ie9) label.sr-only.separator {
+    height: 0;
+    position: fixed;
+    width: auto;
+
+    span {
+        font-size: 0;
+        padding: 0;
+    }
+}
+
+#processContent {
+    padding-bottom: 20px;
+
+    .alert {
+        overflow: auto;
+    }
+}

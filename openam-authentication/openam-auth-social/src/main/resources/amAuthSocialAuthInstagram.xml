@@ -1,0 +1,534 @@
+<?xml version='1.0' encoding="ISO-8859-1"?>
+
+<!--
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2017-2020 ForgeRock AS. All Rights Reserved
+ * 
+-->
+
+<!DOCTYPE ServicesConfiguration
+        PUBLIC "=//forgerock//Service Management Services (SMS) 1.0 DTD//EN"
+        "jar://com/sun/identity/sm/sms.dtd">
+
+<ServicesConfiguration>
+    <Service name="iPlanetAMAuthSocialAuthInstagramService" version="1.0">
+        <Schema
+                serviceHierarchy="/DSAMEConfig/authentication/iPlanetAMAuthSocialAuthInstagramService"
+                i18nFileName="amAuthSocialAuth"
+                revisionNumber="1"
+                i18nKey="am.social.auth.instagram.serviceTitle"
+                resourceName="authSocialInstagram">
+
+            <Organization>
+                <AttributeSchema name="forgerock-am-auth-socialauthinstagram-auth-level"
+                                 type="single"
+                                 syntax="number_range"
+                                 rangeStart="0"
+                                 rangeEnd="2147483647"
+                                 i18nKey="am.social.auth.level"
+                                 order="100"
+                                 resourceName="authenticationLevel">
+                    <DefaultValues>
+                        <Value>0</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="provider"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.provider"
+                                 order="200">
+                    <DefaultValues>
+                        <Value>Instagram</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="clientId"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.clientId"
+                                 order="400">
+                </AttributeSchema>
+                <AttributeSchema name="clientSecret"
+                                 type="single"
+                                 syntax="password"
+                                 i18nKey="am.social.auth.clientSecret"
+                                 order="500">
+                </AttributeSchema>
+                <AttributeSchema name="authorizeEndpoint"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.authorizeEndpoint"
+                                 order="600">
+                    <DefaultValues>
+                        <Value>https://api.instagram.com/oauth/authorize</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="tokenEndpoint"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.tokenEndpoint"
+                                 order="700">
+                    <DefaultValues>
+                        <Value>https://api.instagram.com/oauth/access_token</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="userInfoEndpoint"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.userInfoEndpoint"
+                                 order="800">
+                    <DefaultValues>
+                        <Value>https://api.instagram.com/v1/users/self</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="scope"
+                                 type="list"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.scope"
+                                 order="900">
+                    <DefaultValues>
+                        <Value>basic</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="scopeDelimiter"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.scopeDelimiter"
+                                 order="1000">
+                </AttributeSchema>
+                <AttributeSchema name="subjectProperty"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.subjectProperty"
+                                 order="1100">
+                    <DefaultValues>
+                        <Value>id</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="usesBasicAuth"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.usesBasicAuth"
+                                 order="1200">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>false</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="ssoProxyUrl"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.ssoProxyUrl"
+                                 order="1300">
+                    <DefaultValues>
+                        <Value>@SERVER_PROTO@://@SERVER_HOST@:@SERVER_PORT@/@SERVER_URI@/oauth2c/OAuthProxy.jsp</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="accountProviderClass"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.accountProviderClass"
+                                 order="1400">
+                    <DefaultValues>
+                        <Value>org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="accountMapperClass"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.accountMapperClass"
+                                 order="1500" >
+                    <DefaultValues>
+                        <Value>org.forgerock.openam.authentication.modules.common.mapping.JsonAttributeMapper|*|instagram-</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="accountMapperConfiguration"
+                                 type="list"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.accountMapperConfiguration"
+                                 order="1600">
+                    <DefaultValues>
+                        <Value>id=uid</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="attributeMappingClasses"
+                                 type="list"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.attributeMappingClasses"
+                                 order="1700">
+                    <DefaultValues>
+                        <Value>org.forgerock.openam.authentication.modules.common.mapping.JsonAttributeMapper|uid|instagram-</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="attributeMapperConfiguration"
+                                 type="list"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.attributeMapperConfiguration"
+                                 order="1800">
+                    <DefaultValues>
+                        <Value>username=givenName</Value>
+                        <Value>username=cn</Value>
+                        <Value>full_name=sn</Value>
+                        <Value>id=uid</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="createAccount"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.createAccount"
+                                 order="1360">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>true</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="mapToAnonymousUser"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.mapToAnonymousUser"
+                                 order="2000">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>false</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="anonymousUserName"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.anonymousUserName"
+                                 order="2100">
+                    <DefaultValues>
+                        <Value>anonymous</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="logoutServiceUrl"
+                                 type="single"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.logoutServiceUrl"
+                                 order="2150"
+                                 resourceName="logoutServiceUrl">
+                    <DefaultValues>
+                        <Value>https://instagram.com/accounts/logout</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="logoutBehaviour"
+                                 type="single_choice"
+                                 syntax="string"
+                                 i18nKey="am.social.auth.logoutBehaviour"
+                                 order="2155"
+                                 resourceName="logoutBehaviour">
+                    <ChoiceValues>
+                        <ChoiceValue i18nKey="prompt">prompt</ChoiceValue>
+                        <ChoiceValue i18nKey="logout">logout</ChoiceValue>
+                        <ChoiceValue i18nKey="donotlogout">donotlogout</ChoiceValue>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <Value>prompt</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="enableRegistrationService"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.enableRegistrationService"
+                                 order="1350">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>false</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="saveAttributesInSession"
+                                 type="single"
+                                 syntax="boolean"
+                                 i18nKey="am.social.auth.saveAttributesInSession"
+                                 order="2400">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>true</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+
+                <SubSchema name="serverconfig" inheritance="multiple" resourceName="USE-PARENT">
+                    <AttributeSchema name="RequiredValueValidator" type="validator" syntax="string">
+                        <DefaultValues>
+                            <Value>com.sun.identity.sm.RequiredValueValidator</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+
+                    <AttributeSchema name="forgerock-am-auth-socialauthinstagram-auth-level"
+                                     type="single"
+                                     syntax="number_range"
+                                     rangeStart="0"
+                                     rangeEnd="2147483647"
+                                     i18nKey="am.social.auth.level"
+                                     order="100"
+                                     resourceName="authenticationLevel" >
+                        <DefaultValues>
+                            <Value>0</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="provider"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.provider"
+                                     order="200" >
+                        <DefaultValues>
+                            <Value>Instagram</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="clientId"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.clientId"
+                                     order="400">
+                    </AttributeSchema>
+                    <AttributeSchema name="clientSecret"
+                                     type="single"
+                                     syntax="password"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.clientSecret"
+                                     order="500">
+                    </AttributeSchema>
+                    <AttributeSchema name="authorizeEndpoint"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.authorizeEndpoint"
+                                     order="600">
+                        <DefaultValues>
+                            <Value>https://api.instagram.com/oauth/authorize</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="tokenEndpoint"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.tokenEndpoint"
+                                     order="700">
+                        <DefaultValues>
+                            <Value>https://api.instagram.com/oauth/access_token</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="userInfoEndpoint"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.userInfoEndpoint"
+                                     order="800">
+                        <DefaultValues>
+                            <Value>https://api.instagram.com/v1/users/self</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="scope"
+                                     type="list"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.scope"
+                                     order="900">
+                        <DefaultValues>
+                            <Value>basic</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="scopeDelimiter"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.scopeDelimiter"
+                                     order="1000">
+                    </AttributeSchema>
+                    <AttributeSchema name="subjectProperty"
+                                     type="single"
+                                     syntax="string"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.subjectProperty"
+                                     order="1100">
+                        <DefaultValues>
+                            <Value>id</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="usesBasicAuth"
+                                     type="single"
+                                     syntax="boolean"
+                                     validator="RequiredValueValidator"
+                                     i18nKey="am.social.auth.usesBasicAuth"
+                                     order="1200">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>false</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="ssoProxyUrl"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.ssoProxyUrl"
+                                     order="1300">
+                        <DefaultValues>
+                            <Value>@SERVER_PROTO@://@SERVER_HOST@:@SERVER_PORT@/@SERVER_URI@/oauth2c/OAuthProxy.jsp</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="accountProviderClass"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.accountProviderClass"
+                                     order="1400">
+                        <DefaultValues>
+                            <Value>org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="accountMapperClass"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.accountMapperClass"
+                                     order="1500" >
+                        <DefaultValues>
+                            <Value>org.forgerock.openam.authentication.modules.common.mapping.JsonAttributeMapper|*|instagram-</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="accountMapperConfiguration"
+                                     type="list"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.accountMapperConfiguration"
+                                     order="1600">
+                        <DefaultValues>
+                            <Value>id=uid</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="attributeMappingClasses"
+                                     type="list"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.attributeMappingClasses"
+                                     order="1700">
+                        <DefaultValues>
+                            <Value>org.forgerock.openam.authentication.modules.common.mapping.JsonAttributeMapper|uid|instagram-</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="attributeMapperConfiguration"
+                                     type="list"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.attributeMapperConfiguration"
+                                     order="1800">
+                        <DefaultValues>
+                            <Value>username=givenName</Value>
+                            <Value>username=cn</Value>
+                            <Value>full_name=sn</Value>
+                            <Value>id=uid</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="createAccount"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="am.social.auth.createAccount"
+                                     order="1360">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>true</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="mapToAnonymousUser"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="am.social.auth.mapToAnonymousUser"
+                                     order="2000">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>false</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="anonymousUserName"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.anonymousUserName"
+                                     order="2100">
+                        <DefaultValues>
+                            <Value>anonymous</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="logoutServiceUrl"
+                                     type="single"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.logoutServiceUrl"
+                                     order="2150"
+                                     resourceName="logoutServiceUrl">
+                        <DefaultValues>
+                            <Value>https://instagram.com/accounts/logout</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="logoutBehaviour"
+                                     type="single_choice"
+                                     syntax="string"
+                                     i18nKey="am.social.auth.logoutBehaviour"
+                                     order="2155"
+                                     resourceName="logoutBehaviour">
+                        <ChoiceValues>
+                            <ChoiceValue i18nKey="prompt">prompt</ChoiceValue>
+                            <ChoiceValue i18nKey="logout">logout</ChoiceValue>
+                            <ChoiceValue i18nKey="donotlogout">donotlogout</ChoiceValue>
+                        </ChoiceValues>
+                        <DefaultValues>
+                            <Value>prompt</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="enableRegistrationService"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="am.social.auth.enableRegistrationService"
+                                     order="1350">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>false</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="saveAttributesInSession"
+                                     type="single"
+                                     syntax="boolean"
+                                     i18nKey="am.social.auth.saveAttributesInSession"
+                                     order="2400">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>true</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                </SubSchema>
+            </Organization>
+        </Schema>
+    </Service>
+</ServicesConfiguration>

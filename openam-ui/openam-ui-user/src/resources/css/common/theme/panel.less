@@ -1,0 +1,94 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2019 ForgeRock AS.
+ */
+
+.panel-default>.panel-heading {
+    background-color: transparent;
+    padding: 15px;
+}
+
+.panel-collapse .panel-body {
+    padding-left: 33px;
+}
+.panel-collapse>.panel-heading {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.panel-default {
+    -webkit-box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 1px rgba(0,0,0,0.05);
+}
+
+.panel-title {
+    font-weight: normal;
+    letter-spacing: 1px;
+}
+
+.panel-collapse .panel-title>a {
+    color: @base-theme-color;
+}
+
+.panel-title a:focus {
+    color: @base-theme-color;
+    text-decoration: none;
+}
+
+.panel-title a:hover {
+    color: @panel-hover-color;
+    text-decoration: none;
+}
+
+.panel .nav-list>li:last-child>a {
+    border-bottom: none;
+}
+
+.panel-footer {
+    background-color: #fff;
+}
+
+.panel-default.panel-collapse {
+    border-bottom: 1px solid #eee;
+}
+
+.panel-default.panel-collapse:last-child {
+    border-bottom: none;
+}
+
+.fr-panel-with-border.panel-collapse:last-child  {
+    border: 1px solid #ddd;
+}
+
+.panel-heading .pull-right .btn-link {
+    color: @navbar-toggle-color;
+    &:hover, &:focus{
+      color: darken(@base-theme-color, 5%);
+    }
+}
+
+.fr-panel-scrollable {
+  .panel-body {
+    max-height: 300px;
+    overflow: auto;
+  }
+
+  .panel-heading {
+    border-bottom: 0px;
+
+    .panel-title {
+      font-weight: bold;
+    }
+  }
+}

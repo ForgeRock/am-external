@@ -1,0 +1,28 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "${project.version}",
+    "entityType" : "EmailSuspendNode",
+    "entityId" : "d9a79f01-2ce3-4be2-a28a-975f35c3c8ca",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "d9a79f01-2ce3-4be2-a28a-975f35c3c8ca",
+    "objectLookup" : true,
+    "emailAttribute" : "mail",
+    "emailSuspendMessage" : {
+      "en" : "An email has been sent to the address you entered. Click the link in that email to proceed."
+    },
+    "emailTemplateName" : "forgottenUsername",
+    "identityAttribute" : "mail",
+    "_type" : {
+      "_id" : "EmailSuspendNode",
+      "name" : "Email Suspend Node",
+      "collection" : true
+    },
+    "_outcomes" : [ {
+      "id" : "outcome",
+      "displayName" : "Outcome"
+    } ]
+  }
+}

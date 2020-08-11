@@ -1,0 +1,31 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "${project.version}",
+    "entityType" : "AuthTree",
+    "entityId" : "Agent",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "Agent",
+    "nodes" : {
+      "7547fe44-d239-422d-bf4b-ecc78baed63b" : {
+        "displayName" : "Agent Data Store Decision",
+        "nodeType" : "AgentDataStoreDecisionNode",
+        "connections" : {
+          "true" : "70e691a5-1e33-4ac3-a356-e7b6d60d92e0",
+          "false" : "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      },
+      "a581a7bd-55d5-49fc-82fd-38c0a8af82f5" : {
+        "displayName" : "Zero Page Login Collector",
+        "nodeType" : "ZeroPageLoginNode",
+        "connections" : {
+          "true" : "7547fe44-d239-422d-bf4b-ecc78baed63b",
+          "false" : "e301438c-0bd0-429c-ab0c-66126501069a"
+        }
+      }
+    },
+    "entryNodeId" : "a581a7bd-55d5-49fc-82fd-38c0a8af82f5"
+  }
+}

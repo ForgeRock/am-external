@@ -1,0 +1,154 @@
+<?xml version='1.0' encoding="UTF-8"?>
+
+<!--
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2018-2020 ForgeRock AS. All Rights Reserved
+ * 
+-->
+
+<!DOCTYPE ServicesConfiguration PUBLIC "=//iPlanet//Service Management Services (SMS) 1.0 DTD//EN"
+        "jar://com/sun/identity/sm/sms.dtd">
+
+<ServicesConfiguration>
+    <Service name="amDataStoreService" version="1.0">
+        <Schema serviceHierarchy="/DSAMEConfig/amDataStoreService"
+                i18nFileName="DataStoreService"
+                revisionNumber="1"
+                i18nKey="serviceName"
+                resourceName="DataStoreService">
+            <Global>
+                <SubSchema name="dataStoreContainer" resourceName="USE-PARENT">
+                    <SubSchema name="config" inheritance="multiple" i18nKey="dataStoreInstance">
+                        <!-- validators -->
+                        <AttributeSchema name="PositiveNumberValidator"
+                                         type="validator">
+                            <DefaultValues>
+                                <Value>org.forgerock.openam.audit.validation.PositiveIntegerValidator</Value>
+                            </DefaultValues>
+                        </AttributeSchema>
+                        <AttributeSchema name="RequiredValueValidator"
+                                         type="validator">
+                            <DefaultValues>
+                                <Value>com.sun.identity.sm.RequiredValueValidator</Value>
+                            </DefaultValues>
+                        </AttributeSchema>
+                        <AttributeSchema name="serverUrls"
+                                         order="200"
+                                         type="list"
+                                         uitype="orderedlist"
+                                         syntax="string"
+                                         i18nKey="serverUrls"/>
+                        <AttributeSchema name="bindDN"
+                                         order="400"
+                                         type="single"
+                                         validator="RequiredValueValidator"
+                                         i18nKey="bindDN">
+                        </AttributeSchema>
+                        <AttributeSchema name="bindPassword"
+                                         order="500"
+                                         type="single"
+                                         syntax="password"
+                                         validator="RequiredValueValidator"
+                                         i18nKey="bindPassword"/>
+                        <AttributeSchema name="minimumConnectionPool"
+                                         order="600"
+                                         type="single"
+                                         syntax="number"
+                                         validator="RequiredValueValidator PositiveNumberValidator"
+                                         i18nKey="minimumConnectionPool">
+                            <DefaultValues>
+                                <Value>1</Value>
+                            </DefaultValues>
+                        </AttributeSchema>
+                        <AttributeSchema name="maximumConnectionPool"
+                                         order="700"
+                                         type="single"
+                                         syntax="number"
+                                         validator="RequiredValueValidator PositiveNumberValidator"
+                                         i18nKey="maximumConnectionPool">
+                            <DefaultValues>
+                                <Value>10</Value>
+                            </DefaultValues>
+                        </AttributeSchema>
+                        <AttributeSchema name="useSsl"
+                                         order="800"
+                                         type="single"
+                                         syntax="boolean"
+                                         i18nKey="useSsl">
+                            <BooleanValues>
+                                <BooleanTrueValue i18nKey="i18nYes">true</BooleanTrueValue>
+                                <BooleanFalseValue i18nKey="i18nNo">false</BooleanFalseValue>
+                            </BooleanValues>
+                        </AttributeSchema>
+                        <AttributeSchema name="useStartTLS"
+                                         order="900"
+                                         type="single"
+                                         syntax="boolean"
+                                         i18nKey="startTls">
+                            <BooleanValues>
+                                <BooleanTrueValue i18nKey="i18nYes">true</BooleanTrueValue>
+                                <BooleanFalseValue i18nKey="i18nNo">false</BooleanFalseValue>
+                            </BooleanValues>
+                        </AttributeSchema>
+                        <AttributeSchema name="affinityEnabled"
+                                         order="1000"
+                                         type="single"
+                                         syntax="boolean"
+                                         i18nKey="affinityEnabled">
+                            <BooleanValues>
+                                <BooleanTrueValue i18nKey="i18nYes">true</BooleanTrueValue>
+                                <BooleanFalseValue i18nKey="i18nNo">false</BooleanFalseValue>
+                            </BooleanValues>
+                        </AttributeSchema>
+                    </SubSchema>
+                </SubSchema>
+            </Global>
+            <Organization>
+                <AttributeSchema name="policy-datastore-id"
+                                 type="single_choice"
+                                 uitype="unorderedlist"
+                                 i18nKey="policy.datastore.id"
+                                 order="100"
+                                 resourceName="policyDataStoreId">
+                    <ChoiceValues>
+                        <ChoiceValuesClassName className="org.forgerock.openam.core.rest.sms.SmsDataStoreChoiceValues"/>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <DefaultValuesClassName className="org.forgerock.openam.core.rest.sms.SmsDataStoreDefaultValues" />
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="application-datastore-id"
+                                 type="single_choice"
+                                 uitype="unorderedlist"
+                                 i18nKey="application.datastore.id"
+                                 order="200"
+                                 resourceName="applicationDataStoreId">
+                    <ChoiceValues>
+                        <ChoiceValuesClassName className="org.forgerock.openam.core.rest.sms.SmsDataStoreChoiceValues"/>
+                    </ChoiceValues>
+                    <DefaultValues>
+                        <DefaultValuesClassName className="org.forgerock.openam.core.rest.sms.SmsDataStoreDefaultValues" />
+                    </DefaultValues>
+                </AttributeSchema>
+            </Organization>
+        </Schema>
+
+        <Configuration>
+            <GlobalConfiguration>
+                <SubConfiguration name="dataStoreContainer"/>
+            </GlobalConfiguration>
+        </Configuration>
+
+    </Service>
+</ServicesConfiguration>

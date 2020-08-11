@@ -1,0 +1,78 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2019 ForgeRock AS.
+ */
+
+#dialogs {
+    position:absolute;
+    top:0;
+    left:0;
+    height:100%;
+    width:100%;
+    z-index:10001;
+    display:none;
+
+    .dialogCloseCross {
+        text-align:right;
+    }
+
+    .modal-body {
+        padding-top:0px;
+    }
+
+    .validationRules, .security-question {
+        margin-left:45px;
+    }
+}
+
+.dialogActions .btn {
+    margin-bottom:10px;
+    margin-right:10px;
+}
+
+#dialog-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    z-index: 1000;
+    background-color:@modal-background-color;
+    opacity: .4;
+    display:none;
+}
+
+.bootstrap-dialog {
+
+    .bootstrap-dialog-header .bootstrap-dialog-title {
+        .wordwrap;
+        color: inherit;
+    }
+
+    .bootstrap-dialog-title {
+        .wordwrap;
+        color: inherit;
+    }
+
+    .modal-title {
+        float:left;
+    }
+
+    .modal-header {
+        margin-bottom: 0;
+        padding-bottom: 5px;
+        // Overriding bootstrap-dialog's background-color.
+        background-color: transparent !important;
+    }
+}

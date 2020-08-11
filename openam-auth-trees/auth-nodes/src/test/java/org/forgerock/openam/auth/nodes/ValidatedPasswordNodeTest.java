@@ -1,0 +1,191 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2019-2020 ForgeRock AS.
+ */
+
+package org.forgerock.openam.auth.nodes;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.forgerock.json.JsonValue.array;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.OBJECT_ATTRIBUTES;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_PASSWORD_ATTRIBUTE;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.security.auth.callback.Callback;
+
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.authentication.callbacks.ValidatedPasswordCallback;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.integration.idm.IdmIntegrationService;
+
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import org.mockito.Mock;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+public class ValidatedPasswordNodeTest {
+
+    private static final ObjectMapper OBJECT_MAPPER;
+    static {
+        OBJECT_MAPPER =
+                new ObjectMapper().configure(JsonParser.Feature.ALLOW_COMMENTS, true)
+                        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                        .enable(SerializationFeature.INDENT_OUTPUT)
+                        .enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
+    }
+
+    @Mock
+    private ValidatedPasswordNode.Config config;
+
+    @Mock
+    private Realm realm;
+
+    @Mock
+    private IdmIntegrationService idmIntegrationService;
+
+    private ValidatedPasswordNode node;
+
+    @BeforeMethod
+    public void before() throws Exception {
+        initMocks(this);
+
+        when(config.passwordAttribute()).thenReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
+        when(config.validateInput()).thenReturn(false);
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
+        when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(new JsonValue(OBJECT_MAPPER.readValue(
+                ValidatedPasswordNodeTest.class.getResource("/ValidatedPasswordNode/idmSchema.json"), Map.class)));
+        when(idmIntegrationService.getValidationRequirements(any(), any(), any()))
+                .thenReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedPasswordNodeTest.class.getResource(
+                        "/ValidatedPasswordNode/idmPolicyRead.json"), Map.class)));
+        when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
+
+        node = new ValidatedPasswordNode(config, realm, idmIntegrationService);
+    }
+
+    @Test
+    public void processWithoutCallbackShouldReturnCallback() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(
+                field(OBJECT_ATTRIBUTES, object(
+                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+                ))
+        ));
+        JsonValue transientState = json(object());
+
+        // When
+        Action action = node.process(getContext(emptyList(), sharedState, transientState));
+
+        // Then
+        assertThat(action.callbacks).hasSize(1);
+        assertThat(action.callbacks.get(0)).isInstanceOf(ValidatedPasswordCallback.class);
+        assertThat(((ValidatedPasswordCallback) action.callbacks.get(0)).getPrompt()).isEqualTo("Password");
+        assertThat(action.sharedState).isNull();
+        assertThat(action.transientState).isNull();
+    }
+
+    @Test
+    public void processWithCallbackShouldStorePasswordInState() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(
+                field(OBJECT_ATTRIBUTES, object(
+                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+                ))
+        ));
+        JsonValue transientState = json(object());
+
+        // When
+        when(idmIntegrationService.validateInput(any(), any(), any(), any(), any())).thenReturn(json(object(
+                field("result", true)
+        )));
+        ValidatedPasswordCallback callback = new ValidatedPasswordCallback("Enter password", false, json(array()),
+                false);
+        callback.setPassword("mypw".toCharArray());
+        Action action = node.process(getContext(singletonList(callback), sharedState, transientState));
+
+        // Then
+        assertThat(action.callbacks).isEmpty();
+        assertThat(action.transientState.isDefined("password")).isTrue();
+        assertThat(action.transientState.get("password").asString()).isEqualTo("mypw");
+        assertThat(action.transientState.isDefined(OBJECT_ATTRIBUTES)).isTrue();
+        assertThat(action.transientState.get(OBJECT_ATTRIBUTES).get(DEFAULT_IDM_PASSWORD_ATTRIBUTE).asString())
+                .isEqualTo("mypw");
+    }
+
+    @Test
+    public void processWithBadPasswordShouldReturnCallbackWithPolicyFailures() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(
+                field(OBJECT_ATTRIBUTES, object(
+                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+                ))
+        ));
+        JsonValue transientState = json(object());
+
+        // When
+        when(config.validateInput()).thenReturn(true);
+        when(idmIntegrationService.validateInput(any(), any(), any(), any(), any())).thenReturn(json(object(
+                field("result", false),
+                field("failedPolicyRequirements", array(
+                        object(
+                                field("policyRequirements", array(
+                                        object(
+                                                field("params", object(
+                                                        field("minLength", 8)
+                                                )),
+                                                field("policyRequirement", "MIN_LENGTH")
+                                        )
+                                )),
+                                field("property", DEFAULT_IDM_PASSWORD_ATTRIBUTE)
+                        )
+                ))
+        )));
+        ValidatedPasswordCallback callback = new ValidatedPasswordCallback("Password", false, json(array()), false);
+        callback.setPassword("mypw".toCharArray());
+        Action action = node.process(getContext(singletonList(callback), sharedState, transientState));
+
+        // Then
+        assertThat(action.callbacks).hasSize(1);
+        assertThat(action.callbacks.get(0)).isInstanceOf(ValidatedPasswordCallback.class);
+        assertThat(((ValidatedPasswordCallback) action.callbacks.get(0)).getPrompt()).isEqualTo("Password");
+        assertThat(((ValidatedPasswordCallback) action.callbacks.get(0)).getPassword()).isNullOrEmpty();
+        assertThat(action.sharedState).isNull();
+        assertThat(action.transientState).isNull();
+    }
+
+    private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState,
+            JsonValue transientState) {
+        return new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, transientState,
+                new ExternalRequestContext.Builder().build(),
+                callbacks, Optional.empty());
+    }
+}

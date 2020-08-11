@@ -1,0 +1,916 @@
+{
+  "_id": "user",
+  "resource": "managed/user",
+  "properties": [
+    {
+      "policyRequirements": [
+        "VALID_TYPE",
+        "CANNOT_CONTAIN_CHARACTERS"
+      ],
+      "fallbackPolicies": null,
+      "name": "_id",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "cannot-contain-characters",
+          "params": {
+            "forbiddenChars": [
+              "/"
+            ]
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var i, join = function (arr, d) {\n        var j, list = \"\";\n        for (j in arr) {\n            list += arr[j] + d;\n        }\n        return list.replace(new RegExp(d + \"$\"), \"\");\n    };\n    if (typeof (value) === \"string\" && value.length) {\n        for (i in params.forbiddenChars) {\n            if (value.indexOf(params.forbiddenChars[i]) !== -1) {\n                return [{\"policyRequirement\": \"CANNOT_CONTAIN_CHARACTERS\", \"params\": {\"forbiddenChars\": join(params.forbiddenChars, \", \")}}];\n            }\n        }\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "CANNOT_CONTAIN_CHARACTERS"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "REQUIRED",
+        "VALID_TYPE",
+        "VALID_USERNAME",
+        "CANNOT_CONTAIN_CHARACTERS",
+        "MIN_LENGTH",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "userName",
+      "policies": [
+        {
+          "policyRequirements": [
+            "REQUIRED"
+          ],
+          "policyId": "required",
+          "policyFunction": "\nfunction (fullObject, value, params, propName) {\n    if (value === undefined) {\n        return [{\"policyRequirement\": \"REQUIRED\"}];\n    }\n    return [];\n}\n"
+        },
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "valid-username",
+          "policyRequirements": [
+            "VALID_USERNAME"
+          ]
+        },
+        {
+          "policyId": "cannot-contain-characters",
+          "params": {
+            "forbiddenChars": [
+              "/"
+            ]
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var i, join = function (arr, d) {\n        var j, list = \"\";\n        for (j in arr) {\n            list += arr[j] + d;\n        }\n        return list.replace(new RegExp(d + \"$\"), \"\");\n    };\n    if (typeof (value) === \"string\" && value.length) {\n        for (i in params.forbiddenChars) {\n            if (value.indexOf(params.forbiddenChars[i]) !== -1) {\n                return [{\"policyRequirement\": \"CANNOT_CONTAIN_CHARACTERS\", \"params\": {\"forbiddenChars\": join(params.forbiddenChars, \", \")}}];\n            }\n        }\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "CANNOT_CONTAIN_CHARACTERS"
+          ]
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE",
+        "MIN_LENGTH",
+        "AT_LEAST_X_CAPITAL_LETTERS",
+        "AT_LEAST_X_NUMBERS",
+        "CANNOT_CONTAIN_OTHERS"
+      ],
+      "fallbackPolicies": null,
+      "name": "password",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 8
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "at-least-X-capitals",
+          "params": {
+            "numCaps": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = (typeof (value) === \"string\"), valuePassesRegexp = (function (v) {\n        var test = isString ? v.match(/[A-Z]/g) : null;\n        return test !== null && test.length >= params.numCaps;\n    }(value));\n    if ((isRequired || isString) && !valuePassesRegexp) {\n        return [{\"policyRequirement\": \"AT_LEAST_X_CAPITAL_LETTERS\", \"params\": {\"numCaps\": params.numCaps}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "AT_LEAST_X_CAPITAL_LETTERS"
+          ]
+        },
+        {
+          "policyId": "at-least-X-numbers",
+          "params": {
+            "numNums": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = (typeof (value) === \"string\"), valuePassesRegexp = (function (v) {\n        var test = isString ? v.match(/\\d/g) : null;\n        return test !== null && test.length >= params.numNums;\n    }(value));\n    if ((isRequired || isString) && !valuePassesRegexp) {\n        return [{\"policyRequirement\": \"AT_LEAST_X_NUMBERS\", \"params\": {\"numNums\": params.numNums}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "AT_LEAST_X_NUMBERS"
+          ]
+        },
+        {
+          "policyId": "cannot-contain-others",
+          "params": {
+            "disallowedFields": [
+              "userName",
+              "givenName",
+              "sn"
+            ]
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var fieldArray, fullObject_server = {}, getValueFromPointer = function (object, pointer) {\n        var pathParts = pointer.split(\"/\");\n        if (pathParts[0] === \"\") {\n            pathParts.shift(1);\n        }\n        if (pointer === \"/\") {\n            return object;\n        }\n        return pathParts.reduce(function (result, path) {\n            if (typeof result === \"object\" && result !== null) {\n                return result[path];\n            } else {\n                return result;\n            }\n        }, object);\n    }, disallowedFieldValue, result = [];\n    if (typeof params.disallowedFields === \"string\") {\n        fieldArray = params.disallowedFields.split(\",\");\n    } else {\n        fieldArray = params.disallowedFields;\n    }\n    try {\n        if (typeof (openidm) !== \"undefined\" && typeof (request) !== \"undefined\" && request.resourcePath && !request.resourcePath.match(/\\/\\*$/)) {\n            fullObject_server = openidm.read(request.resourcePath);\n            if (fullObject_server === null) {\n                fullObject_server = {};\n            }\n        }\n    }\n    catch (e) {\n        fullObject_server = {};\n    }\n    if (value && typeof (value) === \"string\" && value.length) {\n        fieldArray.forEach(function (disallowedFieldName) {\n            disallowedFieldValue = getValueFromPointer(fullObject, disallowedFieldName);\n            if (typeof (disallowedFieldValue) === \"undefined\") {\n                disallowedFieldValue = getValueFromPointer(fullObject_server, disallowedFieldName);\n            }\n            if (typeof (disallowedFieldValue) === \"string\" && value.match(disallowedFieldValue)) {\n                result.push(disallowedFieldName);\n            }\n        });\n    }\n    if (result.length) {\n        return [{\"policyRequirement\": \"CANNOT_CONTAIN_OTHERS\", params: {\"disallowedFields\": result}}];\n    } else {\n        return [];\n    }\n}\n",
+          "policyRequirements": [
+            "CANNOT_CONTAIN_OTHERS"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "REQUIRED",
+        "VALID_TYPE",
+        "MIN_LENGTH",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "givenName",
+      "policies": [
+        {
+          "policyRequirements": [
+            "REQUIRED"
+          ],
+          "policyId": "required",
+          "policyFunction": "\nfunction (fullObject, value, params, propName) {\n    if (value === undefined) {\n        return [{\"policyRequirement\": \"REQUIRED\"}];\n    }\n    return [];\n}\n"
+        },
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "REQUIRED",
+        "VALID_TYPE",
+        "MIN_LENGTH",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "sn",
+      "policies": [
+        {
+          "policyRequirements": [
+            "REQUIRED"
+          ],
+          "policyId": "required",
+          "policyFunction": "\nfunction (fullObject, value, params, propName) {\n    if (value === undefined) {\n        return [{\"policyRequirement\": \"REQUIRED\"}];\n    }\n    return [];\n}\n"
+        },
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "REQUIRED",
+        "VALID_TYPE",
+        "VALID_EMAIL_ADDRESS_FORMAT",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "mail",
+      "policies": [
+        {
+          "policyRequirements": [
+            "REQUIRED"
+          ],
+          "policyId": "required",
+          "policyFunction": "\nfunction (fullObject, value, params, propName) {\n    if (value === undefined) {\n        return [{\"policyRequirement\": \"REQUIRED\"}];\n    }\n    return [];\n}\n"
+        },
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "valid-email-address-format",
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var pattern = /.+@.+\\..+/i, isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), valuePassesRegexp = (function (v) {\n        var testResult = isNonEmptyString ? pattern.test(v) : false;\n        return testResult;\n    }(value));\n    if ((isRequired || isNonEmptyString) && !valuePassesRegexp) {\n        return [{\"policyRequirement\": \"VALID_EMAIL_ADDRESS_FORMAT\"}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "VALID_EMAIL_ADDRESS_FORMAT"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE",
+        "MIN_LENGTH",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "description",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE",
+        "MIN_LENGTH",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "accountStatus",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "MATCH_REGEXP",
+        "VALID_TYPE",
+        "MIN_LENGTH",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "telephoneNumber",
+      "policies": [
+        {
+          "policyRequirements": [
+            "MATCH_REGEXP"
+          ],
+          "policyId": "regexpMatches",
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    if (typeof (value) === \"number\") {\n        value = value + \"\";\n    }\n    var pattern = new RegExp(params.regexp, (params.flags || \"\")), isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), valuePassesRegexp = (function (v) {\n        var testResult = isNonEmptyString ? pattern.test(v) : false;\n        return testResult;\n    }(value));\n    if ((isRequired || isNonEmptyString) && !valuePassesRegexp) {\n        return [{\"policyRequirement\": \"MATCH_REGEXP\", \"regexp\": params.regexp, params: params, \"flags\": params.flags}];\n    }\n    return [];\n}\n",
+          "params": {
+            "regexp": "^\\+?([0-9\\- \\(\\)])*$"
+          }
+        },
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE",
+        "MIN_LENGTH",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "postalAddress",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE",
+        "MIN_LENGTH",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "city",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE",
+        "MIN_LENGTH",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "postalCode",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE",
+        "MIN_LENGTH",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "country",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE",
+        "MIN_LENGTH",
+        "MAX_LENGTH"
+      ],
+      "fallbackPolicies": null,
+      "name": "stateProvince",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        {
+          "policyId": "minimum-length",
+          "params": {
+            "minLength": 1
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isString = typeof (value) === \"string\", hasMinLength = isString ? (value.length >= params.minLength) : false;\n    if ((isRequired || isString) && !hasMinLength) {\n        return [{\"policyRequirement\": \"MIN_LENGTH\", \"params\": {\"minLength\": params.minLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MIN_LENGTH"
+          ]
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          },
+          "policyFunction": "\nfunction (fullObject, value, params, property) {\n    var isRequired = _.find(this.failedPolicyRequirements, function (fpr) {\n        return fpr.policyRequirement === \"REQUIRED\";\n    }), isNonEmptyString = (typeof (value) === \"string\" && value.length), hasMaxLength = isNonEmptyString ? (value.length <= params.maxLength) : false;\n    if ((isRequired || isNonEmptyString) && !hasMaxLength) {\n        return [{\"policyRequirement\": \"MAX_LENGTH\", \"params\": {\"maxLength\": params.maxLength}}];\n    }\n    return [];\n}\n",
+          "policyRequirements": [
+            "MAX_LENGTH"
+          ]
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE"
+      ],
+      "fallbackPolicies": null,
+      "name": "roles",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "array"
+            ]
+          }
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE"
+      ],
+      "fallbackPolicies": null,
+      "name": "manager",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "object"
+            ]
+          }
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE"
+      ],
+      "fallbackPolicies": null,
+      "name": "authzRoles",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "array"
+            ]
+          }
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE"
+      ],
+      "fallbackPolicies": null,
+      "name": "reports",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "array"
+            ]
+          }
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE"
+      ],
+      "fallbackPolicies": null,
+      "name": "effectiveRoles",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "array"
+            ]
+          }
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE"
+      ],
+      "fallbackPolicies": null,
+      "name": "effectiveAssignments",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "array"
+            ]
+          }
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE"
+      ],
+      "fallbackPolicies": null,
+      "name": "lastSync",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "object"
+            ]
+          }
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE"
+      ],
+      "fallbackPolicies": null,
+      "name": "kbaInfo",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "array"
+            ]
+          }
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE"
+      ],
+      "fallbackPolicies": null,
+      "name": "preferences",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "object"
+            ]
+          }
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE"
+      ],
+      "fallbackPolicies": null,
+      "name": "consentedMappings",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "array"
+            ]
+          }
+        }
+      ],
+      "conditionalPolicies": null
+    },
+    {
+      "policyRequirements": [
+        "VALID_TYPE"
+      ],
+      "fallbackPolicies": null,
+      "name": "aliasList",
+      "policies": [
+        {
+          "policyRequirements": [
+            "VALID_TYPE"
+          ],
+          "policyId": "valid-type",
+          "params": {
+            "types": [
+              "array"
+            ]
+          }
+        }
+      ],
+      "conditionalPolicies": null
+    }
+  ]
+}

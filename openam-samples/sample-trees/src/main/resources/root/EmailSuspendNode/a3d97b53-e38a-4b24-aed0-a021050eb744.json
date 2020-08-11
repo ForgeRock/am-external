@@ -1,0 +1,28 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "${project.version}",
+    "entityType" : "EmailSuspendNode",
+    "entityId" : "a3d97b53-e38a-4b24-aed0-a021050eb744",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "a3d97b53-e38a-4b24-aed0-a021050eb744",
+    "objectLookup" : true,
+    "emailAttribute" : "mail",
+    "identityAttribute" : "userName",
+    "emailSuspendMessage" : {
+      "en" : "An email has been sent to your address, please verify your email address to update your password. Click the link in that email to proceed."
+    },
+    "emailTemplateName" : "updatePassword",
+    "_type" : {
+      "_id" : "EmailSuspendNode",
+      "name" : "Email Suspend Node",
+      "collection" : true
+    },
+    "_outcomes" : [ {
+      "id" : "outcome",
+      "displayName" : "Outcome"
+    } ]
+  }
+}
