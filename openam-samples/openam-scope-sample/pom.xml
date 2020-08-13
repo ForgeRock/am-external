@@ -43,4 +43,11 @@
             </snapshots>
         </repository>
     </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>forgerock-build-dependencies</id>
+            <name>ForgeRock Plugin Repository for AM 7.0.0</name>
+            <url>https://maven.forgerock.org/repo/forgerock-openam-7.0.0-dependencies</url>
+        </pluginRepository>
+    </pluginRepositories>
 </project>
