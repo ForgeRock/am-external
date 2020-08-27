@@ -1,0 +1,285 @@
+{
+  "$id": "https://forgerock.com/remoteServiceProvider.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "serviceProvider": {
+    "title": "Remote Service Provider",
+    "description": "This schema describes a SAML2 remote service provider.",
+    "type": "object",
+    "traverseObject": true,
+    "javaType": "org.forgerock.openam.federation.rest.schema.remote.service.ServiceProvider",
+    "properties": {
+      "assertionContent": {
+        "propertyOrder": 0,
+        "traverseObject": true,
+        "title": "Assertion Content",
+        "type": "object",
+        "properties": {
+          "signingAndEncryption": {
+            "traverseObject": true,
+            "title": "Signing And Encryption",
+            "type": "object",
+            "properties": {
+              "requestResponseSigning": {
+                "traverseObject": true,
+                "description": "Select the checkbox for each request/response that should be signed",
+                "title": "Request/Response Signing",
+                "type": "object",
+                "properties": {
+                  "authenticationRequest": {
+                    "attributePath": {
+                      "value": "/authnRequestsSigned"
+                    },
+                    "title": "Authentication Requests Signed",
+                    "type": "boolean"
+                  },
+                  "assertion": {
+                    "attributePath": "/wantAssertionsSigned",
+                    "title": "Assertions Signed",
+                    "type": "boolean"
+                  },
+                  "postResponse": {
+                    "attributeKey": "wantPOSTResponseSigned",
+                    "title": "POST Response Signed",
+                    "type": "boolean"
+                  },
+                  "artifactResponse": {
+                    "attributeKey": "wantArtifactResponseSigned",
+                    "title": "Artifact Response Signed",
+                    "type": "boolean"
+                  },
+                  "logoutRequest": {
+                    "attributeKey": "wantLogoutRequestSigned",
+                    "title": "Logout Request Signed",
+                    "type": "boolean"
+                  },
+                  "logoutResponse": {
+                    "attributeKey": "wantLogoutResponseSigned",
+                    "title": "Logout Response Signed",
+                    "type": "boolean"
+                  },
+                  "manageNameIdRequest": {
+                    "attributeKey": "wantMNIRequestSigned",
+                    "title": "Manage NameID Request Signed",
+                    "type": "boolean"
+                  },
+                  "manageNameIdResponse": {
+                    "attributeKey": "wantMNIResponseSigned",
+                    "title": "Manage NameID Response Signed",
+                    "type": "boolean"
+                  }
+                }
+              },
+              "encryption": {
+                "traverseObject": true,
+                "title": "Encryption",
+                "type": "object",
+                "properties": {
+                  "attributeEncryption": {
+                    "attributeKey": "wantAttributeEncrypted",
+                    "title": "Attribute Encryption",
+                    "type": "boolean"
+                  },
+                  "assertionEncryption": {
+                    "attributeKey": "wantAssertionEncrypted",
+                    "title": "Assertion Encryption",
+                    "type": "boolean"
+                  },
+                  "nameIdEncryption": {
+                    "attributeKey": "wantNameIDEncrypted",
+                    "title": "NameID Encryption",
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          "nameIdFormat": {
+            "traverseObject": true,
+            "title": "NameID Format",
+            "type": "object",
+            "properties": {
+              "nameIdFormatList": {
+                "$ref": "definitions.json#/nameIdFormatList"
+              },
+              "disableNameIdPersistence": {
+                "attributeKey": "spDoNotWriteFederationInfo",
+                "title": "Disable NameID persistence",
+                "description": "Instructs the hosted IdP to not persist the NameID into the User Data Store even if the NameID Format is urn:oasis:names:tc:SAML:2.0:nameid-format:persistent in the Assertion.",
+                "type": "boolean"
+              }
+            }
+          },
+          "basicAuthentication": {
+            "$ref": "definitions.json#/basicAuthentication"
+          }
+        }
+      },
+      "assertionProcessing": {
+        "propertyOrder": 1,
+        "traverseObject": true,
+        "title": "Assertion Processing",
+        "type": "object",
+        "properties": {
+          "attributeMapper": {
+            "traverseObject": true,
+            "title": "Attribute Mapper",
+            "type": "object",
+            "properties": {
+              "attributeMap": {
+                "title": "Attribute Map",
+                "description": "This mapping is the configuration used by the Attribue Mapper. Mapping should be defined as SAML ATTRIBUTE NAME=PROFILE ATTRIBUTE NAME in assertion. Example: EmailAddress=mail, Address=postaladdress.",
+                "type": "array",
+                "attributeKey": {
+                  "value": "attributeMap",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.AttributeMapMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/attributeMap"
+                }
+              }
+            }
+          },
+          "responseArtifactMessageEncoding": {
+            "$ref": "definitions.json#/responseArtifactMessageEncoding"
+          }
+        }
+      },
+      "services": {
+        "propertyOrder": 2,
+        "traverseObject": true,
+        "title": "Services",
+        "type": "object",
+        "properties": {
+          "serviceAttributes": {
+            "traverseObject": true,
+            "title": "SP Service Attributes",
+            "type": "object",
+            "properties": {
+              "singleLogoutService": {
+                "title": "Single Logout Service",
+                "type": "array",
+                "attributePath": {
+                  "value": "singleLogoutService",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EndpointMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/endpoint"
+                },
+                "post": {
+                  "$ref": "definitions.json#/endpoint"
+                },
+                "soap": {
+                  "$ref": "definitions.json#/location"
+                }
+              },
+              "nameIdService": {
+                "title": "Manage NameID Service",
+                "type": "array",
+                "attributePath": {
+                  "value": "manageNameIDService",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EndpointMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/endpoint"
+                },
+                "soap": {
+                  "$ref": "definitions.json#/location"
+                }
+              },
+              "assertionConsumerService": {
+                "attributePath": {
+                  "value": "assertionConsumerService",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.ExtendedIndexedEndpointMapper"
+                },
+                "title": "Assertion Consumer Service",
+                "description": "Location denotes the URL to accept the respective request type. Index denotes the index of the URL in the standard metadata",
+                "type": "array",
+                "items": {
+                  "$ref": "definitions.json#/extendedIndexedEndpoint"
+                }
+              }
+            }
+          }
+        }
+      },
+      "advanced": {
+        "propertyOrder": 3,
+        "traverseObject": true,
+        "title": "Advanced",
+        "type": "object",
+        "properties": {
+          "skipEndpointValidationWhenSigned": {
+            "title": "Skip Endpoint Validation For Signed Requests",
+            "description": "When enabled, AM will not attempt to verify the AssertionConsumerServiceURL value provided in the SAML AuthnRequest. This SP MUST also be configured to sign authentication requests",
+            "type": "boolean",
+            "attributeKey": "skipEndpointValidationWhenSigned"
+          },
+          "saeConfiguration": {
+            "traverseObject": true,
+            "title": "SAE Configuration",
+            "type": "object",
+            "properties": {
+              "spUrl": {
+                "attributeKey": "saeSPUrl",
+                "title": "SP URL",
+                "description": "URL endpoint on Service Provider that can handle SAE requests. If this URL is empty (not configured), SAE single sign-on will not be enabled. Normal samlv2 single sign-on response will be sent to SP",
+                "type": "string"
+              },
+              "spLogoutUrl": {
+                "attributeKey": "saeSPLogoutUrl",
+                "title": "SP Logout URL",
+                "description": "URL endpoint on the Service Provider that can handle SAE global logout requests",
+                "type": "string"
+              }
+            }
+          },
+          "idpProxy": {
+            "traverseObject": true,
+            "title": "IDP Proxy",
+            "type": "object",
+            "properties": {
+              "enableIdpProxy": {
+                "attributeKey": "enableIDPProxy",
+                "title": "IDP Proxy enabled",
+                "description": "Enable IDP Proxy if not enabled",
+                "type": "boolean"
+              },
+              "alwaysIdpProxy": {
+                "attributeKey": "alwaysIdpProxy",
+                "title": "Proxy all requests",
+                "description": "When this option is enabled, the IdP will proxy every single authentication request no matter it contains the Scoping element or not.",
+                "type": "boolean"
+              },
+              "useIntroductionForIdpProxy": {
+                "attributeKey": "useIntroductionForIDPProxy",
+                "title": "Introduction enabled",
+                "type": "boolean"
+              },
+              "useIDPFinder": {
+                "attributeKey": "useIDPFinder",
+                "title": "Use IDP Finder",
+                "type": "boolean"
+              },
+              "idpProxyCount": {
+                "attributeKey": "idpProxyCount",
+                "title": "Proxy Count",
+                "description": "Number of IDP proxies that the SP can have",
+                "type": "integer",
+                "default": 0
+              },
+              "idpProxyList": {
+                "attributeKey": "idpProxyList",
+                "description": "A list of preferred IDPs that the SP would proxy to",
+                "title": "IDP Proxy List",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "$id": "https://www.forgerock.com/remoteIdentityProvider.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "identityProvider": {
+    "title": "Remote Identity Provider",
+    "description": "This schema describes a SAML2 remote identity provider.",
+    "type": "object",
+    "traverseObject": true,
+    "javaType": "org.forgerock.openam.federation.rest.schema.remote.identity.IdentityProvider",
+    "properties": {
+      "assertionContent": {
+        "propertyOrder": 0,
+        "traverseObject": true,
+        "title": "Assertion Content",
+        "type": "object",
+        "properties": {
+          "signingAndEncryption": {
+            "traverseObject": true,
+            "title": "Signing And Encryption",
+            "type": "object",
+            "properties": {
+              "requestResponseSigning": {
+                "traverseObject": true,
+                "title": "Request/Response Signing",
+                "description": "Select the checkbox for each request/response that should be signed",
+                "type": "object",
+                "properties": {
+                  "authenticationRequest": {
+                    "attributePath": {
+                      "value": "/wantAuthnRequestsSigned"
+                    },
+                    "title": "Authentication Request",
+                    "type": "boolean"
+                  },
+                  "artifactResolve": {
+                    "attributeKey": "wantArtifactResolveSigned",
+                    "title": "Artifact Resolve",
+                    "type": "boolean"
+                  },
+                  "logoutRequest": {
+                    "attributeKey": "wantLogoutRequestSigned",
+                    "title": "Logout Request",
+                    "type": "boolean"
+                  },
+                  "logoutResponse": {
+                    "attributeKey": "wantLogoutResponseSigned",
+                    "title": "Logout Response",
+                    "type": "boolean"
+                  },
+                  "manageNameIdRequest": {
+                    "attributeKey": "wantMNIRequestSigned",
+                    "title": "Manage NameID Request",
+                    "type": "boolean"
+                  },
+                  "manageNameIdResponse": {
+                    "attributeKey": "wantMNIResponseSigned",
+                    "title": "Manage NameID Response",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "authenticationRequest",
+                  "artifactResolve",
+                  "logoutRequest",
+                  "logoutResponse",
+                  "manageNameIdRequest",
+                  "manageNameIdResponse"
+                ]
+              },
+              "encryption": {
+                "traverseObject": true,
+                "title": "Encryption",
+                "type": "object",
+                "properties": {
+                  "nameIdEncryption": {
+                    "attributeKey": "wantNameIDEncrypted",
+                    "title": "NameID Encryption",
+                    "type": "boolean"
+                  }
+                },
+                "required": ["nameIdEncryption"]
+              }
+            }
+          },
+          "nameIdFormat": {
+            "traverseObject": true,
+            "title": "NameID Format",
+            "type": "object",
+            "properties": {
+              "nameIdFormatList": {
+                "$ref": "definitions.json#/nameIdFormatList"
+              }
+            }
+          },
+          "basicAuthentication": {
+            "$ref": "definitions.json#/basicAuthentication"
+          }
+        }
+      },
+      "services": {
+        "propertyOrder": 1,
+        "traverseObject": true,
+        "title": "Services",
+        "type": "object",
+        "properties": {
+          "serviceAttributes": {
+            "type": "object",
+            "title": "IDP Service Attributes",
+            "traverseObject": true,
+            "properties": {
+              "artifactResolutionService": {
+                "title": "Artifact Resolution Service",
+                "type": "array",
+                "attributePath": {
+                  "value": "artifactResolutionService",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.IndexedEndpointMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/endpoint"
+                }
+              },
+              "singleLogoutService": {
+                "title": "Single Logout Service",
+                "type": "array",
+                "attributePath": {
+                  "value": "singleLogoutService",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EndpointMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/endpoint"
+                }
+              },
+              "nameIdService": {
+                "title": "Manage NameID Service",
+                "type": "array",
+                "attributePath": {
+                  "value": "manageNameIDService",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EndpointMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/endpoint"
+                }
+              },
+              "singleSignOnService": {
+                "title": "Single SignOn Service",
+                "type": "array",
+                "attributePath": {
+                  "value": "singleSignOnService",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EndpointMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/endpoint"
+                }
+              }
+            }
+          },
+          "nameIdMapping": {
+            "title": "NameID Mapping",
+            "type": "array",
+            "attributePath": {
+              "value": "nameIDMappingService",
+              "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EndpointMapper"
+            },
+            "items": {
+              "$ref": "definitions.json#/endpoint"
+            }
+          }
+        }
+      }
+    }
+  }
+}

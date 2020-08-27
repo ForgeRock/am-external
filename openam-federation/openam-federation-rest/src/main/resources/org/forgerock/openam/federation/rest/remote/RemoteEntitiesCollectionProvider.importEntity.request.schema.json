@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.request.title",
+  "description": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.request.description",
+  "properties": {
+    "standardMetadata": {
+      "type": "string",
+      "title": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.standardMetadata.title",
+      "description": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.standardMetadata.description"
+    }
+  },
+  "required": [
+    "standardMetadata"
+  ]
+}
