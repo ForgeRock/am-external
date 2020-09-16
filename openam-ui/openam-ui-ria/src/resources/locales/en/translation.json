@@ -425,11 +425,12 @@
             },
             "forgotUsername" : {
                 "title" : "Retrieve Your Username",
-                "checkEmail" : "An email containing your username has been sent to your account.",
+                "checkEmail" : "Check your email to retrieve your username.",
                 "failed": "Unable to retrieve your username",
                 "found": "Username found:",
                 "tryAgain": "Try Finding Your Username Again",
-                "answerQuestions": "Answer the security questions below to retrieve your username."
+                "answerQuestions": "Answer the security questions below to retrieve your username.",
+                "completed": "Forgot Username flow completed"
             },
             "kba" : {
                 "description": "Select __numberOfQuestions__ or more security questions below. These questions will help us verify your identity if you forget your password.",
@@ -732,6 +733,10 @@
             },
             "applications-agents": {
                 "title": "Agents"
+            },
+            "applications-agents-identityGateway": {
+                "breadcrumb": "Applications - Agents - Identity Gateway",
+                "title": "Identity Gateway"
             },
             "applications-agents-java": {
                 "breadcrumb": "Applications - Agents - Java",
@@ -1824,6 +1829,44 @@
                         },
                         "new": {
                             "title": "New Remote Consent Agent"
+                        }
+                    }
+                },
+                "identityGateway": {
+                    "title": "Identity Gateway",
+                    "agents": {
+                        "confirmDeleteSelected": "Are you sure you want to delete the selected Identity Gateway Agent?",
+                        "confirmDeleteSelected_plural": "Are you sure you want to delete the selected Identity Gateway Agents?",
+                        "list": {
+                            "callToAction": {
+                                "button": "Add Identity Gateway Agent",
+                                "title": "No Identity Gateway Agents configured.",
+                                "description": "Configure Identity Gateway Agents for use with the Identity Gateway."
+                            },
+                            "grid": ["Agent ID", "Group"]
+                        },
+                        "edit": {
+                            "type": "Identity Gateway Agent"
+                        },
+                        "new": {
+                            "title": "New Identity Gateway Agent"
+                        }
+                    },
+                    "groups": {
+                        "confirmDeleteSelected": "Are you sure you want to delete the selected Identity Gateway Agent Group?",
+                        "confirmDeleteSelected_plural": "Are you sure you want to delete the selected Identity Gateway Agent Groups?",
+                        "edit": {
+                            "type": "Identity Gateway Agent Group"
+                        },
+                        "new": {
+                            "title": "New Identity Gateway Agent Group"
+                        },
+                        "list": {
+                            "callToAction": {
+                                "description": "Specify settings for multiple Identity Gateway agents by adding them to a group",
+                                "title": "No Identity Gateway Agent groups configured."
+                            },
+                            "grid": ["Group ID"]
                         }
                     }
                 }

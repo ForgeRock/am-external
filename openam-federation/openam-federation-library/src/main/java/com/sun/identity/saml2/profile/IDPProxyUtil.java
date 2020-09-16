@@ -24,7 +24,7 @@
  *
  * $Id: IDPProxyUtil.java,v 1.18 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2010-2018 ForgeRock AS.
+ * Portions Copyrighted 2010-2019 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
@@ -753,6 +753,9 @@ public class IDPProxyUtil {
                 paramsMap.put(SAML2Constants.RELAY_STATE, relayState);
             }
             idpSession.removeSessionPartner(partner);
+            String sessionIndex = IDPSSOUtil.getSessionIndex(idpSession.getSession());
+            IDPSSOUtil.saveIdPSessionToTokenRepository(sessionIndex, sessionProvider, idpSession,
+                idpSession.getSession());
             SPSingleLogout.initiateLogoutRequest(request,response, out,
                 binding, paramsMap, logoutReq, msg, ssoToken, null);
         } catch (SAML2Exception sse) {
@@ -875,6 +878,11 @@ public class IDPProxyUtil {
         return sloeElement;
     }
 
+    /**
+     * Obtain the session partner list from the supplied IDPSession
+     * @param request The http servlet request received.
+     * @return The list of session partners
+     */
     public static List getSessionPartners(HttpServletRequest request)
     {
         try {
@@ -882,8 +890,7 @@ public class IDPProxyUtil {
             String tokenID = sessionProvider.getSessionID(tmpsession);
             IDPSession idpSession = null;
             if (tokenID != null && !tokenID.equals("")) {
-                idpSession = (IDPSession)
-                IDPCache.idpSessionsBySessionID.get(tokenID);
+                idpSession = IDPCache.idpSessionsBySessionID.get(tokenID);
             }
             List partners= null;
             if (idpSession != null) {
@@ -924,8 +931,7 @@ public class IDPProxyUtil {
             String tokenID = sessionProvider.getSessionID(tmpsession);
             IDPSession idpSession = null;
             if (tokenID != null && !tokenID.equals("")) {
-                idpSession = (IDPSession)
-                IDPCache.idpSessionsBySessionID.get(tokenID);
+                idpSession = IDPCache.idpSessionsBySessionID.get(tokenID);
             }
 
             Iterator iter = partners.iterator();
@@ -1019,6 +1025,9 @@ public class IDPProxyUtil {
                 getRealm(SAML2MetaUtils.getRealmByMetaAlias(metaAlias));
             String party = partner.getPartner();
             idpSession.removeSessionPartner(party);
+            String sessionIndex = IDPSSOUtil.getSessionIndex(idpSession.getSession());
+            IDPSSOUtil.saveIdPSessionToTokenRepository(sessionIndex, sessionProvider, idpSession,
+                idpSession.getSession());
             initiateSPLogoutRequest(request,response, out, party, metaAlias, realm,
                 null, msg ,idpSession, SAML2Constants.SOAP, null);
 
@@ -1046,8 +1055,7 @@ public class IDPProxyUtil {
                     SAML2Utils.debug.message("getSessionPartners: " +
                         "SessionIndex= " +  sessionIndex);
                 }
-                IDPSession idpSession = (IDPSession)
-                    IDPCache.idpSessionsByIndices.get(sessionIndex);
+                IDPSession idpSession = IDPSSOUtil.retrieveCachedIdPSession(sessionIndex);
 
                 if (idpSession == null) {
                     // session is in another server

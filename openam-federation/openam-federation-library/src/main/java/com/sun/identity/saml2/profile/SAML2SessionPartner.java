@@ -23,7 +23,7 @@
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
  * $Id: SAML2SessionPartner.java,v 1.2 2008/06/25 05:47:54 qcheng Exp $
- *
+ * Portions Copyrighted 2019 ForgeRock AS.
  */
 
 
@@ -35,7 +35,13 @@ package com.sun.identity.saml2.profile;
 public class SAML2SessionPartner{
     private boolean isRoleIDP = false;
     private String sessionPartner = null;
-    
+
+    /**
+     * Default constructor for deserialization.
+     */
+    public SAML2SessionPartner() {
+    }
+
     /**
      * Constructs a new <code>SAML2SessionPartner</code> object.
      * @param sessionPartner session partner's provider ID

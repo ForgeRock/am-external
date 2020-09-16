@@ -24,7 +24,7 @@
  *
  * $Id: IDPSessionListener.java,v 1.10 2009/09/23 22:28:31 bigfatrat Exp $
  *
- * Portions Copyrighted 2014-2018 ForgeRock AS.
+ * Portions Copyrighted 2014-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -134,8 +134,7 @@ public class IDPSessionListener
                return;
             }
 
-            IDPSession idpSession = (IDPSession)IDPCache.
-                                    idpSessionsByIndices.get(sessionIndex);
+            IDPSession idpSession = IDPSSOUtil.retrieveCachedIdPSession(sessionIndex);
             if (idpSession != null) {
                 
                 paramsMap.put(SAML2Constants.ROLE, SAML2Constants.IDP_ROLE);
@@ -230,8 +229,6 @@ public class IDPSessionListener
                 }
             }
 
-            IDPCache.idpSessionsByIndices.remove(sessionIndex);
-            IDPCache.authnContextCache.remove(sessionIndex);
             String  sessID = sessionProvider.getSessionID(session);
             if (sessID != null) {
                 if (IDPCache.idpSessionsBySessionID.get(sessID) != null) {
@@ -246,15 +243,7 @@ public class IDPSessionListener
                     IDPCache.spSessionPartnerBySessionID.remove(sessID);
                 }
             }
-
-            // This failing should not cause the whole process to fail
-            try {
-                if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                    SAML2FailoverUtils.deleteSAML2Token(sessionIndex);
-                }
-            } catch (SAML2TokenRepositoryException se) {
-                SAML2Utils.debug.error(classMethod + "SAML2 Token Repository error, sessionIndex:" + sessionIndex, se);
-            }
+            IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(sessionIndex);
 
             if (SAML2Utils.debug.messageEnabled()) {
                 SAML2Utils.debug.message(classMethod +

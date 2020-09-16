@@ -24,7 +24,7 @@
  *
  * $Id: IDPSessionCopy.java,v 1.3 2009/05/06 19:48:34 madan_ranganath Exp $
  *
- * Portions copyright 2013-2015 ForgeRock AS.
+ * Portions copyright 2013-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -55,6 +55,7 @@ public class IDPSessionCopy implements Serializable {
     private String originatingLogoutSPEntityID = null;
     private boolean doLogoutAll = false;
     private String metaAlias = null;
+    private List<SAML2SessionPartner> sessionPartners = null;
 
     /**
      * Default constructor for deserialization.
@@ -71,6 +72,7 @@ public class IDPSessionCopy implements Serializable {
     public IDPSessionCopy(String ssoToken) {
         this.ssoTokenID = ssoToken;
         nameIDandSPpairs = new ArrayList<NameIDandSPpair>();
+        sessionPartners = new ArrayList<>();
     }
 
     public IDPSessionCopy(IDPSession idpSession) {
@@ -87,6 +89,7 @@ public class IDPSessionCopy implements Serializable {
         originatingLogoutSPEntityID = idpSession.getOriginatingLogoutSPEntityID();
         doLogoutAll = idpSession.getLogoutAll();
         metaAlias = idpSession.getMetaAlias();
+        sessionPartners = new ArrayList<>(idpSession.getSessionPartners());
     }
     
     /**
@@ -214,5 +217,13 @@ public class IDPSessionCopy implements Serializable {
     public String getMetaAlias() {
         return metaAlias;
     }
-}
 
+    // Handle IDP Proxy case
+    /**
+     * Returns list of session partners.
+     * @return list of session partners
+     */
+    public List<SAML2SessionPartner> getSessionPartners() {
+        return sessionPartners;
+    }
+}

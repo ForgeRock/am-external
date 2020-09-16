@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -33,6 +33,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.http.Handler;
+import org.forgerock.json.JsonValue;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthClientConfiguration;
 import org.forgerock.oauth.OAuthException;
@@ -209,6 +210,10 @@ class SocialAuthModuleHelper {
      * @throws OAuthException
      */
     public String extractEmail(UserInfo userInfo, String emailAttribute) throws OAuthException {
-        return userInfo.getRawProfile().get(emailAttribute).asString();
+        JsonValue emailAttributeValue = userInfo.getRawProfile().get(emailAttribute);
+        if (emailAttributeValue.isNotNull()) {
+            return emailAttributeValue.asString();
+        }
+        return null;
     }
 }

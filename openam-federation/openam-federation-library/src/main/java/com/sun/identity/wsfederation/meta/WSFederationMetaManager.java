@@ -24,15 +24,17 @@
  *
  * $Id: WSFederationMetaManager.java,v 1.8 2009/10/28 23:58:59 exu Exp $
  *
- * Portions Copyrighted 2015-2018 ForgeRock AS.
+ * Portions Copyrighted 2015-2019 ForgeRock AS.
  */
 
 
 package com.sun.identity.wsfederation.meta;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1308,23 +1310,24 @@ public class WSFederationMetaManager {
     }
 
     /**
-     * Returns the value of the <code>&lt;TokenIssuerEndpoint&gt;</code> element
+     * Returns the value of the <code>&lt;TokenIssuerEndpoints&gt;</code> element
      * for the given entity.
      * @param fed The standard metadata for the entity.
-     * @return the value of the <code>&lt;TokenIssuerEndpoint&gt;</code> element
+     * @return the value of the <code>&lt;TokenIssuerEndpoints&gt;</code> element
      */
-    public String getTokenIssuerEndpoint(FederationElement fed)
+    public Set<String> getTokenIssuerEndpoints(FederationElement fed)
     {
+        // Preserve the order of the endpoints as defined in the metadata
+        Set<String> tokenEndpoints = new LinkedHashSet<>();
         // Just return first TokenIssuerEndpoint in the Federation
         for ( Object o: fed.getValue().getAny() )
         {
             if ( o instanceof TokenIssuerEndpointElement )
             {
-                return ((TokenIssuerEndpointElement)o).getValue().getAddress().getValue();
+                tokenEndpoints.add(((TokenIssuerEndpointElement)o).getValue().getAddress().getValue());
             }
         }
-        
-        return null;
+        return tokenEndpoints;
     }
 
     /**

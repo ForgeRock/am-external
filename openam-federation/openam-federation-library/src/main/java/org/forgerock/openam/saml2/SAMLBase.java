@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
@@ -20,6 +20,8 @@ import java.util.logging.Level;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.forgerock.openam.jwt.JwtEncryptionOptions;
 
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
@@ -41,11 +43,11 @@ public abstract class SAMLBase {
     protected static final String ACS_URL = "acsURL";
     protected static final String SP_ENTITY_ID = "spEntityID";
     protected static final String BINDING = "binding";
-
     protected static final String INVALID_SAML_REQUEST = "InvalidSAMLRequest";
     protected static final String METADATA_ERROR = "metaDataError";
     protected static final String SSO_OR_FEDERATION_ERROR = "UnableToDOSSOOrFederation";
 
+    final JwtEncryptionOptions localStorageJwtEncryptionOptions;
     protected final HttpServletRequest request;
     protected final HttpServletResponse response;
     protected final IDPSSOFederateRequest data;
@@ -56,11 +58,15 @@ public abstract class SAMLBase {
      * @param request The HTTP request.
      * @param response The HTTP response.
      * @param data The SAML request data.
+     * @param localStorageJwtEncryptionOptions options for encryption/decryption of auth request JWTs that are stored
+     * in local storage on the client browser.
      */
-    protected SAMLBase(HttpServletRequest request, HttpServletResponse response, IDPSSOFederateRequest data) {
+    protected SAMLBase(HttpServletRequest request, HttpServletResponse response, IDPSSOFederateRequest data,
+            JwtEncryptionOptions localStorageJwtEncryptionOptions) {
         this.request = request;
         this.response = response;
         this.data = data;
+        this.localStorageJwtEncryptionOptions = localStorageJwtEncryptionOptions;
     }
 
     protected void logAccess(String logId, Level logLevel, String... data) {

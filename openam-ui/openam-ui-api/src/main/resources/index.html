@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS. All Rights Reserved
+ * Copyright 2016-2020 ForgeRock AS. All Rights Reserved
 -->
 
 <!DOCTYPE html>
@@ -24,6 +24,10 @@
             /* Hide unrequired sections at top of page */
             .information-container,
             .scheme-container {
+                display: none;
+            }
+            /* Hide fields until 'Try it out' button is clicked */
+            .swagger-ui .parameters-col_description :disabled {
                 display: none;
             }
         </style>

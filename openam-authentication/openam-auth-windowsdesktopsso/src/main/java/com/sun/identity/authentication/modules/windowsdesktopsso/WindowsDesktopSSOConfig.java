@@ -24,7 +24,7 @@
  *
  * $Id: WindowsDesktopSSOConfig.java,v 1.3 2009/04/07 22:55:13 beomsuk Exp $
  *
- * Portions Copyrighted 2017-2018 ForgeRock AS.
+ * Portions Copyrighted 2017-2020 ForgeRock AS.
  */
 
 
@@ -107,12 +107,16 @@ public class WindowsDesktopSSOConfig extends AMConfiguration {
         if (appName.equals(defaultAppName)) {
             HashMap hashmap = new HashMap();
             hashmap.put("principal", servicePrincipal);
-            hashmap.put("isInitiator", Boolean.toString(isInitiator));
             if (kerberosModuleName.equalsIgnoreCase("com.ibm.security.auth.module.Krb5LoginModule")) {
                 hashmap.put("useKeytab", keytab);
-                hashmap.put("credsType", credsType);
                 hashmap.put("refreshKrb5Config", "false");
+                if (isInitiator && "acceptor".equalsIgnoreCase(credsType)) {
+                    hashmap.put("credsType", "both");
+                } else {
+                    hashmap.put("credsType", credsType);
+                }
             } else {
+                hashmap.put("isInitiator", Boolean.toString(isInitiator));
                 hashmap.put("storeKey", "true");
                 hashmap.put("useKeyTab", "true");
                 hashmap.put("keyTab", keytab);

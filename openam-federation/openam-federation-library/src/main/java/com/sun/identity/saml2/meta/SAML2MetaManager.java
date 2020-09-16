@@ -24,7 +24,7 @@
  *
  * $Id: SAML2MetaManager.java,v 1.18 2009/10/28 23:58:58 exu Exp $
  *
- * Portions Copyrighted 2010-2018 ForgeRock AS.
+ * Portions Copyrighted 2010-2020 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.meta;
@@ -78,6 +78,7 @@ import com.sun.identity.shared.debug.Debug;
 /**
  * The <code>SAML2MetaManager</code> provides methods to manage both the 
  * standard entity descriptor and the extended entity configuration.
+ * @supported.api
  */
 public class SAML2MetaManager {
     private static final String ATTR_METADATA = "sun-fm-saml2-metadata";
@@ -1453,6 +1454,7 @@ public class SAML2MetaManager {
      * @param metaAlias The metaAlias.
      * @return entity ID associated with the metaAlias or null if not found.
      * @throws SAML2MetaException if unable to retrieve the entity ids.
+     * @supported.api
      */
     public String getEntityByMetaAlias(String metaAlias)
         throws SAML2MetaException {

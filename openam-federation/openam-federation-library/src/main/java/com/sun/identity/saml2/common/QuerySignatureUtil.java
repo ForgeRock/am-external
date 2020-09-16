@@ -24,7 +24,7 @@
  *
  * $Id: QuerySignatureUtil.java,v 1.2 2008/06/25 05:47:45 qcheng Exp $
  *
- * Portions Copyrighted 2015-2018 ForgeRock AS.
+ * Portions Copyrighted 2015-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -41,9 +41,9 @@ import java.security.cert.X509Certificate;
 import java.util.Set;
 import java.util.StringTokenizer;
 
-import org.apache.xml.security.Init;
 import org.apache.xml.security.algorithms.JCEMapper;
 import org.apache.xml.security.signature.XMLSignature;
+import org.forgerock.openam.federation.util.XmlSecurity;
 
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.encode.Base64;
@@ -57,8 +57,7 @@ public class QuerySignatureUtil {
     private static final String SIGNATURE = "Signature";
 
     static {
-        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
-        Init.init();
+        XmlSecurity.init();
     }
 
     private QuerySignatureUtil() {

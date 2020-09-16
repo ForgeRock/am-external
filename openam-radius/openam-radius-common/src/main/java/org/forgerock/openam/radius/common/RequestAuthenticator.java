@@ -24,14 +24,11 @@
  *
  * $Id: AccessAccept.java,v 1.2 2008/06/25 05:42:00 qcheng Exp $
  *
- * Portions Copyrighted 2011-2017 ForgeRock AS.
+ * Portions Copyrighted 2011-2020 ForgeRock AS.
  * Portions Copyrighted 2015 Intellectual Reserve, Inc (IRI)
  */
 package org.forgerock.openam.radius.common;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 /**
@@ -49,18 +46,11 @@ public class RequestAuthenticator implements Authenticator {
      * Generates a request authenticator field consisting of a 16 octet random number per section 3 of RFC 2865.
      *
      * @param rand   in instance of SecureRandom as the source of randomness.
-     * @param secret the secret shared between a radius client and server.
-     * @throws NoSuchAlgorithmException if the MD5 algorithm is not available.
      */
-    public RequestAuthenticator(SecureRandom rand, String secret)
-            throws NoSuchAlgorithmException {
-        final byte[] authenticator = new byte[16];
-        rand.nextBytes(authenticator);
-
-        final MessageDigest md5 = MessageDigest.getInstance("MD5");
-        md5.update(authenticator);
-        md5.update(secret.getBytes(StandardCharsets.UTF_8));
-        octets = md5.digest();
+    public RequestAuthenticator(SecureRandom rand) {
+        final byte[] randomBytes = new byte[16];
+        rand.nextBytes(randomBytes);
+        octets = randomBytes;
     }
 
     /**

@@ -57,7 +57,7 @@ package com.sun.identity.federation.key;
 /**
  * The <code>KeyUtil</code> provides methods to obtain
  * the hosting entity's signing key and decryption key, and
- * to obtain a partner entity's signature verification keyKeyUtil
+ * to obtain a partner entity's signature verification key
  * and encryption related information
  */
 public class KeyUtil {

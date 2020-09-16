@@ -11,13 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2019 ForgeRock AS.
  */
 
 /**
  * @module org/forgerock/openam/ui/admin/services/realm/AgentTypes
  */
 
+export const IDENTITY_GATEWAY_AGENT = "IdentityGatewayAgent";
 export const JAVA_AGENT = "J2EEAgent";
 export const OAUTH2_CLIENT = "OAuth2Client";
 export const REMOTE_CONSENT_AGENT = "RemoteConsentAgent";

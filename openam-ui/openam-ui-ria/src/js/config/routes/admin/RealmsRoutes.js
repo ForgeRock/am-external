@@ -454,6 +454,51 @@ const RealmsRoutes = {
         navGroup: "admin",
         forceUpdate: true
     },
+    "realmsApplicationsAgentsIdentityGateway": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/identity-gateway/IdentityGatewayAgents.jsx"),
+        url: scopedByRealm("applications-agents-identityGateway"),
+        pattern: "realms/?/applications-agents-identityGateway",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsAgentsIdentityGatewayAgentsNew": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/identity-gateway/agents/new/NewIdentityGatewayAgentContainer.jsx"),
+        url: scopedByRealm("applications-agents-identityGateway/agents/new"),
+        pattern: "realms/?/applications-agents-identityGateway/agents/new",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsAgentsIdentityGatewayAgentsEdit": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/identity-gateway/agents/edit/EditIdentityGatewayAgent.js"),
+        url: scopedByRealm("applications-agents-identityGateway/agents/edit/([^/]*)"),
+        pattern: "realms/?/applications-agents-identityGateway/agents/edit/?",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsAgentsIdentityGatewayAgentGroupsEdit": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/identity-gateway/groups/edit/EditIdentityGatewayAgentGroup.js"),
+        url: scopedByRealm("applications-agents-identityGateway/groups/edit/([^/]*)"),
+        pattern: "realms/?/applications-agents-identityGateway/groups/edit/?",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsApplicationsAgentsIdentityGatewayAgentGroupsNew": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/identity-gateway/groups/new/NewIdentityGatewayAgentGroupContainer.jsx"),
+        url: scopedByRealm("applications-agents-identityGateway/groups/new"),
+        pattern: "realms/?/applications-agents-identityGateway/groups/new",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
     "realmsApplicationsAgentsSoapSTS": {
         view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
         page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/soap-sts/SoapSTSAgents.jsx"),

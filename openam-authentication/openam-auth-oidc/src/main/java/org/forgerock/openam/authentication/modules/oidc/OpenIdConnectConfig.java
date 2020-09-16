@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2020 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
@@ -56,6 +56,7 @@ class OpenIdConnectConfig extends JwtHandlerConfig {
     static final String BUNDLE_KEY_INVALID_AUTHORIZED_PARTY = "invalid_authorized_party";
     static final String BUNDLE_KEY_AUTHORIZED_PARTY_NOT_IN_AUDIENCE = "authorized_party_not_in_audience";
     static final String BUNDLE_KEY_NO_AUDIENCE_CLAIM = "no_audience_claim";
+    static final String BUNDLE_KEY_NO_AUTHORIZED_PARTY = "no_authorized_party_claim";
 
     private final String headerName;
     private final String principalMapperClass;

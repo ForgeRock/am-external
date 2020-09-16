@@ -24,6 +24,7 @@
  *
  * $Id: KeyUtil.java,v 1.4 2009/10/28 23:58:58 exu Exp $
  *
+ * Portions Copyrighted 2019 ForgeRock AS.
  */
 
 
@@ -32,14 +33,16 @@ package com.sun.identity.wsfederation.key;
 import java.util.Map;
 import java.util.List;
 import java.util.Hashtable;
+import java.util.Objects;
 import java.io.ByteArrayInputStream;
 import java.security.cert.CertificateFactory;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 
+import org.forgerock.openam.utils.StringUtils;
+
 import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.saml2.common.SAML2Constants;
-
 import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.wsfederation.common.WSFederationUtils;
@@ -61,9 +64,7 @@ public class KeyUtil {
     // value is EncInfo
     protected static Hashtable encHash = new Hashtable();
 
-    // key is EntityID|Role
-    // value is X509Certificate
-    protected static Hashtable sigHash = new Hashtable();
+    private static Map<CacheKey, X509Certificate> sigHash = new Hashtable<>();
     
     static {
         try {
@@ -145,6 +146,7 @@ public class KeyUtil {
      * Returns the partner entity's signature verification certificate.
      * @param fed <code>FederationElement</code> for the partner entity
      * @param entityID partner entity's ID
+     * @param realm partner entity's realm
      * @param isIDP whether partner entity's role is IDP or SP 
      * @return <code>X509Certificate</code> for verifying the partner
      * entity's signature
@@ -152,39 +154,31 @@ public class KeyUtil {
     public static X509Certificate getVerificationCert(
         FederationElement fed,
         String entityID,
+        String realm,
         boolean isIDP
     ) {
         String classMethod = "KeyUtil.getVerificationCert: ";
         String role = (isIDP) ? "idp":"sp";        
         if (WSFederationUtils.debug.messageEnabled()) {
-            WSFederationUtils.debug.message(
-                classMethod +
-                "Entering... \nEntityID=" +
-                entityID + "\nRole="+role
-            );
+            WSFederationUtils.debug.message("{}Entering... \nEntityID={}\nRole={}\nRealm={}",
+                classMethod, entityID, role, realm);
         }
         // first try to get it from cache
-        String index = entityID.trim()+"|"+ role;
-        X509Certificate cert = (X509Certificate)sigHash.get(index);
+        CacheKey index = new CacheKey(entityID, role, realm);
+        X509Certificate cert = sigHash.get(index);
         if (cert != null) {
             return cert;
         }
         // else get it from meta
         if (fed == null) {
-            WSFederationUtils.debug.error(
-                classMethod+
-                "Null SSODescriptorType input for entityID=" +
-                entityID + " in "+role+" role."
-            );
+            WSFederationUtils.debug.error("{}Null SSODescriptorType input for entityID={} in realm {} with {} role.",
+                    classMethod, entityID, realm, role);
             return null;
         }
         cert = getCert(fed);
         if (cert == null) {
-            WSFederationUtils.debug.error(
-                classMethod +
-                "No signing cert for entityID=" +
-                entityID + " in "+role+" role."
-            );
+            WSFederationUtils.debug.error("{}No signing cert for entityID={} in realm {} with {} role.",
+                    classMethod, entityID, realm, role);
             return null;
         }
         sigHash.put(index, cert);
@@ -229,5 +223,43 @@ public class KeyUtil {
             return null;
         }
         return retCert;
-    }        
+    }
+
+    /**
+     * Composite key class comprising (EntityID,Role,Realm). The EntityID is trimmed
+     * and null/empty realm is normalized to "/".
+     */
+    private static final class CacheKey {
+        private final String entityId;
+        private final String role;
+        private final String realm;
+
+        private CacheKey(String entityId, String role, String realm) {
+            this.entityId = entityId.trim();
+            this.role = role;
+            if (StringUtils.isEmpty(realm)) {
+                realm = "/";
+            }
+            this.realm = realm;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            CacheKey cacheKey = (CacheKey) o;
+            return Objects.equals(entityId, cacheKey.entityId) &&
+                    Objects.equals(role, cacheKey.role) &&
+                    realm.equalsIgnoreCase(cacheKey.realm);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(entityId, role, realm.toLowerCase());
+        }
+    }
 } 

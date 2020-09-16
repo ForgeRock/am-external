@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2018 ForgeRock AS.
+ * Copyright 2013-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.key;
 
@@ -78,7 +78,7 @@ public class KeyUtilTest {
         roleDescriptor.getKeyDescriptor().add(getKeyDescriptor());
 
         // When
-        EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(roleDescriptor, "hello", "world");
+        EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(roleDescriptor, "hello", "world", "/");
 
         // Then
         assertThat(encryptionConfig).isNotNull();
@@ -101,7 +101,7 @@ public class KeyUtilTest {
         roleDescriptor.getKeyDescriptor().add(keyDescriptor);
 
         // When
-        EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(roleDescriptor, "hello", "world");
+        EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(roleDescriptor, "hello", "world", "/");
 
         // Then
         assertThat(encryptionConfig).isNotNull();

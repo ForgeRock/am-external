@@ -24,7 +24,7 @@
  *
  * $Id: SAML2ProviderManager.java,v 1.3 2008/06/25 05:47:52 qcheng Exp $
  *
- * Porions Copyrighted 2018 ForgeRock AS.
+ * Portions Copyrighted 2018-2019 ForgeRock AS.
  *
  */
 
@@ -233,6 +233,6 @@ public class SAML2ProviderManager implements ProviderManager {
             return null;
         }
 
-        return KeyUtil.getEncryptionConfig(ssod, providerID, SAML2Constants.SP_ROLE);
+        return KeyUtil.getEncryptionConfig(ssod, providerID, SAML2Constants.SP_ROLE, "/");
     }
 }

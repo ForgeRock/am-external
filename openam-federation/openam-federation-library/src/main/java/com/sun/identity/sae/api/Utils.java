@@ -24,19 +24,21 @@
  *
  * $Id: Utils.java,v 1.4 2008/11/10 22:57:00 veiming Exp $
  *
- * Portions Copyrighted 2013-2015 ForgeRock AS.
+ * Portions Copyrighted 2013-2019 ForgeRock AS.
  */
 
 package com.sun.identity.sae.api;
 
-import org.owasp.esapi.ESAPI;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletRequest;
 import java.io.PrintWriter;
 import java.net.URLEncoder;
-import java.util.Map;
-import java.util.Iterator;
 import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.owasp.esapi.ESAPI;
 
 /**
   * Util class to implement simple Http request/response transactions.
@@ -148,11 +150,14 @@ public class Utils
             buf.append("<HTML><HEAD><TITLE>SAE POST</TITLE></HEAD>");
             buf.append("<BODY Onload=\"document.forms[0].submit()\">");
         }
-        buf.append("<FORM id=\"saeform\" METHOD=\"POST\" ACTION=\"").append(redirectUrl).append("\">");
+        buf.append("<FORM id=\"saeform\" METHOD=\"POST\" ACTION=\"")
+                .append(ESAPI.encoder().encodeForHTMLAttribute(redirectUrl)).append("\">");
         for (Object name : pmap.keySet()) {
             String val = (String) pmap.get(name);
-            buf.append("<INPUT TYPE=\"HIDDEN\" NAME=\"").append(name).append("\" VALUE=\"");
-            buf.append(ESAPI.encoder().encodeForHTML(val)).append("\">");
+            buf.append("<INPUT TYPE=\"HIDDEN\" NAME=\"")
+                    .append(ESAPI.encoder().encodeForHTMLAttribute(String.valueOf(name)))
+                    .append("\" VALUE=\"");
+            buf.append(ESAPI.encoder().encodeForHTMLAttribute(val)).append("\">");
         }
         buf.append("</FORM>");
         if (addAutoSubmit) {

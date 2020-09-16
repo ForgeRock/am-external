@@ -24,7 +24,7 @@
  *
  * $Id: AccessAccept.java,v 1.2 2008/06/25 05:42:00 qcheng Exp $
  *
- * Portions Copyrighted 2011-2017 ForgeRock AS.
+ * Portions Copyrighted 2011-2020 ForgeRock AS.
  * Portions Copyrighted 2015 Intellectual Reserve, Inc (IRI)
  */
 package com.sun.identity.authentication.modules.radius.client;
@@ -338,11 +338,9 @@ public class RadiusConn {
      * Generates an access request packet.
      *
      * @return the access request packet.
-     * @throws NoSuchAlgorithmException
      */
-    private AccessRequest createAccessRequest() throws
-            NoSuchAlgorithmException {
-        RequestAuthenticator ra = new RequestAuthenticator(random, secret);
+    private AccessRequest createAccessRequest() {
+        RequestAuthenticator ra = new RequestAuthenticator(random);
         AccessRequest req = new AccessRequest(getIdentifier(), ra);
         return req;
     }

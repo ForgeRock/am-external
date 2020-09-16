@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -26,6 +26,7 @@ import org.forgerock.openam.auth.nodes.push.PushResultVerifierNode;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnAuthenticationNode;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnRegistrationNode;
 import org.forgerock.openam.plugins.PluginException;
+import org.forgerock.openam.plugins.VersionComparison;
 
 /**
  * Core nodes installed by default with no engine dependencies.
@@ -34,13 +35,17 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public String getPluginVersion() {
-        return "4.0.0";
+        return "4.5.0";
     }
 
     @Override
     public void upgrade(String fromVersion) throws PluginException {
         if (fromVersion.equals("1.0.0")) {
             pluginTools.upgradeAuthNode(ZeroPageLoginNode.class);
+        } else if (VersionComparison.compareVersionStrings("3.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("4.5.0", fromVersion) < 0) {
+            pluginTools.upgradeAuthNode(WebAuthnAuthenticationNode.class);
+            pluginTools.upgradeAuthNode(WebAuthnRegistrationNode.class);
         }
         super.upgrade(fromVersion);
     }
@@ -94,7 +99,8 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 RecoveryCodeDisplayNode.class),
             "4.0.0", asList(
                 SocialOpenIdConnectNode.class,
-                MetadataNode.class)
+                MetadataNode.class,
+                AnonymousSessionUpgradeNode.class)
         );
     }
 }

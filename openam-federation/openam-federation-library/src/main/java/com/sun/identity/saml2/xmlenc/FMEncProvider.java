@@ -24,7 +24,7 @@
  *
  * $Id: FMEncProvider.java,v 1.5 2008/06/25 05:48:03 qcheng Exp $
  *
- * Portions Copyrighted 2014-2018 ForgeRock AS.
+ * Portions Copyrighted 2014-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.xmlenc;
 
@@ -41,6 +41,7 @@ import org.apache.xml.security.encryption.EncryptedData;
 import org.apache.xml.security.encryption.EncryptedKey;
 import org.apache.xml.security.encryption.XMLCipher;
 import org.apache.xml.security.encryption.XMLEncryptionException;
+import org.forgerock.openam.federation.util.XmlSecurity;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.w3c.dom.Document;
@@ -73,8 +74,7 @@ public final class FMEncProvider implements EncProvider {
     private static boolean encryptedKeyInKeyInfo = true;
 
     static {
-        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
-        org.apache.xml.security.Init.init();
+        XmlSecurity.init();
         String tmp = SystemConfigurationUtil.getProperty(
                 "com.sun.identity.saml.xmlenc.encryptedKeyInKeyInfo");
         if ((tmp != null) && (tmp.equalsIgnoreCase("false"))) {
@@ -151,7 +151,7 @@ public final class FMEncProvider implements EncProvider {
         }
         // end of obtaining secret key
 
-        XMLCipher cipher = null;
+        XMLCipher cipher;
         // start of encrypting the secret key with public key
         String publicKeyEncAlg = recipientPublicKey.getAlgorithm();
         /* note that the public key encryption algorithm could only
@@ -164,16 +164,16 @@ public final class FMEncProvider implements EncProvider {
             if (StringUtils.isEmpty(keyTransportAlgorithm)) {
                 switch (publicKeyEncAlg) {
                 case EncryptionConstants.RSA:
-                    keyTransportAlgorithm = XMLCipher.RSA_OAEP_11;
-                    rsaOaepConfig = Optional.of(new RsaOaepConfig(
-                            SystemPropertiesManager.get(SAML2Constants.DIGEST_ALGORITHM),
-                            org.apache.xml.security.utils.EncryptionConstants.MGF1_SHA256, null));
+                    keyTransportAlgorithm = SystemPropertiesManager.get(SAML2Constants.RSA_KEY_TRANSPORT_ALGORITHM,
+                            XMLCipher.RSA_OAEP);
+                    rsaOaepConfig = RsaOaepConfig.getDefaultConfigForKeyTransportAlgorithm(keyTransportAlgorithm);
                     break;
                 case EncryptionConstants.TRIPLEDES:
                     keyTransportAlgorithm = XMLCipher.TRIPLEDES_KeyWrap;
                     break;
                 case EncryptionConstants.AES:
-                    keyTransportAlgorithm = XMLCipher.AES_128_KeyWrap;
+                    keyTransportAlgorithm = SystemPropertiesManager.get(SAML2Constants.AES_KEY_WRAP_ALGORITHM,
+                            XMLCipher.AES_256_KeyWrap);
                     break;
                 default:
                     SAML2SDKUtils.debug.message("public key encryption algorithm '{}' unsupported", publicKeyEncAlg);

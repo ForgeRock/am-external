@@ -24,7 +24,7 @@
  *
  * $Id: SPSingleLogout.java,v 1.29 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2013-2018 ForgeRock AS.
+ * Portions Copyrighted 2013-2020 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
@@ -300,11 +300,13 @@ public class SPSingleLogout {
                         SAML2Constants.DEFAULT_RELAY_STATE);
             }
 
+            String requestUrl = request.getRequestURL().toString();
             // Validate the RelayState URL.
             SAML2Utils.validateRelayStateURL(realm,
                     spEntityID,
                     relayState,
-                    SAML2Constants.SP_ROLE);
+                    SAML2Constants.SP_ROLE,
+                    requestUrl);
 
             if (infoKeyString == null) {
                 // termination case, do local logout only and send to
@@ -557,11 +559,13 @@ public class SPSingleLogout {
                     SAML2Utils.bundle.getString("unsupportedBinding"));
         }
 
+        String requestUrl = request.getRequestURL().toString();
         // Validate the RelayState URL.
         SAML2Utils.validateRelayStateURL(realm,
                 spEntityID,
                 relayState,
-                SAML2Constants.SP_ROLE);
+                SAML2Constants.SP_ROLE,
+                requestUrl);
 
         LogoutResponse logoutRes = null;
         if (rmethod.equals("POST")) {

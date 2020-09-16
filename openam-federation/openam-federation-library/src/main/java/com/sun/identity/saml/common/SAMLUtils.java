@@ -24,7 +24,7 @@
  *
  * $Id: SAMLUtils.java,v 1.16 2010/01/09 19:41:06 qcheng Exp $
  *
- * Portions Copyrighted 2012-2018 ForgeRock AS.
+ * Portions Copyrighted 2012-2020 ForgeRock AS.
  */
 
 package com.sun.identity.saml.common;
@@ -61,6 +61,7 @@ import javax.xml.soap.MimeHeader;
 import javax.xml.soap.MimeHeaders;
 
 import org.apache.xml.security.c14n.Canonicalizer;
+import org.forgerock.openam.federation.util.XmlSecurity;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -133,8 +134,7 @@ public class SAMLUtils  extends SAMLUtilsCommon {
     private static Object ssoToken;
  
     static {
-        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
-        org.apache.xml.security.Init.init();
+        XmlSecurity.init();
         if (SystemConfigurationUtil.isServerMode()) {
             long period = ((Integer) SAMLServiceManager.getAttribute(
                         SAMLConstants.CLEANUP_INTERVAL_NAME)).intValue() * 1000;
@@ -1741,61 +1741,57 @@ public class SAMLUtils  extends SAMLUtilsCommon {
       * @param errorCode Error code
       * @param errorMsg Detailed error message
       */
-     public static void sendError(HttpServletRequest request,
-         HttpServletResponse response, int httpStatusCode,
-         String errorCode, String errorMsg) {
-                 String errorUrl = SystemConfigurationUtil.getProperty(
-               SAMLConstants.ERROR_PAGE_URL,
-               SAMLConstants.DEFAULT_ERROR_PAGE_URL);
-         if(debug.messageEnabled()) {
-            debug.message("SAMLUtils.sendError: error page" + errorUrl);
-         }
+
+     public static void sendError(HttpServletRequest request, HttpServletResponse response, int httpStatusCode,
+             String errorCode, String errorMsg) {
+         String errorUrl = SystemConfigurationUtil.getProperty(SAMLConstants.ERROR_PAGE_URL,
+                 SAMLConstants.DEFAULT_ERROR_PAGE_URL);
+         debug.message("SAMLUtils.sendError: error page {}", errorUrl);
          String tmp = errorUrl.toLowerCase();
          if (!tmp.startsWith("http://") && !tmp.startsWith("https://")) {
-             // use forward
-             String jointString = "?";
-             if (errorUrl.indexOf("?") != -1) {
-                 jointString = "&";
-             }
-             String newUrl = errorUrl.trim() + jointString
-                  + SAMLConstants.ERROR_CODE + "=" + errorCode + "&"
-                  + SAMLConstants.HTTP_STATUS_CODE + "=" + httpStatusCode
-                  + "&" + SAMLConstants.ERROR_MESSAGE + "="
-                  + urlEncodeQueryParameterNameOrValue(errorMsg);
+             String newUrl = getErrorUrl(errorUrl, httpStatusCode, errorCode, errorMsg);
 
+             // use forward
              forwardRequest(newUrl, request, response);
          } else {
-           String binding = SystemConfigurationUtil.getProperty(
-                            SAMLConstants.ERROR_PAGE_HTTP_BINDING,
-                            SAMLConstants.HTTP_POST);
-           if(SAMLConstants.HTTP_REDIRECT.equals(binding)) {
-               // use FSUtils, this may be redirection or forward
-              String jointString = "?";
-              if (errorUrl.indexOf("?") != -1) {
-                  jointString = "&";
-              }
-              String newUrl = errorUrl.trim() + jointString
-                   + SAMLConstants.ERROR_CODE + "=" + errorCode + "&"
-                   + SAMLConstants.HTTP_STATUS_CODE + "=" + httpStatusCode
-                   + "&" + SAMLConstants.ERROR_MESSAGE + "="
-                   + urlEncodeQueryParameterNameOrValue(errorMsg);
+             String binding = SystemConfigurationUtil.getProperty(SAMLConstants.ERROR_PAGE_HTTP_BINDING,
+                     SAMLConstants.HTTP_POST);
+             if (SAMLConstants.HTTP_REDIRECT.equals(binding)) {
+                 String newUrl = getErrorUrl(errorUrl, httpStatusCode, errorCode, errorMsg);
 
-              FSUtils.forwardRequest(request, response, newUrl) ;
-           } else {
-               // Populate request attributes to be available for rendering.
-               request.setAttribute("ERROR_URL", errorUrl);
-               request.setAttribute("ERROR_CODE_NAME", SAMLConstants.ERROR_CODE);
-               request.setAttribute("ERROR_CODE", errorCode);
-               request.setAttribute("ERROR_MESSAGE_NAME", SAMLConstants.ERROR_MESSAGE);
-               request.setAttribute("ERROR_MESSAGE", urlEncodeQueryParameterNameOrValue(errorMsg));
-               request.setAttribute("HTTP_STATUS_CODE_NAME", SAMLConstants.HTTP_STATUS_CODE);
-               request.setAttribute("HTTP_STATUS_CODE", httpStatusCode);
-               request.setAttribute("SAML_ERROR_KEY", bundle.getString("samlErrorKey"));
-               // Forward to auto-submitting form.
-               forwardRequest(ERROR_JSP, request, response);
-           }
+                 // use FSUtils, this may be redirection or forward
+                 FSUtils.forwardRequest(request, response, newUrl);
+             } else {
+                 // Populate request attributes to be available for rendering.
+                 request.setAttribute("ERROR_URL", errorUrl);
+                 request.setAttribute("ERROR_CODE_NAME", SAMLConstants.ERROR_CODE);
+                 request.setAttribute("ERROR_CODE", errorCode);
+                 request.setAttribute("ERROR_MESSAGE_NAME", SAMLConstants.ERROR_MESSAGE);
+                 request.setAttribute("ERROR_MESSAGE", urlEncodeQueryParameterNameOrValue(errorMsg));
+                 request.setAttribute("HTTP_STATUS_CODE_NAME", SAMLConstants.HTTP_STATUS_CODE);
+                 request.setAttribute("HTTP_STATUS_CODE", httpStatusCode);
+                 request.setAttribute("SAML_ERROR_KEY", bundle.getString("samlErrorKey"));
+                 // Forward to auto-submitting form.
+                 forwardRequest(ERROR_JSP, request, response);
+             }
          }
      }
+
+    /**
+     * Constructs the SAML error page URL using the provided parameters.
+     *
+     * @param errorUrl The error page's base URL.
+     * @param httpStatusCode The HTTP status code to add as a query parameter.
+     * @param errorCode The error code to add as a query parameter.
+     * @param errorMsg The error message to add as a query parameter.
+     * @return The error URL including all provided parameters.
+     */
+    public static String getErrorUrl(String errorUrl, int httpStatusCode, String errorCode, String errorMsg) {
+        return errorUrl + (errorUrl.contains("?") ? "&" : "?")
+                + SAMLConstants.ERROR_CODE + "=" + errorCode + "&"
+                + SAMLConstants.HTTP_STATUS_CODE + "=" + httpStatusCode + "&"
+                + SAMLConstants.ERROR_MESSAGE + "=" + urlEncodeQueryParameterNameOrValue(errorMsg);
+    }
 
     /**
      * Forwards to the passed URL.

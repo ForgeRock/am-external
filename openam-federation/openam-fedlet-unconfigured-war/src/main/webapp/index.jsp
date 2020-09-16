@@ -24,11 +24,12 @@
 
    $Id: index.jsp,v 1.14 2009/06/09 20:28:30 exu Exp $
 
-    Portions Copyrighted 2013-2016 ForgeRock AS.
+    Portions Copyrighted 2013-2019 ForgeRock AS.
  --%>
 
 
 <%@ page import="com.sun.identity.saml2.common.SAML2Exception" %>
+<%@ page import="com.sun.identity.saml2.common.SAML2Utils" %>
 <%@ page import="com.sun.identity.saml2.meta.SAML2MetaException" %>
 <%@ page import="com.sun.identity.saml2.meta.SAML2MetaManager" %>
 <%@ page import="java.io.IOException" %>
@@ -39,6 +40,7 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="org.owasp.esapi.ESAPI" %>
+<%@ page import="org.forgerock.http.util.Uris" %>
 
 <%@ include file="header.jspf" %>
 <%--
@@ -65,7 +67,7 @@
 <head>
     <title>Validate Fedlet Setup</title>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-    <link rel="stylesheet" type="text/css" href="<%= deployuri %>/com_sun_web_ui/css/css_ns6up.css" />
+    <link rel="stylesheet" type="text/css" href="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/css/css_ns6up.css" />
 </head>
 
 <body>
@@ -78,9 +80,9 @@
 <table width="100%" border="0" cellpadding="0" cellspacing="0" class="MstTblBot" title="">
 <tbody><tr>
 <td class="MstTdTtl" width="99%">
-<div class="MstDivTtl"><img name="ProdName" src="<%= deployuri %>/console/images/PrimaryProductName.png" alt="" /></div></td><td class="MstTdLogo" width="1%"><img name="RMRealm.mhCommon.BrandLogo" src="<%= deployuri %>/com_sun_web_ui/images/other/javalogo.gif" alt="Java(TM) Logo" border="0" height="55" width="31" /></td></tr></tbody></table>
-<table class="MstTblEnd" border="0" cellpadding="0" cellspacing="0" width="100%"><tbody><tr><td><img name="RMRealm.mhCommon.EndorserLogo" src="<%= deployuri %>/com_sun_web_ui/images/masthead/masthead-sunname.gif" alt="Sun(TM) Microsystems, Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></table></div><div class="SkpMedGry1"><a name="SkipAnchor2089" id="SkipAnchor2089"></a></div>
-<div class="SkpMedGry1"><a href="#SkipAnchor4928"><img src="<%= deployuri %>/com_sun_web_ui/images/other/dot.gif" alt="Jump Over Tab Navigation Area. Current Selection is: Access Control" border="0" height="1" width="1" /></a></div>
+<div class="MstDivTtl"><img name="ProdName" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/console/images/PrimaryProductName.png" alt="" /></div></td><td class="MstTdLogo" width="1%"><img name="RMRealm.mhCommon.BrandLogo" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/other/javalogo.gif" alt="Java(TM) Logo" border="0" height="55" width="31" /></td></tr></tbody></table>
+<table class="MstTblEnd" border="0" cellpadding="0" cellspacing="0" width="100%"><tbody><tr><td><img name="RMRealm.mhCommon.EndorserLogo" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/masthead/masthead-sunname.gif" alt="Sun(TM) Microsystems, Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></table></div><div class="SkpMedGry1"><a name="SkipAnchor2089" id="SkipAnchor2089"></a></div>
+<div class="SkpMedGry1"><a href="#SkipAnchor4928"><img src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/other/dot.gif" alt="Jump Over Tab Navigation Area. Current Selection is: Access Control" border="0" height="1" width="1" /></a></div>
 
 <%
     // Retreive the metadata information 
@@ -150,7 +152,7 @@
                 }
             }
             out.println("<p><br><b>Fedlet configuration created under \"" +
-                fedletHomeDir + "\" directory.</b>");
+                ESAPI.encoder().encodeForHTML(fedletHomeDir) + "\" directory.</b>");
             out.println("<br><br>Click <a href=\"index.jsp\">here</a> to continue.");
         } else {
             // check if this WAR contain Fedlet configuration
@@ -164,18 +166,18 @@
             File dir = new File(fedletHomeDir);
             File file = new File(fedletHomeDir + File.separator + "FederationConfig.properties");
             if (!dir.exists() || !dir.isDirectory()) {
-                out.println("<p><br><b>Fedlet configuration home directory \"" + fedletHomeDir + "\" does not exist.</b>");
+                out.println("<p><br><b>Fedlet configuration home directory \"" + ESAPI.encoder().encodeForHTML(fedletHomeDir) + "\" does not exist.</b>");
                 if (confExist) {
                     out.println("<br><br>Click <a href=\"index.jsp?CreateConfig=true\">here</a> to create Fedlet configuration automatically.");
-                    out.println("<br>Or manually extract your fedlet.war and copy all files under \"conf\" directory to \"" + fedletHomeDir + "\" directory.");
+                    out.println("<br>Or manually extract your fedlet.war and copy all files under \"conf\" directory to \"" + ESAPI.encoder().encodeForHTML(fedletHomeDir) + "\" directory.");
                 } else {
                     out.println("<br>Please follow the README bundled inside your Fedlet.zip or Fedlet-unconfigured.zip file to setup Fedlet configuration.");
                 }
             } else if (!file.exists()) {
-                out.println("<p><br><b>FederationConfig.properties could not be found in \"" + fedletHomeDir + "\".</b>");
+                out.println("<p><br><b>FederationConfig.properties could not be found in \"" + ESAPI.encoder().encodeForHTML(fedletHomeDir) + "\".</b>");
                 if (confExist) {
                     out.println("<br><br>Click <a href=\"index.jsp?CreateConfig=true\">here</a> to create Fedlet configuration automatically.");
-                    out.println("<br>Or manually extract your fedlet.war and copy all files under \"conf\" directory to \"" + fedletHomeDir + "\" directory.");
+                    out.println("<br>Or manually extract your fedlet.war and copy all files under \"conf\" directory to \"" + ESAPI.encoder().encodeForHTML(fedletHomeDir) + "\" directory.");
                 } else {
                     out.println("<br>Please follow the README bundled inside your Fedlet.zip or Fedlet-unconfigured.zip file to setup Fedlet configuration.");
                 }
@@ -229,12 +231,12 @@
                     }
                     for (int j = 0; j < numOfIDP; j ++) {
                         idpEntityID = (String) trustedIDPs.get(j); 
-                        out.println("<br><a href=\"" + thisURI + "idpEntityID=" 
-                            + idpEntityID + "\">" + idpEntityID + "</a>");
+                        out.println("<br><a href=\"" + ESAPI.encoder().encodeForHTMLAttribute(thisURI) + "idpEntityID="
+                            + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(idpEntityID)) + "\">" + idpEntityID + "</a>");
                     }
                     out.println("<br><br><b>or </b><br>");
-                    out.println("<a href=\"" + deployuri + 
-                        "/saml2/jsp/fedletSSOInit.jsp?metaAlias=" + spMetaAlias
+                    out.println("<a href=\"" + ESAPI.encoder().encodeForHTMLAttribute(deployuri) +
+                        "/saml2/jsp/fedletSSOInit.jsp?metaAlias=" + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(spMetaAlias))
                         + "\">use IDP discovery service to find out preferred IDP</a>");
                     out.println("</body>");
                     out.println("</html>");
@@ -247,7 +249,7 @@
                     out.println("<p><br><b>Fedlet or remote Identity Provider metadata is not configured.</b>");
                     if (confExist) {
                         out.println("<p><br>Click <a href=\"index.jsp?CreateConfig=true\">here</a> to create Fedlet configuration automatically.");
-                        out.println("<br>Or manually extract your fedlet.war and copy all files under \"conf\" directory to \"" + fedletHomeDir + "\" directory, then restart your web container.");
+                        out.println("<br>Or manually extract your fedlet.war and copy all files under \"conf\" directory to \"" + ESAPI.encoder().encodeForHTML(fedletHomeDir) + "\" directory, then restart your web container.");
                     } else {
                         out.println("<br>Please follow the README bundled inside your Fedlet-unconfigured.zip file to setup Fedlet configuration, then restart your web container.");
                     }
@@ -280,25 +282,25 @@
       <td colspan="2"> </td>
     </tr>
     <tr>
-      <td><b>Fedlet (SP) Configuration Directory:&nbsp;&nbsp;</b></td> <td><%= fedletHomeDir %></td>
+      <td><b>Fedlet (SP) Configuration Directory:&nbsp;&nbsp;</b></td> <td><%= ESAPI.encoder().encodeForHTML(fedletHomeDir) %></td>
     </tr>
     <tr>
-      <td><b>Fedlet (SP) Entity ID:</b>&nbsp;&nbsp;&nbsp;&nbsp;</td> <td><%= spEntityID %></td>
+      <td><b>Fedlet (SP) Entity ID:</b>&nbsp;&nbsp;&nbsp;&nbsp;</td> <td><%= ESAPI.encoder().encodeForHTML(spEntityID) %></td>
     </tr>
     <tr>
-      <td><b>IDP Entity ID:</b></td> <td><%= idpEntityID %></td>
-    </tr>
-    <tr>
-      <td colspan="2"> </td>
+      <td><b>IDP Entity ID:</b></td> <td><%= ESAPI.encoder().encodeForHTML(idpEntityID) %></td>
     </tr>
     <tr>
       <td colspan="2"> </td>
     </tr>
     <tr>
-      <td colspan="2"><a href="<%= fedletBaseUrl %>/saml2/jsp/fedletSSOInit.jsp?metaAlias=<%= spMetaAlias %>&idpEntityID=<%= idpEntityID%>&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST">Run Fedlet (SP) initiated Single Sign-On using HTTP POST binding</a></td>
+      <td colspan="2"> </td>
     </tr>
     <tr>
-      <td colspan="2"><a href="<%= fedletBaseUrl %>/saml2/jsp/fedletSSOInit.jsp?metaAlias=<%= spMetaAlias %>&idpEntityID=<%= idpEntityID %>&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact">Run Fedlet (SP) initiated Single Sign-On using HTTP Artifact binding</a></td>
+      <td colspan="2"><a href="<%= ESAPI.encoder().encodeForHTMLAttribute(fedletBaseUrl) %>/saml2/jsp/fedletSSOInit.jsp?metaAlias=<%= ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(spMetaAlias)) %>&idpEntityID=<%=ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(idpEntityID))%>&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST">Run Fedlet (SP) initiated Single Sign-On using HTTP POST binding</a></td>
+    </tr>
+    <tr>
+      <td colspan="2"><a href="<%= ESAPI.encoder().encodeForHTMLAttribute(fedletBaseUrl) %>/saml2/jsp/fedletSSOInit.jsp?metaAlias=<%= ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(spMetaAlias)) %>&idpEntityID=<%= ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(idpEntityID))%>&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact">Run Fedlet (SP) initiated Single Sign-On using HTTP Artifact binding</a></td>
     </tr>
 <%
                     if ((idpMetaAlias != null) && (idpMetaAlias.length() != 0)){
@@ -308,10 +310,10 @@
       <td colspan="2"> </td>
     </tr>
      <tr>
-       <td colspan="2"><a href="<%= idpBaseUrl %>/idpssoinit?NameIDFormat=urn:oasis:names:tc:SAML:2.0:nameid-format:transient&metaAlias=<%= idpMetaAlias %>&spEntityID=<%=spEntityID %>&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST">Run Identity Provider initiated Single Sign-On using HTTP POST binding</a></td>
+       <td colspan="2"><a href="<%= ESAPI.encoder().encodeForHTMLAttribute(idpBaseUrl)%>/idpssoinit?NameIDFormat=urn:oasis:names:tc:SAML:2.0:nameid-format:transient&metaAlias=<%= ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(idpMetaAlias)) %>&spEntityID=<%=ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(spEntityID))%>&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST">Run Identity Provider initiated Single Sign-On using HTTP POST binding</a></td>
      </tr>
      <tr>
-       <td colspan="2"><a href="<%= idpBaseUrl %>/idpssoinit?NameIDFormat=urn:oasis:names:tc:SAML:2.0:nameid-format:transient&metaAlias=<%= idpMetaAlias %>&spEntityID=<%=spEntityID %>&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact">Run Identity Provider initiated Single Sign-On using HTTP Artifact binding</a></td>
+       <td colspan="2"><a href="<%= ESAPI.encoder().encodeForHTMLAttribute(idpBaseUrl)%>/idpssoinit?NameIDFormat=urn:oasis:names:tc:SAML:2.0:nameid-format:transient&metaAlias=<%= ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(idpMetaAlias)) %>&spEntityID=<%=ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(spEntityID))%>&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact">Run Identity Provider initiated Single Sign-On using HTTP Artifact binding</a></td>
      </tr>
 <%
                     }       
@@ -324,13 +326,9 @@
                 }
             }
         }
-    } catch (SAML2MetaException se) {
-        se.printStackTrace();
-        response.sendError(response.SC_INTERNAL_SERVER_ERROR, se.getMessage());
-        return;
-    } catch (SAML2Exception sse) {
-        sse.printStackTrace();
-        response.sendError(response.SC_INTERNAL_SERVER_ERROR, sse.getMessage());
+    } catch (SAML2Exception se) {
+        SAML2Utils.debug.error(se.getMessage(), se);
+        response.sendError(response.SC_INTERNAL_SERVER_ERROR);
         return;
     }
 %>

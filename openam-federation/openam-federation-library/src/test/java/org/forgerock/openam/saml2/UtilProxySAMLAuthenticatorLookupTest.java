@@ -11,12 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import java.io.PrintWriter;
 import java.util.List;
@@ -26,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.federation.testutils.TestCaseConfigurationInstance;
 import org.forgerock.openam.federation.testutils.TestCaseSessionProvider;
+import org.forgerock.openam.jwt.JwtEncryptionOptions;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
@@ -61,7 +63,7 @@ public class UtilProxySAMLAuthenticatorLookupTest {
         MockitoAnnotations.initMocks(this);
         data = new IDPSSOFederateRequest("test-id", REALM, null, "test-metaAlias", "openam-saml2-idp");
         data.setSession(ssoToken);
-        lookup = new UtilProxySAMLAuthenticatorLookup(data, request, response, out);
+        lookup = new UtilProxySAMLAuthenticatorLookup(data, request, response, out, mock(JwtEncryptionOptions.class));
 
         TestCaseConfigurationInstance.resetConfiguration();
     }

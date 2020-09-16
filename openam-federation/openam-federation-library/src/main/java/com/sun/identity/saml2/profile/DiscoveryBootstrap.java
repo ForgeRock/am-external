@@ -24,7 +24,7 @@
  *
  * $Id: DiscoveryBootstrap.java,v 1.4 2008/12/05 00:18:31 exu Exp $
  *
- * Portions Copyrighted 2015-2018 ForgeRock AS.
+ * Portions Copyrighted 2015-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -199,7 +199,7 @@ public class DiscoveryBootstrap {
                 IDPSSODescriptorType idpSSODesc = SAML2Utils
                     .getSAML2MetaManager().getIDPSSODescriptor(realm,
                     providerID);
-                EncryptionConfig encInfo = KeyUtil.getEncryptionConfig(idpSSODesc, wscID, SAML2Constants.IDP_ROLE);
+                EncryptionConfig encInfo = KeyUtil.getEncryptionConfig(idpSSODesc, wscID, SAML2Constants.IDP_ROLE, realm);
 
                 NameIdentifier ni =
                     EncryptedNameIdentifier.getEncryptedNameIdentifier(

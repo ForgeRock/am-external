@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import "./webpack/setWebpackPublicPath";
@@ -24,16 +24,16 @@ import $ from "jquery";
 import { getTheme } from "ThemeManager";
 import { init } from "org/forgerock/commons/ui/common/main/i18n/manager";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
-import DeviceDoneTemplate from "templates/user/DeviceDoneTemplate";
-import DeviceTemplate from "templates/user/DeviceTemplate";
-import FooterTemplate from "templates/common/FooterTemplate";
-import LoginBaseTemplate from "templates/common/LoginBaseTemplate";
-import LoginHeaderTemplate from "templates/common/LoginHeaderTemplate";
+import loadTemplate from "org/forgerock/openam/ui/common/util/theme/loadTemplate";
 import prependPublicPath from "webpack/prependPublicPath";
 
 const data = window.pageData;
-const template = data.done ? DeviceDoneTemplate : DeviceTemplate;
+const deviceTemplate = data.done ? "user/DeviceDoneTemplate" : "user/DeviceTemplate";
 const language = data.locale ? data.locale.split(" ")[0] : undefined;
+
+const loadThemedTemplates = async (templates, theme) => {
+    return await Promise.all(templates.map((template) => loadTemplate(template, theme)));
+};
 
 init({
     language,
@@ -42,11 +42,17 @@ init({
 }).then(() => {
     Configuration.globalData = { realm : data.realm };
 
-    getTheme().then((theme) => {
+    const render = async () => {
+        const theme = await getTheme();
         data.theme = theme;
+        const templates = ["common/LoginBaseTemplate", "common/FooterTemplate",
+            "common/LoginHeaderTemplate", deviceTemplate];
+        const [LoginBaseTemplate, FooterTemplate, LoginHeaderTemplate,
+            DeviceTemplate] = await loadThemedTemplates(templates, theme);
         $("#wrapper").html(LoginBaseTemplate(data));
         $("#footer").html(FooterTemplate(data));
         $("#loginBaseLogo").html(LoginHeaderTemplate(data));
-        $("#content").html(template(data));
-    });
+        $("#content").html(DeviceTemplate(data));
+    };
+    render();
 });

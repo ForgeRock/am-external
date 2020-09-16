@@ -35,6 +35,10 @@ const navData = [{
         title: "console.navigation.applications-agents.title",
         icon: "fa-angle-right",
         children: [{
+            title: "console.navigation.applications-agents-identityGateway.title",
+            icon: "fa-angle-right",
+            route: "realmsApplicationsAgentsIdentityGateway"
+        }, {
             title: "console.navigation.applications-agents-java.title",
             icon: "fa-angle-right",
             route: "realmsApplicationsAgentsJava"

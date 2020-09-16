@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2018 ForgeRock AS.
+ * Copyright 2014-2019 ForgeRock AS.
  * Portions Copyrighted 2015 Nomura Research Institute, Ltd.
  */
 
@@ -49,6 +49,7 @@ public class DeviceIdSave extends AMLoginModule {
     private static final String AUTO_STORE_PROFILES_KEY = "iplanet-am-auth-device-id-save-auto-store-profile";
     private static final String MAX_PROFILES_ALLOWED_KEY = "iplanet-am-auth-device-id-save-max-profiles-allowed";
     private static final String DEVICE_PRINT_PROFILE_KEY = "devicePrintProfile";
+    private static final String CLAZZ = DeviceIdSave.class.getSimpleName();
     static final int SAVE_PROFILE_STATE = 2;
     static final int NAME_PROFILE_STATE = 3;
 
@@ -66,19 +67,25 @@ public class DeviceIdSave extends AMLoginModule {
      */
     @Override
     public void init(Subject subject, Map sharedState, Map config) {
+        final String methodName = CLAZZ + ".init";
         int maxProfilesAllowed = Integer.parseInt(CollectionHelper.getMapAttr(config, MAX_PROFILES_ALLOWED_KEY));
         ProfilePersisterFactory profilePersisterFactory = InjectorHolder.getInstance(ProfilePersisterFactory.class);
         userName = (String) sharedState.get(getUserKey());
+        if (userName == null){
+            DEBUG.warning("{} - userName not present - module will fail", methodName);
+            return;
+        }
         this.realm = DNMapper.orgNameToRealmName(getRequestOrg());
         try {
             userSearchAttributes = getUserAliasList();
         } catch (final AuthLoginException ale) {
-            DEBUG.warning("DeviceIdSave.init: unable to retrieve search attributes", ale);
+            DEBUG.warning("{} - unable to retrieve search attributes", methodName, ale);
         }
         amIdentityPrincipal = IdUtils.getIdentity(userName, realm, userSearchAttributes);
         String principalUserName = null;
         if (amIdentityPrincipal == null || amIdentityPrincipal.getName() == null) {
-            DEBUG.error("DeviceIdSave.init :unable to find identity for user name: " + userName);
+            DEBUG.error("{} - unable to find identity for user name: {}", methodName, userName);
+            return;
         } else {
             principalUserName = amIdentityPrincipal.getName();
         }
@@ -90,9 +97,9 @@ public class DeviceIdSave extends AMLoginModule {
             ProfilePersister profilePersister = profilePersisterFactory
                     .create(maxProfilesAllowed, principalUserName, realm, userSearchAttributes);
             processor = new PersistModuleProcessor(devicePrintProfile, autoStoreProfiles, profilePersister);
-        } catch (IOException e) {
-            DEBUG.error("DeviceIdSave.init : Module exception : ", e);
-        }
+            } catch (IOException e) {
+                DEBUG.error(methodName + " - Module exception : ", e);
+            }
     }
 
     /**
@@ -100,7 +107,11 @@ public class DeviceIdSave extends AMLoginModule {
      */
     @Override
     public int process(Callback[] callbacks, int state) throws LoginException {
-        return processor.process(callbacks, state);
+        if (null != processor) {
+            return processor.process(callbacks, state);
+        } else {
+            throw new LoginException("Could not complete module - profilePersister required");
+        }
     }
 
     /**

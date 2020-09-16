@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -20,22 +20,31 @@ import static org.forgerock.openam.auth.node.api.Action.send;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.SecureRandom;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.security.auth.callback.Callback;
 
+import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
+import org.forgerock.openam.utils.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
+import com.sun.identity.authentication.spi.MetadataCallback;
 import com.sun.identity.shared.encode.Base64;
+import com.sun.identity.tools.objects.MapFormat;
 
 /**
  * Abstract class for authentication and registration.
@@ -100,17 +109,21 @@ abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
         return challengeBytes;
     }
 
-    Action getCallbacksForWebAuthnInteraction(String script, TreeContext context,
-                                              Callback... additionalCallbacks) throws NodeProcessException {
-        ScriptTextOutputCallback registrationCallback = new ScriptTextOutputCallback(script);
-        String spinnerScript = clientScriptUtilities.getSpinnerScript(context.request.locales);
-        ScriptTextOutputCallback spinnerCallback = new ScriptTextOutputCallback(spinnerScript);
-        HiddenValueCallback hiddenValueCallback = new HiddenValueCallback(OUTCOME, "false");
-        ImmutableList<Callback> callbacks = ImmutableList.<Callback>builder()
-                .add(registrationCallback, spinnerCallback, hiddenValueCallback)
-                .add(additionalCallbacks)
-                .build();
-        return send(callbacks)
+    Action getCallbacksForWebAuthnInteraction(boolean asScript, String script, Map<String, String> scriptContext,
+            TreeContext context, Callback... additionalCallbacks) throws NodeProcessException {
+        ImmutableList.Builder<Callback> callbacks = ImmutableList.builder();
+        if (asScript) {
+            script = MapFormat.format(script, scriptContext);
+            callbacks.add(new ScriptTextOutputCallback(script));
+            String spinnerScript = clientScriptUtilities.getSpinnerScript(context.request.locales);
+            callbacks.add(new ScriptTextOutputCallback(spinnerScript));
+        } else {
+            scriptContext.put("_type", "WebAuthn");
+            scriptContext = new HashMap<>(scriptContext);
+            scriptContext.put("challenge", context.sharedState.get(CHALLENGE).asString());
+            callbacks.add(new MetadataCallback(JsonValue.json(scriptContext)));
+        }
+        return send(callbacks.add(new HiddenValueCallback(OUTCOME, "false")).add(additionalCallbacks).build())
                 .replaceSharedState(context.sharedState)
                 .build();
     }
@@ -121,10 +134,19 @@ abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
         return secretBytes;
     }
 
-    String getDomain(String serverUrl, Optional<String> configRpId) throws NodeProcessException {
+    String getDomain(Optional<String> configRpId, List<String> originHeader, String serverUrl)
+            throws NodeProcessException {
 
         if (configRpId.isPresent()) {
             return configRpId.get();
+        }
+
+        if (CollectionUtils.isNotEmpty(originHeader)) {
+            try {
+                return new URL(originHeader.get(0)).getHost();
+            } catch (MalformedURLException e) {
+                throw new NodeProcessException("Unable to parse origin header URL.", e);
+            }
         }
 
         try {
@@ -132,6 +154,24 @@ abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
         } catch (MalformedURLException e) {
             throw new NodeProcessException("Unable to parse host URL.", e);
         }
+
+    }
+
+    Set<String> getPermittedOrigins(Set<String> configOrigins, TreeContext context) {
+        Set<String> origins;
+        if (!configOrigins.isEmpty()) {
+            origins = configOrigins;
+        } else {
+            origins = new HashSet<>(1);
+            List<String> originHeader = context.request.headers.get("origin");
+            if (CollectionUtils.isNotEmpty(originHeader)) {
+                if (!originHeader.get(0).equalsIgnoreCase("null")) {
+                    origins.add(originHeader.get(0));
+                }
+            }
+            logger.debug("no origins set in config. Fallback using {}", origins);
+        }
+        return origins;
     }
 
     WebAuthnDomException parseError(String description) {

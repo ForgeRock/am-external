@@ -22,7 +22,7 @@
 
    Copyright 2009 Sun Microsystems Inc. All Rights Reserved
 
-     Portions Copyrighted 2014-2018 ForgeRock AS.
+     Portions Copyrighted 2014-2019 ForgeRock AS.
      Portions Copyrighted 2014 Nomura Research Institute, Ltd
 --%>
 
@@ -89,7 +89,7 @@
 <head>
     <title>Attribute Query</title>
     <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-    <link rel="stylesheet" type="text/css" href="<%= deployuri %>/com_sun_web_ui/css/css_ns6up.css" />
+    <link rel="stylesheet" type="text/css" href="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/css/css_ns6up.css" />
 </head>
 
 <body>
@@ -102,9 +102,9 @@
 <table width="100%" border="0" cellpadding="0" cellspacing="0" class="MstTblBot" title="">
 <tbody><tr>
 <td class="MstTdTtl" width="99%">
-<div class="MstDivTtl"><img name="ProdName" src="<%= deployuri %>/console/images/PrimaryProductName.png" alt="" /></div></td><td class="MstTdLogo" width="1%"><img name="RMRealm.mhCommon.BrandLogo" src="<%= deployuri %>/com_sun_web_ui/images/other/javalogo.gif" alt="Java(TM) Logo" border="0" height="55" width="31" /></td></tr></tbody></table>
-<table class="MstTblEnd" border="0" cellpadding="0" cellspacing="0" width="100%"><tbody><tr><td><img name="RMRealm.mhCommon.EndorserLogo" src="<%= deployuri %>/com_sun_web_ui/images/masthead/masthead-sunname.gif" alt="Sun(TM) Microsystems, Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></table></div><div class="SkpMedGry1"><a name="SkipAnchor2089" id="SkipAnchor2089"></a></div>
-<div class="SkpMedGry1"><a href="#SkipAnchor4928"><img src="<%= deployuri %>/com_sun_web_ui/images/other/dot.gif" alt="Jump Over Tab Navigation Area. Current Selection is: Access Control" border="0" height="1" width="1" /></a></div>
+<div class="MstDivTtl"><img name="ProdName" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/console/images/PrimaryProductName.png" alt="" /></div></td><td class="MstTdLogo" width="1%"><img name="RMRealm.mhCommon.BrandLogo" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/other/javalogo.gif" alt="Java(TM) Logo" border="0" height="55" width="31" /></td></tr></tbody></table>
+<table class="MstTblEnd" border="0" cellpadding="0" cellspacing="0" width="100%"><tbody><tr><td><img name="RMRealm.mhCommon.EndorserLogo" src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/masthead/masthead-sunname.gif" alt="Sun(TM) Microsystems, Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></table></div><div class="SkpMedGry1"><a name="SkipAnchor2089" id="SkipAnchor2089"></a></div>
+<div class="SkpMedGry1"><a href="#SkipAnchor4928"><img src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/other/dot.gif" alt="Jump Over Tab Navigation Area. Current Selection is: Access Control" border="0" height="1" width="1" /></a></div>
 
 <%
     // Retreive the metadata information 
@@ -162,8 +162,8 @@
             Attribute 1 <input type=text name=attr1 value=CommonName><br>
             Attribute 2 <input type=text name=attr2 value=GivenName><br>
             Attribute 3 <input type=text name=attr3 value=UserStatus><br>
-            <input type=hidden name=idpEntityID value="<%=idpEntityID%>">
-            <input type=hidden name=spEntityID value="<%=spEntityID%>">
+            <input type=hidden name=idpEntityID value="<%= ESAPI.encoder().encodeForHTMLAttribute(idpEntityID) %>">
+            <input type=hidden name=spEntityID value="<%= ESAPI.encoder().encodeForHTMLAttribute(spEntityID) %>">
 	    <p><B> Profile Name </B></p>
             <input type="radio" name="attrQueryProfile" value="default" onclick="enableSubjectDN()" checked/> Default <br> 
 	    <input type="radio" name="attrQueryProfile" onclick="enableSubjectDN()" value="x509Subject"/> X.509 <br>

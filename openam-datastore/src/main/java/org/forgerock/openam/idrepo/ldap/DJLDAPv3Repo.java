@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2019 ForgeRock AS.
+ * Copyright 2013-2020 ForgeRock AS.
  * Portions Copyright 2016 Nomura Research Institute, Ltd.
  * Portions Copyrighted 2016 Agile Digital Engineering.
  */
@@ -22,6 +22,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.forgerock.openam.ldap.LDAPConstants.*;
 import static org.forgerock.openam.ldap.LDAPUtils.CACHED_POOL_OPTIONS;
 import static org.forgerock.opendj.ldap.LdapConnectionFactory.*;
+import static org.forgerock.openam.ldap.LDAPUtils.AFFINITY_ENABLED;
 import static org.forgerock.openam.ldap.LDAPUtils.partiallyEscapeAssertionValue;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
 
@@ -48,6 +49,7 @@ import org.forgerock.openam.idrepo.ldap.helpers.ADAMHelper;
 import org.forgerock.openam.idrepo.ldap.helpers.ADHelper;
 import org.forgerock.openam.idrepo.ldap.helpers.DirectoryHelper;
 import org.forgerock.openam.idrepo.ldap.psearch.DJLDAPv3PersistentSearch;
+import org.forgerock.openam.ldap.LDAPConstants;
 import org.forgerock.openam.ldap.LDAPRequests;
 import org.forgerock.openam.ldap.LDAPURL;
 import org.forgerock.openam.ldap.LDAPUtils;
@@ -62,12 +64,8 @@ import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.opendj.ldap.Attribute;
 import org.forgerock.opendj.ldap.ByteString;
 import org.forgerock.opendj.ldap.Connection;
-import org.forgerock.opendj.ldap.controls.PasswordPolicyErrorType;
 import org.forgerock.opendj.ldap.controls.PasswordPolicyRequestControl;
-import org.forgerock.opendj.ldap.controls.PasswordPolicyResponseControl;
 import org.forgerock.opendj.ldap.Dn;
-import org.forgerock.opendj.ldap.DecodeOptions;
-import org.forgerock.opendj.ldap.DecodeException;
 import org.forgerock.opendj.ldap.Entry;
 import org.forgerock.opendj.ldap.Filter;
 import org.forgerock.opendj.ldap.LdapUrl;
@@ -83,9 +81,9 @@ import org.forgerock.opendj.ldap.controls.ProxiedAuthV2RequestControl;
 import org.forgerock.opendj.ldap.messages.BindRequest;
 import org.forgerock.opendj.ldap.messages.ModifyRequest;
 import org.forgerock.opendj.ldap.messages.Request;
+import org.forgerock.opendj.ldap.messages.Requests;
 import org.forgerock.opendj.ldap.messages.SearchRequest;
 import org.forgerock.opendj.ldap.messages.BindResult;
-import org.forgerock.opendj.ldap.messages.Result;
 import org.forgerock.opendj.ldap.messages.SearchResultEntry;
 import org.forgerock.opendj.ldap.schema.AttributeType;
 import org.forgerock.opendj.ldap.schema.ObjectClass;
@@ -211,6 +209,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     private boolean adRecursiveGroupMembershipsEnabled = false;
     private boolean iotIdentitiesEnrichedAsOAuth2Client = false;
     private boolean proxiedAuthorizationEnabled = false;
+    private boolean proxiedAuthorizationFallbackOnDenied = false;
+    private boolean affinityEnabled = false;
 
     /**
      * Initializes the IdRepo instance, basically within this method we process
@@ -240,10 +240,13 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         defaultTimeLimit = CollectionHelper.getIntMapAttr(configParams, LDAP_TIME_LIMIT, 5, DEBUG);
         int maxPoolSize = CollectionHelper.getIntMapAttr(configParams, LDAP_CONNECTION_POOL_MAX_SIZE, 10, DEBUG);
         int minPoolSize = CollectionHelper.getIntMapAttr(configParams, LDAP_CONNECTION_POOL_MIN_SIZE, 1, DEBUG);
+        affinityEnabled = CollectionHelper.getBooleanMapAttr(configMap, LDAPConstants.LDAP_CONNECTION_AFFINITY_ENABLED,
+            false);
 
         String username = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_USER_NAME);
         char[] password = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_PASSWORD, "").toCharArray();
         proxiedAuthorizationEnabled = CollectionHelper.getBooleanMapAttr(configMap, LDAP_PROXIED_AUTHORIZATION_ENABLED, false);
+        proxiedAuthorizationFallbackOnDenied = CollectionHelper.getBooleanMapAttr(configMap, LDAP_PROXIED_AUTHORIZATION_DENIED_FALLBACK, false);
         heartBeatInterval = CollectionHelper.getIntMapAttr(configParams, LDAP_SERVER_HEARTBEAT_INTERVAL, 10, DEBUG);
         heartBeatTimeUnit = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_HEARTBEAT_TIME_UNIT, "SECONDS");
 
@@ -344,7 +347,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         int idleTimeout = LdapConnectionFactoryProvider.getIdleConnectionTime(DEBUG);
         Options ldapOptions = Options.defaultOptions()
             .set(REQUEST_TIMEOUT, Duration.duration(defaultTimeLimit, SECONDS))
-            .set(CACHED_POOL_OPTIONS, new LDAPUtils.CachedPoolOptions(minPoolSize, maxPoolSize, idleTimeout, SECONDS));
+            .set(CACHED_POOL_OPTIONS, new LDAPUtils.CachedPoolOptions(minPoolSize, maxPoolSize, idleTimeout, SECONDS))
+            .set(AFFINITY_ENABLED, affinityEnabled);
         if (maxPoolSize == 1) {
             return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(
                     LDAPUtils.newFailoverConnectionFactory(
@@ -756,6 +760,9 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         try {
             conn = createConnection();
             conn.add(addBeheraControl(LDAPRequests.newAddRequest(entry)));
+            if (dnCacheEnabled) {
+                dnCache.put(generateDNCacheKey(name, type), Dn.valueOf(dn));
+            }
             if (type.equals(IdType.GROUP) && defaultGroupMember != null) {
                 if (memberOfAttr != null) {
                     ModifyRequest modifyRequest = LDAPRequests.newModifyRequest(defaultGroupMember);
@@ -764,8 +771,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 }
             }
         } catch (LdapException ere) {
-            DEBUG.error("Unable to add a new entry: " + name + " attrMap: "
-                    + IdRepoUtils.getAttrMapWithoutPasswordAttrs(attrMap, null), ere);
+            DEBUG.error("Unable to add a new entry: {}", name, ere);
             if (ResultCode.ENTRY_ALREADY_EXISTS.equals(ere.getResult().getResultCode())) {
                 throw IdRepoDuplicateObjectException.nameAlreadyExists(name);
             } else {
@@ -1145,17 +1151,37 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             }
         }
 
-        if (proxiedAuthorizationEnabled) {
-            adaptModifyRequest(modifyRequest, userDN);
+        try {
+            updateAsProxiedAuthzIfNeeded(modifyRequest, userDN);
+        } catch (LdapException ere) {
+            DEBUG.error("An error occurred while setting attributes for identity: {}", name, ere);
+            handleErrorResult(ere);
         }
+    }
 
+    void updateAsProxiedAuthzIfNeeded(ModifyRequest request, String userDN) throws IdRepoException, LdapException {
+        ModifyRequest origRequest = Requests.copyOfModifyRequest(request);
+        if (proxiedAuthorizationEnabled) {
+            adaptModifyRequest(request, userDN);
+        }
         Connection conn = null;
         try {
             conn = createConnection();
-            conn.modify(modifyRequest);
+            conn.modify(request);
         } catch (LdapException ere) {
-            DEBUG.error("An error occured while setting attributes for identity: " + name, ere);
-            handleErrorResult(ere);
+            if (proxiedAuthorizationEnabled) {
+                ResultCode resultCode = ere.getResult().getResultCode();
+                if (proxiedAuthorizationFallbackOnDenied && resultCode.equals(ResultCode.AUTHORIZATION_DENIED)) {
+                    DEBUG.message("Proxied authorization using {} failed {}. retrying without proxy-auth",
+                            userDN, ere.getResult().getDiagnosticMessageAsString());
+                    conn.modify(origRequest);
+                    return;
+                } else {
+                    DEBUG.message("Proxied authorization retry fallback (enabled={}) not done on {}",
+                            proxiedAuthorizationFallbackOnDenied, userDN);
+                }
+            }
+            throw ere;
         } finally {
             IOUtils.closeIfNotNull(conn);
         }
@@ -1395,7 +1421,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 } else if (resultCode.equals(ResultCode.SIZE_LIMIT_EXCEEDED)) {
                     errorCode = RepoSearchResults.SIZE_LIMIT_EXCEEDED;
             } else {
-                DEBUG.error("Unexpected error occurred during search", ere);
+                DEBUG.error("Unexpected error occurred during search. {}", getConnectionInformation(), ere);
                 errorCode = resultCode.intValue();
             }
         } catch (SearchResultReferenceIOException srrioe) {
@@ -2742,13 +2768,12 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
 
     private void handleErrorResult(LdapException ere) throws IdRepoException {
         ResultCode resultCode = ere.getResult().getResultCode();
-        if (beheraSupportEnabled) {
-            String passwordPolicyErrorCode = getPasswordPolicyErrorCode(ere.getResult());
-            if (passwordPolicyErrorCode != null) {
-                Object[] args = new Object[]{CLASS_NAME, resultCode.intValue(), ere.getResult().getDiagnosticMessage()};
-                DEBUG.message("Encountered password policy error : {}", ere.getResult().getDiagnosticMessage());
-                throw new PasswordPolicyException(resultCode, passwordPolicyErrorCode, args);
-            }
+        String passwordPolicyErrorCode = helper.getPasswordPolicyErrorCode(ere.getResult());
+        if (passwordPolicyErrorCode != null) {
+            DEBUG.message("Encountered password policy error : {}", ere.getResult().getDiagnosticMessageAsString());
+            Object[] args = new Object[]{CLASS_NAME, resultCode.intValue(),
+                    ere.getResult().getDiagnosticMessageAsString()};
+            throw new PasswordPolicyException(resultCode, passwordPolicyErrorCode, args);
         }
         switch (resultCode.asEnum()) {
             case AUTHORIZATION_DENIED:
@@ -2772,54 +2797,6 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 throw newIdRepoException(resultCode, IdRepoErrorCode.LDAP_EXCEPTION_OCCURRED, CLASS_NAME,
                         resultCode.intValue());
         }
-    }
-
-    private String getPasswordPolicyErrorCode(Result result) {
-        String policyErrorCode = null;
-        try {
-            PasswordPolicyResponseControl control =
-                    result.getControl(PasswordPolicyResponseControl.DECODER, new DecodeOptions());
-            if (control != null) {
-                PasswordPolicyErrorType policyErrorType = control.getErrorType();
-                if (policyErrorType != null) {
-                    if (DEBUG.messageEnabled()) {
-                        DEBUG.message("PolicyErrorType : " + policyErrorType.toString());
-                    }
-                    switch (policyErrorType) {
-                        case PASSWORD_EXPIRED:
-                            policyErrorCode = IdRepoErrorCode.PASSWORD_EXPIRED;
-                            break;
-                        case ACCOUNT_LOCKED:
-                            policyErrorCode = IdRepoErrorCode.ACCOUNT_LOCKED;
-                            break;
-                        case CHANGE_AFTER_RESET:
-                            policyErrorCode = IdRepoErrorCode.CHANGE_AFTER_RESET;
-                            break;
-                        case PASSWORD_MOD_NOT_ALLOWED:
-                            policyErrorCode = IdRepoErrorCode.PASSWORD_MOD_NOT_ALLOWED;
-                            break;
-                        case MUST_SUPPLY_OLD_PASSWORD:
-                            policyErrorCode = IdRepoErrorCode.MUST_SUPPLY_OLD_PASSWORD;
-                            break;
-                        case INSUFFICIENT_PASSWORD_QUALITY:
-                            policyErrorCode = IdRepoErrorCode.INSUFFICIENT_PASSWORD_QUALITY;
-                            break;
-                        case PASSWORD_TOO_SHORT:
-                            policyErrorCode = IdRepoErrorCode.PASSWORD_TOO_SHORT;
-                            break;
-                        case PASSWORD_TOO_YOUNG:
-                            policyErrorCode = IdRepoErrorCode.PASSWORD_TOO_YOUNG;
-                            break;
-                        case PASSWORD_IN_HISTORY:
-                            policyErrorCode = IdRepoErrorCode.PASSWORD_IN_HISTORY;
-                            break;
-                    }
-                }
-            }
-        } catch (DecodeException de) {
-            DEBUG.error("Unable to decode PasswordPolicyResponseControl", de);
-        }
-        return policyErrorCode;
     }
 
     private IdRepoException newIdRepoException(String key, Object... args) {
@@ -2881,7 +2858,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         try {
             return connectionFactory.create();
         } catch (DataLayerException e) {
-            DEBUG.error("An error occurred while trying to create a connection to the datastore", e);
+            DEBUG.error("An error occurred while trying to create a connection to the datastore. {}",
+                    getConnectionInformation(), e);
             throw newIdRepoException(IdRepoErrorCode.INITIALIZATION_ERROR, CLASS_NAME);
         }
     }
@@ -2916,5 +2894,23 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     @VisibleForTesting
     Map<String, DJLDAPv3PersistentSearch> getPsearchMap() {
         return pSearchMap;
+    }
+
+    /**
+     * Retrieve connection information for this instance of DJLDAPv3Repo so that it can be included in debug logging.
+     * @return String containing server:port for each server in the connection string and root suffix.
+     */
+    private String getConnectionInformation() {
+        StringBuilder sb = new StringBuilder();
+        if (ldapServers != null) {
+            sb.append("Servers:");
+            for (LDAPURL ldapServer : ldapServers) {
+                sb.append(" ");
+                sb.append(ldapServer.toString());
+            }
+        }
+        sb.append(", Root suffix: ");
+        sb.append(rootSuffix);
+        return sb.toString();
     }
 }

@@ -401,13 +401,13 @@ public class LDAP extends AMLoginModule {
             setFailureID((ldapUtil != null) ?
                 ldapUtil.getUserId(userName) : userName);
 
-            if (ex.getResultCode().equals(ResultCode.NO_SUCH_OBJECT)) {
+            if (ResultCode.NO_SUCH_OBJECT.equals(ex.getResultCode())) {
                 if (debug.messageEnabled()) {
                     debug.message("The specified user does not exist.");
                 }
 
                 throw new AuthLoginException(AM_AUTH, USERID_NOT_FOUND, null);
-            } else if (ex.getResultCode().equals(ResultCode.INVALID_CREDENTIALS)) {
+            } else if (ResultCode.INVALID_CREDENTIALS.equals(ex.getResultCode())) {
                 if (debug.messageEnabled()) {
                     debug.message("Invalid password.");
                 }
@@ -415,20 +415,20 @@ public class LDAP extends AMLoginModule {
                 String failureUserID = ldapUtil.getUserId();
                 throw new InvalidPasswordException(AM_AUTH, "InvalidUP",
                     null, failureUserID, null);
-            } else if (ex.getResultCode().equals(ResultCode.UNWILLING_TO_PERFORM)) {
+            } else if (ResultCode.UNWILLING_TO_PERFORM.equals(ex.getResultCode())) {
                 if (debug.messageEnabled()) {
                     debug.message("Unwilling to perform. Account inactivated.");
                 }
 
                 currentState = LoginScreen.USER_INACTIVE.intValue();
                 return currentState;
-            } else if (ex.getResultCode().equals(ResultCode.INAPPROPRIATE_AUTHENTICATION)) {
+            } else if (ResultCode.INAPPROPRIATE_AUTHENTICATION.equals(ex.getResultCode())) {
                 if (debug.messageEnabled()) {
                     debug.message("Inappropriate authentication.");
                 }
 
                 throw new AuthLoginException(AM_AUTH, "InappAuth", null);
-            } else if (ex.getResultCode().equals(ResultCode.CONSTRAINT_VIOLATION)) {
+            } else if (ResultCode.CONSTRAINT_VIOLATION.equals(ex.getResultCode())) {
                 if (debug.messageEnabled()) {
                     debug.message("Exceed password retry limit.");
                 }

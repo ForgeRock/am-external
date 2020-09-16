@@ -24,9 +24,7 @@
  *
  * $Id: WSPRedirectHandlerServlet.java,v 1.6 2008/08/06 17:28:10 exu Exp $
  *
- */
-/**
- * Portions Copyrighted 2012-2018 ForgeRock AS.
+ * Portions Copyrighted 2012-2019 ForgeRock AS.
  */
 package com.sun.identity.liberty.ws.interaction;
 
@@ -65,6 +63,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.owasp.esapi.ESAPI;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
@@ -608,7 +607,7 @@ public class WSPRedirectHandlerServlet extends HttpServlet {
             out.println("<head><title>WSPRedirectHandler</title></head>");
             out.println("<body>");
             out.println("WSPRedirectHandler - Interaction Error");
-            out.println(message);
+            out.println(ESAPI.encoder().encodeForHTML(message));
             out.println("</body>");
             out.println("</html>");
         } else { //a wml client

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -24,8 +24,12 @@ import static org.forgerock.cuppa.Cuppa.when;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.NODE_TYPE;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
+import static org.forgerock.openam.auth.nodes.RecoveryCodeCollectorDecisionNode.OATH_AUTH_TYPE;
+import static org.forgerock.openam.auth.nodes.RecoveryCodeCollectorDecisionNode.PUSH_AUTH_TYPE;
+import static org.forgerock.openam.auth.nodes.RecoveryCodeCollectorDecisionNode.WEB_AUTHN_AUTH_TYPE;
 import static org.mockito.BDDMockito.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.verify;
@@ -78,6 +82,7 @@ public class RecoveryCodeCollectorDecisionNodeTest {
 
     private DeviceSettings settings;
     private DeviceProfileManager<? extends DeviceSettings> manager;
+    private String deviceType;
     private TreeContext treeContext;
     private List<Callback> callbacks;
     private RecoveryCodeCollectorDecisionNode node;
@@ -101,14 +106,17 @@ public class RecoveryCodeCollectorDecisionNodeTest {
                         case "OATH":
                             manager = oathDeviceManager;
                             settings = oathDeviceSettings;
+                            deviceType = OATH_AUTH_TYPE;
                             break;
                         case "PUSH":
                             manager = pushDeviceManager;
                             settings = pushDeviceSettings;
+                            deviceType = PUSH_AUTH_TYPE;
                             break;
                         default:
                             manager = webAuthnDeviceManager;
                             settings = webAuthnDeviceSettings;
+                            deviceType = WEB_AUTHN_AUTH_TYPE;
                             break;
                         }
                     });
@@ -153,9 +161,24 @@ public class RecoveryCodeCollectorDecisionNodeTest {
                         });
                         it("removes the code from the list", () -> {
                             mockRecoveryCodes("ferret", "otter");
+                            int recoveryCodesSize = settings.getRecoveryCodes().size();
                             Action result = node.process(treeContext);
 
                             assertThat(result.outcome).isEqualTo("true");
+                            assertThat(settings.getRecoveryCodes().size()).isLessThan(recoveryCodesSize);
+                        });
+                        it("returns correct NodeType if the recovery code is correct", () -> {
+                            mockRecoveryCodes("ferret");
+                            Action result = node.process(treeContext);
+                            String nodeType = result.sessionProperties.get(NODE_TYPE);
+
+                            assertThat(nodeType).contains(deviceType);
+                        });
+                        it("returns no NodeType if the recovery code is incorrect", () -> {
+                            mockRecoveryCodes("otter");
+                            Action result = node.process(treeContext);
+
+                            assertThat(result.sessionProperties).doesNotContainKey(NODE_TYPE);
                         });
                     });
                 });

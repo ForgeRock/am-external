@@ -24,11 +24,13 @@
  *
  * $Id: CreateHostedIDP.java,v 1.9 2008/06/25 05:50:01 qcheng Exp $
  *
- * Portions Copyrighted 2018 ForgeRock AS.
+ * Portions Copyrighted 2018-2020 ForgeRock AS.
  *
  */
 
 package com.sun.identity.workflow;
+
+import static com.google.common.html.HtmlEscapers.htmlEscaper;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -39,11 +41,11 @@ import java.util.Map;
 
 import com.sun.identity.cot.COTException;
 import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.jaxb.entityconfig.AttributeType;
 import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
-import com.sun.identity.saml2.meta.SAML2MetaUtils;
 
 /**
  * Creates Hosted Identity Provider.
@@ -91,8 +93,8 @@ public class CreateHostedIDP
                     createExtendedDataTemplate(entityId, map,
                     getRequestURL(params));
             } catch (SAML2MetaException e) {
-                return e.getMessage();
-            }
+                //return error message with escaped html tags
+                return htmlEscaper().escape(e.getMessage());            }
         }
 
         String[] results = ImportSAML2MetaData.importData(
@@ -117,10 +119,12 @@ public class CreateHostedIDP
                 IDPSSOConfigElement ssoConfig =
                     manager.getIDPSSOConfig(realm, entityId);
 
-                Map attribConfig = SAML2MetaUtils.getAttributes(ssoConfig);
-                List mappedAttributes = (List)attribConfig.get(
-                    SAML2Constants.ATTRIBUTE_MAP);
-                mappedAttributes.addAll(attrMapping);
+                List<AttributeType> attribConfig = ssoConfig.getValue().getAttribute();
+                for (AttributeType attributeType : attribConfig) {
+                    if (SAML2Constants.ATTRIBUTE_MAP.equals(attributeType.getName())) {
+                        attributeType.getValue().addAll(attrMapping);
+                    }
+                }
                 manager.setEntityConfig(realm, config);
             }
         } catch (SAML2MetaException e) {

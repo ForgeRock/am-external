@@ -11,10 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
+import static org.forgerock.json.JsonValue.array;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.nodes.webauthn.flows.encoding.EncodingUtilities.base64Decode;
 
 import java.io.IOException;
@@ -27,6 +31,7 @@ import java.util.Set;
 import javax.inject.Singleton;
 
 import org.apache.commons.io.IOUtils;
+import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
@@ -88,20 +93,11 @@ public final class ClientScriptUtilities {
      * @return the public key credential params for the browser API call.
      */
     String getPubKeyCredParams(Set<CoseAlgorithm> coseAlgorithms) {
-        String entryTemplate = "{\n"
-                + "            type: \"public-key\",\n"
-                + "            alg: %1$s\n"
-                + "        }\n";
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
+        List<Object> array = array();
         for (CoseAlgorithm coseAlgorithm : coseAlgorithms) {
-            if (!first) {
-                sb.append(",");
-            }
-            sb.append(String.format(entryTemplate, coseAlgorithm.getCoseNumber()));
-            first = false;
+            array.add(object(field("type", "public-key"), field("alg", coseAlgorithm.getCoseNumber())));
         }
-        return sb.toString();
+        return json(array).toString();
     }
 
     /**
@@ -122,7 +118,7 @@ public final class ClientScriptUtilities {
     /**
      * Parses the response from the client registration script.
      * @param encodedResponse the response as an encoded String.
-     * @return the reponse as a rich data object.
+     * @return the response as a rich data object.
      */
     ClientScriptResponse parseClientRegistrationResponse(String encodedResponse) {
         ClientScriptResponse response = new ClientScriptResponse();
@@ -157,11 +153,12 @@ public final class ClientScriptUtilities {
 
     private String getDeviceAsJavaScript(WebAuthnDeviceSettings authenticatorEntry) {
         String credentialId = authenticatorEntry.getCredentialId();
-        String template = "{\n"
-                + "     type: \"public-key\",\n"
-                + "     id: new Int8Array(%1$s).buffer\n"
-                + " }";
         String decodedId = Arrays.toString(base64Decode(credentialId));
-        return String.format(template, decodedId);
+
+        JsonValue js = json(object(
+                        field("type", "public-key"),
+                        field("id", "{ID_REPLACE}")));
+
+        return js.toString().replace("\"{ID_REPLACE}\"", "new Int8Array(" + decodedId + ").buffer");
     }
 }

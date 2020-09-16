@@ -11,21 +11,28 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2020 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.common;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+import com.google.common.collect.ImmutableMap;
 import com.sun.identity.shared.encode.URLEncDec;
 import org.apache.commons.lang.RandomStringUtils;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 public class SAML2UtilsTest {
 
@@ -73,5 +80,30 @@ public class SAML2UtilsTest {
         assertThat(mappedAttributes).containsEntry("name3", "\"static cn=value\"");
         assertThat(mappedAttributes).containsEntry("urn:oasis:names:tc:SAML:2.0:attrname-format:uri|urn:mace:dir:attribute-def:name4", "value");
         assertThat(mappedAttributes).containsEntry("urn:oasis:names:tc:SAML:2.0:attrname-format:uri|name5", "\"static value\"");
+    }
+
+    @DataProvider(name = "cookies")
+    public Object[][] getCookies() {
+        String jsessionId = "JSESSIONID=testjsessionidvalue";
+        String sessionCookie = "iPlanetDirectoryPro=r3RWxelZgS5tgL8Zgbn46-WfXjw."
+                + "*AAJTSQACMDEAAlNLABxNK1hGSHkwL1lHRkhQdFlsVnIzWFpGYWVud2c9AAR0eXBlAANDVFMAAlMxAAA.*";
+        return new Object[][]{
+                {ImmutableMap.of("Cookie", singletonList(jsessionId))},
+                {ImmutableMap.of("Cookie", singletonList(sessionCookie))},
+                {ImmutableMap.of("Cookie", singletonList(String.join(";", jsessionId, sessionCookie)))},
+                {ImmutableMap.of("Cookie", emptyList())},
+                {null}
+        };
+    }
+
+    /**
+     * Perform processing of cookies and verify that no exceptions are thrown.
+     * @param headers The set of headers that include 'cookie's
+     */
+    @Test(dataProvider = "cookies")
+    public void processCookiesTest(Map<String, List> headers) {
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        SAML2Utils.processCookies(headers, request, response);
     }
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -122,6 +122,7 @@ AnonymousProcessDelegate.prototype.submit = function (input) {
             "url": `?_action=submitRequirements${this.additional}`,
             "data": JSON.stringify({
                 "token" : this.token,
+                "code" : this.code,
                 input
             }),
             "headers": { "Accept-API-Version": "protocol=1.0,resource=1.0" },
@@ -138,6 +139,9 @@ AnonymousProcessDelegate.prototype.submit = function (input) {
     return promise.then(_.bind(function (response) {
         if (_.has(response, "token")) {
             this.token = response.token;
+        }
+        if (_.has(response.requirements, "code")) {
+            this.code = response.requirements.code;
         }
         this.lastResponse = response;
         return response;

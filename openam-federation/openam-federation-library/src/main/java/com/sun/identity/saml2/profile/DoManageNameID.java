@@ -24,7 +24,7 @@
  *
  * $Id: DoManageNameID.java,v 1.26 2009/11/24 21:53:27 madan_ranganath Exp $
  *
- * Portions copyright 2013-2019 ForgeRock AS.
+ * Portions copyright 2013-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -267,13 +267,15 @@ public class DoManageNameID {
                 relayState = SAML2Utils.getAttributeValueFromSSOConfig(
                     realm, hostEntityID, hostEntityRole,
                     SAML2Constants.DEFAULT_RELAY_STATE);
-            }      
+            }
 
+            String requestUrl = request.getRequestURL().toString();
             // Validate the RelayState URL.
             SAML2Utils.validateRelayStateURL(realm,
                                              hostEntityID,
                                              relayState,
-                                             hostEntityRole);
+                                             hostEntityRole,
+                                             requestUrl);
 
             mniRequest.setDestination(XMLUtils.escapeSpecialCharacters(mniURL));
             saveMNIRequestInfo(request, response, paramsMap, mniRequest,
@@ -479,10 +481,10 @@ public class DoManageNameID {
         Set<X509Certificate> signingCerts;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
             SPSSODescriptorType spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
+            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE, realm);
         } else {
             IDPSSODescriptorType idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
+            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE, realm);
         }
 
         if (!signingCerts.isEmpty()) {
@@ -592,10 +594,10 @@ public class DoManageNameID {
         Set<X509Certificate> signingCerts;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
             SPSSODescriptorType spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
+            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE, realm);
         } else {
             IDPSSODescriptorType idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
+            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE, realm);
         }
         
         if (!signingCerts.isEmpty()) {
@@ -945,11 +947,14 @@ public class DoManageNameID {
             debug.message(method + "MNI Response : " + mniResStr);
         }
 
+        String requestUrl = request.getRequestURL().toString();
+
         // Validate the RelayState URL.
         SAML2Utils.validateRelayStateURL(realm,
                                          hostEntityID,
                                          relayState,
-                                         hostRole);
+                                         hostRole,
+                                         requestUrl);
                     
         ManageNameIDResponse mniResponse = null;
         try {
@@ -1859,11 +1864,11 @@ public class DoManageNameID {
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
             SPSSODescriptorType spSSODesc =
                 metaManager.getSPSSODescriptor(realm, remoteEntity);
-            encryptionConfig = KeyUtil.getEncryptionConfig(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
+            encryptionConfig = KeyUtil.getEncryptionConfig(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE, realm);
         } else {
             IDPSSODescriptorType idpSSODesc =
                  metaManager.getIDPSSODescriptor(realm, remoteEntity);
-            encryptionConfig = KeyUtil.getEncryptionConfig(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
+            encryptionConfig = KeyUtil.getEncryptionConfig(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE, realm);
         }
 
         if (debug.messageEnabled()) {
@@ -2428,11 +2433,13 @@ public class DoManageNameID {
                 "MNI Response : " + mniResStr);
         }
 
+        String requestUrl = request.getRequestURL().toString();
         // Validate the RelayState URL.
         SAML2Utils.validateRelayStateURL(realm,
                                          hostEntityID,
                                          relayState,
-                                         hostRole);
+                                         hostRole,
+                                         requestUrl);
 
         ManageNameIDResponse mniResponse = null;
         try {

@@ -24,7 +24,7 @@
  *
  * $Id: SAML2MetaUtils.java,v 1.9 2009/09/21 17:28:12 exu Exp $
  *
- * Portions Copyrighted 2010-2018 ForgeRock AS.
+ * Portions Copyrighted 2010-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.meta;
 
@@ -79,6 +79,8 @@ import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * The <code>SAML2MetaUtils</code> provides metadata related util methods.
+ *
+ * @supported.api
  */
 public final class SAML2MetaUtils {
     protected static final String RESOURCE_BUNDLE_NAME = "libSAML2Meta";
@@ -230,6 +232,7 @@ public final class SAML2MetaUtils {
      * </pre>
      * @param metaAlias The metaAlias.
      * @return the realm associated with the metaAlias.
+     * @supported.api
      */
     public static String getRealmByMetaAlias(String metaAlias) {
         if (metaAlias == null) {
@@ -248,6 +251,7 @@ public final class SAML2MetaUtils {
      * Returns metaAlias embedded in uri.
      * @param uri The uri string.
      * @return the metaAlias embedded in uri or null if not found.
+     * @supported.api
      */
     public static String getMetaAliasByUri(String uri) {
         if (uri == null) {

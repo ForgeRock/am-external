@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2018 ForgeRock AS.
+ * Copyright 2016-2019 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.amster;
 
@@ -32,6 +32,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.ECPublicKeySpec;
 import java.security.spec.RSAPublicKeySpec;
@@ -153,8 +154,8 @@ class AuthorizedKeys {
                     curveIdentifier, keyTypeIdentifier);
             throw new IOException("Misformatted key - blob should start with curve identifier");
         }
-        ECPoint w = SecgUtils.getDecoded(readData(dio), curve.getParameters().getCurve());
-        ECPublicKeySpec keySpec = new ECPublicKeySpec(w, curve.getParameters());
+        ECPoint w = SecgUtils.getDecoded(readData(dio), ((ECParameterSpec) curve.getParameters()).getCurve());
+        ECPublicKeySpec keySpec = new ECPublicKeySpec(w, ((ECParameterSpec) curve.getParameters()));
         ECPublicKey key = (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(keySpec);
         return new ECDSASigningHandler(key);
     }

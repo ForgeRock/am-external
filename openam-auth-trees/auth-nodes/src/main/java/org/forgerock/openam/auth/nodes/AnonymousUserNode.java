@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -25,6 +25,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SharedStateConstants;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.authentication.SessionUpgradeVerifier;
 
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -65,6 +66,7 @@ public class AnonymousUserNode extends SingleOutcomeNode {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         return goToNext()
+                .addNodeType(context, SessionUpgradeVerifier.ANONYMOUS_MODULE_TYPE)
                 .replaceSharedState(context.sharedState.put(SharedStateConstants.USERNAME, getAnonymousUser()))
                 .build();
     }

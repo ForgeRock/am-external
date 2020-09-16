@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
@@ -29,10 +29,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.io.IOUtils;
+import org.forgerock.util.encode.Base64url;
 import org.forgerock.util.xml.XMLUtils;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 import org.w3c.dom.Document;
+
+import java.nio.charset.StandardCharsets;
 
 public class SAML2ProxyTest {
 
@@ -42,8 +45,10 @@ public class SAML2ProxyTest {
 
     @BeforeTest
     void setUp() {
+        byte[] cookieLocationBytes = COOKIE_LOCATION.getBytes(StandardCharsets.UTF_8);
+        String cookieLocation = Base64url.encode(cookieLocationBytes);
         validCookies = new Cookie[1];
-        validCookies[0] = new Cookie(AM_LOCATION_COOKIE, COOKIE_LOCATION);
+        validCookies[0] = new Cookie(AM_LOCATION_COOKIE, cookieLocation);
     }
 
     @Test

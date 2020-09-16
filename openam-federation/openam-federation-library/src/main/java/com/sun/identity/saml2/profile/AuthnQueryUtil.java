@@ -24,7 +24,7 @@
  *
  * $Id: AuthnQueryUtil.java,v 1.8 2008/12/03 00:32:31 hengming Exp $
  *
- * Portions Copyrighted 2010-2018 ForgeRock AS.
+ * Portions Copyrighted 2010-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -393,7 +393,7 @@ public class AuthnQueryUtil {
             throw new SAML2Exception(SAML2Utils.bundle.getString(
                 "authnQueryIssuerNotFound"));
         }
-        Set<X509Certificate> signingCerts = KeyUtil.getVerificationCerts(spSSODesc, spEntityID, SAML2Constants.SP_ROLE);
+        Set<X509Certificate> signingCerts = KeyUtil.getVerificationCerts(spSSODesc, spEntityID, SAML2Constants.SP_ROLE, realm);
 
         if (!signingCerts.isEmpty()) {
             boolean valid = authnQuery.isSignatureValid(signingCerts);
@@ -506,7 +506,7 @@ public class AuthnQueryUtil {
         }
 
         Set<X509Certificate> signingCerts = KeyUtil.getVerificationCerts(aad, authnAuthorityEntityID,
-                SAML2Constants.AUTHN_AUTH_ROLE);
+                SAML2Constants.AUTHN_AUTH_ROLE, realm);
 
         if (signingCerts.isEmpty()) {
             throw new SAML2Exception(SAML2Utils.bundle.getString("missingSigningCertAlias"));
@@ -542,7 +542,7 @@ public class AuthnQueryUtil {
             return;
         }
 
-        signingCerts = KeyUtil.getVerificationCerts(aad, authnAuthorityEntityID, SAML2Constants.IDP_ROLE);
+        signingCerts = KeyUtil.getVerificationCerts(aad, authnAuthorityEntityID, SAML2Constants.IDP_ROLE, realm);
 
         for(Iterator iter = assertions.iterator(); iter.hasNext(); ) {
             Assertion assertion = (Assertion)iter.next();

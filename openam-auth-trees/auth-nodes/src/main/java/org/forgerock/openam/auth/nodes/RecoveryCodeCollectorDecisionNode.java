@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -62,6 +62,10 @@ public class RecoveryCodeCollectorDecisionNode extends AbstractDecisionNode {
     private final UserOathDeviceProfileManager oathDeviceProfileManager;
     private final UserWebAuthnDeviceProfileManager webauthnDeviceProfileManager;
 
+    static final String OATH_AUTH_TYPE = "AuthenticatorOATH";
+    static final String PUSH_AUTH_TYPE = "AuthenticatorPushRegistration";
+    static final String WEB_AUTHN_AUTH_TYPE = "WebAuthnAuthentication";
+
     /**
      * Configuration for Recovery Code Collector Decision Node.
      */
@@ -102,23 +106,29 @@ public class RecoveryCodeCollectorDecisionNode extends AbstractDecisionNode {
         LOGGER.debug("RecoveryCodeCollectorDecisionNode started");
 
         DeviceProfileManager<? extends DeviceSettings> profileManager;
+        String deviceNodeType;
         switch (config.recoveryCodeType()) {
         case OATH:
             profileManager = oathDeviceProfileManager;
+            deviceNodeType = OATH_AUTH_TYPE;
             break;
         case PUSH:
             profileManager = pushDeviceProfileManager;
+            deviceNodeType = PUSH_AUTH_TYPE;
             break;
         case WEB_AUTHN:
         default:
             profileManager = webauthnDeviceProfileManager;
+            deviceNodeType = WEB_AUTHN_AUTH_TYPE;
             break;
         }
 
         return context.getCallback(NameCallback.class)
                 .map(NameCallback::getName)
                 .filter(code -> !Strings.isNullOrEmpty(code))
-                .map(code -> goTo(isRecoveryCodeValid(context, profileManager, code)).build())
+                .map(code -> isRecoveryCodeValid(context, profileManager, code))
+                .map(outcome -> outcome ? goTo(true).addNodeType(context, deviceNodeType).build()
+                        : goTo(false).build())
                 .orElseGet(() -> collectRecoveryCode(context));
     }
 

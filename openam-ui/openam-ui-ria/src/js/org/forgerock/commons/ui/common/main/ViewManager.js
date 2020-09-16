@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2012-2018 ForgeRock AS.
+ * Copyright 2012-2019 ForgeRock AS.
  */
 
 import { isEqual, isFunction, map } from "lodash";
@@ -41,7 +41,7 @@ export function changeView (module, args, callback, forceUpdate) {
             $(".modal.in").modal("hide");
         }
 
-        Messages.messages.hideMessages();
+        Messages.messages.clearMessages();
         module().then((view) => {
             /**
              * A reference to the current ReactAdapterView is cached to ensure it can be removed here.

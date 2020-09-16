@@ -24,7 +24,7 @@
  *
  * $Id: IDPSSOUtil.java,v 1.3 2009/10/28 23:58:59 exu Exp $
  *
- * Portions Copyrighted 2018 ForgeRock AS.
+ * Portions Copyrighted 2018-2019 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.profile;
@@ -40,12 +40,13 @@ import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.wsfederation.common.WSFederationUtils;
 import com.sun.identity.wsfederation.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.wsfederation.jaxb.wsfederation.FederationElement;
-import com.sun.identity.wsfederation.jaxb.wsfederation.TokenIssuerEndpointElement;
 import com.sun.identity.wsfederation.meta.WSFederationMetaException;
 import com.sun.identity.wsfederation.meta.WSFederationMetaManager;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
+import org.forgerock.openam.utils.CollectionUtils;
 
 /**
  * The utility class is used by the identity provider to process
@@ -123,32 +124,27 @@ public class IDPSSOUtil {
     {
         WSFederationMetaManager metaManager = getMetaManager();
         FederationElement sp = metaManager.getEntityDescriptor(realm, entityId);
-        if ( wreply == null )
-        {
-            // Get first ACS URL for this SP
-            return metaManager.getTokenIssuerEndpoint(sp);
-        }
-        else
-        {
-            // Check that wreply is registered on this SP
-            // Just return first TokenIssuerEndpoint in the Federation
-            for ( Object o: sp.getValue().getAny() )
-            {
-                if ( o instanceof TokenIssuerEndpointElement )
-                {
-                    try {
-                        URL replyUrl = new URL(wreply);
-                        URL thisUrl = new URL(
-                          ((TokenIssuerEndpointElement)o).getValue().getAddress().
-                          getValue());
-                        if ( replyUrl.equals(thisUrl))
-                            return wreply;
-                    } catch (MalformedURLException mue) {
-                        return null;
-                    }
-                }
+        Set<String> tokenEndpoints = metaManager.getTokenIssuerEndpoints(sp);
+        if (wreply == null) {
+            // Get first ACS URL for this SP, matches order of list in stored metadata.
+            if (tokenEndpoints.size() > 1) {
+                debug.message("No wreply provided and more than one token endpoint issuer, returning first in list");
             }
+            return CollectionUtils.getFirstItem(tokenEndpoints);
         }
+
+        try {
+            new URL(wreply);
+        } catch (MalformedURLException murle) {
+            debug.error("Invalid token issuer endpoint URL {}", wreply, murle);
+            return null;
+        }
+
+        // Check that wreply matches one of the valid token issuer endpoints on this SP
+        if (tokenEndpoints.contains(wreply)) {
+            return wreply;
+        }
+        debug.error("No matching token issuer endpoint found for {}", wreply);
         return null;
     }    
 }

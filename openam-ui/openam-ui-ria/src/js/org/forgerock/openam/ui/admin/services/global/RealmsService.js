@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2018 ForgeRock AS.
+ * Copyright 2016-2020 ForgeRock AS.
  */
 
 /**
@@ -22,6 +22,7 @@ import _ from "lodash";
 
 import { addRealm, removeRealm, setRealms } from "store/modules/remote/realms";
 import AbstractDelegate from "org/forgerock/commons/ui/common/main/AbstractDelegate";
+import Base64 from "org/forgerock/commons/ui/common/util/Base64";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import fetchUrl from "org/forgerock/openam/ui/common/services/fetchUrl";
 import SMSServiceUtils from "org/forgerock/openam/ui/admin/services/SMSServiceUtils";
@@ -45,7 +46,7 @@ function getRealmPath (realm) {
  * @returns {string} the encoded path
  */
 function encodePath (path) {
-    return btoa(path)
+    return Base64.encodeUTF8(path)
         .replace(/\+/g, "-")
         .replace(/\//g, "_")
         .replace(/=+$/, "");

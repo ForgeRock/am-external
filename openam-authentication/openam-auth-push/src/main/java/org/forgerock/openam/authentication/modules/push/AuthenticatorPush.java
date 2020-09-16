@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2018 ForgeRock AS.
+ * Copyright 2016-2020 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.push;
 
@@ -306,13 +306,14 @@ public class AuthenticatorPush extends AbstractPushModule {
         try {
             if (isSessionUpgrade()) {
                 username = getUsernameFromOldSession();
-            } else if (username == null && sharedState != null) {
-                username = sharedState.get(getUserKey());
             }
         } catch (AuthLoginException | SSOException e) {
             throw failedAsLoginException();
         }
 
+        if (username == null && sharedState != null) {
+            username = sharedState.get(getUserKey());
+        }
         if (username == null) {
             extractSubjectDataFromExistingSession();
         }

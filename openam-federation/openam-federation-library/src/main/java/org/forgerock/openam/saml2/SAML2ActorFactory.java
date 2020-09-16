@@ -11,19 +11,34 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
-import com.sun.identity.saml2.common.SAML2Utils;
+import java.io.PrintWriter;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.PrintWriter;
+
+import org.forgerock.guice.core.InjectorHolder;
+import org.forgerock.json.jose.jwe.CompressionAlgorithm;
+import org.forgerock.json.jose.jwe.EncryptionMethod;
+import org.forgerock.json.jose.jwe.JweAlgorithm;
+import org.forgerock.openam.jwt.JwtEncryptionOptions;
+import org.forgerock.openam.secrets.SecretException;
+import org.forgerock.openam.secrets.Secrets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.profile.ServerFaultException;
 
 /**
  * The SAML2ActorFactory provides creation services for SAML IDP actors.
  */
 public class SAML2ActorFactory {
+
+    private static final Logger logger = LoggerFactory.getLogger(SAML2ActorFactory.class);
 
     /**
      * Gets an IDPRequestValidator
@@ -51,8 +66,9 @@ public class SAML2ActorFactory {
                                                   final HttpServletRequest request,
                                                   final HttpServletResponse response,
                                                   final PrintWriter out,
-                                                  final boolean isFromECP) {
-        return new UtilProxySAMLAuthenticator(reqData, request, response, out, isFromECP);
+                                                  final boolean isFromECP) throws ServerFaultException {
+        return new UtilProxySAMLAuthenticator(reqData, request, response, out, isFromECP,
+                getLocalStorageJwtEncryptionOptions());
     }
 
     /**
@@ -67,7 +83,19 @@ public class SAML2ActorFactory {
     public SAMLAuthenticatorLookup getSAMLAuthenticatorLookup(final IDPSSOFederateRequest reqData,
                                                               final HttpServletRequest request,
                                                               final HttpServletResponse response,
-                                                              final PrintWriter out) {
-        return new UtilProxySAMLAuthenticatorLookup(reqData, request, response, out);
+                                                              final PrintWriter out) throws ServerFaultException {
+        return new UtilProxySAMLAuthenticatorLookup(reqData, request, response, out,
+                getLocalStorageJwtEncryptionOptions());
+    }
+
+    private JwtEncryptionOptions getLocalStorageJwtEncryptionOptions() throws ServerFaultException {
+        try {
+            return new JwtEncryptionOptions(
+                    InjectorHolder.getInstance(Secrets.class).getGlobalSecrets(),
+                    JweAlgorithm.DIRECT, EncryptionMethod.A256GCM, CompressionAlgorithm.DEF);
+        } catch (SecretException e) {
+            logger.error("Error initialising secret store.", e);
+            throw new ServerFaultException(SAML2Utils.bundle.getString("secretStoreInitFailure"));
+        }
     }
 }

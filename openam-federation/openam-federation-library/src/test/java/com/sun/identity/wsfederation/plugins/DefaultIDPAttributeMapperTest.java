@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2019 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.plugins;
 
@@ -34,7 +34,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import org.w3c.dom.Element;
 
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.cot.COTConstants;
@@ -141,11 +140,13 @@ public class DefaultIDPAttributeMapperTest {
         // This just keeps the error logging noise down by having a valid COT setup, set a realm to foil the COT cache.
         cotManager.createCircleOfTrust(realm, new CircleOfTrustDescriptor(TEST_COT, realm, COTConstants.ACTIVE));
 
-        TestCaseConfigurationInstance.configureWsFed(realm, "/wsfedmetadata/idp.xml", "/wsfedmetadata/" + idpExtended);
-        TestCaseConfigurationInstance.configureWsFed(realm, "/wsfedmetadata/sp.xml", "/wsfedmetadata/" + spExtended);
+        TestCaseConfigurationInstance.configureWsFed(realm, "/wsfedmetadata/idp.xml",
+                "/wsfedmetadata/" + idpExtended);
+        TestCaseConfigurationInstance.configureWsFed(realm, "/wsfedmetadata/sp-external.xml",
+                "/wsfedmetadata/" + spExtended);
     }
 
     private String getFirstAttributeValue(Attribute attribute) throws SAMLException {
-        return XMLUtils.getElementValue((Element)attribute.getAttributeValue().get(0));
+        return XMLUtils.getElementValue(attribute.getAttributeValue().get(0));
     }
 }

@@ -11,17 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.ERROR_MESSAGE;
 import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.WEB_AUTHENTICATION_DOM_EXCEPTION;
 
+import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +37,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.forgerock.http.util.Json;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -60,7 +66,7 @@ import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdUtils;
 import com.sun.identity.sm.DNMapper;
-import com.sun.identity.tools.objects.MapFormat;
+import com.sun.identity.sm.RequiredValueValidator;
 
 /**
  * A web authentication registration node. Uses client side javascript to interact with the browser and negotiate
@@ -87,22 +93,32 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
     public interface Config {
 
         /**
-         * The relying party display name. NOT to be confused the relying party id, RpID or the relying party domain.
+         * The relying party display name. NOT to be confused the RpID (relying party id) or the valid origins.
          *
          * @return the display friendly name of the RP.
          */
-        @Attribute(order = 10)
+        @Attribute(order = 10, validators = RequiredValueValidator.class)
         default String relyingPartyName() {
             return "ForgeRock";
         }
 
         /**
-         * Sets the domain. If left empty, AM will attempt a best-guess.
+         * Sets the relying party domain.
          *
          * @return the relying party domain.
          */
         @Attribute(order = 20)
         Optional<String> relyingPartyDomain();
+
+        /**
+         * Sets the origins from which this node accepts requests.
+         *
+         * @return the set of valid origins
+         */
+        @Attribute(order = 25)
+        default Set<String> origins() {
+            return Collections.emptySet();
+        }
 
         /**
          * If required, successful registration requires user verification.
@@ -177,6 +193,16 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         default boolean generateRecoveryCodes() {
             return true;
         }
+
+        /**
+         * Specify whether to return the challenge as a script or just as metadata.
+         *
+         * @return {@literal true} if return as a script.
+         */
+        @Attribute(order = 100)
+        default boolean asScript() {
+            return true;
+        }
     }
 
     /**
@@ -204,12 +230,14 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("WebAuthnRegistrationNode started");
-        AMIdentity user = IdUtils.getIdentity(context.sharedState.get(USERNAME).asString(),
-                    context.sharedState.get(REALM).asString());
+        String username = context.sharedState.get(USERNAME).asString();
+        AMIdentity user = IdUtils.getIdentity(username, context.sharedState.get(REALM).asString());
+        if (user == null) {
+            logger.debug("returning with failure outcome. Unable to find user {}", username);
+            return Action.goTo(FAILURE_OUTCOME_ID).build();
+        }
         byte[] challengeBytes = getChallenge(context);
-        String rpId = getDomain(context.request.serverUrl, config.relyingPartyDomain());
         String registrationScript = clientScriptUtilities.getScriptAsString(REGISTRATION_SCRIPT);
-        registrationScript = MapFormat.format(registrationScript, getScriptContext(challengeBytes, rpId, user));
 
         Optional<String> result = context.getCallback(HiddenValueCallback.class)
                 .map(HiddenValueCallback::getValue)
@@ -236,10 +264,15 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
             ClientScriptResponse response = clientScriptUtilities.parseClientRegistrationResponse(result.get());
             AttestationObject attestationObject;
 
+            //retrieve the domain from the passing in Origin if not specified
+            String rpId = getDomain(config.relyingPartyDomain(), context.request.headers.get("origin"),
+                    context.request.serverUrl);
+
             try {
                 attestationObject = registerFlow.accept(response.getClientData(),
                         response.getAttestationData(), challengeBytes, rpId, config.userVerificationRequirement(),
-                        response.getCredentialId(), context.request.serverUrl, config.attestationPreference());
+                        response.getCredentialId(), getPermittedOrigins(config.origins(), context),
+                        config.attestationPreference());
             } catch (WebAuthnRegistrationException wre) {
                 //we can build more outcomes from the various Exception types when/if required
                 logger.error(wre.getMessage(), wre);
@@ -256,7 +289,8 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
 
         } else {
             logger.debug("sending callbacks to user for completion");
-            return getCallbacksForWebAuthnInteraction(registrationScript, context);
+            return getCallbacksForWebAuthnInteraction(config.asScript(), registrationScript,
+                    getScriptContext(challengeBytes, user, config.relyingPartyDomain().orElse(null)), context);
         }
     }
 
@@ -292,11 +326,10 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         return outcomeBuilder.build();
     }
 
-    private Map<String, String> getScriptContext(byte[] challengeBytes, String rpId, AMIdentity user)
+    private Map<String, String> getScriptContext(byte[] challengeBytes, AMIdentity user, String configuredRpId)
             throws NodeProcessException {
         Map<String, String> scriptContext = new HashMap<>();
         scriptContext.put("challenge", Arrays.toString(challengeBytes));
-        scriptContext.put("relyingPartyId", rpId);
         scriptContext.put("attestationPreference", config.attestationPreference().getValue());
         scriptContext.put("userName", user.getName());
         scriptContext.put("userId", EncodingUtilities.getURLSafeEncodedUserName(user.getUniversalId()));
@@ -306,6 +339,13 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
                 .getPubKeyCredParams(config.acceptedSigningAlgorithms()));
         scriptContext.put("timeout", String.valueOf(config.timeout() * 1000));
         scriptContext.put("excludeCredentials", getExcludeCredentials(user));
+
+        StringBuilder sb = new StringBuilder();
+        if (configuredRpId != null) {
+            sb.append("id: \"").append(configuredRpId).append("\",");
+        }
+        scriptContext.put("relyingPartyId", sb.toString());
+
         return scriptContext;
     }
 
@@ -325,23 +365,20 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         return "";
     }
 
-    private String getAuthenticatorSelection() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{\n");
-        sb.append("userVerification: ")
-                .append("\"")
-                .append(config.userVerificationRequirement().getValue())
-                .append("\"");
-        if (config.authenticatorAttachment() != AuthenticatorAttachment.UNSPECIFIED) {
-            sb.append(",\n");
-            sb.append("authenticatorAttachment: ")
-                    .append("\"")
-                    .append(config.authenticatorAttachment().getValue())
-                    .append("\"");
+    private String getAuthenticatorSelection() throws NodeProcessException {
+
+        try {
+            JsonValue jsonValue = json(
+                    object(field("userVerification", config.userVerificationRequirement().getValue())));
+            if (config.authenticatorAttachment() != AuthenticatorAttachment.UNSPECIFIED) {
+                jsonValue.put("authenticatorAttachment", config.authenticatorAttachment().getValue());
+            }
+
+            return new String(Json.writeJson(jsonValue));
+        } catch (IOException ioe) {
+            logger.error("Internal error generating JSON string. Aborting operation.");
+            throw new NodeProcessException("Unable to generate JSON for webauthn script");
         }
-        sb.append("\n");
-        sb.append("}");
-        return sb.toString();
     }
 
     /**

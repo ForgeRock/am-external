@@ -24,15 +24,22 @@
 
    $Id: propertySAMLv2SPAdvancedRemote.xml,v 1.4 2008/06/25 05:51:06 qcheng Exp $
 
--->
-
-<!--
-    Portions Copyrighted 2010-2012 ForgeRock Inc
+   Portions Copyrighted 2010-2020 ForgeRock AS.
 -->
 
 <!DOCTYPE propertysheet SYSTEM "propertysheet.dtd">
 
 <propertysheet>
+    <section name="requestProcessing" defaultValue="samlv2sp.provider.section.title.requestprocessing">
+        <property>
+            <label name="lblspSkipEndpointValidationWhenSigned"
+                   defaultValue="samlv2sp.attribute.label.skipEndpointValidationWhenSigned"
+                   labelFor="skipEndpointValidationWhenSigned" />
+            <cc name="skipEndpointValidationWhenSigned"
+                tagclass="com.sun.web.ui.taglib.html.CCCheckBoxTag" />
+            <fieldhelp name="helpskipEndpointValidationWhenSigned" defaultValue="samlv2sp.attribute.help.skipEndpointValidationWhenSigned" />
+        </property>
+    </section>
     <section name="SAE" defaultValue="samlv2sp.attribute.label.sae">
         <property>
             <label name="lblSAESPUrl" defaultValue="samlv2sp.attribute.label.sae.saeSPUrl" labelFor="saeSPUrl" />

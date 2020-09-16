@@ -166,7 +166,7 @@ public class AttributeQueryUtil {
         if (binding.equalsIgnoreCase(SAML2Constants.SOAP)) {
             signAttributeQuery(attrQuery, realm, false);
             return sendAttributeQuerySOAP(attrQuery, location,
-                attrAuthorityEntityID, aad);
+                attrAuthorityEntityID, aad, realm);
         } else {
             throw new SAML2Exception(
                 SAML2Utils.bundle.getString("unsupportedBinding"));
@@ -507,7 +507,7 @@ public class AttributeQueryUtil {
                 "attrQueryIssuerNotFound"));
         }
         Set<X509Certificate> signingCerts = KeyUtil.getVerificationCerts(attrqDesc, requestedEntityID,
-                SAML2Constants.ATTR_QUERY_ROLE);
+                SAML2Constants.ATTR_QUERY_ROLE, realm);
 
         if (!signingCerts.isEmpty()) {
             boolean valid = attrQuery.isSignatureValid(signingCerts);
@@ -820,7 +820,7 @@ public class AttributeQueryUtil {
         AttributeQueryDescriptorType aqd =
             metaManager.getAttributeQueryDescriptor(realm, requesterEntityID);
         EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(aqd, requesterEntityID,
-                SAML2Constants.ATTR_QUERY_ROLE);
+                SAML2Constants.ATTR_QUERY_ROLE, realm);
 
         Element el = EncManager.getEncInstance().encrypt(assertion.toXMLString(true, true),
                 secretKey, encryptionConfig, requesterEntityID, "EncryptedAssertion");
@@ -1038,7 +1038,7 @@ public class AttributeQueryUtil {
 
     private static Response sendAttributeQuerySOAP(AttributeQuery attrQuery,
         String attributeServiceURL, String attrAuthorityEntityID,
-        AttributeAuthorityDescriptorType aad) throws SAML2Exception {
+        AttributeAuthorityDescriptorType aad, String realm) throws SAML2Exception {
 
         String attrQueryXMLString = attrQuery.toXMLString(true, true);
         if (SAML2Utils.debug.messageEnabled()) {
@@ -1085,14 +1085,14 @@ public class AttributeQueryUtil {
                 "response = " + response.toXMLString(true, true));
         }
 
-        verifyResponse(response, attrQuery, attrAuthorityEntityID, aad);
+        verifyResponse(response, attrQuery, attrAuthorityEntityID, aad, realm);
 
         return response;
     }
 
     private static void verifyResponse(Response response,
         AttributeQuery attrQuery, String attrAuthorityEntityID,
-        AttributeAuthorityDescriptorType aad)
+        AttributeAuthorityDescriptorType aad, String realm)
         throws SAML2Exception {
 
         String attrQueryID = attrQuery.getID();
@@ -1119,7 +1119,7 @@ public class AttributeQueryUtil {
         }
 
         Set<X509Certificate> signingCerts = KeyUtil.getVerificationCerts(aad, attrAuthorityEntityID,
-                SAML2Constants.ATTR_AUTH_ROLE);
+                SAML2Constants.ATTR_AUTH_ROLE, realm);
 
         if (!signingCerts.isEmpty()) {
             boolean valid = response.isSignatureValid(signingCerts);
@@ -1497,7 +1497,7 @@ public class AttributeQueryUtil {
                   metaManager.getAttributeAuthorityDescriptor("/", idpEntityID);
 
             EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(aad, idpEntityID,
-                    SAML2Constants.ATTR_AUTH_ROLE);
+                    SAML2Constants.ATTR_AUTH_ROLE, "/");
 
             EncryptedID encryptedID = nameID.encrypt(encryptionConfig, idpEntityID);
             subject.setEncryptedID(encryptedID);

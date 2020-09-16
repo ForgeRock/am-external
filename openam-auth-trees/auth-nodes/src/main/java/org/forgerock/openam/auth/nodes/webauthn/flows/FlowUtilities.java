@@ -11,49 +11,66 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.PublicKey;
+import java.util.Set;
 
 import org.forgerock.json.jose.jwk.EcJWK;
 import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.json.jose.jwk.RsaJWK;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utilities useful for webauthn flows.
  */
 public class FlowUtilities {
 
-    private final int defaultHttpsPort = 443;
+    private final Logger logger = LoggerFactory.getLogger(AuthenticationFlow.class);
+
+    private static final int DEFAULT_HTTPS_PORT = 443;
 
     /**
      * Compares two origins, matching on their scheme, host and port.
      *
-     * @param amOriginStr First (URL) String to compare.
+     * @param amOriginStrs Set of (URL) Strings AM allows.
      * @param deviceOriginStr Second (URL) String to compare.
      * @return True if the scheme, host and port matches.
      */
-    boolean originsMatch(String amOriginStr, String deviceOriginStr) {
+    boolean originsMatch(Set<String> amOriginStrs, String deviceOriginStr) {
         try {
             URL deviceOrigin = new URL(deviceOriginStr);
-            URL amOrigin = new URL(amOriginStr);
 
-            return deviceOrigin.getProtocol().equals(amOrigin.getProtocol())
-                    && deviceOrigin.getHost().equals(amOrigin.getHost())
-                    && portsMatch(deviceOrigin.getPort(), amOrigin.getPort());
+            for (String amOriginStr : amOriginStrs) {
+                URL amOrigin = new URL(amOriginStr);
+
+                boolean result = deviceOrigin.getProtocol().equals(amOrigin.getProtocol())
+                        && deviceOrigin.getHost().equals(amOrigin.getHost())
+                        && portsMatch(deviceOrigin.getPort(), amOrigin.getPort());
+
+                if (result) {
+                    return true;
+                }
+            }
+
         } catch (MalformedURLException e) {
+            logger.error("Invalid error for origin verification, origin {}, validated against {}", deviceOriginStr,
+                    amOriginStrs, e);
             return false;
         }
+
+        return false;
     }
 
     private boolean portsMatch(int port, int port1) {
         return (port == port1) //both ports set, or both omitted
-            || (port == -1 && port1 == defaultHttpsPort)  //one omitted, the other specified
-            || (port == defaultHttpsPort && port1 == -1); //vice-versa
+            || (port == -1 && port1 == DEFAULT_HTTPS_PORT)  //one omitted, the other specified
+            || (port == DEFAULT_HTTPS_PORT && port1 == -1); //vice-versa
     }
 
     /**

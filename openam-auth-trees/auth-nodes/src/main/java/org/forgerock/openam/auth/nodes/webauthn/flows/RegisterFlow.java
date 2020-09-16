@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
@@ -21,6 +21,7 @@ import static org.forgerock.openam.auth.nodes.webauthn.flows.encoding.EncodingUt
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -38,6 +39,8 @@ import org.forgerock.openam.auth.nodes.webauthn.flows.exceptions.WebAuthnRegistr
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.VerificationResponse;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.JsonValueBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of https://www.w3.org/TR/webauthn/#registering-a-new-credential
@@ -45,6 +48,8 @@ import org.forgerock.openam.utils.JsonValueBuilder;
  */
 @Singleton
 public class RegisterFlow {
+
+    private final Logger logger = LoggerFactory.getLogger(RegisterFlow.class);
 
     private AttestationDecoder attestationDecoder;
     private final FlowUtilities flowUtilities;
@@ -69,32 +74,35 @@ public class RegisterFlow {
      * @param clientData the client data.
      * @param attestationData the encoded attestation data.
      * @param challengeBytes the challenge as bytes.
-     * @param rpId the replying party ID.
+     * @param rpId the relying party ID.
      * @param userVerificationRequirement if required, the user must be verified.
      * @param credentialId the credential ID associated with the user.
-     * @param originUrl the origin url the device should claim
+     * @param origins the origin urls one of which the device should claim
      * @param attestationPreference configured preference of attestation.
      * @return AttestationObject The attestation data.
      * @throws WebAuthnRegistrationException the exception indicating the failure type.
      */
     public AttestationObject accept(String clientData, byte[] attestationData, byte[] challengeBytes, String rpId,
                                     UserVerificationRequirement userVerificationRequirement, String credentialId,
-                                    String originUrl, AttestationPreference attestationPreference)
+                                    Set<String> origins, AttestationPreference attestationPreference)
             throws WebAuthnRegistrationException {
         // 7.1.1 & 7.1.2
         Map<String, Object> map;
         try {
             map = JsonValueBuilder.getObjectMapper().readValue(clientData, Map.class);
         } catch (IOException e) {
+            logger.error("Failed to parse client data response.");
             throw new InvalidDataException("failed to parse the client data response.", e);
         }
 
         if (CollectionUtils.isEmpty(map)) {
+            logger.error("client data parsed, but was empty.");
             throw new InvalidDataException("client data parsed, but was empty.");
         }
 
         // 7.1.3
         if (!("webauthn.create").equals(map.get("type"))) {
+            logger.warn("Invalid webauthn type, expected webauthn.create, recieved {}", map.get("type"));
             throw new InvalidDataException("client data type was incorrect, expecting webauth.create");
         }
 
@@ -105,7 +113,9 @@ public class RegisterFlow {
         }
 
         //7.1.5
-        if (map.get("origin") == null || !flowUtilities.originsMatch(originUrl, map.get("origin").toString())) {
+        if (map.get("origin") == null || !flowUtilities.originsMatch(origins, map.get("origin").toString())) {
+            logger.warn("origin in response not valid for the actual origin. Origin provided was {} but origins"
+                    + " allowed are: {}", map.get("origin").toString(), origins);
             throw new InvalidDataException("origin in response not valid for the actual origin");
         }
 

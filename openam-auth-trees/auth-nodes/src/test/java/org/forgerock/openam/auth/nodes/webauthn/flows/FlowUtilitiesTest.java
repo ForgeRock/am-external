@@ -11,11 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.singleton;
+import static java.util.Collections.unmodifiableSet;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -25,21 +31,37 @@ public class FlowUtilitiesTest {
     @DataProvider (name = "urls")
     public static Object[][] provideStringAndExpectedLength() {
         return new Object[][] {
-                { "https://example.com:443/", "https://example.com:443/", true }, //same
-                { "https://am.example.com:443/", "https://am.example.com:443/", true }, //same, subrealms
-                { "https://example.com:443/", "https://example.com/", true }, //default port omitted
-                { "https://example.com/", "https://example.com:443/", true }, //default port omitted
-                { "https://example.com", "https://example.com", true }, //default ports omitted
-                { "https://example.com", "https://example.com:443/openam", true }, //with a small path
-
-                { "https://example.com:8443", "https://example.com", false }, //unmatched omitted port
-                { "http://example.com:443/", "https://example.com:443/", false }, //invalid scheme
-                { "https://example.com:443/", "https://test.com:443/", false }, //invalid host
+                //same
+                { singleton("https://example.com:443/"), "https://example.com:443/", true },
+                //same, subrealms
+                { singleton("https://am.example.com:443/"), "https://am.example.com:443/", true },
+                //default port omitted
+                { singleton("https://example.com:443/"), "https://example.com/", true },
+                //default port omitted
+                { singleton("https://example.com/"), "https://example.com:443/", true },
+                //default ports omitted
+                { singleton("https://example.com"), "https://example.com", true },
+                //with a small path
+                { singleton("https://example.com"), "https://example.com:443/openam", true },
+                //valid w/ multiple
+                { unmodifiableSet(
+                        new HashSet<>(asList("https://example.com", "https://am.example.com"))),
+                        "https://example.com:443/openam", true },
+                //invalid w/ multiple
+                { unmodifiableSet(
+                        new HashSet<>(asList("https://example.com:8443", "https://am.example.com:8444"))),
+                        "https://example.com:443/openam", false },
+                //unmatched omitted port
+                { singleton("https://example.com:8443"), "https://example.com", false },
+                //invalid scheme
+                { singleton("http://example.com:443/"), "https://example.com:443/", false },
+                //invalid host
+                { singleton("https://example.com:443/"), "https://test.com:443/", false },
         };
     }
 
     @Test (dataProvider = "urls")
-    public void testCalculateLength(String one, String two, boolean expected) {
+    public void testOriginsMatch(Set<String> one, String two, boolean expected) {
         FlowUtilities flowUtils = new FlowUtilities();
         boolean response = flowUtils.originsMatch(one, two);
         assertThat(response).isEqualTo(expected);

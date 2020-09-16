@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2017 ForgeRock AS.
+ * Copyright 2011-2020 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -699,9 +699,13 @@ public class OAuth extends AMLoginModule {
             if (authorizationHeader != null) {
                 connection.setRequestProperty("Authorization", authorizationHeader);
             }
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Accept", "application/json,text/html,application/xhtml+xml,application/xml");
             connection.connect();
 
-            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK ||
+                connection.getResponseCode() == HttpURLConnection.HTTP_ACCEPTED ||
+                connection.getResponseCode() == HttpURLConnection.HTTP_CREATED) {
                 OAuthUtil.debugMessage("OAuth.getContentStreamByGET: HTTP Conn OK");
                 is = connection.getInputStream();
             } else {
@@ -770,12 +774,16 @@ public class OAuth extends AMLoginModule {
             if (authorizationHeader != null) {
                 connection.setRequestProperty("Authorization", authorizationHeader);
             }
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Accept", "application/json,text/html,application/xhtml+xml,application/xml");
             if (postParameters != null && !postParameters.isEmpty()) {
                 OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
                 writer.write(getDataString(postParameters));
                 writer.close();
             }
-            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
+            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK ||
+                connection.getResponseCode() == HttpURLConnection.HTTP_ACCEPTED ||
+                connection.getResponseCode() == HttpURLConnection.HTTP_CREATED) {
                 OAuthUtil.debugMessage("OAuth.getContentStreamByPOST: HTTP Conn OK");
                 is = connection.getInputStream();
             } else { // Error Code

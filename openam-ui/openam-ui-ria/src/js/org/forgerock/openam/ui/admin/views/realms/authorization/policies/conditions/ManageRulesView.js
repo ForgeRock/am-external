@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2018 ForgeRock AS.
+ * Copyright 2014-2020 ForgeRock AS.
  */
 
 import "sortable";
@@ -299,11 +299,10 @@ export default AbstractView.extend({
 
         editRuleView.render(this.getProperties(), this.droppableParent, this.idCount, null,
             () => {
+                self.idCount++;
                 self.editStart(editRuleView.$el);
                 self.$el.find("ol#dropbox").sortable("refresh");
             });
-
-        this.idCount++;
     },
 
     onSelect (e) {

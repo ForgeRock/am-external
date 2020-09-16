@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 
 /**
@@ -114,6 +114,7 @@ export function update (realm, type, id, data) {
         type: "PUT",
         headers: { "Accept-API-Version": "protocol=2.0,resource=1.0" },
         // CREST Protocol 2.0 payload must not transmit _rev
-        data: JSON.stringify(omit(data, "_rev"))
+        data: JSON.stringify(omit(data, "_rev")),
+        errorsHandlers: { "badRequest": { status: "400" } }
     });
 }

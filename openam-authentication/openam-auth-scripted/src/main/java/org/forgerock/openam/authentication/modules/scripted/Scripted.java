@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2018 ForgeRock AS.
+ * Copyright 2014-2020 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.scripted;
 
@@ -37,9 +37,11 @@ import org.forgerock.openam.scripting.ScriptEvaluator;
 import org.forgerock.openam.scripting.ScriptObject;
 import org.forgerock.openam.scripting.SupportedScriptingLanguage;
 import org.forgerock.openam.scripting.factories.ScriptHttpClientFactory;
+import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 import org.forgerock.openam.scripting.service.ScriptConfiguration;
 import org.forgerock.openam.scripting.service.ScriptingService;
 import org.forgerock.openam.scripting.service.ScriptingServiceFactory;
+import org.forgerock.openam.utils.StringUtils;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
@@ -82,6 +84,8 @@ public class Scripted extends AMLoginModule {
     public static final String CLIENT_SCRIPT_OUTPUT_DATA_VARIABLE_NAME = "clientScriptOutputData";
     public static final String REQUEST_DATA_VARIABLE_NAME = "requestData";
     public static final String SHARED_STATE = "sharedState";
+    // Provides the ability for a script to define a failure URL to redirect to on authentication failure
+    public static final String SHARED_STATE_FAILURE_URL_NAME = "gotoOnFailureUrl";
 
     private String userName;
     private String realm;
@@ -190,6 +194,11 @@ public class Scripted extends AMLoginModule {
         sharedState.put(CLIENT_SCRIPT_OUTPUT_DATA_VARIABLE_NAME, clientScriptOutputData);
 
         if (state != SUCCESS_VALUE) {
+            String scriptGotoOnFailureUrl = (String) sharedState.get(SHARED_STATE_FAILURE_URL_NAME);
+            if (StringUtils.isNotEmpty(scriptGotoOnFailureUrl)) {
+                sharedState.remove(SHARED_STATE_FAILURE_URL_NAME);
+                setLoginFailureURL(scriptGotoOnFailureUrl);
+            }
             throw new AuthLoginException("Authentication failed");
         }
 

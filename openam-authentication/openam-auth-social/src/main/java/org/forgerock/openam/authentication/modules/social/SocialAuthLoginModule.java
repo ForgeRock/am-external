@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -30,6 +30,7 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
 
 import org.forgerock.json.JsonValue;
+import org.forgerock.json.jose.exceptions.JwsException;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthException;
 import org.forgerock.oauth.UserInfo;
@@ -97,6 +98,9 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
                     .thenAsync(value -> getClient().getUserInfo(getDataStore())).getOrThrowUninterruptibly();
         } catch (OAuthException e) {
             throw new AuthLoginException("Unable to get UserInfo details", e);
+        } catch (JwsException jse) {
+            debug.error("JwsException: {}", jse.getMessage(), jse);
+            throw jse;
         }
     }
 

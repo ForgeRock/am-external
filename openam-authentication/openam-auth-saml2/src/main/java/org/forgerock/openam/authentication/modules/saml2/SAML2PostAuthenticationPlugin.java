@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
@@ -39,6 +39,7 @@ import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.plugins.SAML2ServiceProviderAdapter;
+import com.sun.identity.saml2.plugins.SPAdapterHttpServletResponseWrapper;
 import com.sun.identity.saml2.profile.CacheObject;
 import com.sun.identity.saml2.profile.IDPProxyUtil;
 import com.sun.identity.saml2.profile.LogoutUtil;
@@ -130,8 +131,9 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
 
         final SAML2ServiceProviderAdapter spAdapter = SAML2Utils.getSPAdapterClass(spEntityId, realm);
         if (spAdapter != null) {
-            final boolean redirected = spAdapter.postSingleSignOnSuccess(spEntityId, realm, request, response,
-                    null, session, authnReq, respInfo.getResponse(), respInfo.getProfileBinding(), writeFedInfo);
+            final boolean redirected = spAdapter.postSingleSignOnSuccess(spEntityId, realm, request,
+                    new SPAdapterHttpServletResponseWrapper(response), null, session, authnReq,
+                    respInfo.getResponse(), respInfo.getProfileBinding(), writeFedInfo);
             final String[] value = new String[] { String.valueOf(redirected) };
             try {
                 sessionProvider.setProperty(session, SAML2Constants.RESPONSE_REDIRECTED, value);

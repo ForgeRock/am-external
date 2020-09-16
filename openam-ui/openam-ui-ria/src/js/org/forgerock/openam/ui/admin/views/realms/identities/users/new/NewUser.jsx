@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 
 import { Form, Panel } from "react-bootstrap";
@@ -42,7 +42,7 @@ class NewUser extends Component {
                 hideInheritance: true,
                 schema: new JSONSchema(this.props.schema),
                 values: new JSONValues(this.props.template),
-                showOnlyRequiredAndEmpty: true
+                showOnlyRequired: true
             });
             this.jsonForm.appendChild(this.jsonSchemaView.render().el);
         }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2019 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -58,6 +58,10 @@ public final class Action {
      * Result of the node. May be null.
      **/
     public final String outcome;
+    /**
+     * The error message to present to the caller when the FAILURE node is reached.
+     */
+    public final String errorMessage;
     /**
      * Callbacks requested by the node when the outcome is null. May be null.
      */
@@ -108,11 +112,13 @@ public final class Action {
         return send(asList(callbacks));
     }
 
-    private Action(JsonValue sharedState, JsonValue transientState, String outcome, List<? extends Callback> callbacks,
-            Map<String, String> sessionProperties, List<JsonValue> sessionHooks, List<String> webhooks) {
+    private Action(JsonValue sharedState, JsonValue transientState, String outcome, String errorMessage,
+            List<? extends Callback> callbacks, Map<String, String> sessionProperties, List<JsonValue> sessionHooks,
+            List<String> webhooks) {
         this.sharedState = sharedState;
         this.transientState = transientState;
         this.outcome = outcome;
+        this.errorMessage = errorMessage;
         this.callbacks = Collections.unmodifiableList(callbacks);
         this.sessionProperties = Collections.unmodifiableMap(sessionProperties);
         this.sessionHooks = sessionHooks;
@@ -134,6 +140,7 @@ public final class Action {
     public static final class ActionBuilder {
         private JsonValue sharedState;
         private JsonValue transientState;
+        private String errorMessage;
         private final String outcome;
         private final List<? extends Callback> callbacks;
         private final Map<String, String> sessionProperties = new HashMap<>();
@@ -171,6 +178,19 @@ public final class Action {
         public ActionBuilder replaceTransientState(JsonValue transientState) {
             Reject.ifNull(transientState);
             this.transientState = transientState;
+            return this;
+        }
+
+        /**
+         * Sets the error message to present to the caller when the FAILURE node is reached.
+         *
+         * <p>It is up to the caller to apply localisation.</p>
+         *
+         * @param errorMessage The error message.
+         * @return the same instance of the ActionBuilder.
+         */
+        public ActionBuilder withErrorMessage(String errorMessage) {
+            this.errorMessage = errorMessage;
             return this;
         }
 
@@ -301,8 +321,8 @@ public final class Action {
          * @throws IllegalStateException if the builder is called before building mandatory fields.
          */
         public Action build() {
-            return new Action(this.sharedState, this.transientState, this.outcome, this.callbacks, sessionProperties,
-                    sessionHooks, webhooks);
+            return new Action(this.sharedState, this.transientState, this.outcome, this.errorMessage, this.callbacks,
+                    sessionProperties, sessionHooks, webhooks);
         }
 
     }

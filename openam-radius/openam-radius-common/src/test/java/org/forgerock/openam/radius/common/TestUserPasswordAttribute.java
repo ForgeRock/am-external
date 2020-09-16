@@ -12,6 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
+ * Portions Copyrighted 2020 ForgeRock AS.
  */
 package org.forgerock.openam.radius.common;
 
@@ -67,7 +68,7 @@ public class TestUserPasswordAttribute {
     public void test15charPwd() throws NoSuchAlgorithmException, IOException {
         final String pwd15 = "123456789_12345";
         final SecureRandom rand = new SecureRandom();
-        final RequestAuthenticator ra = new RequestAuthenticator(rand, secret);
+        final RequestAuthenticator ra = new RequestAuthenticator(rand);
         final UserPasswordAttribute upa = new UserPasswordAttribute(ra, secret, pwd15);
         final byte[] bytes = upa.getOctets();
         final UserPasswordAttribute upa2 = new UserPasswordAttribute(bytes);
@@ -86,7 +87,7 @@ public class TestUserPasswordAttribute {
     public void test16charPwd() throws NoSuchAlgorithmException, IOException {
         final String pwd = "123456789_123456";
         final SecureRandom rand = new SecureRandom();
-        final RequestAuthenticator ra = new RequestAuthenticator(rand, secret);
+        final RequestAuthenticator ra = new RequestAuthenticator(rand);
         final UserPasswordAttribute upa = new UserPasswordAttribute(ra, secret, pwd);
         final byte[] bytes = upa.getOctets();
         final UserPasswordAttribute upa2 = new UserPasswordAttribute(bytes);
@@ -98,7 +99,7 @@ public class TestUserPasswordAttribute {
     public void test36charPwd() throws NoSuchAlgorithmException, IOException {
         final String pwd = "123456789_123456789_123456";
         final SecureRandom rand = new SecureRandom();
-        final RequestAuthenticator ra = new RequestAuthenticator(rand, secret);
+        final RequestAuthenticator ra = new RequestAuthenticator(rand);
         final UserPasswordAttribute upa = new UserPasswordAttribute(ra, secret, pwd);
         final byte[] bytes = upa.getOctets();
         final UserPasswordAttribute upa2 = new UserPasswordAttribute(bytes);
@@ -112,7 +113,7 @@ public class TestUserPasswordAttribute {
         final String pwd = "\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u5EFA\u7BC9\u5BB6";
         System.out.println("- " + pwd);
         final SecureRandom rand = new SecureRandom();
-        final RequestAuthenticator ra = new RequestAuthenticator(rand, secret);
+        final RequestAuthenticator ra = new RequestAuthenticator(rand);
         final UserPasswordAttribute upa = new UserPasswordAttribute(ra, secret, pwd);
         final byte[] bytes = upa.getOctets();
         final UserPasswordAttribute upa2 = new UserPasswordAttribute(bytes);

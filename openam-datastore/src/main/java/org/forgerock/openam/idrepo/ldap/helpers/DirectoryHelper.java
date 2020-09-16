@@ -11,18 +11,28 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2017 ForgeRock AS.
+ * Copyright 2013-2019 ForgeRock AS.
  */
 
 package org.forgerock.openam.idrepo.ldap.helpers;
 
+import static org.forgerock.openam.ldap.LDAPConstants.STATUS_ACTIVE;
+import static org.forgerock.openam.ldap.LDAPConstants.STATUS_INACTIVE;
+
+import java.nio.charset.Charset;
+import java.util.Set;
+
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdType;
 import com.sun.identity.shared.debug.Debug;
-import java.nio.charset.Charset;
-import java.util.Set;
+import com.sun.identity.idm.IdRepoErrorCode;
 import org.forgerock.openam.idrepo.ldap.DJLDAPv3Repo;
-import static org.forgerock.openam.ldap.LDAPConstants.*;
+import org.forgerock.opendj.ldap.DecodeException;
+import org.forgerock.opendj.ldap.DecodeOptions;
+import org.forgerock.opendj.ldap.controls.PasswordPolicyErrorType;
+import org.forgerock.opendj.ldap.controls.PasswordPolicyResponseControl;
+import org.forgerock.opendj.ldap.messages.Result;
+
 
 /**
  * Provides a generic implementation of directory specific settings, that for non-generic directories (like AD), could
@@ -116,5 +126,57 @@ public class DirectoryHelper {
     public String getStatus(DJLDAPv3Repo idRepo, String name, boolean isActive, String userStatusAttr,
             String activeValue, String inactiveValue) throws IdRepoException {
         return isActive ? activeValue : inactiveValue;
+    }
+
+    /**
+     * Returns the Password Policy error code from the result passed.
+     *
+     * @param result Result object from the DJLDAPv3Repo Operation.
+     * @return IdRepoErrorCode based on the result. Returns null if gets DecodeException.
+     */
+    public String getPasswordPolicyErrorCode(Result result) {
+        String policyErrorCode = null;
+        try {
+            PasswordPolicyResponseControl control =
+                    result.getControl(PasswordPolicyResponseControl.DECODER, new DecodeOptions());
+            if (control != null) {
+                PasswordPolicyErrorType policyErrorType = control.getErrorType();
+                if (policyErrorType != null) {
+                    DEBUG.message("PolicyErrorType : {}", policyErrorType.toString());
+                    switch (policyErrorType) {
+                        case PASSWORD_EXPIRED:
+                            policyErrorCode = IdRepoErrorCode.PASSWORD_EXPIRED;
+                            break;
+                        case ACCOUNT_LOCKED:
+                            policyErrorCode = IdRepoErrorCode.ACCOUNT_LOCKED;
+                            break;
+                        case CHANGE_AFTER_RESET:
+                            policyErrorCode = IdRepoErrorCode.CHANGE_AFTER_RESET;
+                            break;
+                        case PASSWORD_MOD_NOT_ALLOWED:
+                            policyErrorCode = IdRepoErrorCode.PASSWORD_MOD_NOT_ALLOWED;
+                            break;
+                        case MUST_SUPPLY_OLD_PASSWORD:
+                            policyErrorCode = IdRepoErrorCode.MUST_SUPPLY_OLD_PASSWORD;
+                            break;
+                        case INSUFFICIENT_PASSWORD_QUALITY:
+                            policyErrorCode = IdRepoErrorCode.INSUFFICIENT_PASSWORD_QUALITY;
+                            break;
+                        case PASSWORD_TOO_SHORT:
+                            policyErrorCode = IdRepoErrorCode.PASSWORD_TOO_SHORT;
+                            break;
+                        case PASSWORD_TOO_YOUNG:
+                            policyErrorCode = IdRepoErrorCode.PASSWORD_TOO_YOUNG;
+                            break;
+                        case PASSWORD_IN_HISTORY:
+                            policyErrorCode = IdRepoErrorCode.PASSWORD_IN_HISTORY;
+                            break;
+                    }
+                }
+            }
+        } catch (DecodeException de) {
+            DEBUG.error("Unable to decode PasswordPolicyResponseControl", de);
+        }
+        return policyErrorCode;
     }
 }

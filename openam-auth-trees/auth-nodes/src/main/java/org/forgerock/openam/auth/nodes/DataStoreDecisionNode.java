@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -22,6 +22,7 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.ResourceBundle;
 
 import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
@@ -68,6 +69,7 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
     private final IdentityUtils identityUtils;
     private final Provider<PrivilegedAction<SSOToken>> adminTokenActionProvider;
     private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private static final String BUNDLE = DataStoreDecisionNode.class.getName();
 
     /**
      * Guice constructor.
@@ -99,24 +101,47 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
         boolean success = false;
         JsonValue newState = context.sharedState.copy();
         JsonValue newTransientState = context.transientState.copy();
+        Action.ActionBuilder action = goTo(true);
+        ResourceBundle bundle = context.request.locales
+                .getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
         try {
             logger.debug("authenticating {} ", nameCallback.getName());
-            success = idrepo.authenticate(getIdentityType(), callbacks)
-                    && isActive(context, nameCallback);
+            boolean isAuthenticationFailed = !idrepo.authenticate(getIdentityType(), callbacks);
+            if (isAuthenticationFailed) {
+                action = goTo(false).withErrorMessage(bundle.getString("authenticationFailed"));
+            } else if (!isActive(context, nameCallback)) {
+                action = goTo(false).withErrorMessage(bundle.getString("accountLocked"));
+                logger.warn("Account is not active");
+            }
         } catch (InvalidPasswordException e) {
             logger.warn("invalid password error");
-            // Ignore. Success is already false!
+            try {
+                if (!isActive(context, nameCallback)) {
+                    logger.warn("Account is not active");
+                    action = goTo(false).withErrorMessage(bundle.getString("accountLocked"));
+                } else {
+                    action = goTo(false).withErrorMessage(bundle.getString("authenticationFailed"));
+                }
+            } catch (IdRepoException ex) {
+                logWarningAndThrow(e, "Exception in data store decision node");
+            } catch (SSOException ex) {
+                logWarningAndThrow(e, "Exception checking user status");
+            }
         } catch (IdentityNotFoundException e) {
             logger.warn("invalid username error");
+            action = goTo(false).withErrorMessage(bundle.getString("authenticationFailed"));
         } catch (IdRepoException | AuthLoginException e) {
-            logger.warn("Exception in data store decision node");
-            throw new NodeProcessException(e);
+            logWarningAndThrow(e, "Exception in data store decision node");
         } catch (SSOException e) {
-            logger.warn("Exception checking user status");
-            throw new NodeProcessException(e);
+            logWarningAndThrow(e, "Exception checking user status");
         }
-        return goTo(success).replaceSharedState(newState)
+        return action.replaceSharedState(newState)
                 .replaceTransientState(newTransientState).build();
+    }
+
+    private void logWarningAndThrow(Exception e, String logMessage) throws NodeProcessException {
+        logger.warn(logMessage);
+        throw new NodeProcessException(e);
     }
 
     private boolean isActive(TreeContext context, NameCallback nameCallback) throws IdRepoException, SSOException {

@@ -24,7 +24,7 @@
  *
  * $Id: SPACSUtils.java,v 1.48 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2010-2018 ForgeRock AS.
+ * Portions Copyrighted 2010-2020 ForgeRock AS.
  * Portions Copyrighted 2016 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.saml2.profile;
@@ -111,6 +111,7 @@ import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.plugins.SAML2PluginsUtils;
 import com.sun.identity.saml2.plugins.SAML2ServiceProviderAdapter;
 import com.sun.identity.saml2.plugins.SPAccountMapper;
+import com.sun.identity.saml2.plugins.SPAdapterHttpServletResponseWrapper;
 import com.sun.identity.saml2.plugins.SPAttributeMapper;
 import com.sun.identity.saml2.protocol.Artifact;
 import com.sun.identity.saml2.protocol.ArtifactResolve;
@@ -166,6 +167,9 @@ public class SPACSUtils {
         ResponseInfo respInfo = null;
 
         String method = request.getMethod();
+
+        SAML2Utils.verifyAssertionConsumerServiceLocation(orgName, hostEntityId, request, response);
+
         if (method.equals("GET")) {
             if (!SAML2Utils.isSPProfileBindingSupported(
                     orgName, hostEntityId, SAML2Constants.ACS_SERVICE,
@@ -630,7 +634,7 @@ public class SPACSUtils {
                 SAML2Constants.WANT_ARTIFACT_RESPONSE_SIGNED);
         if (wantArtiRespSigned != null && wantArtiRespSigned.equals("true")) {
             Set<X509Certificate> verificationCerts = KeyUtil.getVerificationCerts(idp, idpEntityID,
-                    SAML2Constants.IDP_ROLE);
+                    SAML2Constants.IDP_ROLE, orgName);
             if (!artiResp.isSigned() || !artiResp.isSignatureValid(verificationCerts)) {
                 if (SAML2Utils.debug.messageEnabled()) {
                     SAML2Utils.debug.message(method
@@ -836,7 +840,7 @@ public class SPACSUtils {
             throw se;
         }
 
-        Set<X509Certificate> certificates = KeyUtil.getVerificationCerts(idpDesc, idpEntityID, SAML2Constants.IDP_ROLE);
+        Set<X509Certificate> certificates = KeyUtil.getVerificationCerts(idpDesc, idpEntityID, SAML2Constants.IDP_ROLE, orgName);
         List assertions = resp.getAssertion();
         if ((assertions != null) && (!assertions.isEmpty())) {
             for(Iterator iter = assertions.iterator(); iter.hasNext(); ) {
@@ -1338,8 +1342,8 @@ public class SPACSUtils {
         if (spAdapter != null) {
             boolean redirected = spAdapter.postSingleSignOnSuccess(
                     hostEntityId, realm, request,
-                    response, out, session, authnRequest, respInfo.getResponse(),
-                    respInfo.getProfileBinding(), writeFedInfo);
+                    new SPAdapterHttpServletResponseWrapper(response), out, session, authnRequest,
+                    respInfo.getResponse(), respInfo.getProfileBinding(), writeFedInfo);
             String[] value = null;
             if (redirected) {
                 value = new String[] {"true"};
@@ -1489,6 +1493,7 @@ public class SPACSUtils {
                 }
                 SAML2Utils.debug.message("Add Session Partner: {}", info.getRemoteEntityID());
                 idpSess.addSessionPartner(new SAML2SessionPartner(info.getRemoteEntityID(), true));
+                IDPSSOUtil.saveIdPSessionToTokenRepository(sessionIndex, sessionProvider, idpSess, session);
             }
 
             if (fedSessions == null) {

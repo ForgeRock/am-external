@@ -24,7 +24,7 @@
  *
  * $Id: DefaultIDPAccountMapper.java,v 1.9 2008/11/10 22:57:02 veiming Exp $
  *
- * Portions Copyrighted 2015-2016 ForgeRock AS.
+ * Portions Copyrighted 2015-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -80,7 +80,7 @@ public class DefaultIDPAccountMapper extends DefaultAccountMapper implements IDP
         if (nameIDFormat.equals(SAML2Constants.NAMEID_TRANSIENT_FORMAT)) {
             String sessionIndex = IDPSSOUtil.getSessionIndex(session);
             if (sessionIndex != null) {
-                IDPSession idpSession = IDPCache.idpSessionsByIndices.get(sessionIndex);
+                IDPSession idpSession = IDPSSOUtil.retrieveCachedIdPSession(sessionIndex);
                 if (idpSession != null) {
                     List<NameIDandSPpair> list = idpSession.getNameIDandSPpairs();
                     if (list != null) {

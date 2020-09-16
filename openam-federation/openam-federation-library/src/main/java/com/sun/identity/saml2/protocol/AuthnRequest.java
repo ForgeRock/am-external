@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,7 +24,7 @@
  *
  * $Id: AuthnRequest.java,v 1.2 2008/06/25 05:47:56 qcheng Exp $
  *
- * Portions Copyrighted 2016-2017 ForgeRock AS.
+ * Portions Copyrighted 2016-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.protocol;
 
@@ -41,7 +41,7 @@ import com.sun.identity.saml2.protocol.impl.AuthnRequestImpl;
  *  @supported.all.api
  */
 
-@JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS,
         defaultImpl = AuthnRequestImpl.class)
 public interface AuthnRequest extends RequestAbstract {
     
@@ -51,7 +51,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @return the <code>Subject</code> object. 
      * @see #setSubject(Subject)
      */
-    public Subject getSubject();
+    Subject getSubject();
     
     /** 
      * Sets the <code>Subject</code> object. 
@@ -60,7 +60,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @throws SAML2Exception if the object is immutable.
      * @see #getSubject
      */
-    public void setSubject(Subject subject) throws SAML2Exception;
+    void setSubject(Subject subject) throws SAML2Exception;
     
     /** 
      * Returns the <code>NameIDPolicy</code> object.
@@ -68,7 +68,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @return the <code>NameIDPolicy</code> object. 
      * @see #setNameIDPolicy(NameIDPolicy)
      */
-    public NameIDPolicy getNameIDPolicy();
+    NameIDPolicy getNameIDPolicy();
     
     /** 
      * Sets the <code>NameIDPolicy</code> object. 
@@ -77,8 +77,8 @@ public interface AuthnRequest extends RequestAbstract {
      * @throws SAML2Exception if the object is immutable.
      * @see #getNameIDPolicy
      */
-    
-    public void setNameIDPolicy(NameIDPolicy nameIDPolicy) 
+
+    void setNameIDPolicy(NameIDPolicy nameIDPolicy)
     throws SAML2Exception;
     
     /** 
@@ -87,7 +87,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @return the <code>Conditions</code> object. 
      * @see #setConditions(Conditions)
      */
-    public Conditions getConditions();
+    Conditions getConditions();
     
     /** 
      * Sets the <code>Conditions</code> object. 
@@ -96,8 +96,8 @@ public interface AuthnRequest extends RequestAbstract {
      * @throws SAML2Exception if the object is immutable.
      * @see #getConditions
      */
-    
-    public void setConditions(Conditions conditions) throws SAML2Exception;
+
+    void setConditions(Conditions conditions) throws SAML2Exception;
     
     /** 
      * Returns the <code>RequestedAuthnContext</code> object. 
@@ -105,8 +105,8 @@ public interface AuthnRequest extends RequestAbstract {
      * @return the <code>RequestAuthnContext</code> object. 
      * @see #setRequestedAuthnContext(RequestedAuthnContext)
      */
-    
-    public RequestedAuthnContext getRequestedAuthnContext();
+
+    RequestedAuthnContext getRequestedAuthnContext();
     
     /** 
      * Sets the <code>RequestedAuthnContext</code>. 
@@ -116,7 +116,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @throws SAML2Exception if the object is immutable.
      * @see #getRequestedAuthnContext
      */
-    public void setRequestedAuthnContext(RequestedAuthnContext reqAuthnContext)
+    void setRequestedAuthnContext(RequestedAuthnContext reqAuthnContext)
     throws SAML2Exception;
     
     /** 
@@ -126,7 +126,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @throws SAML2Exception if the object is immutable.
      * @see #getScoping
      */
-    public void setScoping(Scoping scoping) throws SAML2Exception;
+    void setScoping(Scoping scoping) throws SAML2Exception;
     
     /** 
      * Returns the <code>Scoping</code> object. 
@@ -134,14 +134,14 @@ public interface AuthnRequest extends RequestAbstract {
      * @return the <code>Scoping</code> object. 
      * @see #setScoping(Scoping)
      */
-    public Scoping getScoping();
+    Scoping getScoping();
     
     /** 
      * Returns value of <code>isForceAuthn</code> attribute.
      *
      * @return value of <code>isForceAuthn</code> attribute, or null if the attribute is not present.
      */
-    public Boolean isForceAuthn();
+    Boolean isForceAuthn();
     
     /** 
      * Sets the value of the <code>ForceAuthn</code> attribute.
@@ -149,7 +149,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @param value the value of <code>ForceAuthn</code> attribute.
      * @throws SAML2Exception if the object is immutable.
      */
-    public void setForceAuthn(Boolean value)    
+    void setForceAuthn(Boolean value)
     throws SAML2Exception;
     
     /** 
@@ -157,7 +157,7 @@ public interface AuthnRequest extends RequestAbstract {
      *
      * @return value of <code>isPassive</code> attribute, or null if the attribute is not present.
      */
-    public Boolean isPassive();
+    Boolean isPassive();
     
     /** 
      * Sets the value of the <code>IsPassive</code> attribute.
@@ -165,7 +165,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @param value Value of <code>IsPassive</code> attribute.
      * @throws SAML2Exception if the object is immutable.
      */
-    public void setIsPassive(Boolean value)     
+    void setIsPassive(Boolean value)
     throws SAML2Exception;
     
     /** 
@@ -176,7 +176,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @throws SAML2Exception if the object is immutable.
      * @see #getProtocolBinding
      */
-    public void setProtocolBinding(String protocolBinding)   
+    void setProtocolBinding(String protocolBinding)
     throws SAML2Exception;
     
     /** 
@@ -185,7 +185,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @return the value of <code>ProtocolBinding</code> attribute.
      * @see #setProtocolBinding(String)
      */
-    public String getProtocolBinding();
+    String getProtocolBinding();
     
     /** 
      * Returns the value of the <code>AssertionConsumerServiceURL</code>
@@ -194,7 +194,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @return the value of <code>AssertionConsumerServiceURL</code> attribute.
      * @see #setAssertionConsumerServiceURL(String)
      */
-    public String getAssertionConsumerServiceURL();
+    String getAssertionConsumerServiceURL();
     
     /** 
      * Sets the value of the <code>AssertionConsumerServiceURL</code> 
@@ -205,7 +205,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAssertionConsumerServiceURL
      */
-    public void setAssertionConsumerServiceURL(String url) throws SAML2Exception;
+    void setAssertionConsumerServiceURL(String url) throws SAML2Exception;
     
     /** 
      * Returns the value of the <code>AssertionConsumerServiceIndex</code> 
@@ -214,7 +214,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @return value of the <code>AssertionConsumerServiceIndex</code> attribute.
      * @see #setAssertionConsumerServiceIndex(Integer)
      */
-    public Integer getAssertionConsumerServiceIndex();
+    Integer getAssertionConsumerServiceIndex();
     
     /** 
      * Sets the value of the <code>AssertionConsumerServiceIndex</code> 
@@ -225,7 +225,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAssertionConsumerServiceIndex
      */
-    public void setAssertionConsumerServiceIndex(Integer index)
+    void setAssertionConsumerServiceIndex(Integer index)
     throws SAML2Exception;
     
 
@@ -236,7 +236,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @return value of the <code>AttributeConsumingServiceIndex</code> attribute.
      * @see #setAttributeConsumingServiceIndex(Integer)
      */
-    public Integer getAttributeConsumingServiceIndex();
+    Integer getAttributeConsumingServiceIndex();
 
     /**
      * Sets the value of the <code>AttributeConsumingServiceIndex</code>
@@ -247,7 +247,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAttributeConsumingServiceIndex
      */
-    public void setAttributeConsumingServiceIndex(Integer index)
+    void setAttributeConsumingServiceIndex(Integer index)
     throws SAML2Exception;
 
     /** 
@@ -257,7 +257,7 @@ public interface AuthnRequest extends RequestAbstract {
      * @throws SAML2Exception if the object is immutable.
      * @see #getProviderName
      */
-    public void setProviderName(String providerName) throws SAML2Exception;
+    void setProviderName(String providerName) throws SAML2Exception;
     
     /** 
      * Returns the <code>ProviderName</code> attribute value.
@@ -265,5 +265,5 @@ public interface AuthnRequest extends RequestAbstract {
      * @return value of the <code>ProviderName</code> attribute value.
      * @see #setProviderName(String)
      */
-    public String getProviderName();
+    String getProviderName();
 }

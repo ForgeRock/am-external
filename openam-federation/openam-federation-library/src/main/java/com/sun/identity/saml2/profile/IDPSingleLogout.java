@@ -24,7 +24,7 @@
  *
  * $Id: IDPSingleLogout.java,v 1.28 2009/11/25 01:20:47 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2019 ForgeRock AS.
+ * Portions Copyrighted 2010-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -145,15 +145,15 @@ public class IDPSingleLogout {
         if (debug.messageEnabled()) {
             debug.message("in initiateLogoutRequest");
             debug.message("binding : " + binding);
-            debug.message("logoutAll : " + 
+            debug.message("logoutAll : " +
                             (String) paramsMap.get(SAML2Constants.LOGOUT_ALL));
             debug.message("paramsMap : " + paramsMap);
         }
 
         boolean logoutall = false;
-        String logoutAllValue = 
+        String logoutAllValue =
                    (String)paramsMap.get(SAML2Constants.LOGOUT_ALL);
-        if ((logoutAllValue != null) && 
+        if ((logoutAllValue != null) &&
                         logoutAllValue.equalsIgnoreCase("true")) {
             logoutall = true;
         }
@@ -215,7 +215,7 @@ public class IDPSingleLogout {
                 }
             }
 
-            IDPSession idpSession = IDPCache.idpSessionsByIndices.get(idpSessionIndex);
+            IDPSession idpSession = IDPSSOUtil.retrieveCachedIdPSession(idpSessionIndex);
 
             if (idpSession == null) {
                 if (debug.messageEnabled()) {
@@ -223,15 +223,7 @@ public class IDPSingleLogout {
                         + "IDP Session with session index "
                         + idpSessionIndex + " already removed.");
                 }
-                try {
-                    if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                         SAML2FailoverUtils.deleteSAML2Token(idpSessionIndex);
-                     }
-                } catch (SAML2TokenRepositoryException se) {
-                    debug.error("IDPSingleLogout.initiateLogoutReq: Error while deleting token from " +
-                            "SAML2 Token Repository for idpSessionIndex:" + idpSessionIndex, se);
-                }
-                IDPCache.authnContextCache.remove(idpSessionIndex);
+                IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
                 MultiProtocolUtils.invalidateSession(session, request,
                     response, SingleLogoutManager.SAML2);
                 return;
@@ -250,20 +242,7 @@ public class IDPSingleLogout {
                 if (debug.messageEnabled()) {
                     debug.message("No SP session participant(s)");
                 }
-                IDPCache.idpSessionsByIndices.remove(idpSessionIndex);
-                if ((agent != null) && agent.isRunning() && (saml2Svc != null)){
-                    saml2Svc.setIdpSessionCount(
-		        (long)IDPCache.idpSessionsByIndices.size());
-                }
-                try {
-                    if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                        SAML2FailoverUtils.deleteSAML2Token(idpSessionIndex);
-                    }
-                } catch (SAML2TokenRepositoryException se) {
-                    debug.error("IDPSingleLogout.initiateLogoutReq: Error while deleting token from " +
-                            "SAML2 Token Repository for idpSessionIndex:" + idpSessionIndex, se);
-                }
-                IDPCache.authnContextCache.remove(idpSessionIndex);
+                IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
                 MultiProtocolUtils.invalidateSession(session, request,
                     response, SingleLogoutManager.SAML2);
                 return;
@@ -272,14 +251,19 @@ public class IDPSingleLogout {
             String relayState =
                 (String)paramsMap.get(SAML2Constants.RELAY_STATE);
 
+
+            String requestUrl = request.getRequestURL().toString();
             // Validate the RelayState URL.
             SAML2Utils.validateRelayStateURL(realm,
                                              idpEntityID,
                                              relayState,
-                                             SAML2Constants.IDP_ROLE);
+                                             SAML2Constants.IDP_ROLE,
+                                             requestUrl);
 
             int soapFailCount = 0;
             idpSession.setOriginatingLogoutRequestBinding(binding);
+            // Ensure token store copy of session (if using failover) is up to date with cached.
+            IDPSSOUtil.saveIdPSessionToTokenRepository(idpSessionIndex, sessionProvider, idpSession, session);
             for (int i = 0; i < n; i++) {
                 NameIDandSPpair pair = list.remove(0);
                 removeTransientNameIDFromCache(pair.getNameID());
@@ -329,6 +313,7 @@ public class IDPSingleLogout {
                         || bindingUsed.equals(SAML2Constants.HTTP_POST))) {
                     idpSession.setPendingLogoutRequestID(requestIDStr);
                     idpSession.setLogoutAll(logoutall);
+                    IDPSSOUtil.saveIdPSessionToTokenRepository(idpSessionIndex, sessionProvider, idpSession, session);
                     Map logoutMap = (Map) paramsMap.get("LogoutMap");
                     if (logoutMap != null && !logoutMap.isEmpty()) {
                        IDPCache.logoutResponseCache.put(requestIDStr, (Map) paramsMap.get("LogoutMap"));
@@ -345,11 +330,7 @@ public class IDPSingleLogout {
             } else {
                 MultiProtocolUtils.invalidateSession(idpSession.getSession(), request, response,
                         SingleLogoutManager.SAML2);
-                IDPCache.idpSessionsByIndices.remove(idpSessionIndex);
-                if (agent != null && agent.isRunning() && saml2Svc != null) {
-                    saml2Svc.setIdpSessionCount((long) IDPCache.idpSessionsByIndices.size());
-                }
-                IDPCache.authnContextCache.remove(idpSessionIndex);
+                IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
             }
             //handling the case when the auth was initiated with HTTP-Redirect, but only SOAP or no SLO endpoint was
             //available, and also the case when the whole logout process was using SOAP binding from the beginning
@@ -837,7 +818,6 @@ public class IDPSingleLogout {
         // SP (this SP name should be remembered in cache)
 
         Object session = sessionProvider.getSession(request);
-        String tokenID = sessionProvider.getSessionID(session);
 
         String idpSessionIndex = IDPSSOUtil.getSessionIndex(session);
 
@@ -850,7 +830,7 @@ public class IDPSingleLogout {
             return false;
         }
 
-        IDPSession idpSession = IDPCache.idpSessionsByIndices.get(idpSessionIndex);
+        IDPSession idpSession = IDPSSOUtil.retrieveCachedIdPSession(idpSessionIndex);
 
         if (idpSession == null) {
             if (debug.messageEnabled()) {
@@ -858,15 +838,7 @@ public class IDPSingleLogout {
                     + "IDP Session with session index "
                     + idpSessionIndex + " already removed.");
             }
-            try {
-                if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                    SAML2FailoverUtils.deleteSAML2Token(idpSessionIndex);
-                 }
-            } catch (SAML2TokenRepositoryException se) {
-                debug.error("IDPSingleLogout.processLogoutRequest: Error while deleting token from " +
-                        "SAML2 Token Repository for idpSessionIndex:" + idpSessionIndex, se);
-            }
-            IDPCache.authnContextCache.remove(idpSessionIndex);
+            IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
             MultiProtocolUtils.invalidateSession(session, request,
                 response, SingleLogoutManager.SAML2);
             return false;
@@ -916,11 +888,15 @@ public class IDPSingleLogout {
 
                     if (requestIDStr != null && requestIDStr.length() != 0) {
                         idpSession.setPendingLogoutRequestID(requestIDStr);
+                        // Ensure token store copy of session (if using failover) is up to date with cached.
+                        IDPSSOUtil.saveIdPSessionToTokenRepository(idpSessionIndex, sessionProvider, idpSession,
+                            session);
                     }
 
                     return true;
                 }
             }
+            IDPSSOUtil.saveIdPSessionToTokenRepository(idpSessionIndex, sessionProvider, idpSession, session);
             //seems like there were only SOAP endpoints left for SPs, so now we should just send back the logout
             //response.
             return sendLastResponse(idpSession, logoutRes, request, response, out, idpSessionIndex, session, realm,
@@ -1011,25 +987,7 @@ public class IDPSingleLogout {
                    // find out remote serice URL based on server id
                    remoteServiceURL = SAML2Utils.getRemoteServiceURL(serverId);
                 }
-
-                IDPSession idpSession = IDPCache.idpSessionsByIndices.get(sessionIndex);
-
-                if (idpSession == null && SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                    // Read from SAML2 Token Repository
-                    IDPSessionCopy idpSessionCopy = null;
-                    try {
-                        idpSessionCopy = (IDPSessionCopy) SAML2FailoverUtils.retrieveSAML2Token(sessionIndex);
-                    } catch (SAML2TokenRepositoryException se) {
-                        debug.error("IDPSingleLogout.processLogoutRequest: Error while deleting token from " +
-                                "SAML2 Token Repository for sessionIndex:" + sessionIndex, se);
-                    }
-                    // Copy back to IDPSession
-                    if (idpSessionCopy != null) {
-                        idpSession = new IDPSession(idpSessionCopy);
-                    } else {
-                        SAML2Utils.debug.error("IDPSessionCopy is NULL!!!");
-                    }
-                }
+                IDPSession idpSession = IDPSSOUtil.retrieveCachedIdPSession(sessionIndex);
                 if (idpSession == null) {
                     // If the IDP session does not find locally for a given
                     // session index and if the IDP is behind a lb with another
@@ -1141,21 +1099,7 @@ public class IDPSingleLogout {
                         sessionIndex, idpSession.getSession(),
                         request, response, cleanUp);
                     if (cleanUp) {
-                       IDPCache.idpSessionsByIndices.remove(sessionIndex);
-                       if ((agent != null) &&
-                           agent.isRunning() &&
-                           (saml2Svc != null)) {
-                           saml2Svc.setIdpSessionCount( (long)IDPCache.idpSessionsByIndices.size() );
-                       }
-                       if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                           try {
-                                SAML2FailoverUtils.deleteSAML2Token(sessionIndex);
-                           } catch (SAML2TokenRepositoryException se) {
-                               debug.error("IDPSingleLogout.processLogoutRequest: Error while deleting token from " +
-                                       "SAML2 Token Repository for sessionIndex:" + sessionIndex, se);
-                           }
-                       }
-                       IDPCache.authnContextCache.remove(sessionIndex);
+                        IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(sessionIndex);
                     }
                     break;
                 }
@@ -1170,6 +1114,8 @@ public class IDPSingleLogout {
                     idpSession.setOriginatingLogoutSPEntityID(
                                           logoutReq.getIssuer().getValue());
                 }
+                // Ensure token store copy of session (if using failover) is up to date with cached.
+                IDPSSOUtil.saveIdPSessionToTokenRepository(sessionIndex, sessionProvider, idpSession, session);
 
                 int soapFailCount = 0;
                 for (int i = 0; i < n; i++) {
@@ -1217,10 +1163,13 @@ public class IDPSingleLogout {
                         String requestIDStr = requestID.toString();
                         if (requestIDStr != null && requestIDStr.length() != 0) {
                             idpSession.setPendingLogoutRequestID(requestIDStr);
+                            IDPSSOUtil.saveIdPSessionToTokenRepository(sessionIndex, sessionProvider, idpSession,
+                                session);
                         }
                         return null;
                     }
                 }
+                IDPSSOUtil.saveIdPSessionToTokenRepository(sessionIndex, sessionProvider, idpSession, session);
 
                 if (soapFailCount == n) {
                     throw new SAML2Exception(SAML2Utils.bundle.getString("sloFailed"));
@@ -1239,24 +1188,7 @@ public class IDPSingleLogout {
                         sessionIndex, idpSession.getSession(),
                         request, response, true);
                     if (cleanUp) {
-                        IDPCache.idpSessionsByIndices.remove(sessionIndex);
-                        if ((agent != null) &&
-                            agent.isRunning() &&
-                            (saml2Svc != null))
-                        {
-                            saml2Svc.setIdpSessionCount(
-                                (long)IDPCache.idpSessionsByIndices.
-                                    size());
-                        }
-                        if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                            try {
-                                SAML2FailoverUtils.deleteSAML2Token(sessionIndex);
-                            } catch (SAML2TokenRepositoryException se) {
-                                debug.error("IDPSingleLogout.processLogoutRequest: Error while deleting token from " +
-                                        "SAML2 Token Repository for sessionIndex:" + sessionIndex, se);
-                            }
-                        }
-                        IDPCache.authnContextCache.remove(sessionIndex);
+                        IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(sessionIndex);
                     }
                 }
             } while (false);
@@ -1386,6 +1318,7 @@ public class IDPSingleLogout {
         String  userToLogout, HttpServletRequest request,
         HttpServletResponse response) {
 
+        // TODO Update to retrieve sessions for this user from CTS, then process associated IdPSessions
         Enumeration keys = IDPCache.idpSessionsByIndices.keys();
         String idpSessionIndex = null;
         IDPSession idpSession = null;
@@ -1404,19 +1337,9 @@ public class IDPSingleLogout {
                     try {
                         String userID = sessionProvider.getPrincipalName(idpToken);
                         if (userToLogout.equalsIgnoreCase(userID)) {
-                            MultiProtocolUtils.invalidateSession(idpToken,
-                                request, response, SingleLogoutManager.SAML2);
-                            IDPCache.
-                                idpSessionsByIndices.remove(idpSessionIndex);
-                            IDPCache.authnContextCache.remove(idpSessionIndex);
-                            if ((agent != null) &&
-                                agent.isRunning() &&
-                                (saml2Svc != null))
-                            {
-                                saml2Svc.setIdpSessionCount(
-		                    (long)IDPCache.
-					idpSessionsByIndices.size());
-                            }
+                            MultiProtocolUtils.invalidateSession(idpToken, request, response,
+                                SingleLogoutManager.SAML2);
+                            IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
                         }
                     } catch (SessionException e) {
                         debug.error(
@@ -1425,20 +1348,7 @@ public class IDPSingleLogout {
                     }
                 }
             } else {
-                IDPCache.idpSessionsByIndices.remove(idpSessionIndex);
-                if ((agent != null) && agent.isRunning() && (saml2Svc != null)){
-                    saml2Svc.setIdpSessionCount(
-		        (long)IDPCache.idpSessionsByIndices.size());
-                }
-                try {
-                    if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                        SAML2FailoverUtils.deleteSAML2Token(idpSessionIndex);
-                    }
-                } catch (SAML2TokenRepositoryException se) {
-                    debug.error("IDPSingleLogout.destroyAllTokenForUser: Error while deleting token from " +
-                            "SAML2 Token Repository for idpSessionIndex:" + idpSessionIndex, se);
-                }
-                IDPCache.authnContextCache.remove(idpSessionIndex);
+                IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
             }
         }
     }
@@ -1612,7 +1522,8 @@ public class IDPSingleLogout {
         List partners = IDPProxyUtil.getSessionPartners(request);
         if (CollectionUtils.isNotEmpty(partners)) {
             LogoutRequest origLogoutRequest = (LogoutRequest) IDPCache.logoutRequestById.remove(originatingRequestID);
-            IDPProxyUtil.sendProxyLogoutRequest(request, response, out, origLogoutRequest, partners, binding, relayState);
+            IDPProxyUtil.sendProxyLogoutRequest(request, response, out, origLogoutRequest, partners, binding,
+                relayState);
             return false;
         }
         if (originatingRequestID == null) {
@@ -1621,19 +1532,7 @@ public class IDPSingleLogout {
                 String userID = sessionProvider.getPrincipalName(idpSession.getSession());
                 destroyAllTokenForUser(userID, request, response);
             } else {
-                IDPCache.idpSessionsByIndices.remove(idpSessionIndex);
-                if (agent != null && agent.isRunning() && saml2Svc != null) {
-                    saml2Svc.setIdpSessionCount((long) IDPCache.idpSessionsByIndices.size());
-                }
-                try {
-                    if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                        SAML2FailoverUtils.deleteSAML2Token(idpSessionIndex);
-                    }
-                } catch (SAML2TokenRepositoryException se) {
-                    debug.error("IDPSingleLogout.sendLastResponse: Error while deleting token from " +
-                            "SAML2 Token Repository for idpSessionIndex:" + idpSessionIndex, se);
-                }
-                IDPCache.authnContextCache.remove(idpSessionIndex);
+                IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
                 if (!MultiProtocolUtils.isMultipleProtocolSession(idpSession.getSession(), SingleLogoutManager.SAML2)) {
                     sessionProvider.invalidateSession(idpSession.getSession(), request, response);
                 } else {
@@ -1688,19 +1587,7 @@ public class IDPSingleLogout {
                 realm, SAML2Constants.IDP_ROLE, null);
         if (logoutRes != null) {
             logoutRes.setDestination(XMLUtils.escapeSpecialCharacters(location));
-            IDPCache.idpSessionsByIndices.remove(idpSessionIndex);
-            if (agent != null && agent.isRunning() && saml2Svc != null) {
-                saml2Svc.setIdpSessionCount((long) IDPCache.idpSessionsByIndices.size());
-            }
-            try {
-                if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                    SAML2FailoverUtils.deleteSAML2Token(idpSessionIndex);
-                }
-            } catch (SAML2TokenRepositoryException se) {
-                debug.error("IDPSingleLogout.sendLastResponse: Error while deleting token from " +
-                        "SAML2 Token Repository for idpSessionIndex:" + idpSessionIndex, se);
-            }
-            IDPCache.authnContextCache.remove(idpSessionIndex);
+            IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
 
             // call multi-federation protocol processing
             // this is the SP initiated HTTP binding case
@@ -1739,19 +1626,7 @@ public class IDPSingleLogout {
                 return false;
             }
         }
-        IDPCache.idpSessionsByIndices.remove(idpSessionIndex);
-        if (agent != null && agent.isRunning() && saml2Svc != null) {
-            saml2Svc.setIdpSessionCount((long) IDPCache.idpSessionsByIndices.size());
-        }
-        try {
-            if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                SAML2FailoverUtils.deleteSAML2Token(idpSessionIndex);
-            }
-        } catch (SAML2TokenRepositoryException se) {
-            debug.error("IDPSingleLogout.sendLastResponse: Error while deleting token from " +
-                    "SAML2 Token Repository for idpSessionIndex:" + idpSessionIndex, se);
-        }
-        IDPCache.authnContextCache.remove(idpSessionIndex);
+        IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(idpSessionIndex);
         return false;
     }
 

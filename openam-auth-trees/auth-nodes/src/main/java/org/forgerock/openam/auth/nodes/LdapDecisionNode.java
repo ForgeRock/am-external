@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -316,7 +316,15 @@ public class LdapDecisionNode implements Node {
                 logger.warn("Server error");
                 throw new NodeProcessException(bundle.getString("ServerError"));
             } else {
-                action = goTo(LdapOutcome.FALSE);
+                String userLockedStatus = ldapUtil.getUserAttributeValues()
+                        .get(USER_STATUS_ATTRIBUTE)
+                        .iterator()
+                        .next();
+                if (StringUtils.isNotEmpty(userLockedStatus) && !userLockedStatus.equalsIgnoreCase(STATUS_ACTIVE)) {
+                    action = goTo(LdapOutcome.LOCKED).withErrorMessage(bundle.getString("accountLocked"));
+                } else {
+                    action = goTo(LdapOutcome.FALSE).withErrorMessage(bundle.getString("authenticationFailed"));
+                }
             }
         }
         return action.replaceSharedState(newState).build();
@@ -338,7 +346,7 @@ public class LdapDecisionNode implements Node {
             ldapUtil.authenticateUser(userName, userPassword);
             return true;
         } catch (LDAPUtilException ex) {
-            if (ex.getResultCode().equals(ResultCode.UNWILLING_TO_PERFORM)) {
+            if (ResultCode.UNWILLING_TO_PERFORM.equals(ex.getResultCode())) {
                 logger.debug("LDAP Unwilling to perform authenticate on user {}.", userName);
                 return false;
             }
@@ -511,7 +519,7 @@ public class LdapDecisionNode implements Node {
             break;
         case ACCOUNT_LOCKED:
             logger.debug("Account for user {} has been locked.", ldapUtil.getUserId());
-            loginResult = goTo(LdapOutcome.LOCKED);
+            loginResult = goTo(LdapOutcome.LOCKED).withErrorMessage(bundle.getString("accountLocked"));
             break;
         case GRACE_LOGINS:
             String message = Locale.formatMessage(bundle.getString("GraceLogins"), ldapUtil.getGraceLogins());
@@ -525,7 +533,7 @@ public class LdapDecisionNode implements Node {
             loginResult = Action.send(callbacks);
             break;
         case USER_NOT_FOUND:
-            loginResult = goTo(LdapOutcome.FALSE);
+            loginResult = goTo(LdapOutcome.FALSE).withErrorMessage(bundle.getString("authenticationFailed"));
             break;
         default:
             logger.warn("Unknown login state");

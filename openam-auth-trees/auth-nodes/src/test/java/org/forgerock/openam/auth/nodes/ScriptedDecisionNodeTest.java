@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -29,9 +29,11 @@ import static org.mockito.MockitoAnnotations.initMocks;
 import javax.script.Bindings;
 import javax.script.ScriptException;
 
+import com.google.common.collect.ListMultimap;
 import org.forgerock.guice.core.GuiceTestCase;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -41,15 +43,21 @@ import org.forgerock.openam.scripting.ScriptEvaluator;
 import org.forgerock.openam.scripting.ScriptObject;
 import org.forgerock.openam.scripting.SupportedScriptingLanguage;
 import org.forgerock.openam.scripting.factories.ScriptHttpClientFactory;
+import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 import org.forgerock.openam.scripting.service.ScriptConfiguration;
+import org.forgerock.util.i18n.PreferredLocales;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Listeners(RealmTestHelper.RealmFixture.class)
 public class ScriptedDecisionNodeTest extends GuiceTestCase {
@@ -66,6 +74,12 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     @Mock
     ScriptedDecisionNode.Config serviceConfig;
 
+    @Mock
+    ListMultimap<String, String> headers;
+
+    @Mock
+    ScriptIdentityRepository.Factory scriptIdentityRepositoryFactory;
+
     @RealmTestHelper.RealmHelper
     static Realm mockRealm;
 
@@ -79,7 +93,8 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
         given(scriptConfiguration.getLanguage()).willReturn(SupportedScriptingLanguage.JAVASCRIPT);
         given(serviceConfig.script()).willReturn(scriptConfiguration);
         given(serviceConfig.outcomes()).willReturn(ImmutableList.of("a", "b"));
-        node = new ScriptedDecisionNode(scriptEvaluator, serviceConfig, null, httpClientFactory, mockRealm);
+        node = new ScriptedDecisionNode(scriptEvaluator, serviceConfig, null, httpClientFactory,
+                mockRealm, scriptIdentityRepositoryFactory);
     }
 
     @Test
@@ -109,6 +124,33 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
 
         assertThat(bindingCaptor.getValue().get("sharedState")).isSameAs(sharedState.getObject());
         assertThat(bindingCaptor.getValue().get("transientState")).isSameAs(transientState.getObject());
+    }
+
+    @Test
+    public void scriptIsPassedParameter() throws Exception {
+        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+                .will(answerWithOutcome("a"));
+        JsonValue sharedState = json(object(field("foo", "bar")));
+        JsonValue transientState = json(object(field("fizz", "buzz")));
+
+        Map<String, String[]> parameters = new HashMap<>();
+        String[] values = {"parameter"};
+        parameters.put("dummy", values);
+
+        ExternalRequestContext request = new ExternalRequestContext.Builder()
+                .clientIp("127.0.0.1")
+                .hostName("dummy.example.com")
+                .locales(new PreferredLocales())
+                .cookies(new HashMap<>())
+                .headers(headers)
+                .parameters(parameters)
+                .build();
+        node.process(getContext(sharedState, transientState, request));
+
+        ArgumentCaptor<Bindings> bindingCaptor = ArgumentCaptor.forClass(Bindings.class);
+        verify(scriptEvaluator).evaluateScript(any(ScriptObject.class), bindingCaptor.capture());
+
+        Assert.assertEquals(bindingCaptor.getValue().get("requestParameters"), request.parameters);
     }
 
     @Test
@@ -175,6 +217,24 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
         assertThat(result.outcome).isEqualTo("a");
     }
 
+    @Test
+    public void whenScriptSetsAuditEntryDetail() throws Exception {
+        // Given
+        Map<String, Object> extraAuditInfo = new HashMap<>();
+        extraAuditInfo.put("key", "value");
+        JsonValue auditEntryDetail = json(object(field("auditInfo", extraAuditInfo)));
+        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+                .will(answerWithOutcomeAndAuditEntryDetail("a", extraAuditInfo));
+
+        // When
+        Action result = node.process(getContext());
+        JsonValue auditResult = node.getAuditEntryDetail();
+
+        // Then
+        assertThat(auditResult.isEqualTo(auditEntryDetail)).isTrue();
+        assertThat(result.outcome).isEqualTo("a");
+    }
+
     @Test(expectedExceptions = NodeProcessException.class)
     public void whenScriptSetsOutcomeToValueNotConfiguredItThrowsException() throws Exception {
         given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
@@ -211,6 +271,10 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
         return new TreeContext(sharedState, transientState, new Builder().build(), emptyList());
     }
 
+    private TreeContext getContext(JsonValue sharedState, JsonValue transientState, ExternalRequestContext request) {
+        return new TreeContext(sharedState, transientState, request, emptyList());
+    }
+
     private static Answer<Object> answerWithOutcome(Object outcome) {
         return invocationOnMock -> {
             Bindings bindings = invocationOnMock.getArgument(1);
@@ -232,6 +296,16 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
             Bindings bindings = invocationOnMock.getArgument(1);
             bindings.put("action", action);
             bindings.put("outcome", outcome);
+            return null;
+        };
+    }
+
+    private static Answer<Object> answerWithOutcomeAndAuditEntryDetail(Object outcome,
+                                                                       Map<String, Object> auditEntryDetail) {
+        return invocationOnMock -> {
+            Bindings bindings = invocationOnMock.getArgument(1);
+            bindings.put("outcome", outcome);
+            bindings.put("auditEntryDetail", auditEntryDetail);
             return null;
         };
     }

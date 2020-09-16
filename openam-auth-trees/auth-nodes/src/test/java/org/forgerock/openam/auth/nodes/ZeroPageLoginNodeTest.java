@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -106,6 +106,23 @@ public class ZeroPageLoginNodeTest {
     public void shouldCaptureUsernameAndPasswordWhenPresent() throws Exception {
         // Given
         ListMultimap<String, String> headers = ImmutableListMultimap.of("pass", "secure", "user", "fred");
+        JsonValue sharedState = json(object());
+
+        // When
+        Action result = node.process(getContext(headers, sharedState));
+
+        // Then
+        assertThat(result.outcome).isEqualTo("true");
+        assertThat(result.sharedState).isNotSameAs(sharedState);
+        assertThat(result.sharedState).stringAt(USERNAME).isEqualTo("fred");
+        assertThat(result.transientState.get(PASSWORD).getObject()).isEqualTo("secure");
+    }
+
+    @Test
+    public void shouldCaptureEncodedUsernameAndPasswordWhenPresent() throws Exception {
+        // Given
+        ListMultimap<String, String> headers = ImmutableListMultimap.of("pass", "=?UTF-8?B?c2VjdXJl?=",
+                "user", "=?UTF-8?B?ZnJlZA==?=");
         JsonValue sharedState = json(object());
 
         // When

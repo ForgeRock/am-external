@@ -24,7 +24,7 @@
  *
  * $Id: WSFederationUtils.java,v 1.6 2009/10/28 23:58:58 exu Exp $
  *
- * Portions Copyrighted 2015-2018 ForgeRock AS.
+ * Portions Copyrighted 2015-2020 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.common;
 
@@ -283,8 +283,7 @@ public class WSFederationUtils {
         try {
             FederationElement idp =
                 metaManager.getEntityDescriptor(realm, issuer);
-            X509Certificate cert = KeyUtil.getVerificationCert(idp, issuer, 
-                true);
+            X509Certificate cert = KeyUtil.getVerificationCert(idp, issuer, realm, true);
             valid = SigManager.getSigInstance().verify(signedXMLString, "AssertionID", id, Collections.singleton(cert));
         } catch (WSFederationMetaException | SAML2Exception ex) {
             valid = false;
@@ -418,7 +417,10 @@ public class WSFederationUtils {
 
         try {
             WSFederationMetaManager metaManager = new WSFederationMetaManager();
-            return isWReplyURLValid(metaAlias, relayState, metaManager.getRoleByMetaAlias(metaAlias));
+            return isWReplyURLValid(metaAlias,
+                                    relayState,
+                                    metaManager.getRoleByMetaAlias(metaAlias),
+                                    request.getRequestURL().toString());
         } catch (WSFederationMetaException e) {
             debug.warning("Can't get metaManager.", e);
             return false;
@@ -431,9 +433,10 @@ public class WSFederationUtils {
      * @param metaAlias  The metaAlias of the hosted entity.
      * @param wreply The URL to validate.
      * @param role       The role of the caller.
+     * @param requestUrl the URL of the HTTP request
      * @return <code>true</code> if the wreply is valid.
      */
-    public static boolean isWReplyURLValid(String metaAlias, String wreply, String role) {
+    public static boolean isWReplyURLValid(String metaAlias, String wreply, String role, String requestUrl) {
         boolean result = false;
 
         if (metaAlias != null) {
@@ -441,7 +444,7 @@ public class WSFederationUtils {
             try {
                 String hostEntityID = WSFederationUtils.getMetaManager().getEntityByMetaAlias(metaAlias);
                 if (hostEntityID != null) {
-                    validateWReplyURL(realm, hostEntityID, wreply, role);
+                    validateWReplyURL(realm, hostEntityID, wreply, role, requestUrl);
                     result = true;
                 }
             } catch (WSFederationException e) {
@@ -469,18 +472,20 @@ public class WSFederationUtils {
      * @param hostEntityId Entity ID of the hosted provider.
      * @param wreply       wreply URL.
      * @param role         IDP/SP Role.
+     * @param requestUrl   the URL of the HTTP request
      * @throws WSFederationException if the processing failed.
      */
     public static void validateWReplyURL(
             String orgName,
             String hostEntityId,
             String wreply,
-            String role) throws WSFederationException {
+            String role,
+            String requestUrl) throws WSFederationException {
 
         // Check for the validity of the RelayState URL.
         if (wreply != null && !wreply.isEmpty()) {
             if (!WREPLY_VALIDATOR.isRedirectUrlValid(wreply,
-                    ValidWReplyExtractor.WSFederationEntityInfo.from(orgName, hostEntityId, role))) {
+                    ValidWReplyExtractor.WSFederationEntityInfo.from(orgName, hostEntityId, role), false, requestUrl)) {
                 throw new WSFederationException(WSFederationUtils.bundle.getString("invalidWReplyUrl"));
             }
         }

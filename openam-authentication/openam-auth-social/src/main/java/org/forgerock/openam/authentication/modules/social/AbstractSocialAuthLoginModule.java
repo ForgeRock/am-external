@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -101,7 +101,7 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
     private static final String MIX_UP_MITIGATION_PARAM_CLIENT_ID = "client_id";
     private static final String MIX_UP_MITIGATION_PARAM_ISSUER = "iss";
     private static AMResourceBundleCache amCache = AMResourceBundleCache.getInstance();
-    private final Debug debug;
+    protected final Debug debug;
     private final SocialAuthModuleHelper authModuleHelper;
     private final Function<Map, AbstractSmsSocialAuthConfiguration> configurationFunction;
     private final ClientTokenJwtGenerator clientTokenJwtGenerator;
@@ -385,9 +385,14 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
 
     private void emailActivationCode() throws AuthLoginException {
         activationCode = authModuleHelper.getRandomData();
-        String mail;
+        String mail = null;
         try {
-            mail = authModuleHelper.extractEmail(userInfo, config.getCfgMailAttribute());
+            String emailAttribute = config.getCfgMailAttribute();
+            if (StringUtils.isEmpty(emailAttribute)) {
+                OAuthUtil.debugMessage("'emailAttribute' parameter not configured.");
+            } else {
+                mail = authModuleHelper.extractEmail(userInfo, emailAttribute);
+            }
         } catch (OAuthException e) {
             OAuthUtil.debugError("Email id not found in the profile response");
             throw new AuthLoginException("Aborting authentication, because "

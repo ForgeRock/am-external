@@ -24,7 +24,7 @@
  *
  * $Id: SAML2Constants.java,v 1.44 2009/11/24 21:53:02 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2019 ForgeRock AS.
+ * Portions Copyrighted 2010-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -965,6 +965,14 @@ public interface SAML2Constants {
      * Property name for the global default query signature algorithm for EC keys.
      */
     public String QUERY_SIGNATURE_ALGORITHM_EC = "org.forgerock.openam.saml2.query.signature.alg.ec";
+    /**
+     * Property name for the global default AES key wrap algorithm.
+     */
+    String AES_KEY_WRAP_ALGORITHM = "org.forgerock.openam.saml2.encryption.aes.key.wrap.algorithm";
+    /**
+     * Property name for the global default RSA key transport algorithm.
+     */
+    String RSA_KEY_TRANSPORT_ALGORITHM = "org.forgerock.openam.saml2.encryption.rsa.key.transport.algorithm";
     public String DSA = "DSA";
     public String RSA = "RSA";      
 
@@ -1668,4 +1676,14 @@ public interface SAML2Constants {
      * Property that determines which mask generation function algorithm should AM use.
      */
     String MASK_GENERATION_FUNCTION = "org.forgerock.openam.saml2.mask.generation.function.alg";
+
+    /**
+     * The type (typ) value to set on the SAML2 request JWT claimset.
+     */
+    String SAML2_REQUEST_JWT_TYPE = "vnd.fr-am-saml2+jwt";
+
+    /**
+     * Property that controls whether the endpoint validation should be performed for signed authentication requests.
+     */
+    String SKIP_ENDPOINT_VALIDATION_WHEN_SIGNED = "skipEndpointValidationWhenSigned";
 }

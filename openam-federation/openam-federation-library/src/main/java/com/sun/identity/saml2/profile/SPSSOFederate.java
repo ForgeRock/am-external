@@ -24,7 +24,7 @@
  *
  * $Id: SPSSOFederate.java,v 1.29 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2011-2018 ForgeRock AS.
+ * Portions Copyrighted 2011-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -293,8 +293,10 @@ public class SPSSOFederate {
             // TODO get Default URL from metadata 
             String relayState = getParameter(paramsMap, SAML2Constants.RELAY_STATE);
 
+
+            String requestUrl = request.getRequestURL().toString();
             // Validate the RelayState URL.
-            SAML2Utils.validateRelayStateURL(realm, spEntityID, relayState, SAML2Constants.SP_ROLE);
+            SAML2Utils.validateRelayStateURL(realm, spEntityID, relayState, SAML2Constants.SP_ROLE, requestUrl);
 
             // check if relayState is present and get the unique
             // id which will be appended to the SSO URL before

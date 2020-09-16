@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2020 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -284,9 +284,9 @@ public class OAuthConf {
         OAuthUtil.debugMessage("authentication code: " + code);
 
         try {
-            postParameters.put(PARAM_CLIENT_ID, clientId);
+            postParameters.put(PARAM_CLIENT_ID, OAuthUtil.oAuthEncode(clientId));
             postParameters.put(PARAM_REDIRECT_URI, OAuthUtil.oAuthEncode(authServiceURL));
-            postParameters.put(PARAM_CLIENT_SECRET, clientSecret);
+            postParameters.put(PARAM_CLIENT_SECRET, OAuthUtil.oAuthEncode(clientSecret));
             postParameters.put(PARAM_CODE, OAuthUtil.oAuthEncode(code));
             if (isMixUpMitigationEnabled()) {
                 postParameters.put(PARAM_STATE, csrfState);

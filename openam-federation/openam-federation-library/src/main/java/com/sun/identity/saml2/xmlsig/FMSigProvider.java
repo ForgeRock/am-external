@@ -24,7 +24,7 @@
  *
  * $Id: FMSigProvider.java,v 1.5 2009/05/09 15:43:59 mallas Exp $
  *
- *  Portions Copyrighted 2011-2019 ForgeRock AS.
+ *  Portions Copyrighted 2011-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.xmlsig;
 
@@ -45,6 +45,7 @@ import org.apache.xml.security.transforms.TransformationException;
 import org.apache.xml.security.transforms.Transforms;
 import org.apache.xml.security.utils.Constants;
 import org.apache.xml.security.utils.ElementProxy;
+import org.forgerock.openam.federation.util.XmlSecurity;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.Reject;
@@ -79,8 +80,7 @@ public final class FMSigProvider implements SigProvider {
     public static final String ALGO_ID_DIGEST_SHA256 = "http://www.w3.org/2001/04/xmlenc#sha256";
 
     static {
-        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
-        org.apache.xml.security.Init.init();
+        XmlSecurity.init();
 
 	c14nMethod = SystemPropertiesManager.get(
 	    SAML2Constants.CANONICALIZATION_METHOD,
@@ -264,7 +264,7 @@ public final class FMSigProvider implements SigProvider {
         }
         String refUri = reference.getAttribute("URI");
         String signedId = ((Element) sigElement.getParentNode()).getAttribute(idAttribute);
-        if (refUri == null || !idValue.equals(signedId) || !refUri.substring(1).equals(signedId)) {
+        if (StringUtils.isEmpty(refUri) || !idValue.equals(signedId) || !refUri.substring(1).equals(signedId)) {
             SAML2SDKUtils.debug.error("{}Signature reference ID does not match with element ID", classMethod);
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("uriNoMatchWithId"));
         }

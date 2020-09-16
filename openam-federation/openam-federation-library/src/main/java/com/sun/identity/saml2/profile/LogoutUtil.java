@@ -24,10 +24,11 @@
  *
  * $Id: LogoutUtil.java,v 1.16 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2012-2018 ForgeRock AS.
+ * Portions Copyrighted 2012-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.newDate;
 
@@ -84,6 +85,8 @@ import com.sun.identity.saml2.protocol.StatusDetail;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.xml.XMLUtils;
+
+import org.forgerock.openam.utils.StringUtils;
 
 /**
  * This class constructs the <code>LogoutRequest</code> and executes
@@ -778,31 +781,22 @@ public class LogoutUtil {
      * @param realm realm of host entity.
      * @param hostEntity entity ID of host entity.
      * @param hostEntityRole role of host entity.
-     * @param remoteEntity entity ID of remote host entity.
+     * @param remoteEntityId entity ID of remote host entity.
      * @throws SAML2Exception if error in signing the request.
      */
     public static void signSLORequest(LogoutRequest sloRequest,
             String realm, String hostEntity,
-            String hostEntityRole, String remoteEntity)
-            throws SAML2Exception {
-        signSLORequest(sloRequest, realm, hostEntity,
-                hostEntityRole, remoteEntity, false);
-    }
-
-    static void signSLORequest(LogoutRequest sloRequest,
-            String realm, String hostEntity,
-            String hostEntityRole, String remoteEntity,
-            boolean includeCert)
+            String hostEntityRole, String remoteEntityId)
             throws SAML2Exception {
         String method = "signSLORequest : ";
         boolean needRequestSign = false;
 
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
             needRequestSign = SAML2Utils.getWantLogoutRequestSigned(realm,
-                    remoteEntity, SAML2Constants.SP_ROLE);
+                    remoteEntityId, SAML2Constants.SP_ROLE);
         } else {
             needRequestSign = SAML2Utils.getWantLogoutRequestSigned(realm,
-                    remoteEntity, SAML2Constants.IDP_ROLE);
+                    remoteEntityId, SAML2Constants.IDP_ROLE);
         }
 
         if (needRequestSign == false) {
@@ -832,10 +826,7 @@ public class LogoutUtil {
         } else {
             signingKey = keyProvider.getPrivateKey(alias, encryptedKeyPass);
         }
-        X509Certificate signingCert = null;
-        if (includeCert) {
-            signingCert = keyProvider.getX509Certificate(alias);
-        }
+        X509Certificate signingCert = keyProvider.getX509Certificate(alias);
 
         if (signingKey != null) {
             sloRequest.sign(signingKey, signingCert);
@@ -889,10 +880,10 @@ public class LogoutUtil {
         Set<X509Certificate> signingCerts;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
             SPSSODescriptorType spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
+            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE, realm);
         } else {
             IDPSSODescriptorType idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
+            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE, realm);
         }
 
         if (!signingCerts.isEmpty()) {
@@ -916,31 +907,22 @@ public class LogoutUtil {
      * @param realm realm of host entity.
      * @param hostEntity entity ID of host entity.
      * @param hostEntityRole role of host entity.
-     * @param remoteEntity entity ID of remote host entity.
+     * @param remoteEntityId entity ID of remote host entity.
      * @throws SAML2Exception if error in signing the request.
      */
     public static void signSLOResponse(LogoutResponse sloResponse,
             String realm, String hostEntity,
-            String hostEntityRole, String remoteEntity)
-            throws SAML2Exception {
-        signSLOResponse(sloResponse, realm, hostEntity,
-                hostEntityRole, remoteEntity, false);
-    }
-
-    static void signSLOResponse(LogoutResponse sloResponse,
-            String realm, String hostEntity,
-            String hostEntityRole, String remoteEntity,
-            boolean includeCert)
+            String hostEntityRole, String remoteEntityId)
             throws SAML2Exception {
         String method = "signSLOResponse : ";
         boolean needSignResponse = false;
 
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
             needSignResponse = SAML2Utils.getWantLogoutResponseSigned(realm,
-                    remoteEntity, SAML2Constants.SP_ROLE);
+                    remoteEntityId, SAML2Constants.SP_ROLE);
         } else {
             needSignResponse = SAML2Utils.getWantLogoutResponseSigned(realm,
-                    remoteEntity, SAML2Constants.IDP_ROLE);
+                    remoteEntityId, SAML2Constants.IDP_ROLE);
         }
 
         if (needSignResponse == false) {
@@ -969,10 +951,7 @@ public class LogoutUtil {
         } else {
             signingKey = keyProvider.getPrivateKey(alias, encryptedKeyPass);
         }
-        X509Certificate signingCert = null;
-        if (includeCert) {
-            signingCert = keyProvider.getX509Certificate(alias);
-        }
+        X509Certificate signingCert = keyProvider.getX509Certificate(alias);
 
         if (signingKey != null) {
             sloResponse.sign(signingKey, signingCert);
@@ -1015,10 +994,10 @@ public class LogoutUtil {
         Set<X509Certificate> signingCerts;
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
             SPSSODescriptorType spSSODesc = metaManager.getSPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
+            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE, realm);
         } else {
             IDPSSODescriptorType idpSSODesc = metaManager.getIDPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
+            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE, realm);
         }
 
         if (!signingCerts.isEmpty()) {
@@ -1063,11 +1042,11 @@ public class LogoutUtil {
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
             SPSSODescriptorType spSSODesc =
                     metaManager.getSPSSODescriptor(realm, remoteEntity);
-            encryptionConfig = KeyUtil.getEncryptionConfig(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
+            encryptionConfig = KeyUtil.getEncryptionConfig(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE, realm);
         } else {
             IDPSSODescriptorType idpSSODesc =
                     metaManager.getIDPSSODescriptor(realm, remoteEntity);
-            encryptionConfig = KeyUtil.getEncryptionConfig(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
+            encryptionConfig = KeyUtil.getEncryptionConfig(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE, realm);
         }
 
         if (debug.messageEnabled()) {
@@ -1173,10 +1152,15 @@ public class LogoutUtil {
                             .append(SAML2Constants.EQUAL)
                             .append(encodedXML);
 
-            if (relayState != null && relayState.length() > 0
-                    && relayState.getBytes("UTF-8").length <= 80) {
-                queryString.append("&").append(SAML2Constants.RELAY_STATE)
-                        .append("=").append(urlEncodeQueryParameterNameOrValue(relayState));
+            // http://docs.oasis-open.org/security/saml/v2.0/sstc-saml-approved-errata-2.0.html
+            // Spec states RelayState data MUST NOT exceed 80 bytes in length
+            if (StringUtils.isNotEmpty(relayState)) {
+                if (relayState.getBytes(UTF_8).length <= 80) {
+                    queryString.append("&").append(SAML2Constants.RELAY_STATE)
+                            .append("=").append(urlEncodeQueryParameterNameOrValue(relayState));
+                } else {
+                    debug.warning("RelayState MUST NOT exceed 80 bytes. Dropping relayState : '{}'", relayState);
+                }
             }
             boolean needToSign = false;
             if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {

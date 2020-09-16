@@ -24,7 +24,7 @@
  *
  * $Id: RPSigninRequest.java,v 1.9 2009/11/03 00:48:54 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2018 ForgeRock AS.
+ * Portions Copyrighted 2015-2020 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.servlet;
@@ -52,6 +52,8 @@ import com.sun.identity.wsfederation.meta.WSFederationMetaUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.StringUtils;
 
 /**
  * This class implements the sign-in request for the service provider.
@@ -134,25 +136,22 @@ public class RPSigninRequest extends WSFederationAction {
             WSFederationMetaUtils.getAttributes(spConfig.getValue());
 
         String accountRealmSelection = 
-                spConfigAttributes.get(
-                com.sun.identity.wsfederation.common.WSFederationConstants.
-                ACCOUNT_REALM_SELECTION).get(0);
+                CollectionUtils.getFirstItem(spConfigAttributes.get(
+                com.sun.identity.wsfederation.common.WSFederationConstants.ACCOUNT_REALM_SELECTION));
         if ( accountRealmSelection == null )
         {
             accountRealmSelection = 
                 WSFederationConstants.ACCOUNT_REALM_SELECTION_DEFAULT;
         }
-        String accountRealmCookieName = 
-            spConfigAttributes.get(WSFederationConstants.
-            ACCOUNT_REALM_COOKIE_NAME).get(0);
+        String accountRealmCookieName =
+                CollectionUtils.getFirstItem(spConfigAttributes.get(WSFederationConstants.ACCOUNT_REALM_COOKIE_NAME));
         if ( accountRealmCookieName == null )
         {
             accountRealmCookieName = 
                 WSFederationConstants.ACCOUNT_REALM_COOKIE_NAME_DEFAULT;
         }
         String homeRealmDiscoveryService = 
-            spConfigAttributes.get(
-            WSFederationConstants.HOME_REALM_DISCOVERY_SERVICE).get(0);
+            CollectionUtils.getFirstItem(spConfigAttributes.get(WSFederationConstants.HOME_REALM_DISCOVERY_SERVICE));
 
         if (debug.messageEnabled()) {
             debug.message(classMethod+"account realm selection method is " + 
@@ -221,7 +220,7 @@ public class RPSigninRequest extends WSFederationAction {
             // Got the issuer name from the cookie/UA string - let's see if 
             // we know the entity ID
             idpEntityId = 
-                metaManager.getEntityByTokenIssuerName(null, 
+                metaManager.getEntityByTokenIssuerName(spRealm,
                 idpIssuerName);
         }
 
@@ -254,7 +253,7 @@ public class RPSigninRequest extends WSFederationAction {
         FederationElement idp = null;
         if ( idpEntityId != null )
         {
-            idp = metaManager.getEntityDescriptor(null,
+            idp = metaManager.getEntityDescriptor(spRealm,
                 idpEntityId);
         }
         
@@ -264,6 +263,10 @@ public class RPSigninRequest extends WSFederationAction {
 
         // If we still don't know the IdP, redirect to home realm discovery
         if (idp == null) {
+            if (StringUtils.isEmpty(homeRealmDiscoveryService)) {
+                debug.error("Invalid Home Realm Discovery Service specified");
+                throw new WSFederationException("invalidHomeRealmDiscoveryService");
+            }
             StringBuffer url = new StringBuffer(homeRealmDiscoveryService);
             url.append("?wreply=");
             url.append(urlEncodeQueryParameterNameOrValue(request.getRequestURL().toString()));
@@ -282,13 +285,15 @@ public class RPSigninRequest extends WSFederationAction {
             debug.message(classMethod+"account realm:" + idpEntityId);
         }
 
-        String endpoint = 
-            metaManager.getTokenIssuerEndpoint(idp);
+        String endpoint = CollectionUtils.getFirstItem(metaManager.getTokenIssuerEndpoints(idp));
         if (debug.messageEnabled()) {
             debug.message(classMethod+"endpoint:" + endpoint);
         }
-        String replyURL = 
-            metaManager.getTokenIssuerEndpoint(sp);
+        if (StringUtils.isEmpty(endpoint)) {
+            debug.error("Invalid Token Issuer Endpoint specified");
+            throw new WSFederationException(WSFederationUtils.bundle.getString("invalidTokenIssuerEndpoint"));
+        }
+        String replyURL = CollectionUtils.getFirstItem(metaManager.getTokenIssuerEndpoints(sp));
         if (debug.messageEnabled()) {
             debug.message(classMethod+"replyURL:" + replyURL);
         }
@@ -300,8 +305,10 @@ public class RPSigninRequest extends WSFederationAction {
             url.append("&wctx=");
             url.append(urlEncodeQueryParameterNameOrValue(wctx));
         }
-        url.append("&wreply=");
-        url.append(urlEncodeQueryParameterNameOrValue(replyURL));
+        if (StringUtils.isNotEmpty(replyURL)) {
+            url.append("&wreply=");
+            url.append(urlEncodeQueryParameterNameOrValue(replyURL));
+        }
         url.append("&wct=");
         url.append(urlEncodeQueryParameterNameOrValue(DateUtils.toUTCDateFormat(newDate())));
         url.append("&wtrealm=");

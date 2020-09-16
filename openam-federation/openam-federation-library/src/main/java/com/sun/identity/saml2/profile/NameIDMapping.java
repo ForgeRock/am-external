@@ -24,7 +24,7 @@
  *
  * $Id: NameIDMapping.java,v 1.6 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2013-2018 ForgeRock AS.
+ * Portions Copyrighted 2013-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -471,7 +471,7 @@ public class NameIDMapping {
             roled = metaManager.getIDPSSODescriptor(realm, entityID);
         }
 
-        EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(roled, entityID, role);
+        EncryptionConfig encryptionConfig = KeyUtil.getEncryptionConfig(roled, entityID, role, realm);
         
         if (encryptionConfig == null) {
             throw new SAML2Exception(SAML2Utils.bundle.getString("UnableToFindEncryptKeyInfo"));
@@ -560,7 +560,7 @@ public class NameIDMapping {
         IDPSSODescriptorType idpSSODesc = metaManager.getIDPSSODescriptor(
             realm, idpEntityID);
         Set<X509Certificate> signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, idpEntityID,
-                SAML2Constants.IDP_ROLE);
+                SAML2Constants.IDP_ROLE, realm);
         
         if (!signingCerts.isEmpty()) {
             boolean valid = nimResponse.isSignatureValid(signingCerts);

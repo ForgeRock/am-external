@@ -24,6 +24,8 @@
 
    $Id: propertyWSFedGeneralView.xml,v 1.5 2008/06/25 05:51:08 qcheng Exp $
 
+   Portions Copyrighted 2019 ForgeRock AS.
+
 -->
 
 <!DOCTYPE propertysheet SYSTEM "propertysheet.dtd">
@@ -68,11 +70,18 @@
             <label name="lblTokenIssuerEndpoint"
                    defaultValue="wsfed.attribute.label.tokenIssuerEndpoint"
                    labelFor="TokenIssuerEndpoint" />
-            <cc name="TokenIssuerEndpoint" 
-                tagclass="com.sun.web.ui.taglib.html.CCTextFieldTag" >
-                <attribute name="size" value="85" />
-                <attribute name="autoSubmit" value="false" />
-            </cc>
+            <ccgroup>
+                <property>
+                    <cc name="TokenIssuerEndpoint"
+                        tagclass="com.sun.web.ui.taglib.editablelist.CCEditableListTag" >
+                        <attribute name="name" value="list" />
+                        <attribute name="listboxLabel" value="label.current.value" />
+                        <attribute name="textboxLabel" value="label.new.value" />
+                    </cc>
+                    <fieldhelp name="helpTokenIssuerEndpoint"
+                               defaultValue="wsfed.attribute.help.tokenissuerendpoint" />
+                </property>
+            </ccgroup>
         </property>
     </section>
 </propertysheet>

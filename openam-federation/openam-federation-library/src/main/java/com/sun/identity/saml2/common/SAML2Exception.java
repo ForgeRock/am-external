@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -23,7 +23,7 @@
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
  * $Id: SAML2Exception.java,v 1.3 2008/06/25 05:47:45 qcheng Exp $
- *
+ * Portions Copyrighted 2010-2020 ForgeRock AS.
  */
 
 
@@ -59,7 +59,7 @@ public class SAML2Exception extends L10NMessageImpl {
      * as null
      * 
      */
-    public SAML2Exception(String rbName, String errorCode, Object[] args) {
+    public SAML2Exception(String rbName, String errorCode, Object... args) {
         super(rbName, errorCode, args);
     }
     

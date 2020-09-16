@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2019 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -109,6 +109,16 @@ const MessagesView = Backbone.View.extend({
         });
     },
 
+    hideMessages: function () {
+        var _this = Messages.messages;
+        window.clearTimeout(_this.timer);
+        window.clearTimeout(_this.removeAndNext.timer);
+        _this.$el.find("div").fadeOut(0, function () {
+            $(this).remove();
+            _this.list = [];
+        });
+    },
+
     showMessage: function () {
         var _this = this,
             alertClass = "alert-info",
@@ -148,7 +158,7 @@ const MessagesView = Backbone.View.extend({
         });
     },
 
-    hideMessages: function () {
+    clearMessages: function () {
         var _this = Messages.messages;
         if (_this.list.length > 1) {
             _this.list = [_this.list[1]];
@@ -165,6 +175,10 @@ Messages.messages = new MessagesView();
 
 Messages.addMessage = function (msg) {
     Messages.messages.addMessage(msg);
+};
+
+Messages.hideMessages = function () {
+    Messages.messages.hideMessages();
 };
 
 export default Messages;

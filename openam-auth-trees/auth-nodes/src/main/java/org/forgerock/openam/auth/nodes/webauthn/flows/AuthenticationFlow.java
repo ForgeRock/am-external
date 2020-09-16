@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
@@ -26,6 +26,7 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -73,12 +74,12 @@ public class AuthenticationFlow {
      * @param challengeBytes the challenge in bytes.
      * @param rpId the replying party ID.
      * @param device the authentication device.
-     * @param originUrl the origin url the device should claim
+     * @param origins the origin urls one of which the device should claim
      * @param userVerificationRequirement set to required if the user needs to be verified.
      * @return true if the attestation data is correct and the user can authenticate.
      */
     public boolean accept(String clientData, byte[] authenticatorData, byte[] signature, byte[] challengeBytes,
-                          String rpId, WebAuthnDeviceSettings device, String originUrl,
+                          String rpId, WebAuthnDeviceSettings device, Set<String> origins,
                           UserVerificationRequirement userVerificationRequirement) {
 
         // 7.2.1 & 7.2.2 & 7.2.3 handled prior to calling this method
@@ -96,7 +97,7 @@ public class AuthenticationFlow {
         }
 
         if (CollectionUtils.isEmpty(map)) {
-            logger.warn("failure to parse client data");
+            logger.warn("failure to parse client data - map is empty");
             return false;
         }
 
@@ -114,8 +115,9 @@ public class AuthenticationFlow {
         }
 
         //7.2.9
-        if (map.get("origin") == null || !flowUtilities.originsMatch(originUrl, map.get("origin").toString())) {
-            logger.warn("origin in response not valid for the actual origin");
+        if (map.get("origin") == null || !flowUtilities.originsMatch(origins, map.get("origin").toString())) {
+            logger.warn("origin in response not valid for the actual origin. Origin provided was {} but origins"
+                    + " allowed are: {}", map.get("origin").toString(), origins);
             return false;
         }
 
@@ -130,14 +132,14 @@ public class AuthenticationFlow {
 
         // 7.2.12
         if (!authData.attestationFlags.isUserPresent()) {
-            logger.warn("user present bit not set");
+            logger.warn("user present bit not set in auth data");
             return false;
         }
 
         // 7.2.13
         if (userVerificationRequirement == UserVerificationRequirement.REQUIRED) {
             if (!authData.attestationFlags.isUserVerified()) {
-                logger.warn("user verified bit required and not set");
+                logger.warn("user verified bit required and not set in auth data");
                 return false;
             }
         }

@@ -24,7 +24,7 @@
  *
  * $Id: QueryClient.java,v 1.9 2009/10/29 00:19:21 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2018 ForgeRock AS.
+ * Portions Copyrighted 2015-2019 ForgeRock AS.
  * Portions Copyrighted 2016 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.saml2.soapbinding;
@@ -615,7 +615,7 @@ public class QueryClient {
                     pdpDesc =
                             saml2MetaManager.getPolicyDecisionPointDescriptor(
                             realm,pdpEntityID);
-                    verificationCerts = KeyUtil.getPDPVerificationCerts(pdpDesc,pdpEntityID);
+                    verificationCerts = KeyUtil.getPDPVerificationCerts(pdpDesc,pdpEntityID, realm);
                 }
                 
                 while (assertionIter.hasNext()) {
@@ -870,7 +870,7 @@ public class QueryClient {
                 wantResponseSigned.equalsIgnoreCase("true")) {
             XACMLPDPDescriptorType pdpDescriptor = saml2MetaManager.getPolicyDecisionPointDescriptor(null,
                     pdpEntityID);
-            Set<X509Certificate> signingCerts = KeyUtil.getPDPVerificationCerts(pdpDescriptor, pdpEntityID);
+            Set<X509Certificate> signingCerts = KeyUtil.getPDPVerificationCerts(pdpDescriptor, pdpEntityID, realm);
             if (!signingCerts.isEmpty()) {
                 valid = response.isSignatureValid(signingCerts);
                 if (debug.messageEnabled()) {

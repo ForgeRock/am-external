@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 
 if (!window.PublicKeyCredential) {
@@ -20,11 +20,11 @@ if (!window.PublicKeyCredential) {
 }
 
 var publicKey = {
-    challenge: new Uint8Array({challenge}).buffer,
+    challenge: new Int8Array({challenge}).buffer,
     // Relying Party:
     rp: {
-        name: "{relyingPartyName}",
-        id: "{relyingPartyId}"
+        {relyingPartyId}
+        name: "{relyingPartyName}"
     },
     // User:
     user: {
@@ -32,9 +32,7 @@ var publicKey = {
         name: "{userName}",
         displayName: "{userName}"
     },
-    pubKeyCredParams: [
-        {pubKeyCredParams}
-    ],
+    pubKeyCredParams: {pubKeyCredParams},
     attestation: "{attestationPreference}",
     timeout: {timeout},
     excludeCredentials: [{excludeCredentials}],

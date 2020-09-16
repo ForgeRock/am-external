@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2019 ForgeRock AS.
  */
 
 import $ from "jquery";
@@ -69,7 +69,7 @@ export function init ({
                 suffix: "__"
             },
             lng: language,
-            load: "currentOnly",
+            load: "all",
             ns: namespace,
             nsSeparator: ":::"
         }, deferred.resolve);

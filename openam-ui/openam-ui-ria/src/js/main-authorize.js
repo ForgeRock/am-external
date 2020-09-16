@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2018 ForgeRock AS.
+ * Copyright 2014-2019 ForgeRock AS.
  */
 
 import "./webpack/setWebpackPublicPath";
@@ -24,17 +24,18 @@ import $ from "jquery";
 
 import { getTheme } from "ThemeManager";
 import { init } from "org/forgerock/commons/ui/common/main/i18n/manager";
-import AuthorizeTemplate from "templates/user/AuthorizeTemplate";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
-import FooterTemplate from "templates/common/FooterTemplate";
-import LoginBaseTemplate from "templates/common/LoginBaseTemplate";
-import LoginHeaderTemplate from "templates/common/LoginHeaderTemplate";
+import loadTemplate from "org/forgerock/openam/ui/common/util/theme/loadTemplate";
 import prependPublicPath from "webpack/prependPublicPath";
 
 const data = window.pageData || {};
 const KEY_CODE_ENTER = 13;
 const KEY_CODE_SPACE = 32;
 const language = data.locale ? data.locale.split(" ")[0] : undefined;
+
+const loadThemedTemplates = async (templates, theme) => {
+    return await Promise.all(templates.map((template) => loadTemplate(template, theme)));
+};
 
 init({
     language,
@@ -65,9 +66,13 @@ init({
 
     Configuration.globalData = { realm : data.realm };
 
-    getTheme().then((theme) => {
+    const render = async () => {
+        const theme = await getTheme();
         data.theme = theme;
-
+        const templates = ["common/LoginBaseTemplate", "common/FooterTemplate",
+            "common/LoginHeaderTemplate", "user/AuthorizeTemplate"];
+        const [LoginBaseTemplate, FooterTemplate, LoginHeaderTemplate,
+            AuthorizeTemplate] = await loadThemedTemplates(templates, theme.path);
         $("#wrapper").html(LoginBaseTemplate(data));
         $("#footer").html(FooterTemplate(data));
         $("#loginBaseLogo").html(LoginHeaderTemplate(data));
@@ -79,5 +84,6 @@ init({
             }
             $(this).toggleClass("expanded").next(".panel-collapse").slideToggle();
         });
-    });
+    };
+    render();
 });

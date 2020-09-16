@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS. All Rights Reserved
+ * Copyright 2011-2020 ForgeRock AS. All Rights Reserved
  * 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-federation</artifactId>
-        <version>6.5.2.3</version>
+        <version>6.5.3</version>
     </parent>
 
     <!-- Component Definition -->
@@ -256,10 +256,20 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>openam-audit-core</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.forgerock.commons</groupId>
+            <artifactId>json-web-token</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>commons-lang</groupId>
             <artifactId>commons-lang</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-jwt-utils</artifactId>
         </dependency>
     </dependencies>
 </project>

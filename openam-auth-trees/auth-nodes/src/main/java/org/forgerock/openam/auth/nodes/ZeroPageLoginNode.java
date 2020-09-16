@@ -11,19 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
+import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.mail.internet.MimeUtility;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -31,6 +33,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,7 +139,15 @@ public class ZeroPageLoginNode implements Node {
                 throw new NodeProcessException("Expecting only one header value for username and/or password "
                         + "but size is" + values.size());
             }
-            state.put(stateKey, values.get(0));
+            String value = values.get(0);
+            try {
+                if (StringUtils.isNotEmpty(value)) {
+                    value = MimeUtility.decodeText(value);
+                }
+            } catch (UnsupportedEncodingException e) {
+                logger.debug("Could not decode username or password header");
+            }
+            state.put(stateKey, value);
         }
     }
 

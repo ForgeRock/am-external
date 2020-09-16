@@ -24,7 +24,7 @@
  *
  * $Id: IDPSession.java,v 1.6 2009/05/12 22:44:45 madan_ranganath Exp $
  *
- * Portions Copyrighted 2013-2015 ForgeRock AS.
+ * Portions Copyrighted 2013-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -50,7 +50,7 @@ public class IDPSession {
     private String originatingLogoutRequestID = null;
     private String originatingLogoutSPEntityID = null;
     private boolean doLogoutAll = false;  
-    private List sessionPartners = null;
+    private List<SAML2SessionPartner> sessionPartners = null;
     private String authnContext = null;
     private String metaAlias = null;
 
@@ -64,7 +64,7 @@ public class IDPSession {
     public IDPSession(Object session) {
         this.session = session;
         nameIDandSPpairs = new ArrayList<NameIDandSPpair>();
-        sessionPartners = new ArrayList(); 
+        sessionPartners = new ArrayList<>();
     }
 
     /**
@@ -191,7 +191,7 @@ public class IDPSession {
      * Returns list of session partners.
      * @return list of session partners
      */
-    public List getSessionPartners() {
+    public List<SAML2SessionPartner> getSessionPartners() {
         return sessionPartners;
     }
     
@@ -264,28 +264,29 @@ public class IDPSession {
             SessionProvider sessionProvider = SessionManager.getProvider();
             session = sessionProvider.getSession(
                  idpSessionCopy.getSSOToken());
-            nameIDandSPpairs = new ArrayList<NameIDandSPpair>(idpSessionCopy.getNameIDandSPpairs());
-            String tmp = idpSessionCopy.getPendingLogoutRequestID();
-            if (tmp != null && !tmp.isEmpty()) {
-                pendingLogoutRequestID = tmp;
-            }
-            tmp = idpSessionCopy.getOriginatingLogoutRequestID();
-            if (tmp != null && !tmp.isEmpty()) {
-                originatingLogoutRequestID = tmp;
-            }
-            tmp = idpSessionCopy.getOriginatingLogoutSPEntityID();
-            if (tmp != null && !tmp.isEmpty()) {
-                originatingLogoutSPEntityID = tmp;
-            }
-            tmp = idpSessionCopy.getOriginatingLogoutRequestBinding();
-            if (tmp != null && !tmp.isEmpty()) {
-                originatingLogoutRequestBinding = tmp;
-            }
-            doLogoutAll = idpSessionCopy.getLogoutAll();
-            metaAlias = idpSessionCopy.getMetaAlias();
         } catch (SessionException se) {
-            SAML2Utils.debug.error("Session Exception.", se);
+            SAML2Utils.debug.warning("Session Exception.", se);
         }
+        nameIDandSPpairs = new ArrayList<NameIDandSPpair>(idpSessionCopy.getNameIDandSPpairs());
+        String tmp = idpSessionCopy.getPendingLogoutRequestID();
+        if (tmp != null && !tmp.isEmpty()) {
+            pendingLogoutRequestID = tmp;
+        }
+        tmp = idpSessionCopy.getOriginatingLogoutRequestID();
+        if (tmp != null && !tmp.isEmpty()) {
+            originatingLogoutRequestID = tmp;
+        }
+        tmp = idpSessionCopy.getOriginatingLogoutSPEntityID();
+        if (tmp != null && !tmp.isEmpty()) {
+            originatingLogoutSPEntityID = tmp;
+        }
+        tmp = idpSessionCopy.getOriginatingLogoutRequestBinding();
+        if (tmp != null && !tmp.isEmpty()) {
+            originatingLogoutRequestBinding = tmp;
+        }
+        doLogoutAll = idpSessionCopy.getLogoutAll();
+        metaAlias = idpSessionCopy.getMetaAlias();
+        sessionPartners = new ArrayList<>(idpSessionCopy.getSessionPartners());
     }
   
     /**

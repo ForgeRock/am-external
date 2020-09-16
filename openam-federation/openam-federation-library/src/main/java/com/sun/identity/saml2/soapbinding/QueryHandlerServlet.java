@@ -24,7 +24,7 @@
  *
  * $Id: QueryHandlerServlet.java,v 1.9 2009/09/22 22:49:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2012-2018 ForgeRock AS.
+ * Portions Copyrighted 2012-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.soapbinding;
 
@@ -360,7 +360,7 @@ public class QueryHandlerServlet extends HttpServlet {
                         SAML2Utils.getSAML2MetaManager().
                         getPolicyEnforcementPointDescriptor(
                         realm,pepEntityID);
-                Set<X509Certificate> verificationCerts = KeyUtil.getPEPVerificationCerts(pep, pepEntityID);
+                Set<X509Certificate> verificationCerts = KeyUtil.getPEPVerificationCerts(pep, pepEntityID, realm);
                 if (verificationCerts.isEmpty() || !samlRequest.isSignatureValid(verificationCerts)) {
                     // error
                     debug.error(classMethod + "Invalid signature in message");
@@ -431,7 +431,7 @@ public class QueryHandlerServlet extends HttpServlet {
             if (wantAssertionEncrypted != null
                     && wantAssertionEncrypted.equalsIgnoreCase
                     (SAML2Constants.TRUE)) {
-                encryptionConfig = KeyUtil.getPepEncryptionConfig(pepDescriptor, pepEntityID);
+                encryptionConfig = KeyUtil.getPepEncryptionConfig(pepDescriptor, pepEntityID, realm);
                 
                 // encrypt the Assertion
                 EncryptedAssertion encryptedAssertion = assertion.encrypt(encryptionConfig, pepEntityID);

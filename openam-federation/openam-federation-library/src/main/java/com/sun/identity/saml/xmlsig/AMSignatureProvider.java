@@ -24,7 +24,7 @@
  *
  * $Id: AMSignatureProvider.java,v 1.11 2009/08/29 03:06:47 mallas Exp $
  *
- * Portions Copyrighted 2013-2018 ForgeRock AS.
+ * Portions Copyrighted 2013-2019 ForgeRock AS.
  */
 
 package com.sun.identity.saml.xmlsig;
@@ -55,6 +55,7 @@ import org.apache.xml.security.signature.XMLSignature;
 import org.apache.xml.security.transforms.Transforms;
 import org.apache.xml.security.utils.Constants;
 import org.apache.xml.security.utils.ElementProxy;
+import org.forgerock.openam.federation.util.XmlSecurity;
 import org.forgerock.openam.utils.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -93,8 +94,7 @@ public class AMSignatureProvider implements SignatureProvider {
      * Default Constructor
      */
     public AMSignatureProvider() {
-        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
-        org.apache.xml.security.Init.init();
+        XmlSecurity.init();
         try {
             String kprovider = SystemConfigurationUtil.getProperty(
                 SAMLConstants.KEY_PROVIDER_IMPL_CLASS,

@@ -24,7 +24,7 @@
  *
  * $Id: IPRPSignoutRequest.java,v 1.7 2009/10/28 23:59:00 exu Exp $
  *
- * Portions Copyrighted 2018 ForgeRock AS.
+ * Portions Copyrighted 2018-2019 ForgeRock AS.
  *
  */
 
@@ -48,6 +48,8 @@ import java.util.logging.Level;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.StringUtils;
 
 /**
  * This class implements the sign-out request for both identity provider and
@@ -154,8 +156,12 @@ public class IPRPSignoutRequest extends WSFederationAction {
                     FederationElement fed =
                         metaManager.getEntityDescriptor(realm, 
                         idpList[0]);
-                    String endpoint = 
-                        metaManager.getTokenIssuerEndpoint(fed);
+                    String endpoint = CollectionUtils.getFirstItem(metaManager.getTokenIssuerEndpoints(fed));
+                    if (StringUtils.isEmpty(endpoint)) {
+                        debug.error("Invalid Token Issuer Endpoint specified");
+                        throw new WSFederationException(
+                            WSFederationUtils.bundle.getString("invalidTokenIssuerEndpoint"));
+                    }
                     String url = endpoint + "?wa=" + 
                         WSFederationConstants.WSIGNOUT10;
 
@@ -195,9 +201,13 @@ public class IPRPSignoutRequest extends WSFederationAction {
                         FederationElement fed =
                             metaManager.getEntityDescriptor(realm, 
                             spList[i]);
-                        String endpoint = 
-                            metaManager.getTokenIssuerEndpoint(fed);
-                        String url = 
+                        String endpoint = CollectionUtils.getFirstItem(metaManager.getTokenIssuerEndpoints(fed));
+                        if (StringUtils.isEmpty(endpoint)) {
+                            debug.error("Invalid Token Issuer Endpoint specified");
+                            throw new WSFederationException(
+                                WSFederationUtils.bundle.getString("invalidTokenIssuerEndpoint"));
+                        }
+                        String url =
                             endpoint + "?wa=" + 
                             WSFederationConstants.WSIGNOUT10;
                         if (debug.messageEnabled()) {

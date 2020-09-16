@@ -40,8 +40,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.owasp.esapi.ESAPI;
-
 import com.sun.identity.multiprotocol.MultiProtocolUtils;
 import com.sun.identity.multiprotocol.SingleLogoutManager;
 import com.sun.identity.plugin.session.SessionException;
@@ -357,10 +355,10 @@ public class IPSigninRequest extends WSFederationAction {
             debug.message(classMethod + "wresult before encoding: " + wresult);
         }
         
-        request.setAttribute(WSFederationConstants.POST_ACTION, ESAPI.encoder().encodeForHTML(targetURL));
+        request.setAttribute(WSFederationConstants.POST_ACTION, targetURL);
         request.setAttribute(WSFederationConstants.POST_WA, WSFederationConstants.WSIGNIN10);
-        request.setAttribute(WSFederationConstants.POST_WCTX, ESAPI.encoder().encodeForHTML(wctx));
-        request.setAttribute(WSFederationConstants.POST_WRESULT, ESAPI.encoder().encodeForHTML(wresult));
+        request.setAttribute(WSFederationConstants.POST_WCTX, wctx);
+        request.setAttribute(WSFederationConstants.POST_WRESULT, wresult);
         request.getRequestDispatcher("/wsfederation/jsp/post.jsp").forward(request, response);
     }
 

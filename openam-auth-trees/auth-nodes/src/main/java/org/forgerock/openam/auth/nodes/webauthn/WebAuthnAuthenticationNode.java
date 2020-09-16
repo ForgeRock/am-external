@@ -10,8 +10,8 @@
  * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
- * 
- * Copyright 2018-2020 ForgeRock AS. All Rights Reserved
+ *
+ * Copyright 2018-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -23,11 +23,13 @@ import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.WEB_
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
@@ -52,7 +54,6 @@ import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdUtils;
 import com.sun.identity.sm.DNMapper;
-import com.sun.identity.tools.objects.MapFormat;
 
 /**
  * A web authentication, authentication node. Uses client side javascript to interact with the browser and negotiate
@@ -89,7 +90,19 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
          * @return the relying party domain.
          */
         @Attribute(order = 10)
-        Optional<String> relyingPartyDomain();
+        default Optional<String> relyingPartyDomain() {
+            return Optional.empty();
+        }
+
+        /**
+         * Sets the origins from which this node accepts requests.
+         *
+         * @return the set of valid origins
+         */
+        @Attribute(order = 15)
+        default Set<String> origins() {
+            return Collections.emptySet();
+        }
 
         /**
          * If true, requires the user to be verified in the auth flow.
@@ -120,6 +133,16 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         default int timeout() {
             return 60;
         }
+
+        /**
+         * Specify whether to return the challenge as a script or just as metadata.
+         *
+         * @return {@literal true} if return as a script.
+         */
+        @Attribute(order = 50)
+        default boolean asScript() {
+            return true;
+        }
     }
 
     /**
@@ -146,14 +169,17 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("WebAuthnAuthenticationNode started");
         byte[] challengeBytes = getChallenge(context);
-        String rpId = getDomain(context.request.serverUrl, config.relyingPartyDomain());
 
         List<WebAuthnDeviceSettings> devices;
 
         try {
             logger.debug("getting user data and device data");
-            AMIdentity user = IdUtils.getIdentity(context.sharedState.get(USERNAME).asString(),
-                    context.sharedState.get(REALM).asString());
+            String username = context.sharedState.get(USERNAME).asString();
+            AMIdentity user = IdUtils.getIdentity(username, context.sharedState.get(REALM).asString());
+            if (user == null) {
+                logger.debug("returning with failure outcome. Unable to find user {}", username);
+                return Action.goTo(FAILURE_OUTCOME_ID).build();
+            }
             devices = webAuthnProfileManager.getDeviceProfiles(user.getName(),
                     DNMapper.orgNameToRealmName(user.getRealm()));
             if (devices.isEmpty()) {
@@ -165,12 +191,8 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         }
 
         String authScript = clientScriptUtilities.getScriptAsString(AUTH_SCRIPT);
-        Map<String, String> scriptContext = new HashMap<>();
-        scriptContext.put("challenge", Arrays.toString(challengeBytes));
-        scriptContext.put("acceptableCredentials", clientScriptUtilities.getDevicesAsJavaScript(devices));
-        scriptContext.put("timeout", String.valueOf(config.timeout() * 1000));
-        scriptContext.put("relyingPartyId", rpId);
-        authScript = MapFormat.format(authScript, scriptContext);
+        Map<String, String> scriptContext = getScriptContext(challengeBytes, devices,
+                config.relyingPartyDomain().orElse(null));
 
         if (context.getCallback(ConfirmationCallback.class)
                 .filter(callback -> callback.getSelectedIndex() == RECOVERY_PRESSED)
@@ -196,11 +218,14 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
                         context.sharedState.copy().put(WEB_AUTHENTICATION_DOM_EXCEPTION, exception.toString())).build();
             }
 
+            String rpId = getDomain(config.relyingPartyDomain(), context.request.headers.get("origin"),
+                    context.request.serverUrl);
+
             ClientScriptResponse response = clientScriptUtilities.parseClientAuthenticationResponse(result.get());
             WebAuthnDeviceSettings device = getEntry(response.getCredentialId(), devices);
             if (authenticationFlow.accept(response.getClientData(), response.getAuthenticatorData(),
-                    response.getSignature(), challengeBytes, rpId, device, context.request.serverUrl,
-                    config.userVerificationRequirement())) {
+                    response.getSignature(), challengeBytes, rpId, device,
+                    getPermittedOrigins(config.origins(), context), config.userVerificationRequirement())) {
                 logger.debug("returning with success outcome");
 
                 return Action.goTo(SUCCESS_OUTCOME_ID)
@@ -213,8 +238,26 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         } else {
             logger.debug("sending callbacks to user for completion");
             Callback[] additionalCallbacks = getAdditionalCallbacks(context.request.locales);
-            return getCallbacksForWebAuthnInteraction(authScript, context, additionalCallbacks);
+            return getCallbacksForWebAuthnInteraction(config.asScript(), authScript, scriptContext, context,
+                    additionalCallbacks);
         }
+    }
+
+    private Map<String, String> getScriptContext(byte[] challengeBytes, List<WebAuthnDeviceSettings> devices,
+                                                 String configuredRpId) {
+        Map<String, String> scriptContext = new HashMap<>();
+        scriptContext.put("challenge", Arrays.toString(challengeBytes));
+        scriptContext.put("acceptableCredentials", clientScriptUtilities.getDevicesAsJavaScript(devices));
+        scriptContext.put("timeout", String.valueOf(config.timeout() * 1000));
+        scriptContext.put("userVerification", config.userVerificationRequirement().getValue());
+
+        StringBuilder sb = new StringBuilder();
+        if (configuredRpId != null) {
+            sb.append("rpId: \"").append(configuredRpId).append("\",");
+        }
+        scriptContext.put("relyingPartyId", sb.toString());
+
+        return scriptContext;
     }
 
     private Callback[] getAdditionalCallbacks(PreferredLocales locales) {

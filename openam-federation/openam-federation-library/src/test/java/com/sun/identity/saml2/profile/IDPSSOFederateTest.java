@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
@@ -19,6 +19,11 @@ package com.sun.identity.saml2.profile;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.when;
+
+import java.io.PrintWriter;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.saml2.IDPRequestValidator;
 import org.forgerock.openam.saml2.IDPSSOFederateRequest;
@@ -30,10 +35,6 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.PrintWriter;
 
 public class IDPSSOFederateTest {
 

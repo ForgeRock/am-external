@@ -24,7 +24,7 @@
  *
  * $Id: AssertionIDRequestUtil.java,v 1.8 2009/06/12 22:21:40 mallas Exp $
  *
- * Portions Copyrighted 2013-2018 ForgeRock AS.
+ * Portions Copyrighted 2013-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -574,7 +574,7 @@ public class AssertionIDRequestUtil {
         }
 
         Set<X509Certificate> verificationCerts = KeyUtil.getVerificationCerts(spSSODesc, requestedEntityID,
-                SAML2Constants.SP_ROLE);
+                SAML2Constants.SP_ROLE, realm);
 
         if (!verificationCerts.isEmpty()) {
             boolean valid = assertionIDRequest.isSignatureValid(verificationCerts);
@@ -680,14 +680,14 @@ public class AssertionIDRequestUtil {
         }
 
         verifyResponse(response, assertionIDRequest, samlAuthorityEntityID,
-                role, roled);
+                realm, role, roled);
 
         return response;
     }
 
     private static void verifyResponse(Response response,
             AssertionIDRequest assertionIDRequest, String samlAuthorityEntityID,
-            String role, RoleDescriptorType roled) throws SAML2Exception {
+            String realm, String role, RoleDescriptorType roled) throws SAML2Exception {
 
         String aIDReqID = assertionIDRequest.getID();
         if ((aIDReqID != null) &&
@@ -708,7 +708,7 @@ public class AssertionIDRequestUtil {
         }
 
 
-        Set<X509Certificate> signingCerts = KeyUtil.getVerificationCerts(roled, samlAuthorityEntityID, role);
+        Set<X509Certificate> signingCerts = KeyUtil.getVerificationCerts(roled, samlAuthorityEntityID, role, realm);
 
         if (!signingCerts.isEmpty()) {
             boolean valid = response.isSignatureValid(signingCerts);

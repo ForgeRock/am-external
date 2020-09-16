@@ -24,7 +24,7 @@
  *
  * $Id: DefaultSPAttributeMapper.java,v 1.3 2008/06/25 05:48:07 qcheng Exp $
  *
- * Portions Copyrighted 2017 ForgeRock AS.
+ * Portions Copyrighted 2017-2019 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.plugins;
 
@@ -70,8 +70,8 @@ public class DefaultSPAttributeMapper extends DefaultAttributeMapper implements 
      *         key as the attribute name and the value as the attribute value
      * @throws WSFederationException for any failures.
      */ 
-    public Map getAttributes(
-        List attributes,
+    public Map<String, Set<String>> getAttributes(
+        List<Attribute> attributes,
         String userID,
         String hostEntityID,
         String remoteEntityID, 
@@ -92,19 +92,19 @@ public class DefaultSPAttributeMapper extends DefaultAttributeMapper implements 
  
         Map<String, Set<String>> attributeMap = new HashMap<>(attributes.size());
         Map<String, String> configMap = getConfigAttributeMap(realm, hostEntityID, SP);
-        for (Object attribute : attributes) {
+        for (Attribute attribute : attributes) {
             Set<String> values = new HashSet<>();
             try {
-                List attrValues = ((Attribute) attribute).getAttributeValue();
-                for (Object attrValue : attrValues) {
-                    values.add(XMLUtils.getElementValue((Element) attrValue));
+                List<Element> attrValues = attribute.getAttributeValue();
+                for (Element attrValue : attrValues) {
+                    values.add(XMLUtils.getElementValue(attrValue));
                 }
             } catch (SAMLException se) {
                 throw new WSFederationException(se);
             }
-            String attributeName = ((Attribute) attribute).getAttributeName();
+            String attributeName = attribute.getAttributeName();
             String localAttribute = configMap.get(attributeName);
-            if (StringUtils.isNotEmpty(localAttribute)) {
+            if (StringUtils.isEmpty(localAttribute)) {
                 localAttribute = attributeName;
             }
             Set<String> existingValues = attributeMap.get(localAttribute);

@@ -289,7 +289,7 @@ public class IDPArtifactResolution {
                         "ArtifactResolveNotSigned", null);
             }
             Set<X509Certificate> verificationCerts = KeyUtil.getVerificationCerts(spSSODescriptor, spEntityID,
-                    SAML2Constants.SP_ROLE);
+                    SAML2Constants.SP_ROLE, realm);
             if (!artResolve.isSignatureValid(verificationCerts)) {
                 SAML2Utils.debug.error(classMethod +
                     "artifact resolve verification failed.");

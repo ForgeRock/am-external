@@ -24,16 +24,15 @@
  *
  * $Id: IDPCache.java,v 1.18 2009/05/14 17:23:45 exu Exp $
  *
- * Portions Copyrighted 2010-2016 ForgeRock AS.
+ * Portions Copyrighted 2010-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
-import com.sun.identity.common.PeriodicCleanUpMap;
-import java.util.Collections;
 import java.util.Hashtable;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import com.sun.identity.common.PeriodicCleanUpMap;
 
 /**
  * This class caches authn request objects and relay states
@@ -57,16 +56,6 @@ public class IDPCache {
      */
     public static PeriodicCleanUpMap authnRequestCache = new PeriodicCleanUpMap(
         SPCache.interval * 1000, SPCache.interval * 1000); 
-
-    /**
-     * Cache saves the authn context objects before IDP redirects user to 
-     * authentication.
-     * Key : request ID String
-     * Value : AuthnContext object
-     */
-    public static PeriodicCleanUpMap idpAuthnContextCache = 
-        new PeriodicCleanUpMap(
-            SPCache.interval * 1000, SPCache.interval * 1000); 
 
     /**
      * Cache saves the assertion objects.
@@ -178,22 +167,6 @@ public class IDPCache {
      * value : the AuthnContext object
      */
     public static Hashtable authnContextCache = new Hashtable();
-
-    /**
-     * Cache saves information to determine if the request was
-     * a session upgrade case. 
-     * key   : requestID (String)
-     * value : session upgrade (Boolean)
-     */
-    public static Set isSessionUpgradeCache =  
-        Collections.synchronizedSet(new HashSet());
-
-    /**
-     * Cache saves the IDP Session object before an session upgrade.
-     * key    : requestID (String)
-     * value  : IDPSession object.
-     */
-    public static Hashtable oldIDPSessionCache = new Hashtable();
     
     /**
       * Cache saves the original AuthnRequest coming from SP to IDP proxy

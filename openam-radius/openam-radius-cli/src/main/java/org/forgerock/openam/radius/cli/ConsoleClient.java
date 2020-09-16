@@ -12,7 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2017 ForgeRock AS.
+ * Portions Copyrighted 2017-2020 ForgeRock AS.
  */
 package org.forgerock.openam.radius.cli;
 
@@ -183,7 +183,7 @@ public class ConsoleClient implements Runnable {
             final ByteBuffer bufIn = ByteBuffer.allocate(4096); // ready for writing
 
             while (!finished) {
-                final RequestAuthenticator reqAuthR = new RequestAuthenticator(random, this.secret);
+                final RequestAuthenticator reqAuthR = new RequestAuthenticator(random);
                 final AccessRequest req = new AccessRequest(reqId++, reqAuthR);
                 req.addAttribute(new UserNameAttribute(username));
                 req.addAttribute(new UserPasswordAttribute(req.getAuthenticator(), this.secret, passwordOrAnswer));

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.fr.oath;
@@ -104,7 +104,7 @@ public class AuthenticatorAppRegistrationURIBuilder {
         byte[] secretPlainTextBytes = Hex.decodeHex(secretHex.toCharArray());
 
         Base32 base32 = new Base32();
-        String secretBase32 = new String(base32.encode(secretPlainTextBytes));
+        String secretBase32 = new String(base32.encode(secretPlainTextBytes)).replace("=","");
 
         String userName = id.getName();
 

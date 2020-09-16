@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 package org.forgerock.openam.authentication;
 
@@ -21,6 +21,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.sun.identity.plugin.session.SessionManager;
+import com.sun.identity.plugin.session.SessionProvider;
+import com.sun.identity.saml2.profile.IDPSSOUtil;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.authentication.service.SessionUpgradeHandler;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
@@ -74,21 +77,7 @@ public class Saml2SessionUpgradeHandler implements SessionUpgradeHandler {
                 debug.warning("Unable to create an SSOToken for the session ID due to " + ssoe.toString());
                 return;
             }
-
-            IDPSession idpSession = IDPCache.idpSessionsByIndices.get(sessionIndex);
-            if (idpSession == null) {
-                if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                    try {
-                        final IDPSessionCopy idpSessionCopy =
-                                (IDPSessionCopy) SAML2FailoverUtils.retrieveSAML2Token(sessionIndex);
-                        if (idpSessionCopy != null) {
-                            idpSession = new IDPSession(idpSessionCopy);
-                        }
-                    } catch (SAML2TokenRepositoryException stre) {
-                        debug.warning("Unable to retrieve IDPSessionCopy from SAML failover store", stre);
-                    }
-                }
-            }
+            IDPSession idpSession = IDPSSOUtil.retrieveCachedIdPSession(sessionIndex);
 
             if (idpSession != null) {
                 idpSession.setSession(newSSOToken);
@@ -108,6 +97,12 @@ public class Saml2SessionUpgradeHandler implements SessionUpgradeHandler {
                 }
 
                 IDPCache.idpSessionsByIndices.put(sessionIndex, idpSession);
+                try {
+                    SessionProvider sessionProvider = SessionManager.getProvider();
+                    IDPSSOUtil.saveIdPSessionToTokenRepository(sessionIndex, sessionProvider, idpSession, newSSOToken);
+                } catch (com.sun.identity.plugin.session.SessionException e) {
+                    debug.warning("Failed to save idpSession to token store for {}", sessionIndex, e);
+                }
                 IDPCache.idpSessionsBySessionID.put(newSessionID, idpSession);
             }
 

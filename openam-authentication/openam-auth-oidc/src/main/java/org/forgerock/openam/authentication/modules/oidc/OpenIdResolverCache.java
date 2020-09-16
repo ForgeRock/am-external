@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2019 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
@@ -29,16 +29,19 @@ import java.net.URL;
  */
 public interface OpenIdResolverCache {
     /**
+     * Obtain the resolver for the specified issuer and cryptoContextDefinitionValue
+     * @param issuer The issuer.
      * @param cryptoContextDefinitionValue Either the discovery url, jwk url, or client_secret used to configure the authN module.
      *                                     This value is the key into the Map of OpenIdResolver instances.
      * @return The OpenIdResolver instance which can validate jwts issued by the specified issuer. If no issuer has
      * been configured, null will be returned.
      */
-    OpenIdResolver getResolverForIssuer(String cryptoContextDefinitionValue);
+    OpenIdResolver getResolverForIssuer(String issuer, String cryptoContextDefinitionValue);
 
     /**
+     * Create a resolver based on the issuer and cryptoContextValue
      * @param  issuerFromJwk The string corresponding to the issuer. This information is present in the OIDC discovery data, but
-     *                it is used to insure that the issuer string configured for the login module, and the issuer string
+     *                it is used to ensure that the issuer string configured for the login module, and the issuer string
      *                pulled from the configuration url, match.
      * @param cryptoContextType Identifies the manner in which the crypto context was defined (discovery url, jwk url, or client_secret)
      * @param cryptoContextValue The specific value of the discovery url, jwk url, or client_secret
@@ -49,6 +52,6 @@ public interface OpenIdResolverCache {
      *         FailedToLoadJWKException If the jwk descriptor could not be loaded from url referenced by the discovery or jwk url
      *         IllegalArgumentException if the cryptoContextType specification is unknown
      */
-    OpenIdResolver createResolver(String issuerFromJwk, String cryptoContextType, String cryptoContextValue, URL cryptoContextValueUrl)
-            throws FailedToLoadJWKException;
+    OpenIdResolver createResolver(String issuerFromJwk, String cryptoContextType, String cryptoContextValue,
+            URL cryptoContextValueUrl) throws FailedToLoadJWKException;
 }

@@ -285,9 +285,9 @@ hooker@~0.2.3:
   integrity sha1-uDT3I8xKJCqmWWNFnfbZhMXT2Vk=
 
 hosted-git-info@^2.1.4:
-  version "2.8.5"
-  resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/hosted-git-info/-/hosted-git-info-2.8.5.tgz#759cfcf2c4d156ade59b0b2dfabddc42a6b9c70c"
-  integrity sha1-dZz88sTRVq3lmwst+r3cQqa5xww=
+  version "2.8.4"
+  resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/hosted-git-info/-/hosted-git-info-2.8.4.tgz#44119abaf4bc64692a16ace34700fed9c03e2546"
+  integrity sha1-RBGauvS8ZGkqFqzjRwD+2cA+JUY=
 
 iconv-lite@~0.4.13:
   version "0.4.24"
@@ -613,10 +613,10 @@ supports-color@^2.0.0:
   resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/supports-color/-/supports-color-2.0.0.tgz#535d045ce6b6363fa40117084629995e9df324c7"
   integrity sha1-U10EXOa2Nj+kARcIRimZXp3zJMc=
 
-swagger-ui-dist@3.21.0:
-  version "3.21.0"
-  resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/swagger-ui-dist/-/swagger-ui-dist-3.21.0.tgz#172bdd39d7d2efd4d4998411702ebe562a934631"
-  integrity sha1-FyvdOdfS79TUmYQRcC6+ViqTRjE=
+swagger-ui-dist@3.26.2:
+  version "3.26.2"
+  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/swagger-ui-dist/-/swagger-ui-dist-3.26.2.tgz#22c700906c8911b1c9956da6c3fca371dba6219f"
+  integrity sha1-IscAkGyJEbHJlW2mw/yjcdumIZ8=
 
 swagger-ui-themes@3.0.0:
   version "3.0.0"

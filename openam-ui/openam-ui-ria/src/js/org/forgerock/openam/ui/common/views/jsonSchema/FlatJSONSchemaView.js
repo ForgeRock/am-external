@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2018 ForgeRock AS.
+ * Copyright 2016-2020 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -61,7 +61,8 @@ const FlatJSONSchemaView = Backbone.View.extend({
         }
 
         this.options = _.defaults(options, {
-            showOnlyRequiredAndEmpty: false
+            showOnlyRequiredAndEmpty: false,
+            showOnlyRequired: false
         });
     },
     render () {
@@ -74,6 +75,10 @@ const FlatJSONSchemaView = Backbone.View.extend({
             const requiredAndEmptyKeys = _.intersection(requiredSchemaKeys, emptyValueKeys);
             schema = schema.removeUnrequiredNonDefaultProperties().addDefaultProperties(requiredAndEmptyKeys);
             displayForm = !_.isEmpty(requiredAndEmptyKeys);
+        } else if (this.options.showOnlyRequired) {
+            const requiredSchemaKeys = this.options.schema.getRequiredPropertyKeys();
+            schema = schema.removeUnrequiredNonDefaultProperties().addDefaultProperties(requiredSchemaKeys);
+            displayForm = !_.isEmpty(requiredSchemaKeys);
         }
 
         this.subview = new JSONEditorView({

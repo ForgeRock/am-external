@@ -11,8 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
+
+import { t } from "i18next";
 
 import _ from "lodash";
 import $ from "jquery";
@@ -57,6 +59,20 @@ function walkTreeForFilterStrings (basicNode) {
     } else {
         return "";
     }
+}
+
+export function getRegistrationError (code, reason) {
+    let error;
+    // Provide a self registration specific error message related to the following scenarios.
+    // If no match, no message returned - ErrorHandler will display generic message instead based on code
+    if (code === 409 || _.startsWith(reason, "ldap exception") || _.startsWith(reason, "Resource already exists")) {
+        error = t("config.messages.UserMessages.registerDataInvalid");
+    } else if (code === 400 && _.startsWith(reason, "CONSTRAINT_VIOLATION")) {
+        error = t("config.messages.UserMessages.registerDataInvalid");
+    } else if (_.startsWith(reason, "Identity names may not have a space character")) {
+        error = t("config.messages.UserMessages.registerDataInvalid");
+    }
+    return error;
 }
 
 /**
@@ -174,6 +190,13 @@ const AnonymousProcessView = AbstractView.extend({
                 status: response.status,
                 additions: response.additions
             }, this.data);
+        }
+
+        if (_.has(this.stateData, "status") && !this.stateData.status.success) {
+            const errorMessage = getRegistrationError(this.stateData.status.code, this.stateData.status.reason);
+            if (errorMessage) {
+                this.stateData.status.reason = errorMessage;
+            }
         }
 
         if (_.has(response, "type") && _.has(response, "tag")) {

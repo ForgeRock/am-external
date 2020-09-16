@@ -24,12 +24,11 @@
  *
  * $Id: KeyUtil.java,v 1.10 2009/08/28 23:42:14 exu Exp $
  *
- * Portions Copyrighted 2013-2020 ForgeRock AS.
+ * Portions Copyrighted 2013-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.key;
 
 import java.io.ByteArrayInputStream;
-import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
@@ -40,6 +39,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -48,10 +48,10 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBIntrospector;
 import javax.xml.namespace.QName;
 
-import org.apache.xml.security.Init;
 import org.apache.xml.security.algorithms.JCEMapper;
 import org.apache.xml.security.encryption.XMLCipher;
 import org.apache.xml.security.utils.EncryptionConstants;
+import org.forgerock.openam.federation.util.XmlSecurity;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.w3c.dom.Element;
@@ -90,16 +90,11 @@ public class KeyUtil {
 
     private static KeyProvider keyProvider = null;
 
-    // key is EntityID|Role
-    private static Map<String, EncryptionConfig> encHash = new Hashtable<>();
-
-    // key is EntityID|Role
-    // value is X509Certificate
-    protected static Map<String, Set<X509Certificate>> sigHash = new Hashtable<>();
+    private static Map<CacheKey, EncryptionConfig> encHash = new Hashtable<>();
+    private static Map<CacheKey, Set<X509Certificate>> sigHash = new Hashtable<>();
 
     static {
-        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
-        Init.init();
+        XmlSecurity.init();
         try {
             keyProvider = (KeyProvider)Class.forName(SystemConfigurationUtil.getProperty(
                     SAMLConstants.KEY_PROVIDER_IMPL_CLASS,
@@ -221,14 +216,15 @@ public class KeyUtil {
      * @param roleDescriptor <code>RoleDescriptor</code> for the partner entity.
      * @param entityID Partner entity's ID.
      * @param role Entity's role.
+     * @param realm Entity's realm
      * @return The set of signing {@link X509Certificate} for verifying the partner entity's signature.
      */
     public static Set<X509Certificate> getVerificationCerts(RoleDescriptorType roleDescriptor, String entityID,
-            String role) {
+            String role, String realm) {
         String classMethod = "KeyUtil.getVerificationCerts: ";
 
         // first try to get it from cache
-        String index = entityID.trim() + "|" + role;
+        CacheKey index = new CacheKey(entityID, role, realm);
         Set<X509Certificate> certificates = sigHash.get(index);
         if (certificates != null) {
             return certificates;
@@ -237,20 +233,13 @@ public class KeyUtil {
         certificates = new LinkedHashSet<>(3);
         // else get it from meta
         if (roleDescriptor == null) {
-            SAML2SDKUtils.debug.error(
-                    classMethod+
-                            "Null RoleDescriptorType input for entityID=" +
-                            entityID + " in "+role+" role."
-            );
+            SAML2SDKUtils.debug.error("{}Null RoleDescriptorType input for entityID={} in realm {} with {} role.",
+                    classMethod, entityID, realm, role);
             return null;
         }
         List<KeyDescriptorElement> keyDescriptors = getKeyDescriptors(roleDescriptor, SAML2Constants.SIGNING);
         if (keyDescriptors.isEmpty()) {
-            SAML2SDKUtils.debug.error(
-                    classMethod+
-                            "No signing KeyDescriptor for entityID=" +
-                            entityID + " in "+role+" role."
-            );
+            SAML2SDKUtils.debug.error("{}No signing KeyDescriptor for entityID={} in realm {} with {} role.", classMethod, entityID, realm, role);
             return certificates;
         }
 
@@ -258,11 +247,7 @@ public class KeyUtil {
             certificates.add(getCert(keyDescriptor));
         }
         if (certificates.isEmpty()) {
-            SAML2SDKUtils.debug.error(
-                    classMethod +
-                            "No signing cert for entityID=" +
-                            entityID + " in "+role+" role."
-            );
+            SAML2SDKUtils.debug.error("{} No signing cert for entityID={} in realm {} with {} role.", classMethod, entityID, realm, role);
             return null;
         }
         sigHash.put(index, certificates);
@@ -276,35 +261,33 @@ public class KeyUtil {
      * @param roleDescriptor <code>RoleDescriptor</code> for the partner entity
      * @param entityID partner entity's ID
      * @param role entity's role
+     * @param realm the entity's realm
      * @return <code>EncryptionConfig</code> which includes partner entity's
      * public key for wrapping the secret key, data encryption algorithm,
      * and data encryption strength
      */
     public static EncryptionConfig getEncryptionConfig(RoleDescriptorType roleDescriptor, String entityID,
-            String role) {
+            String role, String realm) {
         String classMethod = "KeyUtil.getEncryptionConfig: ";
-        if (SAML2SDKUtils.debug.messageEnabled()) {
-            SAML2SDKUtils.debug.message("{}Entering... \nEntityID={}\nRole={}", classMethod, entityID, role);
-        }
+        SAML2SDKUtils.debug.message("{}Entering... \nEntityID={}\nRole={}\nRealm={}", classMethod, entityID, role, realm);
+
         // first try to get it from cache
-        String index = entityID.trim() + "|" + role;
+        CacheKey index = new CacheKey(entityID, role, realm);
         EncryptionConfig encryptionConfig = encHash.get(index);
         if (encryptionConfig != null) {
             return encryptionConfig;
         }
         // else get it from meta
         if (roleDescriptor == null) {
-            SAML2SDKUtils.debug.error("{}Null RoleDescriptorType input for entityID={} in {} role.", classMethod,
-                    entityID, role);
+            SAML2SDKUtils.debug.error("{}Null RoleDescriptorType input for entityID={} in realm {} with {} role.", classMethod, entityID, realm, role);
             return null;
         }
         KeyDescriptorElement keyDescriptor = getKeyDescriptor(roleDescriptor, SAML2Constants.ENCRYPTION);
         if (keyDescriptor == null) {
-            SAML2SDKUtils.debug.error("{}No encryption KeyDescriptor for entityID={} in {} role.", classMethod,
-                    entityID, role);
+            SAML2SDKUtils.debug.error("{}No encryption KeyDescriptor for entityID={} in realm {} with {} role.", classMethod, entityID, realm, role);
             return null;
         }
-        return getEncryptionConfig(keyDescriptor, entityID, role);
+        return getEncryptionConfig(keyDescriptor, entityID, role, realm);
     }
 
     /**
@@ -430,11 +413,12 @@ public class KeyUtil {
      *
      * @param pepDescriptor <code>XACMLAuthzDecisionQueryDescriptorElement</code> for the partner entity.
      * @param entityID Policy Enforcement Point (PEP) entity identifier.
+     * @param realm the realm
      * @return The Set of signing {@link X509Certificate}s for verifying the partner entity's signature.
      */
     public static Set<X509Certificate> getPEPVerificationCerts(XACMLAuthzDecisionQueryDescriptorType pepDescriptor,
-            String entityID) {
-        return getVerificationCerts(pepDescriptor, entityID, SAML2Constants.PEP_ROLE);
+            String entityID, String realm) {
+        return getVerificationCerts(pepDescriptor, entityID, SAML2Constants.PEP_ROLE, realm);
     }
 
     /**
@@ -444,37 +428,37 @@ public class KeyUtil {
      * @param pepDesc <code>XACMLAuthzDecisionQueryDescriptorElement</code>
      * for the partner entity
      * @param pepEntityID partner entity's ID
+     * @param realm the realm
      * @return <code>EncryptionConfig</code> which includes partner entity's
      * public key for wrapping the secret key, data encryption algorithm,
      * and data encryption strength
      */
     public static EncryptionConfig getPepEncryptionConfig(XACMLAuthzDecisionQueryDescriptorType pepDesc,
-            String pepEntityID) {
+            String pepEntityID, String realm) {
         String classMethod = "KeyUtil.getEncryptionConfig: ";
         String role = SAML2Constants.PEP_ROLE;
 
-        if (SAML2SDKUtils.debug.messageEnabled()) {
-            SAML2SDKUtils.debug.message(classMethod + "Entering... \nEntityID=" + pepEntityID + "\nRole="+role);
-        }
+        SAML2SDKUtils.debug.message("{}Entering... \nEntityID={}\nRole={}\nRealm={}", classMethod, pepEntityID, role, realm);
+
         // first try to get it from cache
-        String index = pepEntityID.trim() + "|" + role;
+        CacheKey index = new CacheKey(pepEntityID, role, realm);
         EncryptionConfig encryptionConfig = encHash.get(index);
         if (encryptionConfig != null) {
             return encryptionConfig;
         }
         // else get it from meta
         if (pepDesc == null) {
-            SAML2SDKUtils.debug.error(classMethod + "Null PEP Descriptor input for entityID=" + pepEntityID + " in " + role
-                    + " role.");
+            SAML2SDKUtils.debug.error("{}Null PEP Descriptor input for entityID={} in realm {} with {} role.",
+                    classMethod, pepEntityID, realm, role);
             return null;
         }
         KeyDescriptorElement keyDescriptor = getKeyDescriptor(pepDesc, SAML2Constants.ENCRYPTION);
         if (keyDescriptor == null) {
-            SAML2SDKUtils.debug.error(classMethod + "No encryption KeyDescriptor for entityID=" + pepEntityID +
-                    " in " + role + " role.");
+            SAML2SDKUtils.debug.error("{}No encryption KeyDescriptor for entityID={} in realm {} with {} role.",
+                    classMethod, pepEntityID, realm, role);
             return null;
         }
-        return getEncryptionConfig(keyDescriptor, pepEntityID, role);
+        return getEncryptionConfig(keyDescriptor, pepEntityID, role, realm);
     }
 
     /**
@@ -483,15 +467,15 @@ public class KeyUtil {
      * @param keyDescriptor the M<code>KeyDescriptor</code> object.
      * @param entityID the entity identifier
      * @param role the role of the entity . Value can be PEP or PDP.
+     * @param realm the realm.
      * @return <code>EncryptionConfig</code> the encryption info.
      */
     private static EncryptionConfig getEncryptionConfig(KeyDescriptorElement keyDescriptor, String entityID,
-            String role) {
+            String role, String realm) {
         String classMethod = "KeyUtil:getEncryptionConfig:";
         X509Certificate cert = getCert(keyDescriptor);
         if (cert == null) {
-            SAML2SDKUtils.debug.error(classMethod + "No encryption cert for entityID=" + entityID +
-                    " in " + role + " role.");
+            SAML2SDKUtils.debug.error("{}No encryption cert for entityID={} in realm {} with {} role.", classMethod, entityID, realm, role);
             return null;
         }
         List<EncryptionMethodType> encryptionMethods = keyDescriptor.getValue().getEncryptionMethod();
@@ -529,8 +513,8 @@ public class KeyUtil {
             encryptionConfig = new EncryptionConfig(publicKey, dataEncryptionAlgorithm, keySize, keyTransportAlgorithm,
                     Optional.ofNullable(rsaOaepConfig));
         }
-        String index = entityID.trim()+"|"+role;
         if (encryptionConfig != null) {
+            CacheKey index = new CacheKey(entityID, role, realm);
             encHash.put(index, encryptionConfig);
         }
         return encryptionConfig;
@@ -589,8 +573,8 @@ public class KeyUtil {
      * @return The Set of signing {@link X509Certificate}s for verifying the partner entity's signature.
      */
     public static Set<X509Certificate> getPDPVerificationCerts(XACMLPDPDescriptorType pdpDescriptor,
-            String entityID) {
-        return getVerificationCerts(pdpDescriptor, entityID, SAML2Constants.PDP_ROLE);
+            String entityID, String realm) {
+        return getVerificationCerts(pdpDescriptor, entityID, SAML2Constants.PDP_ROLE, realm);
     }
 
     /**
@@ -599,5 +583,43 @@ public class KeyUtil {
     public static void clear() {
         sigHash.clear();
         encHash.clear();
+    }
+
+    /**
+     * Composite key class comprising (EntityID,Role,Realm). The EntityID is trimmed
+     * and null/empty realm is normalized to "/".
+     */
+    private static final class CacheKey {
+        private final String entityId;
+        private final String role;
+        private final String realm;
+
+        private CacheKey(String entityId, String role, String realm) {
+            this.entityId = entityId.trim();
+            this.role = role;
+            if (StringUtils.isEmpty(realm)) {
+                realm = "/";
+            }
+            this.realm = realm;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            CacheKey cacheKey = (CacheKey) o;
+            return Objects.equals(entityId, cacheKey.entityId) &&
+                    Objects.equals(role, cacheKey.role) &&
+                    realm.equalsIgnoreCase(cacheKey.realm);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(entityId, role, realm.toLowerCase());
+        }
     }
 } 

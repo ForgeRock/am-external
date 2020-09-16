@@ -24,17 +24,17 @@
  *
  * $Id: CacheCleanUpScheduler.java,v 1.8 2009/05/14 17:23:44 exu Exp $
  *
- * Portions Copyrighted 2014-2016 ForgeRock AS.
+ * Portions Copyrighted 2014-2020 ForgeRock AS.
  */
-
 package com.sun.identity.saml2.profile;
 
-import static com.sun.identity.saml2.profile.SPCache.*;
-import static org.forgerock.openam.utils.Time.*;
+import static com.sun.identity.saml2.profile.SPCache.interval;
+import static org.forgerock.openam.utils.Time.currentTimeMillis;
+
+import java.util.Date;
 
 import com.sun.identity.common.SystemTimerPool;
 import com.sun.identity.common.TimerPool;
-import java.util.Date;
 
 public class CacheCleanUpScheduler {
     
@@ -53,7 +53,6 @@ public class CacheCleanUpScheduler {
         pool.schedule(SPCache.fedAccountHash, nextRun);
         pool.schedule(SPCache.assertionByIDCache, nextRun);
         pool.schedule(IDPCache.authnRequestCache, nextRun);
-        pool.schedule(IDPCache.idpAuthnContextCache, nextRun);
         pool.schedule(IDPCache.assertionByIDCache, nextRun);
         pool.schedule(IDPCache.relayStateCache, nextRun);
         pool.schedule(IDPCache.responsesByArtifacts, nextRun);

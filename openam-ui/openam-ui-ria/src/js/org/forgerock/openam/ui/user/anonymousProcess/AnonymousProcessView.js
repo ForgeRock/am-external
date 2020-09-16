@@ -11,14 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2019 ForgeRock AS.
  */
 
 import _ from "lodash";
-import i18next from "i18next";
 
 import { parseParameters, urlParamsFromObject } from "org/forgerock/openam/ui/common/util/uri/query";
-import AnonymousProcessView from "org/forgerock/commons/ui/user/anonymousProcess/AnonymousProcessView";
+import AnonymousProcessView, {
+    getRegistrationError
+} from "org/forgerock/commons/ui/user/anonymousProcess/AnonymousProcessView";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 import fetchUrl from "org/forgerock/openam/ui/common/services/fetchUrl";
@@ -47,20 +48,6 @@ function isSelfRegistrationFlow (endpoint) {
 
 function isPasswordResetFlow (endpoint) {
     return endpoint.indexOf(Constants.SELF_SERVICE_RESET_PASSWORD) !== -1;
-}
-
-function getRegistrationError (code, reason) {
-    let error;
-    // Provide a self registration specific error message related to the following scenarios.
-    // If no match, no message returned - ErrorHandler will display generic message instead based on code
-    if (code === 409 || _.startsWith(reason, "ldap exception") || _.startsWith(reason, "Resource already exists")) {
-        error = i18next.t("config.messages.UserMessages.registerDataInvalid");
-    } else if (code === 400 && _.startsWith(reason, "CONSTRAINT_VIOLATION")) {
-        error = i18next.t("config.messages.UserMessages.registerDataInvalid");
-    } else if (_.startsWith(reason, "Identity names may not have a space character")) {
-        error = i18next.t("config.messages.UserMessages.registerDataInvalid");
-    }
-    return error;
 }
 
 export default AnonymousProcessView.extend({

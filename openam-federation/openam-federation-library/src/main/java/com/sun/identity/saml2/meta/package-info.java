@@ -24,11 +24,11 @@
  *
  * $Id: package-info.java,v 1.2 2008/06/25 05:47:49 qcheng Exp $
  *
+ * Portions Copyrighted 2017-2020 ForgeRock AS.
  */
 
 /**
  * Package that handles SAML v2 metadata operations.
- *
+ * @supported.api
  */
 package com.sun.identity.saml2.meta;
-

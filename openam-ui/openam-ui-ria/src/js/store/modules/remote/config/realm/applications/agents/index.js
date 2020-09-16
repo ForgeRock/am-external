@@ -11,10 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2019 ForgeRock AS.
  */
 import { combineReducers } from "redux";
 
+import identityGateway from "./identityGateway";
 import java from "./java";
 import remoteConsent from "./remoteConsent";
 import soapSts from "./soapSts";
@@ -23,6 +24,7 @@ import trustedJwtIssuer from "./trustedJwtIssuer";
 import web from "./web";
 
 export default combineReducers({
+    identityGateway,
     java,
     remoteConsent,
     soapSts,

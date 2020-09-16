@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.key;
 
@@ -47,7 +47,8 @@ public class RsaOaepConfig {
      * @param oaepParams The OAEP parameters to use (also known as the label, or PSource).
      */
     public RsaOaepConfig(String digestMethod, String maskGenerationFunction, byte[] oaepParams) {
-        Reject.ifNull(digestMethod, maskGenerationFunction);
+        Reject.ifNull(digestMethod, "Digest method must not be null");
+        Reject.ifNull(maskGenerationFunction, "Mask Generation Function must not be null");
         this.digestMethod = digestMethod;
         this.maskGenerationFunction = maskGenerationFunction;
         this.oaepParams = oaepParams;

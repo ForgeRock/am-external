@@ -24,7 +24,7 @@
  *
  * $Id: SAML2MetaSecurityUtils.java,v 1.6 2009/06/08 23:43:18 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2018 ForgeRock AS.
+ * Portions Copyrighted 2010-2019 ForgeRock AS.
  */
 package com.sun.identity.saml2.meta;
 
@@ -46,6 +46,7 @@ import org.apache.xml.security.keys.storage.implementations.KeyStoreResolver;
 import org.apache.xml.security.signature.XMLSignature;
 import org.apache.xml.security.utils.Constants;
 import org.apache.xml.security.utils.EncryptionConstants;
+import org.forgerock.openam.federation.util.XmlSecurity;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -121,8 +122,7 @@ public final class SAML2MetaSecurityUtils {
             return;
         }
 
-        System.setProperty("org.apache.xml.security.resource.config", "/xml-security-config.xml");
-        org.apache.xml.security.Init.init();
+        XmlSecurity.init();
 
         keyProvider = KeyUtil.getKeyProviderInstance();
         if (keyProvider != null) {

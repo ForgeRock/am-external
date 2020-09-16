@@ -22,7 +22,7 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2019 ForgeRock AS.
+ * Portions Copyrighted 2010-2020 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.common;
@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
@@ -85,7 +86,6 @@ import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.Reject;
-import org.owasp.esapi.ESAPI;
 
 import com.sun.identity.common.HttpURLConnectionManager;
 import com.sun.identity.common.SystemConfigurationException;
@@ -94,12 +94,16 @@ import com.sun.identity.cot.COTException;
 import com.sun.identity.cot.CircleOfTrustDescriptor;
 import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.federation.common.FSUtils;
+import org.forgerock.openam.federation.plugin.rooturl.RootUrlManager;
+import org.forgerock.openam.federation.plugin.rooturl.RootUrlProvider;
+import org.forgerock.openam.federation.plugin.rooturl.RootUrlProviderException;
 import com.sun.identity.plugin.datastore.DataStoreProvider;
 import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.plugin.datastore.DataStoreProviderManager;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.saml.common.SAMLConstants;
+import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml.common.SAMLUtilsCommon;
 import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.saml2.assertion.Assertion;
@@ -161,10 +165,12 @@ import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.encode.CookieUtils;
 import com.sun.identity.shared.encode.URLEncDec;
 import com.sun.identity.shared.xml.XMLUtils;
+import org.forgerock.util.annotations.VisibleForTesting;
 
 /**
  * The <code>SAML2Utils</code> contains utility methods for SAML 2.0
  * implementation.
+ * @supported.api
  */
 public class SAML2Utils extends SAML2SDKUtils {
 
@@ -445,7 +451,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             }
             if (idpSSODescriptor != null) {
                 Set<X509Certificate> verificationCerts = KeyUtil.getVerificationCerts(idpSSODescriptor, idpEntityId,
-                        SAML2Constants.IDP_ROLE);
+                        SAML2Constants.IDP_ROLE, orgName);
                 if (CollectionUtils.isEmpty(verificationCerts) || !response.isSignatureValid(verificationCerts)) {
                     debug.error(method + "Response is not signed or signature is not valid.");
                     String[] data = { orgName, hostEntityId, idpEntityId };
@@ -548,7 +554,7 @@ public class SAML2Utils extends SAML2SDKUtils {
                 if (verificationCerts == null) {
                     idp = saml2MetaManager.getIDPSSODescriptor(
                             orgName, idpEntityId);
-                    verificationCerts = KeyUtil.getVerificationCerts(idp, idpEntityId, SAML2Constants.IDP_ROLE);
+                    verificationCerts = KeyUtil.getVerificationCerts(idp, idpEntityId, SAML2Constants.IDP_ROLE, orgName);
                 }
                 if (CollectionUtils.isEmpty(verificationCerts) || !assertion.isSignatureValid(verificationCerts)) {
                     debug.error(method +
@@ -1401,6 +1407,7 @@ public class SAML2Utils extends SAML2SDKUtils {
      * Returns an instance of <code>SAML2MetaManger</code>.
      *
      * @return Instance of <code>SAML2MetaManager</code>
+     * @supported.api
      */
     public static SAML2MetaManager getSAML2MetaManager() {
         return saml2MetaManager;
@@ -2166,14 +2173,14 @@ public class SAML2Utils extends SAML2SDKUtils {
     public static boolean getBooleanAttributeValueFromSSOConfig(String realm,
             String hostEntityId, String entityRole, String attrName) {
 
-        List value = (List) getAllAttributeValueFromSSOConfig(realm,
+        List<String> value = getAllAttributeValueFromSSOConfig(realm,
                 hostEntityId, entityRole, attrName);
 
         if ((value == null) || (value.isEmpty())) {
             return false;
         }
 
-        return SAML2Constants.TRUE.equalsIgnoreCase((String) value.get(0));
+        return SAML2Constants.TRUE.equalsIgnoreCase(value.get(0));
     }
 
     /**
@@ -2443,11 +2450,11 @@ public class SAML2Utils extends SAML2SDKUtils {
         if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
             SPSSODescriptorType spSSODesc =
                     saml2MetaManager.getSPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE);
+            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE, realm);
         } else {
             IDPSSODescriptorType idpSSODesc =
                     saml2MetaManager.getIDPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE);
+            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE, realm);
         }
 
         if (debug.messageEnabled()) {
@@ -3705,11 +3712,11 @@ public class SAML2Utils extends SAML2SDKUtils {
             String SAMLmessageName, String SAMLmessageValue, String relayStateName,
             String relayStateValue, String targetURL) throws SAML2Exception {
 
-        request.setAttribute("TARGET_URL", ESAPI.encoder().encodeForHTML(targetURL));
-        request.setAttribute("SAML_MESSAGE_NAME", ESAPI.encoder().encodeForHTML(SAMLmessageName));
-        request.setAttribute("SAML_MESSAGE_VALUE", ESAPI.encoder().encodeForHTML(SAMLmessageValue));
-        request.setAttribute("RELAY_STATE_NAME", ESAPI.encoder().encodeForHTML(relayStateName));
-        request.setAttribute("RELAY_STATE_VALUE", ESAPI.encoder().encodeForHTML(relayStateValue));
+        request.setAttribute("TARGET_URL", targetURL);
+        request.setAttribute("SAML_MESSAGE_NAME", SAMLmessageName);
+        request.setAttribute("SAML_MESSAGE_VALUE", SAMLmessageValue);
+        request.setAttribute("RELAY_STATE_NAME", relayStateName);
+        request.setAttribute("RELAY_STATE_VALUE", relayStateValue);
         request.setAttribute("SAML_POST_KEY", bundle.getString("samlPostKey"));
 
         response.setHeader("Pragma", "no-cache");
@@ -4150,6 +4157,38 @@ public class SAML2Utils extends SAML2SDKUtils {
     }
 
     /**
+     * Assert consumer service location.
+     *
+     * @param realm Realm the SP is in.
+     * @param spEntityID the sp entity id.
+     * @param request http servlet request.
+     * @param response http servlet response.
+     * @throws SAML2Exception when the redirect url does not match with the configured ACS url.
+     */
+    public static void verifyAssertionConsumerServiceLocation(String realm, String spEntityID,
+            HttpServletRequest request, HttpServletResponse response) throws SAML2Exception {
+        if (saml2MetaManager != null) {
+            try {
+                RootUrlProvider rootUrlProvider = RootUrlManager.INSTANCE.getDefaultProvider();
+                SPSSODescriptorType spDescriptor = saml2MetaManager.getSPSSODescriptor(realm, spEntityID);
+                List<IndexedEndpointType> acsEndpoints = spDescriptor.getAssertionConsumerService();
+                String accessedEndpoint = rootUrlProvider.getRootURL(realm, request) +
+                        request.getRequestURI().substring(request.getContextPath().length());
+                if (acsEndpoints.stream()
+                        .map(EndpointType::getLocation)
+                        .noneMatch(Predicate.isEqual(accessedEndpoint))) {
+                    SAMLUtils.sendError(request, response, response.SC_BAD_REQUEST, "invalidACSLocation",
+                            SAML2Utils.bundle.getString("invalidACSLocation"));
+                    throw new SAML2Exception(SAML2Utils.bundle.getString("invalidACSLocation"));
+                }
+            } catch (RootUrlProviderException e) {
+                debug.error("SAML2Utils.verifyAssertionConsumerServiceLocation:", e);
+                throw new SAML2Exception(e);
+            }
+        }
+    }
+
+    /**
      * Checks if a profile binding is suppported by an IDP.
      *
      * @param realm       Realm the IDP is in.
@@ -4262,7 +4301,7 @@ public class SAML2Utils extends SAML2SDKUtils {
     }
 
     /**
-     * Convenience method to validate a SAML2 relay state (goto) URL, often called from a JSP.
+     * Convenience method to validate a SAML2 relay state (goto) URL, called from a JSP.
      *
      * @param request    Used to help establish the realm and hostEntityID.
      * @param relayState The URL to validate.
@@ -4270,23 +4309,56 @@ public class SAML2Utils extends SAML2SDKUtils {
      * @return <code>true</code> if the relayState is valid.
      */
     public static boolean isRelayStateURLValid(HttpServletRequest request, String relayState, String role) {
+        return isRelayStateURLValid(request, relayState, role, false);
+    }
+
+    /**
+     * Convenience method to validate a SAML2 relay state (goto) URL, called from a JSP.
+     *
+     * @param request    Used to help establish the realm and hostEntityID.
+     * @param relayState The URL to validate.
+     * @param role       The role of the caller.
+     * @param inclESAPIValidation Whether to also include an OWASP ESAPI validation of the url.
+     * This will fail if included for redirect urls that include %20, e.g. an OAuth 2 authorize flow url scope param.
+     * @return <code>true</code> if the relayState is valid.
+     */
+    public static boolean isRelayStateURLValid(HttpServletRequest request, String relayState, String role,
+            boolean inclESAPIValidation) {
         String metaAlias = SAML2MetaUtils.getMetaAliasByUri(request.getRequestURI());
         if (metaAlias == null) {
             //try to acquire the metaAlias from request parameter
             metaAlias = request.getParameter(SAML2MetaManager.NAME_META_ALIAS_IN_URI);
         }
-        return isRelayStateURLValid(metaAlias, relayState, role);
+        String requestUrl = request.getRequestURL().toString();
+        return isRelayStateURLValid(metaAlias, relayState, role, inclESAPIValidation, requestUrl);
     }
 
     /**
-     * Convenience method to validate a SAML2 relay state (goto) URL, often called from a JSP.
+     * Convenience method to validate a SAML2 relay state (goto) URL, called from a JSP.
      *
      * @param metaAlias  The metaAlias of the hosted entity.
      * @param relayState The URL to validate.
      * @param role       The role of the caller.
+     * @param requestUrl          the URL of the request that was made to AM
      * @return <code>true</code> if the relayState is valid.
      */
-    public static boolean isRelayStateURLValid(String metaAlias, String relayState, String role) {
+    public static boolean isRelayStateURLValid(String metaAlias, String relayState, String role, String requestUrl) {
+        return isRelayStateURLValid(metaAlias, relayState, role, false, requestUrl);
+    }
+
+    /**
+     * Convenience method to validate a SAML2 relay state (goto) URL, called from a JSP.
+     *
+     * @param metaAlias  The metaAlias of the hosted entity.
+     * @param relayState The URL to validate.
+     * @param role       The role of the caller.
+     * @param inclESAPIValidation Whether to also include an OWASP ESAPI validation of the url.
+     * @param requestUrl          the URL of the request that was made to AM
+     * This will fail if included for redirect urls that include %20, e.g. an OAuth 2 authorize flow url scope param.
+     * @return <code>true</code> if the relayState is valid.
+     */
+    public static boolean isRelayStateURLValid(String metaAlias, String relayState, String role,
+            boolean inclESAPIValidation, String requestUrl) {
         boolean result = false;
 
         if (metaAlias != null) {
@@ -4294,7 +4366,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             try {
                 String hostEntityID = saml2MetaManager.getEntityByMetaAlias(metaAlias);
                 if (hostEntityID != null) {
-                    validateRelayStateURL(realm, hostEntityID, relayState, role);
+                    validateRelayStateURL(realm, hostEntityID, relayState, role, inclESAPIValidation, requestUrl);
                     result = true;
                 }
             } catch (SAML2Exception e) {
@@ -4322,18 +4394,43 @@ public class SAML2Utils extends SAML2SDKUtils {
      * @param hostEntityId Entity ID of the hosted provider.
      * @param relayState   Relay State URL.
      * @param role         IDP/SP Role.
+     * @param requestUrl          the URL of the request that was made to AM
      * @throws SAML2Exception if the processing failed.
      */
     public static void validateRelayStateURL(
             String orgName,
             String hostEntityId,
             String relayState,
-            String role) throws SAML2Exception {
+            String role,
+            String requestUrl) throws SAML2Exception {
+        validateRelayStateURL(orgName, hostEntityId, relayState, role, false, requestUrl);
+    }
+
+    /**
+     * Validates the Relay State URL against a list of valid Relay State
+     * URLs created on the hosted service provider.
+     *
+     * @param orgName      realm or organization name the provider resides in.
+     * @param hostEntityId Entity ID of the hosted provider.
+     * @param relayState   Relay State URL.
+     * @param role         IDP/SP Role.
+     * @param inclESAPIValidation Whether to perform OWASP ESAPI checking for the url.
+     * @param requestUrl          the URL of the request that was made to AM
+     * This will fail if included for redirect urls that include %20, e.g. an OAuth 2 authorize flow url scope param.
+     * @throws SAML2Exception if the processing failed.
+     */
+    public static void validateRelayStateURL(
+            String orgName,
+            String hostEntityId,
+            String relayState,
+            String role,
+            boolean inclESAPIValidation,
+            String requestUrl) throws SAML2Exception {
 
         // Check for the validity of the RelayState URL.
         if (relayState != null && !relayState.isEmpty()) {
             if (!RELAY_STATE_VALIDATOR.isRedirectUrlValid(relayState,
-                    SAMLEntityInfo.from(orgName, hostEntityId, role))) {
+                    SAMLEntityInfo.from(orgName, hostEntityId, role), inclESAPIValidation, requestUrl)) {
                 throw new SAML2Exception(SAML2Utils.bundle.getString("invalidRelayStateUrl"));
             }
         }
@@ -4456,7 +4553,8 @@ public class SAML2Utils extends SAML2SDKUtils {
     // the HTTP response.
     // TODO: This is a copy from AuthClientUtils, need to refactor into OpenAM
     // common
-    private static void processCookies(Map headers,
+    @VisibleForTesting
+    static void processCookies(Map headers,
             HttpServletRequest request, HttpServletResponse response) {
         if (debug.messageEnabled()) {
             debug.message("processCookies : headers : " + headers);
@@ -4536,17 +4634,21 @@ public class SAML2Utils extends SAML2SDKUtils {
                         }
                     }
 
-                    cookie = createCookie(cookieName, cookieValue, domain, path);
-
-                    if ("LOGOUT".equals(cookieValue)) {
-                        cookie.setMaxAge(0);
+                    if (StringUtils.isNotEmpty(cookieName)) {
+                        cookie = createCookie(cookieName, cookieValue, domain, path);
                     }
 
-                    if (cookieName.equals(sessionCookieName)) {
-                        cookie.setMaxAge(0);
-                    }
+                    if (cookie != null) {
+                        if ("LOGOUT".equals(cookieValue)) {
+                            cookie.setMaxAge(0);
+                        }
 
-                    response.addCookie(cookie);
+                        if (cookieName.equals(sessionCookieName)) {
+                            cookie.setMaxAge(0);
+                        }
+
+                        response.addCookie(cookie);
+                    }
                 }
             }
         }

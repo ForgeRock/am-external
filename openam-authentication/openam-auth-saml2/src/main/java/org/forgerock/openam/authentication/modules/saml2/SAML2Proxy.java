@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
@@ -33,6 +33,7 @@ import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.SAML2Store;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.xui.XUIState;
+import org.forgerock.util.encode.Base64url;
 import org.owasp.esapi.ESAPI;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -292,6 +293,10 @@ public final class SAML2Proxy {
 
     private static StringBuilder getLocationValue(HttpServletRequest req) {
         String value = CookieUtils.getCookieValueFromReq(req, AM_LOCATION_COOKIE);
+        if (StringUtils.isNotEmpty(value)) {
+            byte[] locationValueBytes = Base64url.decode(value);
+            value = new String(locationValueBytes);
+        }
 
         if (StringUtils.isEmpty(value)) {
             return null;

@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright © 2011-2014 ForgeRock AS. All rights reserved.
+ * Copyright © 2011-2020 ForgeRock AS. All rights reserved.
  * Copyright © 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -77,14 +77,12 @@ public class JsonAttributeMapper implements AttributeMapper<String> {
     public Map<String, Set<String>> getAttributes(Map<String, String> attributeMapConfiguration, String jsonText)
             throws AuthLoginException {
 
-        if (debug.messageEnabled()) {
-            debug.message("defaultAttributeMapper.getAttributes: " + attributeMapConfiguration);
-        }
+        debug.message("defaultAttributeMapper.getAttributes: {}", attributeMapConfiguration);
         JSONObject json;
         try {
             json = new JSONObject(jsonText);
         } catch (JSONException ex) {
-            debug.error("OAuth.process(): JSONException: " + ex.getMessage());
+            debug.error("OAuth.process(): JSONException: {}", ex.getMessage());
             throw new AuthLoginException(bundleName, ex.getMessage(), null);
         }
         Map<String, Set<String>> attr = new HashMap<String, Set<String>>();
@@ -95,9 +93,7 @@ public class JsonAttributeMapper implements AttributeMapper<String> {
                 responseName = entry.getKey();
                 localName = entry.getValue();
 
-                if (debug.messageEnabled()) {
-                    debug.message("defaultAttributeMapper.getAttributes: " + responseName + ":" + localName);
-                }
+                debug.message("defaultAttributeMapper.getAttributes: {}={}", responseName, localName);
 
                 String data;
                 if (responseName != null && responseName.indexOf(".") != -1) {
@@ -112,7 +108,7 @@ public class JsonAttributeMapper implements AttributeMapper<String> {
                 }
                 attr.put(localName, CollectionUtils.asSet(data));
             } catch (JSONException ex) {
-                debug.error("defaultAttributeMapper.getAttributes: Could not get the attribute" + responseName, ex);
+                debug.error("defaultAttributeMapper.getAttributes: Could not get the attribute '{}'", responseName, ex);
             }
         }
         

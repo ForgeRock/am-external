@@ -24,10 +24,12 @@
  *
  * $Id: WindowsDesktopSSO.java,v 1.7 2009/07/28 19:40:45 beomsuk Exp $
  *
- * Portions Copyrighted 2011-2018 ForgeRock AS.
+ * Portions Copyrighted 2011-2020 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.windowsdesktopsso;
+
+import static org.forgerock.openam.utils.StringUtils.isEmpty;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.shared.debug.Debug;
@@ -545,9 +547,11 @@ public class WindowsDesktopSSO extends AMLoginModule {
         String tabFile = (String)configMap.get(KEYTAB);
         String realm = (String)configMap.get(REALM);
         String kdc = (String)configMap.get(KDC);
+        String configInitiator = (String)configMap.get(ISINITIATOR);
 
         if (principalName == null || tabFile == null || 
             realm == null || kdc == null ||
+            isInitiator != Boolean.valueOf(configInitiator) ||
             ! servicePrincipalName.equalsIgnoreCase(principalName) ||
             ! keyTabFile.equals(tabFile) ||
             ! kdcRealm.equals(realm) ||
@@ -586,6 +590,7 @@ public class WindowsDesktopSSO extends AMLoginModule {
         configMap.put(KEYTAB, keyTabFile);
         configMap.put(REALM, kdcRealm);
         configMap.put(KDC, kdcServer);
+        configMap.put(ISINITIATOR, Boolean.toString(isInitiator));
 
         configTable.put(confIndex, configMap);
     }
@@ -632,29 +637,23 @@ public class WindowsDesktopSSO extends AMLoginModule {
     }        
 
     private void verifyAttributes() throws AuthLoginException {
-        if (servicePrincipalName == null || servicePrincipalName.length() == 0){
-            throw new AuthLoginException(amAuthWindowsDesktopSSO, 
-                "nullprincipal", null);
+        if (isEmpty(servicePrincipalName)) {
+            throw new AuthLoginException(amAuthWindowsDesktopSSO, "nullprincipal", null);
         }
-        if (keyTabFile == null || keyTabFile.length() == 0){
-            throw new AuthLoginException(amAuthWindowsDesktopSSO, 
-                "nullkeytab", null);
+        if (isEmpty(keyTabFile)) {
+            throw new AuthLoginException(amAuthWindowsDesktopSSO, "nullkeytab", null);
         }
-        if (kdcRealm == null || kdcRealm.length() == 0){
-            throw new AuthLoginException(amAuthWindowsDesktopSSO, 
-                "nullrealm", null);
+        if (isEmpty(kdcRealm)) {
+            throw new AuthLoginException(amAuthWindowsDesktopSSO, "nullrealm", null);
         }
-        if (kdcServer == null || kdcServer.length() == 0){
-            throw new AuthLoginException(amAuthWindowsDesktopSSO,
-                "nullkdc", null);
+        if (isEmpty(kdcServer)) {
+            throw new AuthLoginException(amAuthWindowsDesktopSSO, "nullkdc", null);
         }
 
-        if (!(new File(keyTabFile)).exists()) {
-            // ibm jdk needs to skip "file://" part in parameter
-            if (!(new File(keyTabFile.substring(7))).exists()) {
-                throw new AuthLoginException(amAuthWindowsDesktopSSO, 
-                "nokeytab", null);
-            }
+        File file = new File(keyTabFile);
+        if (!file.exists() || !file.isFile() || !file.canRead()) {
+            debug.error("Unable to access Key tab file or does not exist");
+            throw new AuthLoginException(amAuthWindowsDesktopSSO, "nokeytab", new String[] {keyTabFile});
         }
     }
 

@@ -52,6 +52,8 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
+import org.forgerock.openam.secrets.SecretsUtils;
+
 public class NT extends AMLoginModule {
     private static boolean hasInitialized = false;
     private static String baseDir;
@@ -211,6 +213,7 @@ public class NT extends AMLoginModule {
         try {
             // Create the tmpFile
             tmpFile = File.createTempFile("username","pwd");
+            SecretsUtils.lockDownFilePermissions(tmpFile.toPath());
             FileOutputStream fw = new FileOutputStream(tmpFile);
             OutputStreamWriter dos = new OutputStreamWriter(fw, "ISO-8859-1");
             dos.write("username = " + userName + "\n");

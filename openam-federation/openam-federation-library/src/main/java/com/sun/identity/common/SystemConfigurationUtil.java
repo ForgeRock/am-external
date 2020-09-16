@@ -24,7 +24,7 @@
  *
  * $Id: SystemConfigurationUtil.java,v 1.7 2008/08/06 17:26:14 exu Exp $
  *
- * Portions Copyrighted 2010-2017 ForgeRock AS.
+ * Portions Copyrighted 2010-2020 ForgeRock AS.
  */
 
 package com.sun.identity.common;
@@ -535,7 +535,7 @@ public final class SystemConfigurationUtil implements ConfigurationListener {
 
             values =(Set)avPairs.get(Constants.ATTR_COOKIE_DOMAINS);
             if ((values == null) || values.isEmpty()) {
-                cookieDomains = Collections.EMPTY_LIST;
+                cookieDomains = Collections.singletonList(null);
             } else {
                 cookieDomains = new ArrayList();
                 cookieDomains.addAll(values);

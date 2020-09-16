@@ -24,7 +24,7 @@
  *
  * $Id: SAML2SingleLogoutHandler.java,v 1.6 2008/11/10 22:57:00 veiming Exp $
  *
- * Portions Copyrighted 2018 ForgeRock AS.
+ * Portions Copyrighted 2018-2019 ForgeRock AS.
  */
 package com.sun.identity.multiprotocol;
 
@@ -49,8 +49,8 @@ import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
-import com.sun.identity.saml2.profile.IDPCache;
 import com.sun.identity.saml2.profile.IDPSession;
+import com.sun.identity.saml2.profile.IDPSSOUtil;
 import com.sun.identity.saml2.profile.LogoutUtil;
 import com.sun.identity.saml2.profile.NameIDandSPpair;
 import com.sun.identity.shared.debug.Debug;
@@ -314,8 +314,7 @@ public class SAML2SingleLogoutHandler implements SingleLogoutHandler {
             return SingleLogoutManager.LOGOUT_NO_ACTION_STATUS;
         }
         
-        IDPSession idpSession = (IDPSession)
-        IDPCache.idpSessionsByIndices.get(sessIndex[0]);
+        IDPSession idpSession = IDPSSOUtil.retrieveCachedIdPSession(sessIndex[0]);
         if (idpSession == null) {
             debug.error("SAML2SLOHanlder.handleSOAPSLO: " +
                     "IDP no longer has this session index " + sessIndex[0]);
@@ -371,8 +370,7 @@ public class SAML2SingleLogoutHandler implements SingleLogoutHandler {
         //  invaidate session
         MultiProtocolUtils.invalidateSession(session, request, response,
             SingleLogoutManager.SAML2);
-        IDPCache.idpSessionsByIndices.remove(sessIndex[0]);
-        IDPCache.authnContextCache.remove(sessIndex[0]);
+        IDPSSOUtil.removeIdPSessionFromCachesAndFailoverStore(sessIndex[0]);
         if (debug.messageEnabled()) {
             debug.message("SAML2SLOHandler.doSOAPSLO: return status for "  +
                 session + " is " + retStatus);

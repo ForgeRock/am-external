@@ -22,7 +22,6 @@ import { parseParameters, urlParamsFromObject } from "org/forgerock/openam/ui/co
 import AbstractDelegate from "org/forgerock/commons/ui/common/main/AbstractDelegate";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
-import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 import fetchUrl from "org/forgerock/openam/ui/common/services/fetchUrl";
 import Messages from "org/forgerock/commons/ui/common/components/Messages";
 import store from "store";
@@ -93,7 +92,16 @@ AuthNService.begin = function (options) {
     return AuthNService.serviceCall(serviceCall).then((requirements) => requirements,
         (jqXHR) => {
             // some auth processes might throw an error fail immediately
-            const errorBody = $.parseJSON(jqXHR.responseText);
+            let errorBody;
+            try {
+                errorBody = $.parseJSON(jqXHR.responseText);
+            } catch (parseErr) {
+                console.warn(parseErr);
+                return {
+                    message: $.t("config.messages.CommonMessages.unknown"),
+                    type: Messages.TYPE_DANGER
+                };
+            }
             // if the error body contains an authId, then we might be able to
             // continue on after this error to the next module in the chain
             if (errorBody.hasOwnProperty("authId")) {
@@ -130,6 +138,7 @@ AuthNService.handleRequirements = function (requirements) {
             set(requirements.authId);
         }
     } else if (isAuthenticated) {
+        Messages.hideMessages();
         addRealmToStore(requirements.realm);
     }
 };
@@ -184,7 +193,8 @@ AuthNService.submitRequirements = function (requirements, options) {
                         return AuthNService.submitRequirements(oldReqs).then(processSucceeded, processFailed);
                     } else {
                         // restart the process at the beginning
-                        EventManager.sendEvent(Constants.EVENT_DISPLAY_MESSAGE_REQUEST, "loginTimeout");
+                        message = $.t("config.messages.CommonMessages.loginTimeout");
+                        Messages.addMessage({ message, type: Messages.TYPE_INFO });
                         return requirements;
                     }
                 } else {

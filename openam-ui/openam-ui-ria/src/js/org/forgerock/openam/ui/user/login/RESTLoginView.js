@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2020 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -315,6 +315,10 @@ const LoginView = AbstractView.extend({
             // then we must have already had a session
             if (reqs.hasOwnProperty("tokenId")) {
                 this.handleExistingSession(reqs);
+            } else if (reqs.hasOwnProperty("type") && reqs.type === "error" && reqs.hasOwnProperty("message")) {
+                Messages.addMessage({ type: Messages.TYPE_DANGER, message: reqs.message });
+                const paramString = URIUtils.getCurrentFragmentQueryString();
+                routeToLoginUnavailable(RESTLoginHelper.filterUrlParams(parseParameters(paramString)));
             } else { // We aren't logged in yet, so render a form...
                 this.loginRequestFunction = processLoginRequest;
                 this.renderForm(reqs, params);
@@ -344,13 +348,19 @@ const LoginView = AbstractView.extend({
             }
         }, this));
     },
+    isUsernamePasswordStage (reqs) {
+        const usernamePasswordStages = ["DataStore1", "AD1", "JDBC1", "LDAP1", "Membership1", "RADIUS1"];
+        if (_.includes(usernamePasswordStages, reqs.stage)) {
+            return true;
+        }
+        return (reqs.callbacks && hasCallback(reqs.callbacks, "NameCallback"));
+    },
     renderForm (reqs, urlParams) {
         const requirements = _.clone(reqs);
         const promise = $.Deferred();
-        const usernamePasswordStages = ["DataStore1", "AD1", "JDBC1", "LDAP1", "Membership1", "RADIUS1"];
         const self = this;
 
-        this.userNamePasswordStage = _.includes(usernamePasswordStages, reqs.stage);
+        this.userNamePasswordStage = this.isUsernamePasswordStage(reqs);
 
         requirements.callbacks = [];
 

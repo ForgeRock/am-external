@@ -11,11 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.Action.goTo;
 import static org.forgerock.openam.scripting.ScriptConstants.AUTHENTICATION_TREE_DECISION_NODE_NAME;
 import static org.forgerock.openam.scripting.ScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
@@ -48,6 +51,7 @@ import org.forgerock.openam.scripting.ScriptEvaluator;
 import org.forgerock.openam.scripting.ScriptObject;
 import org.forgerock.openam.scripting.SupportedScriptingLanguage;
 import org.forgerock.openam.scripting.factories.ScriptHttpClientFactory;
+import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 import org.forgerock.openam.scripting.service.ScriptConfiguration;
 import org.forgerock.openam.session.Session;
 import org.forgerock.openam.utils.StringUtils;
@@ -82,6 +86,9 @@ public class ScriptedDecisionNode implements Node {
     private static final String LOGGER_VARIABLE_NAME = "logger";
     private static final String REALM_IDENTIFIER = "realm";
     private static final String CALLBACKS_IDENTIFIER = "callbacks";
+    private static final String QUERY_PARAMETER_IDENTIFIER = "requestParameters";
+    private static final String ID_REPO_IDENTIFIER = "idRepository";
+    private static final String AUDIT_ENTRY_DETAIL = "auditEntryDetail";
 
     /**
      * Node Config Declaration.
@@ -111,6 +118,8 @@ public class ScriptedDecisionNode implements Node {
     private final Provider<SessionService> sessionServiceProvider;
     private final RestletHttpClient httpClient;
     private final Realm realm;
+    private final ScriptIdentityRepository scriptIdentityRepo;
+    private JsonValue auditEntryDetail;
 
     /**
      * Guice constructor.
@@ -120,17 +129,20 @@ public class ScriptedDecisionNode implements Node {
      * @param sessionServiceProvider provides Sessions.
      * @param httpClientFactory provides http clients.
      * @param realm The realm the node is in, and that the request is targeting.
-     * @throws NodeProcessException If there is an error reading the configuration.
+     * @param scriptIdentityRepoFactory factory to build access to the identity repo for this node's script
      */
     @Inject
     public ScriptedDecisionNode(@Named(AUTHENTICATION_TREE_DECISION_NODE_NAME) ScriptEvaluator scriptEvaluator,
             @Assisted Config config, Provider<SessionService> sessionServiceProvider,
-            ScriptHttpClientFactory httpClientFactory, @Assisted Realm realm) throws NodeProcessException {
+            ScriptHttpClientFactory httpClientFactory, @Assisted Realm realm,
+            ScriptIdentityRepository.Factory scriptIdentityRepoFactory) {
         this.scriptEvaluator = scriptEvaluator;
         this.config = config;
         this.sessionServiceProvider = sessionServiceProvider;
         this.httpClient = getHttpClient(httpClientFactory);
         this.realm = realm;
+        this.scriptIdentityRepo = scriptIdentityRepoFactory.create(realm);
+        this.auditEntryDetail = null;
     }
 
     private RestletHttpClient getHttpClient(ScriptHttpClientFactory httpClientFactory) {
@@ -153,6 +165,7 @@ public class ScriptedDecisionNode implements Node {
             binding.put(SHARED_STATE_IDENTIFIER, context.sharedState.getObject());
             binding.put(TRANSIENT_STATE_IDENTIFIER, context.transientState.getObject());
             binding.put(CALLBACKS_IDENTIFIER, context.getAllCallbacks());
+            binding.put(ID_REPO_IDENTIFIER, scriptIdentityRepo);
             binding.put(HEADERS_IDENTIFIER, convertHeadersToModifiableObjects(context.request.headers));
             binding.put(LOGGER_VARIABLE_NAME, Debug.getInstance("scripts." + AUTHENTICATION_TREE_DECISION_NODE.name()
                     + "." + config.script().getId()));
@@ -161,9 +174,19 @@ public class ScriptedDecisionNode implements Node {
             if (!StringUtils.isEmpty(context.request.ssoTokenId)) {
                 binding.put(EXISTING_SESSION, getSessionProperties(context.request.ssoTokenId));
             }
+            binding.put(QUERY_PARAMETER_IDENTIFIER, convertParametersToModifiableObjects(context.request.parameters));
+            binding.put(AUDIT_ENTRY_DETAIL, auditEntryDetail);
             scriptEvaluator.evaluateScript(script, binding);
             logger.debug("script {} \n binding {}", script, binding);
-
+            Object rawAuditEntryDetail = binding.get(AUDIT_ENTRY_DETAIL);
+            if (rawAuditEntryDetail != null) {
+                if (rawAuditEntryDetail instanceof String || rawAuditEntryDetail instanceof Map) {
+                    auditEntryDetail = json(object(field("auditInfo", rawAuditEntryDetail)));
+                } else {
+                    logger.warn("script auditEntryDetail not type String or Map");
+                    throw new NodeProcessException("Invalid auditEntryDetail type from script");
+                }
+            }
             Object actionResult = binding.get(ACTION_IDENTIFIER);
             if (actionResult != null) {
                 if (actionResult instanceof Action) {
@@ -210,6 +233,21 @@ public class ScriptedDecisionNode implements Node {
         return mapCopy;
     }
 
+    /**
+     * The request parameters are unmodifiable, this prevents them being converted into javascript. This method
+     * copies unmofifiable to modifiable collections.
+     *
+     * @param input the parameters.
+     * @return the parameters in modifiable collections.
+     */
+    private Map<String, List<String>> convertParametersToModifiableObjects(Map<String, List<String>> input) {
+        Map<String, List<String>> mapCopy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (Map.Entry<String, List<String>> entry : input.entrySet()) {
+            mapCopy.put(entry.getKey(), entry.getValue().stream().collect(Collectors.toList()));
+        }
+        return mapCopy;
+    }
+
     private Map<String, String> getSessionProperties(String ssoTokenId) {
         Map<String, String> properties = null;
         try {
@@ -221,6 +259,15 @@ public class ScriptedDecisionNode implements Node {
             logger.error("Failed to get existing session", e);
         }
         return properties;
+    }
+
+    @Override
+    public JsonValue getAuditEntryDetail() {
+        if (auditEntryDetail != null) {
+            return auditEntryDetail;
+        } else {
+            return json(object());
+        }
     }
 
     /**

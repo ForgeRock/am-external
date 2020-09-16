@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2020 ForgeRock AS.
  */
 
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
@@ -26,7 +26,12 @@ export default {
         view: () => import("org/forgerock/openam/ui/common/views/error/ForbiddenView.js"),
         url: /.*/
     },
-    "404": {
+    /*
+     * In some cases "forbidden" and "404" routes both match. Backbone organises
+     * routes by their name and will use the last matching route. The underscore
+     * below forces the 404 route to be displayed in those cases.
+     */
+    "_404": {
         view: () => import("org/forgerock/commons/ui/common/NotFoundView.js"),
         url: /^([\w\W]*)$/,
         pattern: "?"

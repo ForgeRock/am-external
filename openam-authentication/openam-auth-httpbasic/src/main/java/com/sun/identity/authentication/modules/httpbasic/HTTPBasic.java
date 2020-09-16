@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2005 Sun Microsystems Inc. All Rights Reserved
@@ -24,39 +24,39 @@
  *
  * $Id: HTTPBasic.java,v 1.5 2009/06/19 17:54:14 ericow Exp $
  *
- */
-
-/**
- * Portions Copyrighted 2011-2013 ForgeRock AS
+ * Portions Copyrighted 2011-2020 ForgeRock AS.
  */
 package com.sun.identity.authentication.modules.httpbasic;
 
-import com.sun.identity.shared.debug.Debug;
-import com.sun.identity.shared.datastruct.CollectionHelper;
-import com.sun.identity.authentication.spi.AuthLoginException;
-import com.sun.identity.authentication.spi.HttpCallback;
-import com.sun.identity.authentication.spi.InvalidPasswordException;
-import com.sun.identity.authentication.spi.AMLoginModule;
-import com.sun.identity.authentication.config.AMAuthenticationManager;
-import com.sun.identity.authentication.config.AMAuthenticationInstance;
-import com.sun.identity.authentication.util.ISAuthConstants;
-import com.sun.identity.authentication.service.AuthD;
+import java.io.IOException;
+import java.security.AccessController;
 import java.security.Principal;
-import java.util.ResourceBundle;
 import java.util.Map;
+import java.util.ResourceBundle;
+
 import javax.security.auth.Subject;
-import javax.security.auth.login.LoginException;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
-import java.io.IOException;
-import com.iplanet.sso.SSOToken;
-import com.sun.identity.security.AdminTokenAction;
-import com.sun.identity.shared.encode.Base64;
-import java.security.AccessController;
+import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+
+import org.forgerock.openam.utils.StringUtils;
+
+import com.iplanet.sso.SSOToken;
+import com.sun.identity.authentication.config.AMAuthenticationInstance;
+import com.sun.identity.authentication.config.AMAuthenticationManager;
+import com.sun.identity.authentication.service.AuthD;
+import com.sun.identity.authentication.spi.AMLoginModule;
+import com.sun.identity.authentication.spi.AuthLoginException;
+import com.sun.identity.authentication.spi.HttpCallback;
+import com.sun.identity.authentication.spi.InvalidPasswordException;
+import com.sun.identity.authentication.util.ISAuthConstants;
+import com.sun.identity.security.AdminTokenAction;
+import com.sun.identity.shared.datastruct.CollectionHelper;
+import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.shared.encode.Base64;
 
 /**
  * HTTP Basic login module.
@@ -111,49 +111,40 @@ public class HTTPBasic extends AMLoginModule {
 
     }
 
-    public int process(Callback[] callbacks, int state)
-    throws LoginException {
-        if ((instanceName == null) || (instanceName.length() == 0) ) {
+    public int process(Callback[] callbacks, int state) throws LoginException {
+        if (StringUtils.isEmpty(instanceName)) {
             throw new AuthLoginException(amAuthHTTPBasic, "noModule", null);
         }
 
-        int status = 0;
         HttpServletRequest req = getHttpServletRequest();
-        HttpServletResponse resp = getHttpServletResponse();
         String auth = null;
-        if (callbacks != null && callbacks.length != 0) { 
-            auth = ((HttpCallback)callbacks[0]).getAuthorization();
+        if (callbacks != null && callbacks.length != 0) {
+            auth = ((HttpCallback) callbacks[0]).getAuthorization();
         }
 
-        if ((req == null || resp == null) && auth == null) {
+        if (req == null && auth == null) {
             debug.message("Servlet Request and Response cannot be null");
-            throw new AuthLoginException(amAuthHTTPBasic, "reqRespNull", 
-                null);
+            throw new AuthLoginException(amAuthHTTPBasic, "reqRespNull", null);
         }
         try {
             debug.message("Process HTTPBasic Auth started ...");
-            if (auth == null || auth.length() == 0) {
+            if (StringUtils.isEmpty(auth) && req != null) {
                 auth = req.getHeader("Authorization");
-            }
-            if (debug.messageEnabled()) {
-                debug.message("AUTH : "+auth);
             }
             int retVal = authenticate(auth);
             validatedUserID = userName;
             return retVal;
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             debug.error("login: unknown exception = ", ex);
             setFailureID(userName);
             if (ex instanceof InvalidPasswordException) {
                 throw new InvalidPasswordException(ex);
             } else {
-                throw new AuthLoginException(amAuthHTTPBasic, "sendError", 
-                    null,ex);
+                throw new AuthLoginException(amAuthHTTPBasic, "sendError", null, ex);
             }
         }
-        
     }
-    
+
     public java.security.Principal getPrincipal() {
         if (userPrincipal != null) {
             return userPrincipal;

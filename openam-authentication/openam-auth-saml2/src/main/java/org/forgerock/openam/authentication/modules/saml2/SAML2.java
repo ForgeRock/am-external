@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
@@ -19,6 +19,7 @@ import static com.sun.identity.shared.Constants.*;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.authentication.modules.saml2.Constants.*;
 import static org.forgerock.openam.utils.Time.*;
+import static java.lang.Boolean.parseBoolean;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.AuthContext;
@@ -64,6 +65,7 @@ import com.sun.identity.shared.encode.CookieUtils;
 import com.sun.identity.shared.locale.L10NMessageImpl;
 import com.sun.identity.sm.DNMapper;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.util.Collection;
@@ -88,6 +90,7 @@ import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.xui.XUIState;
+import org.forgerock.util.encode.Base64url;
 
 /**
  * SAML2 Authentication Module, acting from the SP's POV. Will redirect to a SAML2 IdP for authentication, then
@@ -183,7 +186,18 @@ public class SAML2 extends AMLoginModule {
             case START:
                 return initiateSAMLLoginAtIDP(response, request);
             case REDIRECT:
-                return handleReturnFromRedirect(state, request, spName, response);
+                if (parseBoolean(request.getParameter(SAML2Proxy.ERROR_PARAM_KEY))) {
+                    DEBUG.message("SAML2 :: process() : Handling error from redirect.");
+                    return handleRedirectError(request, response);
+                }
+                final String responseKey = getResponseKey(request);
+                if (StringUtils.isEmpty(responseKey)) {
+                    DEBUG.message("SAML2 :: process() : Response key is empty, restarting SSO flow.");
+                    // Flow has been restarted before authn has successfully completed at IdP.
+                    return initiateSAMLLoginAtIDP(response, request);
+                }
+                DEBUG.message("SAML2 :: process() : Response key is populated, handling redirect.");
+                return handleReturnFromRedirect(state, request, spName, response, responseKey);
             case LOGIN_STEP:
                 return stepLogin(realCallbacks, state);
             default:
@@ -290,37 +304,26 @@ public class SAML2 extends AMLoginModule {
     }
 
     /**
-     * Once we're back from the ACS, we need to validate that we have not errored during the proxying process.
-     * Then we detect if we need to perform a local linking authentication chain, or if the user is already
+     * Once we're back from the ACS we detect if we need to perform
+     * a local linking authentication chain or if the user is already
      * locally linked, we need to look up the already-linked username.
      */
     private int handleReturnFromRedirect(final int state, final HttpServletRequest request, final String spName,
-                                         final HttpServletResponse response)  throws AuthLoginException {
+            final HttpServletResponse response, final String responseKey) throws AuthLoginException {
 
         //first make sure to delete the cookie
         removeCookiesForRedirects(request, response);
 
-        if (Boolean.parseBoolean(request.getParameter(SAML2Proxy.ERROR_PARAM_KEY))) {
-            return handleRedirectError(request);
-        }
-
-        final String key;
-        if (request.getParameter("jsonContent") != null) {
-            key = JsonValueBuilder.toJsonValue(request.getParameter("jsonContent")).get("responsekey").asString();
-        } else {
-            key = request.getParameter(SAML2Proxy.RESPONSE_KEY);
-        }
-
         final String username;
         SAML2ResponseData data = null;
 
-        if (!StringUtils.isBlank(key)) {
-            data = (SAML2ResponseData) SAML2Store.getTokenFromStore(key);
+        if (!StringUtils.isBlank(responseKey)) {
+            data = (SAML2ResponseData) SAML2Store.getTokenFromStore(responseKey);
 
             if (data == null) {
                 if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
                     try {
-                        data = (SAML2ResponseData) SAML2FailoverUtils.retrieveSAML2Token(key);
+                        data = (SAML2ResponseData) SAML2FailoverUtils.retrieveSAML2Token(responseKey);
                     } catch (SAML2TokenRepositoryException e) {
                         return processError(bundle.getString("samlFailoverError"),
                                 "SAML2.handleReturnFromRedirect : Error reading from failover map.", e);
@@ -334,7 +337,7 @@ public class SAML2 extends AMLoginModule {
                     + "Unable to perform local linking - response data not found");
         }
 
-        storageKey = key;
+        storageKey = responseKey;
         assertionSubject = data.getSubject();
         authnAssertion = data.getAssertion();
         sessionIndex = data.getSessionIndex();
@@ -372,12 +375,28 @@ public class SAML2 extends AMLoginModule {
     }
 
     /**
+     * Retrieve the response key from the request.
+     * @param request The Http Servlet Request.
+     * @return The response key returned from the IdP, or null if not present.
+     */
+    private String getResponseKey(final HttpServletRequest request) {
+        if (request.getParameter("jsonContent") != null) {
+            return JsonValueBuilder.toJsonValue(request.getParameter("jsonContent")).get("responsekey").asString();
+        } else {
+            return request.getParameter(SAML2Proxy.RESPONSE_KEY);
+        }
+    }
+
+    /**
      * Grab error code/message and display to user via processError.
      */
-    private int handleRedirectError(HttpServletRequest request) throws AuthLoginException {
+    private int handleRedirectError(final HttpServletRequest request, final HttpServletResponse response) throws
+            AuthLoginException {
+
+        removeCookiesForRedirects(request, response);
+
         final String errorCode = request.getParameter(SAML2Proxy.ERROR_CODE_PARAM_KEY);
         final String errorMessage = request.getParameter(SAML2Proxy.ERROR_MESSAGE_PARAM_KEY);
-
         if (StringUtils.isNotEmpty(errorMessage)) {
             return processError(errorMessage, "SAML2 :: handleReturnFromRedirect() : "
                     + "error forwarded from saml2AuthAssertionConsumer.jsp.  Error code - {}. "
@@ -455,9 +474,12 @@ public class SAML2 extends AMLoginModule {
         }
 
         // Set the return URL Cookie
+        byte[] originalUrlBytes = originalUrl.toString().getBytes(StandardCharsets.UTF_8);
+        // Use Base64Url encoding so that the value syntax is consistent with RFC-6265
+        String base64UrlEncOrigUrl = Base64url.encode(originalUrlBytes);
         for (String domain : domains) {
             CookieUtils.addCookieToResponse(response,
-                    CookieUtils.newCookie(Constants.AM_LOCATION_COOKIE, originalUrl.toString(), "/", domain));
+                    CookieUtils.newCookie(Constants.AM_LOCATION_COOKIE, base64UrlEncOrigUrl, "/", domain));
         }
     }
 
@@ -660,7 +682,7 @@ public class SAML2 extends AMLoginModule {
         final String spName = metaManager.getEntityByMetaAlias(metaAlias);
         final SPSSOConfigElement spssoconfig = metaManager.getSPSSOConfig(realm, spName);
         final boolean needAssertionEncrypted =
-                Boolean.parseBoolean(SAML2Utils.getAttributeValueFromSPSSOConfig(spssoconfig,
+                parseBoolean(SAML2Utils.getAttributeValueFromSPSSOConfig(spssoconfig,
                         SAML2Constants.WANT_ASSERTION_ENCRYPTED));
         final boolean needAttributeEncrypted =
                 SPACSUtils.getNeedAttributeEncrypted(needAssertionEncrypted, spssoconfig);
@@ -702,7 +724,7 @@ public class SAML2 extends AMLoginModule {
 
     /**
      * Links SAML2 accounts once all local auth steps have completed and we have a local principalId,
-     * sets the local principal to a new SAML2Pricipal with that ID.
+     * sets the local principal to a new SAML2Principal with that ID.
      */
     private void linkAccount(final String principalId, final NameID nameId)
             throws SAML2MetaException, AuthenticationException {

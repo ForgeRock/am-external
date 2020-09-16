@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2020 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
@@ -24,10 +24,8 @@ import org.forgerock.oauth.resolvers.OpenIdResolver;
 import org.forgerock.oauth.resolvers.SharedSecretOpenIdResolverImpl;
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.exceptions.FailedToLoadJWKException;
-import org.forgerock.json.jose.exceptions.InvalidJwtException;
 import org.forgerock.json.jose.exceptions.JwsSigningException;
 import org.forgerock.json.jose.exceptions.JwtReconstructionException;
-import org.forgerock.json.jose.jws.JwsAlgorithm;
 import org.forgerock.json.jose.jws.JwsAlgorithmType;
 import org.forgerock.json.jose.jws.SignedJwt;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
@@ -60,8 +58,8 @@ public class JwtHandler {
     /**
      * Validate the integrity of the JWT OIDC token, according to the spec
      * (http://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation). Specifically check that the issuer is
-     * the expected issuer, the token has not expired, the token has at least one audience claim, and if there is an
-     * authorized party claim ("azp"), does it appear in the audience list contained within the token?
+     * the expected issuer, the token has not expired, the token has at least one audience claim, and relax the
+     * authorized party claim ("azp") check following https://bitbucket.org/openid/connect/issues/973/
      *
      * @param jwtValue The encoded JWT string.
      * @return The validated JWT claims.
@@ -89,7 +87,7 @@ public class JwtHandler {
             } else if (signedJwt.getHeader().getAlgorithm().getAlgorithmType().equals(JwsAlgorithmType.HMAC)) {
                 throw new AuthLoginException(RESOURCE_BUNDLE_NAME, BUNDLE_KEY_INVALID_SIGNING_ALG, null);
             } else if (StringUtils.isNotEmpty(config.getCryptoContextValue())) {
-                resolver = openIdResolverCache.getResolverForIssuer(config.getCryptoContextValue());
+                resolver = openIdResolverCache.getResolverForIssuer(jwtClaimSetIssuer, config.getCryptoContextValue());
             }
             if (resolver == null) {
                 String cryptoContextValue;
@@ -118,15 +116,9 @@ public class JwtHandler {
                 throw new AuthLoginException(RESOURCE_BUNDLE_NAME, BUNDLE_KEY_NO_AUDIENCE_CLAIM,
                         null);
             }
-            if (jwtHasAuthorizedPartyClaim(jwtClaimSet)) {
-                String authorizedPartyClaim = 
-                        (String) jwtClaimSet.getClaim(AUTHORIZED_PARTY_CLAIM_KEY);
-                if (!audienceClaim.contains(authorizedPartyClaim)) {
-                    logger.error("Authorized party was present in ID token, but its value was not found in the " +
-                            "audience claim.");
-                    throw new AuthLoginException(RESOURCE_BUNDLE_NAME, BUNDLE_KEY_AUTHORIZED_PARTY_NOT_IN_AUDIENCE,
-                            null);
-                }
+            if (audienceClaim.size() > 1 && !jwtHasAuthorizedPartyClaim(jwtClaimSet)) {
+                logger.error("Authorized party was not present in ID token when having multiple audiences.");
+                throw new AuthLoginException(RESOURCE_BUNDLE_NAME, BUNDLE_KEY_NO_AUTHORIZED_PARTY, null);
             }
         } catch (OpenIdConnectVerificationException oice) {
             logger.warning("Verification of ID Token failed: " + oice);
