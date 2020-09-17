@@ -15,6 +15,7 @@ This repository contains OpenAM and AM source code that you can use to modify an
 Product Version   |  Branch Name
 ------------------|-----------------
 AM 7.0.0          |  releases/7.0.0
+AM 6.5.3          |  releases/6.5.3
 AM 6.5.2.3        |  releases/6.5.2.3
 AM 6.5.2.2        |  releases/6.5.2.2
 AM 6.5.2.1        |  releases/6.5.2.1
