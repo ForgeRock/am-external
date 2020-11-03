@@ -11,7 +11,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2015-2019 ForgeRock AS. All Rights Reserved
+  Copyright 2015-2020 ForgeRock AS. All Rights Reserved
 }}
 <li class="rule clearfix invalid-rule" id="subject_{{itemID}}" tabindex="0">
     <span class="item-button-panel edit-state">
@@ -25,7 +25,10 @@
 			<select id="subjSelection" class="form-control type-selection" data-type-selection>
 				<option value="" selected disabled >{{t "common.form.select"}}</option>
 				{{#subjects}}
-                <option value="{{title}}" {{#equals title 'Policy'}}hidden{{/equals}}>{{i18nKey}}</option>
+				{{#equals title 'Policy'}}
+				{{else}}
+                	<option value="{{title}}">{{i18nKey}}</option>
+				{{/equals}}
                 {{/subjects}}
 			</select>
 		</div>

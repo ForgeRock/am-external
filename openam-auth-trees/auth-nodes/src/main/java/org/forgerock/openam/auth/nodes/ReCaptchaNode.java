@@ -27,6 +27,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.forgerock.http.Handler;
+import org.forgerock.http.protocol.Form;
 import org.forgerock.http.protocol.Request;
 import org.forgerock.http.protocol.Response;
 import org.forgerock.json.JsonException;
@@ -155,12 +156,14 @@ public class ReCaptchaNode extends SingleOutcomeNode {
     }
 
     private void verifyRecaptchaResponse(String response) throws NodeProcessException {
-        URI uri = URI.create(config.reCaptchaUri()
-                + "?secret=" + config.secretKey()
-                + "&response=" + response);
+        URI uri = URI.create(config.reCaptchaUri());
         try {
-            Response verificationResponse = handler.handle(new RootContext(),
-                    new Request().setUri(uri).setMethod(HTTP_POST))
+            Form form = new Form();
+            form.fromFormString("secret=" + config.secretKey() + "&response=" + response);
+            Request request = new Request().setUri(uri)
+                    .setMethod(HTTP_POST);
+            form.toRequestEntity(request);
+            Response verificationResponse = handler.handle(new RootContext(), request)
                     .getOrThrow();
 
             if (!json(verificationResponse.getEntity().getJson()).get(SUCCESS).asBoolean()) {

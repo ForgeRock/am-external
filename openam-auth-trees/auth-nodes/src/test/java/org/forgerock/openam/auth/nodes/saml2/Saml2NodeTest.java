@@ -247,6 +247,19 @@ public class Saml2NodeTest {
                 .doesNotContain("sun-fm-saml2-nameid-info", "sun-fm-saml2-nameid-infokey");
     }
 
+    @Test
+    public void shouldReportNoAccountExistsWhenTheUniversalIDCanNotBeResolved() throws Exception {
+        // Given
+        setupSuccessfulFederation(ssoResult("universalId", true));
+        given(identityUtils.doesIdentityExist("universalId")).willReturn(false);
+
+        // When
+        Action action = node.process(getContext(singletonMap(RESPONSE_KEY, new String[]{"storage-key"})));
+
+        // Then
+        assertThat(action.outcome).isEqualTo("NO_ACCOUNT");
+    }
+
     private Saml2SsoResult ssoResult(String universalId, boolean isTransient) throws Exception {
         return new Saml2SsoResult(universalId, getNameID(isTransient), emptySet(), !isTransient);
     }
@@ -260,6 +273,7 @@ public class Saml2NodeTest {
         responseData.setSessionIndex("session-index");
         given(responseUtils.readSaml2ResponseData("storage-key")).willReturn(responseData);
         given(identityUtils.getIdentityName(ssoResult.getUniversalId())).willReturn("userId");
+        given(identityUtils.doesIdentityExist("universalId")).willReturn(true);
 
         given(responseUtils.getSsoResultWithoutLocalLogin(any(), any(), any(), any(), any(), eq("storage-key")))
                 .willReturn(ssoResult);

@@ -399,7 +399,6 @@ const LoginView = AbstractView.extend({
             };
             requirements.callbacks.push(confirmationCallback);
         }
-
         // This code is run each time a new callback is returned, so we need to check if the callbacks have changed
         const haveCallbacksChanged = (reqs.callbacks && !this.reqs) || !_.isEqual(reqs.callbacks, this.reqs.callbacks);
         const isPolling = this.pollingInProgress || hasCallback(reqs.callbacks, "PollingWaitCallback");
@@ -441,7 +440,11 @@ const LoginView = AbstractView.extend({
         if (this.$el.find("[name=loginRemember]").length !== 0 && login) {
             this.$el.find("input[type=text]:first").val(login);
             this.$el.find("[name=loginRemember]").attr("checked", "true");
-            this.$el.find("[type=password]").focus();
+            // setTimeout here is a workaround for iOS safari which tries to
+            // block autofocussing on elements.
+            setTimeout(() => {
+                this.$el.find("[type=password]").focus();
+            });
         } else {
             this.$el.find(":input:not([type='radio']):not([type='checkbox'])" +
                 ":not([type='submit']):not([type='button']):first").focus();

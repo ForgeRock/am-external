@@ -34,11 +34,14 @@ import static org.forgerock.openam.scripting.ScriptContext.SOCIAL_IDP_PROFILE_TR
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.TreeMap;
 
 import javax.inject.Inject;
@@ -228,41 +231,45 @@ public class SocialProviderHandlerNode implements Node {
 
                 // Store the profile in OBJECT_ATTRIBUTES
                 for (Map.Entry<String, Object> entry : objectData.asMap().entrySet()) {
-                    if (!entry.getKey().equals(config.usernameAttribute())
-                            || idmIntegrationService.getAttributeFromContext(context, config.usernameAttribute())
-                                    .isEmpty()) {
+                    if (!entry.getKey().equals(config.usernameAttribute())) {
                         idmIntegrationService.storeAttributeInState(context.transientState,
                                 entry.getKey(), entry.getValue());
                     }
                 }
                 // Record the social identity subject in the profile, too
                 String identity = selectedIdp + "-" + profile.getSubject();
-                // we probably want to look up the user first and get their attribute that way
-                List<String> aliasList = getAliasList(context);
-                aliasList.add(identity);
-                idmIntegrationService.storeAttributeInState(context.transientState, ALIAS_LIST, aliasList);
-                // Set username in state if available
-                Optional<String> username = usernameFromDataStore(context, identity);
-                Optional<String> universalId = Optional.empty();
-                if (username.isPresent()) {
-                    context.transientState.remove(USERNAME);
-                    idmIntegrationService.removeAttributeFromState(context.transientState, config.usernameAttribute());
-                    universalId = identityUtils.getUniversalId(username.get(), realm.asPath(), USER);
-                    context.sharedState.put(USERNAME, username.get());
+                Optional<String> contextId = idmIntegrationService.getAttributeFromContext(context,
+                        config.usernameAttribute())
+                        .map(JsonValue::asString);
+                Optional<JsonValue> user = IdmIntegrationHelper.getObject(idmIntegrationService, realm,
+                        context.request.locales, context.identityResource, ALIAS_LIST, Optional.of(identity),
+                        config.usernameAttribute(), ALIAS_LIST);
+
+                String resolvedId;
+                if (contextId.isPresent()) {
+                    if (user.isPresent()
+                            && !contextId.get().equals(user.get().get(config.usernameAttribute()).asString())) {
+                        throw new NodeProcessException("Account does not belong to user in share state.");
+                    }
+                    resolvedId = contextId.get();
+                } else {
+                    resolvedId = user.isPresent()
+                            ? user.get().get(config.usernameAttribute()).asString()
+                            : objectData.get(config.usernameAttribute()).asString();
                     idmIntegrationService.storeAttributeInState(context.sharedState, config.usernameAttribute(),
-                            username.get());
-                } else if (objectData.isDefined(config.usernameAttribute())) {
-                    context.transientState.remove(USERNAME);
-                    idmIntegrationService.removeAttributeFromState(context.transientState, config.usernameAttribute());
-                    JsonValue usernameValue = objectData.get(config.usernameAttribute());
-                    universalId = identityUtils.getUniversalId(usernameValue.asString(), realm.asPath(), USER);
-                    context.sharedState.put(USERNAME, usernameValue.asString());
-                    idmIntegrationService.storeAttributeInState(context.sharedState, config.usernameAttribute(),
-                            usernameValue);
+                            resolvedId);
                 }
 
-                // Return either ACCOUNT_EXISTS or NO_ACCOUNT
-                return goTo(username.isPresent()
+                if (resolvedId != null) {
+                    context.sharedState.put(USERNAME, resolvedId);
+                }
+
+                idmIntegrationService.storeAttributeInState(context.transientState, ALIAS_LIST,
+                        getAliasList(context, identity, user, contextId));
+
+                Optional<String> universalId = identityUtils.getUniversalId(resolvedId, realm.asPath(), USER);
+
+                return goTo(user.isPresent()
                         ? SocialAuthOutcome.ACCOUNT_EXISTS.name()
                         : SocialAuthOutcome.NO_ACCOUNT.name())
                         .withUniversalId(universalId)
@@ -294,20 +301,6 @@ public class SocialProviderHandlerNode implements Node {
             Thread.currentThread().interrupt();
             throw new NodeProcessException("Process interrupted", e);
         }
-    }
-
-    private Optional<String> usernameFromDataStore(TreeContext context, String identity) throws NodeProcessException {
-        if (context.sharedState.isDefined(USERNAME)) {
-            return Optional.of(context.sharedState.get(USERNAME).asString());
-        } else if (identity != null) {
-            JsonValue object = IdmIntegrationHelper.getObject(idmIntegrationService, realm, context.request.locales,
-                    context.identityResource, ALIAS_LIST, Optional.of(identity))
-                    .orElse(json(null));
-            return object.isDefined(config.usernameAttribute())
-                    ? Optional.of(object.get(config.usernameAttribute()).asString())
-                    : Optional.empty();
-        }
-        return Optional.empty();
     }
 
     private Callback prepareRedirectCallback(OAuthClient client, DataStore dataStore)
@@ -398,21 +391,23 @@ public class SocialProviderHandlerNode implements Node {
         return properties;
     }
 
-    private List<String> getAliasList(TreeContext context) {
-        return idmIntegrationService.getAttributeFromContext(context, ALIAS_LIST)
-                .map(jsonList -> jsonList.asList(String.class))
-                .orElseGet(() -> {
-                    try {
-                        return IdmIntegrationHelper.getObject(idmIntegrationService, realm, context.request.locales,
-                                context.identityResource, config.usernameAttribute(),
-                                idmIntegrationService.getAttributeFromContext(context, config.usernameAttribute())
-                                        .map(JsonValue::asString), IDPS)
-                                .map(object -> object.get(IDPS).asList(String.class))
-                                .orElseGet(ArrayList::new);
-                    } catch (NodeProcessException e) {
-                        return new ArrayList<>();
-                    }
-                });
+    private List<String> getAliasList(TreeContext context, String identity, Optional<JsonValue> user,
+            Optional<String> contextId) throws NodeProcessException {
+        Set<String> aliasList = new HashSet<>();
+        aliasList.add(identity);
+        idmIntegrationService.getAttributeFromContext(context, ALIAS_LIST)
+                .ifPresent(list -> aliasList.addAll(list.asList(String.class)));
+        if (user.isPresent()) {
+            aliasList.addAll(user.get().get(ALIAS_LIST).asList(String.class));
+        } else if (contextId.isPresent()) {
+            // try to look up user's existing aliasList if identity attribute already existed in shared state
+            aliasList.addAll(IdmIntegrationHelper.getObject(idmIntegrationService, realm,
+                    context.request.locales, context.identityResource, config.usernameAttribute(),
+                    contextId, config.usernameAttribute(), ALIAS_LIST)
+                    .map(u -> u.get(ALIAS_LIST).asList(String.class))
+                    .orElse(Collections.emptyList()));
+        }
+        return new ArrayList<>(aliasList);
     }
 
     /**

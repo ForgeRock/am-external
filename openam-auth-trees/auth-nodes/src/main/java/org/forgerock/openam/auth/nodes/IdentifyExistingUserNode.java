@@ -141,7 +141,9 @@ public class IdentifyExistingUserNode extends AbstractDecisionNode {
 
             // save identifier so that it is present for login
             if (!Strings.isNullOrEmpty(config.identifier()) && managedObject.get().isDefined(config.identifier())) {
-                copyState.put(USERNAME, managedObject.get().get(config.identifier()).asString());
+                String identifier = managedObject.get().get(config.identifier()).asString();
+                copyState.put(USERNAME, identifier);
+                idmIntegrationService.storeAttributeInState(copyState, config.identifier(), identifier);
             }
 
             return goTo(true)

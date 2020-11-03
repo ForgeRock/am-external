@@ -11,6 +11,8 @@
  * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
+ 
+  Copyright 2020 ForgeRock AS.
  *
  * Copyright 2013-2018 ForgeRock AS. All Rights Reserved
 -->
@@ -20,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am.examples</groupId>
         <artifactId>openam-samples</artifactId>
-        <version>7.0.0</version>
+        <version>7.0.1</version>
     </parent>
 
     <artifactId>quotaexhaustionaction</artifactId>
@@ -41,19 +43,8 @@
 
     <repositories>
         <repository>
-            <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 7.0.0</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.0.0-dependencies</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
+            <id>forgerock-private-releases</id>
+            <url>https://maven.forgerock.org/repo/private-releases</url>
         </repository>
     </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Plugin Repository for AM 7.0.0</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.0.0-dependencies</url>
-        </pluginRepository>
-    </pluginRepositories>
 </project>

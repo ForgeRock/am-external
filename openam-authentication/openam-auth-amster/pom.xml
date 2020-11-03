@@ -20,7 +20,7 @@
     <parent>
         <artifactId>openam-authentication</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>7.0.0</version>
+        <version>7.0.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -53,21 +53,4 @@
     </dependencies>
 
 
-    <repositories>
-        <repository>
-            <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 7.0.0</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.0.0-dependencies</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Plugin Repository for AM 7.0.0</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.0.0-dependencies</url>
-        </pluginRepository>
-    </pluginRepositories>
 </project>

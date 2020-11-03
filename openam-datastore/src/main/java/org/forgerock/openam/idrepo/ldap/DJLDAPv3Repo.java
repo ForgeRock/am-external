@@ -121,6 +121,7 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
+import com.sun.identity.sm.DNMapper;
 import org.forgerock.am.cts.api.DataLayerException;
 import org.forgerock.openam.idrepo.ldap.helpers.ADAMHelper;
 import org.forgerock.openam.idrepo.ldap.helpers.ADHelper;
@@ -1557,7 +1558,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 } else if (resultCode.equals(ResultCode.SIZE_LIMIT_EXCEEDED)) {
                     errorCode = RepoSearchResults.SIZE_LIMIT_EXCEEDED;
             } else {
-                DEBUG.error("Unexpected error occurred during search", ere);
+                DEBUG.error("Unexpected error occurred during search. {}", getConnectionInformation(), ere);
                 errorCode = resultCode.intValue();
             }
         } catch (SearchResultReferenceIOException srrioe) {
@@ -2956,7 +2957,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         try {
             return connectionFactory.create();
         } catch (DataLayerException e) {
-            DEBUG.error("An error occurred while trying to create a connection to the datastore", e);
+            DEBUG.error("An error occurred while trying to create a connection to the datastore. {}",
+                    getConnectionInformation(), e);
             throw newIdRepoException(IdRepoErrorCode.INITIALIZATION_ERROR, CLASS_NAME);
         }
     }
@@ -2991,5 +2993,23 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     @VisibleForTesting
     Map<String, DJLDAPv3PersistentSearch> getPsearchMap() {
         return pSearchMap;
+    }
+
+    /**
+     * Retrieve connection information for this instance of DJLDAPv3Repo so that it can be included in debug logging.
+     * @return String containing server:port for each server in the connection string and root suffix.
+     */
+    private String getConnectionInformation() {
+        StringBuilder sb = new StringBuilder();
+        if (ldapServers != null) {
+            sb.append("Servers:");
+            for (LDAPURL ldapServer : ldapServers) {
+                sb.append(" ");
+                sb.append(ldapServer.toString());
+            }
+        }
+        sb.append(", Root suffix: ");
+        sb.append(rootSuffix);
+        return sb.toString();
     }
 }

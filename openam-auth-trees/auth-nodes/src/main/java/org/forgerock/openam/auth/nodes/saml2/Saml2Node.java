@@ -36,6 +36,7 @@ import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.USER_INFO
 import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.USER_NAMES_SHARED_STATE_KEY;
 import static org.forgerock.openam.utils.CollectionUtils.getFirstItem;
 import static org.forgerock.openam.utils.CollectionUtils.isNotEmpty;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -72,6 +73,7 @@ import org.forgerock.openam.auth.nodes.oauth.AbstractSocialAuthLoginNode;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.headers.CookieUtilsWrapper;
+import org.forgerock.openam.identity.idm.IdentityException;
 import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.Options;
@@ -367,10 +369,18 @@ public class Saml2Node extends AbstractDecisionNode {
         Saml2SsoResult ssoResult = responseUtils.getSsoResultWithoutLocalLogin(realm, spEntityId, idpEntityId,
                 subject, assertion, storageKey);
 
-        ActionBuilder actionBuilder = Action.goTo(ssoResult.getUniversalId() == null ? NO_ACCOUNT.name()
-                : ACCOUNT_EXISTS.name());
+        ActionBuilder actionBuilder = Action.goTo(doesUserExist(ssoResult.getUniversalId()) ? ACCOUNT_EXISTS.name()
+                : NO_ACCOUNT.name());
         return setSessionProperties(actionBuilder.replaceSharedState(
                 updateSharedState(ssoResult, assertion, sharedState)), ssoResult.getNameId());
+    }
+
+    private boolean doesUserExist(String universalId) throws NodeProcessException {
+        try {
+            return isNotBlank(universalId) && identityUtils.doesIdentityExist(universalId);
+        } catch (IdentityException e) {
+            throw new NodeProcessException("Error occurred verifying identities existence", e);
+        }
     }
 
     private JsonValue updateSharedState(Saml2SsoResult ssoResult, Assertion assertion, JsonValue sharedState)

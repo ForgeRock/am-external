@@ -11,7 +11,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2015-2019 ForgeRock AS. All Rights Reserved
+  Copyright 2015-2020 ForgeRock AS. All Rights Reserved
 }}
 <div class="container">
     {{#if errorCode}}
@@ -27,11 +27,23 @@
 
                 <div class="form-group">
                     <label class="sr-only" for="deviceUserCode">{{t 'form.code'}}</label>
-                    <input type="text" name="user_code" id="deviceUserCode" required class="form-control input-lg" placeholder="{{t 'form.code'}}">
+                    {{#if oauth2Data.userCode}}
+                        <input type="text" name="user_code" id="deviceUserCode" required class="form-control input-lg" placeholder="{{t 'form.code'}}" value="{{oauth2Data.userCode}}">
+                    {{else}}
+                        <input type="text" name="user_code" id="deviceUserCode" required class="form-control input-lg" placeholder="{{t 'form.code'}}">
+                    {{/if}}
                 </div>
 
+                {{#if oauth2Data.csrf}}
+                    <input type="hidden" name="csrf" aria-hidden="true" value="{{oauth2Data.csrf}}"/>
+                {{/if}}
+
                 <div class="form-group">
-                    <button type="submit" class="btn btn-lg btn-block btn-uppercase btn-primary">{{t "form.submit"}}</button>
+                    {{#if oauth2Data.userCode}}
+                        <button type="submit" class="btn btn-lg btn-block btn-uppercase btn-primary">{{t "form.confirm"}}</button>
+                    {{else}}
+                        <button type="submit" class="btn btn-lg btn-block btn-uppercase btn-primary">{{t "form.submit"}}</button>
+                    {{/if}}
                 </div>
             </fieldset>
         </form>

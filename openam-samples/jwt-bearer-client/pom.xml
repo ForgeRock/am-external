@@ -2,7 +2,7 @@
 <!--
    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 
-   Copyright (c) 2013-2018 ForgeRock AS. All Rights Reserved
+   Copyright (c) 2013-2020 ForgeRock AS. All Rights Reserved
 
    The contents of this file are subject to the terms
    of the Common Development and Distribution License
@@ -29,7 +29,7 @@
     <parent>
         <groupId>org.forgerock.am.examples</groupId>
         <artifactId>openam-samples</artifactId>
-        <version>7.0.0</version>
+        <version>7.0.1</version>
     </parent>
 
     <artifactId>jwt-bearer-client</artifactId>
@@ -38,6 +38,22 @@
         <pmd.skip>true</pmd.skip>
     </properties>
 
+    <repositories>
+        <repository>
+            <id>forgerock-staging-repository</id>
+            <url>https://maven.forgerock.org/repo/releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>forgerock-private-releases</id>
+            <url>https://maven.forgerock.org/repo/private-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <dependencies>
         <dependency>
@@ -97,21 +113,4 @@
             </plugin>
         </plugins>
     </build>
-    <repositories>
-        <repository>
-            <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 7.0.0</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.0.0-dependencies</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Plugin Repository for AM 7.0.0</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.0.0-dependencies</url>
-        </pluginRepository>
-    </pluginRepositories>
 </project>

@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2020 ForgeRock AS.
  */
 
-import BootstrapCustomStyle from "css/bootstrap-3.3.7-custom";
+import BootstrapCustomStyle from "css/bootstrap-3.4.1-custom";
 import LoginLogoImage from "images/login-logo";
 import LogoHorizontalImage from "images/logo-horizontal";
 import StructureStyle from "css/structure";

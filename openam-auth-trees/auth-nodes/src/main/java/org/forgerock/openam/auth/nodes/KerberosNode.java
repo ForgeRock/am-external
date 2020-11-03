@@ -299,7 +299,7 @@ public class KerberosNode extends AbstractDecisionNode {
                                 "KerberosNode.authenticateToken: " + ": Unable to find the user "
                                         + userValue + " in org" + realm.toString());
                     }
-                    sharedState.put(SharedStateConstants.UNIVERSAL_ID, universalId);
+                    sharedState.put(SharedStateConstants.UNIVERSAL_ID, universalId.get());
                 }
                 logger.debug("KerberosNode.authenticateToken:" + "User authenticated: " + user.toString());
                 sharedState.put(SharedStateConstants.USERNAME, userValue);

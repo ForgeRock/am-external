@@ -323,7 +323,7 @@
           },
           "defaultRelayState": {
             "attributeKey": "defaultRelayState",
-            "title": "Default Delay State Url",
+            "title": "Default Relay State Url",
             "description": "This is the default relay state URL that the SP will redirect to, in case there is no relay state specified in the response",
             "type": "string"
           },

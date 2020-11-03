@@ -46,6 +46,7 @@ import javax.inject.Provider;
 import javax.script.ScriptException;
 
 import org.forgerock.json.JsonValue;
+import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.oauth.DataStore;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthException;
@@ -72,7 +73,7 @@ import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.authentication.spi.RedirectCallback;
 import org.mockito.Mock;
 import org.testng.Assert;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class SocialProviderHandlerNodeTest {
@@ -117,7 +118,7 @@ public class SocialProviderHandlerNodeTest {
     private SocialProviderHandlerNode node;
     private ScriptConfiguration scriptConfiguration;
 
-    @BeforeTest
+    @BeforeMethod
     public void setUp() throws Exception {
         initMocks(this);
 
@@ -154,8 +155,6 @@ public class SocialProviderHandlerNodeTest {
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(idmIntegrationService.getSharedAttributesFromContext(any())).thenCallRealMethod();
         when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
-        when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any()))
-                .thenReturn(json(object(field("userName", "bob"))));
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any(), any()))
                 .thenReturn(json(object(field("userName", "bob"), field(IDPS, array("existingProvider-bob")))));
         when(sessionService.getSession(any())).thenReturn(null);
@@ -183,6 +182,8 @@ public class SocialProviderHandlerNodeTest {
 
     @Test
     public void processWithCodeResultsInCompletionWithDatastoreInTransientState() throws Exception {
+        when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any(), any()))
+                .thenThrow(new NotFoundException());
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
         TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
                 json(object(field(SELECTED_IDP, PROVIDER_NAME))),
@@ -310,6 +311,8 @@ public class SocialProviderHandlerNodeTest {
 
     @Test
     public void shouldAddReturnedAliasToAliasList() throws Exception {
+        when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any(), any()))
+                .thenThrow(new NotFoundException());
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
         TreeContext context = new TreeContext(json(object(field(SELECTED_IDP, PROVIDER_NAME))),
                 json(object(field(OBJECT_ATTRIBUTES, object(field(ALIAS_LIST, array("anotherIdp-user")))))),
@@ -331,6 +334,35 @@ public class SocialProviderHandlerNodeTest {
                 .contains(PROVIDER_NAME + "-user")).isTrue();
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList(String.class)
                 .contains("anotherIdp-user")).isTrue();
+        Assert.assertNull(context.request.parameters.get("state"));
+        Assert.assertNull(context.request.parameters.get("code"));
+    }
+
+    @Test
+    public void shouldMergeAllAliases() throws Exception {
+        Map<String, String[]> parameters = getStateAndCodeAsParameter();
+        TreeContext context = new TreeContext(json(object(field(SELECTED_IDP, PROVIDER_NAME))),
+                json(object(field(OBJECT_ATTRIBUTES, object(field(ALIAS_LIST, array("anotherIdp-user")))))),
+                new ExternalRequestContext.Builder()
+                        .parameters(parameters)
+                        .build(),
+                emptyList(), Optional.empty());
+
+        Action action = node.process(context);
+
+        Assert.assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
+        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
+        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
+        Assert.assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
+                "testValue");
+        assertThat(context.transientState.get(OBJECT_ATTRIBUTES).isDefined(ALIAS_LIST)).isTrue();
+        assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList().size()).isEqualTo(3);
+        assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList(String.class)
+                .contains(PROVIDER_NAME + "-user")).isTrue();
+        assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList(String.class)
+                .contains("anotherIdp-user")).isTrue();
+        assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList(String.class)
+                .contains("existingProvider-bob")).isTrue();
         Assert.assertNull(context.request.parameters.get("state"));
         Assert.assertNull(context.request.parameters.get("code"));
     }
@@ -362,6 +394,21 @@ public class SocialProviderHandlerNodeTest {
                 .contains("existingProvider-bob")).isTrue();
         Assert.assertNull(context.request.parameters.get("state"));
         Assert.assertNull(context.request.parameters.get("code"));
+    }
+
+    @Test(expectedExceptions = NodeProcessException.class)
+    public void shouldThrowExceptionIfMatchedUserDiffersFromSharedState() throws Exception {
+        Map<String, String[]> parameters = getStateAndCodeAsParameter();
+        TreeContext context = new TreeContext(json(object(
+                field(SELECTED_IDP, PROVIDER_NAME),
+                field(OBJECT_ATTRIBUTES, object(field("userName", "alice")))
+        )),
+                new ExternalRequestContext.Builder()
+                        .parameters(parameters)
+                        .build(),
+                emptyList(), Optional.empty());
+
+        Action action = node.process(context);
     }
 
     private Map<String, String[]> getStateAndCodeAsParameter() {

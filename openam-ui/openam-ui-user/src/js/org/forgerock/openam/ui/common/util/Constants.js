@@ -11,10 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2020 ForgeRock AS.
  */
 
-import BootstrapCustomCSS from "css/bootstrap-3.3.7-custom";
+import BootstrapCustomCSS from "css/bootstrap-3.4.1-custom";
 
 const getContextPath = () => {
     let path = location.pathname.replace(new RegExp("^/|/$", "g"), "").split("/");

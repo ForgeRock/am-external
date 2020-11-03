@@ -16,6 +16,7 @@
  * Copyright 2020 ForgeRock AS. All Rights Reserved
  *
 -->
+
 <!DOCTYPE ServicesConfiguration
     PUBLIC "=//iPlanet//Service Management Services (SMS) 1.0 DTD//EN"
     "jar://com/sun/identity/sm/sms.dtd">
