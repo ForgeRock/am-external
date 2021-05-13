@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.response.title",
+  "description": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.response.description",
+  "properties": {
+    "importedEntities": {
+      "type": "array",
+      "title": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.importedEntities.title",
+      "description": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.importedEntities.description",
+      "items": {
+        "type": "string",
+        "title": "Entity ID",
+        "description": "The entity ID of the SAML2 Entity Provider."
+      }
+    }
+  },
+  "required": [
+    "importedEntities"
+  ]
+}

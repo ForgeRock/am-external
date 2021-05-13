@@ -1,0 +1,142 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2019 ForgeRock AS.
+ */
+
+/*
+ * The rules included in this file are necessary for the correct functioning of the app. They should always be
+ * included on any page, regardless of which Bootstrap theme is being used.
+ */
+
+/*
+    Base: All base HTML tags. No IDs or Classes should be included here.
+*/
+@import "structure/base.less";
+
+/*
+    Generic css helpers and functions
+*/
+@import "helpers.less";
+
+/*
+    Navbar and SubNav
+*/
+@import "structure/navbar.less";
+
+/*
+    Dropdown-menus - The drop down menu in the Navbar is styled within navbar.less
+*/
+@import "structure/dropdown-menu.less";
+
+/*
+    Page Footer
+*/
+@import "structure/page-footer.less";
+
+/*
+    Page Header
+*/
+@import "structure/page-header.less";
+
+/*
+    Tab Styles
+*/
+@import "structure/tabs.less";
+
+/*
+    Sortable List
+*/
+@import "structure/sortable-list.less";
+
+/*
+    Popovers
+*/
+@import "structure/popover.less";
+
+/*
+    Validation Rules
+*/
+@import "structure/validation-rules.less";
+
+/*
+    Forms
+*/
+@import "structure/form.less";
+
+/*
+    Alert System
+*/
+@import "structure/alert-system.less";
+
+/*
+    dialogs
+*/
+@import "structure/dialogs.less";
+
+/*
+    Toolbar
+*/
+@import "structure/toolbar.less";
+
+/*
+    Generic buttons CSS
+*/
+@import "structure/buttons.less";
+
+/*
+    Panel Styles
+*/
+@import "structure/panel.less";
+
+/*
+    Self-Service (Registration and Password Reset)
+*/
+
+@import "structure/selfservice.less";
+
+/*
+  Items for review (not used in projects yet)
+*/
+@import "review.less";
+
+@version: '';
+.nocache-background-image(@url) {
+    background-image: url("@{url}?v=@{version}");
+}
+
+/*
+Login
+*/
+
+.main-logo-holder {
+    margin: 60px auto 40px;
+    text-align: center;
+}
+
+.login .has-feedback .form-control-feedback,
+.register .has-feedback .form-control-feedback {
+    width: 46px;
+    height: 46px;
+    line-height: 46px;
+    top: 0;
+}
+
+.logo-header {
+    text-align: center;
+    padding: 60px 0 40px;
+
+    img {
+        max-width: 210px;
+    }
+}

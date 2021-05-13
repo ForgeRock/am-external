@@ -1,0 +1,499 @@
+[
+  {
+    "provider": "facebook",
+    "authorizationEndpoint": "https://www.facebook.com/dialog/oauth",
+    "tokenEndpoint": "https://graph.facebook.com/v2.7/oauth/access_token",
+    "userInfoEndpoint": "https://graph.facebook.com/me?fields=id,name,picture,email,first_name,last_name,locale",
+    "clientId": "openidm-admin",
+    "scope": [
+      "email",
+      "user_birthday"
+    ],
+    "uiConfig": {
+      "iconBackground": "#3b5998",
+      "iconClass": "fa-facebook",
+      "iconFontColor": "white",
+      "buttonClass": "fa-facebook-official",
+      "buttonDisplayName": "Facebook",
+      "buttonCustomStyle": "background-color: #3b5998;border-color: #3b5998; color: white;",
+      "buttonCustomStyleHover": "background-color: #334b7d;border-color: #334b7d; color: white;"
+    },
+    "basicAuth": false,
+    "authenticationIdKey": "id",
+    "schema": {
+      "id": "urn:jsonschema:org:forgerock:openidm:identityProviders:api:Facebook",
+      "title": "Facebook",
+      "viewable": true,
+      "type": "object",
+      "$schema": "http://json-schema.org/draft-03/schema",
+      "properties": {
+        "id": {
+          "description": "ID",
+          "title": "ID",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "name": {
+          "description": "Name",
+          "title": "Name",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "first_name": {
+          "description": "First Name",
+          "title": "First Name",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "last_name": {
+          "description": "Last Name",
+          "title": "Last Name",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "email": {
+          "description": "Email Address",
+          "title": "Email Address",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "locale": {
+          "description": "Locale Code",
+          "title": "Locale Code",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "picture": {
+          "description": "Picture",
+          "title": "Picture",
+          "viewable": true,
+          "type": "object",
+          "searchable": true
+        }
+      },
+      "order": [
+        "id",
+        "name",
+        "first_name",
+        "last_name",
+        "email",
+        "locale",
+        "picture"
+      ],
+      "required": []
+    },
+    "propertyMap": [
+      {
+        "source": "id",
+        "target": "id"
+      },
+      {
+        "source": "name",
+        "target": "displayName"
+      },
+      {
+        "source": "first_name",
+        "target": "givenName"
+      },
+      {
+        "source": "last_name",
+        "target": "familyName"
+      },
+      {
+        "source": "email",
+        "target": "email"
+      },
+      {
+        "source": "email",
+        "target": "username"
+      },
+      {
+        "source": "locale",
+        "target": "locale"
+      },
+      {
+        "source": "picture",
+        "target": "photoUrl",
+        "transform": {
+          "type": "text/javascript",
+          "source": "source.data.url"
+        }
+      }
+    ],
+    "redirectUri": "http://localhost:8080/",
+    "configClass": "org.forgerock.oauth.clients.oauth2.OAuth2ClientConfiguration",
+    "enabled": true
+  },
+  {
+    "provider": "google",
+    "authorizationEndpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+    "tokenEndpoint": "https://www.googleapis.com/oauth2/v4/token",
+    "userInfoEndpoint": "https://www.googleapis.com/oauth2/v3/userinfo",
+    "wellKnownEndpoint": "https://accounts.google.com/.well-known/openid-configuration",
+    "clientId": "openidm-admin",
+    "uiConfig": {
+      "iconBackground": "#4184f3",
+      "iconClass": "fa-google",
+      "iconFontColor": "white",
+      "buttonImage": "images/g-logo.png",
+      "buttonDisplayName": "Google",
+      "buttonCustomStyle": "background-color: #fff; color: #757575; border-color: #ddd;",
+      "buttonCustomStyleHover": "color: #6d6d6d; background-color: #eee; border-color: #ccc;"
+    },
+    "scope": [
+      "openid",
+      "profile",
+      "email"
+    ],
+    "authenticationIdKey": "sub",
+    "schema": {
+      "id": "urn:jsonschema:org:forgerock:openidm:identityProviders:api:Google",
+      "title": "Google",
+      "viewable": true,
+      "type": "object",
+      "$schema": "http://json-schema.org/draft-03/schema",
+      "properties": {
+        "sub": {
+          "description": "ID",
+          "title": "ID",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "name": {
+          "description": "Name",
+          "title": "Name",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "given_name": {
+          "description": "First Name",
+          "title": "First Name",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "family_name": {
+          "description": "Last Name",
+          "title": "Last Name",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "picture": {
+          "description": "Profile Picture URL",
+          "title": "Profile Picture URL",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "email": {
+          "description": "Email Address",
+          "title": "Email Address",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "locale": {
+          "description": "Locale Code",
+          "title": "Locale Code",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        }
+      },
+      "order": [
+        "sub",
+        "name",
+        "given_name",
+        "family_name",
+        "picture",
+        "email",
+        "locale"
+      ],
+      "required": []
+    },
+    "propertyMap": [
+      {
+        "source": "sub",
+        "target": "id"
+      },
+      {
+        "source": "name",
+        "target": "displayName"
+      },
+      {
+        "source": "given_name",
+        "target": "givenName"
+      },
+      {
+        "source": "family_name",
+        "target": "familyName"
+      },
+      {
+        "source": "picture",
+        "target": "photoUrl"
+      },
+      {
+        "source": "email",
+        "target": "email"
+      },
+      {
+        "source": "email",
+        "target": "username"
+      },
+      {
+        "source": "locale",
+        "target": "locale"
+      }
+    ],
+    "redirectUri": "http://localhost:8080/",
+    "configClass": "org.forgerock.oauth.clients.oidc.OpenIDConnectClientConfiguration",
+    "basicAuth": false,
+    "enabled": true
+  },
+  {
+    "provider": "linkedIn",
+    "authorizationEndpoint": "https://www.linkedin.com/oauth/v2/authorization",
+    "tokenEndpoint": "https://www.linkedin.com/oauth/v2/accessToken",
+    "userInfoEndpoint": "https://api.linkedin.com/v1/people/~:(id,formatted-name,first-name,last-name,email-address,location,picture-url)?format=json",
+    "clientId": "openidm-admin",
+    "scope": [
+      "r_basicprofile",
+      "r_emailaddress"
+    ],
+    "authenticationIdKey": "id",
+    "basicAuth": false,
+    "uiConfig": {
+      "iconBackground": "#0077b5",
+      "iconClass": "fa-linkedin",
+      "iconFontColor": "white",
+      "buttonClass": "fa-linkedin",
+      "buttonDisplayName": "LinkedIn",
+      "buttonCustomStyle": "background-color:#0077b5;border-color:#0077b5;color:white;",
+      "buttonCustomStyleHover": "background-color:#006ea9; border-color:#006ea9;color:white;"
+    },
+    "schema": {
+      "id": "urn:jsonschema:org:forgerock:openidm:identityProviders:api:LinkedIn",
+      "title": "LinkedIn",
+      "viewable": true,
+      "type": "object",
+      "$schema": "http://json-schema.org/draft-03/schema",
+      "properties": {
+        "id": {
+          "description": "ID",
+          "title": "ID",
+          "viewable": true,
+          "type": "string",
+          "searchable": false
+        },
+        "formattedName": {
+          "description": "Formatted Name",
+          "title": "Formatted Name",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "firstName": {
+          "description": "First Name",
+          "title": "First Name",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "lastName": {
+          "description": "Last Name",
+          "title": "Last Name",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "emailAddress": {
+          "description": "Email Address",
+          "title": "Email Address",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "location": {
+          "description": "Location",
+          "title": "Location",
+          "viewable": true,
+          "type": "object",
+          "searchable": true,
+          "properties": {
+            "country": {
+              "description": "Country",
+              "title": "Country",
+              "type": "object",
+              "properties": {
+                "code": {
+                  "description": "Locale Code",
+                  "title": "Locale Code",
+                  "type": "string"
+                }
+              }
+            },
+            "name": {
+              "description": "Area Name",
+              "type": "string",
+              "title": "Area Name"
+            }
+          }
+        },
+        "pictureUrl": {
+          "description": "Picture URL",
+          "title": "Picture URL",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        }
+      },
+      "order": [
+        "id",
+        "formattedName",
+        "emailAddress",
+        "firstName",
+        "lastName",
+        "location"
+      ],
+      "required": []
+    },
+    "propertyMap": [
+      {
+        "source": "id",
+        "target": "id"
+      },
+      {
+        "source": "formattedName",
+        "target": "displayName"
+      },
+      {
+        "source": "firstName",
+        "target": "givenName"
+      },
+      {
+        "source": "lastName",
+        "target": "familyName"
+      },
+      {
+        "source": "emailAddress",
+        "target": "email"
+      },
+      {
+        "source": "emailAddress",
+        "target": "username"
+      },
+      {
+        "source": "location",
+        "target": "locale",
+        "transform": {
+          "type": "text/javascript",
+          "source": "source.country.code"
+        }
+      },
+      {
+        "source": "pictureUrl",
+        "target": "photoUrl"
+      }
+    ],
+    "redirectUri": "http://localhost:8080/",
+    "configClass": "org.forgerock.oauth.clients.oauth2.OAuth2ClientConfiguration",
+    "enabled": true
+  },
+  {
+    "provider": "instagram",
+    "configClass": "org.forgerock.oauth.clients.instagram.InstagramClientConfiguration",
+    "basicAuth": false,
+    "clientId": "openidm-admin",
+    "authorizationEndpoint": "https://api.instagram.com/oauth/authorize/",
+    "tokenEndpoint": "https://api.instagram.com/oauth/access_token",
+    "userInfoEndpoint": "https://api.instagram.com/v1/users/self/",
+    "redirectUri": "http://localhost:8080/",
+    "scope": [
+      "basic",
+      "public_content"
+    ],
+    "uiConfig": {
+      "iconBackground": "#3f729b",
+      "iconClass": "fa-instagram",
+      "iconFontColor": "white",
+      "buttonClass": "fa-instagram",
+      "buttonDisplayName": "Instagram",
+      "buttonCustomStyle": "background-color: #3f729b; border-color: #3f729b;color: white;",
+      "buttonCustomStyleHover": "background-color: #305777; border-color: #305777;color: white;"
+    },
+    "connectionTimeout": 0,
+    "readTimeout": 0,
+    "authenticationIdKey": "id",
+    "propertyMap": [
+      {
+        "source": "id",
+        "target": "id"
+      },
+      {
+        "source": "full_name",
+        "target": "displayName"
+      },
+      {
+        "source": "profile_picture",
+        "target": "photoUrl"
+      },
+      {
+        "source": "username",
+        "target": "username"
+      }
+    ],
+    "schema": {
+      "id": "urn:jsonschema:org:forgerock:openidm:identityProviders:api:Instagram",
+      "viewable": true,
+      "type": "object",
+      "$schema": "http://json-schema.org/draft-03/schema",
+      "properties": {
+        "id": {
+          "description": "ID",
+          "title": "ID",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "full_name": {
+          "description": "Full Name",
+          "title": "Full Name",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "profile_picture": {
+          "description": "Profile Picture URL",
+          "title": "Profile Picture URL",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        },
+        "username": {
+          "description": "Username",
+          "title": "Username",
+          "viewable": true,
+          "type": "string",
+          "searchable": true
+        }
+      },
+      "order": [
+        "id",
+        "full_name",
+        "profile_picture",
+        "username"
+      ],
+      "required": []
+    },
+    "enabled": true
+  }
+]

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2011-2021 ForgeRock AS. All Rights Reserved
+ *
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Component Definition -->
+    <name>OpenAM External</name>
+    <description>OpenAM Extension Points and Samples</description>
+
+    <groupId>org.forgerock.am</groupId>
+    <artifactId>openam-external</artifactId>
+    <version>7.1.0</version>
+    <packaging>pom</packaging>
+
+    <!-- Child Modules -->
+    <modules>
+        <module>openam-ui</module>
+        <module>openam-authentication</module>
+        <module>openam-samples</module>
+        <module>openam-auth-trees</module>
+        <module>openam-push-notification</module>
+        <module>openam-radius</module>
+        <module>openam-datastore</module>
+    </modules>
+
+    <repositories>
+        <repository>
+            <id>forgerock-build-dependencies</id>
+            <url>https://maven.forgerock.org/repo/forgerock-openam-7.1.0-dependencies</url>
+        </repository>
+    </repositories>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>4.2.1</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

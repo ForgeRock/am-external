@@ -1,0 +1,32 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "${project.version}",
+    "entityType" : "PageNode",
+    "entityId" : "d018fcd1-4e22-4160-8c41-63bee51c9cb3",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "d018fcd1-4e22-4160-8c41-63bee51c9cb3",
+    "pageDescription" : {
+      "en" : "Enter new password"
+    },
+    "nodes" : [ {
+      "_id" : "3e0fedc7-cc9d-4652-bd41-bfee458b7737",
+      "nodeType" : "ValidatedPasswordNode",
+      "displayName" : "Platform Password"
+    } ],
+    "pageHeader" : {
+      "en" : "Update Password"
+    },
+    "_type" : {
+      "_id" : "PageNode",
+      "name" : "Page Node",
+      "collection" : true
+    },
+    "_outcomes" : [ {
+      "id" : "outcome",
+      "displayName" : "Outcome"
+    } ]
+  }
+}

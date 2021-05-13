@@ -1,0 +1,21 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "${project.version}",
+    "entityType" : "ZeroPageLoginCollector",
+    "entityId" : "a581a7bd-55d5-49fc-82fd-38c0a8af82f5",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "a581a7bd-55d5-49fc-82fd-38c0a8af82f5",
+    "usernameHeader" : "X-OpenAM-Username",
+    "referrerWhiteList" : [ ],
+    "allowWithoutReferer" : true,
+    "passwordHeader" : "X-OpenAM-Password",
+    "_type" : {
+      "_id" : "ZeroPageLoginNode",
+      "name" : "Zero Page Login Collector",
+      "collection" : true
+    }
+  }
+}

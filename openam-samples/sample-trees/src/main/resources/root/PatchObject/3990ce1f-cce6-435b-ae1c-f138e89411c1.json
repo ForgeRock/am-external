@@ -1,0 +1,28 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "${project.version}",
+    "entityType" : "PatchObject",
+    "entityId" : "3990ce1f-cce6-435b-ae1c-f138e89411c1",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "3990ce1f-cce6-435b-ae1c-f138e89411c1",
+    "identityAttribute" : "userName",
+    "identityResource": "managed/user",
+    "patchAsObject" : true,
+    "ignoredFields" : ["userName"],
+    "_type" : {
+      "_id" : "PatchObjectNode",
+      "name" : "Patch Object",
+      "collection" : true
+    },
+    "_outcomes" : [ {
+      "id" : "PATCHED",
+      "displayName" : "Patched"
+    }, {
+      "id" : "FAILURE",
+      "displayName" : "Failed"
+    } ]
+  }
+}

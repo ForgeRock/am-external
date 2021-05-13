@@ -1,0 +1,1798 @@
+{
+    "config" : {
+        "messages" : {
+            "api" : {
+                "parseError": "Unable to parse response. Please try again later.",
+                "requestError": "Network error. Check your internet connection."
+            },
+            "CommonMessages" : {
+                "authenticationFailed" : "User name/password combination is invalid.",
+                "serviceUnavailable" : "Service unavailable",
+                "unknown" : "Unknown error. Please contact your Administrator",
+                "loggedIn" : "You have been successfully logged in.",
+                "errorFetchingData" : "Error fetching user data",
+                "loggedOut" : "You have been logged out.",
+                "loginTimeout" : "Login processed timed out. Restarting...",
+                "unauthorized" : "Unauthorized access",
+                "internalError" : "Internal server error",
+                "forbiddenError" : "Forbidden request error.",
+                "notFoundError" : "Not found error.",
+                "badRequestError" : "Bad request error.",
+                "conflictError" : "Detected conflict in request.",
+                "incorrectRevisionError" : "Cannot update the record because the version is not the latest.",
+                "changesSaved": "Changes saved"
+            },
+            "AdminMessages" : {
+                "schemaLoaded" : "Schema loaded successfully.",
+                "scripts": {
+                    "error": {
+                        "noName": "Name is required",
+                        "noLanguage": "Language is required"
+                    }
+                },
+                "policies": {
+                    "unableToRetrievePolicy": "Unable to retrieve policy",
+                    "invalidResource": "Invalid resource",
+                    "duplicateResource": "Duplicate resource",
+                    "duplicateAttribute": "Duplicate attribute",
+                    "unableToPersistPolicy": "Unable to persist policy in datastore",
+                    "policiesUploaded": "Policies uploaded successfully",
+                    "policiesUploadFailed": "Failed to upload policies",
+                    "importFailed": "Import Failed: __applicationName__ policy set not found in realm",
+                    "error": {
+                        "cantStartWithHash": "LDAP entity can't start with #",
+                        "noName": "Name is required",
+                        "noId": "ID is required",
+                        "noResourceTypes": "Please select one or more resource types",
+                        "noResources": "Please select one or more resources",
+                        "noActions": "Please add one or more actions",
+                        "noPatterns": "Please add one or more patterns"
+                    }
+                }
+            }
+        },
+        "AppConfiguration" : {
+            "Navigation" : {
+                "links" : {
+                    "realms": {
+                        "title": "Realms",
+                        "showAll": "Show All",
+                        "newRealm": "New Realm",
+                        "viewAll": "View all..."
+                    },
+                    "configure": {
+                        "title": "Configure",
+                        "authentication": "Authentication",
+                        "server-defaults": "Server Defaults",
+                        "global-services": "Global Services",
+                        "secret-stores": "Secret Stores"
+                    },
+                    "deployment": {
+                        "title" : "deployment",
+                        "servers" : "Servers",
+                        "sites" : "Sites"
+                    }
+                },
+                "helpLinks" : {
+                    "apiExplorer" : "API Explorer",
+                    "apiDocs" : "API Docs",
+                    "documentation": "AM Documentation"
+                },
+                "userAvatar" : {
+                    "signedInAs": {
+                        "title" : "Signed in as"
+                    },
+                    "title": "User Avatar"
+                }
+            }
+        }
+    },
+    "templates" : {
+        "user" : {
+            "404" : {
+                "pageNotFound" : "Page not found",
+                "requestedPageCouldNotBeFound" : "The requested page could not be found."
+            },
+            "403" : {
+                "title" : "Forbidden",
+                "description" : "You are not authorized to view this page."
+            },
+            "DefaultBaseTemplate" : {
+                "orPhone" : ", or phone"
+            },
+            "ChangesPendingTemplate": {
+                "undo": "Undo Changes",
+                "changesPending": "Changes Pending"
+            },
+            "UnauthorizedTemplate" : {
+                "title": "Unauthorized",
+                "description": "Insufficient access to view this page.",
+                "logoutLink": "Login Again",
+                "goBackLink": "Go Back"
+            }
+        }
+    },
+    "common" : {
+        "form" : {
+            "accept" : "Accept",
+            "actions" : "Actions",
+            "activate": "Activate",
+            "active": "Active",
+            "add": "Add",
+            "addAll": "Add All",
+            "addItem": "Add __item__",
+            "addKey" : "Add Key",
+            "addUser" : "Add user",
+            "addValue" : "Add Value",
+            "advanced": "Advanced",
+            "allow": "Allow",
+            "back" : "Back",
+            "build": "Build",
+            "cancel" : "Cancel",
+            "change": "Change",
+            "clear": "Clear",
+            "clone" : "Clone",
+            "close" : "Close",
+            "complete" : "Complete",
+            "confirm": "Confirm",
+            "continue" : "Continue",
+            "copyright" : "Copyright &copy; 2010-2021 ForgeRock AS. All rights reserved.",
+            "create" : "Create",
+            "createdAt" : "Created at",
+            "createNew": "Create New",
+            "deactivate": "Deactivate",
+            "decision" : "Decision",
+            "delete" : "Delete",
+            "deleteSelected" : "Delete Selected",
+            "deny": "Deny",
+            "details" : "Details",
+            "disable": "Disable",
+            "disabled": "Disabled",
+            "done" : "Done",
+            "download": "Download",
+            "edit": "Edit",
+            "editDetails": "Edit Details",
+            "empty" : "Empty",
+            "enable": "Enable",
+            "enableCookies" : "Cookies must be enabled to login",
+            "enabled": "Enabled",
+            "fail" : "Fail",
+            "false" : "False",
+            "filter": "Filter...",
+            "help" : "Help",
+            "home" : "Home",
+            "inactive": "Inactive",
+            "key":"Key",
+            "loadSchema":"Load Schema",
+            "logout" : "Log out",
+            "more" : "more...",
+            "moveDown" : "Move Down",
+            "moveUp" : "Move Up",
+            "name" : "Name",
+            "next" : "Next",
+            "no" : "No",
+            "noItemAvailable": "No __item__ available",
+            "notApplicable": "n/a",
+            "ok" : "OK",
+            "optional": "Optional",
+            "pass" : "Pass",
+            "passwordPlaceholder": "••••••••••••",
+            "pleaseSelect" : "Please Select",
+            "properties": "Properties",
+            "propertyName": "Property Name",
+            "propertyValue": "Property Value",
+            "redirecting": "Redirecting...",
+            "register" : "Register",
+            "reject" : "Reject",
+            "removeAll": "Remove All",
+            "removeValue": "Remove Value",
+            "reset" : "Reset",
+            "rename" : "Rename",
+            "revert": "Revert",
+            "revoke" : "Revoke",
+            "save" : "Save",
+            "saveChanges": "Save Changes",
+            "search" : "Search",
+            "select" : "Select",
+            "selectAll": "Select all",
+            "sessionExpired" : "Session Expired",
+            "settings" : "Settings",
+            "standard": "Standard",
+            "start" : "Start",
+            "searchPrompt": "Type to search",
+            "searchForPrompt": "Search for \"__label__\"",
+            "submit" : "Submit",
+            "success" : "Success",
+            "true" : "True",
+            "type": "Type",
+            "unassigned": "Unassigned",
+            "update" : "Update",
+            "upload": "Upload",
+            "validate": "Validate",
+            "value": "Value",
+            "working" : "Working...",
+            "yes" : "Yes",
+            "validation" : {
+                "errorsNotSaved" : "Validation errors exist in form. Changes not saved.",
+                "VALID_PHONE_FORMAT": "Contains invalid characters",
+                "VALID_NAME_FORMAT": "Contains invalid characters",
+                "VALID_EMAIL_ADDRESS_FORMAT": "Not a valid email address",
+                "AT_LEAST_X_CAPITAL_LETTERS" : "At least __numCaps__ capital letters",
+                "AT_LEAST_X_NUMBERS" : "At least __numNums__ numbers",
+                "CANNOT_CONTAIN_OTHERS" : "Cannot contain values from: __disallowedFields__",
+                "MIN_LENGTH" : "At least __minLength__ characters",
+                "REQUIRED" : "Cannot be blank",
+                "UNIQUE" : "Already exists",
+                "REAUTH_REQUIRED" : "",
+                "formContainsErrors" : "Form contains validation errors",
+                "atLeastOneCapitalLetter" : "At least one capital letter",
+                "atLeastOneNumber" : "At least one number",
+                "atLeast8Characters" : "At least 8 characters",
+                "cannotMatchLogin" : "Cannot match login",
+                "confirmationMatchesPassword" : "Passwords must match",
+                "usernameExists" : "Username already exists",
+                "emailAddressAlreadyExists" : "Email address already exists",
+                "onlyAlphabeticCharacters" : "Only alphabetic characters",
+                "onlyNumbersAndSpecialCharacters" : "Only numbers and special characters",
+                "cannotMatchOldPassword" : "Cannot match old password",
+                "minimum4Characters" : "Minimum 4 characters",
+                "acceptanceRequiredForRegistration" : "Acceptance required for registration",
+                "incorrectPassword" : "Incorrect password",
+                "incorrectSecurityAnswer" : "Incorrect answer",
+                "required": "Please provide a value",
+                "emailNotValid" : "Not a valid email address.",
+                "emailExists" : "Email address already exists.",
+                "shouldBeLong" : "Should be long value",
+                "wrongDateFormat" : "Wrong format"
+            },
+            "inheritValue": "Inherit value"
+        },
+        "grid": {
+            "pagination": {
+                "first": "First",
+                "previous": "Previous",
+                "next": "Next",
+                "last": "Last"
+            }
+        },
+        "user" : {
+            "changePassword" : "Change password",
+            "newPassword" : "New password",
+            "currentPassword" : "Current password",
+            "confirmNewPassword" : "Confirm new password",
+            "selfService": "Self Service"
+        }
+    },
+    "console": {
+        "navigation": {
+            "applications": {
+                "title": "Applications"
+            },
+            "applications-agents": {
+                "title": "Agents"
+            },
+            "applications-agents-identityGateway": {
+                "breadcrumb": "Applications - Agents - Identity Gateway",
+                "title": "Identity Gateway"
+            },
+            "applications-agents-java": {
+                "breadcrumb": "Applications - Agents - Java",
+                "title": "Java"
+            },
+            "applications-agents-soapSts": {
+                "breadcrumb": "Applications - Agents - SOAP STS",
+                "title": "SOAP STS"
+            },
+            "applications-agents-web": {
+                "breadcrumb": "Applications - Agents - Web",
+                "title": "Web"
+            },
+            "applications-federation": {
+                "title": "Federation"
+            },
+            "applications-federation-circlesOfTrust": {
+                "breadcrumb": "Applications - Federation - Circles of Trust",
+                "title": "Circles of Trust"
+            },
+            "applications-federation-entityProviders": {
+                "breadcrumb": "Applications - Federation - Entity Providers",
+                "title": "Entity Providers"
+            },
+            "applications-oauth2": {
+                "title": "OAuth 2.0"
+            },
+            "applications-oauth2-clients": {
+                "breadcrumb": "Applications - OAuth 2.0 - Clients",
+                "title": "Clients"
+            },
+            "applications-oauth2-remoteConsent": {
+                "breadcrumb": "Applications - OAuth 2.0 - Remote Consent",
+                "title": "Remote Consent"
+            },
+            "applications-oauth2-softwarePublisher": {
+                "breadcrumb": "Applications - OAuth 2.0 - Software Publisher",
+                "title": "Software Publisher"
+            },
+            "applications-oauth2-trustedJwtIssuer": {
+                "breadcrumb": "Applications - OAuth 2.0 - Trusted JWT Issuer",
+                "title": "Trusted JWT Issuer"
+            },
+            "authentication": {
+                "title": "Authentication"
+            },
+            "authentication-chains": {
+                "breadcrumb": "Authentication - Chains",
+                "title": "Chains"
+            },
+            "authentication-modules": {
+                "breadcrumb": "Authentication - Modules",
+                "title": "Modules"
+            },
+            "authentication-settings": {
+                "breadcrumb": "Authentication - Settings",
+                "title": "Settings"
+            },
+            "authentication-trees": {
+                "breadcrumb": "Authentication - Trees",
+                "title": "Trees"
+            },
+            "authentication-webhooks": {
+                "breadcrumb": "Authentication - Webhooks",
+                "title": "Webhooks"
+            },
+            "authorization": {
+                "title": "Authorization"
+            },
+            "authorization-policySets": {
+                "breadcrumb": "Authorization - Policy Sets",
+                "title": "Policy Sets"
+            },
+            "authorization-resourceTypes": {
+                "breadcrumb": "Authorization - Resource Types",
+                "title": "Resource Types"
+            },
+            "dashboard": {
+                "breadcrumb": "Dashboard",
+                "title": "Dashboard"
+            },
+            "identityStores": {
+                "breadcrumb": "Identity Stores",
+                "title": "Identity Stores"
+            },
+            "scripts": {
+                "breadcrumb": "Scripts",
+                "title": "Scripts"
+            },
+            "sts": {
+                "breadcrumb": "STS",
+                "title": "STS"
+            },
+            "identities": {
+                "breadcrumb": "Identities",
+                "title": "Identities"
+            },
+            "secretStores": {
+                "breadcrumb": "Secret Stores",
+                "title": "Secret Stores"
+            },
+            "services": {
+                "breadcrumb": "Services",
+                "title": "Services"
+            },
+            "sessions": {
+                "breadcrumb": "Sessions",
+                "title": "Sessions"
+            },
+
+            "advanced": {
+                "title": "Advanced"
+            },
+            "cts": {
+                "title":  "CTS"
+            },
+            "directoryConfiguration": {
+                "title": "Directory Configuration"
+            },
+            "general": {
+                "title": "General"
+            },
+            "sdk": {
+                "title": "SDK"
+            },
+            "security": {
+                "title": "Security"
+            },
+            "session": {
+                "title": "Session"
+            },
+            "uma": {
+                "title":  "UMA"
+            }
+        },
+        "common": {
+            "configuration": "Configuration",
+            "confirmAction": "Are you sure that you want to perform this action?",
+            "confirmDelete": "Confirm delete",
+            "confirmDeleteItem": "Are you sure that you want to delete this item?",
+            "confirmDeleteText": "Are you sure that you want to delete this __type__?",
+            "description": "Description",
+            "dynamicAttributes": "Dynamic Attributes",
+            "editFullScreen": "Edit Fullscreen",
+            "exitFullScreen": "Exit Fullscreen",
+            "error": {
+                "oops": "Oops something went wrong!"
+            },
+            "global": "Global",
+            "globalAttributes": "Global Attributes",
+            "id": "Id",
+            "loading": "Loading...",
+            "name": "Name",
+            "noResults": "No results to display",
+            "oopsSomethingWentWrong": "Oops, Something went wrong",
+            "realmDefaults": "Realm Defaults",
+            "realmDnsAliases": "Aliases/DNS Aliases",
+            "realmStatus": "Status",
+            "secondaryConfigurations": "Secondary Configurations",
+            "topLevelRealm": "Top Level Realm",
+            "type": "Type",
+            "validation": {
+                "alphaNumWithDotOnly": "Must not start or end with the <code>.</code> character <br>The <code>.</code> character must not be followed by another <code>.</code> character <br>Must contain <code>a-z</code>, <code>A-Z</code>, <code>0-9</code> and <code>.</code> characters only",
+                "invalidCharacters": "Must not start with the <code>#</code> or <code>\"</code> characters <br>Must not start or end with the space character <br>Must not contain the <code>\\</code>, <code>/</code>, <code>+</code>, <code>;</code>, <code>,</code>, <code>%</code>, <code>[</code>, <code>]</code>, <code>|</code> or <code>?</code> characters <br>Must not be <code>.</code> or <code>..</code>",
+                "minItems": "Must have a least __count__ item",
+                "minItems_plural": "Must have a least __count__ items"
+            }
+        },
+        "api": {
+            "explorer": {
+                "iFrameTitle": "Available API end-point actions"
+            }
+        },
+        "sites" : {
+            "common" : {
+                "confirmType": "site"
+            },
+            "edit": {
+                "title" : "Site Settings"
+            },
+            "list" :{
+                "title" : "Sites",
+                "new" : "Add a Site",
+                "table" : ["Name", "URL", "Secondary URLs", "Assigned Servers"],
+                "empty" : "No sites found",
+                "description": "Create Sites to contain a pool of servers that can respond to client requests in a highly-available fashion."
+            },
+            "new": {
+                "title": "New Site",
+                "nameValidationError": "Spaces are not allowed in the site's name"
+            }
+        },
+        "servers" : {
+            "common" : {
+                "confirmType": "server"
+            },
+            "list" : {
+                "title" : "Servers",
+                "new" : "Add a Server",
+                "table" : ["Url", "Site Name"],
+                "empty" : "No Servers found",
+                "clone" : "Clone",
+                "description": "Configure server-specific properties in AM instances."
+            },
+            "new": {
+                "title" : "New Server",
+                "serverUrl": "Server URL"
+            },
+            "clone": {
+                "title" : "Clone Server",
+                "serverUrl": "Server URL"
+            }
+        },
+        "authentication": {
+            "common": {
+                "module": "module",
+                "chain": "chain"
+            },
+            "settings": {
+                "title": "Settings"
+            },
+            "modules": {
+                "title" : "Modules",
+                "newModule": "New Module",
+                "description" : "AM uses authentication modules to identify the user. Normally authentication modules are associated with an authentication chain. Each realm has a default authentication chain that will be used to authenticate users. This section is used to add, configure or remove authentication module available for authentication into this realm.",
+                "addModuleTitle" : "New Module",
+                "addModuleError": "Authentication instance already exists.",
+                "selectModuleType" : "Select Module type",
+                "addModule" : "Add Module",
+                "moduleName" : "Module Name",
+                "moduleType" : "Type",
+                "chain" : "Chain",
+                "notFound" : "The module __name__ could not be found",
+                "inUse": {
+                    "title": "Edit module",
+                    "message": "The <code>__moduleName__</code> module is being used by the following Authentication Chain(s) <code>__usedChains__</code>. Editing this module may change their behaviour. <br><br>Are you sure you want to continue?"
+                },
+                "moduleNameValidationError" : "Spaces are not allowed in a module's name"
+            },
+            "chains": {
+                "title" : "Chains",
+                "newChain" : "Add Chain",
+                "chainName" : "Chain Name",
+                "description" : "Use authentication chains to define the steps a subject takes to authenticate. Authentication chains consist of a series of one or more authentication modules, with credentials being passed down the chain to each module instance.",
+                "defaultAdminAuthConfiguration" : "Default Administrator Authentication Chain",
+                "defaultOrgAuthConfiguration" : "Default Organization Authentication Chain",
+                "duplicateChain" : "A Chain with the same name already exists"
+            },
+            "editChains": {
+                "options" : "Options",
+                "noOptions" : "No Options",
+                "selectCriteria" : "Select Criteria",
+                "addValue" : "Add Value",
+                "selectModule" : "Select Module",
+                "chains" : "Chains",
+                "editChain" : "Edit Chain",
+                "newModule" : "New Module",
+                "addModule": "Add a Module",
+                "editModule" : "Edit Module",
+                "gotoNextModule" : "Pass through to next module",
+                "gotoSuccessUrl" : "Go to Successful Login URL",
+                "gotoFailUrl" : "Go to Failed Login URL",
+                "redirectUrls" : "Redirect URLS",
+                "redirectUrlsHelp" : "Specify the URL to which the subject is redirected. You can specify separate URLs for authenticating successfully and when authentication fails.",
+                "successUrl" : "Successful Login URL",
+                "failUrl" : "Failed Login URL",
+                "addUrl" : "Add URL",
+                "dropHere" : "Drop here",
+                "moduleHelp" : "Add authentication modules to build a process in which a user must pass credentials to all module instances.",
+                "processingClass": {
+                    "title": "Post Authentication Processing Class",
+                    "className": "Class Name",
+                    "addClassNameDialog": {
+                        "title": "Add new Class Name",
+                        "message": "The new class name <mark>__newClassName__</mark> for Post Authentication Processing has not been saved. Do you want to save it?"
+                    },
+                    "duplicateClass" : "A Class with the same name already exists",
+                    "help" : "Specify the name of a Java class to execute at the end of the authentication process."
+                },
+                "criteria" : [
+                    {
+                        "title": "Required",
+                        "passText" : "Pass this module and you will get a pass flag, and continue in the chain.",
+                        "failText" : "Fail this module and you will get a fail flag, and continue in the chain."
+                    },
+                    {
+                        "title": "Optional",
+                        "passText" : "Pass this module and you will get a pass flag, and continue in the chain.",
+                        "failText" : "Fail this module and you will continue in the chain."
+                    },
+                    {
+                        "title": "Requisite",
+                        "passText" : "Pass this module and you will get a pass flag, and continue in the chain.",
+                        "failText" : "Fail this module and you will get a fail flag, and exit the chain."
+
+                    },
+                    {
+                        "title": "Sufficient",
+                        "passText" : "Pass this module and you will get a pass flag, and exit the chain.",
+                        "failText" : "Fail this module and you will continue in the chain."
+                    }
+                ],
+                "alerts" : {
+                    "reqdFailSuffPass" : "Warning: Passing a SUFFICIENT module after the failing a REQUIRED module will continue through the chain and will not exit at that point. Consider using REQUISITE instead of REQUIRED."
+                },
+                "callToAction" : "Chains require at least one module",
+                "lastCriteria" : "Will advance to success or failure URL",
+                "deletedChain": "Chain deleted successfully",
+                "deleteBtnTooltip": {
+                    "defaultAdminAuthChain": "This is the default authentication service for Administrators.",
+                    "defaultOrgAuthChain": "This is the default authentication service for Organizations.",
+                    "defaultAdminOrgAuthChain": "This is the default authentication chain for Administrators and Organizations."
+                },
+                "legend" : ["Successful authentication requires:","At least one PASS flag", "No FAIL flags"]
+            },
+            "trees": {
+                "edit": {
+                    "nodes": {
+                        "failure": {
+                            "title": "Failure"
+                        },
+                        "success": {
+                            "title": "Success"
+                        },
+                        "start": {
+                            "title": "Start"
+                        },
+                        "properties": {
+                            "noProperties": "There are no properties to display."
+                        },
+                        "nodeTypes": {
+                            "label": "Enter some text to filter the list of authentication node types",
+                            "title": "Components",
+                            "groups": {
+                                "basicAuthentication": "Basic Authentication",
+                                "mfa": "MFA",
+                                "risk": "Risk",
+                                "behavioral": "Behavioral",
+                                "contextual": "Contextual",
+                                "federation": "Federation",
+                                "identityManagement": "Identity Management",
+                                "utilities": "Utilities",
+                                "iot": "IoT",
+                                "uncategorized": "Uncategorized"
+                            }
+                        },
+                        "selectedNode": {
+                            "nodeName": "Node name"
+                        },
+                        "pages": {
+                            "noNodes": "Drag a node here to add it to the page",
+                            "alreadyComplete": "Only the last node in a page can contain multiple outcomes, which has already been added. To add another node, remove the last node from this page."
+                        }
+                    },
+                    "toolbar": {
+                        "deleteNode": "Delete Node",
+                        "fullscreen": "Toggle fullscreen",
+                        "autoLayout": "Auto layout"
+                    },
+                    "type": "Trees"
+                },
+                "list": {
+                    "title": "Trees",
+                    "callToAction": {
+                        "title": "No Trees configured.",
+                        "description": "Create Trees to define the steps a subject takes to authenticate.",
+                        "button" : "Create Tree"
+                    },
+                    "grid": ["Name"]
+                },
+                "new": {
+                    "title": "New Tree",
+                    "treeName": "Name"
+                }
+            },
+            "webhooks": {
+                "list": {
+                    "title": "Webhooks",
+                    "callToAction": {
+                        "title": "No Webhooks configured.",
+                        "description": "Create Webhooks to define HTTP calls for specific AM events.",
+                        "button" : "Create Webhook"
+                    },
+                    "grid": ["Name"]
+                },
+                "new": {
+                    "title": "New Webhook",
+                    "name": "Webhook Name"
+                },
+                "edit": {
+                    "type": "Webhook"
+                }
+            }
+        },
+        "dashboard": {
+            "realmProperties" : "Properties",
+            "title" : "Realm Overview",
+            "quickStart" : "Quick Start",
+            "tasks": {
+                "authenticationTrees": "Authentication Trees",
+                "services": "Service Management",
+                "oauth2Clients": "OAuth2 Clients",
+                "saml": "SAML Applications",
+                "identityGateway": "IG Protected Apps",
+                "agentsJava": "Java Agents",
+                "agentsWeb": "Web Agents",
+                "sts": "STS Instances"
+            }
+        },
+        "services": {
+            "edit": {
+                "title": "Service",
+                "titleNew": "New Service",
+                "chooseServiceType": "Choose a service type",
+                "serviceTypes": "Service Types...",
+                "settings": "Settings",
+                "unavaliable": "No services available to add",
+                "unavaliableAlert": "No services available to add. To view a list of the existing services, click Cancel."
+            },
+            "list": {
+                "service": "Service",
+                "title": "Services",
+                "description": "Configure realm-specific properties for AM functionality.",
+                "addService": "Add a Service",
+                "addServicePrompt": "No services found",
+                "grid": {
+                    "header": ["Name"]
+                },
+                "confirmDeleteSelected": "Are you sure you want to delete the selected service?",
+                "confirmDeleteSelected_plural": "Are you sure you want to delete the selected services?"
+            },
+            "subSchema": {
+                "add": "Add a Secondary Configuration",
+                "title": "__subSchema__ configuration",
+                "new": {
+                    "title": "New __subSchema__ configuration"
+                },
+                "confirmDeleteSelected": "Are you sure you want to delete the selected configuration?",
+                "callToAction": "No secondary configurations found"
+            }
+        },
+        "realms": {
+            "title": "Realms",
+            "description" : "Use realms to organize subjects and configuration data. Within each realm you can configure identity stores, administration privileges, authentication chains, authorization policies, and other realm-specific settings.",
+            "newRealm": "New Realm",
+            "grid": {
+                "header": ["Realm name", "Status", "Path", "Realm/DNS Aliases"]
+            },
+            "parentRealmCannotDeleted": "Parent-realms cannot be deleted. Please delete any sub-realms first.",
+            "edit": {
+                "title": "Realm",
+                "realmAliases": {
+                    "title": "Realm Aliases",
+                    "description": "List of text aliases for the realm.<br/>Must not include full stops."
+                },
+                "dnsAliases": {
+                    "title": "DNS Aliases",
+                    "description": "List of fully-qualified DNS aliases for the realm.<br/>Editing the list of DNS aliases also applies appropriate changes to the advanced default server property <code>com.sun.identity.server.fqdnMap</code>."
+                },
+                "errors": {
+                    "statelessSessions" : "Stateless Sessions settings failed to save",
+                    "fqdnMap" : "Fully-qualified DNS alias settings failed to save"
+                }
+            },
+            "realmStatusPopover": {
+                "title": "Realm Status",
+                "content": "If the realm is inactive, all AM services will be unavailable for all users in this realm."
+            },
+            "realmAliasesPopover": {
+                "title": "Realm/DNS Aliases",
+                "content": "When a request is received by the authentication user interface, AM searches this attribute in all realms to find the matching realm into which the user should be authenticated. <br> AM must only find one matching realm so therefore do not put duplicate entries into multiple realms. <br> Additionally if AM does not find a matching realm, the user is presented with an error screen."
+            },
+            "realmNameValidationError" : "Characters $, &, +, \\, \", comma, /, :, ;, =, ?, @, space, #, %, <, > are not allowed in a realm's name."
+        },
+        "scripts": {
+            "edit": {
+                "title": "New Script",
+                "language": "Language",
+                "script": "Script",
+                "scriptType": "Script Type",
+                "validation": {
+                    "line": "line",
+                    "column": "column",
+                    "message": "message",
+                    "errors": "This script contains errors:",
+                    "noErrors": "No errors found."
+                },
+                "dialog": {
+                    "title":  "Change Script Type",
+                    "warning": "By changing the script type you will lose any unsaved data."
+                }
+            },
+            "list": {
+                "title": "Scripts",
+                "addNew": "New Script",
+                "grid": ["Name", "Script Type", "Language", "Description"],
+                "confirmDeleteText": "Are you sure you want to delete the selected scripts?"
+            }
+        },
+        "configuration" : {
+            "authentication" : {
+                "description": "Configure default properties for global authentication functionality.",
+                "core": {
+                    "coreAttributes": "Core Attributes",
+                    "title": "Realm Authentication Defaults",
+                    "description": "Configure default authentication properties applied when creating new realms."
+                },
+                "modules": {
+                    "title": "Authentication Module Defaults",
+                    "description": "Configure default properties applied when creating new authentication modules."
+                }
+            },
+            "globalServices" : {
+                "description": "Configure default properties applied when creating new services."
+            }
+        },
+        "authorization": {
+            "common": {
+                "duplicateItem": "Duplicate item",
+                "invalidItem": "Invalid item",
+                "realm": "Realm",
+                "realms": "Realms",
+                "policy": "Policy",
+                "policySet": "Policy Set",
+                "policySets": "Policy Sets",
+                "pattern": "Pattern",
+                "patterns": "Patterns",
+                "responseAttributes": "Response Attributes",
+                "subjectAttributes": "Subject attributes",
+                "customAttributes": "Custom attributes",
+                "availablePatterns": "Available patterns",
+                "staticAttributes": "Static attributes",
+                "action": "Action",
+                "actions": "Actions",
+                "resources": "Resources",
+                "subjects": "Subjects",
+                "environments": "Environments",
+                "resourceType": "Resource Type",
+                "resourceTypes": "Resource Types",
+                "defaultState": "Default State",
+                "allowed": "Allowed",
+                "denied": "Denied",
+                "summary": "Summary",
+
+                "noRealms": "There are no selected realms...",
+                "noActions": "There are no actions...",
+                "noActionsSelected": "There are no selected actions...",
+                "noResources": "There are no selected resources...",
+                "noResourceTypes": "There are no selected resources types...",
+                "noStaticAttributes": "There are no static attributes...",
+                "noSubjectAttributes": "There are no subject attributes...",
+                "noApplications": "There are no selected policy sets...",
+                "noPatterns": "There are no patterns...",
+                "noResourceTypesAvailable": "There are no available resource types...",
+                "noApplicationsAvailable": "There are no available policy sets...",
+                "noItems": "There are no items ...",
+
+                "weekdays": {
+                    "Monday": {
+                        "short": "mon",
+                        "full": "Monday"
+                    },
+                    "Tuesday": {
+                        "short": "tue",
+                        "full": "Tuesday"
+                    },
+                    "Wednesday": {
+                        "short": "wed",
+                        "full": "Wednesday"
+                    },
+                    "Thursday": {
+                        "short": "thu",
+                        "full": "Thursday"
+                    },
+                    "Friday": {
+                        "short": "fri",
+                        "full": "Friday"
+                    },
+                    "Saturday": {
+                        "short": "sat",
+                        "full": "Saturday"
+                    },
+                    "Sunday": {
+                        "short": "sun",
+                        "full": "Sunday"
+                    }
+                }
+            },
+
+            "policySets":{
+                "edit": {
+                    "new": "New Policy Set",
+                    "policies": "Policies",
+                    "addResourceTypes": "Add Resource Types...",
+                    "selectResourceTypes": "Select the resource types to be available within this policy set.",
+                    "resourceTypes": {
+                        "availableResourceTypes": "Available Resource Types",
+                        "selectedResourceTypes": "Selected Resource Types"
+                    }
+                },
+                "list": {
+                    "addNew": "New Policy Set",
+                    "description": "Define sets of policies for protecting web sites, web applications, or other resources.",
+                    "importPolicySets": "Import Policy Sets",
+                    "exportPolicySets": "Export Policy Sets",
+                    "grid": ["Name"],
+                    "noPolicySets": "No policy sets found",
+                    "addPolicySets": "Add a Policy Set",
+                    "noResourceTypesMessage" : "Policy Sets require a resource type"
+                }
+            },
+
+            "policies": {
+                "edit": {
+                    "createNew": "New Policy",
+                    "resourcesDescription": "Specify resources to be managed with this policy.",
+                    "actionsDescription": "Select the actions that the policy applies.",
+                    "subjectConditionsDescription": "Specify the subject conditions to which the policy applies.",
+                    "environmentConditionsDescription": "Specify the environment conditions to which the policy applies.",
+                    "deleteLogical": "Deleting will also remove any child objects",
+                    "addLogical": "Add a Logical Operator",
+                    "selectResourceTypeHelper": "Select the type of resource for which this policy will manage access.",
+                    "selectResourceType": "Select a resource type...",
+                    "selectResourcePattern": "Select resource pattern...",
+                    "addAction": "Add an Action",
+                    "availableActions": "Available Resource Type Actions",
+                    "selectedActions": "Selected Actions",
+                    "subjectAttributesPlaceholder": "Select or search for subject attributes",
+                    "addEnvironmentCondition": "Add an Environment Condition",
+                    "addSubjectCondition": "Add a Subject Condition",
+                    "canAcceptOneChild": "The \"Not...\" logical operator can only accept one child",
+
+                    "operators": {
+                        "NOT": "Not...",
+                        "OR": "Any of...",
+                        "AND": "All of..."
+                    },
+
+                    "subjectTypes": {
+                        "AuthenticatedUsers": {
+                            "title": "Authenticated Users",
+                            "props": {}
+                        },
+                        "Identity": {
+                            "title": "Users & Groups",
+                            "props": {
+                                "subjectValues": "Subject Values",
+                                "users": "User Subjects",
+                                "groups": "Group Subjects"
+                            },
+                            "placeholder": "Search for subjects"
+                        },
+                        "JwtClaim": {
+                            "title": "OpenID Connect/JWT Claim",
+                            "props": {
+                                "claimName": "Claim Name",
+                                "claimValue": "Claim Value"
+                            }
+                        },
+                        "NONE": {
+                            "title": "Never Match",
+                            "props": {}
+                        }
+                    },
+
+                    "conditionTypes": {
+                        "AMIdentityMembership": {
+                            "title": "Identity Membership",
+                            "props": {
+                                "amIdentityName": "AM Identity Name"
+                            }
+                        },
+                        "AuthLevel": {
+                            "title": "Authentication Level (greater than or equal to)",
+                            "props": {
+                                "authLevel": "Authentication Level"
+                            }
+                        },
+                        "AuthScheme": {
+                            "title": "Authentication by Module Instance",
+                            "props": {
+                                "authScheme": "Authentication Scheme",
+                                "applicationIdleTimeout": "Application Idle Timeout Scheme",
+                                "applicationName": "Application Name"
+                            }
+                        },
+                        "AuthenticateToRealm": {
+                            "title": "Authentication to a Realm",
+                            "props": {
+                                "authenticateToRealm": "Authenticate to a Realm"
+                            }
+                        },
+                        "AuthenticateToService": {
+                            "title": "Authentication by Service",
+                            "props": {
+                                "authenticateToService": "Authenticate To Service"
+                            }
+                        },
+                        "IPv4": {
+                            "title": "IPv4 Address/DNS Name",
+                            "props": {
+                                "ipRange": "IP Range",
+                                "dnsName": "DNS Name",
+                                "startIp": "Start IP",
+                                "endIp": "End IP"
+                            }
+                        },
+                        "IPv6": {
+                            "title": "IPv6 Address/DNS Name",
+                            "props": {
+                                "ipRange": "IP Range",
+                                "dnsName": "DNS Name",
+                                "startIp": "Start IP",
+                                "endIp": "End IP"
+                            }
+                        },
+                        "LDAPFilter": {
+                            "title": "LDAP Filter Condition",
+                            "props": {
+                                "ldapFilter": "LDAP Filter"
+                            }
+                        },
+                        "LEAuthLevel": {
+                            "title": "Authentication Level (less than or equal to)",
+                            "props": {
+                                "authLevel": "Authentication Level"
+                            }
+                        },
+                        "OAuth2Scope": {
+                            "title": "OAuth2 Scope",
+                            "props": {
+                                "requiredScopes": "Scopes"
+                            }
+                        },
+                        "ResourceEnvIP": {
+                            "title": "Resource/Environment/IP Address",
+                            "props": {
+                                "resourceEnvIPConditionValue": "Resource/Environment/IP Address"
+                            }
+                        },
+                        "Session": {
+                            "title": "Active Session Time",
+                            "props": {
+                                "maxSessionTime": "Max Session Time",
+                                "terminateSession": "Terminate Session"
+                            }
+                        },
+                        "SessionProperty": {
+                            "title": "Current Session Properties",
+                            "props": {
+                                "ignoreValueCase": "Ignore Value Case",
+                                "properties": "Properties"
+                            }
+                        },
+                        "SimpleTime": {
+                            "title": "Time (day, date, time, and timezone)",
+                            "props": {
+                                "startTime": "Start Time",
+                                "endTime": "End Time",
+                                "startDay": "Start Day",
+                                "endDay": "End Day",
+                                "startDate": "Start Date",
+                                "endDate": "End Date",
+                                "enforcementTimeZone": "Time Zone",
+                                "enterTimeZone": "Enter Time Zone"
+                            },
+                            "helperTitle": "Time condition",
+                            "helperContent": "Must contain one or more of the following values: Time (Start and End), Day (Start and End), Date (Start and End) and/or Time Zone."
+                        },
+                        "Script": {
+                            "title": "Script",
+                            "props": {
+                                "scriptId": "Script Name"
+                            },
+                            "placeholder": "Select from scripts"
+                        },
+                        "Transaction": {
+                            "title": "Transaction",
+                            "props": {
+                                "authenticationStrategy": "Authentication Strategy",
+                                "strategySpecifier": "Strategy Specifier",
+                                "AuthSchemeConditionAdvice": "Authenticate To Module",
+                                "AuthLevelConditionAdvice": "Auth Level",
+                                "AuthenticateToServiceConditionAdvice": "Authenticate To Chain",
+                                "AuthenticateToRealmConditionAdvice": "Authenticate To Realm",
+                                "AuthenticateToTreeConditionAdvice": "Authenticate To Tree"
+                            }
+                        },
+                        "ipHelperTitle": "IP Condition",
+                        "ipHelperContent": "Enter at least one of Start IP, End IP or DNS Name. To match a single IP, enter it in either Start IP or End IP. Start IP must be less than or equal to End IP. DNS Name is an explicit match, or you can use a wildcard in the lowest sub-domain.",
+                        "legacyFormat": "This condition is in a legacy format, and should be replaced.",
+                        "nothingSelected": "Nothing selected",
+                        "attributes": {
+                            "object": "key:value[,value2,...]"
+                        }
+                    }
+                },
+                "list": {
+                    "grid": ["Name", "Status"],
+                    "addNew": "Add a Policy",
+
+                    "description": "Configure this policy set by adding, editing, or removing authorization policies.",
+                    "readOnly": {
+                        "heading": "This policy set is read only, and cannot be configured.",
+                        "text": "Only resource owners can make changes to their policy sets."
+                    },
+                    "noPolicies": "No policies found"
+                }
+            },
+
+            "resourceTypes": {
+                "list": {
+                    "add": "New Resource Type",
+                    "title": "Resource Types",
+                    "description": "Define template for the resources that policies apply to, and the actions that could be performed on those resources.",
+                    "grid": ["Name"],
+                    "noResourceTypes" : "No resource types found",
+                    "addNewResourceType" : "Add a Resource Type"
+                },
+                "edit": {
+                    "title" : "New Resource Type",
+                    "actionsDescription" : "Define the actions that policies using this resource type can allow or deny.",
+                    "specifyActions" : "Specify Actions",
+                    "addAction": "Add Action",
+                    "addNewActionPlaceholder": "Add a new action...",
+                    "patternsDescription" : "Define resource patterns that policies using this resource type can expand upon.",
+                    "specifyPatterns" : "Specify Patterns",
+                    "addPattern": "Add Pattern",
+                    "addNewPatternPlaceholder": "Add a new pattern..."
+                }
+            }
+        },
+        "sessions": {
+            "search": {
+                "intro": "Find sessions by entering a username.",
+                "placeholder": "Username",
+                "title": "Username"
+            },
+            "table": {
+                "expires": "Expires __timestamp__",
+                "headers": [
+                    "Idle Time",
+                    "Idle Time Remaining",
+                    "Session Time Remaining"
+                ],
+                "noResults": "No sessions found."
+            },
+            "title": "Sessions",
+            "invalidate": "Invalidate",
+            "invalidateSelected": "Invalidate Selected",
+            "yourSession": "Your session"
+        },
+        "applications": {
+            "agents": {
+                "common": {
+                    "tabs": ["Agents", "Groups"],
+                    "agents": {
+                        "new": {
+                            "agentId": {
+                                "title": "Agent ID"
+                            }
+                        }
+                    },
+                    "groups": {
+                        "list": {
+                            "callToAction": {
+                                "button": "Add Group"
+                            }
+                        },
+                        "new": {
+                            "groupId": {
+                                "title": "Group ID"
+                            }
+                        }
+                    },
+                    "agentUrl": {
+                        "title": "Agent URL",
+                        "placeholder": "protocol://host:port",
+                        "validationMessage": "The URL must be entered in the format 'protocol://host:port'."
+                    },
+                    "serverUrl": {
+                        "title": "Server URL",
+                        "placeholder": "protocol://host:port/deploymentUri",
+                        "validationMessage": "The URL must be entered in the format 'protocol://host:port/deploymentUri'."
+                    }
+                },
+                "web": {
+                    "agentType": "Web Agent",
+                    "title": "Web Agents",
+                    "agents": {
+                        "edit": {
+                            "type": "Web Agent"
+                        },
+                        "new": {
+                            "title": "New Web Agent"
+                        },
+                        "list": {
+                            "callToAction": {
+                                "button": "Add Web Agent",
+                                "title": "No Web Agents configured.",
+                                "description": "Configure web agents to protect websites by contacting AM for authentication and policy evaluation."
+                            },
+                            "grid": ["Agent ID", "Group", "Repository Location", "Status"]
+                        }
+                    },
+                    "groups": {
+                        "edit": {
+                            "type": "Web Agent Group"
+                        },
+                        "new": {
+                            "title": "New Web Agent Group"
+                        },
+                        "list": {
+                            "callToAction": {
+                                "description": "Specify settings for multiple web agents by adding them to a group",
+                                "title": "No Web Agent groups configured."
+                            },
+                            "grid": ["Group ID", "Status"]
+                        }
+                    }
+                },
+                "java": {
+                    "agentType": "Java Agent",
+                    "title": "Java Agents",
+                    "agents": {
+                        "list": {
+                            "callToAction": {
+                                "button": "Add Java Agent",
+                                "title": "No Java Agents configured.",
+                                "description": "Configure Java policy agents to protect java applications by contacting AM for authentication and policy evaluation."
+                            },
+                            "grid": ["Agent ID", "Group", "Repository Location", "Status"]
+                        },
+                        "edit": {
+                            "type": "Java Agent"
+                        },
+                        "new": {
+                            "title": "New Java Agent",
+                            "agentUrl": {
+                                "placeholder": "protocol://host:port/deploymentUri",
+                                "validationMessage": "The URL must be entered in the format 'protocol://host:port/deploymentUri'."
+                            }
+                        }
+                    },
+                    "groups": {
+                        "edit": {
+                            "type": "Java Agent Group"
+                        },
+                        "new": {
+                            "title": "New Java Agent Group"
+                        },
+                        "list": {
+                            "callToAction": {
+                                "description": "Specify settings for multiple Java agents by adding them to a group",
+                                "title": "No Java Agent groups configured."
+                            },
+                            "grid": ["Group ID", "Status"]
+                        }
+                    }
+                },
+                "soapSts": {
+                    "title": "SOAP STS Agents",
+                    "agents": {
+                        "list": {
+                            "callToAction": {
+                                "button": "Add SOAP STS Agent",
+                                "title": "No SOAP STS Agents configured.",
+                                "description": "Configure SOAP STS Agents to authenticate external SOAP STS deployments."
+                            },
+                            "grid": ["Agent ID", "Group"]
+                        },
+                        "new": {
+                            "title": "New SOAP STS Agent"
+                        },
+                        "edit": {
+                            "type": "SOAP STS Agent"
+                        }
+                    },
+                    "groups": {
+                        "edit": {
+                            "type": "SOAP STS Agent Group"
+                        },
+                        "new": {
+                            "title": "New SOAP STS Agent Group"
+                        },
+                        "list": {
+                            "callToAction": {
+                                "description": "Specify settings for multiple SOAP STS agents by adding them to a group",
+                                "title": "No SOAP STS Agent groups configured."
+                            },
+                            "grid": ["Group ID"]
+                        }
+                    }
+                },
+                "identityGateway": {
+                    "title": "Identity Gateway",
+                    "agents": {
+                        "list": {
+                            "callToAction": {
+                                "button": "Add Identity Gateway Agent",
+                                "title": "No Identity Gateway Agents configured.",
+                                "description": "Configure Identity Gateway Agents for use with the Identity Gateway."
+                            },
+                            "grid": ["Agent ID", "Group"]
+                        },
+                        "edit": {
+                            "type": "Identity Gateway Agent"
+                        },
+                        "new": {
+                            "title": "New Identity Gateway Agent"
+                        }
+                    },
+                    "groups": {
+                        "edit": {
+                            "type": "Identity Gateway Agent Group"
+                        },
+                        "new": {
+                            "title": "New Identity Gateway Agent Group"
+                        },
+                        "list": {
+                            "callToAction": {
+                                "description": "Specify settings for multiple Identity Gateway agents by adding them to a group",
+                                "title": "No Identity Gateway Agent groups configured."
+                            },
+                            "grid": ["Group ID"]
+                        }
+                    }
+                }
+            },
+            "federation": {
+                "circlesoftrust": {
+                    "edit": {
+                        "type": "Circle of Trust"
+                    },
+                    "list": {
+                        "title": "Circles of Trust",
+                        "callToAction": {
+                            "button": "Add Circle of Trust",
+                            "title": "No Circles of Trust configured.",
+                            "description": "A Circle of Trust is a group of Identity Providers and Service Providers that trust each other and in effect represents the confines within which all federation communications are performed."
+                        },
+                        "grid": ["Name", "Entities", "Status"]
+                    },
+                    "new": {
+                        "title": "New Circle of Trust"
+                    }
+                },
+                "entityProviders": {
+                    "edit": {
+                        "addRole": "Add Role",
+                        "delete": {
+                            "entityProvider": "Entity Provider",
+                            "role": "Role"
+                        },
+                        "noMoreRoles": "No more roles can be added to this Entity Provider",
+                        "type": "Entity Provider"
+                    },
+                    "list": {
+                        "title": "Entity Providers",
+                        "grid": ["Name", "Roles", "Location"],
+                        "callToAction": {
+                            "title": "No Entity Providers configured",
+                            "description": "Configure Entity Providers",
+                            "button": {
+                                "title": "Add Entity Provider",
+                                "hosted": "Hosted",
+                                "remote": "Remote"
+                            }
+                        },
+                        "noSuchEntity": "No entities found",
+                        "search": "Search Entity IDs"
+                    },
+                    "new": {
+                        "hosted": {
+                            "title": "New Hosted Entity Provider",
+                            "entityId": "Entity ID",
+                            "baseUrl": {
+                                "description": "The Base URL to use for the SAML2 endpoints in the metadata. The Base URL should include the AM context path, for example: https://openam.example.com/openam",
+                                "title": "Entity Provider Base URL"
+                            },
+                            "metaAliases": {
+                                "description": "At least one meta alias is required",
+                                "idp": {
+                                    "description": "The meta alias needs to be a URL friendly unique identifier. The provided value will be automatically prefixed with the realm's name.",
+                                    "title": "Identity Provider Meta Alias"
+                                },
+                                "sp": {
+                                    "description": "The meta alias needs to be a URL friendly unique identifier. The provided value will be automatically prefixed with the realm's name.",
+                                    "title": "Service Provider Meta Alias"
+                                }
+                            },
+                            "cot": "Circles of Trust",
+                            "validation": {
+                                "atLeastOne": "At least one Meta Alias is required",
+                                "duplicate" : "Duplicate Meta Aliases not allowed",
+                                "whitespace": "Meta Alias must not contain whitespace"
+                            },
+                           "addToCOTFailed" : "Entity created but not added to Circle of Trust"
+                        },
+                        "remote": {
+                            "title": "New Remote Entity Provider",
+                            "importFile": "Import files",
+                            "xmlUploadInstructions": "Drag __fileType__ files here or, click to browse",
+                            "uploadFieldFilesCount": "__filesCount__ queued for upload.",
+                            "cot": "Circles of Trust",
+                            "validation": {
+                                "atLeastOne": "At least one Meta Alias is required",
+                                "duplicate" : "Duplicate Meta Aliases not allowed"
+                            },
+                            "addToCOTFailed" : "File imported but entity/entities not added to Circle of Trust"
+                        }
+                    },
+                    "roles": {
+                        "identityProvider": "Identity Provider",
+                        "serviceProvider": "Service Provider"
+                    }
+                }
+            },
+            "oauth2": {
+                "clients": {
+                    "tabs": ["Clients", "Groups"],
+                    "title": "Clients",
+                    "clients": {
+                        "list": {
+                            "grid": ["Client ID", "Group", "Status"],
+                            "callToAction": {
+                                "title": "No OAuth 2.0 Clients configured.",
+                                "description": "Configure OAuth 2.0 Clients to use access tokens issued by AM to access protected resources.",
+                                "button": "Add Client"
+                            }
+                        },
+                        "new": {
+                            "clientId": "Client ID",
+                            "title": "New OAuth 2.0 Client"
+                        },
+                        "edit": {
+                            "type": "OAuth 2.0 Client"
+                        }
+                    },
+                    "groups": {
+                        "list": {
+                            "grid": ["Group ID", "Status"],
+                            "callToAction": {
+                                "title": "No OAuth 2.0 Client groups configured.",
+                                "description": "Specify settings for multiple OAuth 2.0 Clients by adding them to a group.",
+                                "button" : "Add Group"
+                            }
+                        },
+                        "edit": {
+                            "type": "OAuth 2.0 Group"
+                        },
+                        "new": {
+                            "title": "New OAuth 2.0 Group",
+                            "groupId": "Group ID"
+                        }
+                    }
+                },
+                "remoteConsent": {
+                    "title": "Remote Consent",
+                    "groups": {
+                        "edit": {
+                            "type": "Remote Consent Agent Group"
+                        },
+                        "new": {
+                            "title": "New Remote Consent Agent Group"
+                        },
+                        "list": {
+                            "callToAction": {
+                                "description": "Specify settings for multiple Remote Consent agents by adding them to a group",
+                                "title": "No Remote Consent Agent groups configured."
+                            },
+                            "grid": ["Group ID"]
+                        }
+                    },
+                    "agents": {
+                        "list": {
+                            "callToAction": {
+                                "button": "Add Remote Consent Agent",
+                                "title": "No Remote Consent Agents configured.",
+                                "description": "Configure Remote Consent Agents to authenticate external Remote Consent deployments."
+                            },
+                            "grid": ["Agent ID", "Group"]
+                        },
+                        "edit": {
+                            "type": "Remote Consent Agent"
+                        },
+                        "new": {
+                            "title": "New Remote Consent Agent"
+                        }
+                    }
+                },
+                "softwarePublisher": {
+                    "title": "Software Publisher Agents",
+                    "agents": {
+                        "list": {
+                            "callToAction": {
+                                "button": "Add Software Publisher Agent",
+                                "description": "Configure Software Publisher agents to register issuers of software statements used in OAuth 2.0 dynamic client registration.",
+                                "title": "No Software Publisher Agents configured."
+                            },
+                            "grid": ["Agent ID", "Group"]
+                        },
+                        "new": {
+                            "title": "New Software Publisher Agent"
+                        },
+                        "edit": {
+                            "type": "Software Publisher Agent"
+                        }
+                    },
+                    "groups": {
+                        "edit": {
+                            "type": "Software Publisher Agent Group"
+                        },
+                        "list": {
+                            "callToAction": {
+                                "description": "Specify settings for multiple Software Publisher agents by adding them to a group",
+                                "title": "No Software Publisher Agent groups configured."
+                            },
+                            "grid": ["Group ID"]
+                        },
+                        "new": {
+                            "title": "New Software Publisher Agent Group"
+                        }
+                    }
+                },
+                "trustedJwtIssuer": {
+                    "title": "Trusted JWT Issuer Agents",
+                    "agents": {
+                        "list": {
+                            "callToAction": {
+                                "button": "Add Trusted JWT Issuer Agent",
+                                "description": "Configure Trusted JWT Issuer agents to register issuers of JWTs used in OAuth 2.0 JWT Bearer grant.",
+                                "title": "No Trusted JWT Issuer Agents configured."
+                            },
+                            "grid": ["Agent ID", "Group"]
+                        },
+                        "new": {
+                            "title": "New Trusted JWT Issuer Agent"
+                        },
+                        "edit": {
+                            "type": "Trusted JWT Issuer Agent"
+                        }
+                    },
+                    "groups": {
+                        "edit": {
+                            "type": "Trusted JWT Issuer Agent Group"
+                        },
+                        "list": {
+                            "callToAction": {
+                                "description": "Specify settings for multiple Trusted JWT Issuer agents by adding them to a group",
+                                "title": "No Trusted JWT Issuer Agent groups configured."
+                            },
+                            "grid": ["Group ID"]
+                        },
+                        "new": {
+                            "title": "New Trusted JWT Issuer Agent Group"
+                        }
+                    }
+                }
+
+            }
+        },
+        "identities": {
+            "tabs": ["Identities", "Groups"],
+            "title": "Identities",
+            "users": {
+                "confirmDeleteSelected": "Are you sure you want to delete the selected identity?",
+                "confirmDeleteSelected_plural": "Are you sure you want to delete the selected identities?",
+                "edit": {
+                    "tabs": ["General", "Services", "Groups"],
+                    "type": "Identity",
+                    "services": {
+                        "confirmDeleteSelected": "Are you sure you want to delete the selected service?",
+                        "confirmDeleteSelected_plural": "Are you sure you want to delete the selected services?",
+                        "edit": {
+                            "subtitle": "Edit __type__ service"
+                        },
+                        "list": {
+                            "grid": [
+                                "Name"
+                            ],
+                            "callToAction": {
+                                "title": "No services configured.",
+                                "description": "Configure services for this user.",
+                                "button": "Add Service"
+                            }
+                        },
+                        "new": {
+                            "subtitle": "New __type__ service"
+                        }
+                    }
+                },
+                "new": {
+                    "title": "New Identity",
+                    "userId": "User ID",
+                    "emailAddress" : "Email address"
+                },
+                "list": {
+                    "grid": [
+                        "Username",
+                        "Full name",
+                        "Email address",
+                        "Status"
+                    ],
+                    "callToAction": {
+                        "title": "No identities configured.",
+                        "description": "Configure Identities to represent the subjects authenticating to the AM server.",
+                        "button": "Add Identity"
+                    },
+                    "noSuchUser": "No such user found",
+                    "search": "Search Identities..."
+                }
+            },
+            "groups": {
+                "confirmDeleteSelected": "Are you sure you want to delete the selected identity group?",
+                "confirmDeleteSelected_plural": "Are you sure you want to delete the selected identity groups?",
+                "confirmDeleteSelectedWithUsers": "Are you sure you want to delete the selected identity group? This group still contains assigned users.",
+                "confirmDeleteSelectedWithUsers_plural": "Are you sure you want to delete the selected identity groups? At least one of them still contains assigned users.",
+                "list": {
+                    "allAuthenticatedButton": "All Authenticated Identities",
+                    "grid": [
+                        "Name"
+                    ],
+                    "callToAction": {
+                        "title": "No groups configured.",
+                        "description": "Configure groups of identities for easier use in policies.",
+                        "button": "Add Group"
+                    }
+                },
+                "new": {
+                    "title": "New Identity Group",
+                    "groupId": "Group ID"
+                },
+                "edit": {
+                    "allAuthenticated": {
+                        "title": "All Authenticated Identities",
+                        "type": "Identity Group Privileges"
+                    },
+                    "tabs": ["Members", "Privileges"],
+                    "type": "Identity Group"
+                }
+            }
+        },
+        "datastores": {
+            "title": "Identity Stores",
+            "confirmDeleteSelected": "Are you sure you want to delete the selected Identity Store?",
+            "confirmDeleteSelected_plural": "Are you sure you want to delete the selected Identity Stores?",
+            "list": {
+                "grid": ["Name", "Type"],
+                "callToAction": {
+                    "title": "No Identity Stores configured.",
+                    "description": "Configure connections to identity stores.",
+                    "button": "Add Identity Store"
+                }
+            },
+            "new": {
+                "title": "New Identity Store",
+                "id": "Identity Store ID"
+            }
+        },
+        "sts": {
+            "tabs": ["Rest STS", "Soap STS"],
+            "title": "STS",
+            "confirmDeleteSelected": "Are you sure you want to delete the selected STS instance?",
+            "confirmDeleteSelected_plural": "Are you sure you want to delete the selected STS instances?",
+            "deploymentUrlElement": "Deployment URL Element",
+            "rest": {
+                "edit": {
+                    "type": "Rest STS"
+                },
+                "list": {
+                    "grid": ["Name"],
+                    "callToAction": {
+                        "title": "No published Rest STS instances.",
+                        "description": "Configure Rest STS.",
+                        "button": "Add Rest STS"
+                    }
+                },
+                "new": {
+                    "title": "New REST STS Instance"
+                }
+            },
+            "soap": {
+                "edit": {
+                    "type": "Soap STS"
+                },
+                "list": {
+                    "grid": ["Name"],
+                    "callToAction": {
+                        "title": "No published Soap STS instances.",
+                        "description": "Configure Soap STS.",
+                        "button": "Add Soap STS"
+                    }
+                },
+                "new": {
+                    "title": "New SOAP STS Instance"
+                }
+            }
+        },
+        "secretStores": {
+            "title": "Secret Stores",
+            "confirmDeleteSelected": "Are you sure you want to delete the selected Secret Store?",
+            "confirmDeleteSelected_plural": "Are you sure you want to delete the selected Secret Stores?",
+            "confirmDeleteAll": "WARNING: Removing all the Secret Stores might leave the system non-operational. Are you sure you want to delete the last Secret Store?",
+            "confirmDeleteAll_plural": "WARNING: Removing all the Secret Stores might leave the system non-operational. Are you sure you want to delete all the Secret Stores?",
+            "list": {
+                "grid": ["Name", "Type"],
+                "deleteAll": "<strong>WARNING</strong>! Removing all the Secret Stores might leave the system non-operational.",
+                "callToAction": {
+                    "title": "No Secret Stores configured.",
+                    "description": "Configure a new Secret Store.",
+                    "button": "Add Secret Store"
+                },
+                "title": "Secret Stores",
+                "global-description": "Global Secret Stores list."
+            },
+            "new": {
+                "id": "Secret Store ID",
+                "title": "New Secret Store",
+                "type": "Store Type"
+            },
+            "core": {
+                "title": "Secret Stores defaults",
+                "description": "Configure default properties for global Secret Stores functionality.",
+                "coreAttributes": "Core Attributes"
+            },
+            "edit": {
+                "mappings": {
+                    "edit": {
+                        "title": "Edit Mapping"
+                    },
+                    "new": {
+                        "title": "Add Mapping"
+                    },
+                    "confirmDeleteSelected": "Are you sure you want to delete the selected Mapping?",
+                    "confirmDeleteSelected_plural": "Are you sure you want to delete the selected Mappings?",
+                    "mappingAdded": "Mapping Added",
+                    "callToAction": {
+                        "title": "No Mappings configured.",
+                        "description": "Configure new Mapping.",
+                        "button": "Add Mapping"
+                    },
+                    "form": {
+                        "aliasField": {
+                            "active": "Active",
+                            "placeholder": "Enter an alias"
+                        }
+                    },
+                    "grid": {
+                        "activeAlias": {
+                            "title": "Active Alias",
+                            "description": "The active alias"
+                        }
+                    }
+                },
+                "singletons": {
+                    "title": "Persistent Secret Store"
+                }
+            },
+            "singletons": {
+                "title": "Persistent Secret Stores",
+                "description": "Persistent Secret Stores list."
+            }
+        }
+    },
+    "errorPage": {
+        "503": {
+            "title": "Service Unavailable",
+            "description": "The service is currently unavailable. It may be temporarily overloaded or undergoing maintenance. Please try again later."
+        }
+    },
+    "components": {
+        "dialogs": {
+            "delete": {
+                "title": "Delete __objectName__?",
+                "titleInProgress": "Deleting...",
+                "message_interval": "(1){Deleting <strong>__names__</strong> will permanently remove it.};;(2-5){Deleting <strong>__names__</strong> will permanently remove them.};;(6-inf){Deleting these <strong>__count__</strong> __objectName, lowercase__ will permanently remove them.};;",
+                "no": "No, Keep __objectName__",
+                "yes": "Yes, Delete __objectName__"
+            }
+        }
+    },
+    "objects": {
+        "agent_plural": "Agents",
+        "agent": "Agent",
+        "agentGroup_plural": "Agent Groups",
+        "agentGroup": "Agent Group",
+        "attributeAuthorityAbbr": "AttrAuth",
+        "attributeQueryProviderAbbr": "AttrQuery",
+        "authenticationAuthorityAbbr": "AuthnAuth",
+        "chain_plural": "Chains",
+        "chain": "Chain",
+        "circleOfTrust_plural": "Circles of Trust",
+        "circleOfTrust": "Circle of Trust",
+        "configuration": "Configuration",
+        "entityProvider_plural": "Entity Providers",
+        "entityProvider": "Entity Provider",
+        "identity": "Identity",
+        "identity_plural": "Identities",
+        "identityProviderAbbr": "IDP",
+        "identityStore": "Identity Store",
+        "module_plural": "Modules",
+        "module": "Module",
+        "oauth20Client_plural": "OAuth 2.0 Clients",
+        "oauth20Client": "OAuth 2.0 Client",
+        "oauth20Group_plural": "OAuth 2.0 Groups",
+        "oauth20Group": "OAuth 2.0 Group",
+        "realm": "Realm",
+        "role": "Role",
+        "secretStore_plural": "Secret Stores",
+        "secretStore": "Secret Store",
+        "service_plural": "Services",
+        "service": "Service",
+        "serviceProviderAbbr": "SP",
+        "tree_plural": "Trees",
+        "tree": "Tree",
+        "webhook_plural": "Webhooks",
+        "webhook": "Webhook",
+        "xacmlPolicyDecisionPointAbbr": "XACML PDP",
+        "xacmlPolicyEnforcementPointAbbr": "XACML PEP"
+    }
+}

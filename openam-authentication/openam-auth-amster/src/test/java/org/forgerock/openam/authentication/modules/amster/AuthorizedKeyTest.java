@@ -1,0 +1,255 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2016-2019 ForgeRock AS.
+ */
+
+package org.forgerock.openam.authentication.modules.amster;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.when;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.forgerock.json.jose.builders.JwtClaimsSetBuilder;
+import org.forgerock.json.jose.exceptions.JwsSigningException;
+import org.forgerock.json.jose.jws.JwsHeader;
+import org.forgerock.json.jose.jws.SignedJwt;
+import org.forgerock.json.jose.jws.handlers.SigningHandler;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.slf4j.Logger;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+
+public class AuthorizedKeyTest {
+
+    @Mock
+    private SignedJwt jwt;
+    @Mock
+    private HttpServletRequest request;
+    @Mock
+    private SigningHandler signingHandler;
+    @Mock
+    private Logger debug;
+
+    @BeforeMethod
+    public void setup() throws Exception {
+        MockitoAnnotations.initMocks(this);
+        JwsHeader value = new JwsHeader();
+        value.setKeyId("fred");
+        when(jwt.getHeader()).thenReturn(value);
+        when(jwt.getClaimsSet()).thenReturn(new JwtClaimsSetBuilder().sub("amadmin").build());
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void shouldRequirePublicKey() throws Exception {
+        AuthorizedKey authorizedKey = new AuthorizedKey(null, signingHandler, null);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void shouldRequireSigningHandler() throws Exception {
+        AuthorizedKey authorizedKey = new AuthorizedKey("fred", null, null);
+    }
+
+    @Test
+    public void shouldVerifyJwtIsValidWithWildcardSubjectOption() throws Exception {
+        // Given
+        Key key = new AuthorizedKey("fred", signingHandler, "subject=\"*\"");
+        given(jwt.verify(any(SigningHandler.class))).willThrow(new IllegalArgumentException());
+
+        // When
+        boolean result = key.isValid(jwt, request);
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    public void shouldVerifyJwtIsValidWithSubjectOption() throws Exception {
+        // Given
+        Key key = new AuthorizedKey("fred", signingHandler, "subject=\"alice,amadmin,fred\"");
+        given(jwt.verify(any(SigningHandler.class))).willThrow(new IllegalArgumentException());
+
+        // When
+        boolean result = key.isValid(jwt, request);
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    public void shouldVerifyJwtIsValidWithSubjectContainingComma() throws Exception {
+        // Given
+        Key key = new AuthorizedKey("fred", signingHandler, "subject=\"alice,ama\\\\,dmin,fred\"");
+        given(jwt.verify(any(SigningHandler.class))).willThrow(new IllegalArgumentException());
+        jwt.getClaimsSet().setSubject("ama,dmin");
+
+        // When
+        boolean result = key.isValid(jwt, request);
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    public void shouldVerifyJwtIsValidWithPublicKey() throws Exception {
+        // Given
+        AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, null);
+        given(jwt.verify(any(SigningHandler.class))).willReturn(true);
+
+        // When
+        boolean result = authorizedKey.isValid(jwt, request);
+
+        // Then
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    public void shouldVerifyJwtIsInvalidWithMismatchingPublicKey() throws Exception {
+        // Given
+        AuthorizedKey authorizedKey = new AuthorizedKey("freddy", signingHandler, null);
+        given(jwt.verify(any(SigningHandler.class))).willReturn(true);
+
+        // When
+        boolean result = authorizedKey.isValid(jwt, request);
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    public void shouldVerifyJwtIsInvalid() throws Exception {
+        // Given
+        AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, null);
+        given(jwt.verify(any(SigningHandler.class))).willReturn(false);
+
+        // When
+        boolean result = authorizedKey.isValid(jwt, request);
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    public void shouldVerifyJwtIsInvalidFromIllegalArgument() throws Exception {
+        // Given
+        AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, null);
+        given(jwt.verify(any(SigningHandler.class))).willThrow(new IllegalArgumentException());
+
+        // When
+        boolean result = authorizedKey.isValid(jwt, request);
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    public void shouldVerifyJwtIsInvalidFromSubjectOption() throws Exception {
+        // Given
+        Key key = new AuthorizedKey("fred", signingHandler, "subject=\"alice,fred\"");
+        given(jwt.verify(any(SigningHandler.class))).willReturn(true);
+
+        // When
+        boolean result = key.isValid(jwt, request);
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    public void shouldVerifyJwtIsInvalidFromSigningException() throws Exception {
+        // Given
+        AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, null);
+        given(jwt.verify(any(SigningHandler.class))).willThrow(new JwsSigningException(""));
+
+        // When
+        boolean result = authorizedKey.isValid(jwt, request);
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    public void shouldApproveRequestsWhenNoFromRestriction() throws Exception {
+        // Given
+        AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler,
+                "agent-forwarding,environment=\"fred=\\\"a string\\\"\",nopty");
+
+        // When
+        boolean result = authorizedKey.isValidOrigin(request);
+
+        // Then
+        assertThat(result).isTrue();
+    }
+
+    @DataProvider
+    public Object[][] matchingFrom() {
+        return new Object[][] {
+                { "127.0.0.1,fred.co.uk", "127.0.0.1", "localhost" },
+                { "127.0.0.?,!127.0.0.1,fred.co.uk", "127.0.0.2", "localhost" },
+                { "127.0.0.1,::1,fred.co.uk", "::1", "localhost" },
+                { "127.0.0.1,::?,fred.co.uk", "::?", "localhost" },
+                { "127.0.0.0/24,fred.co.uk", "127.0.0.1", "localhost" },
+                { "127.0.0.1,::1/128,fred.co.uk", "::1", "localhost" },
+        };
+    }
+
+    @Test(dataProvider = "matchingFrom")
+    public void shouldApproveRequests(String from, String address, String host) throws Exception {
+        // Given
+        AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, "from=\"" + from + "\"");
+        setRequestOrigin(address, host);
+
+        // When
+        boolean result = authorizedKey.isValidOrigin(request);
+
+        // Then
+        assertThat(result).isTrue();
+    }
+
+    @DataProvider
+    public Object[][] failingFrom() {
+        return new Object[][] {
+                { "127.0.0.?,::1,*.co.uk", "::2", "localhost" },
+                { "127.0.0.?,::1,*.co.uk", "192.168.0.1", "localhost" },
+                { "192.168.0.0/24,!192.168.0.1,::1,*.co.uk", "192.168.0.1", "localhost" },
+                { "127.0.0.?,::aaaa:0/128,*.co.uk", "::1", "localhost" },
+                { "127.0.0.0/24,::aaaa:0/128,*.co.uk", "192.168.0.1", "localhost" },
+                { "127.0.0.1,fred.co.uk", "127.0.0.2", "fred.co.uk" },
+                { "127.0.0.1,*.co.uk", "127.0.0.2", "fred.co.uk" },
+        };
+    }
+
+    @Test(dataProvider = "failingFrom")
+    public void shouldDenyRequests(String from, String address, String host) throws Exception {
+        // Given
+        AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, "from=\"" + from + "\"");
+        setRequestOrigin(address, host);
+
+        // When
+        boolean result = authorizedKey.isValidOrigin(request);
+
+        // Then
+        assertThat(result).isFalse();
+    }
+
+    private void setRequestOrigin(String address, String host) {
+        when(request.getRemoteAddr()).thenReturn(address);
+        when(request.getRemoteHost()).thenReturn(host);
+    }
+
+}

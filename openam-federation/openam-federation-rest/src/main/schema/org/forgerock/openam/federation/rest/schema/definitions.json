@@ -1,0 +1,503 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$id": "https://www.forgerock.com/definitions.json",
+  "title": "Definitions for entity providers",
+  "secretIdAndAlgorithms": {
+    "traverseObject": true,
+    "title": "Secret ID And Algorithms",
+    "type": "object",
+    "properties": {
+      "secretIdIdentifier": {
+        "type": "string",
+        "attributeKey": "secretIdIdentifier",
+        "title": "Secret ID Identifier",
+        "description": "This identifier determines the secret ID for this entity provider when resolving secrets. For example when this value is set to \"demo\", the entity provider will use am.applications.federation.entity.providers.saml2.demo.signing and am.applications.federation.entity.providers.saml2.demo.encryption secret IDs to resolve the signing and encryption secrets. When left unspecified, AM will use the entity provider role (service provider, identity provider, etc.) specific default global secret IDs. When the secret ID identifier for a given role is modified, the corresponding mapping is removed if it isn’t referenced by other entities."
+      },
+      "signingAlgorithm": {
+        "title": "Signing Algorithm",
+        "type": "array",
+        "attributePath": {
+          "value": "extensions",
+          "mapper": "org.forgerock.openam.federation.rest.schema.mappers.SigningAlgorithmMapper"
+        },
+        "items": {
+          "javaType": "org.forgerock.openam.federation.rest.schema.shared.SigningAlgorithm",
+          "type": "string",
+          "enum": [
+            "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
+            "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256",
+            "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384",
+            "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512",
+            "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+            "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384",
+            "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512",
+            "http://www.w3.org/2009/xmldsig11#dsa-sha256"
+          ],
+          "enumNames": [
+            "http://www.w3.org/2000/09/xmldsig#rsa-sha1",
+            "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256",
+            "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384",
+            "http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512",
+            "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256",
+            "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384",
+            "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512",
+            "http://www.w3.org/2009/xmldsig11#dsa-sha256"
+          ]
+        }
+      },
+      "digestAlgorithm": {
+        "title": "Digest Algorithm",
+        "type": "array",
+        "attributePath": {
+          "value": "extensions",
+          "mapper": "org.forgerock.openam.federation.rest.schema.mappers.DigestAlgorithmMapper"
+        },
+        "items": {
+          "javaType": "org.forgerock.openam.federation.rest.schema.shared.DigestAlgorithm",
+          "type": "string",
+          "enum": [
+            "http://www.w3.org/2000/09/xmldsig#sha1",
+            "http://www.w3.org/2001/04/xmldsig-more#sha384",
+            "http://www.w3.org/2001/04/xmlenc#sha256",
+            "http://www.w3.org/2001/04/xmlenc#sha512",
+            "http://www.w3.org/2007/05/xmldsig-more#sha3-256",
+            "http://www.w3.org/2007/05/xmldsig-more#sha3-384",
+            "http://www.w3.org/2007/05/xmldsig-more#sha3-512"
+          ],
+          "enumNames": [
+            "http://www.w3.org/2000/09/xmldsig#sha1",
+            "http://www.w3.org/2001/04/xmldsig-more#sha384",
+            "http://www.w3.org/2001/04/xmlenc#sha256",
+            "http://www.w3.org/2001/04/xmlenc#sha512",
+            "http://www.w3.org/2007/05/xmldsig-more#sha3-256",
+            "http://www.w3.org/2007/05/xmldsig-more#sha3-384",
+            "http://www.w3.org/2007/05/xmldsig-more#sha3-512"
+          ]
+        }
+      },
+      "encryptionAlgorithm": {
+        "title": "Encryption Algorithm",
+        "type": "array",
+        "attributeKey": {
+          "value": "encryptionAlgorithms",
+          "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EncryptionAlgorithmMapper"
+        },
+        "items": {
+          "javaType": "org.forgerock.openam.federation.rest.schema.shared.EncryptionAlgorithm",
+          "type": "string",
+          "enum": [
+            "http://www.w3.org/2009/xmlenc11#aes128-gcm",
+            "http://www.w3.org/2009/xmlenc11#aes192-gcm",
+            "http://www.w3.org/2009/xmlenc11#aes256-gcm",
+            "http://www.w3.org/2001/04/xmlenc#aes128-cbc",
+            "http://www.w3.org/2001/04/xmlenc#aes192-cbc",
+            "http://www.w3.org/2001/04/xmlenc#aes256-cbc",
+            "http://www.w3.org/2001/04/xmlenc#rsa-1_5",
+            "http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p",
+            "http://www.w3.org/2009/xmlenc11#rsa-oaep"
+          ],
+          "enumNames": [
+            "http://www.w3.org/2009/xmlenc11#aes128-gcm",
+            "http://www.w3.org/2009/xmlenc11#aes192-gcm",
+            "http://www.w3.org/2009/xmlenc11#aes256-gcm",
+            "http://www.w3.org/2001/04/xmlenc#aes128-cbc",
+            "http://www.w3.org/2001/04/xmlenc#aes192-cbc",
+            "http://www.w3.org/2001/04/xmlenc#aes256-cbc",
+            "http://www.w3.org/2001/04/xmlenc#rsa-1_5",
+            "http://www.w3.org/2001/04/xmlenc#rsa-oaep-mgf1p",
+            "http://www.w3.org/2009/xmlenc11#rsa-oaep"
+          ]
+        }
+      }
+    }
+  },
+  "nameIdFormatList": {
+    "description": "List of NameID formats the requestor will use to contact. Order listed shows the order of preference",
+    "title": "NameID Format List",
+    "attributePath": {
+      "value": "/nameIDFormat"
+    },
+    "type": "array",
+    "items": {
+      "type": "string"
+    },
+    "default": [
+      "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent",
+      "urn:oasis:names:tc:SAML:2.0:nameid-format:transient",
+      "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
+      "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
+      "urn:oasis:names:tc:SAML:1.1:nameid-format:WindowsDomainQualifiedName",
+      "urn:oasis:names:tc:SAML:2.0:nameid-format:kerberos",
+      "urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName"
+    ]
+  },
+  "assertionTime": {
+    "type": "object",
+    "properties": {
+      "notBeforeTimeSkew": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "effectiveTime": {
+        "type": "integer",
+        "minimum": 0
+      }
+    }
+  },
+  "basicAuthentication": {
+    "traverseObject": true,
+    "description": "Configure basic authentication setting for Soap based binding",
+    "title": "Basic Authentication",
+    "type": "object",
+    "properties": {
+      "enabled": {
+        "attributeKey": "basicAuthOn",
+        "title": "Enabled",
+        "type": "boolean",
+        "default": false
+      },
+      "userName": {
+        "attributeKey": "basicAuthUser",
+        "title": "User Name",
+        "type": "string"
+      },
+      "password": {
+        "title": "Password",
+        "attributeKey": {
+          "value": "basicAuthPassword",
+          "mapper": "org.forgerock.openam.federation.rest.schema.mappers.PasswordMapper"
+        },
+        "type": "string",
+        "format": "password"
+      }
+    }
+  },
+  "assertionCache": {
+    "traverseObject": true,
+    "type": "object",
+    "title": "Assertion Cache",
+    "properties": {
+      "enabled": {
+        "attributeKey": "assertionCacheEnabled",
+        "description": "Enable assertion cache",
+        "title": "Enabled",
+        "type": "boolean",
+        "default": false
+      }
+    }
+  },
+  "extendedIndexedEndpoint": {
+    "javaType": "org.forgerock.openam.federation.rest.schema.shared.ExtendedIndexedEndpoint",
+    "type": "object",
+    "properties": {
+      "isDefault": {
+        "type": "boolean"
+      },
+      "binding": {
+        "title": "Binding",
+        "anyOf": [
+          {
+            "title": "Predefined Binding",
+            "type": "string",
+            "enum": [
+              "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact",
+              "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+              "urn:oasis:names:tc:SAML:2.0:bindings:PAOS"
+            ],
+            "enumNames": [
+              "HTTP-Artifact",
+              "HTTP-POST",
+              "PAOS"
+            ]
+          },
+          {
+            "title": "Custom Binding",
+            "type": "string"
+          }
+        ]
+      },
+      "location": {
+        "title": "Location",
+        "type": "string"
+      },
+      "index": {
+        "type": "integer"
+      }
+    }
+  },
+  "endpoint": {
+    "javaType": "org.forgerock.openam.federation.rest.schema.shared.Endpoint",
+    "type": "object",
+    "properties": {
+      "binding": {
+        "$ref": "#/binding"
+      },
+      "location": {
+        "title": "Location",
+        "type": "string"
+      },
+      "responseLocation": {
+        "title": "Response Location",
+        "type": "string"
+      }
+    },
+    "required": [
+      "location"
+    ]
+  },
+  "location": {
+    "type": "object",
+    "properties": {
+      "location": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "location"
+    ]
+  },
+  "binding": {
+    "javaType": "org.forgerock.openam.federation.rest.schema.shared.Binding",
+    "title": "Binding",
+    "anyOf": [
+      {
+        "title": "Predefined Binding",
+        "type": "string",
+        "enum": [
+          "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+          "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+          "urn:oasis:names:tc:SAML:2.0:bindings:SOAP",
+          "urn:oasis:names:tc:SAML:2.0:bindings:PAOS"
+        ],
+        "enumNames": [
+          "HTTP-REDIRECT",
+          "HTTP-POST",
+          "SOAP",
+          "PAOS"
+        ]
+      },
+      {
+        "title": "Custom Binding",
+        "type": "string"
+      }
+    ]
+  },
+  "authContextItem": {
+    "type": "object",
+    "properties": {
+      "defaultItem": {
+        "propertyOrder": 5,
+        "title": "Default",
+        "type": "boolean"
+      },
+      "contextReference": {
+        "$ref": "#/contextReferenceValues"
+      },
+      "key": {
+        "propertyOrder": 0,
+        "type": "string",
+        "title": "Key",
+        "enum": [
+          "service",
+          "module",
+          "user",
+          "role",
+          "authlevel"
+        ],
+        "enumNames": [
+          "Service",
+          "Module",
+          "User",
+          "Role",
+          "Authentication Level"
+        ]
+      },
+      "value": {
+        "propertyOrder": 1,
+        "title": "Value",
+        "type": "string"
+      },
+      "level": {
+        "propertyOrder": 2,
+        "title": "Level",
+        "type": "integer",
+        "minimum": 0
+      }
+    }
+  },
+  "contextReferenceValues": {
+    "javaType": "org.forgerock.openam.federation.rest.schema.shared.ContextReferenceValues",
+    "propertyOrder": 0,
+    "title": "Context Reference",
+    "anyOf": [
+      {
+        "title": "Predefined Reference",
+        "type": "string",
+        "enum": [
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocol",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocolPassword",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:Kerberos",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:MobileOneFactorUnregistered",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:MobileTwoFactorUnregistered",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:MobileOneFactorContract",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:MobileTwoFactorContract",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:Password",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:PreviousSession",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:X.509",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:PGP",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:SPKI",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:XMLDSig",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:Smartcard",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:SmartcardPKI",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:SoftwarePKI",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:Telephony",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:NomadTelephony",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:PersonalTelephony",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:AuthenticatedTelephony",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:SecureRemotePassword",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:TLSClient",
+          "urn:oasis:names:tc:SAML:2.0:ac:classes:TimeSyncToken",
+          "unspecified"
+        ],
+        "enumNames": [
+          "InternetProtocol",
+          "InternetProtocolPassword",
+          "Kerberos",
+          "MobileOneFactorUnregistered",
+          "MobileTwoFactorUnregistered",
+          "MobileOneFactorContract",
+          "MobileTwoFactorContract",
+          "Password",
+          "PasswordProtectedTransport",
+          "PreviousSession",
+          "X.509",
+          "PGP",
+          "SPKI",
+          "XMLDSig",
+          "Smartcard",
+          "SmartcardPKI",
+          "SoftwarePKI",
+          "Telephony",
+          "NomadTelephony",
+          "PersonalTelephony",
+          "AuthenticatedTelephony",
+          "SecureRemotePassword",
+          "TLSClient",
+          "TimeSyncToken",
+          "unspecified"
+        ]
+      },
+      {
+        "title": "Custom Reference",
+        "type": "string"
+      }
+    ]
+  },
+  "applicationSecurityConfigItem": {
+    "javaType": "org.forgerock.openam.federation.rest.schema.shared.ApplicationSecurityConfigItem",
+    "type": "object",
+    "properties": {
+      "url": {
+        "title": "URL",
+        "propertyOrder": 0,
+        "type": "string"
+      },
+      "type": {
+        "title": "Type",
+        "propertyOrder": 1,
+        "type": "string"
+      },
+      "pubKeyAlias": {
+        "title": "Public Key Alias",
+        "propertyOrder": 2,
+        "type": "string"
+      },
+      "encryptionAlgorithm": {
+        "title": "Encryption Algorithm",
+        "propertyOrder": 3,
+        "type": "string"
+      },
+      "encryptionKeyStrength": {
+        "title": "Encryption Key Strength",
+        "propertyOrder": 4,
+        "type": "string"
+      },
+      "secret": {
+        "title": "Secret",
+        "propertyOrder": 5,
+        "type": "string"
+      }
+    },
+    "required": [
+      "url",
+      "secret"
+    ]
+  },
+  "attributeMap": {
+    "javaType": "org.forgerock.openam.federation.rest.schema.shared.AttributeMap",
+    "type": "object",
+    "properties": {
+      "nameFormatUri": {
+        "title": "Name Format Uri",
+        "propertyOrder": 0,
+        "type": "string"
+      },
+      "samlAttribute": {
+        "title": "SAML Attribute",
+        "propertyOrder": 1,
+        "type": "string"
+      },
+      "localAttribute": {
+        "title": "Local Attribute",
+        "propertyOrder": 2,
+        "type": "string"
+      },
+      "binary": {
+        "title": "Binary",
+        "propertyOrder": 3,
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "samlAttribute",
+      "localAttribute"
+    ]
+  },
+  "keyValue": {
+    "type": "object",
+    "properties": {
+      "key": {
+        "propertyOrder": 0,
+        "title": "Key",
+        "type": "string"
+      },
+      "value": {
+        "propertyOrder": 1,
+        "title": "Value",
+        "type": "string"
+      }
+    }
+  },
+  "responseArtifactMessageEncoding": {
+    "traverseObject": true,
+    "title": "Artifact Message Encoding",
+    "javaType": "org.forgerock.openam.federation.rest.schema.shared.ResponseArtifactMessageEncoding",
+    "type": "object",
+    "properties": {
+      "encoding": {
+        "attributeKey": {
+          "value": "responseArtifactMessageEncoding",
+          "mapper": "org.forgerock.openam.federation.rest.schema.mappers.MessageEncodingMapper"
+        },
+        "title": "Artifact Message Encoding",
+        "type": "string",
+        "enum": [
+          "URI",
+          "FORM"
+        ],
+        "default": "URI"
+      }
+    }
+  }
+}

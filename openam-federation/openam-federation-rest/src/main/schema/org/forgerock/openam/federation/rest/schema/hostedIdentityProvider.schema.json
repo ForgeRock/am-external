@@ -1,0 +1,598 @@
+{
+  "$id": "https://www.forgerock.com/hostedIdentityProvider.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "identityProvider": {
+    "title": "Identity Provider",
+    "description": "This schema describes a SAML2 identity provider.",
+    "type": "object",
+    "traverseObject": true,
+    "javaType": "org.forgerock.openam.federation.rest.schema.hosted.identity.IdentityProvider",
+    "properties": {
+      "assertionContent": {
+        "propertyOrder": 0,
+        "title": "Assertion Content",
+        "type": "object",
+        "traverseObject": true,
+        "properties": {
+          "signingAndEncryption": {
+            "traverseObject": true,
+            "title": "Signing And Encryption",
+            "type": "object",
+            "properties": {
+              "requestResponseSigning": {
+                "traverseObject": true,
+                "title": "Request/Response Signing",
+                "description": "Select the checkbox for each request/response that should be signed",
+                "type": "object",
+                "properties": {
+                  "authenticationRequest": {
+                    "attributePath": {
+                      "value": "/wantAuthnRequestsSigned"
+                    },
+                    "title": "Authentication Request",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "artifactResolve": {
+                    "attributeKey": "wantArtifactResolveSigned",
+                    "title": "Artifact Resolve",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "logoutRequest": {
+                    "attributeKey": "wantLogoutRequestSigned",
+                    "title": "Logout Request",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "logoutResponse": {
+                    "attributeKey": "wantLogoutResponseSigned",
+                    "title": "Logout Response",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "manageNameIdRequest": {
+                    "attributeKey": "wantMNIRequestSigned",
+                    "title": "Manage NameID Request",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "manageNameIdResponse": {
+                    "attributeKey": "wantMNIResponseSigned",
+                    "title": "Manage NameID Response",
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "authenticationRequest",
+                  "artifactResolve",
+                  "logoutRequest",
+                  "logoutResponse",
+                  "manageNameIdRequest",
+                  "manageNameIdResponse"
+                ]
+              },
+              "encryption": {
+                "traverseObject": true,
+                "title": "Encryption",
+                "type": "object",
+                "properties": {
+                  "nameIdEncryption": {
+                    "attributeKey": "wantNameIDEncrypted",
+                    "title": "NameID Encryption",
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "nameIdEncryption"
+                ]
+              },
+              "secretIdAndAlgorithms": {
+                "$ref": "definitions.json#/secretIdAndAlgorithms"
+              }
+            }
+          },
+          "nameIdFormat": {
+            "traverseObject": true,
+            "title": "NameID Format",
+            "type": "object",
+            "properties": {
+              "nameIdFormatList": {
+                "$ref": "definitions.json#/nameIdFormatList"
+              },
+              "nameIdValueMap": {
+                "attributeKey": {
+                  "value": "nameIDFormatMap",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.NameIdValueMapper"
+                },
+                "description": "Defines mapping between the NameID format and user's profile attribute. Example <code>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress=mail</code> or <code>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent=objectGUID;binary</code>. If the defined NameID format is used in protocol, the profile attribute value will be used as NameID value for the format in the Subject, the <code>;binary</code> flag can be used to indicate that the profile attribute is binary and should be Base64 encoded when used as the NameID value.",
+                "title": "NameID Value Map",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "key": {
+                      "title": "Key",
+                      "propertyOrder": 0,
+                      "type": "string"
+                    },
+                    "value": {
+                      "title": "Value",
+                      "propertyOrder": 1,
+                      "type": "string"
+                    },
+                    "binary": {
+                      "title": "Binary",
+                      "propertyOrder": 2,
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "default": [
+                  {
+                    "key": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
+                    "value": "mail",
+                    "binary": false
+                  }
+                ]
+              }
+            }
+          },
+          "authenticationContext": {
+            "title": "Authentication Context",
+            "type": "object",
+            "traverseObject": true,
+            "properties": {
+              "authenticationContextMapper": {
+                "attributeKey": "idpAuthncontextMapper",
+                "title": "Mapper",
+                "type": "string",
+                "default": "com.sun.identity.saml2.plugins.DefaultIDPAuthnContextMapper"
+              },
+              "authContextItems": {
+                "title": "Authentication Context",
+                "description": "Defines mapping between SP requested Authentication Context Reference and IDP authentication scheme and authentication level.",
+                "type": "array",
+                "attributeKey": {
+                  "value": "idpAuthncontextClassrefMapping",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.IdpAuthContextMapper"
+                },
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "contextReference": {
+                      "$ref": "definitions.json#/contextReferenceValues"
+                    },
+                    "key": {
+                      "propertyOrder": 1,
+                      "type": "string",
+                      "title": "Key",
+                      "enum": [
+                        "service",
+                        "module",
+                        "user",
+                        "role",
+                        "authlevel"
+                      ],
+                      "enumNames": [
+                        "Service",
+                        "Module",
+                        "User",
+                        "Role",
+                        "Authentication Level"
+                      ]
+                    },
+                    "value": {
+                      "propertyOrder": 2,
+                      "title": "Value",
+                      "type": "string"
+                    },
+                    "level": {
+                      "propertyOrder": 3,
+                      "title": "Level",
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                },
+                "default": [
+                  {
+                    "contextReference": "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport",
+                    "level": "0"
+                  }
+                ]
+              }
+            }
+          },
+          "assertionTime": {
+            "traverseObject": true,
+            "title": "Assertion Time",
+            "type": "object",
+            "properties": {
+              "notBeforeTimeSkew": {
+                "attributeKey": "assertionNotBeforeTimeSkew",
+                "title": "Not-Before Time Skew",
+                "type": "integer",
+                "minimum": 0,
+                "default": 600,
+                "description": "Is in seconds. This is the skew time for NotBefore attributes in assertion"
+              },
+              "effectiveTime": {
+                "attributeKey": "assertionEffectiveTime",
+                "title": "Effective Time",
+                "type": "integer",
+                "minimum": 0,
+                "description": "Is in seconds. Validity time of assertion for NotAfter attributes",
+                "default": 600
+              }
+            }
+          },
+          "basicAuthentication": {
+            "$ref": "definitions.json#/basicAuthentication"
+          },
+          "assertionCache": {
+            "$ref": "definitions.json#/assertionCache"
+          }
+        }
+      },
+      "assertionProcessing": {
+        "propertyOrder": 1,
+        "title": "Assertion Processing",
+        "type": "object",
+        "traverseObject": true,
+        "properties": {
+          "attributeMapper": {
+            "title": "Attribute Mapper",
+            "type": "object",
+            "traverseObject": true,
+            "properties": {
+              "attributeMapper": {
+                "attributeKey": "idpAttributeMapper",
+                "title": "Attribute Mapper",
+                "type": "string",
+                "default": "com.sun.identity.saml2.plugins.DefaultIDPAttributeMapper"
+              },
+              "attributeMap": {
+                "title": "Attribute Map",
+                "description": "This mapping is the configuration used by the Attribute Mapper. The mapping should be defined as [NameFormatURI|]SAML ATTRIBUTE NAME=PROFILE ATTRIBUTE NAME in assertion. Example: EmailAddress=mail, Address=postaladdress, urn:oasis:names:tc:SAML:2.0:attrname-format:uri|urn:mace:dir:attribute-def:cn=cn The mapper also allows for static values to be defined. To define a static value, enclose the profile attribute name in double quotes. Example: partnerID=\"staticPartnerIDValue\", urn:oasis:names:tc:SAML:2.0:attrname-format:uri|nameID=\"staticNameIDValue\". To flag an attribute as being a binary value and have its value Base64 encoded, add ;binary to the end of the profile attribute name. Example: photo=photo;binary, urn:oasis:names:tc:SAML:2.0:attrname-format:uri|photo=photo;binary",
+                "type": "array",
+                "attributeKey": {
+                  "value": "attributeMap",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.AttributeMapMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/attributeMap"
+                }
+              }
+            },
+            "required": [
+              "attributeMapper"
+            ]
+          },
+          "accountMapper": {
+            "traverseObject": true,
+            "title": "Account Mapper",
+            "type": "object",
+            "properties": {
+              "accountMapper": {
+                "attributeKey": "idpAccountMapper",
+                "title": "Account Mapper",
+                "type": "string",
+                "default": "com.sun.identity.saml2.plugins.DefaultIDPAccountMapper",
+                "description": "Used to generate Name Identifier in Single Sign-on assertion and find user's identity from incoming request."
+              },
+              "disableNameIdPersistence": {
+                "attributeKey": "idpDisableNameIDPersistence",
+                "title": "Disable NameID Persistence",
+                "type": "boolean",
+                "description": "Disables the persistence of the NameID values into the User Data Store for all persistent NameID-Formats. When the persistent NameID-Format is in use, disabling NameID persistence is not recommended. Note that by preventing the storage of the NameID values, the ManageNameID and the NameIDMapping SAML profiles will no longer work when using any persistent NameID-Formats. Existing account links that have been established (and persisted) previously, will not be removed when enabling this feature.",
+                "default": false
+              }
+            }
+          },
+          "localConfiguration": {
+            "traverseObject": true,
+            "title": "Local Configuration",
+            "type": "object",
+            "properties": {
+              "authUrl": {
+                "attributeKey": "AuthUrl",
+                "type": "string",
+                "title": "Auth URL",
+                "description": "URL to redirect for user authentication if required"
+              },
+              "reverseProxyUrl": {
+                "attributeKey": "RpUrl",
+                "type": "string",
+                "title": "Reverse Proxy URL",
+                "description": "URL of the Reverse Proxy where the SAML endpoints are available"
+              },
+              "externalApplicationLogoutUrl": {
+                "attributeKey": "appLogoutUrl",
+                "type": "string",
+                "title": "External Application Logout URL",
+                "description": "This is the logout URL for an external application. Once the server receives logout request from the remote partner, a request will be sent to the logout URL using back channel HTTP POST with all cookies. Optionally, a user session property could be sent as HTTP header and POST parameter if a query parameter \"appsessionproperty\" (set to the session property name) is included in the URL. e.g. \"http://www.app.domain.com/uri/logout?appsessionproperty=mail\"."
+              }
+            }
+          }
+        }
+      },
+      "services": {
+        "propertyOrder": 2,
+        "title": "Services",
+        "type": "object",
+        "traverseObject": true,
+        "properties": {
+          "metaAlias": {
+            "attributeKey": "metaAlias",
+            "default": "{idpMetaAlias}",
+            "type": "string",
+            "title": "Meta Alias",
+            "readOnly": true,
+            "description": "The Meta Alias attribute is specific to providers using OpenAM therefore, a null value for a remote provider configuration is possible."
+          },
+          "serviceAttributes": {
+            "title": "IDP Service Attributes",
+            "type": "object",
+            "traverseObject": true,
+            "properties": {
+              "artifactResolutionService": {
+                "title": "Artifact Resolution Service",
+                "type": "array",
+                "attributePath": {
+                  "value": "artifactResolutionService",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.IndexedEndpointMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/endpoint"
+                },
+                "default": [
+                  {
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:SOAP",
+                    "location": "{baseUrl}/ArtifactResolver/metaAlias{idpMetaAlias}"
+                  }
+                ]
+              },
+              "singleLogoutService": {
+                "title": "Single Logout Service",
+                "type": "array",
+                "attributePath": {
+                  "value": "singleLogoutService",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EndpointMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/endpoint"
+                },
+                "default": [
+                  {
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+                    "location": "{baseUrl}/IDPSloRedirect/metaAlias{idpMetaAlias}",
+                    "responseLocation": "{baseUrl}/IDPSloRedirect/metaAlias{idpMetaAlias}"
+                  },
+                  {
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+                    "location": "{baseUrl}/IDPSloPOST/metaAlias{idpMetaAlias}",
+                    "responseLocation": "{baseUrl}/IDPSloPOST/metaAlias{idpMetaAlias}"
+                  },
+                  {
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:SOAP",
+                    "location": "{baseUrl}/IDPSloSoap/metaAlias{idpMetaAlias}"
+                  }
+                ]
+              },
+              "nameIdService": {
+                "title": "Manage NameID Service",
+                "type": "array",
+                "attributePath": {
+                  "value": "manageNameIDService",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EndpointMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/endpoint"
+                },
+                "default": [
+                  {
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+                    "location": "{baseUrl}/IDPMniRedirect/metaAlias{idpMetaAlias}",
+                    "responseLocation": "{baseUrl}/IDPMniRedirect/metaAlias{idpMetaAlias}"
+                  },
+                  {
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+                    "location": "{baseUrl}/IDPMniPOST/metaAlias{idpMetaAlias}",
+                    "responseLocation": "{baseUrl}/IDPMniPOST/metaAlias{idpMetaAlias}"
+                  },
+                  {
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:SOAP",
+                    "location": "{baseUrl}/IDPMniSoap/metaAlias{idpMetaAlias}"
+                  }
+                ]
+              },
+              "singleSignOnService": {
+                "title": "Single SignOn Service",
+                "type": "array",
+                "attributePath": {
+                  "value": "singleSignOnService",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EndpointMapper"
+                },
+                "items": {
+                  "$ref": "definitions.json#/endpoint"
+                },
+                "default": [
+                  {
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+                    "location": "{baseUrl}/SSORedirect/metaAlias{idpMetaAlias}"
+                  },
+                  {
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+                    "location": "{baseUrl}/SSOPOST/metaAlias{idpMetaAlias}"
+                  },
+                  {
+                    "binding": "urn:oasis:names:tc:SAML:2.0:bindings:SOAP",
+                    "location": "{baseUrl}/SSOSoap/metaAlias{idpMetaAlias}"
+                  }
+                ]
+              }
+            }
+          },
+          "nameIdMapping": {
+            "title": "NameID Mapping",
+            "type": "array",
+            "attributePath": {
+              "value": "nameIDMappingService",
+              "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EndpointMapper"
+            },
+            "items": {
+              "$ref": "definitions.json#/endpoint"
+            },
+            "default": [
+              {
+                "binding": "urn:oasis:names:tc:SAML:2.0:bindings:SOAP",
+                "location": "{baseUrl}/NIMSoap/metaAlias{idpMetaAlias}"
+              }
+            ]
+          },
+          "assertionIdRequest": {
+            "title": "Assertion ID Request Service",
+            "type": "array",
+            "attributePath": {
+              "value": "assertionIDRequestService",
+              "mapper": "org.forgerock.openam.federation.rest.schema.mappers.EndpointMapper"
+            },
+            "items": {
+              "$ref": "definitions.json#/endpoint"
+            },
+            "default": [
+              {
+                "binding": "urn:oasis:names:tc:SAML:2.0:bindings:SOAP",
+                "location": "{baseUrl}/AIDReqSoap/IDPRole/metaAlias{idpMetaAlias}"
+              },
+              {
+                "binding": "urn:oasis:names:tc:SAML:2.0:bindings:URI",
+                "location": "{baseUrl}/AIDReqUri/IDPRole/metaAlias{idpMetaAlias}"
+              }
+            ]
+          }
+        },
+        "required": [
+          "metaAlias"
+        ]
+      },
+      "advanced": {
+        "traverseObject": true,
+        "propertyOrder": 3,
+        "title": "Advanced",
+        "type": "object",
+        "properties": {
+          "saeConfiguration": {
+            "traverseObject": true,
+            "title": "SAE Configuration",
+            "type": "object",
+            "properties": {
+              "idpUrl": {
+                "attributeKey": "saeIDPUrl",
+                "title": "IDP URL",
+                "description": "URL endpoint on the Identity Provider that can handle SAE requests.",
+                "type": "string",
+                "default": "{baseUrl}/idpsaehandler/metaAlias{idpMetaAlias}"
+              },
+              "applicationSecurityConfiguration": {
+                "attributeKey": {
+                  "value": "saeAppSecretList",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.ApplicationSecurityConfigItemMapper"
+                },
+                "title": "Application Security Configuration",
+                "type": "array",
+                "items": {
+                  "$ref": "definitions.json#/applicationSecurityConfigItem"
+                }
+              }
+            }
+          },
+          "ecpConfiguration": {
+            "traverseObject": true,
+            "title": "ECP Configuration",
+            "type": "object",
+            "properties": {
+              "idpSessionMapper": {
+                "attributeKey": "idpECPSessionMapper",
+                "title": "IDP Session Mapper",
+                "description": "Defines an implementation class for the session mapper SPI. The mapper finds a valid session from HTTP servlet request on IDP with ECP profile.",
+                "type": "string",
+                "default": "com.sun.identity.saml2.plugins.DefaultIDPECPSessionMapper"
+              }
+            }
+          },
+          "sessionSynchronization": {
+            "traverseObject": true,
+            "title": "Session Synchronization",
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "attributeKey": "idpSessionSyncEnabled",
+                "title": "Enabled",
+                "description": "If this is enabled, when a session times out, the Identity Provider notifies all Service Providers to log out. A session may time out, for example, when max-idle time or max-session time is reached.",
+                "type": "boolean",
+                "default": false
+              }
+            }
+          },
+          "idpFinderImplementation": {
+            "traverseObject": true,
+            "title": "IDP Finder Implementation",
+            "type": "object",
+            "properties": {
+              "idpFinderImplementationClass": {
+                "attributeKey": "proxyIDPFinderClass",
+                "title": "IDP Finder implementation class",
+                "description": "Defines an implementation class for the Proxy IDP Finder SPI. The implementation is used to find a preferred IdP to send the proxied Authentication Request",
+                "type": "string"
+              },
+              "idpFinderJsp": {
+                "attributeKey": "proxyIDPFinderJSP",
+                "title": "IdP Finder JSP",
+                "description": "Specify the JSP that will present the IdP List to the user, if required by the class implementation (example: proxyidpfinder.jsp)",
+                "type": "string"
+              },
+              "enableProxyIdpFinderForAllSps": {
+                "attributeKey": "enableProxyIDPFinderForAllSPs",
+                "title": "Enable Proxy IDP Finder for all SPs",
+                "description": "If this is enabled the proxy idp finder will be enabled for all the remote SPs regardless of what they have configured in their extended metadata",
+                "type": "boolean",
+                "default": false
+              }
+            }
+          },
+          "relayStateUrlList": {
+            "traverseObject": true,
+            "title": "Relay State URL List",
+            "type": "object",
+            "properties": {
+              "relayStateUrlList": {
+                "attributeKey": "relayStateUrlList",
+                "title": "Relay State URL List",
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "idpAdapter": {
+            "traverseObject": true,
+            "title": "IDP Adapter",
+            "type": "object",
+            "properties": {
+              "idpAdapterClass": {
+                "attributeKey": "idpAdapter",
+                "title": "IDP Adapter Class",
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

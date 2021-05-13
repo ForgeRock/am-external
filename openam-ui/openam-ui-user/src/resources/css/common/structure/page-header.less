@@ -1,0 +1,99 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2019 ForgeRock AS.
+ */
+
+.page-header {
+    h1 {
+        margin: 0;
+        word-wrap: break-word;
+        font-weight:300;
+        font-size: 40px;
+
+        .help-link {
+            font-size: 14px;
+            text-transform: capitalize;
+            margin-top: 25px;
+        }
+    }
+
+    // FIXME: Deprecated. This should be replaced with the .page-header-button-group
+        position: relative;
+        .page-header-right {
+            position: absolute;
+            right: 0;
+            bottom: 30px;
+        }
+    //
+
+    &.no-border {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    &.page-header-no-border {
+        border-bottom: none;
+    }
+
+    .row h1 {
+        margin-top: 0;
+    }
+
+    h4.page-type {
+        display: inline-block;
+        text-transform: uppercase;
+        font-size: 13px;
+        letter-spacing: 1px;
+        margin: 10px 0;
+        font-weight: 600;
+    }
+
+    .header-icon {
+        margin: 0 10px 0 0;
+        .icon-circle(76px);
+    }
+
+    .page-header-button-group {
+        float: right;
+        padding-top: 6px;
+    }
+
+    &.page-header-list-page {
+        border-bottom: none;
+    }
+
+    .page-header-detail {
+        margin-left: 5px;
+        padding-left: 10px;
+    }
+}
+
+#login-base .page-header {
+    border-bottom: none;
+    margin-bottom: 40px;
+}
+
+#login-base .page-description {
+    margin-top: 20px;
+    margin-bottom: 0;
+}
+
+.modal-body .page-header {
+    border-bottom: none;
+}
+
+.page-description {
+    margin: 0 0 20px 2px;
+    clear: left;
+}

@@ -1,0 +1,184 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2019 ForgeRock AS.
+ */
+
+/*
+For font awesome
+*/
+.fa-icon() {
+    display: inline-block;
+    font: normal normal normal 14px/1 FontAwesome; // shortening font declaration
+    font-size: inherit; // can't have font-size inherit on line above, so need to override
+    text-rendering: auto; // optimizelegibility throws things off #1094
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+
+
+/* Helper classes for rendering arrows and triangles*/
+.arrow-down(@color: #fff, @arrowWidth: 10px, @armWidth: 0, @armLength: 0) {
+    width: 0;
+    height: 0;
+    border-left: (@arrowWidth/2) solid transparent;
+    border-right: (@arrowWidth/2) solid transparent;
+    border-top: (@arrowWidth/2) solid @color;
+    margin-top:@armLength;
+    &:after{
+        width: @armWidth;
+        height: @armLength;
+        background:@color;
+        margin: -((@arrowWidth/2) + @armLength) 0 0 -(@armWidth/2);
+        content: "";
+        display: block;
+    }
+}
+
+.arrow-right(@color: #fff, @arrowWidth: 10px, @armWidth: 0, @armLength: 0) {
+    width: 0;
+    height: 0;
+    border-top: (@arrowWidth/2) solid transparent;
+    border-bottom: (@arrowWidth/2) solid transparent;
+    border-left: (@arrowWidth/2) solid @color;
+    &:after{
+        width: @armLength;
+        height: @armWidth;
+        background: @color;
+        margin: -(@armWidth/2) 0 0 -(@armLength+@armWidth);
+        content: "";
+        display: block;
+    }
+}
+
+.arrow-left(@color: #fff, @arrowWidth: 10px, @armWidth: 0, @armLength: 0) {
+    width: 0;
+    height: 0;
+    border-top: (@arrowWidth/2) solid transparent;
+    border-bottom: (@arrowWidth/2) solid transparent;
+    border-right: (@arrowWidth/2) solid @color;
+    &:after{
+        width: @armLength;
+        height: @armWidth;
+        background: @color;
+        margin: -(@armWidth/2) 0 0 (@arrowWidth/2);
+        content: "";
+        display: block;
+    }
+}
+
+.arrow-up(@color: #fff, @arrowWidth: 10px, @armWidth: 0, @armLength: 0) {
+    width: @armWidth*2;
+    height: @armLength + (@arrowWidth/2);
+    &:after{
+        width: @armWidth;
+        height: @armLength;
+        background: @color;
+        margin: 0 0 0 (@armWidth/2);
+        content: "";
+        display: block;
+    }
+
+    &:before{
+        content: "";
+        display: block;
+        width: 0;
+    	height: 0;
+        border-left: (@arrowWidth/2)  solid transparent;
+    	border-right: (@arrowWidth/2)  solid transparent;
+    	border-bottom: (@arrowWidth/2)  solid @color;
+    }
+}
+
+/* Helper class for creating multi-column layout */
+.multi-column-layout(@count, @gap, @width: auto) {
+    -webkit-column-count: @count; /* Chrome, Safari, Opera */
+    -moz-column-count: @count; /* Firefox */
+    column-count: @count;
+
+    -webkit-column-gap: @gap; /* Chrome, Safari, Opera */
+    -moz-column-gap: @gap; /* Firefox */
+    column-gap: @gap;
+
+    -webkit-column-width: @width; /* Chrome, Safari, Opera */
+    -moz-column-width: @width; /* Firefox */
+    column-width: @width;
+}
+
+/* Helper class for creating cross platform transitions*/
+.transition(@property: all, @duration:.5s, @easing:ease, @delay:0s){
+    -webkit-transition: @arguments;
+       -moz-transition: @arguments;
+        -ms-transition: @arguments;
+         -o-transition: @arguments;
+            transition: @arguments;
+}
+
+/* Helper class for creating icon images.
+ * Example usage.
+ * HTML: <span class=".your-class"><i class="fa fa-your-icon"></i></span>
+ * CSS:
+ * .your-class {
+ *    .icon-circle(20px);
+ *    color:white;
+ *    background:black;
+ * }
+*/
+.icon-circle(@diameter:76px){
+
+    width: @diameter;
+    height: @diameter;
+    border-radius: 50%;
+    line-height: @diameter;
+    font-size: @diameter/2;
+    display: table;
+    text-align: center;
+    overflow: hidden;
+
+    .fa {
+        display: table-cell;
+        vertical-align: middle;
+    }
+}
+
+
+.wordwrap{
+    white-space: initial;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+// Required because ff does not wrap properly in tables.
+.table .wordwrap {
+    word-break: break-all;
+}
+
+.ellipsis{
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.ellipsis-wrap{
+    .ellipsis;
+    white-space: normal;
+}
+
+.light {
+    font-weight:normal;
+}
+
+.display-none {
+  display: none;
+}

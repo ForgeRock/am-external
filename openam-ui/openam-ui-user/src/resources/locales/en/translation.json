@@ -1,0 +1,618 @@
+{
+    "config" : {
+        "messages" : {
+            "api" : {
+                "parseError": "Unable to parse response. Please try again later.",
+                "requestError": "Network error. Check your internet connection."
+            },
+            "CommonMessages" : {
+                "authenticationFailed" : "User name/password combination is invalid.",
+                "serviceUnavailable" : "Service unavailable",
+                "unknown" : "Unknown error. Please contact your Administrator",
+                "loggedIn" : "You have been successfully logged in.",
+                "errorFetchingData" : "Error fetching user data",
+                "loggedOut" : "You have been logged out.",
+                "loginTimeout" : "Login processed timed out. Restarting...",
+                "unauthorized" : "Unauthorized access",
+                "internalError" : "Internal server error",
+                "forbiddenError" : "Forbidden request error.",
+                "notFoundError" : "Not found error.",
+                "badRequestError" : "Bad request error.",
+                "conflictError" : "Detected conflict in request.",
+                "incorrectRevisionError" : "Cannot update the record because the version is not the latest.",
+                "changesSaved": "Changes saved"
+            },
+            "UserMessages" : {
+                "profileUpdateSuccessful" : "Profile has been updated",
+                "registerDataInvalid" : "One or more user account values are invalid."
+            }
+        },
+        "AppConfiguration" : {
+            "Navigation" : {
+                "links" : {
+                    "dashboard" : "Dashboard",
+                    "uma" : "Shares",
+                    "umaLinks": {
+                        "history" : "History",
+                        "resources" : "Resources",
+                        "requests" : "Requests"
+                    }
+                },
+                "userAvatar" : {
+                    "signedInAs": {
+                        "title" : "Signed in as"
+                    },
+                    "title": "User Avatar"
+                }
+            }
+        }
+    },
+    "templates" : {
+        "authn": {
+            "AuthenticatorOATH8" : {
+                "intro" : "You must make a copy of these OATH device recovery codes. They cannot be displayed again.",
+                "deviceName" : "OATH Device",
+                "description" : "Use one of these codes to authenticate if you lose your device, which has been named:"
+            },
+            "AuthenticatorPushRegistration3" : {
+                "getTheAppFromThe": "Get the app from the",
+                "orOn": "or on",
+                "appStore": "App Store",
+                "googlePlay": "Google Play",
+                "havingTrouble": "Having trouble?",
+                "useRecoveryCode": "Use recovery code"
+            },
+            "AuthenticatorPushRegistration5" : {
+                "intro" : "You must make a copy of these push device recovery codes. They cannot be displayed again.",
+                "deviceName" : "Push Device",
+                "description" : "Use one of these codes to authenticate if you lose your device, which has been named:"
+            },
+            "DeviceIdMatch2": {
+                "verifyingDevice": "Verifying your device..."
+            }
+        },
+        "user" : {
+            "LoginTemplate" : {
+                "termsAndConditionsText": "By continuing, you agree to our <button data-toggle='modal' data-target='#terms-modal-__index__' type='button' class='btn btn-link terms-modal-trigger'>Terms & Conditions.</button>",
+                "termsAndConditionsModalTitle": "Terms & Conditions",
+                "loginRemember" : "Remember my username",
+                "socialAuthentication" : "Or login with:",
+                "resetPassword" : "Forgot Password?",
+                "forgotUsername" : "Forgot Username?",
+                "onMobileDevice": "On a mobile device?",
+                "newHere": "New here?",
+                "createAccount": "Create an account"
+            },
+            "404" : {
+                "pageNotFound" : "Page not found",
+                "requestedPageCouldNotBeFound" : "The requested page could not be found."
+            },
+            "403" : {
+                "title" : "Forbidden",
+                "description" : "You are not authorized to view this page."
+            },
+            "DefaultBaseTemplate" : {
+                "orPhone" : ", or phone"
+            },
+            "ConfirmPasswordDialogTemplate" : {
+                "description" : "Please confirm your current password to continue."
+            },
+            "ChangesPendingTemplate": {
+                "undo": "Undo Changes",
+                "changesPending": "Changes Pending"
+            },
+            "UnauthorizedTemplate" : {
+                "title": "Unauthorized",
+                "description": "Insufficient access to view this page.",
+                "logoutLink": "Login Again",
+                "goBackLink": "Go Back"
+            },
+            "ReturnToLoginTemplate" : {
+                "unavailable" : "Unable to login.",
+                "sessionExpired" : "Your session expired."
+            },
+            "LogoutTemplate" : {
+                "loggingOut" : "Logging out...",
+                "loggedOut" : "You have been logged out."
+            }
+        }
+    },
+    "common" : {
+        "form" : {
+            "accept" : "Accept",
+            "actions" : "Actions",
+            "activate": "Activate",
+            "active": "Active",
+            "add": "Add",
+            "addAll": "Add All",
+            "addItem": "Add __item__",
+            "addKey" : "Add Key",
+            "addUser" : "Add user",
+            "addValue" : "Add Value",
+            "advanced": "Advanced",
+            "allow": "Allow",
+            "back" : "Back",
+            "build": "Build",
+            "cancel" : "Cancel",
+            "change": "Change",
+            "clear": "Clear",
+            "clone" : "Clone",
+            "close" : "Close",
+            "complete" : "Complete",
+            "confirm": "Confirm",
+            "continue" : "Continue",
+            "copyright" : "Copyright &copy; 2010-2021 ForgeRock AS. All rights reserved.",
+            "create" : "Create",
+            "createdAt" : "Created at",
+            "createNew": "Create New",
+            "deactivate": "Deactivate",
+            "decision" : "Decision",
+            "delete" : "Delete",
+            "deleteSelected" : "Delete Selected",
+            "deny": "Deny",
+            "details" : "Details",
+            "disable": "Disable",
+            "disabled": "Disabled",
+            "done" : "Done",
+            "download": "Download",
+            "edit": "Edit",
+            "editDetails": "Edit Details",
+            "empty" : "Empty",
+            "enable": "Enable",
+            "enableCookies" : "Cookies must be enabled to login",
+            "enabled": "Enabled",
+            "fail" : "Fail",
+            "false" : "False",
+            "filter": "Filter...",
+            "help" : "Help",
+            "home" : "Home",
+            "inactive": "Inactive",
+            "key":"Key",
+            "loadSchema":"Load Schema",
+            "logout" : "Log out",
+            "more" : "more...",
+            "moveDown" : "Move Down",
+            "moveUp" : "Move Up",
+            "name" : "Name",
+            "next" : "Next",
+            "no" : "No",
+            "notApplicable": "n/a",
+            "ok" : "OK",
+            "optional": "Optional",
+            "pass" : "Pass",
+            "passwordPlaceholder": "••••••••••••",
+            "pleaseSelect" : "Please Select",
+            "properties": "Properties",
+            "propertyName": "Property Name",
+            "propertyValue": "Property Value",
+            "redirecting": "Redirecting...",
+            "register" : "Register",
+            "reject" : "Reject",
+            "removeAll": "Remove All",
+            "reset" : "Reset",
+            "rename" : "Rename",
+            "revert": "Revert",
+            "revoke" : "Revoke",
+            "save" : "Save",
+            "saveChanges": "Save Changes",
+            "search" : "Search",
+            "select" : "Select",
+            "selectAll": "Select all",
+            "sessionExpired" : "Session Expired",
+            "settings" : "Settings",
+            "standard": "Standard",
+            "start" : "Start",
+            "startTypingToSearch": "Start typing to search",
+            "submit" : "Submit",
+            "success" : "Success",
+            "true" : "True",
+            "type": "Type",
+            "unassigned": "Unassigned",
+            "update" : "Update",
+            "upload": "Upload",
+            "validate": "Validate",
+            "value": "Value",
+            "working" : "Working...",
+            "yes" : "Yes",
+            "or": "Or",
+            "validation" : {
+                "errorsNotSaved" : "Validation errors exist in form. Changes not saved.",
+                "VALID_PHONE_FORMAT": "Contains invalid characters",
+                "VALID_NAME_FORMAT": "Contains invalid characters",
+                "VALID_EMAIL_ADDRESS_FORMAT": "Not a valid email address",
+                "AT_LEAST_X_CAPITAL_LETTERS" : "At least __numCaps__ capital letters",
+                "AT_LEAST_X_NUMBERS" : "At least __numNums__ numbers",
+                "CANNOT_CONTAIN_OTHERS" : "Cannot contain values from: __disallowedFields__",
+                "MIN_LENGTH" : "At least __minLength__ characters",
+                "REQUIRED" : "Cannot be blank",
+                "UNIQUE" : "Already exists",
+                "REAUTH_REQUIRED" : "",
+                "formContainsErrors" : "Form contains validation errors",
+                "atLeastOneCapitalLetter" : "At least one capital letter",
+                "atLeastOneNumber" : "At least one number",
+                "atLeast8Characters" : "At least 8 characters",
+                "cannotMatchLogin" : "Cannot match login",
+                "confirmationMatchesPassword" : "Passwords must match",
+                "usernameExists" : "Username already exists",
+                "emailAddressAlreadyExists" : "Email address already exists",
+                "onlyAlphabeticCharacters" : "Only alphabetic characters",
+                "onlyNumbersAndSpecialCharacters" : "Only numbers and special characters",
+                "cannotMatchOldPassword" : "Cannot match old password",
+                "minimum4Characters" : "Minimum 4 characters",
+                "acceptanceRequiredForRegistration" : "Acceptance required for registration",
+                "incorrectPassword" : "Incorrect password",
+                "incorrectSecurityAnswer" : "Incorrect answer",
+                "required": "Please provide a value",
+                "emailNotValid" : "Not a valid email address.",
+                "emailExists" : "Email address already exists.",
+                "shouldBeLong" : "Should be long value",
+                "wrongDateFormat" : "Wrong format"
+            },
+            "inheritValue": "Inherit value"
+        },
+        "grid": {
+            "pagination": {
+                "first": "First",
+                "previous": "Previous",
+                "next": "Next",
+                "last": "Last"
+            }
+        },
+        "user" : {
+            "userQuery" : {
+                "mainEnterPromptUsername": "Enter your $t(common.user.username)",
+                "mainEnterPromptEmailAddress": "Enter your $t(common.user.emailAddress)",
+                "optionalEnterPromptEmail": "or your $t(common.user.emailAddress)",
+                "orAllEnterPrompt" : "or all of the following information",
+                "title" : "Enter details to find your account",
+                "any" : "Any of these:"
+            },
+            "passwordReset" : {
+                "title": "Reset Your Password",
+                "completed": "Your password has been successfully reset.",
+                "failed": "Unable to reset your password",
+                "tryAgain": "Try Resetting Your Password Again",
+                "answerQuestions": "Answer the security questions below to reset your password."
+            },
+            "selfRegistration" : {
+                "title": "Register Your Account",
+                "completed": "Your account has been successfully registered.",
+                "failed": "Unable to register your account",
+                "tryAgain": "Try Registering Again"
+            },
+            "forgotUsername" : {
+                "title" : "Retrieve Your Username",
+                "checkEmail" : "Check your email to retrieve your username.",
+                "failed": "Unable to retrieve your username",
+                "found": "Username found:",
+                "tryAgain": "Try Finding Your Username Again",
+                "answerQuestions": "Answer the security questions below to retrieve your username.",
+                "completed": "Forgot Username flow completed"
+            },
+            "kba" : {
+                "description": "Select __numberOfQuestions__ or more security questions below. These questions will help us verify your identity if you forget your password.",
+                "provideAnother": "Add a question",
+                "selectQuestion": "Select a security question",
+                "provideYourOwn": "Provide your own",
+                "customQuestion": "Custom Security Question",
+                "answer": "Security Answer",
+                "securityQuestions": "Security Questions"
+            },
+            "switchRealm" : {
+                "title" : "Leaving Site",
+                "description" : "Leaving this site will log you out. Continue and log into the new site?",
+                "leave" : "Yes, log into the new site",
+                "goBack" : "No, go back"
+            },
+            "returnToLoginPage": "Return to Login Page",
+            "userIdValidation" : "Enter the username or email address associated with your account. We will send you an email with a link that will allow you to reset your password.",
+            "emailValidation" : "Enter your email address to proceed. We will send you an email with a link that will allow you to continue registering.",
+            "send": "Send",
+            "validateCode" : "An email has been sent to the address you entered. Click the link in that email to proceed.",
+            "user" : "User",
+            "login" : "Log in",
+            "loggedOutOfPreviousSite" : "We have logged you out of the previous site.",
+            "selfService" : "Self-service",
+            "administration": "Administration",
+            "basicInfo" : "Basic Info",
+            "myProfile" : "My Profile",
+            "userProfile" : "User profile",
+            "profile": "Profile",
+            "username" : "Username",
+            "emailAddress" : "Email address",
+            "givenName" : "First Name",
+            "sn" : "Last Name",
+            "changePassword" : "Change password",
+            "forgotPassword" : "Forgot password?",
+            "accountStatus" : "Account status",
+            "active" : "Active",
+            "inactive" : "Inactive",
+            "address" : "Address",
+            "address1" : "Address 1",
+            "address2" : "Address 2",
+            "country" : "Country",
+            "city" : "City",
+            "role" : "Admin Role",
+            "stateProvince" : "State/Province",
+            "phoneNumber" : "Phone number",
+            "postalCode" : "Postal Code",
+            "lastPasswordSet" : "Last password set",
+            "siteImage" : "Site Image",
+            "sitePhrase" : "Site Phrase",
+            "securityQuestion" : "Security question",
+            "securityAnswer" : "Security answer",
+            "adaptiveAuthMethod" : "Adaptive auth method",
+            "SMS" : "SMS",
+            "OAuth" : "OAuth",
+            "createNewAccount" : "Create new account",
+            "password" : "Password",
+            "confirmPassword" : "Confirm password",
+            "newPassword" : "New password",
+            "oldPassword" : "Old password",
+            "currentPassword" : "Current password",
+            "confirmNewPassword" : "Confirm new password",
+            "usersList" : "Users list",
+            "addUsers" : "Add users",
+            "name" : "Name",
+            "status" : "Status",
+            "email" : "Email",
+            "system" : "System",
+            "changePhoto" : "Change photo",
+            "SKYPE" : "SKYPE",
+            "googlePlus" : "Google+"
+        },
+        "task" : {
+            "unassigned" : "Unassigned",
+            "assignToMe" : "Assign to me",
+            "claim" : "Claim",
+            "unclaim" : "Unclaim",
+            "approve" : "Approve",
+            "deny" : "Deny",
+            "requeue" : "Requeue",
+            "taskName" : "Task Name",
+            "processName" : "Process Name",
+            "startProcess" : "Start Process",
+            "assignee" : "Assignee",
+            "taskDetails" : "Task Details",
+            "myTasks" : "My tasks",
+            "tasksList" : "Tasks list",
+            "processes" : "Processes"
+        },
+        "application" : {
+            "applicationName" : "Application Name",
+            "requestedBy" : "Requested by",
+            "yourFrequentlyUsedApplications" : "Your frequently used apps",
+            "applicationsYouHaveAdded" : "Apps you've added",
+            "defaultApplications" : "Default apps",
+            "addMoreApplications" : "Add more apps",
+            "allAvailableApps" : "All available apps",
+            "dropApplicationsHere" : "drop apps here"
+        },
+        "select": {
+            "allSelected": "All selected",
+            "noneSelected": "None selected",
+            "nSelected": "selected",
+            "selectAll": "Select all"
+        },
+        "policyValidationMessages": {
+            "AT_LEAST_X_CAPITAL_LETTERS": "Must have at least __numCaps__ capital letter(s)",
+            "AT_LEAST_X_NUMBERS": "Must have at least __numNums__ number(s)",
+            "CANNOT_CONTAIN_CHARACTERS": "Cannot contain characters: __forbiddenChars__",
+            "CANNOT_CONTAIN_DUPLICATES": "Cannot contain duplicates: __duplicateValue__",
+            "CANNOT_CONTAIN_OTHERS": "Must not share characters with __disallowedFields__",
+            "IS_NEW": "Must not be the same as the previous __historyLength__ password(s)",
+            "IS_NUMBER": "Must be a number greater than or equal to zero.",
+            "IS_NUMBER_GREATER_ZERO": "Must be a number greater than or equal to 1.",
+            "MATCH_REGEXP": "Has to match pattern: __regexp__",
+            "MAX_LENGTH": "Must be less than __maxLength__ characters long",
+            "MIN_LENGTH": "Must be at least __minLength__ characters long",
+            "MIN_ITEMS": "Must have at least __minItems__ value(s)",
+            "MUST_CONTAIN_LOWERCASE_CHARACTERS": "Must have at least __minItems__ lowercase letter(s)",
+            "MUST_CONTAIN_SPECIAL_CHARACTERS": "Must have at least __minItems__ of these characters: __requiredChars__",
+            "PRIVILEGE_MISSING_REQUIRED_CREATE_ATTRIBUTES": "Required attributes must be Read/Write when privilege has Create permission. Missing required attributes: __missingRequiredAttributeLabels__",
+            "PRIVILEGE_AT_LEAST_ONE_ATTRIBUTE_READONLY_FALSE": "Must set at least one attribute permission to Read/Write",
+            "PRIVILEGE_MUST_CONTAIN_CREATE_OR_UPDATE_PERMISSION": "Must have at least Create or Update permission",
+            "PRIVILEGE_MUST_CONTAIN_VIEW_PERMISSION": "Must have at least View permission when granting access to all attributes",
+            "REQUIRED": "Cannot be blank",
+            "UNIQUE": "Must be unique",
+            "VALID_BOOLEAN": "Value must be of type boolean.",
+            "VALID_DATE": "Must be a valid date",
+            "VALID_EMAIL_ADDRESS_FORMAT": "Invalid email format (example@example.com)",
+            "VALID_INT": "Value must be of type integer.",
+            "VALID_NAME_FORMAT": "Must have valid name characters",
+            "VALID_PHONE_FORMAT": "Must be a valid phone number",
+            "VALID_QUERY_FILTER": "Invalid queryFilter format",
+            "VALID_SUPPORT_SET_KEY_FORMAT": "Invalid support set key format (1234-1234-1234-1234)",
+            "VALID_TYPE": "Must be one of the following types: __validTypes__. Cannot be __invalidType__",
+            "VALID_TENANT_NAME_FORMAT": "Invalid tenant name format (my-tenant2)",
+            "VALID_USERNAME": "Invalid username"
+        }
+    },
+    "openam" : {
+        "dashboard": {
+            "title": "Dashboard"
+        },
+        "apps" : {
+            "header" : "My Applications",
+            "noneFound": "You have no applications assigned to you"
+        },
+        "trusted" : {
+            "devices" : {
+                "header" : "Trusted Devices",
+                "deviceName" : "Name",
+                "cpu" : "CPU",
+                "os" : "Operating System",
+                "browser" : "Browser",
+                "lastUsed" : "Last Used",
+                "deleteDevice" : "Delete Device",
+                "currentDevice": "Current Device"
+            }
+        },
+        "oAuth": {
+            "tokenList" : "Authorized Apps"
+        },
+        "oAuth2" : {
+            "tokens" : {
+                "appName" : "Application",
+                "scopes" : "Scopes",
+                "expires" : "Expires",
+                "deleteToken" : "Revoke Access",
+                "neverExpires": "Never"
+            }
+        },
+        "authDevices": {
+            "header": "Authentication Devices",
+            "cards": {
+                "oath": "Oath Device",
+                "push": "Push Device",
+                "noDevice": "No registered device"
+            },
+            "multiFactorAuthDialog": {
+                "oath": {
+                    "title": "OATH Device Settings",
+                    "description" : {
+                        "noDevice": "This setting cannot be changed because you do not have any OATH devices.",
+                        "auth": "Configure default settings for OATH devices."
+                    },
+                    "label": "Multi-factor authentication using OATH enabled"
+                },
+                "push": {
+                    "title": "Push Device Settings",
+                    "description" : {
+                        "noDevice": "This setting cannot be changed because you do not have any Push devices.",
+                        "auth": "Configure default settings for Push devices."
+                    },
+                    "label": "Multi-factor authentication using Push enabled"
+                }
+            },
+            "editDeviceDialog": {
+                "deviceName": "Device name",
+                "title": "Rename Your Device"
+            },
+            "common": {
+                 "noAuth": "This setting cannot be changed because you did not authenticate with your device: <b>__deviceName__</b>"
+            }
+        }
+    },
+    "uma": {
+        "common": {
+            "shares" : "Shares"
+        },
+        "share": {
+            "shareResource": "Share the resource",
+            "people": "Add or select people to share your resource with",
+            "permission": "Select Permission",
+            "labels": "Labels",
+            "share": "Share",
+            "info": "Shared with __count__ person",
+            "info_plural": "Shared with __count__ people",
+            "info_none": "Not shared",
+            "messages": {
+                "success": "Resource successfully shared",
+                "fail": "Failed to share resource"
+            },
+            "notSpecifiedResource": "You have not specified a resource to share."
+        },
+        "resources": {
+            "title": "Resources",
+            "grid": {
+                "header": ["Name", "Host", "Type", ""]
+            },
+            "myresources": {
+                "title": "My Resources",
+                "description": "Resources you own.",
+                "unshareAllResources": {
+                    "button": "Unshare All Resources",
+                    "dialog": {
+                        "title": "Unshare all resources?",
+                        "message": "Are you sure you want to unshare all resources? Selecting OK will not remove your resources, but will remove all the shares within your resources."
+                    },
+                    "messages": {
+                        "success" : "All resources successfully unshared",
+                        "fail" : "We have been unable to unshare all resources. Please contact your Administrator"
+                    }
+                }
+            },
+            "sharedWithMe": {
+                "title": "Shared with me",
+                "description": "Resources that have been shared with you."
+            },
+            "starred": {
+                "title": "Starred",
+                "description": "Your favorite resources."
+            },
+            "myLabels": {
+                "title": "My Labels",
+                "description": "Resources with this label applied to them.",
+                "deleteLabel": {
+                    "button": "Delete Label",
+                    "dialog": {
+                        "title": "Delete label?",
+                        "message": "Are you sure you want to delete this label? Deleting a resource label does not delete the resources themselves."
+                    },
+                    "messages": {
+                        "success" : "Label successfully deleted",
+                        "fail" : "We have been unable delete the label. Please contact your Administrator"
+                    }
+                },
+                "noResources": {
+                    "headline": "Nothing here!",
+                    "text": "There are no resources associated with this label."
+                }
+            },
+            "show": {
+                "subtitle": "Users allowed to access this resource and their permissions",
+                "grid": ["User", "Last accessed", "Permissions"],
+                "share": "Share",
+                "editLabels" : "Edit Labels",
+                "revoke": "Unshare Resource",
+                "revokeAllMessage": "Are you sure you want to revoke all access?",
+                "resource" : "Resource",
+                "revokeAllPoliciesSuccess" : "All access successfully revoked for your resource",
+                "revokePolicySuccess" : "Access successfully revoked for your resource",
+                "revokeAllResourcesMessage": "Are you sure you want to revoke all access? Selecting OK will not remove your resources, but will remove all the shares within your resources."
+            }
+        },
+        "history": {
+            "title": "History",
+            "subtitle": "History of events on your resources",
+            "grid": {
+                "header": ["User", "Resource", "Action", "When"],
+                "types": {
+                    "authorisation_requested": "Requested authorisation",
+                    "authorisation_request_approved": "Granted authorisation",
+                    "authorisation_request_denied": "Denied authorisation",
+                    "authorisation_granted": "Granted authorisation",
+                    "authorisation_denied": "Denied authorisation",
+                    "policy_created": "Shared",
+                    "policy_updated": "Updated share"
+                }
+            }
+        },
+        "requests": {
+            "list": {
+                "title": "Requests",
+                "description": "Pending requests for access to your resources."
+            },
+            "show": {
+                "title": "Request",
+                "description": "Pending request for access to your resources."
+            },
+            "grid": {
+                "header": ["User", "Resource", "When", "Permissions", "Actions"]
+            }
+        }
+    },
+    "console": {
+        "common": {
+            "noResults": "No results to display",
+            "topLevelRealm": "Top Level Realm"
+        }
+    },
+    "errorPage": {
+        "503": {
+            "title": "Service Unavailable",
+            "description": "The service is currently unavailable. It may be temporarily overloaded or undergoing maintenance. Please try again later."
+        }
+    }
+}

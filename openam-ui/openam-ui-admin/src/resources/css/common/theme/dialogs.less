@@ -1,0 +1,80 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2015-2019 ForgeRock AS.
+ */
+
+.dialog-danger {
+    @media (min-width: 768px) {
+        width: 435px;
+    }
+
+    .modal-body {
+        .alert {
+            margin-bottom: 0;
+        }
+    }
+
+    .modal-footer {
+        border-color: transparent;
+
+        .row {
+            .col-md-6 {
+                &:first-child {
+                    padding-right: 6px;
+                }
+                
+                &:last-child {
+                    padding-left: 6px;
+                }
+            }
+        }
+    }
+
+    .modal-header {
+        border-color: transparent;
+
+        .close {
+            position: fixed;
+            right: 15px;
+        }
+    }
+}
+
+.bootstrap-dialog {
+    .bootstrap-dialog-title {
+        font-weight: 600;
+    }
+
+    .modal-header {
+        border-color: transparent;
+    }
+
+    &.type-primary .modal-header, &.type-default .modal-header {
+        color: @base-theme-color;
+    }
+
+    &.type-danger .modal-header {
+        color: @failure-color;
+    }
+
+    &.type-danger .btn-default{
+        color: @failure-color;
+        border-color: @failure-color;
+    }
+
+    // IDM only - AM is using the inherited color which in this case is text-default
+    &.type-default .bootstrap-dialog-title {
+        color: @base-theme-color;
+    }
+}

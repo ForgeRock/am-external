@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+        
+<!-- 
+The contents of this file are subject to the terms of the Common Development and
+Distribution License (the License). You may not use this file except in 
+compliance with the License.
+
+You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for 
+the specific language governing permission and limitations under the License.
+When distributing Covered Software, include this CDDL Header Notice in each file
+and include the License file at legal/CDDLv1.0.txt. If applicable, add the 
+following below the CDDL Header, with the fields enclosed by brackets [] 
+replaced by your own identifying information: 
+"Portions copyright [year] [name of copyright owner]".
+
+Copyright 2013-2017 ForgeRock AS.
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>OpenID Connect Client Profile Examples</title>
+    <link rel="shortcut icon" href="http://forgerock.com/favicon.ico">
+    <link type="text/css" rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div>
+    <a href="http://openam.forgerock.org/">
+        <img src="forgerock-logo.svg" width="131" height="83" align="right" alt="ForgeRock Logo">
+    </a>
+</div>
+
+<h3>OpenID Connect Client Profiles</h3>
+
+<p><a href="http://openid.net/connect/" target="_blank">OpenID Connect 1.0</a>
+   defines two client profiles.</p>
+
+   <dl>
+       <dt><em>Basic Client Profile</em></dt>
+       <dd>
+           <p>The Basic Client Profile is designed for web-based relying
+           parties that use the OAuth 2.0 Authorization Code grant type,
+           such as server-side clients that can protect their client
+           credentials.</p>
+
+           <p>Try the <a href="basic.html">Basic Client Profile</a>.</p>
+       </dd>
+
+       <dt><em>Implicit Client Profile</em></dt>
+       <dd>
+           <p>The Implicit Client Profile is designed for relying parties
+           that use the OAuth 2.0 Implicit grant type, such as browser-based
+           clients written in JavaScript.</p>
+
+           <p>Try the <a href="implicit.html">Implicit Client Profile</a>.</p>
+       </dd>
+   </dl>
+
+<p>The examples provided here are both written in JavaScript. Neither aims to
+   protect anything, but instead to show you the steps that each kind of client
+   follows, and the responses from OpenAM as OpenID Connect Provider.</p>
+
+<h3>OpenID Connect Dynamic Registration</h3>
+
+<p>OpenID Connect 1.0 defines mechanisms both to discover the provider
+   configuration, and also to register client applications dynamically.</p>
+
+<p>See the <a href="register.html">example registration page</a> for details.</p>
+
+<h3>GSMA Mobile Connect</h3>
+
+<p>
+  Try OpenAM 12 and later as an OpenID Provider and Authenticator for
+  <a href="http://gsmamobileeconomy.com/gsmamc/"
+  target="_blank">GSMA Mobile Connect</a>.
+</p>
+
+<p>
+  See the <a href="mobile.html">Mobile Connect page</a> for details.
+</p>
+</body>
+</html>

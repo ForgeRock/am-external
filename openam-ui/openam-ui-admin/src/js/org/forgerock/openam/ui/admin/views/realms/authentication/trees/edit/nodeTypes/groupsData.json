@@ -1,0 +1,42 @@
+{
+    "basicAuthentication" : {
+        "tag": "basic authentication",
+        "icon": "user"
+    },
+    "mfa": {
+        "tag": "mfa",
+        "icon": "desktop"
+    },
+    "risk": {
+        "tag": "risk",
+        "icon": "balance-scale"
+    },
+    "behavioral": {
+        "tag": "behavioral",
+        "icon": "puzzle-piece"
+    },
+    "contextual": {
+        "tag": "contextual",
+        "icon": "bullseye"
+    },
+    "federation": {
+        "tag": "federation",
+        "icon": "building"
+    },
+    "identityManagement": {
+        "tag": "identity management",
+        "icon": "address-card"
+    },
+    "utilities": {
+        "tag": "utilities",
+        "icon": "plug"
+    },
+    "iot": {
+        "tag": "iot",
+        "icon": "microchip"
+    },
+    "uncategorized": {
+        "tag": "uncategorized",
+        "icon": "square"
+    }
+}

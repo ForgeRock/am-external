@@ -1,0 +1,51 @@
+{{!
+ The contents of this file are subject to the terms of the Common Development and 
+ Distribution License (the License). You may not use this file except in compliance with the 
+ License.
+
+ You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the 
+ specific language governing permission and limitations under the License.
+
+ When distributing Covered Software, include this CDDL Header Notice in each file and include
+ the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ Header, with the fields enclosed by brackets [] replaced by your own identifying
+ information: "Portions copyright [year] [name of copyright owner]".
+
+  Copyright 2015-2020 ForgeRock AS. All Rights Reserved
+}}
+<div class="container">
+    {{#if errorCode}}
+        <div class="alert alert-warning col-md-6 col-md-offset-3" role="alert">
+            <strong>
+                {{t errorCode}}
+            </strong>
+        </div>
+    {{else}}
+        <form method="post" class="form col-md-6 col-md-offset-3" autocomplete="off" aria-describedby="deviceFormInfo">
+            <fieldset>
+                <p id="deviceFormInfo">{{t "form.description"}}</p>
+
+                <div class="form-group">
+                    <label class="sr-only" for="deviceUserCode">{{t 'form.code'}}</label>
+                    {{#if oauth2Data.userCode}}
+                        <input type="text" name="user_code" id="deviceUserCode" required class="form-control input-lg" placeholder="{{t 'form.code'}}" value="{{oauth2Data.userCode}}">
+                    {{else}}
+                        <input type="text" name="user_code" id="deviceUserCode" required class="form-control input-lg" placeholder="{{t 'form.code'}}">
+                    {{/if}}
+                </div>
+
+                {{#if oauth2Data.csrf}}
+                    <input type="hidden" name="csrf" aria-hidden="true" value="{{oauth2Data.csrf}}"/>
+                {{/if}}
+
+                <div class="form-group">
+                    {{#if oauth2Data.userCode}}
+                        <button type="submit" class="btn btn-lg btn-block btn-uppercase btn-primary">{{t "form.confirm"}}</button>
+                    {{else}}
+                        <button type="submit" class="btn btn-lg btn-block btn-uppercase btn-primary">{{t "form.submit"}}</button>
+                    {{/if}}
+                </div>
+            </fieldset>
+        </form>
+    {{/if}}
+</div>

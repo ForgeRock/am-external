@@ -1,0 +1,26 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "${project.version}",
+    "entityType" : "AttributePresentDecision",
+    "entityId" : "0f0904e6-1da3-4cdb-9abf-0d2545016fab",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "0f0904e6-1da3-4cdb-9abf-0d2545016fab",
+    "presentAttribute" : "password",
+    "identityAttribute" : "userName",
+    "_type" : {
+      "_id" : "AttributePresentDecisionNode",
+      "name" : "Attribute Present Decision",
+      "collection" : true
+    },
+    "_outcomes" : [ {
+      "id" : "true",
+      "displayName" : "True"
+    }, {
+      "id" : "false",
+      "displayName" : "False"
+    } ]
+  }
+}

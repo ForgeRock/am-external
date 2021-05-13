@@ -1,0 +1,46 @@
+<!--
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2020 ForgeRock AS. All Rights Reserved
+-->
+<div class="terms-and-conditions clearfix">
+    <div>
+        <input value="true" type="hidden" name="callback_{{index}}" id="{{id}}" /> <span class="text-muted">{{t "templates.user.LoginTemplate.termsAndConditionsText" index=index}}</span>
+    </div>
+    <div class="modal" id="terms-modal-{{index}}" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{t "templates.user.LoginTemplate.termsAndConditionsModalTitle"}}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>{{termsAndConditionsText}}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+        .terms-modal-trigger {
+            padding: 0;
+        }
+        .terms-modal-trigger:empty {
+            display: none;
+        }
+        #terms-modal-{{index}} .modal-title {
+            display: inline;
+        }
+    </style>
+</div>

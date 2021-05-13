@@ -1,0 +1,55 @@
+<!--
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2019-2020 ForgeRock AS. All Rights Reserved
+-->
+<script src="{{apiUri}}"></script>
+<script>
+var loginButton_0 = document.getElementById("loginButton_0"),
+    callback_index = {{index}},
+    /*
+        If callback_index is zero and the "name" attribute on loginButton_0 is callback_1 we
+        know ReCaptcha is by itself on the page. In this case we will hide loginButton_0
+        and click it to submit the form automatically when ReCaptcha is complete.
+    */
+    standaloneMode = callback_index === 0 && loginButton_0 && loginButton_0.name === "callback_1";
+
+if (standaloneMode) {
+    loginButton_0.style.display = "none";
+}
+
+function handleCaptchaCallback(response) {
+   document.getElementById("{{id}}").value = response;
+
+   if (standaloneMode) {
+       loginButton_0.click();
+   }
+}
+</script>
+
+<style>
+.captcha>div {
+    margin: auto;
+}
+.captcha>div>div {
+   display: inline-block;
+}
+</style>
+
+<div class="{{divClass}} captcha"
+     data-sitekey="{{siteKey}}"
+     data-callback="handleCaptchaCallback"></div>
+
+<input type="hidden"
+       id="{{id}}"
+       name="callback_{{index}}"/>
