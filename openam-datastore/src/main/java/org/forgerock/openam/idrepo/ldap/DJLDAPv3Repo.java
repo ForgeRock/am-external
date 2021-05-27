@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2020 ForgeRock AS.
+ * Copyright 2013-2021 ForgeRock AS.
  * Portions Copyright 2016 Nomura Research Institute, Ltd.
  * Portions Copyrighted 2016 Agile Digital Engineering.
  */
@@ -23,6 +23,7 @@ import static com.sun.identity.idm.IdConstants.REV;
 import static com.sun.identity.idm.IdConstants.USERNAME;
 import static com.sun.identity.idm.IdRepoErrorCode.IDENTITY_ATTRIBUTE_INVALID;
 import static com.sun.identity.idm.IdType.USER;
+import static com.sun.identity.shared.Constants.ADMIN_PASSWORD_CHANGE_REQUEST_ATTR;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.forgerock.openam.ldap.LDAPConstants.AD_LDAP_MATCHING_RULE_IN_CHAIN_OID;
 import static org.forgerock.openam.ldap.LDAPConstants.AD_LDAP_RECURSIVE_GROUP_MEMBERSHIP_ENABLED;
@@ -116,12 +117,13 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.stream.Collectors;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
-import com.sun.identity.sm.DNMapper;
+import com.iplanet.am.util.SystemProperties;
 import org.forgerock.am.cts.api.DataLayerException;
 import org.forgerock.openam.idrepo.ldap.helpers.ADAMHelper;
 import org.forgerock.openam.idrepo.ldap.helpers.ADHelper;
@@ -139,6 +141,7 @@ import org.forgerock.openam.utils.CrestQuery;
 import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.opendj.ldap.Attribute;
+import org.forgerock.opendj.ldap.AttributeDescription;
 import org.forgerock.opendj.ldap.ByteString;
 import org.forgerock.opendj.ldap.Connection;
 import org.forgerock.opendj.ldap.Dn;
@@ -219,6 +222,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             new HashMap<>();
     private static final String AM_AUTH = "amAuth";
     private static final String PASSWORD_ATTR_NAME = "userPassword";
+    private static final AttributeDescription PASSWORD_ATTR_DESC = AttributeDescription.valueOf(PASSWORD_ATTR_NAME);
     private static final Filter DEFAULT_ROLE_SEARCH_FILTER =
             Filter.valueOf("(&(objectclass=ldapsubentry)(objectclass=nsmanagedroledefinition))");
     private static final Filter DEFAULT_FILTERED_ROLE_SEARCH_FILTER =
@@ -1172,6 +1176,12 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             boolean isAdd, boolean isString, boolean changeOCs) throws IdRepoException {
         final Dn userDN = getDNSkipExistenceCheck(type, name);
         ModifyRequest modifyRequest = addBeheraControl(LDAPRequests.newModifyRequest(userDN));
+
+        // check if it's password change request by admin
+        String adminPasswordChangeAttr = SystemProperties.get(ADMIN_PASSWORD_CHANGE_REQUEST_ATTR);
+        final boolean isAdminPasswordChangeRequest = StringUtils.isNotEmpty(adminPasswordChangeAttr)
+                && attributes.containsKey(adminPasswordChangeAttr);
+
         attributes = removeUndefinedAttributes(type, attributes);
 
         if (type.equals(USER)) {
@@ -1296,56 +1306,99 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         }
 
         try {
-            updateAsProxiedAuthzIfNeeded(modifyRequest, userDN);
+            updateAsProxiedAuthzIfNeeded(modifyRequest, userDN, isAdminPasswordChangeRequest);
         } catch (LdapException ere) {
             DEBUG.error("An error occurred while setting attributes for identity: {}", name, ere);
             handleErrorResult(ere);
         }
     }
 
-    private void updateAsProxiedAuthzIfNeeded(ModifyRequest request, Dn userDN) throws IdRepoException, LdapException {
-        ModifyRequest origRequest = Requests.copyOfModifyRequest(request);
-        if (proxiedAuthorizationEnabled) {
-            adaptModifyRequest(request, userDN);
-        }
-        Connection conn = null;
-        try {
-            conn = createConnection();
-            conn.modify(request);
-        } catch (LdapException ere) {
-            if (proxiedAuthorizationEnabled) {
-                ResultCode resultCode = ere.getResult().getResultCode();
-                if (proxiedAuthorizationFallbackOnDenied && resultCode.equals(ResultCode.AUTHORIZATION_DENIED)) {
-                    DEBUG.debug("Proxied authorization using {} failed {}. retrying without proxy-auth",
-                            userDN, ere.getResult().getDiagnosticMessageAsString());
-                    conn.modify(origRequest);
-                    return;
-                } else {
-                    DEBUG.debug("Proxied authorization retry fallback (enabled={}) not done on {}",
-                            proxiedAuthorizationFallbackOnDenied, userDN);
+    private void updateAsProxiedAuthzIfNeeded(ModifyRequest request, Dn userDN, boolean isAdminPasswordChangeRequest)
+            throws IdRepoException, LdapException {
+        try (Connection conn = createConnection()) {
+            if (proxiedAuthorizationEnabled && !isAdminPasswordChangeRequest) {
+                for (ModifyRequest modifyRequest : segregateModifyRequest(request, userDN)) {
+                    updateAsProxiedAuthzIfNeeded(conn, modifyRequest, userDN);
                 }
+            } else {
+                conn.modify(request);
             }
-            throw ere;
-        } finally {
-            IOUtils.closeIfNotNull(conn);
         }
     }
 
-    private ModifyRequest adaptModifyRequest(ModifyRequest modifyRequest, Dn userDN) {
-        boolean isPwdReset = false;
+    private void updateAsProxiedAuthzIfNeeded(Connection conn, ModifyRequest request, Dn userDN) throws LdapException {
+        ModifyRequest origRequest = Requests.copyOfModifyRequest(request);
+        boolean isProxiedOriginalRequest = adaptModifyRequest(request, userDN);
+        try {
+            conn.modify(request);
+        } catch (LdapException ere) {
+            ResultCode resultCode = ere.getResult().getResultCode();
+            if (DEBUG.isDebugEnabled()) {
+                String detail = request.getModifications().stream().map(m -> m.getAttribute()
+                        .getAttributeDescription().toString()).collect(Collectors.joining(",", " [", "]"));
+                DEBUG.debug("{}.{}: Update failed on {}{} : {}", DEBUG_CLASS_NAME, "updateAsProxiedAuthzIfNeeded",
+                        userDN, detail, ere.getMessage());
+            }
+            if (isProxiedOriginalRequest && proxiedAuthorizationFallbackOnDenied) {
+                if ((ResultCode.AUTHORIZATION_DENIED.equals(resultCode)
+                        || ResultCode.INSUFFICIENT_ACCESS_RIGHTS.equals(resultCode))) {
+                    DEBUG.debug("{}.{}: Retrying without proxy-auth on error {}",
+                            DEBUG_CLASS_NAME, "updateAsProxiedAuthzIfNeeded", resultCode);
+                    conn.modify(origRequest);
+                    return;
+                }
+            }
+            DEBUG.debug("{}.{}: Proxy auth update not retried: proxiedAuthzFallbackOnDenied={}/{} resultCode={}",
+                    DEBUG_CLASS_NAME, "updateAsProxiedAuthzIfNeeded", proxiedAuthorizationFallbackOnDenied,
+                    isProxiedOriginalRequest, resultCode);
+            throw ere;
+        }
+    }
+
+    private List<ModifyRequest> segregateModifyRequest(ModifyRequest modifyRequest, Dn userDN) {
+        List<Modification> nonPasswordModifications = new ArrayList<>();
+        List<Modification> passwordModifications = new ArrayList<>();
         for (Modification modification : modifyRequest.getModifications()) {
-            if (PASSWORD_ATTR_NAME.equalsIgnoreCase(modification.getAttribute().getAttributeDescriptionAsString())) {
-                isPwdReset = true;
-                break;
+            if (modification.getAttribute().getAttributeDescription().withoutAnyOptions().matches(PASSWORD_ATTR_DESC)) {
+                passwordModifications.add(modification);
+            } else {
+                nonPasswordModifications.add(modification);
             }
         }
-        if (isPwdReset) {
-            final String authzId = "dn:" + userDN;
-            DEBUG.debug("Modify request will be performed by proxy user: {}", authzId);
-            return modifyRequest.addControl(ProxiedAuthV2RequestControl.newControl(authzId));
+        if (!passwordModifications.isEmpty() && !nonPasswordModifications.isEmpty()) {
+            List<ModifyRequest> modifyRequests = new ArrayList<>();
+            for (List<Modification> m : Arrays.asList(nonPasswordModifications, passwordModifications)) {
+                ModifyRequest request = LDAPRequests.newModifyRequest(userDN).addControls(modifyRequest.getControls());
+                request.getModifications().addAll(m);
+                modifyRequests.add(request);
+            }
+            DEBUG.debug("{}.{}: Modify request segregated into non-password and password : {} parts",
+                    DEBUG_CLASS_NAME, "segregateModifyRequest", modifyRequests.size());
+            return modifyRequests;
         } else {
-            return modifyRequest;
+            return Collections.singletonList(modifyRequest);
         }
+    }
+
+    /**
+     * Returns a modified request if the request is adapted with some extra control
+     * like proxied control if the request contains changes to password attribute.
+     *
+     * @param modifyRequest the modify request that will be modified in place
+     * @param userDN the user DN for this request
+     * @return true if the request is altered from original state
+     */
+    private boolean adaptModifyRequest(ModifyRequest modifyRequest, Dn userDN) {
+        for (Modification modification : modifyRequest.getModifications()) {
+            if (PASSWORD_ATTR_DESC.matches(modification.getAttribute().getAttributeDescription().withoutAnyOptions())) {
+                String authzId = "dn:" + userDN;
+                DEBUG.debug("{}.{}: Modify request will be performed by proxy user: {}",
+                        DEBUG_CLASS_NAME, "adaptModifyRequest", authzId);
+                modifyRequest.addControl(ProxiedAuthV2RequestControl.newControl(authzId));
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -2131,7 +2184,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     public Set<String> getAssignedServices(SSOToken token, IdType type, String name,
             Map<String, Set<String>> mapOfServicesAndOCs) throws IdRepoException {
         if (DEBUG.isDebugEnabled()) {
-            DEBUG.debug("getAssignedServices invoked");
+            DEBUG.debug("getAssignedServices invoked for the following services and objectClasses: {}",
+                    mapOfServicesAndOCs);
         }
         Set<String> results = new HashSet<>();
         if (type.equals(USER)) {

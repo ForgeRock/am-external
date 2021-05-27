@@ -24,7 +24,7 @@
 
     <groupId>org.forgerock.am</groupId>
     <artifactId>openam-external</artifactId>
-<version>7.0.1</version>    
+<version>7.0.2</version>    
     <packaging>pom</packaging>
 
     <!-- Child Modules -->
@@ -38,11 +38,29 @@
         <module>openam-datastore</module>
     </modules>
 
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.felix</groupId>
+                    <artifactId>maven-bundle-plugin</artifactId>
+                    <version>4.2.1</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+            </plugin>
+        </plugins>
+    </build>
     <repositories>
         <repository>
             <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 7.0.1</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.0.1-dependencies</url>
+            <name>ForgeRock Private Release Repository for AM 7.0.2</name>
+            <url>https://maven.forgerock.org/repo/forgerock-openam-7.0.2-dependencies</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>

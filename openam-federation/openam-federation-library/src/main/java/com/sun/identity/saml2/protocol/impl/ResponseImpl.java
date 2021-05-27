@@ -24,7 +24,7 @@
  *
  * $Id: ResponseImpl.java,v 1.4 2009/12/16 05:26:39 ericow Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
@@ -430,7 +430,7 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
         result.append("<").append(prefix).append("Response").
                 append(uri).append(" ID=\"").append(responseId).append("\"");
 	if (inResponseTo != null && inResponseTo.trim().length() != 0) {
-	    result.append(" InResponseTo=\"").append(inResponseTo).append("\"");
+	    result.append(" InResponseTo=\"").append(XMLUtils.escapeSpecialCharacters(inResponseTo)).append("\"");
 	}
 
         result.append(" Version=\"").append(version).append("\"").

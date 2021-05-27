@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -311,5 +311,16 @@ public final class TreeContext {
      */
     public boolean hasResumedFromSuspend() {
         return resumedFromSuspend;
+    }
+
+    /**
+     * Copies this TreeContext instance, replacing the callbacks in the context with the provided callbacks.
+     *
+     * @param callbacks The new callbacks.
+     * @return A new TreeContext instance.
+     */
+    public TreeContext copyWithCallbacks(List<? extends Callback> callbacks) {
+        return new TreeContext(identityResource, sharedState, transientState, secureState, request, callbacks,
+                resumedFromSuspend, universalId);
     }
 }

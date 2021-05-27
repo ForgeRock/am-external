@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
 import {
@@ -144,26 +144,7 @@ class EditTreeContainer extends Component {
 
             return tree.nodes;
         }).then((nodes) => {
-            // Some of the nodes for rendering are in Page Nodes, not in the tree itself, so we need to load all the
-            // PageNode properties too.
-            return Promise.all(toPairs(nodes)
-                .filter(([, node]) => node.nodeType === PAGE_NODE_TYPE)
-                .map(([id, page]) => {
-                    return getNodeProperties(realm, page.nodeType, id).then((properties) => {
-                        this.props.addNodeProperties.toRemote(properties);
-                        this.props.addNodeProperties.toLocal(properties);
-                        properties.nodes.forEach((node) => {
-                            /**
-                             * #addNodeInPage must be invoked before #addNode or the tree editor will attempt to
-                             * render the node as a regular node when it has no outcomes, throwing an error.
-                             */
-                            this.props.addNodeInPage(node._id, id);
-                            this.props.addNode.toLocal({ [node._id]: node });
-                            this.props.addNode.toRemote({ [node._id]: node });
-                        });
-                    });
-                })
-            );
+            return this.setAllNodeProperties(realm, nodes);
         }).finally(() => {
             this.setState({ isFetching: false });
         });
@@ -259,7 +240,6 @@ class EditTreeContainer extends Component {
             },
             this.props.tree._id
         );
-
         const nodesToDelete = difference(
             keys(this.props.remoteNodes),
             union(
@@ -274,6 +254,7 @@ class EditTreeContainer extends Component {
             }));
         this.props.updateTree.inRemote(tree);
         this.props.setNodes.toRemote(tree.nodes);
+        this.setAllNodeProperties(realm, tree.nodes);
 
         await Promise.all(nodeDeletePromises); // eslint-disable-line
         Messages.addMessage({ message: t("config.messages.CommonMessages.changesSaved") });
@@ -425,6 +406,29 @@ class EditTreeContainer extends Component {
             this.props.removeConnection(difference(currentOutcomeKeys, newOutcomeKeys), id);
         });
     };
+
+    setAllNodeProperties (realm, nodes) {
+        // Some of the nodes for rendering are in Page Nodes, not in the tree itself, so we need to load all the
+        // PageNode properties too.
+        return Promise.all(toPairs(nodes)
+            .filter(([, node]) => node.nodeType === PAGE_NODE_TYPE)
+            .map(([id, page]) => {
+                return getNodeProperties(realm, page.nodeType, id).then((properties) => {
+                    this.props.addNodeProperties.toRemote(properties);
+                    this.props.addNodeProperties.toLocal(properties);
+                    properties.nodes.forEach((node) => {
+                        /**
+                         * #addNodeInPage must be invoked before #addNode or the tree editor will attempt to
+                         * render the node as a regular node when it has no outcomes, throwing an error.
+                         */
+                        this.props.addNodeInPage(node._id, id);
+                        this.props.addNode.toLocal({ [node._id]: node });
+                        this.props.addNode.toRemote({ [node._id]: node });
+                    });
+                });
+            })
+        );
+    }
 
     updateLocalEntryNodeId (entryNodeId) {
         this.props.updateTree.inLocal({

@@ -24,7 +24,7 @@
  *
  * $Id: NameIDMappingResponseImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
@@ -214,7 +214,7 @@ public class NameIDMappingResponseImpl extends StatusResponseImpl
         result.append("<").append(NSP).append("NameIDMappingResponse")
               .append(uri).append(" ID=\"").append(responseId).append("\"");
         if (inResponseTo != null && inResponseTo.trim().length() != 0) {
-            result.append(" InResponseTo=\"").append(inResponseTo).append("\"");
+            result.append(" InResponseTo=\"").append(XMLUtils.escapeSpecialCharacters(inResponseTo)).append("\"");
         }
 
         result.append(" Version=\"").append(version).append("\"")

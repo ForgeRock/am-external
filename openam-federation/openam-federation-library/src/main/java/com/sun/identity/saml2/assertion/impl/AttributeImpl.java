@@ -24,7 +24,7 @@
  *
  * $Id: AttributeImpl.java,v 1.4 2008/06/25 05:47:42 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
 

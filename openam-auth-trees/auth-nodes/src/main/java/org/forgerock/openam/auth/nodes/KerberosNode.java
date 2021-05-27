@@ -184,7 +184,7 @@ public class KerberosNode extends AbstractDecisionNode {
 
         HttpServletRequest request = context.request.servletRequest;
         if (request != null && hasWDSSOFailed(request)) {
-            logger.debug("Http Auth Failed");
+            logger.warn("Http Auth Failed");
             return goTo(false).build();
         }
 
@@ -202,7 +202,8 @@ public class KerberosNode extends AbstractDecisionNode {
         }
 
         if (spnegoToken == null) {
-            throw new NodeProcessException("spnego token is not valid.");
+            logger.warn("SPNEGO token is not valid.");
+            return goTo(false).build();
         }
 
         if (logger.isDebugEnabled()) {
@@ -211,7 +212,8 @@ public class KerberosNode extends AbstractDecisionNode {
         final byte[] kerberosToken = parseToken(spnegoToken);
 
         if (kerberosToken == null) {
-            throw new NodeProcessException("Kerberos token is not valid.");
+            logger.warn("Kerberos token is not valid.");
+            return goTo(false).build();
         }
 
         if (logger.isDebugEnabled()) {
@@ -242,12 +244,13 @@ public class KerberosNode extends AbstractDecisionNode {
                         logger.debug("Authentication succeeded with new cred.");
                         return goTo(true).replaceSharedState(sharedState).build();
                     } catch (PrivilegedActionException ex) {
-                        throw new NodeProcessException(ex);
+                        logger.warn("Kerberos authentication failed: {}", ex.getMessage(), ex);
+                        return goTo(false).build();
                     }
                 }
             } else {
-                throw new NodeProcessException(
-                        "Authentication failed with PrivilegedActionException wrapped GSSException. Stack Trace", e);
+                logger.warn("Kerberos authentication failed with PrivilegedActionException wrapped GSSException: {}",
+                        e.getMessage(), e);
             }
         }
         return goTo(false).build();

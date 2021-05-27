@@ -24,7 +24,7 @@
  *
  * $Id: AttributeQueryUtil.java,v 1.11 2009/07/24 22:51:48 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -55,6 +55,7 @@ import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
 import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.util.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -96,6 +97,7 @@ import com.sun.identity.saml2.protocol.Response;
 import com.sun.identity.saml2.protocol.Status;
 import com.sun.identity.saml2.protocol.StatusCode;
 import com.sun.identity.saml2.xmlenc.EncManager;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * This class provides methods to send or process <code>AttributeQuery</code>.
@@ -866,7 +868,8 @@ public class AttributeQueryUtil {
         return desiredAttrs;
     }
 
-    private static List<Attribute> convertAttributes(List<AttributeType> jaxbAttrs)
+    @VisibleForTesting
+    static List<Attribute> convertAttributes(List<AttributeType> jaxbAttrs)
         throws SAML2Exception {
 
         List<Attribute> resultAttrs = new ArrayList<>();
@@ -881,7 +884,7 @@ public class AttributeQueryUtil {
                 List<Object> newValues = new ArrayList<>();
                 for (Object attributeValue : attributeValues) {
                     if (attributeValue instanceof Element) {
-                        newValues.add(((Element) attributeValue).getTextContent());
+                        newValues.add(XMLUtils.escapeSpecialCharacters(((Element) attributeValue).getTextContent()));
                     }
                 }
                 if (!newValues.isEmpty()) {

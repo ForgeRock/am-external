@@ -36,6 +36,7 @@ import org.forgerock.oauth.OAuthException;
 import org.forgerock.oauth.UserInfo;
 import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
+import org.forgerock.openam.shared.security.crypto.Fingerprints;
 import org.slf4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -71,6 +72,7 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
 
     @Override
     public int process(Callback[] callbacks, int state) throws LoginException {
+        debug.debug("process: org = {}, state = {}", getRequestOrg(), state);
         switch (state) {
             case ISAuthConstants.LOGIN_START: {
                 return processLoginStart();
@@ -95,9 +97,15 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
     @Override
     UserInfo getUserInfo() throws AuthLoginException {
         try {
-            return getClient().handlePostAuth(getDataStore(), getRequestParameters())
+            debug.debug("Getting user info. ");
+            UserInfo userInfo = getClient().handlePostAuth(getDataStore(), getRequestParameters())
                     .thenAsync(value -> getClient().getUserInfo(getDataStore())).getOrThrowUninterruptibly();
+            if (userInfo != null) {
+                debug.debug("Got user info for '{}'", userInfo.getSubject());
+            }
+            return userInfo;
         } catch (OAuthException e) {
+            debug.debug("Unable to get UserInfo details : {}", e.getMessage(), e);
             throw new AuthLoginException("Unable to get UserInfo details", e);
         } catch(JwsException jse) {
             debug.error("JwsException: {}", jse.getMessage(), jse);
@@ -111,6 +119,7 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
         if (accessToken == null) {
             throw new AuthLoginException("Access token not found");
         }
+        debug.debug("Retrieved access token Fingerprint:'{}'", Fingerprints.generate(accessToken.asString()));
         return accessToken.asString();
     }
 
@@ -125,6 +134,7 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
     private void prepareRedirectCallback(int nextState) throws LoginException {
         final int callbackIndex = 0;
         URI authRedirect = getAuthRedirectUri();
+        debug.debug("Prepare redirect response to {}", authRedirect);
         Callback[] callbacks = getCallback(nextState);
         RedirectCallback rc = (RedirectCallback) callbacks[callbackIndex];
         RedirectCallback rcNew = new RedirectCallback(authRedirect.toString(), null, "GET", rc.getStatusParameter(),
@@ -137,6 +147,7 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
         try {
             return getClient().getAuthRedirect(getDataStore(), null, null).getOrThrow();
         } catch (InterruptedException | OAuthException e) {
+            debug.debug("Unable to get redirect URI.", e);
             throw new LoginException(e.getMessage());
         }
     }

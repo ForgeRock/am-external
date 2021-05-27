@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS.
+ * Copyright 2015-2021 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
@@ -148,9 +149,11 @@ public class SAML2 extends AMLoginModule {
         String authComparison = getMapAttr(options, Constants.AUTH_COMPARISON, "exact");
         saml2Options.set(Saml2Options.AUTH_COMPARISON, AuthComparison.valueOf(authComparison.toUpperCase()));
         saml2Options.set(Saml2Options.AUTH_CONTEXT_CLASS_REF,
-                asList(getMapAttr(options, Constants.AUTHN_CONTEXT_CLASS_REF, "").split("\\|")));
+                asList(getMapAttr(options, Constants.AUTHN_CONTEXT_CLASS_REF, "").split("\\|"))
+                        .stream().filter(StringUtils::isNotEmpty).collect(Collectors.toList()));
         saml2Options.set(Saml2Options.AUTH_CONTEXT_DECL_REF,
-                asList(getMapAttr(options, Constants.AUTHN_CONTEXT_DECL_REF, "").split("\\|")));
+                asList(getMapAttr(options, Constants.AUTHN_CONTEXT_DECL_REF, "").split("\\|"))
+                        .stream().filter(StringUtils::isNotEmpty).collect(Collectors.toList()));
         saml2Options.set(Saml2Options.FORCE_AUTHN, getBooleanMapAttr(options, Constants.FORCE_AUTHN, false));
         saml2Options.set(Saml2Options.IS_PASSIVE, getBooleanMapAttr(options, Constants.IS_PASSIVE, false));
         saml2Options.set(Saml2Options.NAME_ID_FORMAT, getMapAttr(options, NAME_ID_FORMAT));

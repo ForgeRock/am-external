@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -58,6 +58,18 @@ final class TreeContextFactory {
     }
 
     /**
+     * Creates a {@link TreeContext} with the provided shared and secure states.
+     *
+     * @param sharedState The shared state to add to the {@link TreeContext}.
+     * @param secureState The secure state to add to the {@link TreeContext}.
+     * @return The {@link TreeContext}.
+     */
+    static TreeContext newTreeContext(JsonValue sharedState, JsonValue secureState) {
+        return new TreeContext(sharedState, json(object()), secureState,
+            new ExternalRequestContext.Builder().build(), emptyList(), Optional.of(TEST_UNIVERSAL_ID));
+    }
+
+    /**
      * Creates a {@link TreeContext} with the provided shared state and preferred locales.
      *
      * @param sharedState The shared state to add to the {@link TreeContext}.
@@ -67,6 +79,19 @@ final class TreeContextFactory {
     static TreeContext newTreeContext(JsonValue sharedState, PreferredLocales preferredLocales) {
         return new TreeContext(sharedState, new ExternalRequestContext.Builder().locales(preferredLocales).build(),
                 emptyList(), Optional.empty());
+    }
+
+    /**
+     * Creates a {@link TreeContext} with the provided shared state and preferred locales.
+     *
+     * @param sharedState The shared state to add to the {@link TreeContext}.
+     * @param secureState The shared secure to add to the {@link TreeContext}.
+     * @param preferredLocales The preferred locales.
+     * @return The {@link TreeContext}.
+     */
+    static TreeContext newTreeContext(JsonValue sharedState, JsonValue secureState, PreferredLocales preferredLocales) {
+        return new TreeContext(sharedState,  json(object()), secureState,
+            new ExternalRequestContext.Builder().locales(preferredLocales).build(), emptyList(), Optional.empty());
     }
 
 }

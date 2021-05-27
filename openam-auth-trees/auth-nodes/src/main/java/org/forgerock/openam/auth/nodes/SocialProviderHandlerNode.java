@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -74,12 +74,14 @@ import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.scripting.Script;
 import org.forgerock.openam.scripting.ScriptEvaluator;
 import org.forgerock.openam.scripting.ScriptObject;
+import org.forgerock.openam.scripting.SupportedScriptingLanguage;
 import org.forgerock.openam.scripting.service.ScriptConfiguration;
 import org.forgerock.openam.session.Session;
 import org.forgerock.openam.social.idp.OAuthClientConfig;
 import org.forgerock.openam.social.idp.SocialIdentityProviders;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.i18n.PreferredLocales;
+import org.mozilla.javascript.NativeJavaObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -338,13 +340,22 @@ public class SocialProviderHandlerNode implements Node {
             }
             binding.put(QUERY_PARAMETER_IDENTIFIER, convertParametersToModifiableObjects(context.request.parameters));
             binding.put(inputKey, inputData);
-            JsonValue output = scriptEvaluator.evaluateScript(script, binding);
+            JsonValue output = evaluateScript(script, binding);
             logger.debug("script {} \n binding {}", script, binding);
 
             return output;
         } catch (javax.script.ScriptException e) {
             logger.warn("Error evaluating the script", e);
             throw new NodeProcessException(e);
+        }
+    }
+
+    private JsonValue evaluateScript(ScriptObject script, Bindings binding) throws javax.script.ScriptException {
+        if (script.getLanguage().equals(SupportedScriptingLanguage.JAVASCRIPT)) {
+            NativeJavaObject result = scriptEvaluator.evaluateScript(script, binding);
+            return (JsonValue) result.unwrap();
+        } else {
+            return scriptEvaluator.evaluateScript(script, binding);
         }
     }
 

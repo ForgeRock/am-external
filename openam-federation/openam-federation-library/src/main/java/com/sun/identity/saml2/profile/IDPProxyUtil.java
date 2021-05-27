@@ -231,6 +231,7 @@ public class IDPProxyUtil {
         // redirecting
         String relayStateID = null;
         if (relayState != null && relayState.length()> 0) {
+            IDPCache.relayStateCache.put(requestID, relayState);
             relayStateID = SPSSOFederate.getRelayStateID(relayState,
                     authnRequest.getID());
         }
@@ -581,8 +582,10 @@ public class IDPProxyUtil {
             session.setAuthnContext(authnContext);
         }*/
 
-        String relayState = (String)
-            IDPCache.relayStateCache.get(origRequest.getID());
+        String relayState = (String) IDPCache.relayStateCache.remove(requestID);
+        if (relayState == null) {
+            relayState = getSavedRelayStateFromStore(requestID);
+        }
         IDPSSOUtil.doSSOFederate( request,
                                   response,
                                   out,
@@ -595,7 +598,26 @@ public class IDPProxyUtil {
                                   saml2Auditor);
     }
 
-     /**
+    private static String getSavedRelayStateFromStore(String requestID) {
+        String relayState = null;
+        AuthnRequestInfo authnRequestInfo = (AuthnRequestInfo) SPCache.requestHash.get(requestID);
+        if (authnRequestInfo != null) {
+            relayState = authnRequestInfo.getRelayState();
+        } else {
+            try {
+                AuthnRequestInfoCopy reqInfoCopy = (AuthnRequestInfoCopy) SAML2FailoverUtils.retrieveSAML2Token(requestID);
+                if (reqInfoCopy != null) {
+                    authnRequestInfo = reqInfoCopy.getAuthnRequestInfo();
+                    relayState = authnRequestInfo.getRelayState();
+                }
+            } catch (SAML2Exception | SAML2TokenRepositoryException se) {
+                logger.error("Unable to retrieve AuthnRequestInfoCopy from SAML2 repository for {}", requestID, se);
+            }
+        }
+        return relayState;
+    }
+
+    /**
      * Sends back response with firstlevel and secondlevel status code if available for the original AuthnRequest.
      *
      * @param request The request.
@@ -617,7 +639,10 @@ public class IDPProxyUtil {
             throws SAML2Exception {
 
         AuthnRequest origRequest = (AuthnRequest) IDPCache.proxySPAuthnReqCache.remove(requestID);
-        String relayState = (String) IDPCache.relayStateCache.remove(origRequest.getID());
+        String relayState = (String) IDPCache.relayStateCache.remove(requestID);
+        if (relayState == null) {
+            relayState = getSavedRelayStateFromStore(requestID);
+        }
 
         IDPSSOUtil.sendResponseWithStatus(request, response, out, idpMetaAlias, hostEntityID, realm, origRequest,
                 relayState, origRequest.getIssuer().getValue(), firstlevelStatusCodeValue, secondlevelStatusCodeValue);

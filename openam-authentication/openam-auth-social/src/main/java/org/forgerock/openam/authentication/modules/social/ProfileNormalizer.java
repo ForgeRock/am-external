@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.social;
@@ -30,6 +30,8 @@ import org.forgerock.openam.authentication.modules.oauth2.OAuthUtil;
 import org.forgerock.openam.utils.MappingUtils;
 
 import com.sun.identity.authentication.spi.AuthLoginException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * User profile normaliser. It uses configured Account Mapper and Attribute Mappers to normalise the user attributes.
@@ -37,6 +39,8 @@ import com.sun.identity.authentication.spi.AuthLoginException;
  * @see AbstractSmsSocialAuthConfiguration
  */
 class ProfileNormalizer {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProfileNormalizer.class);
 
     private final AbstractSmsSocialAuthConfiguration config;
 
@@ -58,6 +62,7 @@ class ProfileNormalizer {
         if (accountProvider == null) {
             accountProvider = OAuthUtil.instantiateAccountProvider(config.getCfgAccountProviderClass());
         }
+        logger.debug("getAccountProvider : {}", accountProvider);
         return accountProvider;
     }
 
@@ -65,6 +70,7 @@ class ProfileNormalizer {
         if (accountMapper == null) {
             accountMapper = OAuthUtil.instantiateAccountMapper(config.getCfgAccountMapperClass());
         }
+        logger.debug("getAccountMapper : {}", accountMapper);
         return accountMapper;
     }
 
@@ -72,20 +78,33 @@ class ProfileNormalizer {
         if (attributeMappers == null) {
             attributeMappers = config.getCfgAttributeMappingClasses();
         }
+        logger.debug("getAttributeMappers : '{}'", attributeMappers);
         return attributeMappers;
     }
 
     private Map<String, String> getAccountMapperConfig() throws AuthLoginException {
         if (accountMapperConfig == null) {
-            accountMapperConfig = MappingUtils.parseMappings(config.getCfgAccountMapperConfiguration());
+            try {
+                accountMapperConfig = MappingUtils.parseMappings(config.getCfgAccountMapperConfiguration());
+            } catch (IllegalArgumentException iae) {
+                logger.debug("Failed to parse account mapper config. {} ", iae.getMessage());
+                throw iae;
+            }
         }
+        logger.debug("getAccountMapperConfig : '{}'", accountMapperConfig);
         return accountMapperConfig;
     }
 
     private Map<String, String> getAttributeMapperConfig() throws AuthLoginException {
         if (attributeMapperConfig == null) {
-            attributeMapperConfig = MappingUtils.parseMappings(config.getCfgAttributeMappingConfiguration());
+            try {
+                attributeMapperConfig = MappingUtils.parseMappings(config.getCfgAttributeMappingConfiguration());
+            } catch (IllegalArgumentException iae) {
+                logger.debug("Failed to parse attribute mapper config {} ", iae.getMessage());
+                throw iae;
+            }
         }
+        logger.debug("getAttributeMapperConfig : '{}'", attributeMapperConfig);
         return attributeMapperConfig;
     }
 
@@ -100,6 +119,7 @@ class ProfileNormalizer {
     public Map<String, Set<String>> getNormalisedAccountAttributes(UserInfo userInfo, JwtClaimsSet jwtClaimsSet)
             throws AuthLoginException {
         try {
+            OAuthUtil.debugMessage("Get normalized attributes for the account lookup. {} ", userInfo.getRawProfile().toString());
             return unmodifiableMap(OAuthUtil.getAttributes(userInfo.getRawProfile().toString(),
                     getAccountMapperConfig(), getAccountMapper(), jwtClaimsSet));
         } catch (OAuthException e) {

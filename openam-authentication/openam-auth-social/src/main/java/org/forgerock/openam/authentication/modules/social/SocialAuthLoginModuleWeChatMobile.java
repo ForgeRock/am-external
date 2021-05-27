@@ -35,13 +35,16 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthException;
 import org.forgerock.oauth.UserInfo;
+import org.forgerock.openam.authentication.modules.oauth2.OAuthUtil;
 import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
+import org.forgerock.openam.shared.security.crypto.Fingerprints;
 import org.slf4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.util.ISAuthConstants;
+import org.slf4j.LoggerFactory;
 
 /**
  * Social Authentication Module that can accept access token and complete the authentication flow.
@@ -52,6 +55,7 @@ import com.sun.identity.authentication.util.ISAuthConstants;
  */
 public class SocialAuthLoginModuleWeChatMobile extends AbstractSocialAuthLoginModule {
 
+    private static final Logger logger = LoggerFactory.getLogger(SocialAuthLoginModuleWeChatMobile.class);
     static final String OPENID = "openid";
 
     /**
@@ -97,7 +101,11 @@ public class SocialAuthLoginModuleWeChatMobile extends AbstractSocialAuthLoginMo
                 field(OPENID, retrieveOpenId())));
             SharedStateDataStore dataStore = getDataStore();
             dataStore.storeData(data);
-            return getClient().getUserInfo(dataStore).getOrThrowUninterruptibly();
+            UserInfo userInfo = getClient().getUserInfo(dataStore).getOrThrowUninterruptibly();
+            if (userInfo != null) {
+                logger.debug("Retrieved user info for '{}'", userInfo.getSubject());
+            }
+            return userInfo;
         } catch (OAuthException e) {
             throw new AuthLoginException("Unable to get UserInfo details", e);
         }
@@ -110,7 +118,9 @@ public class SocialAuthLoginModuleWeChatMobile extends AbstractSocialAuthLoginMo
         if (StringUtils.isBlank(header)) {
             throw new AuthLoginException("Unable to retrieve access token from header");
         }
-        return header.substring("Bearer".length()).trim();
+        String accessToken = header.substring("Bearer".length()).trim();
+        logger.debug("Retrieved access token Fingerprint:'{}'", Fingerprints.generate(accessToken));
+        return accessToken;
     }
 
     private String retrieveOpenId() throws AuthLoginException {
@@ -119,6 +129,7 @@ public class SocialAuthLoginModuleWeChatMobile extends AbstractSocialAuthLoginMo
         if (StringUtils.isBlank(openId)) {
             throw new AuthLoginException("Unable to retrieve WeChat OpenId");
         }
+        logger.debug("Retrieved OIDC token Fingerprint:'{}'", Fingerprints.generate(openId));
         return openId;
     }
 }

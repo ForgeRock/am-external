@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.common;
@@ -358,6 +358,13 @@ public class SOAPCommunicator {
                         nlName, node.getNamespaceURI());
             }
             if (nlName.equals("Fault")) {
+                try {
+                    SOAPFault soapFault = message.getSOAPBody().getFault();
+                    debug.error("SOAP Fault code {} received in SOAP Response. Fault String: {}",
+                            soapFault.getFaultCode(), soapFault.getFaultString());
+                } catch (SOAPException soapExc) {
+                    debug.error("SOAP Fault received but failed to parse SOAP Fault information.");
+                }
                 throw new SAML2Exception(SAML2Utils.bundle.getString(
                         "soapFaultInSOAPResponse"));
             } else if (nlName.equals(localName) &&

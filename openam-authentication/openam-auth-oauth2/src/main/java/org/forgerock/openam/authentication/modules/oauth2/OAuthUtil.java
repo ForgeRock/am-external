@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright © 2011-2019 ForgeRock AS. All rights reserved.
+ * Copyright © 2011-2020 ForgeRock AS. All rights reserved.
  * Copyright © 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -176,9 +176,9 @@ public class OAuthUtil  {
         return debug.isDebugEnabled();
     } 
     
-    public static void debugMessage(String message) {
+    public static void debugMessage(String message, Object... params) {
         if (debug.isDebugEnabled()) {
-            debug.debug(message);
+            debug.debug(message, params);
         }
     }
 

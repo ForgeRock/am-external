@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS.
+ * Copyright 2015-2021 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
@@ -23,7 +23,6 @@ import static org.forgerock.json.JsonValue.fieldIfNotNull;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.utils.StringUtils.isNotEmpty;
-import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -181,7 +180,9 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             throw new ServerFaultException(data.getIdpAdapter(), METADATA_ERROR);
         }
 
-        if ((HTTP_POST.equals(binding) && authnRequest.isSigned())
+        //only verify signature based on whether this setting is enabled
+        if (idpSSODescriptor.isWantAuthnRequestsSigned() || spSSODescriptor.isAuthnRequestsSigned()) {
+            if ((HTTP_POST.equals(binding) && authnRequest.isSigned())
                 || (HTTP_REDIRECT.equals(binding) && isNotEmpty(request.getParameter(SAML2Constants.SIGNATURE)))) {
             Set<X509Certificate> certificates = KeyUtil.getVerificationCerts(spSSODescriptor, data.getSpEntityID(),
                     SAML2Constants.SP_ROLE, data.getRealm());
@@ -223,10 +224,13 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
                 throw new ClientFaultException(data.getIdpAdapter(), "invalidSignInRequest");
             }
 
-            logger.debug("authn request signature verification is successful.");
-        } else if (idpSSODescriptor.isWantAuthnRequestsSigned() || spSSODescriptor.isAuthnRequestsSigned()) {
-            logger.error("The SAML authentication request issued by {} was not signed.", data.getSpEntityID());
-            throw new ClientFaultException(data.getIdpAdapter(), "invalidSignInRequest");
+                logger.debug("authn request signature verification is successful.");
+            } else {
+                logger.error("The SAML authentication request issued by {} was not signed.", data.getSpEntityID());
+                throw new ClientFaultException(data.getIdpAdapter(), "invalidSignInRequest");
+            }
+        } else {
+            logger.debug("SAML signature verification disabled");
         }
 
         logger.debug("SAML Authentication Request id= {}", data.getRequestID());
@@ -651,7 +655,7 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
 
         //adding these extra parameters will ensure that we can send back SAML error response to the SP even when the
         //originally received AuthnRequest gets lost.
-        secondVisitUrl.append("?ReqID=").append(data.getAuthnRequest().getID()).append('&')
+        secondVisitUrl.append("?ReqID=").append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getID())).append('&')
                 .append(INDEX).append('=').append(data.getAuthnRequest().getAssertionConsumerServiceIndex()).append('&')
                 .append(ACS_URL).append('=')
                 .append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getAssertionConsumerServiceURL()))

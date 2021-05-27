@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -159,7 +159,7 @@ public class OneTimePasswordCollectorDecisionNodeTest {
         assertThat(result.outcome).isEqualTo("true");
     }
 
-    private TreeContext getContext(JsonValue sharedState, List<Callback> callbacks) {
-        return new TreeContext(sharedState, new Builder().build(), callbacks, Optional.empty());
+    private TreeContext getContext(JsonValue transientState, List<Callback> callbacks) {
+        return new TreeContext(json(object()), transientState, new Builder().build(), callbacks, Optional.empty());
     }
 }

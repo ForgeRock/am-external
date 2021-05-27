@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -92,13 +92,12 @@ public class OneTimePasswordCollectorDecisionNode extends AbstractDecisionNode {
     }
 
     private Action checkPassword(TreeContext context, String password) {
-        JsonValue oneTimePassword = context.sharedState.get(ONE_TIME_PASSWORD);
-        JsonValue passwordTimestamp = context.sharedState.get(ONE_TIME_PASSWORD_TIMESTAMP);
-        logger.debug("oneTimePassword {} \n passwordTimestamp {}", oneTimePassword, passwordTimestamp);
+        JsonValue oneTimePassword = context.getState(ONE_TIME_PASSWORD);
+        JsonValue passwordTimestamp = context.getState(ONE_TIME_PASSWORD_TIMESTAMP);
 
-        boolean passwordMatches = oneTimePassword.isString()
+        boolean passwordMatches = oneTimePassword != null && oneTimePassword.isString()
                 && oneTimePassword.asString().equals(password)
-                && passwordTimestamp.isNumber()
+                && passwordTimestamp != null && passwordTimestamp.isNumber()
                 && isWithinExpiryTime(passwordTimestamp.asLong());
         logger.debug("passwordMatches {}", passwordMatches);
         return goTo(passwordMatches).build();

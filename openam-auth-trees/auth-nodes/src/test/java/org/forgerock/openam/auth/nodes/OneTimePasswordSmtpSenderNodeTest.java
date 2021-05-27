@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -19,6 +19,7 @@ import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.EMAIL_ADDRESS;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.TEST_UNIVERSAL_ID;
@@ -56,6 +57,8 @@ public class OneTimePasswordSmtpSenderNodeTest {
     private static final String TEST_REALM = "testRealm";
     private static final String TEST_USERNAME = "testUsername";
     private static final String TO_EMAIL_ADDRESS = "joe.bloggs@forgerock.com";
+    private static final String TEST_ONE_TIME_PASSWORD = "978413";
+
 
     @Mock
     private CoreWrapper coreWrapper;
@@ -68,6 +71,7 @@ public class OneTimePasswordSmtpSenderNodeTest {
     @Mock
     private OneTimePasswordSmtpSenderNode.Config serviceConfig;
     private JsonValue sharedState;
+    private JsonValue secureState;
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -80,6 +84,7 @@ public class OneTimePasswordSmtpSenderNodeTest {
                 .willReturn(Collections.singleton(TO_EMAIL_ADDRESS));
         sharedState = json(object(field(USERNAME, TEST_USERNAME),
                 field(REALM, TEST_REALM)));
+        secureState = json(object(field(ONE_TIME_PASSWORD, TEST_ONE_TIME_PASSWORD)));
     }
 
 
@@ -88,7 +93,7 @@ public class OneTimePasswordSmtpSenderNodeTest {
             throws NodeProcessException, AuthLoginException, IdRepoException, SSOException {
         //when
         new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService)
-                .process(newTreeContext(sharedState));
+                .process(newTreeContext(sharedState, secureState));
 
         then(MockSMSGateway.smsGateway).should().sendEmail(eq(serviceConfig.fromEmailAddress()), eq(TO_EMAIL_ADDRESS),
                 any(), any(), any(), any());
@@ -102,7 +107,7 @@ public class OneTimePasswordSmtpSenderNodeTest {
 
         //when
         new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService)
-                .process(newTreeContext(state));
+                .process(newTreeContext(state, secureState));
 
         then(coreWrapper).shouldHaveNoInteractions();
     }
@@ -112,7 +117,7 @@ public class OneTimePasswordSmtpSenderNodeTest {
         willThrow(AuthLoginException.class).given(MockSMSGateway.smsGateway)
                 .sendEmail(any(), any(), any(), any(), any(), any());
         new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService)
-                .process(newTreeContext(sharedState));
+                .process(newTreeContext(sharedState, secureState));
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
@@ -120,7 +125,7 @@ public class OneTimePasswordSmtpSenderNodeTest {
             throws AuthLoginException, NodeProcessException, IdRepoException, SSOException {
         given(coreWrapper.getIdentity(anyString())).willReturn(null);
         new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService)
-                .process(newTreeContext(sharedState));
+                .process(newTreeContext(sharedState, secureState));
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
@@ -129,7 +134,7 @@ public class OneTimePasswordSmtpSenderNodeTest {
         given(amIdentity.getAttribute(serviceConfig.emailAttribute())).willThrow(IdRepoException.class);
 
         new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService)
-                .process(newTreeContext(sharedState));
+                .process(newTreeContext(sharedState, secureState));
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
@@ -138,7 +143,7 @@ public class OneTimePasswordSmtpSenderNodeTest {
         given(amIdentity.getAttribute(serviceConfig.emailAttribute())).willReturn(null);
 
         new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService)
-                .process(newTreeContext(sharedState));
+                .process(newTreeContext(sharedState, secureState));
     }
 
     private void initConfig() {

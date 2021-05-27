@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2019 ForgeRock AS.
+ * Copyright 2014-2020 ForgeRock AS.
  */
 
 import "./webpack/setWebpackPublicPath";
@@ -58,7 +58,7 @@ init({ language, namespace: "authorize" }).then(() => {
         data.noScopes = true;
     }
 
-    Configuration.globalData = { realm : data.realm };
+    Configuration.globalData = { realm : data.realm || "/" };
 
     const render = async () => {
         const theme = await getTheme();

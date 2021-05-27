@@ -24,12 +24,11 @@
  *
  * $Id: IDPSingleLogout.java,v 1.28 2009/11/25 01:20:47 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -60,7 +59,6 @@ import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.common.SAML2FailoverUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
@@ -100,7 +98,6 @@ public class IDPSingleLogout {
     static final Status ALREADY_LOGGEDOUT =
         SAML2Utils.generateStatus(SAML2Constants.SUCCESS,
          SAML2Utils.bundle.getString("sloAlreadyLoggedout"));
-    private final static String QUESTION_MARK = "?";
     private static FedMonAgent agent;
     private static FedMonSAML2Svc saml2Svc;
     static {
@@ -1361,95 +1358,6 @@ public class IDPSingleLogout {
               nameIDValue);
            }
         }
-    }
-
-     /**
-     * Checks if a SAML2 request has been misrouted, if so, send the
-     * request to  the original server, gets the response and redirects it
-     * or posts it back
-     *
-     * @param request the Servlet request
-     * @param response the Servlet response
-     * @param out the print writer for writing out presentation
-     * @param session the Single Sign On session.
-     *
-     * @return true if the request was misrouted and it was forwarded to
-     * the original server
-     * @throws SAML2Exception, SessionException
-     */
-    private static boolean isMisroutedRequest(HttpServletRequest request,
-            HttpServletResponse response, PrintWriter out, Object session)
-            throws SAML2Exception, SessionException {
-
-        String classMethod = "IDPSingleLogout.isMisroutedRequest : ";
-
-        // Check that the request has not been missrouted
-        String idpSessionIndex = IDPSSOUtil.getSessionIndex(session);
-        if (idpSessionIndex == null) {
-            if (debug.isDebugEnabled()) {
-                debug.debug(classMethod + "No SP session participant(s)");
-            }
-            MultiProtocolUtils.invalidateSession(session, request,
-                response, SingleLogoutManager.SAML2);
-            return true;
-        }
-        String serverId =
-                idpSessionIndex.substring(idpSessionIndex.length() - 2);
-        if (debug.isDebugEnabled()) {
-            debug.debug(classMethod + "idpSessionIndex=" + idpSessionIndex +
-                    ", id=" + serverId);
-        }
-
-        // If misrouted, route it to the proper server
-        if (!serverId.equals(SAML2Utils.getLocalServerID())) {
-            if (debug.isWarnEnabled()) {
-                debug.warn(classMethod + "SLO request is mis-routed, we are "
-                        + SAML2Utils.getLocalServerID()
-                        + " and request is owned by " + serverId);
-            }
-            String remoteServiceURL = SAML2Utils.getRemoteServiceURL(serverId);
-            String remoteLogoutURL = remoteServiceURL
-                    + SAML2Utils.removeDeployUri(request.getRequestURI());
-            String queryString = request.getQueryString();
-            if (queryString != null) {
-                remoteLogoutURL = remoteLogoutURL + QUESTION_MARK + queryString;
-            }
-            HashMap remoteRequestData =
-                    SAML2Utils.sendRequestToOrigServer(request, response, remoteLogoutURL);
-            String redirect_url = null;
-            String output_data = null;
-            if (remoteRequestData != null && !remoteRequestData.isEmpty()) {
-                redirect_url = (String) remoteRequestData.get(SAML2Constants.AM_REDIRECT_URL);
-                output_data = (String) remoteRequestData.get(SAML2Constants.OUTPUT_DATA);
-            }
-            if (debug.isDebugEnabled()) {
-                debug.debug(classMethod + "redirect_url : " + redirect_url);
-                debug.debug(classMethod + "output_data : " + output_data);
-            }
-            // if we have a redirect then let the JSP do the redirect
-            if ((redirect_url != null) && !redirect_url.equals("")) {
-                if (debug.isDebugEnabled()) {
-                    debug.debug(classMethod + "Redirecting the response, "
-                            + "redirect actioned by the JSP");
-                }
-                try {
-                    response.sendRedirect(redirect_url);
-                } catch (IOException ex) {
-                    debug.error(classMethod + "Error when redirecting", ex);
-                }
-                return true;
-            }
-            // no redirect, perhaps an error page, return the content
-            if ((output_data != null) && (!output_data.equals(""))) {
-                if (debug.isDebugEnabled()) {
-                    debug.debug(classMethod + "Printing the forwarded response");
-                }
-                response.setContentType("text/html; charset=UTF-8");
-                out.println(output_data);
-                return true;
-            }
-        }
-        return false;
     }
 
     /**

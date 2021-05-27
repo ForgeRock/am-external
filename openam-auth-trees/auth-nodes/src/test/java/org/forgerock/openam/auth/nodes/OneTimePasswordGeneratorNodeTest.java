@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -63,7 +63,7 @@ public class OneTimePasswordGeneratorNodeTest {
         OneTimePasswordGeneratorNode node = new OneTimePasswordGeneratorNode(serviceConfig, SECURE_RANDOM,
                 otpGenerator);
         Action result = node.process(emptyTreeContext());
-        assertThat(result.sharedState).stringAt(ONE_TIME_PASSWORD).hasSize(otpSize);
+        assertThat(result.transientState).stringAt(ONE_TIME_PASSWORD).hasSize(otpSize);
     }
 
     @Test
@@ -73,7 +73,7 @@ public class OneTimePasswordGeneratorNodeTest {
         OneTimePasswordGeneratorNode node = new OneTimePasswordGeneratorNode(serviceConfig, SECURE_RANDOM,
                 otpGenerator);
         Action result = node.process(emptyTreeContext());
-        assertThat(result.sharedState).stringAt(ONE_TIME_PASSWORD).hasSize(otpSize);
+        assertThat(result.transientState).stringAt(ONE_TIME_PASSWORD).hasSize(otpSize);
     }
 
 
@@ -91,6 +91,6 @@ public class OneTimePasswordGeneratorNodeTest {
         OneTimePasswordGeneratorNode node = new OneTimePasswordGeneratorNode(serviceConfig, SECURE_RANDOM,
                 errorGenerator);
         Action result = node.process(emptyTreeContext());
-        assertThat(result.sharedState).stringAt(ONE_TIME_PASSWORD).hasSize(otpSize);
+        assertThat(result.transientState).stringAt(ONE_TIME_PASSWORD).hasSize(otpSize);
     }
 }

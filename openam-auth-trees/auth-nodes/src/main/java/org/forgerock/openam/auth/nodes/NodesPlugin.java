@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -43,7 +43,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public String getPluginVersion() {
-        return "5.0.0";
+        return "5.1.0";
     }
 
     @Override
@@ -55,6 +55,10 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
             pluginTools.upgradeAuthNode(WebAuthnAuthenticationNode.class);
             pluginTools.upgradeAuthNode(WebAuthnRegistrationNode.class);
             pluginTools.upgradeAuthNode(ScriptedDecisionNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("2.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("5.1.0", fromVersion) < 0) {
+            pluginTools.upgradeAuthNode(RetryLimitDecisionNode.class);
         }
         super.upgrade(fromVersion);
     }

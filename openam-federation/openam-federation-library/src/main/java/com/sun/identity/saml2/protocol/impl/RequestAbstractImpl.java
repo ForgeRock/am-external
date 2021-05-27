@@ -24,12 +24,11 @@
  *
  * $Id: RequestAbstractImpl.java,v 1.5 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.protocol.impl;
 
 
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
@@ -42,6 +41,7 @@ import java.util.ListIterator;
 import java.util.Set;
 
 import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
+import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -435,11 +435,16 @@ public abstract class RequestAbstractImpl implements RequestAbstract {
 
    /* Validates the requestID in the SAML Request. */
     protected void validateID(String requestID) throws SAML2Exception {
-	if ((requestId == null) || (requestId.length() == 0 )) {
-	    logger.debug("ID is missing in the SAMLRequest");
-            throw new SAML2Exception(
-		    SAML2SDKUtils.bundle.getString("missingIDAttr"));
-	}
+        if (StringUtils.isEmpty(requestID)) {
+            logger.debug("ID is missing in the SAMLRequest");
+                throw new SAML2Exception(
+                SAML2SDKUtils.bundle.getString("missingIDAttr"));
+        }
+	    // ID must be an XML NCName
+        if (!XMLUtils.isNCName(requestID)) {
+            logger.debug("SAMLRequest ID is not a valid XML ID (NCName): {}", requestID);
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missingIDAttr"));
+        }
     }
 
 

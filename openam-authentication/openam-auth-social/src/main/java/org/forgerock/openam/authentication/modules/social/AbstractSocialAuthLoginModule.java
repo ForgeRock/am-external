@@ -207,9 +207,11 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
             return loginSuccess(attributes, user.get());
         }
 
+        OAuthUtil.debugMessage("User profile doesn't exist.");
         if (configuredToProvisionAccount()) {
             IdmIntegrationConfig.GlobalConfig idmConfig = idmConfigProvider.global();
             if (configuredToProvisionAccountByExternalService(idmConfig)) {
+                OAuthUtil.debugMessage("Using IDM as an external Registration Service.");
                 int nextState = RESUME_FROM_REGISTRATION_REDIRECT_STATE;
                 prepareRedirectCallbackForExternalRegistrationService(nextState);
                 return nextState;
@@ -225,6 +227,7 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
         }
 
         if (configuredToLoginAsAnonymousUser()) {
+            OAuthUtil.debugMessage("Account is mapped to an anonymous account {}", getAnonymousUser());
             return loginSuccess(attributes, getAnonymousUser());
         }
 
@@ -246,6 +249,8 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
                         + "not match the issuer in the client configuration", issuer);
                 throw new AuthLoginException(BUNDLE_NAME, "incorrectIssuer", null);
             }
+            OAuthUtil.debugMessage("OAuth 2.0 mix-up mitigation is enabled, checked clientId = {}, issuer = {}",
+                    clientId, issuer);
         }
     }
 
@@ -253,6 +258,9 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
         JwtClaimsSet jwtClaimsSet = null;
         if (userInfo instanceof OpenIDConnectUserInfo) {
             jwtClaimsSet = ((OpenIDConnectUserInfo) userInfo).getJwtClaimsSet();
+            if (jwtClaimsSet != null) {
+                OAuthUtil.debugMessage("Retrieved JwtClaimSet from UserInfo. {}", jwtClaimsSet);
+            }
         }
         return jwtClaimsSet;
     }
@@ -267,12 +275,13 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
         if (isCancelActionSelected(callbacks[2])) {
             return ISAuthConstants.LOGIN_IGNORE;
         } else if (!isPasswordValid(callbacks)) {
+            OAuthUtil.debugMessage("Provided user password is not valid.");
             return SET_PASSWORD_STATE;
         }
         else {
             userPassword = extractPassword((PasswordCallback) callbacks[0]);
             emailActivationCode();
-            OAuthUtil.debugMessage("User to be created, we need to activate: " + activationCode);
+            OAuthUtil.debugMessage("User to be created, we need to activate: {}", activationCode);
             return CREATE_USER_STATE;
         }
 
@@ -290,14 +299,15 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
         } else {
             String returnedCode = ((NameCallback) callbacks[1]).getName();
             authModuleHelper.validateInput(PARAM_ACTIVATION, returnedCode, "HTTPParameterValue", 512, false);
-            OAuthUtil.debugMessage("code entered by the user: " + returnedCode);
+            OAuthUtil.debugMessage("code entered by the user: {}", returnedCode);
             if (!authModuleHelper.isValidActivationCodeReturned(activationCode, returnedCode)) {
+                OAuthUtil.debugMessage("Activation code entered is invalid: {}", returnedCode);
                 return CREATE_USER_STATE;
             }
             Map<String, Set<String>> attributes = profileNormalizer.getNormalisedAttributes(userInfo, jwtClaimsSet);
             String user =  provisionAccountNow(attributes, userPassword);
             if (user != null) {
-                OAuthUtil.debugMessage("User created: " + user);
+                OAuthUtil.debugMessage("User created: {}", user);
                 return loginSuccess(attributes, user);
             } else {
                 return ISAuthConstants.LOGIN_IGNORE;
@@ -406,7 +416,7 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
             throw new AuthLoginException("Aborting authentication, because "
                     + "the email id to sent mail could not be found in the profile response");
         }
-        OAuthUtil.debugMessage("Mail found = " + mail);
+        OAuthUtil.debugMessage("Mail found = {}, sending email.", mail);
         try {
             OAuthUtil.sendEmail(config.getCfgEmailFrom(), mail, activationCode,
                     config.getSMTPConfig(), bundle, config.getCfgProxyUrl());
@@ -472,8 +482,8 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
             for (String attributeName : attributes.keySet()) {
                 String attributeValue = attributes.get(attributeName).iterator().next().toString();
                 setUserSessionProperty(attributeName, attributeValue);
-                OAuthUtil.debugMessage("OAuth.setUserSessionProperties: " + attributeName + "=" + attributeValue);
             }
+            OAuthUtil.debugMessage("OAuth.setUserSessionProperties: attributes = {}", attributes.keySet());
         } else {
             OAuthUtil.debugMessage("OAuth.setUserSessionProperties: NO attributes to set");
         }
@@ -500,7 +510,9 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
     private String getMappedUsername(Map<String, Set<String>> userNames) throws AuthLoginException {
         if (userNames != null && !userNames.isEmpty()) {
             Iterator<Set<String>> usersIt = userNames.values().iterator();
-            return usersIt.next().iterator().next();
+            String username = usersIt.next().iterator().next();
+            OAuthUtil.debugMessage("Mapped to user : {}", username);
+            return username;
         }
         throw new AuthLoginException("Username not found in the mapped attributes");
     }
@@ -519,7 +531,7 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
 
     private void prepareRedirectCallbackForExternalRegistrationService(int nextState) throws AuthLoginException {
         String registrationServiceUrl = prepareRegistrationServiceUrl(getHttpServletRequest(), dataStore.retrieveData());
-        OAuthUtil.debugMessage("OAuthRegistrationRedirect::registrationServiceUrl:" + registrationServiceUrl);
+        OAuthUtil.debugMessage("OAuthRegistrationRedirect::registrationServiceUrl: {}", registrationServiceUrl);
 
         RedirectCallback rcNew = new RedirectCallback(registrationServiceUrl, null, "GET");
         rcNew.setTrackingCookie(true);

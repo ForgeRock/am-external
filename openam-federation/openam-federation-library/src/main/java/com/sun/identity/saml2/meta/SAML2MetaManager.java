@@ -1204,6 +1204,9 @@ public class SAML2MetaManager {
                     config = eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig().get(0);
                 }
                 List<String> cots = SAML2MetaUtils.getAttributes(config).get(SAML2Constants.COT_LIST);
+                if (CollectionUtils.isEmpty(cots)) {
+                    return;
+                }
                 for (String cot : cots) {
                     if (StringUtils.isNotEmpty(cot)) {
                         try {

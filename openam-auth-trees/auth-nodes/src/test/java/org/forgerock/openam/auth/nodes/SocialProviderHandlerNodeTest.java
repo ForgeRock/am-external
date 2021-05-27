@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -72,6 +72,7 @@ import org.forgerock.util.promise.Promises;
 import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.authentication.spi.RedirectCallback;
 import org.mockito.Mock;
+import org.mozilla.javascript.NativeJavaObject;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -114,6 +115,9 @@ public class SocialProviderHandlerNodeTest {
 
     @Mock
     private SocialOAuth2Helper authModuleHelper;
+
+    @Mock
+    NativeJavaObject nativeJavaObject;
 
     private SocialProviderHandlerNode node;
     private ScriptConfiguration scriptConfiguration;
@@ -159,7 +163,8 @@ public class SocialProviderHandlerNodeTest {
                 .thenReturn(json(object(field("userName", "bob"), field(IDPS, array("existingProvider-bob")))));
         when(sessionService.getSession(any())).thenReturn(null);
         when(sessionServiceProvider.get()).thenReturn(sessionService);
-        when(scriptEvaluator.evaluateScript(any(), any())).thenReturn(json(object()));
+        when(nativeJavaObject.unwrap()).thenReturn(json(object()));
+        when(scriptEvaluator.evaluateScript(any(), any())).thenReturn(nativeJavaObject);
         node = new SocialProviderHandlerNode(config, authModuleHelper, providerConfigStore, identityUtils, realm,
                 scriptEvaluator,
                 sessionServiceProvider, idmIntegrationService);
@@ -262,7 +267,8 @@ public class SocialProviderHandlerNodeTest {
         JsonValue objectData = json(object(
                 field("attribute1", "value1")
         ));
-        when(scriptEvaluator.evaluateScript(any(), any())).thenReturn(objectData);
+        when(nativeJavaObject.unwrap()).thenReturn(objectData);
+        when(scriptEvaluator.evaluateScript(any(), any())).thenReturn(nativeJavaObject);
         ScriptConfiguration scriptConfiguration = ScriptConfiguration.builder().setId("1")
                 .setLanguage(SupportedScriptingLanguage.JAVASCRIPT).setName("test")
                 .setScript("return {'attribute1':'value1'};")
@@ -292,7 +298,8 @@ public class SocialProviderHandlerNodeTest {
                 field("attribute1", "value1"),
                 field("userName", "newValue")
         ));
-        when(scriptEvaluator.evaluateScript(any(), any())).thenReturn(objectData);
+        when(nativeJavaObject.unwrap()).thenReturn(objectData);
+        when(scriptEvaluator.evaluateScript(any(), any())).thenReturn(nativeJavaObject);
         ScriptConfiguration scriptConfiguration = ScriptConfiguration.builder().setId("1")
                 .setLanguage(SupportedScriptingLanguage.JAVASCRIPT).setName("test")
                 .setScript("return {'attribute1':'value1', 'userName':'newValue'};")

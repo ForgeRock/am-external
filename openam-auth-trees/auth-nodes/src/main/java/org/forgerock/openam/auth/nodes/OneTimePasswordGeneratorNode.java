@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.am.util.SystemProperties;
 import com.sun.identity.authentication.modules.hotp.HOTPAlgorithm;
 import com.sun.identity.authentication.modules.hotp.OTPGenerator;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -52,6 +53,8 @@ import com.sun.identity.sm.RequiredValueValidator;
 public class OneTimePasswordGeneratorNode extends SingleOutcomeNode {
 
     private static final Logger logger = LoggerFactory.getLogger(OneTimePasswordGeneratorNode.class);
+
+    private static final String STORE_OTP_IN_SHARED_STATE_KEY = "org.forgerock.am.auth.node.otp.inSharedState";
     //The moving factor or counter that is provided to the HTOP algorithm along with the shared secret
     private static final int MOVING_FACTOR = 0;
     //A flag that indicates if a checksum digit should be appended to the OTP.
@@ -105,11 +108,20 @@ public class OneTimePasswordGeneratorNode extends SingleOutcomeNode {
             logger.warn("Error generating HOTP password.");
             throw new NodeProcessException(e);
         }
-        JsonValue newSharedState = context.sharedState.copy();
-        newSharedState.put(ONE_TIME_PASSWORD, otp);
-        newSharedState.put(ONE_TIME_PASSWORD_TIMESTAMP, Time.getClock().instant().getEpochSecond());
+        Action.ActionBuilder builder = goToNext();
+        long otpTimestamp = Time.getClock().instant().getEpochSecond();
+        if (SystemProperties.getAsBoolean(STORE_OTP_IN_SHARED_STATE_KEY, false)) {
+            JsonValue newSharedState = context.sharedState.copy();
+            newSharedState.put(ONE_TIME_PASSWORD, otp);
+            newSharedState.put(ONE_TIME_PASSWORD_TIMESTAMP, otpTimestamp);
+            builder.replaceSharedState(newSharedState);
+        }
+        JsonValue newTransientState = context.transientState.copy();
+        newTransientState.put(ONE_TIME_PASSWORD, otp);
+        newTransientState.put(ONE_TIME_PASSWORD_TIMESTAMP, otpTimestamp);
+        builder.replaceTransientState(newTransientState);
         logger.debug("one time password has been generated successfully");
-        return goToNext().replaceSharedState(newSharedState).build();
+        return builder.build();
     }
 
     private byte[] getSharedSecret() {

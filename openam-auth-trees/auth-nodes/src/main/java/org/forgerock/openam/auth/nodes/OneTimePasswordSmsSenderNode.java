@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -27,6 +27,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.InputState;
@@ -133,10 +134,16 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
             throw new NodeProcessException(bundle.getString("gateway.failure"), e);
         }
 
+        JsonValue oneTimePassword = context.getState(ONE_TIME_PASSWORD);
+        if (oneTimePassword == null) {
+            logger.warn("oneTimePasswordNotFound");
+            throw new NodeProcessException(bundle.getString("oneTimePassword.not.found"));
+        }
+
         try {
             logger.debug("sending SMS message from {}, to {}", config.fromEmailAddress(), phone);
             gateway.sendSMSMessage(config.fromEmailAddress(), phone, bundle.getString("messageSubject"),
-                    bundle.getString("messageContent"), context.sharedState.get(ONE_TIME_PASSWORD).asString(),
+                    bundle.getString("messageContent"), oneTimePassword.asString(),
                     config.asConfigMap());
         } catch (AuthLoginException e) {
             logger.warn("SMSGateway sending error", e);

@@ -24,7 +24,7 @@
  *
  * $Id: SingleLogoutManager.java,v 1.8 2008/11/10 22:57:00 veiming Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 package com.sun.identity.multiprotocol;
@@ -497,7 +497,7 @@ public class SingleLogoutManager {
                 "userID=" + userID + ", session=" + userSession +
                 ", orig relayState=" + relayState + ", new=" + tmpRelayState +
                 ", isSOAInitiated=" + isSOAPInitiated + ", isIDPInitiated=" +
-                isIDPInitiated + ", protocol=" + protocol + ", relam=" +
+                isIDPInitiated + ", protocol=" + protocol + ", realm=" +
                 realm + ", idpEntityID=" + idpEntityID + ", spEntityID=" +
                 spEntityID + ", status=" + currentStatus +
                 "\nlogout Request XML=" + singleLogoutRequestXML +
