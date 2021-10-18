@@ -11,13 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS.
+ * Copyright 2015-2021 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
 import static com.sun.identity.shared.Constants.*;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.authentication.modules.saml2.Constants.*;
+import static org.forgerock.openam.utils.CollectionUtils.asList;
 import static org.forgerock.openam.utils.Time.*;
 import static java.lang.Boolean.parseBoolean;
 
@@ -141,6 +142,11 @@ public class SAML2 extends AMLoginModule {
                     String bindingTmp = CollectionHelper.getMapAttr(options, keyStr);
                     params.put(OPTIONS_MAP.get(keyStr),
                             Collections.singletonList(bindingTmp.substring(bindingTmp.lastIndexOf(":") + 1)));
+                } else if (AUTHN_CONTEXT_CLASS_REF.equalsIgnoreCase(keyStr)
+                        || AUTHN_CONTEXT_DECL_REF.equalsIgnoreCase(keyStr)) {
+                    final String authContextTmp = CollectionHelper.getMapAttr(options, keyStr);
+                    final List<String> authContextValues = asList(authContextTmp.split("\\|"));
+                    params.put(OPTIONS_MAP.get(keyStr), authContextValues);
                 } else {
                     params.put(OPTIONS_MAP.get(keyStr),
                             Collections.singletonList(CollectionHelper.getMapAttr(options, keyStr)));
@@ -335,6 +341,16 @@ public class SAML2 extends AMLoginModule {
         if (data == null) {
             return processError(bundle.getString("localLinkError"), "SAML2 :: handleReturnFromRedirect() : "
                     + "Unable to perform local linking - response data not found");
+        } else {
+            try {
+                SAML2Store.removeTokenFromStore(responseKey);
+                if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
+                    SAML2FailoverUtils.deleteSAML2Token(responseKey);
+                }
+            } catch (SAML2TokenRepositoryException e) {
+                DEBUG.error("Failed to remove data for responseKey {}", responseKey, e);
+            }
+            SPCache.samlResponseDataHash.put(responseKey, data);
         }
 
         storageKey = responseKey;

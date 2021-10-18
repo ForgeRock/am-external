@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2008 Sun Microsystems Inc. All Rights Reserved
@@ -24,6 +24,7 @@
  *
  * $Id: NameIDMappingResponseImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
@@ -34,7 +35,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.sun.identity.saml.common.SAMLUtils;
-import com.sun.identity.saml.xmlsig.XMLSignatureException;
 import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.EncryptedID;
 import com.sun.identity.saml2.assertion.NameID;
@@ -212,7 +212,7 @@ public class NameIDMappingResponseImpl extends StatusResponseImpl
         result.append("<").append(NSP).append("NameIDMappingResponse")
               .append(uri).append(" ID=\"").append(responseId).append("\"");
         if (inResponseTo != null && inResponseTo.trim().length() != 0) {
-            result.append(" InResponseTo=\"").append(inResponseTo).append("\"");
+            result.append(" InResponseTo=\"").append(XMLUtils.escapeSpecialCharacters(inResponseTo)).append("\"");
         }
 
         result.append(" Version=\"").append(version).append("\"")

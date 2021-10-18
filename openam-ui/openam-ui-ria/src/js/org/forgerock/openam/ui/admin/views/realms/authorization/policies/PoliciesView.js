@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2018 ForgeRock AS.
+ * Copyright 2014-2021 ForgeRock AS.
  */
 
 import "backbone.paginator";
@@ -59,7 +59,7 @@ const PoliciesView = AbstractListView.extend({
             state: BackgridUtils.getState(),
             queryParams: BackgridUtils.getQueryParams({
                 filterName: "eq",
-                _queryFilter: [`applicationName+eq+"${encodeURIComponent(this.data.policySetModel.id)}"`]
+                _queryFilter: [`applicationName+eq+%22${encodeURIComponent(this.data.policySetModel.id)}%22`]
             }),
             parseState: BackgridUtils.parseState,
             parseRecords: BackgridUtils.parseRecords,

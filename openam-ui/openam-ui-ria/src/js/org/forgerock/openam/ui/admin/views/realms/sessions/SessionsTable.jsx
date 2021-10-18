@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2018 ForgeRock AS.
+ * Copyright 2016-2020 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -40,7 +40,7 @@ class SessionsTable extends Component {
         };
     }
 
-    componentWillReceiveProps (nextProps) {
+    UNSAFE_componentWillReceiveProps (nextProps) {
         const updated = _.findByValues(nextProps.data, "sessionHandle", _.map(this.state.checked, "sessionHandle"));
         this.setState({
             checked: updated,

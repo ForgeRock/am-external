@@ -28,7 +28,7 @@
 
 -->
 <!--
-    Portions Copyrighted 2011 ForgeRock AS
+    Portions Copyrighted 2011-2021 ForgeRock AS
 -->
 <!DOCTYPE ServicesConfiguration
         PUBLIC "=//iPlanet//Service Management Services (SMS) 1.0 DTD//EN"
@@ -133,6 +133,13 @@
                            supportsApplicableOrganization="no"
                            i18nFileName="radiusServer"
                            i18nKey="client-config-instance">
+                    <AttributeSchema name="RequiredValueValidator"
+                                     type="validator"
+                                     syntax="string">
+                        <DefaultValues>
+                            <Value>com.sun.identity.sm.RequiredValueValidator</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
                     <AttributeSchema name="clientIpAddress"
                                      i18nKey="a-client-ip-address-label"
                                      order="100"
@@ -143,20 +150,14 @@
                             <Value>/127.0.0.1</Value>
                         </DefaultValues>                                    
                     </AttributeSchema>
-                        
                     <AttributeSchema name="clientSecret"
                                      i18nKey="b-client-secret-label"
                                      order="300"
                                      isSearchable="no"
-                                     syntax="string"
-                                     type="single" >
-                        <DefaultValues>
-                            <DefaultValuesClassName 
-                                className="org.forgerock.openam.radius.server.config.DefaultClientSecretGenerator">
-                            </DefaultValuesClassName>
-                        </DefaultValues>
+                                     syntax="password"
+                                     type="single"
+                                     validator="RequiredValueValidator">
                     </AttributeSchema>
-                    
                     <AttributeSchema name="clientPacketsLogged"
                                      type="single_choice"
                                      syntax="string"

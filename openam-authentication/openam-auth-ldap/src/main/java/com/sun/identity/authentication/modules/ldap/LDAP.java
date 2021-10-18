@@ -24,7 +24,7 @@
  *
  * $Id: LDAP.java,v 1.17 2010/01/25 22:09:16 qcheng Exp $
  *
- * Portions Copyrighted 2010-2019 ForgeRock AS.
+ * Portions Copyrighted 2010-2021 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.ldap;
@@ -209,6 +209,8 @@ public class LDAP extends AMLoginModule {
                 currentConfig, "openam-auth-ldap-connection-mode", "LDAP");
             useStartTLS = connectionMode.equalsIgnoreCase("StartTLS");
             isSecure = connectionMode.equalsIgnoreCase("LDAPS") || useStartTLS;
+            boolean preventBindsForLockedUser = CollectionHelper.getBooleanMapAttr(currentConfig,
+                    "openam-auth-stop-ldap-bind-after-inmemory-locked-enabled", false);
 
             getUserCreationAttrs(currentConfig);
             String tmp = CollectionHelper.getMapAttr(currentConfig,
@@ -260,6 +262,8 @@ public class LDAP extends AMLoginModule {
             ldapUtil.setHeartBeatInterval(heartBeatInterval);
             ldapUtil.setHeartBeatTimeUnit(heartBeatTimeUnit);
             ldapUtil.setOperationTimeout(operationTimeout);
+            ldapUtil.setLoginState(getLoginState("LDAP"));
+            ldapUtil.setPreventBindsForLockedUser(preventBindsForLockedUser);
 
             if (debug.messageEnabled()) {
                 debug.message("bindDN-> " + bindDN
@@ -592,6 +596,10 @@ public class LDAP extends AMLoginModule {
     private void processPasswordScreen(ModuleState newState)
             throws AuthLoginException {
         switch (newState) {
+            case ACCOUNT_LOCKED:
+                replaceHeader(LoginScreen.PASSWORD_CHANGE.intValue(), bundle.getString("AcctInactive"));
+                currentState = LoginScreen.PASSWORD_CHANGE.intValue();
+                break;
             case PASSWORD_UPDATED_SUCCESSFULLY:
                 validatedUserID = ldapUtil.getUserId();
                 createProfile();

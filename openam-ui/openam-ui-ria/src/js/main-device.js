@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2021 ForgeRock AS.
  */
 
 import "./webpack/setWebpackPublicPath";
@@ -49,6 +49,7 @@ init({
             "common/LoginHeaderTemplate", deviceTemplate];
         const [LoginBaseTemplate, FooterTemplate, LoginHeaderTemplate,
             DeviceTemplate] = await loadThemedTemplates(templates, theme);
+        $("html").attr("lang", language);
         $("#wrapper").html(LoginBaseTemplate(data));
         $("#footer").html(FooterTemplate(data));
         $("#loginBaseLogo").html(LoginHeaderTemplate(data));

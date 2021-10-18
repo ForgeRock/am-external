@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 
 import { Col, ControlLabel, Form, FormGroup, Panel } from "react-bootstrap";
@@ -37,7 +37,7 @@ class NewSecretStores extends Component {
         this.setRef = this.setRef.bind(this);
     }
 
-    componentWillReceiveProps (nextProps) {
+    UNSAFE_componentWillReceiveProps (nextProps) {
         if (this.props.template !== nextProps.template) {
             if (this.jsonSchemaView) {
                 this.jsonSchemaView.destroy();

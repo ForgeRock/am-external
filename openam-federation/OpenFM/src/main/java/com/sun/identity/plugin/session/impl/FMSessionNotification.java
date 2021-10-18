@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2018 ForgeRock AS.
+ * Copyright 2016-2021 ForgeRock AS.
  */
 package com.sun.identity.plugin.session.impl;
 
@@ -189,12 +189,12 @@ public class FMSessionNotification {
         if (reg != null) {
             try {
                 reg.updateSessionIndex(sessionIndex);
-                debug.message("{} Updated sessionIndex for sessionId {} to {}", classMethod,  sessionId, sessionIndex);
+                debug.message("{} Updated sessionIndex to {}", classMethod, sessionIndex);
             } catch (SSOException ex) {
-                debug.message("{} Failed to set sessionIndex for sessionId {} to {}", classMethod, sessionId, sessionIndex);
+                debug.message("{} Failed to set sessionIndex to {}", classMethod, sessionIndex);
             }
         } else {
-            debug.message("{} Failed to update store for sessionId {}", classMethod, sessionId);
+            debug.message("{} Failed to update store for sessionId", classMethod);
         }
     }
 

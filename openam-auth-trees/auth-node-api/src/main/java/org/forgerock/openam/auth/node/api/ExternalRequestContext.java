@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -68,6 +68,10 @@ public final class ExternalRequestContext {
      */
     public final String ssoTokenId;
     /**
+     * The authId. This is typically available after the first call to the authentication.
+     */
+    public final String authId;
+    /**
      * The parameters of the request.
      */
     public final Map<String, List<String>> parameters;
@@ -87,7 +91,7 @@ public final class ExternalRequestContext {
     private ExternalRequestContext(com.google.common.collect.ListMultimap<String, String> headers,
             Map<String, String> cookies, PreferredLocales locales, String clientIp, String hostName, String ssoTokenId,
             Map<String, String[]> parameters, String serverUrl, HttpServletRequest servletRequest,
-            HttpServletResponse servletResponse) {
+            HttpServletResponse servletResponse, String authId) {
         this.headers = new WrappedListMultimap<>(Multimaps.unmodifiableListMultimap(checkNotNull(headers)));
         this.cookies = Collections.unmodifiableMap(cookies);
         this.locales = checkNotNull(locales);
@@ -99,6 +103,7 @@ public final class ExternalRequestContext {
         this.serverUrl = serverUrl;
         this.servletRequest = servletRequest;
         this.servletResponse = servletResponse;
+        this.authId = authId;
     }
 
     /**
@@ -116,6 +121,7 @@ public final class ExternalRequestContext {
         private String serverUrl = null;
         private HttpServletRequest servletRequest;
         private HttpServletResponse servletResponse;
+        private String authId = null;
 
         /**
          * Sets the HTTP headers for the request.
@@ -184,6 +190,17 @@ public final class ExternalRequestContext {
         }
 
         /**
+         * Sets the authId of the request.
+         *
+         * @param authId the authId.
+         * @return this builder.
+         */
+        public Builder authId(String authId) {
+            this.authId = authId;
+            return this;
+        }
+
+        /**
          * Sets the parameterMap of the request.
          * @param parameters the parameters
          * @return this builder
@@ -233,7 +250,7 @@ public final class ExternalRequestContext {
          */
         public ExternalRequestContext build() {
             return new ExternalRequestContext(headers, cookies, locales, clientIp, hostName, ssoTokenId, parameters,
-                    serverUrl, servletRequest, servletResponse);
+                    serverUrl, servletRequest, servletResponse, authId);
         }
     }
 }

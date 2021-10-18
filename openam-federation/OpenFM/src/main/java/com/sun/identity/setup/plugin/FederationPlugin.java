@@ -24,7 +24,7 @@
  *
  * $Id: FederationPlugin.java,v 1.8 2008/10/30 18:24:04 mallas Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
                                                                                 
 package com.sun.identity.setup.plugin;
@@ -120,16 +120,26 @@ public class FederationPlugin implements ConfiguratorPlugin {
     private void setAuthModules(SSOToken adminSSOToken) {
         try {
             ServiceSchemaManager mgr = new ServiceSchemaManager(
-                "iPlanetAMAuthService", adminSSOToken);
+                    "iPlanetAMAuthService", adminSSOToken);
             ServiceSchema ss = mgr.getSchema(SchemaType.GLOBAL);
-            Map values = ss.getAttributeDefaults();
-            Set modules = (Set)values.get("iplanet-am-auth-authenticators");
-            modules.add(
-               "com.sun.identity.authentication.modules.federation.Federation");
-            modules.add(
-               "com.sun.identity.authentication.modules.sae.SAE");
+            Map<String, Set<String>> values = ss.getAttributeDefaults();
+            Set<String> modules = values.get("iplanet-am-auth-authenticators");
 
-            ss.setAttributeDefaults(values);
+            boolean shouldModify = false;
+            final String fedAuthModule = "com.sun.identity.authentication.modules.federation.Federation";
+            if (!modules.contains(fedAuthModule)) {
+                modules.add(fedAuthModule);
+                shouldModify = true;
+            }
+            final String saeAuthModule = "com.sun.identity.authentication.modules.sae.SAE";
+            if (!modules.contains(saeAuthModule)) {
+                modules.add(saeAuthModule);
+                shouldModify = true;
+            }
+
+            if (shouldModify) {
+                ss.setAttributeDefaults(values);
+            }
         } catch (SSOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);

@@ -11,81 +11,117 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.json.JsonValue.*;
-import static org.forgerock.openam.auth.node.api.SharedStateConstants.RETRIES_REMAINING;
-import static org.forgerock.openam.auth.nodes.TreeContextFactory.emptyTreeContext;
-import static org.forgerock.openam.auth.nodes.TreeContextFactory.newTreeContext;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.initMocks;
+import org.forgerock.cuppa.junit.CuppaRunner;
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.core.CoreWrapper;
+
+import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.UUID;
 
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.Node;
-import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
+
+import org.forgerock.cuppa.Test;
+
+import static org.forgerock.cuppa.Cuppa.beforeEach;
+import static org.forgerock.cuppa.Cuppa.describe;
+import static org.forgerock.cuppa.Cuppa.it;
+import static org.forgerock.cuppa.Cuppa.when;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
+
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.RETRY_COUNT;
+
+import static org.forgerock.openam.auth.nodes.TreeContextFactory.newTreeContext;
+
+import static org.mockito.BDDMockito.given;
+
+
+@Test
+@RunWith(CuppaRunner.class)
 public class RetryLimitDecisionNodeTest {
 
     @Mock
     RetryLimitDecisionNode.Config serviceConfig;
 
-    @BeforeMethod
-    public void before() {
-        initMocks(this);
-    }
+    @Mock
+    CoreWrapper coreWrapper;
 
-    @Test
-    public void processReturnsFalseOutcomeIfRetryLimitIsZero() throws Exception {
-        UUID nodeId = UUID.randomUUID();
-        Node node = new RetryLimitDecisionNode(serviceConfig, nodeId);
-        Action result = node.process(newTreeContext(sharedState(nodeId, 0)));
-        assertThat(result.outcome).isEqualTo("Reject");
-    }
+    @Mock
+    IdentityUtils identityUtils;
 
-    @Test
-    public void processReturnsTrueOutcomeIfRetryLimitIsGreaterThanZero() throws Exception {
-        UUID nodeId = UUID.randomUUID();
-        Node node = new RetryLimitDecisionNode(serviceConfig, nodeId);
-        Action result = node.process(newTreeContext(sharedState(nodeId, 1)));
-        assertThat(result.sharedState.get(nodeRetryLimitKey(nodeId)).asInteger()).isEqualTo(0);
-        assertThat(result.outcome).isEqualTo("Retry");
-    }
+    private RetryLimitDecisionNode node;
 
-    @Test
-    public void processStoresDecreasedConfigRetryLimitInSharedState() throws Exception {
-        int configRetryLimit = 10;
-        given(serviceConfig.retryLimit()).willReturn(configRetryLimit);
-        UUID nodeId = UUID.randomUUID();
-        Node node = new RetryLimitDecisionNode(serviceConfig, nodeId);
-        Action result = node.process(emptyTreeContext());
-        assertThat(result.sharedState.get(nodeRetryLimitKey(nodeId)).asInteger()).isEqualTo(configRetryLimit - 1);
-    }
+    private JsonValue sharedState;
 
-    @Test
-    public void processStoresDecreasedRetryLimitInSharedState() throws Exception {
-        int configRetryLimit = 20;
-        int currentRetryLimit = 10;
-        given(serviceConfig.retryLimit()).willReturn(configRetryLimit);
-        UUID nodeId = UUID.randomUUID();
-        Node node = new RetryLimitDecisionNode(serviceConfig, nodeId);
-        Action result = node.process(newTreeContext(sharedState(nodeId, currentRetryLimit)));
-        assertThat(result.sharedState.get(nodeRetryLimitKey(nodeId)).asInteger()).isEqualTo(currentRetryLimit - 1);
+    private UUID nodeId;
+
+    private int configRetryLimit;
+
+    {
+        describe("Retry Limit Decision Node", () -> {
+            beforeEach(() -> {
+                MockitoAnnotations.initMocks(this);
+            });
+
+            when("using shared state to store counter", () -> {
+                beforeEach(() -> {
+                    given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(false);
+                    configRetryLimit = 3;
+                });
+                when("Retry Limit is met", () -> {
+                    it("Returns Reject Outcome", () -> {
+                        nodeId = UUID.randomUUID();
+                        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityUtils);
+                        sharedState = json(object(field(nodeRetryLimitKey(nodeId), configRetryLimit)));
+                        assertThat(node.process(newTreeContext(sharedState)).outcome).isEqualTo("Reject");
+                    });
+                });
+                when("Retry Limit is not met", () -> {
+                    beforeEach(() -> {
+                        nodeId = UUID.randomUUID();
+                        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityUtils);
+                        sharedState = json(object(field(nodeRetryLimitKey(nodeId), 0)));
+                        configRetryLimit = 3;
+                        given(serviceConfig.retryLimit()).willReturn(configRetryLimit);
+
+                    });
+                    it("Returns Retry Outcome", () -> {
+                        assertThat(node.process(newTreeContext(sharedState)).outcome).isEqualTo("Retry");
+                    });
+                    it("Stores increased config retry limit in shared state", () -> {
+                        Action result = node.process(newTreeContext(sharedState));
+                        assertThat(result.sharedState.get(nodeRetryLimitKey(nodeId)).asInteger()).isEqualTo(1);
+                    });
+                    it("Stores increased retry limit in shared state", () -> {
+                        configRetryLimit = 20;
+                        int currentRetryLimit = 10;
+                        given(serviceConfig.retryLimit()).willReturn(configRetryLimit);
+                        sharedState = json(object(field(nodeRetryLimitKey(nodeId), currentRetryLimit)));
+                        Action result = node.process(newTreeContext(sharedState));
+                        assertThat(
+                                result.sharedState.get(nodeRetryLimitKey(nodeId)).asInteger())
+                                .isEqualTo(currentRetryLimit + 1);
+                    });
+                });
+            });
+
+        });
     }
 
     private String nodeRetryLimitKey(UUID nodeId) {
-        return nodeId + "." + RETRIES_REMAINING;
-    }
-
-    private JsonValue sharedState(UUID nodeId, int currentRetryLimit) {
-        return json(object(field(nodeRetryLimitKey(nodeId), currentRetryLimit)));
+        return nodeId + "." + RETRY_COUNT;
     }
 }
+

@@ -11,13 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS.
+ * Copyright 2015-2021 ForgeRock AS.
  */
 package org.forgerock.openam.authentication;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,7 +23,6 @@ import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.authentication.service.SessionUpgradeHandler;
-import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.session.Session;
 import org.forgerock.openam.utils.StringUtils;
 
@@ -35,10 +31,8 @@ import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
 import com.iplanet.sso.SSOTokenManager;
 import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.common.SAML2FailoverUtils;
 import com.sun.identity.saml2.profile.IDPCache;
 import com.sun.identity.saml2.profile.IDPSession;
-import com.sun.identity.saml2.profile.IDPSessionCopy;
 import com.sun.identity.shared.debug.Debug;
 
 /**
@@ -81,21 +75,6 @@ public class Saml2SessionUpgradeHandler implements SessionUpgradeHandler {
 
             if (idpSession != null) {
                 idpSession.setSession(newSSOToken);
-                if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                    try {
-                        long expirationTime;
-                        try {
-                            expirationTime = TimeUnit.MINUTES.toSeconds(newSession.getMaxSessionTime());
-                        } catch (SessionException ex) {
-                            expirationTime = 0; // unable to determine session timeout - set SAML timeout to now
-                        }
-                        SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(sessionIndex,
-                                new IDPSessionCopy(idpSession), expirationTime);
-                    } catch (SAML2TokenRepositoryException stre) {
-                        debug.error("Failed to update IDPSession in SAML failover store", stre);
-                    }
-                }
-
                 IDPCache.idpSessionsByIndices.put(sessionIndex, idpSession);
                 try {
                     SessionProvider sessionProvider = SessionManager.getProvider();

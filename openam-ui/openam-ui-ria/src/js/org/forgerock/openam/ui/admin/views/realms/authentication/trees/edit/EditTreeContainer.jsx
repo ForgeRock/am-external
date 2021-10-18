@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
 import {
@@ -179,7 +179,7 @@ class EditTreeContainer extends Component {
         });
     }
 
-    componentWillReceiveProps (nextProps) {
+    UNSAFE_componentWillReceiveProps (nextProps) {
         if (!this.state.autoLayoutCompleted) {
             const hasAllMeasurements = (measurements) => {
                 return !isEmpty(measurements) && every(measurements, ({ height, width }) => {

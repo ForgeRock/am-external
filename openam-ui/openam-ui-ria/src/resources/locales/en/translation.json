@@ -32,7 +32,8 @@
                 "conflictError" : "Detected conflict in request.",
                 "incorrectRevisionError" : "Cannot update the record because the version is not the latest.",
                 "tokenNotFound" : "Token not found.",
-                "securityDataChanged" : "Password was changed"
+                "securityDataChanged" : "Password was changed",
+                "logoutFailedNotLoggedIn": "Unable to logout. You were not logged in or your session had expired."
             },
             "UserMessages" : {
                 "invalidOldPassword" : "Old password is invalid.",
@@ -285,7 +286,7 @@
             "complete" : "Complete",
             "confirm": "Confirm",
             "continue" : "Continue",
-            "copyright" : "Copyright &copy; 2010-2020 ForgeRock AS. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2021 ForgeRock AS. All rights reserved.",
             "create" : "Create",
             "createdAt" : "Created at",
             "createNew": "Create New",

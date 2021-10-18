@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2012-2017 ForgeRock AS.
+ * Copyright 2012-2021 ForgeRock AS.
  */
 
 package com.sun.identity.common;
@@ -33,7 +33,7 @@ public class ServerOrSiteEntry {
 
             index = id.indexOf("|");
             if (index != -1) {
-                id = id.substring(0, 2);
+                id = id.substring(0, index);
             }
         } else {
             throw new IllegalArgumentException("Invalid server entry: " + serverEntry);

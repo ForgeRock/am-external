@@ -24,7 +24,7 @@
  *
  * $Id: CreateSAML2HostedProviderTemplate.java,v 1.29 2009/11/24 21:49:04 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.workflow;
 
@@ -152,28 +152,28 @@ public class CreateSAML2HostedProviderTemplate {
             MetaTemplateParameters.P_IDP_S_CERT);
         String idpECertAlias = (String)mapParams.get(
             MetaTemplateParameters.P_IDP_E_CERT);
-        
-        if (idpSCertAlias == null) {
-            idpSCertAlias = "";
-        }
-        if (idpECertAlias == null) {
-            idpECertAlias = "";
-        }
 
         buff.append(
             "    <IDPSSOConfig metaAlias=\"" + idpAlias + "\">\n" +
             "        <Attribute name=\"" + SAML2Constants.ENTITY_DESCRIPTION +
             "\">\n" +
             "            <Value></Value>\n" +
-            "        </Attribute>\n" +
-            "        <Attribute name=\"" + SAML2Constants.SIGNING_CERT_ALIAS +
-            "\">\n" +
-            "            <Value>" + idpSCertAlias + "</Value>\n" +
-            "        </Attribute>\n" +
-            "        <Attribute name=\"" +
-            SAML2Constants.ENCRYPTION_CERT_ALIAS + "\">\n" +
-            "            <Value>" + idpECertAlias + "</Value>\n" +
-            "        </Attribute>\n" +
+            "        </Attribute>\n");
+        if (idpSCertAlias != null) {
+            buff.append(
+                "        <Attribute name=\"" + SAML2Constants.SIGNING_CERT_ALIAS +
+                "\">\n" +
+                "            <Value>" + idpSCertAlias + "</Value>\n" +
+                "        </Attribute>\n");
+        }
+        if (idpECertAlias != null) {
+            buff.append(
+                "        <Attribute name=\"" +
+                SAML2Constants.ENCRYPTION_CERT_ALIAS + "\">\n" +
+                "            <Value>" + idpECertAlias + "</Value>\n" +
+                "        </Attribute>\n");
+        }
+        buff.append(
             "        <Attribute name=\"" + SAML2Constants.BASIC_AUTH_ON +
             "\">\n" +
             "            <Value>false</Value>\n" +
@@ -315,27 +315,28 @@ public class CreateSAML2HostedProviderTemplate {
             MetaTemplateParameters.P_SP_S_CERT);
         String spECertAlias = (String)mapParams.get(
             MetaTemplateParameters.P_SP_E_CERT);
-        if (spSCertAlias == null) {
-            spSCertAlias = "";
-        }
-        if (spECertAlias == null) {
-            spECertAlias = "";
-        }
         
         buff.append(
             "    <SPSSOConfig metaAlias=\"" + spAlias + "\">\n" +
             "        <Attribute name=\"" + SAML2Constants.ENTITY_DESCRIPTION +
             "\">\n" +
             "            <Value></Value>\n" +
-            "        </Attribute>\n" +
-            "        <Attribute name=\"" + SAML2Constants.SIGNING_CERT_ALIAS +
-            "\">\n" +
-            "            <Value>" + spSCertAlias + "</Value>\n" +
-            "        </Attribute>\n" +
-            "        <Attribute name=\"" +
-            SAML2Constants.ENCRYPTION_CERT_ALIAS + "\">\n" +
-            "            <Value>" + spECertAlias + "</Value>\n" +
-            "        </Attribute>\n" +
+            "        </Attribute>\n");
+        if (spSCertAlias != null) {
+            buff.append(
+                "        <Attribute name=\"" + SAML2Constants.SIGNING_CERT_ALIAS +
+                "\">\n" +
+                "            <Value>" + spSCertAlias + "</Value>\n" +
+                "        </Attribute>\n");
+        }
+        if (spECertAlias != null) {
+            buff.append(
+                "        <Attribute name=\"" +
+                SAML2Constants.ENCRYPTION_CERT_ALIAS + "\">\n" +
+                "            <Value>" + spECertAlias + "</Value>\n" +
+                "        </Attribute>\n");
+        }
+        buff.append(
             "        <Attribute name=\"" + SAML2Constants.BASIC_AUTH_ON +
             "\">\n" +
             "            <Value>false</Value>\n" +

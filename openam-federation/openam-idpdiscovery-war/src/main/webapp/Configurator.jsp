@@ -59,10 +59,11 @@ org.owasp.esapi.ESAPI"
     String secureCookie = null;
     String encodeCookie = null;
     String httpOnlyCookie = null;
+    String validRedirects = null;
 
     File configF = new File(configFile);
     if (configF.exists()) {
-        errorMsg = "The IDP Discpvery Service have already been configued.<br>"
+        errorMsg = "The IDP Discovery Service has already been configured.<br>"
             + "Configuration file : " + ESAPI.encoder().encodeForHTML(configFile) + "<br><p><br>";
         // reinitialize properties
         SystemProperties.initializeProperties(configFile);
@@ -75,6 +76,7 @@ org.owasp.esapi.ESAPI"
         debugDir = request.getParameter("debugDir");
         encodeCookie = request.getParameter("encodeCookie");
         httpOnlyCookie = request.getParameter("httpOnlyCookie");
+        validRedirects = request.getParameter("validRedirects");
         String submit = request.getParameter("submit");
         String servletPath = request.getServletPath();
 
@@ -84,9 +86,15 @@ org.owasp.esapi.ESAPI"
                 (secureCookie != null) && !secureCookie.equals("") && 
                 (debugDir != null) && !debugDir.equals("") &&
                 (encodeCookie != null) && !encodeCookie.equals("") &&
+                (validRedirects != null) && !validRedirects.equals("") &&
                 (httpOnlyCookie != null) && !httpOnlyCookie.equals("")) {
                 if (cookieDomain == null) {
                     cookieDomain = "";
+                }
+                String[] tmpRedirects = validRedirects.split("[\\r\\n]+");
+                StringBuilder sb = new StringBuilder();
+                for (String tmpRedirect : tmpRedirects) {
+                    sb.append(ESAPI.encoder().encodeForURL(tmpRedirect)).append(" ");
                 }
                 Properties props = new Properties();
                 props.setProperty("DEBUG_DIR", debugDir);
@@ -96,11 +104,10 @@ org.owasp.esapi.ESAPI"
                 props.setProperty("SECURE_COOKIE", secureCookie);
                 props.setProperty("ENCODE_COOKIE", encodeCookie);
                 props.setProperty("HTTP_ONLY_COOKIE", httpOnlyCookie);
+                props.setProperty("VALID_REDIRECTS", sb.toString());
                 try {
-                    IDPDiscoveryWARConfigurator configurator = 
-                        new IDPDiscoveryWARConfigurator();
-                    configurator.createIDPDiscoveryConfig(configFile, 
-                        configTemplate, props);
+                    IDPDiscoveryWARConfigurator configurator = new IDPDiscoveryWARConfigurator();
+                    configurator.createIDPDiscoveryConfig(configFile, configTemplate, props);
                     configurator.setIDPDiscoveryConfig(configFile);
                 } catch (IOException ioex) {
                     ioex.printStackTrace();
@@ -212,6 +219,12 @@ org.owasp.esapi.ESAPI"
     </td>
     </tr>
     <tr>
+    <td>Valid Redirects:</td>
+    <td>
+        <textarea rows="10" cols="80" name="validRedirects" value="<%= validRedirects == null ? "" : ESAPI.encoder().encodeForHTML(validRedirects) %>"></textarea>
+    </td>
+    </tr>
+    <tr>
     <td colspan="2" align="center">
     <input type="submit" name="submit" value="Configure" />
     <input type="reset" value="Reset" />
@@ -231,7 +244,7 @@ org.owasp.esapi.ESAPI"
 <%
 } else {
 %>
-IDP Discovery servce is successfully configured.<br>
+IDP Discovery service is successfully configured.<br>
 Configuration property is created at <%= ESAPI.encoder().encodeForHTML(configFile) %><br>
 <br>
 <p>

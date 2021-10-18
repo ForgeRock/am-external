@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS.
+ * Copyright 2015-2021 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
@@ -22,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.jwt.JwtEncryptionOptions;
+import org.forgerock.openam.utils.StringUtils;
 
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
@@ -98,8 +99,12 @@ public abstract class SAMLBase {
 
         IDPAuthnContextInfo idpAuthnContextInfo = null;
         try {
+            String spEntityID = data.getSpEntityID();
+            if (StringUtils.isBlank(spEntityID)) {
+                spEntityID = request.getParameter(SP_ENTITY_ID);
+            }
             idpAuthnContextInfo = idpAuthnContextMapper.getIDPAuthnContextInfo(data.getAuthnRequest(),
-                    data.getIdpEntityID(), data.getRealm());
+                    data.getIdpEntityID(), data.getRealm(), spEntityID);
         } catch (SAML2Exception sme) {
             SAML2Utils.debug.error(classMethod, sme);
         }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2020 ForgeRock AS.
  */
 
 import { t } from "i18next";
@@ -60,7 +60,7 @@ class ChangePasswordContainer extends Component {
 
     render () {
         const schema = {
-            "$schema": "http://json-schema.org/draft-06/schema#",
+            "$schema": "http://json-schema.org/draft-07/schema#",
             type: "object",
             properties: {
                 olduserpassword: {

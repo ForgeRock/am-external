@@ -11,7 +11,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+  Copyright 2015-2021 ForgeRock AS. All Rights Reserved
 }}
 <div class="container">
 
@@ -19,13 +19,13 @@
     <div class="alert alert-warning col-md-6 col-md-offset-3" role="alert">
         <strong>
         {{#if error.uri}}
-            <a href="{{{error.uri}}}">{{{error.message}}}</a>
+            <a href="{{error.uri}}">{{error.message}}</a>
         {{else}}
-            {{{error.message}}}
+            {{error.message}}
         {{/if}}
         </strong>
         {{#if error.description}}
-            {{{error.description}}}
+            {{error.description}}
         {{/if}}
     </div>
     {{else}}
@@ -132,6 +132,12 @@
             {{#if oauth2Data.policyUri}}
             <p>
               <a href="{{oauth2Data.policyUri}}" target="_blank">{{{oauth2Data.displayName}}} {{t 'form.privacyPolicy'}}</a>
+            </p>
+            {{/if}}
+
+            {{#if oauth2Data.tosUri}}
+            <p>
+                <a href="{{oauth2Data.tosUri}}" target="_blank">{{{oauth2Data.displayName}}} {{t 'form.termsOfService'}}</a>
             </p>
             {{/if}}
 

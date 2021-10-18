@@ -24,6 +24,7 @@
  *
  * $Id: IDPAuthnContextMapper.java,v 1.6 2008/06/25 05:47:51 qcheng Exp $
  *
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
@@ -48,6 +49,24 @@ import com.sun.identity.saml2.protocol.AuthnRequest;
 
 public interface IDPAuthnContextMapper {
 
+    /**
+     * Returns an <code>IDPAuthnContextInfo</code> object.
+     *
+     * @deprecated use {@link #getIDPAuthnContextInfo(AuthnRequest, String, String, String)} instead
+     *
+     * @param authnRequest the <code>AuthnRequest</code> from the Service
+     * Provider
+     * @param idpEntityID the Entity ID of the Identity Provider
+     * @param realm the realm to which the Identity Provider belongs
+     *
+     * @return an <code>IDPAuthnContextInfo</code> object
+     * @throws SAML2Exception if an error occurs.
+     */
+    public IDPAuthnContextInfo getIDPAuthnContextInfo(
+            AuthnRequest authnRequest,
+            String idpEntityID,
+            String realm) throws SAML2Exception;
+
    /** 
     * Returns an <code>IDPAuthnContextInfo</code> object.
     *
@@ -55,14 +74,21 @@ public interface IDPAuthnContextMapper {
     * Provider
     * @param idpEntityID the Entity ID of the Identity Provider    
     * @param realm the realm to which the Identity Provider belongs
-    * 
+    * @param spEntityID the Entity ID of the Service Provider
+    *
+    * @implNote By default this calls  {@link #getIDPAuthnContextInfo(AuthnRequest, String, String)} and must be
+    * overridden to make use of the spEntityId parameter.
+    *
     * @return an <code>IDPAuthnContextInfo</code> object
     * @throws SAML2Exception if an error occurs.
     */
-    public IDPAuthnContextInfo getIDPAuthnContextInfo(
+    default public IDPAuthnContextInfo getIDPAuthnContextInfo(
         AuthnRequest authnRequest,
         String idpEntityID,
-        String realm) throws SAML2Exception;
+        String realm,
+        String spEntityID) throws SAML2Exception {
+        return getIDPAuthnContextInfo(authnRequest, idpEntityID, realm);
+    }
 
    /** 
     * Returns true if the specified AuthnContextClassRef matches a list of

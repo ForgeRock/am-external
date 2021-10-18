@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,16 +24,26 @@
  *
  * $Id: CookieReaderServlet.java,v 1.4 2009/03/26 19:41:29 madan_ranganath Exp $
  *
+ * Portions Copyrighted 2019-2020 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.idpdiscovery;
 
-import java.io.IOException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import static org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator.GlobalService.GLOBAL_SERVICE;
+
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
-import javax.servlet.ServletConfig;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.forgerock.guice.core.InjectorHolder;
+import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 
 /**
  * The Reader Service is used by the service provider. The service provider
@@ -49,7 +59,7 @@ import javax.servlet.ServletConfig;
  */
 public class CookieReaderServlet extends HttpServlet {  
       
-    private String preferred_cookie_name = null;  
+    private static final Logger logger = LoggerFactory.getLogger(CookieReaderServlet.class);
         
     /**
      * Gets handle to CookieUtils.debug.
@@ -58,11 +68,10 @@ public class CookieReaderServlet extends HttpServlet {
      * @exception ServletException if an exception occurs that interrupts
      *               the servlet's normal operation.
      */
-    public void init(ServletConfig config)
-        throws ServletException {
+    public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        if (CookieUtils.debug.messageEnabled()) {
-            CookieUtils.debug.message("CookieReaderServlet: Initializing...");
+        if (logger.isDebugEnabled()) {
+            logger.debug("CookieReaderServlet: Initializing...");
         }
     }
     
@@ -72,15 +81,8 @@ public class CookieReaderServlet extends HttpServlet {
      *                the client has made of the servlet.
      * @param response an HttpServletResponse object that contains the response
      *                 the servlet sends to the client.
-     * @exception ServletException if an input or output error is detected when
-     *                             the servlet handles the GET request
-     * @exception IOException if the request for the GET could not be handled
      */
-    public void doGet(
-        HttpServletRequest request,
-        HttpServletResponse response)
-        throws ServletException, IOException
-    {
+    public void doGet(HttpServletRequest request, HttpServletResponse response) {
         doGetPost(request, response);
     }
     
@@ -90,15 +92,8 @@ public class CookieReaderServlet extends HttpServlet {
      *                the client has made of the servlet.
      * @param response an HttpServletResponse object that contains the response
      *                 the servlet sends to the client.
-     * @exception ServletException if an input or output error is detected when
-     *                             the servlet handles the GET request
-     * @exception IOException if the request for the GET could not be handled
      */
-    public void doPost(
-        HttpServletRequest request,
-        HttpServletResponse response)
-        throws ServletException, IOException
-    {
+    public void doPost(HttpServletRequest request, HttpServletResponse response) {
         doGetPost(request, response);
     }
     
@@ -110,98 +105,63 @@ public class CookieReaderServlet extends HttpServlet {
      *                the client has made of the servlet.
      * @param response an HttpServletResponse object that contains the response
      *                 the servlet sends to the client.
-     * @exception ServletException if an input or output error is detected when
-     *                             the servlet handles the GET request
-     * @exception IOException if the request for the GET could not be handled
      */
-    private void doGetPost(
-        HttpServletRequest  request,
-        HttpServletResponse response)
-        throws ServletException, IOException
-    {
+    private void doGetPost(HttpServletRequest  request, HttpServletResponse response) {
         String classMethod = "CookieReaderServlet.doGetPost: ";
-        preferred_cookie_name = CookieUtils.getPreferCookieName(
-                request.getRequestURI());
+        String preferred_cookie_name = CookieUtils.getPreferCookieName(request.getRequestURI());
         if (preferred_cookie_name == null) {
-            CookieUtils.debug.error( classMethod + 
-                "The request uri is null.");
-            CookieUtils.sendError(request, response,
-                response.SC_INTERNAL_SERVER_ERROR, "nullRequestUri", 
-                CookieUtils.bundle.getString("nullRequestUri"));
+            logger.error(classMethod + "The request uri is null.");
+            CookieUtils.sendError(request, response, response.SC_INTERNAL_SERVER_ERROR, "nullRequestUri",
+                    CookieUtils.bundle.getString("nullRequestUri"));
             return;
         } else if (preferred_cookie_name.equals("")) { 
-            CookieUtils.debug.error( classMethod + 
-                "Cannot match the cookie name from " +
-                "the request uri.");
-            CookieUtils.sendError(request, response,
-                response.SC_INTERNAL_SERVER_ERROR, "invalidRequestUri",
-                CookieUtils.bundle.getString("invalidRequestUri"));
+            logger.error(classMethod + "Cannot match the cookie name from the request uri.");
+            CookieUtils.sendError(request, response, response.SC_INTERNAL_SERVER_ERROR, "invalidRequestUri",
+                    CookieUtils.bundle.getString("invalidRequestUri"));
             return;
         }
         
-        try{            
-            boolean isValidReturn = false;
-            String returnURL =
-                request.getParameter(IDPDiscoveryConstants.LRURL);
-            if (returnURL == null ||
-                returnURL.trim().length() <= 0) {
-                // Redirect URL not specified. Do nothing
-                // Do not throw any error page to user as this operation is
-                // done behind the screens.                
-                CookieUtils.debug.error(
-                    classMethod +
-                    "Redirect URL not specified. "+
-                    "Cannot send preferred idp in query string"
-                );
-                isValidReturn = false;
-            } else {
-                isValidReturn = true;
-            }
+        try {
+            RedirectUrlValidator<RedirectUrlValidator.GlobalService> validator =
+                    InjectorHolder.getInstance(Key.get(
+                            new TypeLiteral<RedirectUrlValidator<RedirectUrlValidator.GlobalService>>() { }));
+
+            String returnURL = request.getParameter(IDPDiscoveryConstants.LRURL);
+
+            boolean isValidReturn = validator != null
+                    && validator.isRedirectUrlValid(returnURL, GLOBAL_SERVICE, false, request);
+
             if (isValidReturn) {
-                String cookieValue =
-                    getPreferredIdpCookie(request);
+                String cookieValue = getPreferredIdpCookie(request, preferred_cookie_name);
                 if (cookieValue != null) {
-                    returnURL = appendCookieToReturnURL(
-                        returnURL,
-                        cookieValue);
-                    if (CookieUtils.debug.messageEnabled()) {
-                        CookieUtils.debug.message(
-                        classMethod + "preferred idp:" +
-                        cookieValue); 
+                    returnURL = appendCookieToReturnURL(returnURL, cookieValue, preferred_cookie_name);
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(classMethod + "preferred idp:" + cookieValue);
                     }
                      
                 }
                 response.sendRedirect(returnURL);
-                return;
             } else {
-                CookieUtils.sendError(request, response,
-                    response.SC_INTERNAL_SERVER_ERROR, "noRedirectionURL",
-                    CookieUtils.bundle.getString("noRedirectionURL"));
-                return;
+                CookieUtils.sendError(request, response, response.SC_INTERNAL_SERVER_ERROR, "noRedirectionURL",
+                        CookieUtils.bundle.getString("noRedirectionURL"));
             }
-        } catch(Exception e){
-            CookieUtils.debug.error(classMethod, e);
-            CookieUtils.sendError(request, response,
-                    response.SC_INTERNAL_SERVER_ERROR, "readerServiceFailed",
+        } catch(Exception e) {
+            logger.error(classMethod, e);
+            CookieUtils.sendError(request, response, response.SC_INTERNAL_SERVER_ERROR, "readerServiceFailed",
                     e.getMessage());
-            return;
         }
     }    
     
     /**
      *
-     * This function is used to get the preferred IDP cookie from the request
-     * object
+     * This function is used to get the preferred IDP cookie from the request object
      * @param request HTTP request
-     * @return string containing the space seperated base64 encoded preferred
+     * @param preferred_cookie_name The preferred cookie name
+     * @return string containing the space separated base64 encoded preferred
      * IDP cookie value
      */
-    private String getPreferredIdpCookie(
-        HttpServletRequest request) {
-        return CookieUtils.getCookieValueFromReq(
-            request, 
-            preferred_cookie_name
-        );
+    private String getPreferredIdpCookie(HttpServletRequest request, String preferred_cookie_name) {
+        return CookieUtils.getCookieValueFromReq(request, preferred_cookie_name);
     }
     
     /**
@@ -213,26 +173,19 @@ public class CookieReaderServlet extends HttpServlet {
      * cookie
      * name/value appended
      */
-    private String appendCookieToReturnURL(
-        String returnURL,
-        String cookieValue) {
-        String classMethod =
-            "CookieReaderServlet.appendCookieToReturnURL: ";
-        if (cookieValue == null ||
-            cookieValue.trim().length() <= 0) {
+    private String appendCookieToReturnURL(String returnURL, String cookieValue, String preferred_cookie_name) {
+        String classMethod = "CookieReaderServlet.appendCookieToReturnURL: ";
+        if (cookieValue == null || cookieValue.trim().length() <= 0) {
             // Preferred IDP cookie not found
             // Do not throw any error page to user as this operation is done
             // behind the screens.
-            CookieUtils.debug.error(
-                classMethod +
-                "Preferred IDPCookie not found"
-            );
+            logger.error(classMethod + "Preferred IDPCookie not found");
         }
         // If the original returnURL already has some params, use
         // AMPERSAND as a delimiter; else use a QUESTION_MARK.
         char delimiter;
-        StringBuffer returnBuffer = null;
-        if(returnURL.indexOf(IDPDiscoveryConstants.QUESTION_MARK) < 0) {
+        StringBuffer returnBuffer;
+        if (returnURL.indexOf(IDPDiscoveryConstants.QUESTION_MARK) < 0) {
             delimiter = IDPDiscoveryConstants.QUESTION_MARK;
         } else {
             delimiter = IDPDiscoveryConstants.AMPERSAND;
@@ -244,19 +197,14 @@ public class CookieReaderServlet extends HttpServlet {
         returnBuffer.append(IDPDiscoveryConstants.EQUAL_TO);
        
         try { 
-            returnBuffer.append(
-                java.net.URLEncoder.encode(cookieValue, "UTF-8"));
+            returnBuffer.append(java.net.URLEncoder.encode(cookieValue, "UTF-8"));
         } catch (Exception e) { 
-            CookieUtils.debug.error("CookieReaderServlet:"
-                + "appendCookieToReturnURL" + e.getMessage()); 
+            logger.error("CookieReaderServlet: appendCookieToReturnURL" + e.getMessage());
         }
-        if (CookieUtils.debug.messageEnabled()) {
-            CookieUtils.debug.message(
-                classMethod +
-                "Return URL = " +
-                returnBuffer.toString()
-            );
+        if (logger.isDebugEnabled()) {
+            logger.debug(classMethod + "Return URL = " + returnBuffer.toString());
         }
         return returnBuffer.toString();
     }
 }
+

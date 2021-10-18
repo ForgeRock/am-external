@@ -24,7 +24,7 @@
  *
  * $Id: NamespacePrefixMapperImpl.java,v 1.3 2008/06/25 05:47:49 qcheng Exp $
  *
- * Portions Copyrighted 2018 ForgeRock AS.
+ * Portions Copyrighted 2018-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.meta;
 
@@ -82,6 +82,8 @@ public class NamespacePrefixMapperImpl extends com.sun.xml.bind.marshaller.Names
             return SAML2MetaSecurityUtils.PREFIX_SAML;
         case SAML2MetaSecurityUtils.NS_XMLENC:
             return SAML2MetaSecurityUtils.PREFIX_XMLENC;
+        case SAML2MetaSecurityUtils.NS_XMLENC11:
+            return SAML2MetaSecurityUtils.PREFIX_XMLENC11;
         case SAML2MetaSecurityUtils.NS_XMLSIG:
             return SAML2MetaSecurityUtils.PREFIX_XMLSIG;
         }

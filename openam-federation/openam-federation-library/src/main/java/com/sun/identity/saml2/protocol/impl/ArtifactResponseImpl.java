@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,15 +24,14 @@
  *
  * $Id: ArtifactResponseImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 
 package com.sun.identity.saml2.protocol.impl;
 
-import java.security.PublicKey;
 import java.text.ParseException;
-import java.util.Date;
 
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
@@ -41,18 +40,14 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.sun.identity.shared.xml.XMLUtils;
-import com.sun.identity.shared.DateUtils;
-import com.sun.identity.saml.xmlsig.XMLSignatureException;
 import com.sun.identity.saml2.assertion.AssertionFactory;
-import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
-import com.sun.identity.saml2.protocol.Status;
-import com.sun.identity.saml2.protocol.Extensions;
-import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.ArtifactResponse;
+import com.sun.identity.saml2.protocol.ProtocolFactory;
+import com.sun.identity.shared.DateUtils;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * The <code>ArtifactResopnse</code> message has the complex type
@@ -346,7 +341,7 @@ public class ArtifactResponseImpl extends StatusResponseImpl
         result.append("<").append(prefix).append("ArtifactResponse").
                 append(uri).append(" ID=\"").append(responseId).append("\"");
 	if (inResponseTo != null && inResponseTo.trim().length() != 0) {
-	    result.append(" InResponseTo=\"").append(inResponseTo).append("\"");
+	    result.append(" InResponseTo=\"").append(XMLUtils.escapeSpecialCharacters(inResponseTo)).append("\"");
 	}
 	
         result.append(" Version=\"").append(version).append("\"").

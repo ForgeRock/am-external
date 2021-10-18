@@ -11,84 +11,161 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
-import static org.forgerock.json.test.assertj.AssertJJsonValueAssert.assertThat;
+import static org.assertj.core.api.Assertions.shouldHaveThrown;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD_ENCRYPTED;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD_TIMESTAMP;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.emptyTreeContext;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertThat;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.anyBoolean;
+import static org.mockito.BDDMockito.anyInt;
+import static org.mockito.BDDMockito.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
+import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.mockito.ArgumentMatcher;
-import org.mockito.Matchers;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.crypto.NodeSharedStateCrypto;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
+import com.iplanet.am.util.SystemProperties;
 import com.sun.identity.authentication.modules.hotp.HOTPAlgorithm;
 
+/**
+ * Tests for {@link OneTimePasswordGeneratorNode}.
+ */
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(SystemProperties.class)
+@PowerMockIgnore("javax.crypto.*")
 public class OneTimePasswordGeneratorNodeTest {
 
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-
-    private ArgumentMatcher<byte[]> anyByteArrayMatcher = bytes -> true;
+    @Mock
+    private OneTimePasswordGeneratorNode.Config serviceConfig;
 
     @Mock
-    OneTimePasswordGeneratorNode.Config serviceConfig;
+    private SecureRandom secureRandom;
 
-    HOTPAlgorithm otpGenerator = new HOTPAlgorithm();
+    @Mock
+    private HOTPAlgorithm otpGenerator;
 
-    @BeforeMethod
-    public void before() throws InvalidKeyException, NoSuchAlgorithmException {
-        initMocks(this);
+    @Mock
+    private NodeSharedStateCrypto nodeSharedStateCrypto;
+
+    @InjectMocks
+    private OneTimePasswordGeneratorNode node;
+
+    @Test
+    public void shouldProcess() throws Exception {
+        // Given
+        String encryptedOtp = "encryptedOtpString";
+        given(nodeSharedStateCrypto.encrypt(any())).willReturn(encryptedOtp);
+
+        // When
+        Action result = node.process(emptyTreeContext());
+
+        // Then
+        assertThat(result.sharedState.get(ONE_TIME_PASSWORD_ENCRYPTED).asString(), is(encryptedOtp));
     }
 
     @Test
-    public void shouldGenerateOneTimePassword() throws Exception {
+    public void shouldProcessGivenNonEncryptedOtpOfLengthSevenAndNonEmptySharedState() throws Exception {
+        // Given
+        setStoreOtpEncryptedSystemPropertyToFalse();
         int otpSize = 7;
-        given(serviceConfig.length()).willReturn(otpSize);
-        OneTimePasswordGeneratorNode node = new OneTimePasswordGeneratorNode(serviceConfig, SECURE_RANDOM,
-                otpGenerator);
-        Action result = node.process(emptyTreeContext());
-        assertThat(result.sharedState).stringAt(ONE_TIME_PASSWORD).hasSize(otpSize);
+        TreeContext context = emptyTreeContext();
+        JsonValue sharedStateJsonValue = json(object(field("realm", "/")));
+        context.sharedState.setObject(sharedStateJsonValue);
+        OneTimePasswordGeneratorNode node = getOneTimePasswordGeneratorNode(otpSize);
+
+        // When
+        Action result = node.process(context);
+
+        // Then
+        assertThat(result.sharedState.get(ONE_TIME_PASSWORD).asString().length(), is(otpSize));
+        assertThat(result.sharedState.get(ONE_TIME_PASSWORD_TIMESTAMP).asLong(), is(notNullValue()));
+        assertThat(result.sharedState.get("realm").asString(), is("/"));
     }
 
     @Test
-    public void shouldGenerateOneTimePasswordOfLengthOne() throws Exception {
+    public void shouldProcessGivenNonEncryptedOtpOfLengthOne() throws Exception {
+        // Given
+        setStoreOtpEncryptedSystemPropertyToFalse();
         int otpSize = 1;
-        given(serviceConfig.length()).willReturn(otpSize);
-        OneTimePasswordGeneratorNode node = new OneTimePasswordGeneratorNode(serviceConfig, SECURE_RANDOM,
-                otpGenerator);
+        OneTimePasswordGeneratorNode node = getOneTimePasswordGeneratorNode(otpSize);
+
+        // When
         Action result = node.process(emptyTreeContext());
-        assertThat(result.sharedState).stringAt(ONE_TIME_PASSWORD).hasSize(otpSize);
+
+        // Then
+        assertThat(result.sharedState.get(ONE_TIME_PASSWORD).asString().length(), is(otpSize));
+        assertThat(result.sharedState.get(ONE_TIME_PASSWORD_TIMESTAMP).asLong(), is(notNullValue()));
     }
 
-
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowWhenOTPGenerationFails() throws Exception {
-        int otpSize = 8;
+    private OneTimePasswordGeneratorNode getOneTimePasswordGeneratorNode(int otpSize) {
         given(serviceConfig.length()).willReturn(otpSize);
-        HOTPAlgorithm errorGenerator = mock(HOTPAlgorithm.class);
-        when(errorGenerator.generateOTP(
-                Matchers.argThat(anyByteArrayMatcher),
-                anyLong(),
-                anyInt(),
-                anyBoolean(),
-                anyInt())).thenThrow(InvalidKeyException.class);
-        OneTimePasswordGeneratorNode node = new OneTimePasswordGeneratorNode(serviceConfig, SECURE_RANDOM,
-                errorGenerator);
-        Action result = node.process(emptyTreeContext());
-        assertThat(result.sharedState).stringAt(ONE_TIME_PASSWORD).hasSize(otpSize);
+        return new OneTimePasswordGeneratorNode(serviceConfig, secureRandom,
+                new HOTPAlgorithm(), nodeSharedStateCrypto);
     }
+
+    @Test
+    public void shouldFailProcessGivenInvalidKeyException() throws Exception {
+        // Given
+        given(otpGenerator.generateOTP(any(), anyLong(), anyInt(), anyBoolean(), anyInt()))
+                .willThrow(InvalidKeyException.class);
+
+        try {
+            // When
+            node.process(emptyTreeContext());
+
+            // Then
+            shouldHaveThrown(NodeProcessException.class);
+        } catch (NodeProcessException e) {
+            assertThat(e.getMessage(), is("java.security.InvalidKeyException"));
+        }
+    }
+
+    @Test
+    public void shouldFailProcessGivenNoSuchAlgorithmException() throws Exception {
+        // Given
+        given(otpGenerator.generateOTP(any(), anyLong(), anyInt(), anyBoolean(), anyInt()))
+                .willThrow(NoSuchAlgorithmException.class);
+
+        try {
+            // When
+            node.process(emptyTreeContext());
+
+            // Then
+            shouldHaveThrown(NodeProcessException.class);
+        } catch (NodeProcessException e) {
+            assertThat(e.getMessage(), is("java.security.NoSuchAlgorithmException"));
+        }
+    }
+
+    private void setStoreOtpEncryptedSystemPropertyToFalse() {
+        PowerMockito.mockStatic(SystemProperties.class);
+        given(SystemProperties.getAsBoolean("org.forgerock.am.auth.node.otp.encrypted")).willReturn(false);
+    }
+
 }

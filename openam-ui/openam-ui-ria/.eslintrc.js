@@ -23,11 +23,11 @@ module.exports = {
         node: true
     },
     extends: [
-        "forgerock",
-        "forgerock/filenames",
-        "forgerock/jsx-a11y",
-        "forgerock/promise",
-        "forgerock/react"
+        "@forgerock/eslint-config",
+        "@forgerock/eslint-config/filenames",
+        "@forgerock/eslint-config/jsx-a11y",
+        "@forgerock/eslint-config/promise",
+        "@forgerock/eslint-config/react"
     ],
     globals: {
         __webpack_public_path__: true
@@ -42,6 +42,8 @@ module.exports = {
         }
     },
     rules: {
+        // This is to ignore the usages of deprecated React lifecycle methods
+        "camelcase": ["error", { "allow": ["^UNSAFE_"] }],
         "promise/always-return": "off",
         "promise/catch-or-return": "off",
         "promise/no-callback-in-promise": "off",
@@ -50,7 +52,7 @@ module.exports = {
     },
     settings: {
         react: {
-            version: "16.0.0"
+            version: "16.9.0"
         }
     }
 };

@@ -11,12 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.EMAIL_ADDRESS;
-import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
@@ -29,6 +28,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.crypto.NodeSharedStateCrypto;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
@@ -48,7 +48,7 @@ import com.sun.identity.idm.IdRepoException;
  */
 @Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
         configClass = OneTimePasswordSmtpSenderNode.Config.class)
-public class OneTimePasswordSmtpSenderNode extends SingleOutcomeNode {
+public class OneTimePasswordSmtpSenderNode extends OneTimePasswordNodeCommon {
 
     private static final String BUNDLE = OneTimePasswordSmtpSenderNode.class.getName()
             .replace('.', '/');
@@ -74,13 +74,18 @@ public class OneTimePasswordSmtpSenderNode extends SingleOutcomeNode {
 
     /**
      * Creates an EmailNode with the provided Config.
-     * @param config the configuration for this Node.
-     * @param coreWrapper Instance of the CoreWrapper.
-     * @param identityProvider provides the current user's profile as an {@link AMIdentity}.
+     *
+     * @param config                the configuration for this Node.
+     * @param coreWrapper           Instance of the CoreWrapper.
+     * @param identityProvider      provides the current user's profile as an {@link AMIdentity}.
+     * @param nodeSharedStateCrypto the crypto operations for encrypting/decrypting payloads
      */
     @Inject
-    public OneTimePasswordSmtpSenderNode(@Assisted Config config, CoreWrapper coreWrapper,
-            IdentityProvider identityProvider) {
+    public OneTimePasswordSmtpSenderNode(@Assisted Config config,
+                                         CoreWrapper coreWrapper,
+                                         IdentityProvider identityProvider,
+                                         NodeSharedStateCrypto nodeSharedStateCrypto) {
+        super(nodeSharedStateCrypto);
         this.config = config;
         this.coreWrapper = coreWrapper;
         this.identityProvider = identityProvider;
@@ -100,14 +105,13 @@ public class OneTimePasswordSmtpSenderNode extends SingleOutcomeNode {
         }
 
         SMSGateway gateway = getSmsGateway(bundle);
-        String oneTimePassword = context.sharedState.get(ONE_TIME_PASSWORD).asString();
-        sendEmail(bundle, context.sharedState.get(EMAIL_ADDRESS).asString(), gateway, oneTimePassword);
+        sendEmail(bundle, context.sharedState.get(EMAIL_ADDRESS).asString(), gateway, getClearTextOtp(context));
 
         return goToNext().replaceSharedState(context.sharedState.copy()).build();
     }
 
     private void sendEmail(ResourceBundle bundle, String toEmailAddress, SMSGateway gateway,
-            String oneTimePassword) throws NodeProcessException {
+                           String oneTimePassword) throws NodeProcessException {
         try {
             logger.debug("sending one time password from {}, to {}", config.fromEmailAddress(), toEmailAddress);
             gateway.sendEmail(config.fromEmailAddress(), toEmailAddress, bundle.getString("messageSubject"),
@@ -130,7 +134,7 @@ public class OneTimePasswordSmtpSenderNode extends SingleOutcomeNode {
     }
 
     private String getToEmailAddress(AMIdentity identity, String username,
-            ResourceBundle bundle) throws NodeProcessException {
+                                     ResourceBundle bundle) throws NodeProcessException {
         String toEmailAddress;
         try {
             toEmailAddress = getEmailAddress(identity, username);
@@ -186,4 +190,5 @@ public class OneTimePasswordSmtpSenderNode extends SingleOutcomeNode {
 
         return mail;
     }
+
 }

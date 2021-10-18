@@ -357,15 +357,10 @@ load-json-file@^1.0.0:
     pinkie-promise "^2.0.0"
     strip-bom "^2.0.0"
 
-lodash@~4.17.5:
-  version "4.17.15"
-  resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/lodash/-/lodash-4.17.15.tgz#b447f6670a0455bbfeedd11392eff330ea097548"
-  integrity sha1-tEf2ZwoEVbv+7dETku/zMOoJdUg=
-
-lodash@~4.3.0:
-  version "4.3.0"
-  resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/lodash/-/lodash-4.3.0.tgz#efd9c4a6ec53f3b05412429915c3e4824e4d25a4"
-  integrity sha1-79nEpuxT87BUEkKZFcPkgk5NJaQ=
+lodash@4.17.21, lodash@~4.17.5, lodash@~4.3.0:
+  version "4.17.21"
+  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
+  integrity sha1-Z5WRxWTDv/quhFTPCz3zcMPWkRw=
 
 loud-rejection@^1.0.0:
   version "1.6.0"

@@ -24,7 +24,7 @@
  *
  * $Id: CircleOfTrustManager.java,v 1.13 2009/10/28 23:58:56 exu Exp $
  *
- * Portions Copyrighted 2016-2018 ForgeRock AS.
+ * Portions Copyrighted 2016-2021 ForgeRock AS.
  */
 package com.sun.identity.cot;
 
@@ -32,6 +32,8 @@ import javax.xml.bind.JAXBException;
 import com.sun.identity.federation.meta.IDFFCOTUtils;
 import com.sun.identity.federation.meta.IDFFMetaException;
 import com.sun.identity.federation.meta.IDFFMetaManager;
+
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -316,7 +318,7 @@ public class CircleOfTrustManager {
      *
      * @param realm the realm name.
      * @param type the protocol type.
-     * @throws COTExcepton if the circle of trust type is invalid.
+     * @throws COTException if the circle of trust type is invalid.
      */
     Set getAllEntities(String realm, String type) throws COTException {
         Set entityIds = Collections.EMPTY_SET;
@@ -389,7 +391,7 @@ public class CircleOfTrustManager {
      * @param realm the realm in which the entity configuration is in.
      * @param cotName the name of the circle of trust.
      * @param protocolType the federation protocol type , IDFF or SAML2.
-     * @param trustedProvider a set of trusted provider identifiers to
+     * @param trustedProviders a set of trusted provider identifiers to
      *        be updated in the entity configuration.
      * @throws COTException if there is an error updating the entity
      *         configuration.
@@ -652,21 +654,17 @@ public class CircleOfTrustManager {
                 updateEntityConfig(realm, cotName, protocolType, entityId);
             }
             if (!cotDesc.add(entityId, protocolType)) {
-                debug.error(classMethod +
-                        "fail to add entityid to the circle of trust."
-                        + entityId + " in Realm " + realm);
+                debug.error("{}fail to add entityid '{}' to the circle of trust {} in Realm {}",
+                        classMethod, entityId, cotName, realm);
                 String[] args = { realm , entityId };
                 throw new COTException("addCOTFailed", args);
             } else {
                 modifyCircleOfTrust(realm, cotDesc);
             }
         } catch (JAXBException jbe) {
-            debug.error(classMethod, jbe);
-            String[] data = { jbe.getMessage(),cotName,entityId,
-            realm};
-            LogUtil.error(Level.INFO,
-                    LogUtil.CONFIG_ERROR_CREATE_COT_DESCRIPTOR,
-                    data);
+            String[] data = { jbe.getMessage(),cotName,entityId, realm};
+            debug.error("{}{}", classMethod, LogUtil.CONFIG_ERROR_ADD_COT_MEMBER, Arrays.toString(data), jbe);
+            LogUtil.error(Level.INFO, LogUtil.CONFIG_ERROR_ADD_COT_MEMBER, data);
             throw new COTException(jbe);
         }
     }
@@ -738,27 +736,19 @@ public class CircleOfTrustManager {
             }
             
             if (!cotDesc.remove(entityId, protocolType)) {
-                debug.error(classMethod +
-                        "fail to remove entityid from the circle of trust." +
-                        realm);
+                debug.error("{}fail to remove entityid '{}' to the circle of trust {} in Realm {}",
+                        classMethod, entityId, cotName, realm);
                 String[] data = { entityId , realm };
                 throw new COTException("removeCOTFailed", data);
             } else {
                 modifyCircleOfTrust(realm, cotDesc);
+                COTCache.invalidate(realm, cotName);
             }
-        } catch (ConfigurationException e) {
-            debug.error(classMethod, e);
+        } catch (ConfigurationException | JAXBException e) {
             String[] data = { e.getMessage(), cotName, entityId, realm };
-            LogUtil.error(Level.INFO,
-                    LogUtil.CONFIG_ERROR_REMOVE_COT_MEMBER,data);
+            debug.error("{}{}", classMethod, LogUtil.CONFIG_ERROR_REMOVE_COT_MEMBER, Arrays.toString(data), e);
+            LogUtil.error(Level.INFO, LogUtil.CONFIG_ERROR_REMOVE_COT_MEMBER,data);
             throw new COTException(e);
-        } catch  (JAXBException jaxbe) {
-            debug.error(classMethod, jaxbe);
-            String[] data = { jaxbe.getMessage(), cotName, entityId, realm};
-            LogUtil.error(Level.INFO,
-                    LogUtil.CONFIG_ERROR_REMOVE_COT_MEMBER,data);
-            
-            throw new COTException(jaxbe);
         }
     }
     
@@ -853,7 +843,7 @@ public class CircleOfTrustManager {
             throw new COTException(e);
         }
     }
-    
+
     /**
      * Returns the circle of trust under the realm.
      *
@@ -863,7 +853,21 @@ public class CircleOfTrustManager {
      * attributes of the given CircleOfTrust.
      * @throws COTException if unable to retrieve the circle of trust.
      */
-    public CircleOfTrustDescriptor getCircleOfTrust(String realm, String name)
+    public CircleOfTrustDescriptor getCircleOfTrust(String realm, String name) throws COTException {
+        return getCircleOfTrust(realm, name, true);
+    }
+
+    /**
+     * Returns the circle of trust under the realm.
+     *
+     * @param realm The realm under which the circle of trust resides.
+     * @param name Name of the circle of trust.
+     * @param useCache use cache first.
+     * @return <code>SAML2CircleOfTrustDescriptor</code> containing the
+     * attributes of the given CircleOfTrust.
+     * @throws COTException if unable to retrieve the circle of trust.
+     */
+    public CircleOfTrustDescriptor getCircleOfTrust(String realm, String name, boolean useCache)
         throws COTException {
         String classMethod = "COTManager.getCircleOfTrust :";
         if (realm == null) {
@@ -874,7 +878,7 @@ public class CircleOfTrustManager {
         String[] data = { name, realm };
         
         CircleOfTrustDescriptor cotDesc = COTCache.getCircleOfTrust(realm,name);
-        if (cotDesc != null) {
+        if (cotDesc != null && useCache) {
             LogUtil.access(Level.FINE, LogUtil.COT_FROM_CACHE, data);
         } else {
             try {

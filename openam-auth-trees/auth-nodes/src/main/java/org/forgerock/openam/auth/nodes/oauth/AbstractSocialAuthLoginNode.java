@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.oauth;
 
@@ -55,6 +55,7 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.SharedStateConstants;
 import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,6 +166,8 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
         if (context.request.parameters.containsKey("code")) {
             logger.debug("the request parameters contains a code");
             return processOAuthTokenState(context);
+        } else if (StringUtils.isNotBlank(context.request.authId)) {
+            return goTo(SocialAuthOutcome.NO_ACCOUNT.name()).build();
         }
 
         DataStore dataStore = SharedStateAdaptor.toDatastore(json(context.sharedState));

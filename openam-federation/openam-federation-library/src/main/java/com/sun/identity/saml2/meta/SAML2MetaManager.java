@@ -24,7 +24,7 @@
  *
  * $Id: SAML2MetaManager.java,v 1.18 2009/10/28 23:58:58 exu Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.meta;
@@ -1184,6 +1184,9 @@ public class SAML2MetaManager {
                     config = eConfig.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig().get(0);
                 }
                 List<String> cots = SAML2MetaUtils.getAttributes(config).get(SAML2Constants.COT_LIST);
+                if (CollectionUtils.isEmpty(cots)) {
+                    return;
+                }
                 for (String cot : cots) {
                     if (StringUtils.isNotEmpty(cot)) {
                         try {
@@ -1207,16 +1210,15 @@ public class SAML2MetaManager {
      * @throws SAML2MetaException if unable to retrieve the entity ids.
      */
     public List<String> getAllHostedEntities(String realm)
-        throws SAML2MetaException {
-
+            throws SAML2MetaException {
         List<String> hostedEntityIds = new ArrayList<>();
         try {
             Set entityIds = configInst.getAllConfigurationNames(realm);
             if (entityIds != null && !entityIds.isEmpty()) {
                 for(Iterator iter = entityIds.iterator(); iter.hasNext();) {
                     String entityId = (String)iter.next();
-                    EntityConfigElement config =
-                                    getEntityConfig(realm, entityId);
+                    EntityConfigElement config = getEntityConfigIgnoreException(realm, entityId,
+                            "SAML2MetaManager.getAllHostedEntities:");
                     if (config != null && config.getValue().isHosted()) {
                         hostedEntityIds.add(entityId);
                     }
@@ -1384,8 +1386,8 @@ public class SAML2MetaManager {
             Set<String> entityIds = configInst.getAllConfigurationNames(realm);
             if (entityIds != null && !entityIds.isEmpty()) {
                 for (String entityId : entityIds) {
-                    EntityConfigElement config =
-                            getEntityConfig(realm, entityId);
+                    EntityConfigElement config = getEntityConfigIgnoreException(realm, entityId,
+                            "SAML2MetaManager.getAllRemoteEntities:");
                     if (config == null || !config.getValue().isHosted()) {
                         remoteEntityIds.add(entityId);
                     }
@@ -1405,6 +1407,17 @@ public class SAML2MetaManager {
                        objs,
                        null);
         return remoteEntityIds;
+    }
+
+    private EntityConfigElement getEntityConfigIgnoreException(String realm, String entityId, String message) {
+        try {
+            return getEntityConfig(realm, entityId);
+        } catch (SAML2MetaException e) {
+            message = (message != null) ? message : "";
+            debug.error("{} getEntityConfig '{}' at {} failed", message, entityId, realm, e.getMessage());
+            debug.message("{} getEntityConfig '{}' at realm {} failed", message, entityId, realm, e);
+        }
+        return null;
     }
 
     /**
@@ -1504,7 +1517,8 @@ public class SAML2MetaManager {
                 return metaAliases;
             }
             for (String entityId : entityIds) {
-                EntityConfigElement config = getEntityConfig(realm, entityId);
+                EntityConfigElement config = getEntityConfigIgnoreException(realm, entityId,
+                        "SAML2MetaManager.getAllHostedMetaAliasesByRealm:");
                 if (config == null || !config.getValue().isHosted()) {
                     continue;
                 }

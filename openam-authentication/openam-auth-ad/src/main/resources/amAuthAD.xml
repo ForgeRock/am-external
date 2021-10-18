@@ -26,7 +26,7 @@
 
     $Id: amAuthAD.xml,v 1.5 2008/06/25 05:45:41 qcheng Exp $
 
-    Portions Copyrighted 2013-2016 ForgeRock AS.
+    Portions Copyrighted 2013-2020 ForgeRock AS.
 -->
 
 <!DOCTYPE ServicesConfiguration
@@ -175,6 +175,20 @@
                     resourceName="authenticationLevel">
                     <DefaultValues>
                         <Value>0</Value>
+                    </DefaultValues>
+                </AttributeSchema>
+                <AttributeSchema name="openam-auth-stop-ldap-bind-after-inmemory-locked-enabled"
+                    type="single"
+                    syntax="boolean"
+                    i18nKey="a121"
+                    order="1900"
+                    resourceName="stopLdapbindAfterInmemoryLockedEnabled">
+                    <BooleanValues>
+                        <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                        <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                    </BooleanValues>
+                    <DefaultValues>
+                        <Value>false</Value>
                     </DefaultValues>
                 </AttributeSchema>
                 <AttributeSchema name="iplanet-am-ldap-user-creation-attr-list"
@@ -361,6 +375,20 @@
                         resourceName="authenticationLevel">
                         <DefaultValues>
                             <Value>0</Value>
+                        </DefaultValues>
+                    </AttributeSchema>
+                    <AttributeSchema name="openam-auth-stop-ldap-bind-after-inmemory-locked-enabled"
+                        type="single"
+                        syntax="boolean"
+                        i18nKey="a121"
+                        order="1900"
+                        resourceName="stopLdapbindAfterInmemoryLockedEnabled">
+                        <BooleanValues>
+                            <BooleanTrueValue i18nKey="i18nTrue">true</BooleanTrueValue>
+                            <BooleanFalseValue i18nKey="i18nFalse">false</BooleanFalseValue>
+                        </BooleanValues>
+                        <DefaultValues>
+                            <Value>false</Value>
                         </DefaultValues>
                     </AttributeSchema>
                     <AttributeSchema name="iplanet-am-ldap-user-creation-attr-list"

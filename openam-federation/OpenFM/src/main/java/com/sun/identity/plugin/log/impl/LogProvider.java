@@ -24,6 +24,7 @@
  *
  * $Id: LogProvider.java,v 1.5 2008/08/06 17:29:26 exu Exp $
  *
+ * Portions Copyrighted 2019-2020 ForgeRock AS.
  */
 
 package com.sun.identity.plugin.log.impl;
@@ -185,21 +186,7 @@ public class LogProvider implements com.sun.identity.plugin.log.Logger {
                 }
                 String ipAddress = (String)properties.get(LogConstants.IP_ADDR);
                 if (ipAddress != null) {
-                    String hostName = ipAddress;
-                    try {
-                        if (Logger.resolveHostNameEnabled()) {
-                            hostName = InetAddress.getByName(ipAddress).
-                                getHostName();
-                        }
-                    } catch (Exception e) {
-                        if (debug.messageEnabled()) {
-                            debug.message(
-                                "LogProvider:Unable to get Host for:"
-                                + ipAddress);
-                        }
-                        hostName = ipAddress;
-                    }
-                    lr.addLogInfo(LogConstants.IP_ADDR, hostName);
+                    lr.addLogInfo(LogConstants.IP_ADDR, ipAddress);
                 }
 
                 String loginIDSid = 

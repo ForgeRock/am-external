@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -42,6 +42,10 @@ public final class TreeContext {
     public final ExternalRequestContext request;
     /** The state that is transient and that won't be stored across requests. */
     public final JsonValue transientState;
+    /**
+     * The identity objects universal id.
+     */
+    public final Optional<String> universalId;
 
     private final List<? extends Callback> callbacks;
 
@@ -52,7 +56,19 @@ public final class TreeContext {
      * @param callbacks The callbacks received in the current authentication request.
      */
     public TreeContext(JsonValue sharedState, ExternalRequestContext request, List<? extends Callback> callbacks) {
-        this(sharedState, json(object()), request, callbacks);
+        this(sharedState, json(object()), request, callbacks, Optional.empty());
+    }
+
+    /**
+     * Construct a tree context for the current state.
+     * @param sharedState The shared state.
+     * @param request The request associated with the current authentication request.
+     * @param callbacks The callbacks received in the current authentication request.
+     * @param universalId The universal id of the identity object.
+     */
+    public TreeContext(JsonValue sharedState, ExternalRequestContext request, List<? extends Callback> callbacks,
+            Optional<String> universalId) {
+        this(sharedState, json(object()), request, callbacks, universalId);
     }
 
     /**
@@ -64,10 +80,24 @@ public final class TreeContext {
      */
     public TreeContext(JsonValue sharedState, JsonValue transientState,
             ExternalRequestContext request, List<? extends Callback> callbacks) {
+        this(sharedState, transientState, request, callbacks, Optional.empty());
+    }
+
+    /**
+     * Construct a tree context for the current state.
+     * @param sharedState The shared state.
+     * @param transientState The transient state.
+     * @param request The request associated with the current authentication request.
+     * @param callbacks The callbacks received in the current authentication request.
+     * @param universalId The universal id of the identity object.
+     */
+    public TreeContext(JsonValue sharedState, JsonValue transientState,
+            ExternalRequestContext request, List<? extends Callback> callbacks, Optional<String> universalId) {
         this.sharedState = checkNotNull(sharedState);
         this.transientState = checkNotNull(transientState);
         this.request = checkNotNull(request);
         this.callbacks = unmodifiableList(checkNotNull(callbacks));
+        this.universalId = universalId;
     }
 
     /**

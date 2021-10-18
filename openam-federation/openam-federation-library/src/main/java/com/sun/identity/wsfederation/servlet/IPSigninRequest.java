@@ -24,7 +24,7 @@
  *
  * $Id: IPSigninRequest.java,v 1.8 2009/10/28 23:59:00 exu Exp $
  *
- * Portions Copyrighted 2014-2019 ForgeRock AS.
+ * Portions Copyrighted 2014-2021 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.servlet;
@@ -188,36 +188,7 @@ public class IPSigninRequest extends WSFederationAction {
         StringBuffer newURL = new StringBuffer(
             IDPSSOUtil.getAuthenticationServiceURL(realm, idpEntityID, 
             request));
-        // find out the authentication method, e.g. module=LDAP, from
-        // authn context mapping 
-        /*
-        IDPAuthnContextMapper idpAuthnContextMapper = 
-            IDPSSOUtil.getIDPAuthnContextMapper(realm, idpEntityID);
-        
-        IDPAuthnContextInfo info = 
-            idpAuthnContextMapper.getIDPAuthnContextInfo(
-                authnReq, idpEntityID, realm);
-        Set authnTypeAndValues = info.getAuthnTypeAndValues();
-        if ((authnTypeAndValues != null) 
-            && (!authnTypeAndValues.isEmpty())) { 
-            Iterator iter = authnTypeAndValues.iterator();
-            StringBuffer authSB = new StringBuffer((String)iter.next());
-            while (iter.hasNext()) {
-                authSB.append("&"); 
-                authSB.append((String)iter.next());
-            }
-            if (newURL.indexOf("?") == -1) {
-                newURL.append("?");
-            } else {
-                newURL.append("&");
-            }
-            newURL.append(authSB.toString());
-            if (debug.messageEnabled()) {
-                debug.message(classMethod +
-                    "authString=" + authSB.toString());
-            }
-        }
-        */
+
         if (newURL.indexOf("?") == -1) {
             newURL.append("?goto=");
         } else {

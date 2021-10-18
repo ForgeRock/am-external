@@ -1,7 +1,7 @@
 {
     "common": {
         "form": {
-            "copyright" : "Copyright &copy; 2010-2020 ForgeRock AS. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2021 ForgeRock AS. All rights reserved.",
             "build": "Build"
         }
     },
@@ -12,6 +12,7 @@
         "save": "Save Consent",
         "allow": "Allow",
         "deny": "Deny",
-        "privacyPolicy": "Privacy Policy"
+        "privacyPolicy": "Privacy Policy",
+        "termsOfService": "Terms of Service"
     }
 }

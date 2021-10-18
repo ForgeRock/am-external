@@ -1,7 +1,7 @@
 {
     "common": {
         "form": {
-            "copyright" : "Copyright &copy; 2010-2020 ForgeRock AS. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2021 ForgeRock AS. All rights reserved.",
             "thankYou": "Done!",
             "build": "Build"
         }
@@ -9,7 +9,8 @@
     "form": {
         "code": "Enter your code here",
         "description": "Enter the code:",
-        "submit": "Submit"
+        "submit": "Submit",
+        "confirm": "Confirm"
     },
     "not_found": "The code you entered cannot be found"
 }

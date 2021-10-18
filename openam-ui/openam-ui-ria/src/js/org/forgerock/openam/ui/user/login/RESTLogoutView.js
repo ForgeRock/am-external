@@ -11,9 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2021 ForgeRock AS.
  */
 
+import $ from "jquery";
 import { has } from "lodash";
 
 import { validateParam as validateGotoParam } from "org/forgerock/openam/ui/user/login/gotoUrl";
@@ -53,10 +54,18 @@ const LogoutView = AbstractView.extend({
         };
 
         const logoutFail = (response) => {
-            Messages.addMessage({ type: Messages.TYPE_DANGER, response });
+            if (response.status === 401) {
+                const message = $.t("config.messages.CommonMessages.logoutFailedNotLoggedIn");
+                Messages.addMessage({ type: Messages.TYPE_INFO, message });
+            } else {
+                Messages.addMessage({ type: Messages.TYPE_DANGER, response });
+            }
 
             if (validatedGotoUrl) {
                 window.location.href = validatedGotoUrl;
+            } else if (response.status === 401) {
+                this.data.loggedOut = true;
+                this.parentRender();
             } else {
                 EventManager.sendEvent(Constants.EVENT_CHANGE_VIEW, { route: Router.configuration.routes.login });
             }

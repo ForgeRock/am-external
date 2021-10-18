@@ -11,13 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+
+import java.util.Optional;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
@@ -28,6 +30,8 @@ import org.forgerock.util.i18n.PreferredLocales;
  * Helper class to assist with creation of {@link TreeContext} objects for use from unit tests.
  */
 final class TreeContextFactory {
+
+    static final String TEST_UNIVERSAL_ID = "universalId";
 
     private TreeContextFactory() {
     }
@@ -49,7 +53,8 @@ final class TreeContextFactory {
      * @return The {@link TreeContext}.
      */
     static TreeContext newTreeContext(JsonValue sharedState) {
-        return new TreeContext(sharedState, new ExternalRequestContext.Builder().build(), emptyList());
+        return new TreeContext(sharedState,
+                new ExternalRequestContext.Builder().build(), emptyList(), Optional.of(TEST_UNIVERSAL_ID));
     }
 
     /**
@@ -61,7 +66,7 @@ final class TreeContextFactory {
      */
     static TreeContext newTreeContext(JsonValue sharedState, PreferredLocales preferredLocales) {
         return new TreeContext(sharedState, new ExternalRequestContext.Builder().locales(preferredLocales).build(),
-                emptyList());
+                emptyList(), Optional.empty());
     }
 
 }

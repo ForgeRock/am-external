@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS. All Rights Reserved
+ * Copyright 2015-2021 ForgeRock AS. All Rights Reserved
  * 
 -->
 
@@ -321,7 +321,8 @@
                    labelFor="saml2-name-id-format"/>
             <cc name="saml2-name-id-format"
                 tagclass="com.sun.web.ui.taglib.html.CCDropDownMenuTag">
-                <option label="sts.saml2.nameidformat.unspecified" value="urn:oasis:names:tc:SAML:1.0:nameid-format:unspecified"/>
+                <option label="sts.saml2.nameidformat.unspecified" value="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified"/>
+                <option label="sts.saml2.nameidformat.unspecified.deprecated" value="urn:oasis:names:tc:SAML:1.0:nameid-format:unspecified"/>
                 <option label="sts.saml2.nameidformat.entity" value="urn:oasis:names:tc:SAML:2.0:nameid-format:entity"/>
                 <option label="sts.saml2.nameidformat.email" value="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"/>
                 <option label="sts.saml2.nameidformat.encrypted" value="urn:oasis:names:tc:SAML:2.0:nameid-format:encrypted"/>

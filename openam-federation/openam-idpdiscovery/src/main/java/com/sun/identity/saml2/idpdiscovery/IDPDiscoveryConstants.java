@@ -24,10 +24,8 @@
  *
  * $Id: IDPDiscoveryConstants.java,v 1.5 2009/11/03 00:50:34 madan_ranganath Exp $
  *
+ * Portions Copyrighted 2018-2020 ForgeRock AS.
  */
-
-
-
 package com.sun.identity.saml2.idpdiscovery;
 
 /**
@@ -67,6 +65,8 @@ public interface IDPDiscoveryConstants {
                         "com.iplanet.am.cookie.encode";
     public static final String AM_COOKIE_HTTPONLY = 
                         "com.sun.identity.cookie.httponly";
+    public static final String VALID_REDIRECTS =
+                        "org.forgerock.discovery.validredirects";
     public static final String SAML2_WRITER_URI = "/saml2writer"; 
     public static final String IDFF_WRITER_URI = "/idffwriter";
     public static final String SAML2_READER_URI = "/saml2reader"; 

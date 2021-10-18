@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -19,18 +19,17 @@ import static org.forgerock.json.JsonValue.*;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.*;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.newTreeContext;
 import static org.mockito.BDDMockito.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.nodes.crypto.NodeSharedStateCrypto;
 import org.forgerock.openam.core.CoreWrapper;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
@@ -42,6 +41,9 @@ import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
 
+/**
+ * Tests for {@link OneTimePasswordSmtpSenderNode}.
+ */
 public class OneTimePasswordSmtpSenderNodeTest {
 
     private static final String TEST_REALM = "testRealm";
@@ -55,6 +57,8 @@ public class OneTimePasswordSmtpSenderNodeTest {
     private AMIdentity amIdentity;
     @Mock
     private OneTimePasswordSmtpSenderNode.Config serviceConfig;
+    @Mock
+    private NodeSharedStateCrypto nodeSharedStateCrypto;
     private JsonValue sharedState;
 
     @BeforeMethod
@@ -73,9 +77,12 @@ public class OneTimePasswordSmtpSenderNodeTest {
 
     @Test
     public void shouldSendEmailWhenConfigurationAndSharedStateEmailAddressAreValid()
-            throws NodeProcessException, AuthLoginException, IdRepoException, SSOException {
+            throws NodeProcessException, AuthLoginException {
+
+        given(nodeSharedStateCrypto.decrypt(any())).willReturn(json(object()));
+
         //when
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider)
+        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider, nodeSharedStateCrypto)
                 .process(newTreeContext(sharedState));
 
         then(MockSMSGateway.smsGateway).should().sendEmail(eq(serviceConfig.fromEmailAddress()), eq(TO_EMAIL_ADDRESS),
@@ -84,12 +91,13 @@ public class OneTimePasswordSmtpSenderNodeTest {
 
     @Test
     public void shouldNotGetAMIdentityIfEmailIsInSharedState()
-            throws NodeProcessException, AuthLoginException, IdRepoException, SSOException {
+            throws NodeProcessException {
 
         JsonValue state = sharedState.copy().add(EMAIL_ADDRESS, TO_EMAIL_ADDRESS);
+        given(nodeSharedStateCrypto.decrypt(any())).willReturn(json(object()));
 
         //when
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider)
+        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider, nodeSharedStateCrypto)
                 .process(newTreeContext(state));
 
         then(identityProvider).shouldHaveZeroInteractions();
@@ -99,34 +107,35 @@ public class OneTimePasswordSmtpSenderNodeTest {
     public void throwsNodeProcessExceptionWhenEmailSendFails() throws AuthLoginException, NodeProcessException {
         willThrow(AuthLoginException.class).given(MockSMSGateway.smsGateway)
                 .sendEmail(any(), any(), any(), any(), any(), any());
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider)
+        given(nodeSharedStateCrypto.decrypt(any())).willReturn(json(object()));
+        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider, nodeSharedStateCrypto)
                 .process(newTreeContext(sharedState));
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void throwsNodeProcessExceptionWhenIdentityProviderFails()
-            throws AuthLoginException, NodeProcessException, IdRepoException, SSOException {
+            throws NodeProcessException, IdRepoException, SSOException {
         given(identityProvider.getIdentity(anyString(), anyString()))
                 .willThrow(IdRepoException.class);
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider)
+        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider, nodeSharedStateCrypto)
                 .process(newTreeContext(sharedState));
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void throwsNodeProcessExceptionWhenIdentityProviderGetsEmailFails()
-            throws AuthLoginException, NodeProcessException, IdRepoException, SSOException {
+            throws NodeProcessException, IdRepoException, SSOException {
         given(amIdentity.getAttribute(serviceConfig.emailAttribute())).willThrow(IdRepoException.class);
 
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider)
+        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider, nodeSharedStateCrypto)
                 .process(newTreeContext(sharedState));
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void throwsNodeProcessExceptionWhenEmailNotFound()
-            throws AuthLoginException, NodeProcessException, IdRepoException, SSOException {
+            throws NodeProcessException, IdRepoException, SSOException {
         given(amIdentity.getAttribute(serviceConfig.emailAttribute())).willReturn(null);
 
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider)
+        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityProvider, nodeSharedStateCrypto)
                 .process(newTreeContext(sharedState));
     }
 
@@ -136,7 +145,7 @@ public class OneTimePasswordSmtpSenderNodeTest {
         given(serviceConfig.hostName()).willReturn("localhost");
         given(serviceConfig.hostPort()).willReturn(8080);
         given(serviceConfig.username()).willReturn("mcarter");
-        given(serviceConfig.password()).willReturn("password".toCharArray());
+        given(serviceConfig.password()).willReturn(Optional.of("password".toCharArray()));
         given(serviceConfig.sslOption()).willReturn(SmtpBaseConfig.SslOption.SSL);
         given(serviceConfig.smsGatewayImplementationClass()).willReturn(MockSMSGateway.class.getName());
     }

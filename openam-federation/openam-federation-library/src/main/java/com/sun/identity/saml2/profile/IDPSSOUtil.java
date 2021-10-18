@@ -24,7 +24,7 @@
  *
  * $Id: IDPSSOUtil.java,v 1.56 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2021 ForgeRock AS.
  * Portions Copyrighted 2013 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.profile;
@@ -145,6 +145,7 @@ public class IDPSSOUtil {
     public static final String NULL = "null";
     private static final String REDIRECTED = "redirected";
     private static final String REDIRECTED_TRUE = "redirected=true";
+    private static final String IDPSESSION_KEYPREFIX = "sx";
     private static final LockFactory<String> LOCK_FACTORY = new LockFactory<>();
     public static SAML2MetaManager metaManager = null;
     public static CircleOfTrustManager cotManager = null;
@@ -312,7 +313,8 @@ public class IDPSSOUtil {
 
         // Check to see if session upgrade is required
         IDPAuthnContextMapper idpAuthnContextMapper = getIDPAuthnContextMapper(realm, idpEntityID);
-        IDPAuthnContextInfo contextInfo = idpAuthnContextMapper.getIDPAuthnContextInfo(authnReq, idpEntityID, realm);
+        IDPAuthnContextInfo contextInfo = idpAuthnContextMapper.getIDPAuthnContextInfo(authnReq, idpEntityID, realm,
+                spEntityID);
         Integer idpDefaultAuthLevel = contextInfo.getAuthnLevel();
         SAML2Utils.debug.message("{}idpDefaultContextAuthLevel = {}", classMethod, idpDefaultAuthLevel);
 
@@ -2439,7 +2441,7 @@ public class IDPSSOUtil {
 
         IDPAuthnContextInfo info =
                 idpAuthnContextMapper.getIDPAuthnContextInfo(
-                        authnReq, idpEntityID, realm);
+                        authnReq, idpEntityID, realm, spEntityID);
         Set authnTypeAndValues = info.getAuthnTypeAndValues();
         if ((authnTypeAndValues != null)
                 && (!authnTypeAndValues.isEmpty())) {
@@ -3188,10 +3190,25 @@ public class IDPSSOUtil {
     /**
      * Save (create/update) the IdP Session to the SAML2 failover store (token repository).
      * @param sessionIndex The session index key for the entry.
+     * @param idpSessionCopy The idpSessionCopy object to save.
+     * @param tokenExpireTimeSinceEpoch Expiration time in seconds from epoch.
+     * @throws SAML2TokenRepositoryException
+     */
+    private static void saveIdPSessionToTokenRepository(String sessionIndex, IDPSessionCopy idpSessionCopy,
+                                                       long tokenExpireTimeSinceEpoch)
+            throws SAML2TokenRepositoryException {
+        SAML2Utils.debug.message("Saving IDPSession to SAML2 token repository, sessionIndex: {} expire: {}",
+                sessionIndex, tokenExpireTimeSinceEpoch);
+        SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(toSessionIndexKey(sessionIndex), idpSessionCopy,
+                tokenExpireTimeSinceEpoch);
+    }
+
+    /**
+     * Save (create/update) the IdP Session to the SAML2 failover store (token repository).
+     * @param sessionIndex The session index key for the entry.
      * @param sessionProvider The session provider to use to determine the remaining time for the session.
      * @param idpSession The idpSession object to save.
      * @param session The session for which this relates to (and for which the expiry time will be determined).
-     * @throws SAML2Exception If the session has expired or issues obtaining the session remaining time left.
      */
     public static void saveIdPSessionToTokenRepository(String sessionIndex, SessionProvider sessionProvider,
             IDPSession idpSession, Object session) {
@@ -3204,10 +3221,9 @@ public class IDPSSOUtil {
                     SAML2Utils.debug.warning("Unable to get session timeout", e);
                     sessionExpireTime = 0;
                 }
-                SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(sessionIndex, new IDPSessionCopy(idpSession),
-                        sessionExpireTime);
+                saveIdPSessionToTokenRepository(sessionIndex, new IDPSessionCopy(idpSession), sessionExpireTime);
+                SAML2Utils.debug.message("IDPSession saved to SAML2 token repository, sessionIndex: {}", sessionIndex);
             }
-            SAML2Utils.debug.message("IDPSession saved to SAML2 token repository, sessionIndex: {}", sessionIndex);
         } catch (SAML2TokenRepositoryException se) {
             SAML2Utils.debug.error("Unable to save IDPSession to the SAML2 Token Repository", se);
         }
@@ -3226,7 +3242,7 @@ public class IDPSSOUtil {
             // Read from SAML2 Token Repository
             IDPSessionCopy idpSessionCopy = null;
             try {
-                idpSessionCopy = (IDPSessionCopy) SAML2FailoverUtils.retrieveSAML2Token(sessionIndex);
+                idpSessionCopy = (IDPSessionCopy) SAML2FailoverUtils.retrieveSAML2Token(toSessionIndexKey(sessionIndex));
             } catch (SAML2TokenRepositoryException se) {
                 SAML2Utils.debug.error("Error while obtaining token from SAML2 Token Repository for sessionIndex: {}",
                         sessionIndex, se);
@@ -3257,11 +3273,15 @@ public class IDPSSOUtil {
         IDPCache.authnContextCache.remove(sessionIndex);
         try {
             if (SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                SAML2FailoverUtils.deleteSAML2Token(sessionIndex);
+                SAML2FailoverUtils.deleteSAML2Token(toSessionIndexKey(sessionIndex));
             }
         } catch (SAML2TokenRepositoryException se) {
             SAML2Utils.debug.warning("Error while deleting token from SAML2 Token Repository for idpSessionIndex: {}",
                 sessionIndex, se);
         }
+    }
+
+    private static String toSessionIndexKey(String sessionIndex) {
+        return IDPSESSION_KEYPREFIX + sessionIndex;
     }
 }

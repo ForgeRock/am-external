@@ -11,12 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD_ENCRYPTED;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD_TIMESTAMP;
 
 import java.time.Duration;
@@ -31,8 +32,8 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
-import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.crypto.NodeSharedStateCrypto;
 import org.forgerock.openam.utils.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,7 @@ public class OneTimePasswordCollectorDecisionNode extends AbstractDecisionNode {
     public interface Config {
         /**
          * Default of 5 minutes.
+         *
          * @return the password expiry time.
          */
         @Attribute(order = 100)
@@ -62,18 +64,21 @@ public class OneTimePasswordCollectorDecisionNode extends AbstractDecisionNode {
         }
     }
 
+    private static final Logger logger = LoggerFactory.getLogger("amAuth");
     private final OneTimePasswordCollectorDecisionNode.Config config;
-    private final Logger logger = LoggerFactory.getLogger("amAuth");
+    private final NodeSharedStateCrypto nodeSharedStateCrypto;
 
     /**
      * Guice constructor.
-     * @param config The node configuration.
-     * @throws NodeProcessException If there is an error reading the configuration.
+     *
+     * @param config                The node configuration.
+     * @param nodeSharedStateCrypto the crypto operations for encrypting/decrypting payloads
      */
     @Inject
-    public OneTimePasswordCollectorDecisionNode(@Assisted OneTimePasswordCollectorDecisionNode.Config config)
-            throws NodeProcessException {
+    public OneTimePasswordCollectorDecisionNode(@Assisted OneTimePasswordCollectorDecisionNode.Config config,
+                                                NodeSharedStateCrypto nodeSharedStateCrypto) {
         this.config = config;
+        this.nodeSharedStateCrypto = nodeSharedStateCrypto;
     }
 
     private static final String BUNDLE = "org/forgerock/openam/auth/nodes/OneTimePasswordCollectorDecisionNode";
@@ -90,14 +95,26 @@ public class OneTimePasswordCollectorDecisionNode extends AbstractDecisionNode {
     }
 
     private Action checkPassword(TreeContext context, String password) {
-        JsonValue oneTimePassword = context.sharedState.get(ONE_TIME_PASSWORD);
-        JsonValue passwordTimestamp = context.sharedState.get(ONE_TIME_PASSWORD_TIMESTAMP);
-        logger.debug("oneTimePassword {} \n passwordTimestamp {}", oneTimePassword, passwordTimestamp);
+        JsonValue otp;
+        JsonValue otpTimestamp;
+        JsonValue encryptedOtp = context.sharedState.get(ONE_TIME_PASSWORD_ENCRYPTED);
+        if (encryptedOtp.isNotNull()) {
+            logger.debug("encryptedOTP {}", encryptedOtp);
+            JsonValue decryptedOtp = nodeSharedStateCrypto.decrypt(encryptedOtp.asString());
+            otp = decryptedOtp.get(ONE_TIME_PASSWORD);
+            otpTimestamp = decryptedOtp.get(ONE_TIME_PASSWORD_TIMESTAMP);
+            context.sharedState.remove(ONE_TIME_PASSWORD_ENCRYPTED);
+        } else {
+            otp = context.sharedState.get(ONE_TIME_PASSWORD);
+            otpTimestamp = context.sharedState.get(ONE_TIME_PASSWORD_TIMESTAMP);
+            context.sharedState.remove(ONE_TIME_PASSWORD);
+            context.sharedState.remove(ONE_TIME_PASSWORD_TIMESTAMP);
+        }
 
-        boolean passwordMatches = oneTimePassword.isString()
-                && oneTimePassword.asString().equals(password)
-                && passwordTimestamp.isNumber()
-                && isWithinExpiryTime(passwordTimestamp.asLong());
+        boolean passwordMatches = otp.isString()
+                && otp.asString().equals(password)
+                && otpTimestamp.isNumber()
+                && isWithinExpiryTime(otpTimestamp.asLong());
         logger.debug("passwordMatches {}", passwordMatches);
         return goTo(passwordMatches).build();
     }

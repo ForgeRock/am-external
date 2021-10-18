@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
@@ -77,6 +77,20 @@ public class OpenIdConnectConfigTest {
     public void testInvalidUrl() {
         configState.remove(OpenIdConnectConfig.CRYPTO_CONTEXT_VALUE_KEY);
         configState.put(OpenIdConnectConfig.CRYPTO_CONTEXT_VALUE_KEY, asSet("bogus_url"));
+        new OpenIdConnectConfig(configState);
+    }
+
+    @Test(expectedExceptions = IllegalArgumentException.class)
+    public void testInvalidCryptoContextNullValue() {
+        configState.remove(OpenIdConnectConfig.CRYPTO_CONTEXT_VALUE_KEY);
+        new OpenIdConnectConfig(configState);
+    }
+
+    public void testCryptoContextClientSecretIgnoresContextValue() {
+        configState.remove(OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_KEY);
+        configState.put(OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_KEY, asSet(
+                OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_CLIENT_SECRET));
+        configState.remove(OpenIdConnectConfig.CRYPTO_CONTEXT_VALUE_KEY);
         new OpenIdConnectConfig(configState);
     }
 }

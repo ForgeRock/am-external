@@ -24,7 +24,7 @@
  *
  * $Id: IDPSingleLogout.java,v 1.28 2009/11/25 01:20:47 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -45,6 +45,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
+import org.owasp.esapi.ESAPI;
 
 import com.sun.identity.multiprotocol.MultiProtocolUtils;
 import com.sun.identity.multiprotocol.SingleLogoutManager;
@@ -1469,7 +1470,7 @@ public class IDPSingleLogout {
                     debug.message(classMethod + "Printing the forwarded response");
                 }
                 response.setContentType("text/html; charset=UTF-8");
-                out.println(output_data);
+                debug.message(ESAPI.encoder().encodeForHTML(output_data));
                 return true;
             }
         }

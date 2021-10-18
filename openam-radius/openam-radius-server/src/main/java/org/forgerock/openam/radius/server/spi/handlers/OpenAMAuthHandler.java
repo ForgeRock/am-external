@@ -12,7 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2016-2018 ForgeRock AS.
+ * Portions Copyrighted 2016-2020 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server.spi.handlers;
 
@@ -37,6 +37,7 @@ import org.forgerock.openam.radius.common.ReplyMessageAttribute;
 import org.forgerock.openam.radius.common.StateAttribute;
 import org.forgerock.openam.radius.common.UserNameAttribute;
 import org.forgerock.openam.radius.common.UserPasswordAttribute;
+import org.forgerock.openam.radius.common.packet.NASIPAddressAttribute;
 import org.forgerock.openam.radius.server.RadiusProcessingException;
 import org.forgerock.openam.radius.server.RadiusRequest;
 import org.forgerock.openam.radius.server.RadiusRequestContext;
@@ -47,6 +48,7 @@ import org.forgerock.openam.radius.server.spi.AccessRequestHandler;
 import org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolder;
 import org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolderCache;
 import org.forgerock.openam.radius.server.spi.handlers.amhandler.OpenAMAuthFactory;
+import org.forgerock.openam.utils.StringUtils;
 
 import com.google.common.base.Strings;
 import com.google.common.eventbus.EventBus;
@@ -262,8 +264,11 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
                 LOG.message("Leaving OpenAMAuthHandler.handle()");
                 return;
             }
+            final NASIPAddressAttribute nasIPAddress = (NASIPAddressAttribute)
+                    request.getAttribute(NASIPAddressAttribute.class);
 
-            holder = startAuthProcess(holder, response, usrAtt, credential);
+            holder = startAuthProcess(holder, response, usrAtt, credential,
+                    nasIPAddress != null ? nasIPAddress.toStringImpl() : null);
             if (holder == null || holder.getAuthPhase() == ContextHolder.AuthPhase.TERMINATED) {
                 // oops. something happened and reject message was already sent. so drop out here.
                 LOG.message("Leaving OpenAMAuthHandler.handle(); Auth phase is TERMINATED.");
@@ -659,9 +664,10 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
      * @param response The response that will be sent to the client.
      * @param usrAtt The name of the user.
      * @param credential The credential.
+     * @param clientIPAddress The Radius Client IP address that the request came from.
      */
     private ContextHolder startAuthProcess(ContextHolder holder, RadiusResponse response, UserNameAttribute usrAtt,
-            String credential) {
+            String credential, String clientIPAddress) {
         LOG.message("Entering OpenAMAuthHandler.startAuthProcess");
 
         // now create an authContext and trigger loading of whatever authN modules will be used
@@ -675,6 +681,10 @@ public class OpenAMAuthHandler implements AccessRequestHandler {
         }
 
         try {
+            // Set the client IP address so that auditing reflects the client, not the Radius Server
+            if (StringUtils.isNotBlank(clientIPAddress)) {
+                holder.getAuthContext().setClientHostName(clientIPAddress);
+            }
             holder.getAuthContext().login(AuthContext.IndexType.SERVICE, authChain);
         } catch (final AuthLoginException e) {
             LOG.error("Unable to start login process. Denying Access.", e);

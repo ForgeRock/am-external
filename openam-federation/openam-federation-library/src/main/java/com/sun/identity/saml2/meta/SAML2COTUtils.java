@@ -24,7 +24,7 @@
  *
  * $Id: SAML2COTUtils.java,v 1.8 2009/10/28 23:58:58 exu Exp $
  *
- * Portions Copyrighted 2018 ForgeRock AS.
+ * Portions Copyrighted 2018-2020 ForgeRock AS.
  *
  */
 
@@ -126,13 +126,13 @@ public class SAML2COTUtils {
             AttributeType atype = objFactory.createAttributeType();
             atype.setName(SAML2Constants.COT_LIST);
             atype.getValue().add(name);
+            bctype.getAttribute().add(atype);
             // add to eConfig
             EntityConfigType ele =objFactory.createEntityConfigType();
             ele.setEntityID(entityId);
             ele.setHosted(false);
             if (isAffiliation) {
                 // handle affiliation case
-                bctype.getAttribute().add(atype);
                 ele.setAffiliationConfig(objFactory.createAffiliationConfigElement(bctype));
             } else {
                 List<JAXBElement<BaseConfigType>> ll =
@@ -143,25 +143,18 @@ public class SAML2COTUtils {
 
                 for (RoleDescriptorType obj : list) {
                     if (obj instanceof SPSSODescriptorType) {
-                        bctype.getAttribute().add(atype);
                         ll.add(objFactory.createSPSSOConfigElement(bctype));
                     } else if (obj instanceof IDPSSODescriptorType) {
-                        bctype.getAttribute().add(atype);
                         ll.add(objFactory.createIDPSSOConfigElement(bctype));
                     } else if (obj instanceof XACMLPDPDescriptorType) {
-                        bctype.getAttribute().add(atype);
                         ll.add(objFactory.createXACMLPDPConfigElement(bctype));
                     } else if (obj instanceof XACMLAuthzDecisionQueryDescriptorType) {
-                        bctype.getAttribute().add(atype);
                         ll.add(objFactory.createXACMLAuthzDecisionQueryConfigElement(bctype));
                     } else if (obj instanceof AttributeAuthorityDescriptorType) {
-                        bctype.getAttribute().add(atype);
                         ll.add(objFactory.createAttributeAuthorityConfigElement(bctype));
                     } else if (obj instanceof AttributeQueryDescriptorType) {
-                        bctype.getAttribute().add(atype);
                         ll.add(objFactory.createAttributeQueryConfigElement(bctype));
                     } else if (obj instanceof AuthnAuthorityDescriptorType) {
-                        bctype.getAttribute().add(atype);
                         ll.add(objFactory.createAuthnAuthorityConfigElement(bctype));
                     }
                 }

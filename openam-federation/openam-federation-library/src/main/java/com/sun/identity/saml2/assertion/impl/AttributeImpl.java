@@ -1,4 +1,4 @@
-/**
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright (c) 2006 Sun Microsystems Inc. All Rights Reserved
@@ -24,6 +24,7 @@
  *
  * $Id: AttributeImpl.java,v 1.4 2008/06/25 05:47:42 qcheng Exp $
  *
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
 
@@ -96,7 +97,7 @@ public class AttributeImpl implements Attribute {
         Document doc = XMLUtils.toDOMDocument(value, SAML2SDKUtils.debug);
         if (doc == null) {
             if (SAML2SDKUtils.debug.messageEnabled()) {
-                SAML2SDKUtils.debug.message("AttributeImpl." 
+                SAML2SDKUtils.debug.message("AttributeImpl."
                     + "validateAttributeValue:"
                     + " could not obtain AttributeValue element.");
             }

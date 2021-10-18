@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -83,7 +83,8 @@ public class DefaultIDPAuthnContextMapperTest {
 
         configureRealm(realmName);
         DefaultIDPAuthnContextMapper mapper = new DefaultIDPAuthnContextMapper();
-        IDPAuthnContextInfo info = mapper.getIDPAuthnContextInfo(authnRequest, "openam-saml2-idp", realmName);
+        IDPAuthnContextInfo info = mapper.getIDPAuthnContextInfo(authnRequest, "openam-saml2-idp", realmName,
+                "openam-saml2-sp");
         assertThat(info).isNotNull();
         assertThat(info.getAuthnContext()).isNotNull();
         assertThat(info.getAuthnContext().getAuthnContextClassRef()).isEqualTo(expectedAuthnClassRef);

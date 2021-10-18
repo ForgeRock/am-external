@@ -1,28 +1,28 @@
 /*
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
- *
- * Copyright 2011-2019 ForgeRock AS.
- * Copyright 2011 Cybernetica AS.
- * 
- * The contents of this file are subject to the terms
- * of the Common Development and Distribution License
- * (the License). You may not use this file except in
- * compliance with the License.
- *
- * You can obtain a copy of the License at
- * http://forgerock.org/license/CDDLv1.0.html
- * See the License for the specific language governing
- * permission and limitations under the License.
- *
- * When distributing Covered Code, include this CDDL
- * Header Notice in each file and include the License file
- * at http://forgerock.org/license/CDDLv1.0.html
- * If applicable, add the following below the CDDL Header,
- * with the fields enclosed by brackets [] replaced by
- * your own identifying information:
- * "Portions Copyrighted [year] [name of copyright owner]"
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- */
+ * Copyright 2011-2020 ForgeRock AS.
+ * Copyright 2011 Cybernetica AS.
+ * 
+ * The contents of this file are subject to the terms
+ * of the Common Development and Distribution License
+ * (the License). You may not use this file except in
+ * compliance with the License.
+ *
+ * You can obtain a copy of the License at
+ * http://forgerock.org/license/CDDLv1.0.html
+ * See the License for the specific language governing
+ * permission and limitations under the License.
+ *
+ * When distributing Covered Code, include this CDDL
+ * Header Notice in each file and include the License file
+ * at http://forgerock.org/license/CDDLv1.0.html
+ * If applicable, add the following below the CDDL Header,
+ * with the fields enclosed by brackets [] replaced by
+ * your own identifying information:
+ * "Portions Copyrighted [year] [name of copyright owner]"
+ *
+ */
 package org.forgerock.openam.authentication.modules.oauth2;
 
 import static com.google.common.collect.Sets.intersection;
@@ -30,6 +30,7 @@ import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.COOK
 import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.PARAM_ACTIVATION;
 import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.PARAM_CODE;
 import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.PARAM_OAUTH_VERIFIER;
+import static org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator.GlobalService.GLOBAL_SERVICE;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
 
 import java.io.PrintWriter;
@@ -40,13 +41,17 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.forgerock.guice.core.InjectorHolder;
+import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;
 import org.forgerock.openam.xui.XUIState;
 import org.owasp.esapi.ESAPI;
 
 import com.sun.identity.authentication.client.AuthClientUtils;
 import com.sun.identity.shared.encode.CookieUtils;
 
-/*
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
+
+/**
  * OAuth module specific Get2Post gateway. 
  * When using the legacy authentication UI we need to transform the incoming GET request (from the OAuth2 AS) to a POST
  * request, so that the authentication framework can remain to use the same authentication session for the corresponding
@@ -73,6 +78,14 @@ public class OAuthProxy  {
         
         if (OAuthUtil.isEmpty(action)) {
             OAuthUtil.debugError("OAuthProxy.toPostForm: Original Url Cookie is empty");
+            out.println(getError("Request not valid !"));
+            return;
+        }
+        RedirectUrlValidator<RedirectUrlValidator.GlobalService> validator = InjectorHolder.getInstance(Key.get(
+                        new TypeLiteral<RedirectUrlValidator<RedirectUrlValidator.GlobalService>>() {}));
+
+        if (!validator.isRedirectUrlValid(action, GLOBAL_SERVICE, false, req)) {
+            OAuthUtil.debugError("OAuthProxy.continueAuthentication: Original Url Cookie is invalid");
             out.println(getError("Request not valid !"));
             return;
         }

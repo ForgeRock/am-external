@@ -11,12 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
 
-import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
@@ -32,6 +31,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.crypto.NodeSharedStateCrypto;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ import com.sun.identity.sm.RequiredValueValidator;
  */
 @Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
         configClass = OneTimePasswordSmsSenderNode.Config.class)
-public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
+public class OneTimePasswordSmsSenderNode extends OneTimePasswordNodeCommon {
 
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final CoreWrapper coreWrapper;
@@ -87,13 +87,17 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
     /**
      * Constructs a new OneTimePasswordSmsSenderNode instance.
      *
-     * @param config Node configuration.
-     * @param coreWrapper A wrapper for core utility methods.
-     * @param identityProvider used to lookup an {@link AMIdentity}
+     * @param config                Node configuration.
+     * @param coreWrapper           A wrapper for core utility methods.
+     * @param identityProvider      used to lookup an {@link AMIdentity}
+     * @param nodeSharedStateCrypto the crypto operations for encrypting/decrypting payloads
      */
     @Inject
-    public OneTimePasswordSmsSenderNode(@Assisted Config config, CoreWrapper coreWrapper,
-                                        IdentityProvider identityProvider) {
+    public OneTimePasswordSmsSenderNode(@Assisted Config config,
+                                        CoreWrapper coreWrapper,
+                                        IdentityProvider identityProvider,
+                                        NodeSharedStateCrypto nodeSharedStateCrypto) {
+        super(nodeSharedStateCrypto);
         this.config = config;
         this.coreWrapper = coreWrapper;
         this.identityProvider = identityProvider;
@@ -138,8 +142,7 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
         try {
             logger.debug("sending SMS message from {}, to {}", config.fromEmailAddress(), phone);
             gateway.sendSMSMessage(config.fromEmailAddress(), phone, bundle.getString("messageSubject"),
-                    bundle.getString("messageContent"), context.sharedState.get(ONE_TIME_PASSWORD).asString(),
-                    config.asConfigMap());
+                    bundle.getString("messageContent"), getClearTextOtp(context), config.asConfigMap());
         } catch (AuthLoginException e) {
             logger.warn("SMSGateway sending error", e);
             throw new NodeProcessException(bundle.getString("sms.send.failure"), e);
@@ -173,7 +176,7 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
      * @param identity The user's identity.
      * @return The user's telephone number.
      * @throws IdRepoException If there is a problem getting the user's telephone number.
-     * @throws SSOException If there is a problem getting the user's telephone number.
+     * @throws SSOException    If there is a problem getting the user's telephone number.
      */
     private String getTelephoneNumber(AMIdentity identity) throws IdRepoException, SSOException {
         String telephoneAttribute = config.mobilePhoneAttributeName();

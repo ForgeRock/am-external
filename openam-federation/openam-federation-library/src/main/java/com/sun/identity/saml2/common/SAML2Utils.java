@@ -22,7 +22,7 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2021 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.common;
@@ -42,6 +42,7 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.security.MessageDigest;
@@ -59,9 +60,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
@@ -85,6 +86,7 @@ import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.openam.utils.UriUtils;
 import org.forgerock.util.Reject;
 
 import com.sun.identity.common.HttpURLConnectionManager;
@@ -827,6 +829,7 @@ public class SAML2Utils extends SAML2SDKUtils {
      */
     public static void validateRecipient(SPSSODescriptorType spDesc, String assertionID,
             SubjectConfirmationData subjectConfData) throws SAML2Exception {
+        final String classMethod = "SAML2Utils.validateRecipient:";
         String recipient = subjectConfData.getRecipient();
         if (StringUtils.isEmpty(recipient)) {
             if (debug.messageEnabled()) {
@@ -837,7 +840,9 @@ public class SAML2Utils extends SAML2SDKUtils {
             throw new SAML2Exception(bundle.getString("missingRecipient"));
         }
         boolean foundMatch = false;
+        debug.message("{} recipient = {}", classMethod, recipient);
         for (IndexedEndpointType acs : spDesc.getAssertionConsumerService()) {
+        debug.message("{} acs = {}", classMethod, acs.getLocation());
             if (recipient.equals(acs.getLocation())) {
                 foundMatch = true;
                 break;
@@ -3594,7 +3599,7 @@ public class SAML2Utils extends SAML2SDKUtils {
         }
 
         if (debug.messageEnabled()) {
-            debug.message("SAML2Utils.getConfigAttributeMap: DefaultAttrMapper: relam="
+            debug.message("SAML2Utils.getConfigAttributeMap: DefaultAttrMapper: realm="
                     + realm + ", entity id="
                     + hostEntityID + ", role=" + role);
         }
@@ -4167,24 +4172,35 @@ public class SAML2Utils extends SAML2SDKUtils {
      */
     public static void verifyAssertionConsumerServiceLocation(String realm, String spEntityID,
             HttpServletRequest request, HttpServletResponse response) throws SAML2Exception {
+        final String classMethod = "SAML2Utils.verifyAssertionConsumerServiceLocation:";
+        if (request.getRequestURL() == null) {
+            throw new IllegalStateException("Request URL in request cannot be null");
+        }
         if (saml2MetaManager != null) {
-            try {
-                RootUrlProvider rootUrlProvider = RootUrlManager.INSTANCE.getDefaultProvider();
-                SPSSODescriptorType spDescriptor = saml2MetaManager.getSPSSODescriptor(realm, spEntityID);
-                List<IndexedEndpointType> acsEndpoints = spDescriptor.getAssertionConsumerService();
-                String accessedEndpoint = rootUrlProvider.getRootURL(realm, request) +
-                        request.getRequestURI().substring(request.getContextPath().length());
-                if (acsEndpoints.stream()
-                        .map(EndpointType::getLocation)
-                        .noneMatch(Predicate.isEqual(accessedEndpoint))) {
-                    SAMLUtils.sendError(request, response, response.SC_BAD_REQUEST, "invalidACSLocation",
-                            SAML2Utils.bundle.getString("invalidACSLocation"));
-                    throw new SAML2Exception(SAML2Utils.bundle.getString("invalidACSLocation"));
-                }
-            } catch (RootUrlProviderException e) {
-                debug.error("SAML2Utils.verifyAssertionConsumerServiceLocation:", e);
-                throw new SAML2Exception(e);
+            SPSSODescriptorType spDescriptor = saml2MetaManager.getSPSSODescriptor(realm, spEntityID);
+            List<IndexedEndpointType> acsEndpoints = spDescriptor.getAssertionConsumerService();
+            final String requestUrl = request.getRequestURL().toString();
+            debug.message("{} accessedEndpoint = {}", classMethod, requestUrl);
+            String[] ACSs = acsEndpoints.stream().map(EndpointType::getLocation).toArray(String[]::new);
+            for (String endP : ACSs){
+                debug.message("{} acsEndpoint = {}", classMethod, endP);
             }
+            if (acsEndpoints.stream()
+                    .map(EndpointType::getLocation)
+                    .noneMatch(location -> endpointsMatch(location, requestUrl))) {
+                debug.error("The requested URL is {}", requestUrl);
+                SAMLUtils.sendError(request, response, response.SC_BAD_REQUEST, "invalidACSLocation",
+                        SAML2Utils.bundle.getString("invalidACSLocation"));
+                throw new SAML2Exception(SAML2Utils.bundle.getString("invalidACSLocation"));
+            }
+        }
+    }
+
+    private static boolean endpointsMatch(String url, String other) {
+        try {
+            return UriUtils.urisEqualIgnoringQueryAndFragment(url, other);
+        } catch (URISyntaxException e) {
+            return false;
         }
     }
 
@@ -4769,5 +4785,30 @@ public class SAML2Utils extends SAML2SDKUtils {
                 .map(BigInteger.class::cast)
                 .map(BigInteger::intValue)
                 .orElse(0);
+    }
+
+    /**
+     * Returns significant information from a certificate
+     * @param cert  the X509Certificate to retrieve significant info from
+     * @return significant information from a certificate in form CertInfo: [SubjectDN : SUBJECT_DN;
+     * Issuer: ISSUER_DN; SerialNumber : HEX_SERIALNUMBER]
+     * or <code>null</code> if it was invoked with <code>null</code>
+     */
+    public static String getDebugInfoFromCertificate(final X509Certificate cert) {
+        StringBuilder certInfoBuilder = new StringBuilder();
+
+        if (!Objects.isNull(cert)) {
+            certInfoBuilder.append("CertInfo: [")
+                           .append("SubjectDN : ")
+                           .append(cert.getSubjectDN().getName())
+                           .append(";")
+                           .append(" Issuer: ")
+                           .append(cert.getIssuerDN())
+                           .append(";")
+                           .append(" SerialNumber : ")
+                           .append(cert.getSerialNumber().toString(16))
+                           .append("]");
+        }
+        return certInfoBuilder.toString();
     }
 }

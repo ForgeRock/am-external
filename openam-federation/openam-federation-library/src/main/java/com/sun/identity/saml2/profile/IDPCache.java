@@ -24,7 +24,7 @@
  *
  * $Id: IDPCache.java,v 1.18 2009/05/14 17:23:45 exu Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -55,7 +55,16 @@ public class IDPCache {
      *        from cleanup interval
      */
     public static PeriodicCleanUpMap authnRequestCache = new PeriodicCleanUpMap(
-        SPCache.interval * 1000, SPCache.interval * 1000); 
+        SPCache.interval * 1000, SPCache.interval * 1000);
+
+    /**
+     * Cache saves the authn context objects before IDP redirects user to
+     * authentication.
+     * Key : request ID String
+     * Value : AuthnContext object
+     */
+    public static PeriodicCleanUpMap idpAuthnContextCache =
+            new PeriodicCleanUpMap(SPCache.interval * 1000, SPCache.interval * 1000);
 
     /**
      * Cache saves the assertion objects.

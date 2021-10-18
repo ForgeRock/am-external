@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2021 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
@@ -103,11 +103,7 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
             final String realm =
                     DNMapper.orgNameToRealmName(ssoToken.getProperty(com.sun.identity.shared.Constants.ORGANIZATION));
 
-            SAML2ResponseData data = (SAML2ResponseData) SAML2Store.getTokenFromStore(cacheKey);
-
-            if (data == null && SAML2FailoverUtils.isSAML2FailoverEnabled()) {
-                data = (SAML2ResponseData) SAML2FailoverUtils.retrieveSAML2Token(cacheKey);
-            }
+            SAML2ResponseData data = (SAML2ResponseData) SPCache.samlResponseDataHash.get(cacheKey);
 
             if (data == null) {
                 throw new SAML2Exception("Unable to retrieve response map from data cache.");
@@ -115,7 +111,8 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
 
             configurePostSSO(spEntityId, realm, request, response, ssoToken, sessionProvider, data.getResponseInfo(),
                     cacheKey);
-        } catch (SAML2Exception | SessionException | SSOException | SAML2TokenRepositoryException e) {
+            SPCache.samlResponseDataHash.remove(cacheKey);
+        } catch (SAML2Exception | SessionException | SSOException e) {
             //debug warning and fall through
             DEBUG.warning("Error saving SAML assertion information in memory. SLO not configured for this session.", e);
         }

@@ -12,6 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
+ * Portions Copyright 2019-2021 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server.config;
 
@@ -24,14 +25,18 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import io.vavr.control.Either;
+
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.radius.server.spi.AccessRequestHandler;
+import org.forgerock.util.Supplier;
 
 import com.google.inject.ConfigurationException;
 import com.google.inject.ProvisionException;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.datastruct.ValueNotFoundException;
 import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.sm.SMSException;
 import com.sun.identity.sm.ServiceConfig;
 import com.sun.identity.sm.ServiceConfigManager;
 
@@ -100,16 +105,14 @@ public class ConfigLoader {
 
                 // now get the RADIUS client instances from the secondary configuration instances table in the
                 // Configuration tab, Global sub-tab, Global Properties table, RADIUS client page
-                final Set<String> clientConfigNames = serviceConf.getSubConfigNames();
+                final Set<String> clientConfigNames = getSubConfigNames(serviceConf);
                 final List<ClientConfig> definedClientConfigs = new ArrayList<ClientConfig>();
                 for (final String clientConfigName : clientConfigNames) {
                     try {
                         final ClientConfig clientConfig = new ClientConfig(); // create object for holding values in
                                                                               // memory
                         clientConfig.setName(clientConfigName);
-                        final ServiceConfig clientCfg = serviceConf.getSubConfig(clientConfigName); // go get our admin
-                        // console values
-                        final Map<String, Set<String>> map = clientCfg.getAttributes();
+                        final Map<String, Set<String>> map = getServiceAttributes(serviceConf, clientConfigName);
 
                         clientConfig.setIpaddr(CollectionHelper.getMapAttrThrows(map,
                                 RadiusServerConstants.CLIENT_ATT_IP_ADDR));
@@ -154,6 +157,61 @@ public class ConfigLoader {
             LOG.error("Unable to load RADIUS Service Configuration", e);
         }
         return null;
+    }
+
+    private Set<String> getSubConfigNames(ServiceConfig serviceConf) throws Exception {
+        final String label = "Global getSubConfigNames";
+        final Set<String> clientConfigNames = retry(label, "Unable to get Radius " + label,
+            () -> {
+                ServiceConfig config = (serviceConf != null && serviceConf.isValid()) ? serviceConf
+                        : serviceConfigManager.getGlobalConfig("default");
+                if (config == null || !config.isValid()) {
+                    return Either.left("Radius Global config is invalid");
+                } else {
+                    return Either.right(config.getSubConfigNames());
+                }
+            }, 2);
+        return clientConfigNames;
+    }
+
+    private Map<String, Set<String>> getServiceAttributes(ServiceConfig serviceConf, String clientConfigName)
+            throws Exception {
+        final String label = "Global getSubConfig " + clientConfigName;
+        final Map<String, Set<String>> map = retry(label, "Unable to get Radius " + label,
+            () -> {
+                ServiceConfig config = (serviceConf != null && serviceConf.isValid()) ? serviceConf
+                        : serviceConfigManager.getGlobalConfig("default");
+                if (config == null || !config.isValid()) {
+                    return Either.left("Radius Global config is invalid");
+                }
+                ServiceConfig clientCfg = config.getSubConfig(clientConfigName);
+                if (clientCfg == null || !clientCfg.isValid()) {
+                    return Either.left(label + " is invalid");
+                }
+                return Either.right(clientCfg.getAttributes());
+            }, 2);
+        return map;
+    }
+
+    private static <T> T retry(String name, String error, Supplier<Either<String, T>, Exception> function,
+                               int retryCount) throws Exception {
+        Exception previousException = null;
+        for (int retry = 0; retry <= retryCount; retry++) {
+            try {
+                Either<String, T> result = function.get();
+                if (result.isRight()) {
+                    return result.get();
+                }
+                if (previousException == null) {
+                    previousException = new SMSException(result.getLeft());
+                }
+                LOG.error("{} retrying {}/{}: {}", name, retry, retryCount, result.getLeft());
+            } catch (Exception e) {
+                previousException = e;
+                LOG.error("{} retrying {}/{}: {}", name, retry, retryCount, e.getMessage());
+            }
+        }
+        throw (previousException != null) ? previousException : new SMSException(error);
     }
 
     /**

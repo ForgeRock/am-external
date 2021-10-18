@@ -24,7 +24,7 @@
  *
  * $Id: FMSessionProvider.java,v 1.23 2009/11/20 00:30:40 exu Exp $
  *
- * Portions Copyrighted 2010-2018 ForgeRock AS.
+ * Portions Copyrighted 2010-2021 ForgeRock AS.
  */
 
 package com.sun.identity.plugin.session.impl;
@@ -316,7 +316,7 @@ public class FMSessionProvider implements SessionProvider {
         final Set<String> cookieDomains = getCookieDomainsForRequest(request);
         final String value = ((SSOToken)session).getTokenID().toString();
         for (String cookieDomain : cookieDomains) {
-            debug.message("cookieName={}, value={}, cookieDomain={}", cookieName, value, cookieDomain);
+            debug.message("cookieName={}, cookieDomain={}", cookieName, cookieDomain);
             addCookieToResponse(response, newCookie(cookieName, value, "/", cookieDomain));
         }
     }

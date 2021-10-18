@@ -468,7 +468,11 @@ const LoginView = AbstractView.extend({
         if (this.$el.find("[name=loginRemember]").length !== 0 && login) {
             this.$el.find("input[type=text]:first").val(login);
             this.$el.find("[name=loginRemember]").attr("checked", "true");
-            this.$el.find("[type=password]").focus();
+            // setTimeout here is a workaround for iOS safari which tries to
+            // block autofocussing on elements.
+            setTimeout(() => {
+                this.$el.find("[type=password]").focus();
+            });
         } else {
             this.$el.find(":input:not([type='radio']):not([type='checkbox'])" +
                 ":not([type='submit']):not([type='button']):first").focus();

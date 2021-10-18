@@ -24,7 +24,7 @@
  *
  * $Id: SAML2SingleLogoutHandler.java,v 1.6 2008/11/10 22:57:00 veiming Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 package com.sun.identity.multiprotocol;
 
@@ -164,7 +164,7 @@ public class SAML2SingleLogoutHandler implements SingleLogoutHandler {
                 debug.message("SAML2SingleLogoutHandler: " +
                     "userID=" + userID + ", session=" + userSession +
                     ", isSOAInited=" + isSOAPInitiated + ", isIDPInited=" +
-                    isIDPInitiated + ", protocol=" + protocol + ", relam=" +
+                    isIDPInitiated + ", protocol=" + protocol + ", realm=" +
                     realm + ", idpEntityID=" + idpEntityID + ", spEntityID=" +
                     spEntityID + ", status=" + currentStatus +
                     "\nlogout Request XML=" + singleLogoutRequestXML +

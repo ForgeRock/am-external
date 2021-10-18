@@ -24,7 +24,7 @@
  *
  * $Id: SAML2MetaSecurityUtils.java,v 1.6 2009/06/08 23:43:18 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2019 ForgeRock AS.
+ * Portions Copyrighted 2010-2020 ForgeRock AS.
  */
 package com.sun.identity.saml2.meta;
 
@@ -93,6 +93,7 @@ public final class SAML2MetaSecurityUtils {
     public static final String NS_SAML = "urn:oasis:names:tc:SAML:2.0:assertion";
     public static final String NS_XMLSIG = "http://www.w3.org/2000/09/xmldsig#";
     public static final String NS_XMLENC = "http://www.w3.org/2001/04/xmlenc#";
+    static final String NS_XMLENC11 = "http://www.w3.org/2009/xmlenc11#";
 
     public static final String PREFIX_ENTITY_CONFIG = "config";
     public static final String PREFIX_MD_ATTR = "mdattr";
@@ -102,6 +103,7 @@ public final class SAML2MetaSecurityUtils {
     public static final String PREFIX_SAML = "saml";
     public static final String PREFIX_XMLSIG = "ds";
     public static final String PREFIX_XMLENC = "xenc";
+    static final String PREFIX_XMLENC11 = "xenc11";
 
     public static final String TAG_KEY_INFO = "KeyInfo";
     public static final String TAG_KEY_DESCRIPTOR = "KeyDescriptor";

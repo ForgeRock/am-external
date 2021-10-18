@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 import "babel-polyfill";
@@ -41,4 +41,6 @@ i18nInit().then(() => {
         const data = { theme };
         loadTemplates(data);
     }, loadTemplates);
+    const lang = navigator.language || "en";
+    $("html").attr("lang", lang);
 });

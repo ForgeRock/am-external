@@ -24,7 +24,7 @@
  *
  * $Id: WSFederationMetaManager.java,v 1.8 2009/10/28 23:58:59 exu Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 
 
@@ -856,6 +856,17 @@ public class WSFederationMetaManager {
         return metaAliases;
     }
 
+    private FederationConfigElement getEntityConfigIgnoreException(String realm, String entityId, String message) {
+        try {
+            return getEntityConfig(realm, entityId);
+        } catch (WSFederationMetaException e) {
+            message = (message != null) ? message : "";
+            debug.error("{} getEntityConfig '{}' at {} failed", message, entityId, realm, e.getMessage());
+            debug.message("{} getEntityConfig '{}' at realm {} failed", message, entityId, realm, e);
+        }
+        return null;
+    }
+
     private void removeFromCircleOfTrust(final BaseConfigType config, final String realm, final String federationId) {
         final String classMethod = "WSFederationMetaManager.removeFromCircleOfTrust:";
         try {
@@ -894,8 +905,8 @@ public class WSFederationMetaManager {
             if (entityIds != null && !entityIds.isEmpty()) {
                 for(Iterator iter = entityIds.iterator(); iter.hasNext();) {
                     String federationId = (String)iter.next();
-                    FederationConfigElement config =
-                                    getEntityConfig(realm, federationId);
+                    FederationConfigElement config = getEntityConfigIgnoreException(realm, federationId,
+                            "WSFederationMetaManager.getAllHostedEntities:");
                     if (config != null && config.getValue().isHosted()) {
                         hostedEntityIds.add(federationId);
                     }
@@ -980,8 +991,8 @@ public class WSFederationMetaManager {
             if (entityIds != null && !entityIds.isEmpty()) {
                 for(Iterator iter = entityIds.iterator(); iter.hasNext();) {
                     String federationId = (String)iter.next();
-                    FederationConfigElement config =
-                                    getEntityConfig(realm, federationId);
+                    FederationConfigElement config = getEntityConfigIgnoreException(realm, federationId,
+                            "WSFederationMetaManager.getAllRemoteEntities:");
                     if (config == null || !config.getValue().isHosted()) {
                         remoteEntityIds.add(federationId);
                     }

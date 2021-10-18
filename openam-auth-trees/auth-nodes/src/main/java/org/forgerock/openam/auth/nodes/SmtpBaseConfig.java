@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -19,10 +19,10 @@ package org.forgerock.openam.auth.nodes;
 import static java.util.Collections.singleton;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.forgerock.openam.annotations.sm.Attribute;
-import org.forgerock.openam.sm.annotations.adapters.Password;
 
 import com.google.common.collect.ImmutableMap;
 import com.sun.identity.authentication.modules.hotp.DefaultSMSGatewayImpl;
@@ -49,19 +49,18 @@ public interface SmtpBaseConfig {
     int hostPort();
 
     /**
-     * The username to use when the mail server is using SMTP authentication.
+     * The (optional) username to use when the mail server is using SMTP authentication.
      * @return Mail server authentication user name.
      */
-    @Attribute(order = 400, validators = {RequiredValueValidator.class})
+    @Attribute(order = 400)
     String username();
 
     /**
-     * The password to use when the mail server is using SMTP authentication.
+     * The (optional) password to use when the mail server is using SMTP authentication.
      * @return Mail server authentication password.
      */
-    @Attribute(order = 500, validators = {RequiredValueValidator.class})
-    @Password
-    char[] password();
+    @Attribute(order = 500)
+    Optional<char[]> password();
 
     /**
      * Emails from the HOTP Authentication module will come from this address.
@@ -100,7 +99,8 @@ public interface SmtpBaseConfig {
                 .put(DefaultSMSGatewayImpl.SMTPHOSTNAME, singleton(hostName()))
                 .put(DefaultSMSGatewayImpl.SMTPHOSTPORT, singleton(String.valueOf(hostPort())))
                 .put(DefaultSMSGatewayImpl.SMTPUSERNAME, singleton(username()))
-                .put(DefaultSMSGatewayImpl.SMTPUSERPASSWORD, singleton(String.valueOf(password())))
+                .put(DefaultSMSGatewayImpl.SMTPUSERPASSWORD, singleton(password().isPresent()
+                        ? String.valueOf(password().get()) : null))
                 .put(DefaultSMSGatewayImpl.SMTPSSLENABLED, singleton(sslOption().option))
                 .build();
     }

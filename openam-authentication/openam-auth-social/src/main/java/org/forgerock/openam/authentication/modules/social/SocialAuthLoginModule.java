@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -36,6 +36,7 @@ import org.forgerock.oauth.OAuthException;
 import org.forgerock.oauth.UserInfo;
 import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.forgerock.openam.shared.security.crypto.Fingerprints;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.sun.identity.authentication.spi.AuthLoginException;
@@ -70,6 +71,7 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
 
     @Override
     public int process(Callback[] callbacks, int state) throws LoginException {
+        debug.message("process: org = {}, state = {}", getRequestOrg(), state);
         switch (state) {
             case ISAuthConstants.LOGIN_START: {
                 return processLoginStart();
@@ -94,13 +96,19 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
     @Override
     UserInfo getUserInfo() throws AuthLoginException {
         try {
-            return getClient().handlePostAuth(getDataStore(), getRequestParameters())
+            debug.message("Getting user info. ");
+            UserInfo userInfo = getClient().handlePostAuth(getDataStore(), getRequestParameters())
                     .thenAsync(value -> getClient().getUserInfo(getDataStore())).getOrThrowUninterruptibly();
-        } catch (OAuthException e) {
-            throw new AuthLoginException("Unable to get UserInfo details", e);
+            if (userInfo != null) {
+                debug.message("Got user info for '{}'", userInfo.getSubject());
+            }
+            return userInfo;
         } catch (JwsException jse) {
             debug.error("JwsException: {}", jse.getMessage(), jse);
             throw jse;
+        } catch (Exception e) {
+            debug.message("Unable to get UserInfo details : {}", e.getMessage(), e);
+            throw new AuthLoginException("Unable to get UserInfo details", e);
         }
     }
 
@@ -110,6 +118,7 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
         if (accessToken == null) {
             throw new AuthLoginException("Access token not found");
         }
+        debug.message("Retrieved access token Fingerprint:'{}'", Fingerprints.generate(accessToken.asString()));
         return accessToken.asString();
     }
 
@@ -124,6 +133,7 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
     private void prepareRedirectCallback(int nextState) throws LoginException {
         final int callbackIndex = 0;
         URI authRedirect = getAuthRedirectUri();
+        debug.message("Prepare redirect response to {}", authRedirect);
         Callback[] callbacks = getCallback(nextState);
         RedirectCallback rc = (RedirectCallback) callbacks[callbackIndex];
         RedirectCallback rcNew = new RedirectCallback(authRedirect.toString(), null, "GET", rc.getStatusParameter(),
@@ -136,6 +146,7 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
         try {
             return getClient().getAuthRedirect(getDataStore(), null, null).getOrThrow();
         } catch (InterruptedException | OAuthException e) {
+            debug.message("Unable to get redirect URI.", e);
             throw new LoginException(e.getMessage());
         }
     }

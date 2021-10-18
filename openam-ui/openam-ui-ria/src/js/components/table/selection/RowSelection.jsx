@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
 import PropTypes from "prop-types";
@@ -41,6 +41,7 @@ class RowSelection extends Component {
             return (
                 <div className="checkbox">
                     <HeaderSelection { ...this.props } />
+                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control*/}
                     <label htmlFor={ `checkbox${this.props.rowIndex}` } />
                 </div>
             );
@@ -55,6 +56,7 @@ class RowSelection extends Component {
                         onChange={ this.handleSelect }
                         type="checkbox"
                     />
+                    {/* eslint-disable-next-line jsx-a11y/label-has-associated-control*/}
                     <label htmlFor={ `checkbox${this.props.rowIndex}` } />
                 </div>
             );

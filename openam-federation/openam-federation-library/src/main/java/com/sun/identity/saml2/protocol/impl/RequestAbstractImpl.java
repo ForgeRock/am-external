@@ -24,14 +24,28 @@
  *
  * $Id: RequestAbstractImpl.java,v 1.5 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.protocol.impl;
 
 
-import com.sun.identity.shared.xml.XMLUtils;
-import com.sun.identity.shared.DateUtils;
-import com.sun.identity.saml.xmlsig.XMLSignatureException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.cert.X509Certificate;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Set;
+
+import org.forgerock.openam.utils.StringUtils;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.common.SAML2Constants;
@@ -41,22 +55,8 @@ import com.sun.identity.saml2.protocol.Extensions;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.RequestAbstract;
 import com.sun.identity.saml2.xmlsig.SigManager;
-
-import java.security.PublicKey;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
-import java.security.Signature;
-import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Set;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import com.sun.identity.shared.DateUtils;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * This abstract class defines methods for setting and retrieving attributes and
@@ -66,7 +66,7 @@ import org.w3c.dom.NodeList;
 
 
 public abstract class RequestAbstractImpl implements RequestAbstract {
-    
+
     protected Issuer nameID = null;
     protected Extensions extensions = null;
     protected String requestId = null; 
@@ -115,7 +115,7 @@ public abstract class RequestAbstractImpl implements RequestAbstract {
     public String getSignature() {
         return signatureString;
     }
-   
+
      /**
      * Signs the Request.
      *
@@ -135,7 +135,7 @@ public abstract class RequestAbstractImpl implements RequestAbstract {
             privateKey,
             cert
         );
-        signatureString = XMLUtils.print(signatureEle); 
+        signatureString = XMLUtils.print(signatureEle);
         signedXMLString = XMLUtils.print(signatureEle.getOwnerDocument().
                                          getDocumentElement());
         isSigned =true;
@@ -449,11 +449,16 @@ public abstract class RequestAbstractImpl implements RequestAbstract {
 
    /* Validates the requestID in the SAML Request. */
     protected void validateID(String requestID) throws SAML2Exception {
-	if ((requestId == null) || (requestId.length() == 0 )) {
-	    SAML2SDKUtils.debug.message("ID is missing in the SAMLRequest");
-            throw new SAML2Exception(
-		    SAML2SDKUtils.bundle.getString("missingIDAttr"));
-	}
+        if (StringUtils.isEmpty(requestID)) {
+            SAML2SDKUtils.debug.message("ID is missing in the SAMLRequest");
+                throw new SAML2Exception(
+                SAML2SDKUtils.bundle.getString("missingIDAttr"));
+        }
+	    // ID must be an XML NCName
+        if (!XMLUtils.isNCName(requestID)) {
+            SAML2SDKUtils.debug.message("SAMLRequest ID is not a valid XML ID (NCName): {}", requestID);
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missingIDAttr"));
+        }
     }
 
 

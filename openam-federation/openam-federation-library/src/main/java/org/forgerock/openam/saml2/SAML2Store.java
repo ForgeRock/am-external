@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2021 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
@@ -46,6 +46,14 @@ public class SAML2Store {
      */
     public static Object getTokenFromStore(String key) {
         return localCache.getIfPresent(key);
+    }
+
+    /**
+     * Removes an object form the store.
+     * @param key Key indicating the value to remove from the map.
+     */
+    public static void removeTokenFromStore(String key) {
+        localCache.invalidate(key);
     }
 
 }

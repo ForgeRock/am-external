@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS.
+ * Copyright 2015-2021 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
@@ -19,10 +19,10 @@ import static com.sun.identity.saml2.common.SAML2Constants.HTTP_POST;
 import static com.sun.identity.saml2.common.SAML2Constants.HTTP_REDIRECT;
 import static com.sun.identity.saml2.common.SAML2Constants.SAML2_REQUEST_JWT_TYPE;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
-import static org.forgerock.openam.utils.StringUtils.isNotEmpty;
 import static org.forgerock.json.JsonValue.fieldIfNotNull;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.openam.utils.StringUtils.isNotEmpty;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPMessage;
 
+import com.sun.identity.saml2.profile.CacheObject;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.jwt.JwtEncryptionHandler;
@@ -181,7 +182,9 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             throw new ServerFaultException(data.getIdpAdapter(), METADATA_ERROR);
         }
 
-        if ((HTTP_POST.equals(binding) && authnRequest.isSigned())
+        //only verify signature based on whether this setting is enabled
+        if (idpSSODescriptor.isWantAuthnRequestsSigned() || spSSODescriptor.isAuthnRequestsSigned()) {
+            if ((HTTP_POST.equals(binding) && authnRequest.isSigned())
                 || (HTTP_REDIRECT.equals(binding) && isNotEmpty(request.getParameter(SAML2Constants.SIGNATURE)))) {
             Set<X509Certificate> certificates = KeyUtil.getVerificationCerts(spSSODescriptor, data.getSpEntityID(),
                     SAML2Constants.SP_ROLE, data.getRealm());
@@ -224,10 +227,13 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
                 throw new ClientFaultException(data.getIdpAdapter(), "invalidSignInRequest");
             }
 
-            SAML2Utils.debug.message("authn request signature verification is successful.");
-        } else if (idpSSODescriptor.isWantAuthnRequestsSigned() || spSSODescriptor.isAuthnRequestsSigned()) {
-            SAML2Utils.debug.error("The SAML authentication request issued by {} was not signed.", data.getSpEntityID());
-            throw new ClientFaultException(data.getIdpAdapter(), "invalidSignInRequest");
+                SAML2Utils.debug.message("authn request signature verification is successful.");
+            } else {
+                SAML2Utils.debug.error("The SAML authentication request issued by {} was not signed.", data.getSpEntityID());
+                throw new ClientFaultException(data.getIdpAdapter(), "invalidSignInRequest");
+            }
+        } else {
+            SAML2Utils.debug.message("SAML signature verification disabled");
         }
 
         SAML2Utils.debug.message("SAML Authentication Request id= {}", data.getRequestID());
@@ -306,6 +312,8 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             if (sessionUpgrade || !isValidSessionInRealm ||
                     ((Boolean.TRUE.equals(authnRequest.isForceAuthn())) &&
                             (!Boolean.TRUE.equals(authnRequest.isPassive())))) {
+
+                saveAuthenticationRequestInfoInIdpCache(data);
 
                 //IDP Proxy: Initiate proxying when session upgrade is requested
                 // Session upgrade could be requested by asking a greater AuthnContext
@@ -398,6 +406,7 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
 
         // IDP Adapter invocation, to be sure that we can execute the logic
         // even if there is a new request with the same session
+        saveAuthenticationRequestInfoInIdpCache(data);
 
         if (preSendResponse(request, response, data)) {
             return;
@@ -415,6 +424,12 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
         } catch (SAML2Exception se) {
             SAML2Utils.debug.error(classMethod + "Unable to do sso or federation.", se);
             throw new ServerFaultException(data.getIdpAdapter(), SSO_OR_FEDERATION_ERROR, se.getMessage());
+        } finally {
+            IDPCache.authnRequestCache.remove(data.getRequestID());
+            IDPCache.idpAuthnContextCache.remove(data.getRequestID());
+            if (StringUtils.isNotBlank(data.getRelayState())) {
+                IDPCache.relayStateCache.remove(data.getRequestID());
+            }
         }
     }
 
@@ -426,6 +441,8 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
         String preferredIDP;
 
         // TODO: need to verify the signature of the AuthnRequest
+
+        saveAuthenticationRequestInfoInIdpCache(data);
 
         //IDP Proxy: Initiate proxying
         try {
@@ -653,7 +670,9 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
 
         //adding these extra parameters will ensure that we can send back SAML error response to the SP even when the
         //originally received AuthnRequest gets lost.
-        secondVisitUrl.append("?ReqID=").append(data.getAuthnRequest().getID()).append('&')
+        StringBuilder secondVisitUrlNoClientStorage = new StringBuilder(secondVisitUrl.toString());
+        secondVisitUrlNoClientStorage.append("?ReqID=").append(data.getAuthnRequest().getID());
+        secondVisitUrl.append("?ReqID=").append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getID())).append('&')
                 .append(INDEX).append('=').append(data.getAuthnRequest().getAssertionConsumerServiceIndex()).append('&')
                 .append(ACS_URL).append('=')
                 .append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getAssertionConsumerServiceURL()))
@@ -663,9 +682,13 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
                 .append(BINDING).append('=')
                 .append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getProtocolBinding()));
 
-        String saml2ContinueUrl = appliRootUrl + "/saml2/continue/metaAlias" + data.getIdpMetaAlias();
+        StringBuilder saml2ContinueUrl = new StringBuilder(appliRootUrl)
+                .append("/saml2/continue/metaAlias")
+                .append(data.getIdpMetaAlias())
+                .append("?secondVisitUrl=")
+                .append(urlEncodeQueryParameterNameOrValue(secondVisitUrlNoClientStorage.toString()));
 
-        loginUrl.append(urlEncodeQueryParameterNameOrValue(saml2ContinueUrl));
+        loginUrl.append(urlEncodeQueryParameterNameOrValue(saml2ContinueUrl.toString()));
 
         SAML2Utils.debug.message("New URL for authentication: {}", loginUrl.toString());
 
@@ -708,9 +731,36 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
     }
 
     /**
+     * Save the authentication request, authentication context and relay state in the IDPCache for subsequent retrieval.
+     * Only needed if client side HTML 5 storage is disabled/not available
+     *
+     * @param data The IDPSSOFederate request that includes the information to be cached.
+     */
+    private void saveAuthenticationRequestInfoInIdpCache(IDPSSOFederateRequest data) {
+        // save the AuthnRequest in the IDPCache so that it can be
+        // retrieved later when the user successfully authenticates
+        synchronized (IDPCache.authnRequestCache) {
+            IDPCache.authnRequestCache.put(data.getRequestID(), new CacheObject(data.getAuthnRequest()));
+        }
+
+        // save the AuthnContext in the IDPCache so that it can be
+        // retrieved later when the user successfully authenticates
+        synchronized (IDPCache.idpAuthnContextCache) {
+            IDPCache.idpAuthnContextCache.put(data.getRequestID(), new CacheObject(data.getMatchingAuthnContext()));
+        }
+
+        // save the relay state in the IDPCache so that it can be
+        // retrieved later when the user successfully authenticates
+        if (StringUtils.isNotBlank(data.getRelayState())) {
+            IDPCache.relayStateCache.put(data.getRequestID(), data.getRelayState());
+        }
+    }
+
+    /**
      * clean up the cache created for session upgrade.
      */
     private static void cleanUpCache(String reqID) {
         IDPCache.authnRequestCache.remove(reqID);
+        IDPCache.idpAuthnContextCache.remove(reqID);
     }
 }

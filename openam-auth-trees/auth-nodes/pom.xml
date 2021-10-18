@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS. All Rights Reserved
+ * Copyright 2017-2021 ForgeRock AS. All Rights Reserved
  * 
 -->
 
@@ -20,7 +20,7 @@
     <parent>
         <artifactId>openam-auth-trees</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>6.5.3</version>
+        <version>6.5.4</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -121,6 +121,14 @@
             <artifactId>openam-shared</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-api-mockito2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-module-junit4</artifactId>
         </dependency>
     </dependencies>
 </project>

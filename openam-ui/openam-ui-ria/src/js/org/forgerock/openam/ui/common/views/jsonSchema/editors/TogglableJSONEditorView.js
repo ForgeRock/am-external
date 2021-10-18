@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2018 ForgeRock AS.
+ * Copyright 2016-2021 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -37,6 +37,7 @@ const TogglableJSONEditorView = Backbone.View.extend({
         this.options.enablePropertyValue = this.options.values.raw[this.options.enablePropertyKey];
         this.options.schema = options.schema.omit(this.options.enablePropertyKey);
         this.options.values = options.values.omit(this.options.enablePropertyKey);
+        this.options.isEmpty = this.options.schema.isEmpty();
     },
     onEnabledChange (event) {
         const ANIMATION_DURATION_IN_MILLISECONDS = 250;
@@ -46,7 +47,7 @@ const TogglableJSONEditorView = Backbone.View.extend({
 
         this.$el.find(".block-header").toggleClass("block-header-inactive");
 
-        if (!this.options.schema.isEmpty()) {
+        if (!this.options.isEmpty) {
             if (enabled) {
                 this.$el.find("[data-toggleable-json-editor]").slideDown(ANIMATION_DURATION_IN_MILLISECONDS);
             } else {
@@ -68,7 +69,7 @@ const TogglableJSONEditorView = Backbone.View.extend({
             values: this.options.values
         });
 
-        if (!this.options.enablePropertyValue) {
+        if (!this.options.enablePropertyValue || this.options.isEmpty) {
             this.$el.find("[data-toggleable-json-editor]").hide();
         }
         this.jsonEditor.render();

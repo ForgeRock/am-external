@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -53,8 +53,14 @@ public final class SharedStateConstants {
     /** The time at which the one time password was created. */
     public static final String ONE_TIME_PASSWORD_TIMESTAMP = "oneTimePasswordTimestamp";
 
+    /** The encrypted OTP and timestamp at which the one time password was created. */
+    public static final String ONE_TIME_PASSWORD_ENCRYPTED = "oneTimePasswordEncrypted";
+
     /** The countdown of number of retries remaining. */
     public static final String RETRIES_REMAINING = "retriesRemaining";
+
+    /** The count of number of retries. */
+    public static final String RETRY_COUNT = "retryCount";
 
     /** The user's email address. */
     public static final String EMAIL_ADDRESS = "emailAddress";

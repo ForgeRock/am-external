@@ -24,7 +24,7 @@
  *
  * $Id: IDPArtifactResolution.java,v 1.13 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2012-2019 ForgeRock AS.
+ * Portions Copyrighted 2012-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
@@ -396,6 +396,7 @@ public class IDPArtifactResolution {
         }
 
         if (res == null) {
+            SAML2Utils.debug.error("Unable to find response for artifact {}", artStr);
             return SOAPCommunicator.getInstance().createSOAPFault(SAML2Constants.CLIENT_FAULT,
                     saml2FailoverEnabled ? "UnableToFindResponseInRepo"
                             : "UnableToFindResponse", null);

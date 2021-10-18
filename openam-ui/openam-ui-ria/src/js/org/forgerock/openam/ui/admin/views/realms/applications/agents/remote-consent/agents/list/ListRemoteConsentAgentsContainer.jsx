@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
 import { isEqual, map, values } from "lodash";
@@ -47,7 +47,7 @@ class ListRemoteConsentAgentsContainer extends Component {
         this.handleTableDataChange(this.props.pagination);
     }
 
-    componentWillReceiveProps (nextProps) {
+    UNSAFE_componentWillReceiveProps (nextProps) {
         if (!isEqual(this.props.pagination, nextProps.pagination)) {
             this.handleTableDataChange(nextProps.pagination);
         }

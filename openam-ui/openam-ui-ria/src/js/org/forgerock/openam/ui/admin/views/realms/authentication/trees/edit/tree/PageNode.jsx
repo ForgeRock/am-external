@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
 import React, { Component } from "react";
@@ -100,6 +100,7 @@ PageNode.propTypes = {
     isSelected: PropTypes.bool.isRequired,
     localNodeProperties: PropTypes.objectOf(PropTypes.object).isRequired,
     node: PropTypes.shape({
+        // eslint-disable-next-line react/forbid-prop-types
         _outcomes: PropTypes.array.isRequired
     }).isRequired,
     onConnectionFinish: PropTypes.func.isRequired,

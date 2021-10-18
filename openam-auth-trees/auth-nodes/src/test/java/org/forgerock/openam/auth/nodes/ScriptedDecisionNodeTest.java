@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -22,7 +22,7 @@ import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
+import static org.mockito.BDDMockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -37,6 +37,7 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.crypto.NodeSharedStateCrypto;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmTestHelper;
 import org.forgerock.openam.scripting.ScriptEvaluator;
@@ -63,27 +64,30 @@ import java.util.Map;
 public class ScriptedDecisionNodeTest extends GuiceTestCase {
 
     @Mock
-    ScriptEvaluator scriptEvaluator;
+    private ScriptEvaluator scriptEvaluator;
 
     @Mock
-    ScriptConfiguration scriptConfiguration;
+    private ScriptConfiguration scriptConfiguration;
 
     @Mock
-    ScriptHttpClientFactory httpClientFactory;
+    private ScriptHttpClientFactory httpClientFactory;
 
     @Mock
-    ScriptedDecisionNode.Config serviceConfig;
+    private ScriptedDecisionNode.Config serviceConfig;
 
     @Mock
-    ListMultimap<String, String> headers;
+    private ListMultimap<String, String> headers;
 
     @Mock
-    ScriptIdentityRepository.Factory scriptIdentityRepositoryFactory;
+    private ScriptIdentityRepository.Factory scriptIdentityRepositoryFactory;
+
+    @Mock
+    private NodeSharedStateCrypto crypto;
 
     @RealmTestHelper.RealmHelper
     static Realm mockRealm;
 
-    ScriptedDecisionNode node;
+    private ScriptedDecisionNode node;
 
     @BeforeMethod
     public void setup() throws Exception {
@@ -94,7 +98,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
         given(serviceConfig.script()).willReturn(scriptConfiguration);
         given(serviceConfig.outcomes()).willReturn(ImmutableList.of("a", "b"));
         node = new ScriptedDecisionNode(scriptEvaluator, serviceConfig, null, httpClientFactory,
-                mockRealm, scriptIdentityRepositoryFactory);
+                mockRealm, scriptIdentityRepositoryFactory, crypto);
     }
 
     @Test

@@ -24,20 +24,18 @@
  *
  * $Id: ResponseImpl.java,v 1.4 2009/12/16 05:26:39 ericow Exp $
  *
- * Portions Copyrighted 2018 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
 
 package com.sun.identity.saml2.protocol.impl;
 
-import java.security.PublicKey;
 import java.text.ParseException;
-import java.util.Date;
-import java.util.Iterator;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
@@ -46,21 +44,17 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.sun.identity.shared.xml.XMLUtils;
-import com.sun.identity.shared.DateUtils;
 import com.sun.identity.saml.common.SAMLUtils;
-import com.sun.identity.saml.xmlsig.XMLSignatureException;
 import com.sun.identity.saml2.assertion.Assertion;
-import com.sun.identity.saml2.assertion.EncryptedAssertion;
 import com.sun.identity.saml2.assertion.AssertionFactory;
-import com.sun.identity.saml2.assertion.Issuer;
+import com.sun.identity.saml2.assertion.EncryptedAssertion;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
-import com.sun.identity.saml2.protocol.Status;
-import com.sun.identity.saml2.protocol.Extensions;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.Response;
+import com.sun.identity.shared.DateUtils;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * This is an implementation of interface <code>Response</code>.
@@ -433,7 +427,7 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
         result.append("<").append(prefix).append("Response").
                 append(uri).append(" ID=\"").append(responseId).append("\"");
 	if (inResponseTo != null && inResponseTo.trim().length() != 0) {
-	    result.append(" InResponseTo=\"").append(inResponseTo).append("\"");
+	    result.append(" InResponseTo=\"").append(XMLUtils.escapeSpecialCharacters(inResponseTo)).append("\"");
 	}
 
         result.append(" Version=\"").append(version).append("\"").

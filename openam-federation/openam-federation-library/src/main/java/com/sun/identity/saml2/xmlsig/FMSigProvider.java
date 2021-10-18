@@ -24,7 +24,7 @@
  *
  * $Id: FMSigProvider.java,v 1.5 2009/05/09 15:43:59 mallas Exp $
  *
- *  Portions Copyrighted 2011-2020 ForgeRock AS.
+ * Portions Copyrighted 2011-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.xmlsig;
 
@@ -248,6 +248,10 @@ public final class FMSigProvider implements SigProvider {
         if (doc == null) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
         }
+        if (CollectionUtils.isEmpty(verificationCerts)) {
+            SAML2SDKUtils.debug.message("{}No certificates provided - certificates have to be read from document",
+                    classMethod);
+        }
         Element nscontext = org.apache.xml.security.utils.XMLUtils.createDSctx(doc, "ds", Constants.SignatureSpecNS);
         Element sigElement;
         try {
@@ -279,20 +283,27 @@ public final class FMSigProvider implements SigProvider {
         KeyInfo ki = signature.getKeyInfo();
         X509Certificate certToUse = null;
         if (ki != null && ki.containsX509Data()) {
-            try {
-                certToUse = ki.getX509Certificate();
-            } catch (KeyResolverException kre) {
-                SAML2SDKUtils.debug.error("{}Could not obtain a certificate from inside the document.", classMethod);
-                certToUse = null;
-            }
-            if (certToUse != null && checkCert) {
-                if ((CollectionUtils.isNotEmpty(verificationCerts)) && !verificationCerts.contains(certToUse)) {
-                    SAML2SDKUtils.debug.error("{}The cert contained in the document is NOT trusted", classMethod);
-                    throw new SAML2Exception(SAML2SDKUtils.bundle.getString("invalidCertificate"));
-                }
-                SAML2SDKUtils.debug.message("{}The cert contained in the document is trusted", classMethod);
-            }
-        }
+			try {
+				certToUse = ki.getX509Certificate();
+			} catch (KeyResolverException kre) {
+				SAML2SDKUtils.debug.error("{}Could not obtain a certificate from inside the document.", classMethod);
+				certToUse = null;
+			}
+			if (certToUse != null) {
+				if (checkCert) {
+					if ((CollectionUtils.isNotEmpty(verificationCerts)) && !verificationCerts.contains(certToUse)) {
+						SAML2SDKUtils.debug.error("{}The cert contained in the document is NOT trusted. {}",
+								classMethod, SAML2Utils.getDebugInfoFromCertificate(certToUse));
+						throw new SAML2Exception(SAML2SDKUtils.bundle.getString("invalidCertificate"));
+					}
+					SAML2SDKUtils.debug.message("{}The cert contained in the document is trusted", classMethod);
+				} else {
+					SAML2SDKUtils.debug.error("{}The cert contained in the document has NOT been checked, " +
+									"com.sun.identity.saml.checkcert should be enabled. {}",
+							classMethod, SAML2Utils.getDebugInfoFromCertificate(certToUse));
+				}
+			}
+		}
 
         if (certToUse != null) {
             verificationCerts = Collections.singleton(certToUse);
@@ -312,9 +323,13 @@ public final class FMSigProvider implements SigProvider {
         XMLSignatureException firstException = null;
         for (X509Certificate certificate : certificates) {
             if (!SAML2Utils.validateCertificate(certificate)) {
-                SAML2SDKUtils.debug.error(classMethod + "Signing Certificate is validated as bad.");
+                SAML2SDKUtils.debug.error("{} Signing Certificate {} is validated as bad."
+                        , classMethod
+                        , SAML2Utils.getDebugInfoFromCertificate(certificate));
             } else {
                 try {
+                    SAML2SDKUtils.debug.message("{} Using cert {} to validate signature", classMethod,
+                            SAML2Utils.getDebugInfoFromCertificate(certificate));
                     if (signature.checkSignatureValue(certificate)) {
                         return true;
                     }

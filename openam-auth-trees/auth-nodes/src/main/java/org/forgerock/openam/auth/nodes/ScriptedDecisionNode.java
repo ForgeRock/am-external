@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -45,6 +45,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.crypto.NodeSharedStateCrypto;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.scripting.Script;
 import org.forgerock.openam.scripting.ScriptEvaluator;
@@ -79,6 +80,7 @@ public class ScriptedDecisionNode implements Node {
     private static final String EXISTING_SESSION = "existingSession";
 
     private static final String SHARED_STATE_IDENTIFIER = "sharedState";
+    private static final String SHARED_STATE_CRYPTO = "sharedStateCrypto";
     private static final String TRANSIENT_STATE_IDENTIFIER = "transientState";
     private static final String OUTCOME_IDENTIFIER = "outcome";
     private static final String ACTION_IDENTIFIER = "action";
@@ -119,6 +121,7 @@ public class ScriptedDecisionNode implements Node {
     private final RestletHttpClient httpClient;
     private final Realm realm;
     private final ScriptIdentityRepository scriptIdentityRepo;
+    private final NodeSharedStateCrypto crypto;
     private JsonValue auditEntryDetail;
 
     /**
@@ -130,18 +133,20 @@ public class ScriptedDecisionNode implements Node {
      * @param httpClientFactory provides http clients.
      * @param realm The realm the node is in, and that the request is targeting.
      * @param scriptIdentityRepoFactory factory to build access to the identity repo for this node's script
+     * @param crypto the {@link NodeSharedStateCrypto} ... // FIXME
      */
     @Inject
     public ScriptedDecisionNode(@Named(AUTHENTICATION_TREE_DECISION_NODE_NAME) ScriptEvaluator scriptEvaluator,
             @Assisted Config config, Provider<SessionService> sessionServiceProvider,
             ScriptHttpClientFactory httpClientFactory, @Assisted Realm realm,
-            ScriptIdentityRepository.Factory scriptIdentityRepoFactory) {
+            ScriptIdentityRepository.Factory scriptIdentityRepoFactory, NodeSharedStateCrypto crypto) {
         this.scriptEvaluator = scriptEvaluator;
         this.config = config;
         this.sessionServiceProvider = sessionServiceProvider;
         this.httpClient = getHttpClient(httpClientFactory);
         this.realm = realm;
         this.scriptIdentityRepo = scriptIdentityRepoFactory.create(realm);
+        this.crypto = crypto;
         this.auditEntryDetail = null;
     }
 
@@ -163,6 +168,7 @@ public class ScriptedDecisionNode implements Node {
                     config.script().getLanguage());
             Bindings binding = new SimpleBindings();
             binding.put(SHARED_STATE_IDENTIFIER, context.sharedState.getObject());
+            binding.put(SHARED_STATE_CRYPTO, crypto);
             binding.put(TRANSIENT_STATE_IDENTIFIER, context.transientState.getObject());
             binding.put(CALLBACKS_IDENTIFIER, context.getAllCallbacks());
             binding.put(ID_REPO_IDENTIFIER, scriptIdentityRepo);

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -55,6 +55,7 @@ import org.forgerock.openam.ldap.LDAPUtilException;
 import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.openam.ldap.ModuleState;
 import org.forgerock.openam.sm.annotations.adapters.Password;
+import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.opendj.ldap.Dn;
 import org.forgerock.opendj.ldap.ResultCode;
 import org.forgerock.util.i18n.PreferredLocales;
@@ -316,10 +317,8 @@ public class LdapDecisionNode implements Node {
                 logger.warn("Server error");
                 throw new NodeProcessException(bundle.getString("ServerError"));
             } else {
-                String userLockedStatus = ldapUtil.getUserAttributeValues()
-                        .get(USER_STATUS_ATTRIBUTE)
-                        .iterator()
-                        .next();
+                String userLockedStatus = CollectionUtils.getFirstItem(
+                        ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE));
                 if (StringUtils.isNotEmpty(userLockedStatus) && !userLockedStatus.equalsIgnoreCase(STATUS_ACTIVE)) {
                     action = goTo(LdapOutcome.LOCKED).withErrorMessage(bundle.getString("accountLocked"));
                 } else {
@@ -342,6 +341,9 @@ public class LdapDecisionNode implements Node {
      */
     private boolean authenticateUser(LDAPAuthUtils ldapUtil, String userName, String userPassword)
             throws LDAPUtilException {
+        if (StringUtils.isBlank(userName) || StringUtils.isBlank(userPassword)) {
+            throw new LDAPUtilException("CredInvalid", ResultCode.INVALID_CREDENTIALS, null);
+        }
         try {
             ldapUtil.authenticateUser(userName, userPassword);
             return true;
@@ -548,6 +550,10 @@ public class LdapDecisionNode implements Node {
         ActionBuilder passwordChangeResult = goTo(LdapOutcome.TRUE);
         logger.debug("passwordState {}", passwordState);
         switch (passwordState) {
+        case ACCOUNT_LOCKED:
+            passwordChangeResult = Action
+                    .send(passwordChangeCallbacks(ERROR, bundle.getString("AcctInactive")));
+            break;
         case PASSWORD_UPDATED_SUCCESSFULLY:
             break;
         case PASSWORD_NOT_UPDATE:

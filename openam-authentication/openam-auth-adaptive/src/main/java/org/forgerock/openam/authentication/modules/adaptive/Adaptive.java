@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2017 ForgeRock AS.
+ * Copyright 2011-2020 ForgeRock AS.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -660,10 +660,13 @@ public class Adaptive extends AMLoginModule {
             return geoLocationScore;
         }
 
-        if (debug.messageEnabled()) {
-            debug.message("{}.checkGeoLocation: {} returns {}", ADAPTIVE, clientIP, countryCode);
+        if (StringUtils.isEmpty(countryCode)) {
+            debug.message("{}.checkGeoLocation: #getCountryCode {} returns countryCode as empty or null",
+                    ADAPTIVE, clientIP);
+            return geoLocationScore;
         }
 
+        debug.message("{}.checkGeoLocation: #getCountryCode {} returns {}", ADAPTIVE, clientIP, countryCode);
         StringTokenizer st = new StringTokenizer(geoLocationValues, "|");
         while (st.hasMoreTokens()) {
             if (countryCode.equalsIgnoreCase(st.nextToken())) {

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 import { cloneDeep, debounce, get, max, reduce, without } from "lodash";
 import { DragDropContext } from "react-dnd";
@@ -77,7 +77,7 @@ class EditTree extends Component {
         this.handleWindowResize = this.handleWindowResize.bind(this);
     }
 
-    componentWillMount () {
+    UNSAFE_componentWillMount () {
         window.addEventListener("resize", debounce(this.handleWindowResize, 100));
     }
 

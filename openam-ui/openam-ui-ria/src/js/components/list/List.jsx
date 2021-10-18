@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
 import { isEmpty, isEqual, map, omit } from "lodash";
@@ -34,7 +34,7 @@ class List extends Component {
         this.handleSelectedChange = this.handleSelectedChange.bind(this);
     }
 
-    componentWillReceiveProps (nextProps) {
+    UNSAFE_componentWillReceiveProps (nextProps) {
         const listHasChanged = !isEqual(
             map(this.props.items, this.props.keyField).sort(),
             map(nextProps.items, this.props.keyField).sort()

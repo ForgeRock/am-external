@@ -24,7 +24,7 @@
  *
  * $Id: StatusResponseImpl.java,v 1.4 2008/06/25 05:48:01 qcheng Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.protocol.impl;
 
@@ -34,6 +34,8 @@ import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.Set;
+
+import org.w3c.dom.Element;
 
 import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.common.SAML2Constants;
@@ -45,8 +47,6 @@ import com.sun.identity.saml2.protocol.StatusResponse;
 import com.sun.identity.saml2.xmlsig.SigManager;
 import com.sun.identity.shared.DateUtils;
 import com.sun.identity.shared.xml.XMLUtils;
-
-import org.w3c.dom.Element;
 
 
 /**
@@ -435,7 +435,7 @@ public abstract class StatusResponseImpl implements StatusResponse {
             .append(SAML2Constants.INRESPONSETO)
             .append(SAML2Constants.EQUAL)
             .append(SAML2Constants.QUOTE)
-            .append(inResponseTo)
+            .append(XMLUtils.escapeSpecialCharacters(inResponseTo))
             .append(SAML2Constants.QUOTE);
         }
         

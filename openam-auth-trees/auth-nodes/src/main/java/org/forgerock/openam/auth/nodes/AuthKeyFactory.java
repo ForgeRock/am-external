@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2020 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -19,11 +19,8 @@ package org.forgerock.openam.auth.nodes;
 import java.io.FileNotFoundException;
 import java.security.AccessController;
 import java.security.Key;
-import java.security.KeyStore;
 
 import org.forgerock.openam.utils.AMKeyProvider;
-import org.forgerock.security.keystore.KeyStoreBuilder;
-import org.forgerock.security.keystore.KeyStoreManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,13 +57,7 @@ public class AuthKeyFactory {
         logger.debug("getPrivateAuthKey method started");
         String keyAlias = getKeyAlias(orgName);
         logger.debug("keyAlias {}", keyAlias);
-        final KeyStore keyStore = new KeyStoreBuilder()
-                .withKeyStoreFile(amKeyProvider.getKeystoreFilePath())
-                .withPassword(amKeyProvider.getKeystorePass())
-                .withKeyStoreType(amKeyProvider.getKeystoreType())
-                .build();
-        logger.debug("Keystore built successfully");
-        return new KeyStoreManager(keyStore).getPrivateKey(keyAlias, amKeyProvider.getPrivateKeyPass());
+        return amKeyProvider.getPrivateKey(keyAlias);
     }
 
     /**
@@ -84,13 +75,7 @@ public class AuthKeyFactory {
         logger.debug("getPublicAuthKey started");
         String keyAlias = getKeyAlias(orgName);
         logger.debug("keyAlias {}", keyAlias);
-        final KeyStore keyStore = new KeyStoreBuilder()
-                .withKeyStoreFile(amKeyProvider.getKeystoreFilePath())
-                .withPassword(amKeyProvider.getKeystorePass())
-                .withKeyStoreType(amKeyProvider.getKeystoreType())
-                .build();
-        logger.debug("KeyStore built successfully");
-        return new KeyStoreManager(keyStore).getPublicKey(keyAlias);
+        return amKeyProvider.getPublicKey(keyAlias);
     }
 
     private String getKeyAlias(String orgName) throws SMSException, SSOException {

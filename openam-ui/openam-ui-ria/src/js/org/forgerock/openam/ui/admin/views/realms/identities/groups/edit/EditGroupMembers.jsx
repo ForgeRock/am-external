@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2020 ForgeRock AS.
  */
 
 import { Button, Col, Form, FormGroup, Panel } from "react-bootstrap";
@@ -35,7 +35,7 @@ class EditGroupMembers extends Component {
         this.setRef = this.setRef.bind(this);
     }
 
-    componentWillReceiveProps (nextProps) {
+    UNSAFE_componentWillReceiveProps (nextProps) {
         if (this.jsonSchemaView && !isEqual(this.props.schema, nextProps.schema)) {
             this.jsonSchemaView.destroy();
             this.jsonSchemaView = null;
