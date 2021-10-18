@@ -18,6 +18,7 @@ AM 7.1.0          |  releases/7.1.0
 AM 7.0.2          |  releases/7.0.2
 AM 7.0.1          |  releases/7.0.1
 AM 7.0.0          |  releases/7.0.0
+AM 6.5.4          |  releases/6.5.4
 AM 6.5.3          |  releases/6.5.3
 AM 6.5.2.3        |  releases/6.5.2.3
 AM 6.5.2.2        |  releases/6.5.2.2
