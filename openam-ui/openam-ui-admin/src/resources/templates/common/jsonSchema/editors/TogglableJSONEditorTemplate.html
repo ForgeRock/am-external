@@ -14,14 +14,23 @@
   Copyright 2016-2021 ForgeRock AS. All Rights Reserved
 }}
 <div class="form-inline">
-    <label class="am-toggle-switch pull-right">
-        <input data-json-editor-toggle type="checkbox" {{#if enablePropertyValue}}checked{{/if}} />
-        <span />
-    </label>
+    {{#if isEmpty}}
+      <label class="am-toggle-switch pull-right">
+          <input data-json-editor-toggle type="checkbox" {{#if enablePropertyValue}}checked{{/if}} />
+          <span />
+      </label>
+    {{/if}}
 
     <h3 class="block-header {{#unless enablePropertyValue}}block-header-inactive{{/unless}}">
         {{schema.raw.title}}
     </h3>
+
+    {{#unless isEmpty}}
+      <label class="am-toggle-switch pull-left">
+          <input data-json-editor-toggle type="checkbox" {{#if enablePropertyValue}}checked{{/if}} />
+          <span />
+      </label>
+    {{/unless}}
 
     {{#if schema.raw.description}}
         <span class="text-muted">schema.raw.description</span>

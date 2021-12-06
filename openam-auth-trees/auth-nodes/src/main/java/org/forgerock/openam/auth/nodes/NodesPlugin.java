@@ -48,7 +48,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public String getPluginVersion() {
-        return "8.0.0";
+        return "8.0.2";
     }
 
     @Override
@@ -59,6 +59,9 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 && VersionComparison.compareVersionStrings("6.0.0", fromVersion) < 0) {
             pluginTools.upgradeAuthNode(WebAuthnAuthenticationNode.class);
             pluginTools.upgradeAuthNode(WebAuthnRegistrationNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("1.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("5.0.0", fromVersion) < 0) {
             pluginTools.upgradeAuthNode(ScriptedDecisionNode.class);
         }
         if (VersionComparison.compareVersionStrings("2.0.0", fromVersion) >= 0
@@ -70,6 +73,14 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 && VersionComparison.compareVersionStrings("8.0.0", fromVersion) < 0) {
             pluginTools.upgradeAuthNode(RetryLimitDecisionNode.class);
         }
+        if (VersionComparison.compareVersionStrings("5.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.0.0", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(SocialProviderHandlerNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("4.5.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.0.2", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(ChoiceCollectorNode.class);
+        }
         super.upgrade(fromVersion);
     }
 
@@ -77,6 +88,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
     protected Map<String, Iterable<? extends Class<? extends Node>>> getNodesByVersion() {
         return new ImmutableMap.Builder<String, Iterable<? extends Class<? extends Node>>>()
                 .put("1.0.0", asList(
+                        ChoiceCollectorNode.class,
                         AuthLevelDecisionNode.class,
                         DataStoreDecisionNode.class,
                         PasswordCollectorNode.class,

@@ -61,6 +61,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
@@ -4187,7 +4188,7 @@ public class SAML2Utils extends SAML2SDKUtils {
 
     private static boolean endpointsMatch(String url, String other) {
         try {
-            return UriUtils.urisEqualIgnoringScheme(url, other);
+            return UriUtils.urisEqualIgnoringQueryAndFragment(url, other);
         } catch (URISyntaxException e) {
             return false;
         }
@@ -4776,5 +4777,30 @@ public class SAML2Utils extends SAML2SDKUtils {
                 .map(BigInteger.class::cast)
                 .map(BigInteger::intValue)
                 .orElse(0);
+    }
+
+    /**
+     * Returns significant information from a certificate
+     * @param cert  the X509Certificate to retrieve significant info from
+     * @return significant information from a certificate in form CertInfo: [SubjectDN : SUBJECT_DN;
+     * Issuer: ISSUER_DN; SerialNumber : HEX_SERIALNUMBER]
+     * or <code>null</code> if it was invoked with <code>null</code>
+     */
+    public static String getDebugInfoFromCertificate(final X509Certificate cert) {
+        StringBuilder certInfoBuilder = new StringBuilder();
+
+        if (!Objects.isNull(cert)) {
+            certInfoBuilder.append("CertInfo: [")
+                           .append("SubjectDN : ")
+                           .append(cert.getSubjectDN().getName())
+                           .append(";")
+                           .append(" Issuer: ")
+                           .append(cert.getIssuerDN())
+                           .append(";")
+                           .append(" SerialNumber : ")
+                           .append(cert.getSerialNumber().toString(16))
+                           .append("]");
+        }
+        return certInfoBuilder.toString();
     }
 }

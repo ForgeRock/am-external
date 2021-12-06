@@ -51,6 +51,7 @@ import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.sun.identity.saml2.profile.SPCache;
 import org.forgerock.am.saml2.api.AuthComparison;
 import org.forgerock.am.saml2.api.Saml2Options;
 import org.forgerock.am.saml2.api.Saml2SsoException;
@@ -269,6 +270,13 @@ public class SAML2 extends AMLoginModule {
         if (data == null) {
             return processError(bundle.getString("localLinkError"), "SAML2 :: handleReturnFromRedirect() : "
                     + "Unable to perform local linking - response data not found");
+        } else {
+            try {
+                SAML2FailoverUtils.deleteSAML2Token(responseKey);
+            } catch (SAML2TokenRepositoryException e) {
+                logger.error("Failed to remove data for responseKey {}", responseKey, e);
+            }
+            SPCache.samlResponseDataHash.put(responseKey, data);
         }
 
         storageKey = responseKey;

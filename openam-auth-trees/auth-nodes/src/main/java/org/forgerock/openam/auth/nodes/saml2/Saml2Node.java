@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
@@ -361,6 +361,12 @@ public class Saml2Node extends AbstractDecisionNode {
         if (data == null) {
             logger.error("Unable to complete SAML2 authentication, response data not found");
             throw new NodeProcessException(bundle.getString(Saml2ClientConstants.SAML_FAILOVER_ERROR_CODE));
+        } else {
+            try {
+                responseUtils.removeSaml2ResponseData(storageKey);
+            } catch (SAML2TokenRepositoryException e) {
+                logger.error("Failed to remove data for responseKey starting with {}", storageKey.substring(0, 6), e);
+            }
         }
 
         Subject subject = data.getSubject();

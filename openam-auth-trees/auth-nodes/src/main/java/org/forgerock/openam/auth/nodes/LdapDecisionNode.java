@@ -31,6 +31,7 @@ import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMod
 import static org.forgerock.openam.ldap.LDAPConstants.STATUS_ACTIVE;
 import static org.forgerock.openam.ldap.LDAPConstants.STATUS_INACTIVE;
 import static org.forgerock.openam.ldap.ModuleState.CHANGE_AFTER_RESET;
+import static org.forgerock.openam.ldap.ModuleState.PASSWORD_UPDATED_SUCCESSFULLY;
 
 import java.util.List;
 import java.util.Optional;
@@ -399,6 +400,9 @@ public class LdapDecisionNode implements Node {
             }
             logger.debug("Password change state :{}", passwordChangeState);
             action = processPasswordChange(passwordChangeState);
+            if (passwordChangeState == PASSWORD_UPDATED_SUCCESSFULLY) {
+                action.replaceTransientState(context.transientState.copy().put(PASSWORD, newPassword));
+            }
         } else {
             if (userPasswordHasBeenReset(context)) {
                 action = goTo(LdapOutcome.CANCELLED);

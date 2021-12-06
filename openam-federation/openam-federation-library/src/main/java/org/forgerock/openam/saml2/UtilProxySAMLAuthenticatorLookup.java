@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS.
+ * Copyright 2015-2021 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
@@ -27,6 +27,7 @@ import java.util.logging.Level;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.sun.identity.saml2.assertion.AuthnContext;
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.jwe.EncryptedJwt;
 import org.forgerock.json.jose.jwt.Jwt;
@@ -126,6 +127,7 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
         try {
             String saml2Request = request.getParameter("saml2Request");
             if (StringUtils.isNotEmpty(saml2Request)) {
+                logger.debug("Retrieving saml2Request from client storage");
                 Jwt saml2RequestJwt = decryptLocalStorageJwt(saml2Request);
                 JwtClaimsSet claimsSet = saml2RequestJwt.getClaimsSet();
                 validateSaml2RequestJwt(claimsSet);
@@ -137,10 +139,19 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
                             claimsSet.get("authnContext").asString()));
                 }
             } else {
+                logger.debug("Retrieving saml2Request from server side cache");
                 cacheObj = (CacheObject) IDPCache.authnRequestCache.get(data.getRequestID());
                 if (cacheObj != null) {
                     data.setAuthnRequest((AuthnRequest) cacheObj.getObject());
                 }
+
+                synchronized (IDPCache.idpAuthnContextCache) {
+                    cacheObj = (CacheObject) IDPCache.idpAuthnContextCache.get(data.getRequestID());
+                }
+                if (cacheObj != null) {
+                    data.setMatchingAuthnContext((AuthnContext) cacheObj.getObject());
+                }
+
                 data.setRelayState((String) IDPCache.relayStateCache.get(data.getRequestID()));
             }
         } catch (SAML2Exception e) {
@@ -171,6 +182,7 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
         // End of block for IDP Adapter invocation
 
         IDPCache.authnRequestCache.remove(data.getRequestID());
+        IDPCache.idpAuthnContextCache.remove(data.getRequestID());
         IDPCache.relayStateCache.remove(data.getRequestID());
 
         if (data.getAuthnRequest() == null) {

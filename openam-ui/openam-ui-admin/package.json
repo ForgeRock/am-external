@@ -13,7 +13,7 @@
         "test": "mocha-webpack --opts config/mocha-webpack/configuration.opts"
     },
     "dependencies": {
-        "@forgerock/crest-js": "2.1.5",
+        "@forgerock/crest-js": "2.1.7",
         "ajv": "6.12.3",
         "backbone": "1.4.0",
         "backbone.paginator": "2.0.8",
@@ -61,7 +61,7 @@
         "redux-actions": "2.6.5",
         "selectize": "0.12.6",
         "spin.js": "2.3.2",
-        "urijs": "1.19.6",
+        "urijs": "1.19.7",
         "uuid": "3.3.3",
         "whatwg-fetch": "3.0.0"
     },
@@ -130,6 +130,7 @@
         "less/request/har-validator/ajv": "6.12.3",
         "jquery-sortable/jquery": "3.5.1",
         "selectize/sifter/optimist/minimist": "0.2.1",
-        "**/**/underscore": "1.12.1"
+        "**/**/underscore": "1.12.1",
+        "**/**/path-parse": "1.0.7"
     }
 }

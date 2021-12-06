@@ -33,6 +33,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.utils.Time;
 import org.slf4j.Logger;
@@ -92,8 +93,11 @@ public class OneTimePasswordCollectorDecisionNode extends AbstractDecisionNode {
     }
 
     private Action checkPassword(TreeContext context, String password) {
-        JsonValue oneTimePassword = context.getState(ONE_TIME_PASSWORD);
-        JsonValue passwordTimestamp = context.getState(ONE_TIME_PASSWORD_TIMESTAMP);
+        NodeState nodeState = context.getStateFor(this);
+        JsonValue oneTimePassword = nodeState.get(ONE_TIME_PASSWORD);
+        JsonValue passwordTimestamp = nodeState.get(ONE_TIME_PASSWORD_TIMESTAMP);
+        nodeState.remove(ONE_TIME_PASSWORD);
+        nodeState.remove(ONE_TIME_PASSWORD_TIMESTAMP);
 
         boolean passwordMatches = oneTimePassword != null && oneTimePassword.isString()
                 && oneTimePassword.asString().equals(password)

@@ -13,7 +13,7 @@
     "test": "mocha-webpack --opts config/mocha-webpack/configuration.opts"
   },
   "dependencies": {
-    "@forgerock/crest-js": "2.1.5",
+    "@forgerock/crest-js": "2.1.7",
     "@forgerock/javascript-sdk": "2.2.0",
     "ajv": "6.12.3",
     "backbone": "1.4.0",
@@ -44,8 +44,8 @@
     "redux-actions": "2.6.5",
     "selectize": "0.12.6",
     "spin.js": "2.3.2",
-    "urijs": "1.19.6",
-    "ua-parser-js": "0.7.24",
+    "urijs": "1.19.7",
+    "ua-parser-js": "0.7.30",
     "whatwg-fetch": "3.0.0"
   },
   "devDependencies": {
@@ -115,6 +115,7 @@
     "**/**/json5/minimist": "1.2.5",
     "**/**/mkdirp/minimist": "1.2.5",
     "**/**/rc/minimist": "1.2.5",
-    "**/**/underscore": "1.12.1"
+    "**/**/underscore": "1.12.1",
+    "**/**/path-parse": "1.0.7"
   }
 }

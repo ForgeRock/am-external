@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2021 ForgeRock AS.
  */
 
 import { clear as clearToken, get as getToken } from "./ReentryToken";
@@ -22,14 +22,26 @@ import { clear as clearToken, get as getToken } from "./ReentryToken";
  */
 
 export function set (token) {
-    sessionStorage.setItem(getToken(), token);
+    try {
+        sessionStorage.setItem(getToken(), token);
+    } catch (e) {
+        // Failed to retrieve item from session storage.
+    }
 }
 
 export function get () {
-    return sessionStorage.getItem(getToken());
+    try {
+        return sessionStorage.getItem(getToken());
+    } catch (e) {
+        // Failed to retrieve item from session storage.
+    }
 }
 
 export function remove () {
-    sessionStorage.removeItem(getToken());
+    try {
+        sessionStorage.removeItem(getToken());
+    } catch (e) {
+        // Failed to remove item from session storage.
+    }
     clearToken();
 }

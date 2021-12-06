@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.trustanchor;
 
@@ -27,6 +27,7 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AttestationType;
@@ -60,7 +61,7 @@ public class TrustAnchorValidator {
     @Inject
     public TrustAnchorValidator(@Named("X.509") CertificateFactory certFactory,
                                 @Named("PKIX") CertPathValidator certPathValidator,
-                                @Assisted Set<TrustAnchor> trustAnchors,
+                                @Assisted @Nullable Set<TrustAnchor> trustAnchors,
                                 @Assisted boolean enforcedRevocation) {
         this.certFactory = certFactory;
         this.certPathValidator = certPathValidator;

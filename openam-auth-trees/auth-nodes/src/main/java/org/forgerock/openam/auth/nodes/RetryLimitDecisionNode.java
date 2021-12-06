@@ -161,8 +161,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
     @Override
     public void onTreeComplete(TreeContext context, boolean success) throws NodeProcessException {
         if (success) {
-            AMIdentity identity = getIdentityFromContext(context);
-            retryStateHandler.clearAttribute(identity);
+            retryStateHandler.clearAttribute(context);
         }
     }
 
@@ -184,7 +183,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
 
         Action processReject(TreeContext context) throws NodeProcessException;
 
-        void clearAttribute(AMIdentity identity) throws NodeProcessException;
+        void clearAttribute(TreeContext context) throws NodeProcessException;
     }
 
     private class SharedStateRetryHandler implements RetryStateHandler {
@@ -206,7 +205,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
         }
 
         @Override
-        public void clearAttribute(AMIdentity identity) {
+        public void clearAttribute(TreeContext context) {
             // no action
         }
     }
@@ -237,22 +236,27 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
 
         @Override
         public Action processReject(TreeContext context) throws NodeProcessException {
-            clearAttribute(getIdentityFromContext(context));
+            clearAttribute(context);
             return goTo(REJECT).build();
         }
 
         @Override
-        public void clearAttribute(AMIdentity identity) throws NodeProcessException {
+        public void clearAttribute(TreeContext context) throws NodeProcessException {
             try {
-                Set<String> retryLimitNodeCounts = identity.getAttribute(RETRY_COUNT_ATTRIBUTE);
+                Optional<AMIdentity> amIdentity = getAMIdentity(context, identityUtils, coreWrapper);
+                if (amIdentity.isPresent()) {
+                    AMIdentity identity = amIdentity.get();
+                    Set<String> retryLimitNodeCounts = identity.getAttribute(RETRY_COUNT_ATTRIBUTE);
 
-                retryLimitNodeCounts.removeAll(
-                        retryLimitNodeCounts.stream()
-                                .filter(s -> s.startsWith(nodeId.toString()))
-                                .collect(Collectors.toList()));
-                identity.setAttributes(Collections.singletonMap(RETRY_COUNT_ATTRIBUTE, retryLimitNodeCounts));
-                identity.store();
+                    retryLimitNodeCounts.removeAll(
+                            retryLimitNodeCounts.stream()
+                                    .filter(s -> s.startsWith(nodeId.toString()))
+                                    .collect(Collectors.toList()));
+                    identity.setAttributes(Collections.singletonMap(RETRY_COUNT_ATTRIBUTE, retryLimitNodeCounts));
+                    identity.store();
+                }
             } catch (IdRepoException | SSOException e) {
+                logger.warn("Error clearing attribute", e);
                 throw new NodeProcessException("attribute.failure");
             }
         }

@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-authentication</artifactId>
-        <version>7.1.0</version>
+        <version>7.1.1</version>
     </parent>
 
     <name>OpenAM Device Id Authentication Module</name>
@@ -48,21 +48,4 @@
             <artifactId>openam-core-rest</artifactId>
         </dependency>
     </dependencies>
-    <repositories>
-        <repository>
-            <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 7.1.0</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.1.0-dependencies</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-    <pluginRepositories>
-        <pluginRepository>
-            <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Plugin Repository for AM 7.1.0</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.1.0-dependencies</url>
-        </pluginRepository>
-    </pluginRepositories>
 </project>

@@ -247,14 +247,14 @@ public final class FMSigProvider implements SigProvider {
                 if (checkCert) {
                     if ((CollectionUtils.isNotEmpty(verificationCerts)) && !verificationCerts.contains(certToUse)) {
                         logger.error("{}The cert contained in the document is NOT trusted. {}",
-                            classMethod, getCertInfo(certToUse));
+                            classMethod, SAML2Utils.getDebugInfoFromCertificate(certToUse));
                         throw new SAML2Exception(SAML2SDKUtils.bundle.getString("invalidCertificate"));
                     }
                     logger.debug("{}The cert contained in the document is trusted", classMethod);
                 } else {
                     logger.error("{}The cert contained in the document has NOT been checked, " +
                             "com.sun.identity.saml.checkcert should be enabled. {}",
-                        classMethod, getCertInfo(certToUse));
+                        classMethod, SAML2Utils.getDebugInfoFromCertificate(certToUse));
                 }
             }
         }
@@ -277,10 +277,13 @@ public final class FMSigProvider implements SigProvider {
         XMLSignatureException firstException = null;
         for (X509Certificate certificate : certificates) {
             if (!SAML2Utils.validateCertificate(certificate)) {
-                logger.error(classMethod + "Signing Certificate is validated as bad.");
+                logger.error("{} Signing Certificate is validated as bad.{}"
+                        , classMethod
+                        , SAML2Utils.getDebugInfoFromCertificate(certificate));
             } else {
                 try {
-                    logger.debug("{}Using cert {} to validate signature", classMethod, getCertInfo(certificate));
+                    logger.debug("{} Using cert to validate signature {}", classMethod,
+                            SAML2Utils.getDebugInfoFromCertificate(certificate));
                     if (signature.checkSignatureValue(certificate)) {
                         return true;
                     }
@@ -297,22 +300,5 @@ public final class FMSigProvider implements SigProvider {
         }
 
         return false;
-    }
-
-    private static String getCertInfo(X509Certificate cert) {
-        StringBuilder certInfoBuilder = new StringBuilder();
-        if (cert != null) {
-            certInfoBuilder.append("CertInfo: [");
-            certInfoBuilder.append("SubjectDN : ");
-            certInfoBuilder.append(cert.getSubjectDN().getName());
-            certInfoBuilder.append(";");
-            certInfoBuilder.append(" Issuer: ");
-            certInfoBuilder.append(cert.getIssuerDN());
-            certInfoBuilder.append(";");
-            certInfoBuilder.append(" SerialNumber : ");
-            certInfoBuilder.append(cert.getSerialNumber().toString(16));
-            certInfoBuilder.append("]");
-        }
-        return certInfoBuilder.toString();
     }
 }

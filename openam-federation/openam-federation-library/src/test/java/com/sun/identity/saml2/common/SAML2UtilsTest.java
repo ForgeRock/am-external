@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2020 ForgeRock AS.
+ * Copyright 2014-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.common;
@@ -138,6 +138,78 @@ public class SAML2UtilsTest {
         HttpServletRequest request = mockHttpServletRequest(getBaseUrl() + "Consumer/metaAlias/sp1");
         mockRequestDispatcher(request);
         createEntityDescriptor(getDefaultRealm(), spEntityID, getBaseUrl() + "AuthConsumer/metaAlias/sp1");
+        // When
+        SAML2Utils.verifyAssertionConsumerServiceLocation(
+                getDefaultRealm(), spEntityID, request, mockHttpServletResponse());
+    }
+
+    private void generateUrlCombinationTestCase(String[] baseUrls, String[] acsUrls, List<Object[]> params) {
+        List<String> testList = new ArrayList<>();
+        for (String path : baseUrls) {
+            for (String acs : acsUrls) {
+                testList.add(path + acs);
+            }
+        }
+        for (String request : testList) {
+            for (String acs: testList) {
+                params.add(new Object[] { request, acs });
+            }
+        }
+    }
+
+    @DataProvider
+    public Object[][] spACSPass() {
+        List<Object[]> params = new ArrayList<>();
+        final String spACSURL = "Consumer/metaAlias/sp1";
+        final String[] spACSURLs = new String[] { spACSURL, spACSURL + "?q=1", spACSURL + "?q=2", spACSURL + "?q2=1" };
+        generateUrlCombinationTestCase( new String[] { "http://localhost:8080/am/" }, spACSURLs, params);
+        generateUrlCombinationTestCase(new String[] { "http://localhost/am/", "http://localhost:80/am/" },
+                spACSURLs, params);
+        generateUrlCombinationTestCase(new String[] {"https://localhost/am/", "https://localhost:443/am/" },
+                spACSURLs, params);
+        return params.toArray(new Object[0][0]);
+    }
+
+    @Test(dataProvider = "spACSPass")
+    public void shouldVerifyAssertionConsumerServiceLocation(String requestUrl, String acsUrl)  throws SAML2Exception {
+        // Given
+        String spEntityID = String.format("testEntityId_1_%s_%s", requestUrl, acsUrl);
+        createEntityDescriptor(getDefaultRealm(), spEntityID, acsUrl);
+
+        // When
+        assertThatCode(() -> SAML2Utils.verifyAssertionConsumerServiceLocation(getDefaultRealm(), spEntityID,
+                mockHttpServletRequest(requestUrl), mockHttpServletResponse()))
+                .doesNotThrowAnyException();
+    }
+
+    @DataProvider
+    public Object[][] spACSFail() {
+        final String spACSURL1 = getBaseUrl() + "Consumer/metaAlias/sp1";
+        final String spACSURL2 = getBaseUrl() + "AuthConsumer/metaAlias/sp1";
+        final String wrongHostRequestACSURL1 = "http://otherhost/am/" + "Consumer/metaAlias/sp1";
+        final String wrongHostRequestACSURL2 = "http://otherhost/am/" + "AuthConsumer/metaAlias/sp1";
+        return new Object[][]{
+                { spACSURL1, spACSURL2},
+                { wrongHostRequestACSURL1, spACSURL1 },
+                { wrongHostRequestACSURL1, spACSURL2 },
+                { spACSURL2, spACSURL1 },
+                { wrongHostRequestACSURL2, spACSURL1 },
+                { wrongHostRequestACSURL2, spACSURL2 }
+        };
+    }
+
+    @Test(dataProvider = "spACSFail",
+            expectedExceptions = SAML2Exception.class,
+            expectedExceptionsMessageRegExp = "Invalid Assertion Consumer Location specified"
+    )
+    public void shouldFailToVerifyAssertionConsumerServiceLocationGivenNoLocationMatch(
+            String requestURL, String acsUrl) throws SAML2Exception {
+        // Given
+        String spEntityID = String.format("testEntityId_2_%s_%s", requestURL, acsUrl);
+        HttpServletRequest request = mockHttpServletRequest(requestURL);
+        mockRequestDispatcher(request);
+        createEntityDescriptor(getDefaultRealm(), spEntityID, acsUrl);
+
         // When
         SAML2Utils.verifyAssertionConsumerServiceLocation(
                 getDefaultRealm(), spEntityID, request, mockHttpServletResponse());

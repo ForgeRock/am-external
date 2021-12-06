@@ -730,10 +730,10 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
-"@forgerock/crest-js@2.1.5":
-  version "2.1.5"
-  resolved "https://registry.yarnpkg.com/@forgerock/crest-js/-/crest-js-2.1.5.tgz#4d3ad6691e3593ebc2b6e51ae4fd8a540757afbf"
-  integrity sha512-lNn57BkBGmBke48G7CimxQMAxNY2NZf5SA1AzXNDGhRuD4wsWLnHCGRQFipbWNwZdYGSOkqFB/30Q+V5h+t2pg==
+"@forgerock/crest-js@2.1.7":
+  version "2.1.7"
+  resolved "https://registry.yarnpkg.com/@forgerock/crest-js/-/crest-js-2.1.7.tgz#122ccdf97b09c91845da47a4afb5b347f2b67c4d"
+  integrity sha512-XiP21EF+aqg91zuVXHCCKvXaxumd0AW9KsHrsXu2u/nqeaXss6le6InXSv84nINqX5sPtiABHcN9UEjURH2WSw==
   dependencies:
     urijs "^1.19.6"
 
@@ -5897,10 +5897,10 @@ path-key@^2.0.0, path-key@^2.0.1:
   resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/path-key/-/path-key-2.0.1.tgz#411cadb574c5a140d3a4b1910d40d80cc9f40b40"
   integrity sha1-QRyttXTFoUDTpLGRDUDYDMn0C0A=
 
-path-parse@^1.0.6:
-  version "1.0.6"
-  resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/path-parse/-/path-parse-1.0.6.tgz#d62dbb5679405d72c4737ec58600e9ddcf06d24c"
-  integrity sha1-1i27VnlAXXLEc37FhgDp3c8G0kw=
+path-parse@1.0.7, path-parse@^1.0.6:
+  version "1.0.7"
+  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/path-parse/-/path-parse-1.0.7.tgz#fbc114b60ca42b30d9daf5858e4bd68bbedb6735"
+  integrity sha1-+8EUtgykKzDZ2vWFjkvWi77bZzU=
 
 path-to-regexp@0.1.7:
   version "0.1.7"
@@ -7559,10 +7559,10 @@ typedarray@^0.0.6:
   resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha1-hnrHTjhkGHsdPUfZlqeOxciDB3c=
 
-ua-parser-js@0.7.24:
-  version "0.7.24"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/ua-parser-js/-/ua-parser-js-0.7.24.tgz#8d3ecea46ed4f1f1d63ec25f17d8568105dc027c"
-  integrity sha1-jT7OpG7U8fHWPsJfF9hWgQXcAnw=
+ua-parser-js@0.7.30:
+  version "0.7.30"
+  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/ua-parser-js/-/ua-parser-js-0.7.30.tgz#4cf5170e8b55ac553fe8b38df3a82f0669671f0b"
+  integrity sha1-TPUXDotVrFU/6LON86gvBmlnHws=
 
 uc.micro@^1.0.1, uc.micro@^1.0.5:
   version "1.0.6"
@@ -7677,10 +7677,10 @@ uri-js@^4.2.2:
   dependencies:
     punycode "^2.1.0"
 
-urijs@1.19.6, urijs@^1.19.6:
-  version "1.19.6"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/urijs/-/urijs-1.19.6.tgz#51f8cb17ca16faefb20b9a31ac60f84aa2b7c870"
-  integrity sha1-UfjLF8oW+u+yC5oxrGD4SqK3yHA=
+urijs@1.19.7, urijs@^1.19.6:
+  version "1.19.7"
+  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/urijs/-/urijs-1.19.7.tgz#4f594e59113928fea63c00ce688fb395b1168ab9"
+  integrity sha1-T1lOWRE5KP6mPADOaI+zlbEWirk=
 
 urix@^0.1.0:
   version "0.1.0"

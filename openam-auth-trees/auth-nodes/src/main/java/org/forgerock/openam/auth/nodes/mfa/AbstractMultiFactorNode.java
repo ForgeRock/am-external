@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
@@ -268,22 +268,21 @@ public abstract class AbstractMultiFactorNode implements Node {
     protected String getUserAttributeForAccountName(AMIdentity identity, String userAttribute) {
         String accountName = identity.getName();
 
-        if (StringUtils.isBlank(userAttribute)
-                || userAttribute.equals(UserAttributeToAccountNameMapping.USERNAME.toString())) {
-            logger.debug("Using 'username' as attribute for Account Name");
-            return accountName;
-        } else {
-            logger.debug("Using user attribute of '{}'", userAttribute);
-            try {
-                Set<String> attributeValue = identity.getAttribute(userAttribute);
-                if (CollectionUtils.isNotEmpty(attributeValue)) {
-                    accountName = attributeValue.iterator().next();
-                }
-            } catch (IdRepoException | SSOException e) {
-                logger.debug("Unable to get user attribute of '{}', returning username for Account Name",
-                        userAttribute, e);
-            }
+        if (StringUtils.isBlank(userAttribute)) {
+            // default to username
+            userAttribute = UserAttributeToAccountNameMapping.USERNAME.toString();
         }
+        logger.debug("Using user attribute of '{}'", userAttribute);
+        try {
+            Set<String> attributeValue = identity.getAttribute(userAttribute);
+            if (CollectionUtils.isNotEmpty(attributeValue)) {
+                accountName = attributeValue.iterator().next();
+            }
+        } catch (IdRepoException | SSOException e) {
+            logger.debug("Unable to get user attribute of '{}', returning username for Account Name",
+                    userAttribute, e);
+        }
+
 
         return UrlEscapers.urlFragmentEscaper().escape(accountName);
     }

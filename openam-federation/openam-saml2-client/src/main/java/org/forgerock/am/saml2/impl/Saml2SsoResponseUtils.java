@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 package org.forgerock.am.saml2.impl;
 
@@ -78,6 +78,18 @@ public class Saml2SsoResponseUtils {
             data = (Saml2ResponseData) SAML2FailoverUtils.retrieveSAML2Token(storageKey);
         }
         return data;
+    }
+
+    /**
+     * Removes the data associated with the specified key from the SAML Failover store.
+     *
+     * @param storageKey The storage key used for the lookup.
+     * @throws SAML2TokenRepositoryException If there was an issue in deleting the object from the store.
+     */
+    public void removeSaml2ResponseData(String storageKey) throws SAML2TokenRepositoryException {
+        if (StringUtils.isNotEmpty(storageKey)) {
+            SAML2FailoverUtils.deleteSAML2Token(storageKey);
+        }
     }
 
     /**

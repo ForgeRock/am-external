@@ -661,8 +661,8 @@ public class SocialProviderHandlerNodeTest {
         }
 
         @Override
-        public char[] clientSecret() {
-            return "secret".toCharArray();
+        public Optional<char[]> clientSecret() {
+            return Optional.of("secret".toCharArray());
         }
 
         @Override

@@ -18,6 +18,7 @@
   },
   "resolutions": {
     "**/**/meow/minimist": "1.2.5",
-    "**/**/mkdirp/minimist": "1.2.5"
+    "**/**/mkdirp/minimist": "1.2.5",
+    "**/**/path-parse": "1.0.7"
   }
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 
 /**
@@ -36,12 +36,12 @@ const resource = (realm, location) => new CRESTv2(url(`${path}/${location}`, rea
     middleware: [middleware]
 });
 
-export const get = (realm, location, id) => resource(realm, location).get(Base64.encodeUTF8(id));
+export const get = (realm, location, id) => resource(realm, location).get(Base64.encodeBase64Url(id));
 
 export const update = (realm, location, id, body) =>
-    spinner(resource(realm, location).update(Base64.encodeUTF8(id), body));
+    spinner(resource(realm, location).update(Base64.encodeBase64Url(id), body));
 
-export const remove = (realm, location, id) => resource(realm, location).delete(Base64.encodeUTF8(id));
+export const remove = (realm, location, id) => resource(realm, location).delete(Base64.encodeBase64Url(id));
 
 export const create = (realm, location, body) => {
     switch (location) {

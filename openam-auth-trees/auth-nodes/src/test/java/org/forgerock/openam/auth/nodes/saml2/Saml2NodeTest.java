@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
@@ -32,6 +32,7 @@ import static org.forgerock.openam.auth.nodes.oauth.AbstractSocialAuthLoginNode.
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -57,6 +58,7 @@ import org.forgerock.openam.auth.nodes.saml2.Saml2Node.Binding;
 import org.forgerock.openam.auth.nodes.saml2.Saml2Node.Config;
 import org.forgerock.openam.auth.nodes.saml2.Saml2Node.RequestBinding;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.headers.CookieUtilsWrapper;
 import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.util.Options;
@@ -258,6 +260,40 @@ public class Saml2NodeTest {
 
         // Then
         assertThat(action.outcome).isEqualTo("NO_ACCOUNT");
+    }
+
+    @Test(expectedExceptions = NodeProcessException.class)
+    public void shouldFailWhenStorageKeyNotFound() throws Exception {
+        setupSuccessfulFederation();
+        given(responseUtils.readSaml2ResponseData(any())).willThrow(SAML2TokenRepositoryException.class);
+
+        Action action = node.process(getContext(singletonMap(RESPONSE_KEY, new String[]{"storage-key"})));
+
+        verify(cookieUtils).addCookieToResponseForRequestDomains(servletRequest, servletResponse, AM_LOCATION_COOKIE,
+                "", 0);
+        assertThat(action.callbacks).isEmpty();
+        assertThat(action.outcome).isEqualTo(ACCOUNT_EXISTS.name());
+        assertThat(action.sharedState).stringAt(USERNAME).isEqualTo("userId");
+        assertThat(action.sharedState).hasArray("userInfo/userNames/username").contains("userId");
+        assertThat(action.sharedState).hasArray("userInfo/attributes/sun-fm-saml2-nameid-info");
+        assertThat(action.sharedState).hasArray("userInfo/attributes/sun-fm-saml2-nameid-infokey");
+    }
+
+    @Test
+    public void shouldSucceedOnFailureToRemoveStorageKey() throws Exception {
+        setupSuccessfulFederation();
+        doThrow(SAML2TokenRepositoryException.class).when(responseUtils).removeSaml2ResponseData(any());
+
+        Action action = node.process(getContext(singletonMap(RESPONSE_KEY, new String[]{"storage-key"})));
+
+        verify(cookieUtils).addCookieToResponseForRequestDomains(servletRequest, servletResponse, AM_LOCATION_COOKIE,
+                "", 0);
+        assertThat(action.callbacks).isEmpty();
+        assertThat(action.outcome).isEqualTo(ACCOUNT_EXISTS.name());
+        assertThat(action.sharedState).stringAt(USERNAME).isEqualTo("userId");
+        assertThat(action.sharedState).hasArray("userInfo/userNames/username").contains("userId");
+        assertThat(action.sharedState).hasArray("userInfo/attributes/sun-fm-saml2-nameid-info");
+        assertThat(action.sharedState).hasArray("userInfo/attributes/sun-fm-saml2-nameid-infokey");
     }
 
     private Saml2SsoResult ssoResult(String universalId, boolean isTransient) throws Exception {

@@ -229,7 +229,8 @@ public class KerberosNode extends AbstractDecisionNode {
             usernameAndMaybeUniversalId = authenticateToken(serviceSubject, kerberosToken,
                     config.trustedKerberosRealms());
             if (isNotEmpty(usernameAndMaybeUniversalId.getFirst())) {
-                setUserNameAndReturnTrue(usernameAndMaybeUniversalId.getFirst(),
+                logger.debug("Authentication succeeded with new cred.");
+                return setUserNameAndReturnTrue(usernameAndMaybeUniversalId.getFirst(),
                         usernameAndMaybeUniversalId.getSecond(), newSharedState);
             }
         } catch (PrivilegedActionException pe) {

@@ -24,7 +24,7 @@
  *
  * $Id: SPCache.java,v 1.17 2009/06/09 20:28:32 exu Exp $
  *
- * Portions Copyrighted 2015-2020 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 
 
@@ -80,6 +80,14 @@ public class SPCache {
      * Value : String representing boolean val
      */
     final public static PeriodicCleanUpMap fedAccountHash = new PeriodicCleanUpMap(
+            interval * 1000, interval * 1000);
+
+    /**
+     * Map saves response data so that it can be retrieved and used for Post Authentication Processing classes.
+     * Key   :   A unique key String value
+     * Value : Saml2ResponseData object
+     */
+    final public static PeriodicCleanUpMap samlResponseDataHash = new PeriodicCleanUpMap(
             interval * 1000, interval * 1000);
 
     /**

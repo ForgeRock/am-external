@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -27,6 +27,7 @@ import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.session.Session;
+import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +91,7 @@ public class SessionDataNode extends SingleOutcomeNode {
     public Action process(TreeContext context) {
         logger.debug("SessionDataNode started");
         String ssoTokenId = context.request.ssoTokenId;
-        if (ssoTokenId != null) {
+        if (StringUtils.isNotEmpty(ssoTokenId)) {
             String sessionData = getSessionData(ssoTokenId);
             if (sessionData != null) {
                 logger.debug("Placing session data in shared state as {}", config.sharedStateKey());

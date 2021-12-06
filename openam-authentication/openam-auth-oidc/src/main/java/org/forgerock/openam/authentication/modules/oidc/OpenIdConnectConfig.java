@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2020 ForgeRock AS.
+ * Copyright 2014-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
@@ -79,7 +79,8 @@ class OpenIdConnectConfig extends JwtHandlerConfig {
         Reject.ifNull(headerName, HEADER_NAME_KEY + " must be set in LoginModule options.");
         Reject.ifNull(configuredIssuer, ISSUER_NAME_KEY + " must be set in LoginModule options.");
         Reject.ifNull(cryptoContextType, CRYPTO_CONTEXT_TYPE_KEY + " must be set in LoginModule options.");
-        Reject.ifNull(cryptoContextValue, CRYPTO_CONTEXT_VALUE_KEY + " must be set in LoginModule options.");
+        Reject.ifTrue(!CRYPTO_CONTEXT_TYPE_CLIENT_SECRET.equals(cryptoContextType) && cryptoContextValue == null,
+                CRYPTO_CONTEXT_VALUE_KEY + " must be set in LoginModule options.");
         Reject.ifNull(principalMapperClass, PRINCIPAL_MAPPER_CLASS_KEY + " must be set in LoginModule options.");
         Reject.ifNull(configuredJwkToLocalAttributeMappings, JWK_TO_LOCAL_ATTRIBUTE_MAPPINGS_KEY + " must be set in LoginModule options.");
         Reject.ifTrue(configuredJwkToLocalAttributeMappings.isEmpty(), JWK_TO_LOCAL_ATTRIBUTE_MAPPINGS_KEY + " must contain some valid mappings.");

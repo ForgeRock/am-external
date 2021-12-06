@@ -24,7 +24,7 @@
  *
  * $Id: SPSingleLogout.java,v 1.29 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2013-2020 ForgeRock AS.
+ * Portions Copyrighted 2013-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
@@ -278,7 +278,6 @@ public class SPSingleLogout {
                 }
             }
             if (debug.isDebugEnabled()) {
-                debug.debug("tokenID : " + tokenID);
                 debug.debug("infoKeyString : " + infoKeyString);
             }
 
