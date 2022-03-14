@@ -11,9 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats;
+
+import static org.forgerock.openam.shared.security.crypto.SignatureSecurityChecks.sanityCheckDerEncodedEcdsaSignatureValue;
 
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -21,6 +23,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECParameterSpec;
 
 import org.forgerock.json.jose.jwk.EcJWK;
 import org.forgerock.json.jose.jwk.JWK;
@@ -65,6 +69,15 @@ public class FidoU2fVerifier extends TrustableAttestationVerifier {
 
         // verify cert type and details
         if (!"EC".equals(cert.getPublicKey().getAlgorithm())) {
+            return VerificationResponse.failure();
+        }
+
+        // Sanity-check signature value
+        try {
+            ECParameterSpec params = ((ECPublicKey) cert.getPublicKey()).getParams();
+            sanityCheckDerEncodedEcdsaSignatureValue(attestationObject.attestationStatement.getSig(), params);
+        } catch (SignatureException e) {
+            logger.warn("WebAuthn ECDSA attestation signature is invalid", e);
             return VerificationResponse.failure();
         }
 

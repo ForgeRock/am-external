@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -237,10 +237,11 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
                 serverUrls = Collections.singleton("[0]=" + hostname + ":" + port);
             }
 
+            String bindPassword = getMapAttr(attributes, BIND_PASSWORD);
             return DataStoreConfig.builder(dataStoreId)
                     .withServerUrls(serverUrls)
                     .withBindDN(getMapAttr(attributes, BIND_DN))
-                    .withBindPassword(getMapAttr(attributes, BIND_PASSWORD))
+                    .withBindPassword(bindPassword != null ? bindPassword.toCharArray() : null)
                     .withMinimumConnectionPool(parseInt(getMapAttr(attributes, MINIMUM_CONNECTION_POOL)))
                     .withMaximumConnectionPool(parseInt(getMapAttr(attributes, MAXIMUM_CONNECTION_POOL)))
                     .withUseSsl(getBooleanMapAttr(attributes, USE_SSL, false))

@@ -48,7 +48,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public String getPluginVersion() {
-        return "8.0.2";
+        return "8.0.3";
     }
 
     @Override
@@ -80,6 +80,10 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
         if (VersionComparison.compareVersionStrings("4.5.0", fromVersion) >= 0
                 && VersionComparison.compareVersionStrings("8.0.2", fromVersion) <= 0) {
             pluginTools.upgradeAuthNode(ChoiceCollectorNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("3.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.0.3", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(MessageNode.class);
         }
         super.upgrade(fromVersion);
     }

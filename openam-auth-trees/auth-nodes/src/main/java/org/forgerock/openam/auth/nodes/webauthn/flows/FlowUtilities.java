@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
@@ -84,7 +84,7 @@ public class FlowUtilities {
     private boolean isOriginFromOAuthClient(Realm realm, String deviceOriginStr) {
         try {
             URL origin = new URL(deviceOriginStr);
-            return identityUtils.getOAuthClientForOrigin(realm, origin).isPresent();
+            return !identityUtils.getOAuthClientsForOrigin(realm, origin).isEmpty();
         } catch (MalformedURLException e) {
             logger.error("Invalid error for origin verification from OAuth Client, origin {}",
                     deviceOriginStr, e);

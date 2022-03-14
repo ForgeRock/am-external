@@ -11,12 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
 import static org.forgerock.openam.auth.nodes.webauthn.flows.encoding.EncodingUtilities.base64UrlDecode;
 import static org.forgerock.openam.auth.nodes.webauthn.flows.encoding.EncodingUtilities.getHash;
+import static org.forgerock.openam.shared.security.crypto.SignatureSecurityChecks.sanityCheckDerEncodedEcdsaSignatureValue;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -25,6 +26,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECParameterSpec;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -33,6 +36,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.forgerock.json.jose.jwk.KeyType;
 import org.forgerock.openam.auth.nodes.webauthn.UserVerificationRequirement;
 import org.forgerock.openam.auth.nodes.webauthn.data.AuthData;
 import org.forgerock.openam.core.realms.Realm;
@@ -152,6 +156,11 @@ public class AuthenticationFlow {
         // 7.2.16
         try {
             PublicKey publicKey = flowUtilities.getPublicKeyFromJWK(device.getKey());
+            if (device.getKey().getKeyType() == KeyType.EC) {
+                ECParameterSpec params = ((ECPublicKey) publicKey).getParams();
+                sanityCheckDerEncodedEcdsaSignatureValue(signature, params);
+            }
+
             Signature sig = Signature.getInstance(device.getAlgorithm());
             sig.initVerify(publicKey);
             sig.update(concatBytes);

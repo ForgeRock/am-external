@@ -730,10 +730,10 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
-"@forgerock/crest-js@2.1.7":
-  version "2.1.7"
-  resolved "https://registry.yarnpkg.com/@forgerock/crest-js/-/crest-js-2.1.7.tgz#122ccdf97b09c91845da47a4afb5b347f2b67c4d"
-  integrity sha512-XiP21EF+aqg91zuVXHCCKvXaxumd0AW9KsHrsXu2u/nqeaXss6le6InXSv84nINqX5sPtiABHcN9UEjURH2WSw==
+"@forgerock/crest-js@2.1.10":
+  version "2.1.10"
+  resolved "https://registry.yarnpkg.com/@forgerock/crest-js/-/crest-js-2.1.10.tgz#b2d516e1728322061f48d7117ca264450097822b"
+  integrity sha512-ZK00t+VKb5skkIri7FbLxBUxGsWmthdfncofAR3ahXTbhLuK4P9DmzH54KbJAf04J772W9JBWcU6waUj7DFRaA==
   dependencies:
     urijs "^1.19.6"
 
@@ -4762,15 +4762,15 @@ less-plugin-clean-css@1.5.1:
   dependencies:
     clean-css "^3.0.1"
 
-less@2.7.3:
-  version "2.7.3"
-  resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/less/-/less-2.7.3.tgz#cc1260f51c900a9ec0d91fb6998139e02507b63b"
-  integrity sha1-zBJg9RyQCp7A2R+2mYE54CUHtjs=
+less@3.0.1:
+  version "3.0.1"
+  resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/less/-/less-3.0.1.tgz#ba2fea24a5632ccb8c84230d6043c0bf91855e37"
+  integrity sha1-ui/qJKVjLMuMhCMNYEPAv5GFXjc=
   optionalDependencies:
     errno "^0.1.1"
     graceful-fs "^4.1.2"
     image-size "~0.5.0"
-    mime "^1.2.11"
+    mime "^1.4.1"
     mkdirp "^0.5.0"
     promise "^7.1.1"
     request "2.81.0"
@@ -5081,7 +5081,7 @@ mime-types@^2.1.12, mime-types@~2.1.17, mime-types@~2.1.19, mime-types@~2.1.24, 
   dependencies:
     mime-db "1.40.0"
 
-mime@1.6.0, mime@^1.2.11:
+mime@1.6.0, mime@^1.4.1:
   version "1.6.0"
   resolved "https://maven.forgerock.org:443/repo/api/npm/npm-virtual/mime/-/mime-1.6.0.tgz#32cd9e5c64553bd58d19a568af452acff04981b1"
   integrity sha1-Ms2eXGRVO9WNGaVor0Uqz/BJgbE=
@@ -7677,10 +7677,10 @@ uri-js@^4.2.2:
   dependencies:
     punycode "^2.1.0"
 
-urijs@1.19.7, urijs@^1.19.6:
-  version "1.19.7"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/urijs/-/urijs-1.19.7.tgz#4f594e59113928fea63c00ce688fb395b1168ab9"
-  integrity sha1-T1lOWRE5KP6mPADOaI+zlbEWirk=
+urijs@1.19.10, urijs@^1.19.6:
+  version "1.19.10"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/urijs/-/urijs-1.19.10.tgz#8e2fe70a8192845c180f75074884278f1eea26cb"
+  integrity sha512-EzauQlgKuJgsXOqoMrCiePBf4At5jVqRhXykF3Wfb8ZsOBMxPcfiVBcsHXug4Aepb/ICm2PIgqAUGMelgdrWEg==
 
 urix@^0.1.0:
   version "0.1.0"

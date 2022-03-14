@@ -738,7 +738,7 @@ Handlebars.registerHelper("callbackRender", function () {
                     icon: _.find(callbackOutput, { name: "icon" }).value || defaultAppIcon,
                     consentMessage: _.find(callbackOutput, { name: "message" }).value,
                     isLast: callbackOutput.isLast,
-                    index: callbackOutput.index
+                    id: callbackOutput.index
                 }))
             }) : ""; break;
         case "TermsAndConditionsCallback":

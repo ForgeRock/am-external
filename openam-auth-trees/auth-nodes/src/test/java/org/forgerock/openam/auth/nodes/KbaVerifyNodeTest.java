@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -32,6 +32,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -48,7 +49,6 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.integration.idm.KbaConfig;
 import org.forgerock.selfservice.core.crypto.CryptoService;
-
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -179,6 +179,44 @@ public class KbaVerifyNodeTest {
 
         // Then
         assertThat(action.outcome).isEqualTo("false");
+    }
+
+    @Test
+    public void shouldProcessCallbacksWhenCustomKBAInfoAppearsFirstInKBAInfoConfig() throws NodeProcessException,
+            IOException {
+        // Given
+        JsonValue sharedState = json(object(
+                field(OBJECT_ATTRIBUTES, object(
+                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+                ))
+        ));
+
+        // Use a configuration that allows for a larger KBAInfo list
+        kbaConfig = OBJECT_MAPPER.readValue(getClass()
+                .getResource("/KbaVerifyNode/KBAInfoOrder/idmKbaConfig.json"), KbaConfig.class);
+        userObject = json(OBJECT_MAPPER.readValue(getClass()
+                .getResource("/KbaVerifyNode/KBAInfoOrder/idmUserObject-customKBAInfoFirst.json"), Map.class));
+        when(idmIntegrationService.getKbaConfig(any(), any())).thenReturn(kbaConfig);
+        when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any())).thenReturn(userObject);
+
+        List<Callback> callbacks = new ArrayList<>();
+        callbacks.add(createPasswordCallback("Question One?", "test", false));
+        callbacks.add(createPasswordCallback("Question Two?", "test", false));
+        callbacks.add(createPasswordCallback("custom 1?", "test", false));
+        callbacks.add(createPasswordCallback("custom 2?", "test", false));
+        callbacks.add(createPasswordCallback("custom 3?", "test", false));
+
+        // When
+        Action action = node.process(getContext(callbacks, sharedState));
+
+        // Then
+        assertThat(action.outcome).isEqualTo("true");
+    }
+
+    private PasswordCallback createPasswordCallback(String prompt, String password, boolean echoOn) {
+        PasswordCallback callback = new PasswordCallback(prompt, echoOn);
+        callback.setPassword(password.toCharArray());
+        return callback;
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {

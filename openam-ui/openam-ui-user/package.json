@@ -13,7 +13,7 @@
     "test": "mocha-webpack --opts config/mocha-webpack/configuration.opts"
   },
   "dependencies": {
-    "@forgerock/crest-js": "2.1.7",
+    "@forgerock/crest-js": "2.1.10",
     "@forgerock/javascript-sdk": "2.2.0",
     "ajv": "6.12.3",
     "backbone": "1.4.0",
@@ -44,7 +44,7 @@
     "redux-actions": "2.6.5",
     "selectize": "0.12.6",
     "spin.js": "2.3.2",
-    "urijs": "1.19.7",
+    "urijs": "1.19.10",
     "ua-parser-js": "0.7.30",
     "whatwg-fetch": "3.0.0"
   },
@@ -87,7 +87,7 @@
     "inquirer": "6.2.2",
     "jsdoc": "3.6.3",
     "jsdom": "13.2.0",
-    "less": "2.7.3",
+    "less": "3.0.1",
     "less-loader": "4.1.0",
     "less-plugin-clean-css": "1.5.1",
     "mocha": "6.2.3",

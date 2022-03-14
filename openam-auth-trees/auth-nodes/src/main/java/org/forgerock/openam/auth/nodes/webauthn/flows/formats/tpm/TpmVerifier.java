@@ -11,10 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm;
+
+import static org.forgerock.openam.shared.security.crypto.SignatureSecurityChecks.sanityCheckDerEncodedEcdsaSignatureValue;
 
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -24,6 +26,8 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECParameterSpec;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -36,14 +40,16 @@ import org.bouncycastle.asn1.DERUTF8String;
 import org.bouncycastle.asn1.x500.AttributeTypeAndValue;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x509.GeneralName;
+import org.forgerock.json.jose.jwk.KeyType;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AttestationType;
-import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.TrustableAttestationVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.VerificationResponse;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.exceptions.InvalidTpmsAttestException;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.exceptions.InvalidTpmtPublicException;
+import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
+import org.forgerock.util.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,7 +165,8 @@ public class TpmVerifier extends TrustableAttestationVerifier {
                 attestationObject.attestationStatement.getCaCert());
     }
 
-    private VerificationResponse verifyX5c(AttestationObject attestationObject, byte[] certInfo, byte[] caCert) {
+    @VisibleForTesting
+    VerificationResponse verifyX5c(AttestationObject attestationObject, byte[] certInfo, byte[] caCert) {
         //must match basic cert requirements https://w3c.github.io/webauthn/#sctn-tpm-cert-requirements
         X509Certificate cert = attestationObject.attestationStatement.getAttestnCerts().get(0);
 
@@ -206,6 +213,16 @@ public class TpmVerifier extends TrustableAttestationVerifier {
         // algorithm specified in alg.
         CoseAlgorithm alg = attestationObject.attestationStatement.getAlg();
         byte[] sig = attestationObject.attestationStatement.getSig();
+
+        if (alg.getKeyType() == KeyType.EC) {
+            try {
+                ECParameterSpec curveParams = ((ECPublicKey) cert.getPublicKey()).getParams();
+                sanityCheckDerEncodedEcdsaSignatureValue(sig, curveParams);
+            } catch (SignatureException e) {
+                logger.error("ECDSA Signature value is invalid");
+                return VerificationResponse.failure();
+            }
+        }
 
         // verify sig using public key
         boolean isValid;

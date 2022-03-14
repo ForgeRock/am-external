@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 import { DragSource } from "react-dnd";
 import { Badge, Panel } from "react-bootstrap";
@@ -30,7 +30,7 @@ const NodeTypeItem = ({ connectDragSource, displayName, filter, icon, isDragging
                     key={ `${displayName}${tag}` }
                     style={ {
                         border: "1px solid #cadeda",
-                        color: "#519387",
+                        color: "#457d78",
                         backgroundColor: "#f1f6f5",
                         marginRight: 2
                     } }

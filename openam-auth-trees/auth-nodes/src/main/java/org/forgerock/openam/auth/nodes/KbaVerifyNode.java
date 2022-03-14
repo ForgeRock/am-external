@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -230,7 +230,8 @@ public class KbaVerifyNode extends AbstractDecisionNode {
                 .orElse(json(kbaConfig.getQuestions()).stream()
                         .filter(kba -> kba.asMap().values().contains(question))
                         .map(kba -> kbaInfo.stream()
-                                .filter(info -> info.get(QUESTION_ID).asString().equals(kba.getPointer().leaf()))
+                                .filter(info -> info.isDefined(QUESTION_ID)
+                                        && info.get(QUESTION_ID).asString().equals(kba.getPointer().leaf()))
                                 .findFirst()
                                 .orElse(null))
                         .findFirst()

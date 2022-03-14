@@ -1,0 +1,41 @@
+{
+  "_id": "kba",
+  "kbaPropertyName": "kbaInfo",
+  "minimumAnswersToDefine": 5,
+  "minimumAnswersToVerify": 5,
+  "questions": {
+    "1": {
+      "en": "Question One?"
+    },
+    "2": {
+      "en": "Question Two?"
+    },
+    "3": {
+      "en": "Question Three?"
+    },
+    "4": {
+      "en": "Question Four?"
+    },
+    "5": {
+      "en": "Question Five?"
+    },
+    "6": {
+      "en": "Question Six?"
+    },
+    "7": {
+      "en": "Question Seven?"
+    },
+    "8": {
+      "en": "Question Eight?"
+    },
+    "9": {
+      "en": "Question Nine?"
+    },
+    "10": {
+      "en": "Question Ten?"
+    },
+    "11": {
+      "en": "Question Eleven?"
+    }
+  }
+}

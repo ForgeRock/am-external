@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 
 /*
@@ -42,7 +42,7 @@ const styles = {
     }),
     groupHeading: (base) => ({
         ...base,
-        color: "#519387",
+        color: "#457d78",
         background: "#fff",
         textTransform: "none",
         fontSize: "1em"
@@ -70,12 +70,12 @@ const styles = {
     multiValue: (base) => ({
         ...base,
         border: "1px solid rgba(81,147,135,.24)",
-        color: "#519387",
+        color: "#457d78",
         background: "#f1f6f5"
     }),
     multiValueLabel: (base) => ({
         ...base,
-        color: "#519387"
+        color: "#457d78"
     }),
     multiValueRemove: (base) => ({
         ...base,

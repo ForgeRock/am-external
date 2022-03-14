@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.federation.rest.secret.manager;
@@ -20,6 +20,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.secrets.config.KeyStoreSecretStore;
 import org.forgerock.openam.secrets.config.PurposeMapping;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
@@ -44,18 +45,21 @@ public class Saml2EntitySecretMappingManager implements ServiceListener {
 
     private final ServiceConfigManagerFactory configManagerFactory;
     private final SecretMappingManagerHelper helper;
+    private final RealmLookup realmLookup;
 
     /**
      * Creates an instance of the Saml2EntitySecretMappingManager.
      *
      * @param configManagerFactory The config manager factory.
      * @param helper The mapping manager helper instance.
+     * @param realmLookup Helper class that provides realm lookup utility functions.
      */
     @Inject
     public Saml2EntitySecretMappingManager(ServiceConfigManagerFactory configManagerFactory,
-            SecretMappingManagerHelper helper) {
+            SecretMappingManagerHelper helper, RealmLookup realmLookup) {
         this.configManagerFactory = configManagerFactory;
         this.helper = helper;
+        this.realmLookup = realmLookup;
     }
 
     /**
@@ -77,8 +81,11 @@ public class Saml2EntitySecretMappingManager implements ServiceListener {
     }
 
     @Override
-    public void organizationConfigChanged(String serviceName, String version, String realm,
+    public void organizationConfigChanged(String serviceName, String version, String orgName,
             String groupName, String serviceComponent, int type) {
+        String realm = realmLookup.convertRealmDnToRealmPath(orgName);
+        logger.debug("organizationConfigChanged called for realm: {}, orgName: {}, serviceName: {}, version: {}",
+                realm, orgName, serviceName, version);
         if (type != MODIFIED && type != REMOVED) {
             return;
         }

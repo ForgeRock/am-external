@@ -134,6 +134,7 @@ import org.forgerock.openam.ldap.LDAPRequests;
 import org.forgerock.openam.ldap.LDAPURL;
 import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.openam.ldap.LdapFromJsonQueryFilterVisitor;
+import org.forgerock.openam.service.datastore.DataStoreConfig;
 import org.forgerock.openam.sm.datalayer.api.ConnectionFactory;
 import org.forgerock.openam.sm.datalayer.providers.LdapConnectionFactoryProvider;
 import org.forgerock.openam.utils.CollectionUtils;
@@ -431,16 +432,28 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             .set(REQUEST_TIMEOUT, Duration.duration(defaultTimeLimit, SECONDS))
             .set(CACHED_POOL_OPTIONS, new LDAPUtils.CachedPoolOptions(minPoolSize, maxPoolSize, idleTimeout, SECONDS))
             .set(AFFINITY_ENABLED, affinityEnabled);
+
+        DataStoreConfig config = DataStoreConfig.builder(null)
+                .withLDAPURLs(LDAPUtils.getLdapUrls(ldapServers, isSecure))
+                .withBindDN(username)
+                .withBindPassword(password)
+                .withMinimumConnectionPool(maxPoolSize)
+                .withMaximumConnectionPool(maxPoolSize)
+                .withUseSsl(isSecure)
+                .withUseStartTLS(useStartTLS)
+                .withAffinityEnabled(affinityEnabled)
+                .build();
+
         if (maxPoolSize == 1) {
             return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(
                     LDAPUtils.newFailoverConnectionFactory(
                             LDAPUtils.getLdapUrls(ldapServers, isSecure), username, password, heartBeatInterval,
-                    heartBeatTimeUnit, useStartTLS, false, ldapOptions));
+                    heartBeatTimeUnit, useStartTLS, false, ldapOptions), config);
         } else {
             return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(
                     LDAPUtils.newFailoverConnectionPool(
                             LDAPUtils.getLdapUrls(ldapServers, isSecure), username, password, maxPoolSize,
-                            heartBeatInterval, heartBeatTimeUnit, useStartTLS, false, ldapOptions));
+                            heartBeatInterval, heartBeatTimeUnit, useStartTLS, false, ldapOptions), config);
         }
     }
 
@@ -450,10 +463,20 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         Options ldapOptions = Options.defaultOptions()
                 .set(REQUEST_TIMEOUT, Duration.duration(defaultTimeLimit, SECONDS));
 
+        DataStoreConfig config = DataStoreConfig.builder(null)
+                .withLDAPURLs(LDAPUtils.getLdapUrls(ldapServers, isSecure))
+                .withBindDN(username)
+                .withBindPassword(password)
+                .withMinimumConnectionPool(maxPoolSize)
+                .withMaximumConnectionPool(maxPoolSize)
+                .withUseSsl(isSecure)
+                .withUseStartTLS(useStartTLS)
+                .build();
+
         return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(
                 LDAPUtils.newPasswordConnectionFactory(
                         LDAPUtils.getLdapUrls(ldapServers, isSecure), username, password, maxPoolSize,
-                        heartBeatInterval, heartBeatTimeUnit, useStartTLS, false, ldapOptions));
+                        heartBeatInterval, heartBeatTimeUnit, useStartTLS, false, ldapOptions), config);
     }
 
     /**

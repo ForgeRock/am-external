@@ -11,11 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 package org.forgerock.openam.services.push;
 
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import org.forgerock.am.config.ServiceConfigException;
@@ -65,7 +64,7 @@ public class PushNotificationServiceConfigHelperFactory {
         try {
             Optional<PushNotificationServiceConfig.Realm> serviceConfig = config.realmSingleton(Realms.of(realm));
             return new PushNotificationServiceConfigHelper(serviceConfig.get());
-        } catch (RealmLookupException | ServiceConfigException | NoSuchElementException e) {
+        } catch (RealmLookupException | ServiceConfigException e) {
             debug.error("Unable to retrieve instance of the ServiceConfig for realm {}.", realm);
             throw new SMSException("Unable to retrieve instance of the ServiceConfig.");
         }

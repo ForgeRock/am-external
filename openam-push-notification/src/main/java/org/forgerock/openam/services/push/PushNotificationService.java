@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 package org.forgerock.openam.services.push;
 
@@ -20,6 +20,7 @@ import static org.forgerock.openam.services.push.PushNotificationConstants.SERVI
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -115,6 +116,8 @@ public class PushNotificationService {
                         }
                     } catch (PushNotificationException e) {
                         debug.error("Unable to update preferences for organization {}", realm.asPath(), e);
+                    } catch (NoSuchElementException e) {
+                        debug.warn("No Push Notification Service Config found for realm " + realm.asPath(), e);
                     }
                 }, ServiceListenerEvent.ADDED, ServiceListenerEvent.MODIFIED)
                 .onRealmChange(realm -> {
@@ -158,7 +161,11 @@ public class PushNotificationService {
         if (!pushRealmMap.containsKey(realm)) {
             synchronized (pushRealmMap) { //wait here for the thread with first access to update
                 if (!pushRealmMap.containsKey(realm)) {
-                    updatePreferences(realm);
+                    try {
+                        updatePreferences(realm);
+                    } catch (NoSuchElementException e) {
+                        debug.warn("No Push Notification Service Config found for realm " + realm, e);
+                    }
                     if (!pushRealmMap.containsKey(realm)) {
                         debug.warn("No Push Notification Delegate configured for realm {}", realm);
                         throw new PushNotificationException("No Push Notification Delegate configured for this realm.");
@@ -264,14 +271,7 @@ public class PushNotificationService {
     }
 
     private void deleteService(String realm) throws PushNotificationException {
-
         delegateUpdater.deleteDelegate(realm);
-
-        PushNotificationServiceConfigHelper configHelper = getConfigHelper(realm);
-        String factoryClass = configHelper.getFactoryClass();
-        validateFactoryExists(factoryClass);
-        pushFactoryMap.remove(factoryClass);
-
     }
 
     private void validateFactoryExists(String factoryClass) throws PushNotificationException {
@@ -281,7 +281,6 @@ public class PushNotificationService {
             debug.error("Unable to instantiate PushNotificationDelegateFactory class.", e);
             throw new PushNotificationException("Unable to instantiate PushNotificationDelegateFactory class.", e);
         }
-
     }
 
     private PushNotificationServiceConfigHelper getConfigHelper(String realm) throws PushNotificationException {
@@ -291,7 +290,6 @@ public class PushNotificationService {
             debug.warn("Unable to read config for PushNotificationConfig in realm {}", realm);
             throw new PushNotificationException("Unable to find config for PushNotificationConfig.", e);
         }
-
     }
 
     private PushNotificationDelegateFactory createFactory(String factoryClass)

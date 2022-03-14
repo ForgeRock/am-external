@@ -24,13 +24,14 @@
  *
  * $Id: SAMLUtils.java,v 1.16 2010/01/09 19:41:06 qcheng Exp $
  *
- * Portions Copyrighted 2012-2020 ForgeRock AS.
+ * Portions Copyrighted 2012-2021 ForgeRock AS.
  */
 package com.sun.identity.saml.common;
 
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.StringTokenizer;
@@ -191,9 +192,10 @@ public class SAMLUtils extends SAMLUtilsCommon {
     public static Element getCanonicalElement(Node node) {
         try {
             Canonicalizer c14n = Canonicalizer.getInstance("http://www.w3.org/TR/2001/REC-xml-c14n-20010315");
-            byte[] outputBytes = c14n.canonicalizeSubtree(node);
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            c14n.canonicalizeSubtree(node, outputStream);
             DocumentBuilder documentBuilder = XMLUtils.getSafeDocumentBuilder(false);
-            Document doc = documentBuilder.parse(new ByteArrayInputStream(outputBytes));
+            Document doc = documentBuilder.parse(new ByteArrayInputStream(outputStream.toByteArray()));
             return doc.getDocumentElement();
         } catch (Exception e) {
             logger.error("Response:getCanonicalElement: Error while performing canonicalization on the input Node.");

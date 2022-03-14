@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2019 ForgeRock AS.
+ * Copyright 2013-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.idrepo.ldap.psearch;
@@ -54,6 +54,7 @@ public class DJLDAPv3PersistentSearch extends LDAPv3PersistentSearch<IdRepoListe
     private final Set<IdentityMovedOrRenamedListener> movedOrRenamedListenerSet = new HashSet<>(1);
     private final String usersSearchAttributeName;
     private final String usersNamingAttributeName;
+    private final ConnectionFactory factory;
 
     /**
      * Creates a new DJLDAPv3PersistentSearch using the provided configuration data and connection factory.
@@ -74,6 +75,7 @@ public class DJLDAPv3PersistentSearch extends LDAPv3PersistentSearch<IdRepoListe
                 CollectionHelper.getMapAttr(configMap, LDAP_USER_NAMING_ATTR));
         usersSearchAttributeName = CollectionHelper.getMapAttr(configMap, LDAP_USER_SEARCH_ATTR);
         usersNamingAttributeName = CollectionHelper.getMapAttr(configMap, LDAP_USER_NAMING_ATTR);
+        this.factory = factory;
     }
 
     /**
@@ -110,11 +112,14 @@ public class DJLDAPv3PersistentSearch extends LDAPv3PersistentSearch<IdRepoListe
     @Override
     protected void connectionLost() {
         //this section intentionally left blank
+        DEBUG.debug("DJLDAPv3PersistentSearch.connectionLost(): connection lost against {}", factory.toString());
     }
 
     @Override
     protected void connectionReestablished() {
         //this section intentionally left blank
+        DEBUG.debug("DJLDAPv3PersistentSearch.connectionReestablished(): connection re-established against {}",
+                factory.toString());
     }
 
     @Override

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -48,7 +48,6 @@ import org.forgerock.openam.authentication.callbacks.KbaCreateCallback;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.integration.idm.KbaConfig;
-
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -152,6 +151,47 @@ public class KbaCreateNodeTest {
     }
 
     @Test
+    public void callbacksPresentProcessesSuccessfullyWithNonLatinQuestions() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(field("initial", "initial")));
+        List<Callback> callbacks = new ArrayList<>();
+        callbacks.add(new KbaCreateCallback("first", singletonList("Question One"))
+                .setSelectedQuestion("質問?").setSelectedAnswer("uno"));
+        callbacks.add(new KbaCreateCallback("second", singletonList("Question Two"))
+                .setSelectedQuestion("あなたの好きな色は何ですか?").setSelectedAnswer("dos"));
+
+        // When
+        Action action = node.process(getContext(callbacks, sharedState));
+
+        // Then
+        assertThat(action.transientState).isNotNull();
+        assertThat(action.callbacks).isEmpty();
+        assertThat(action.transientState.isDefined(OBJECT_ATTRIBUTES)).isTrue();
+        JsonValue attributes = action.transientState.get(OBJECT_ATTRIBUTES);
+        assertThat(attributes.asMap()).hasSize(1);
+        assertThat(attributes.isDefined("kbaInfo")).isTrue();
+        assertThat(attributes.get("kbaInfo")).hasSize(2);
+    }
+
+    @Test
+    public void duplicateQuestionsReturnOriginalCallbacks() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(field("initial", "initial")));
+        List<Callback> callbacks = new ArrayList<>();
+        callbacks.add(new KbaCreateCallback("first", singletonList("Question One"))
+                .setSelectedQuestion("あ!なたの好  きな色は何&ですか??").setSelectedAnswer("uno"));
+        callbacks.add(new KbaCreateCallback("second", singletonList("Question Two"))
+                .setSelectedQuestion("あなたの好きな色は何ですか?").setSelectedAnswer("dos"));
+
+        // When
+        Action action = node.process(getContext(callbacks, sharedState));
+
+        // Then
+        assertThat(action.transientState).isNull();
+        assertThat(action.callbacks).isNotEmpty();
+    }
+
+    @Test
     public void invalidCallbacksReturnOriginalCallbacks() throws Exception {
         // Given
         JsonValue sharedState = json(object(field("initial", "initial")));
@@ -165,6 +205,20 @@ public class KbaCreateNodeTest {
         // Then
         assertThat(action.transientState).isNull();
         assertThat(action.callbacks).isNotEmpty();
+    }
+
+    @Test
+    public void shouldFetchKbaQuestionsGivenUndefinedBestLocale() {
+        // Given
+        JsonValue sharedState = json(object(field("initial", "initial")));
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(null);
+
+        // When
+        Map<String, String> questions = node.fetchKbaQuestions(getContext(emptyList(), sharedState), kbaConfig);
+
+        // Then
+        // defaults to the first map entry question ie. "en"
+        assertThat(questions).containsEntry("1", "Question One?");
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2021 ForgeRock AS.
  */
 
 import { t } from "i18next";
@@ -61,6 +61,8 @@ const CommonConfig = [{
                     location.href = "#enableCookies/";
                 }
             });
+            const lang = Configuration.globalData.lang || "en";
+            $("html").attr("lang", lang);
         });
     }
 }, {

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -23,12 +23,12 @@ import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getLo
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.sm.RequiredValueValidator;
+
 import io.vavr.collection.HashSet;
 
 /**
@@ -63,6 +64,8 @@ public class KbaCreateNode extends SingleOutcomeNode {
     private final Realm realm;
     private final IdmIntegrationService idmIntegrationService;
     private final LocaleSelector localeSelector;
+
+    private static final Pattern NON_WORD_PATTERN = Pattern.compile("\\W", Pattern.UNICODE_CHARACTER_CLASS);
 
     /**
      * Configuration for the node.
@@ -144,7 +147,7 @@ public class KbaCreateNode extends SingleOutcomeNode {
             throws NodeProcessException {
         List<String> questions = callbacks.stream()
                 .filter(callback -> callback.getSelectedQuestion() != null)
-                .map(callback -> callback.getSelectedQuestion().toLowerCase().replaceAll("[\\W]", ""))
+                .map(callback -> NON_WORD_PATTERN.matcher(callback.getSelectedQuestion()).replaceAll("").toLowerCase())
                 .collect(Collectors.toList());
         return HashSet.of(questions.toArray()).size() == questions.size()
                 && (mapCallbacksToQandA(context, kbaConfig, callbacks).size() >= kbaConfig.getMinimumAnswersToDefine());
@@ -207,7 +210,7 @@ public class KbaCreateNode extends SingleOutcomeNode {
     Map<String, String> fetchKbaQuestions(TreeContext context, KbaConfig kbaConfig) {
         Map<String, String> questions = new LinkedHashMap<>();
         for (Map.Entry<String, Map<String, String>> entry : kbaConfig.getQuestions().entrySet()) {
-            Map<Locale, String> localizable = new HashMap<>();
+            Map<Locale, String> localizable = new LinkedHashMap<>();
             Map<String, String> entryValue = entry.getValue();
             for (Map.Entry<String, String> questionEntry : entryValue.entrySet()) {
                 localizable.put(Locale.forLanguageTag(questionEntry.getKey()), questionEntry.getValue());

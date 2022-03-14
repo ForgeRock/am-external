@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.federation.rest.secret.manager;
@@ -30,6 +30,7 @@ import static org.mockito.MockitoAnnotations.initMocks;
 import java.util.Collections;
 import java.util.Set;
 
+import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.secrets.config.KeyStoreSecretStore;
 import org.forgerock.openam.secrets.config.PurposeMapping;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
@@ -44,7 +45,8 @@ public class Saml2EntitySecretMappingManagerTest {
 
     private static final String SERVICE_NAME = "sunFMSAML2MetadataService";
     private static final String SERVICE_VERSION = "1.0";
-    private static final String REALM = "realm";
+    private static final String REALM = "o=testrealm,ou=services,dc=test,dc=org";
+    private static final String REALM_PATH = "/realm";
     @Mock
     private SecretMappingManagerHelper helper;
     @Mock
@@ -53,13 +55,16 @@ public class Saml2EntitySecretMappingManagerTest {
     private KeyStoreSecretStore secretStore;
     @Mock
     private Multiple<PurposeMapping> mappings;
+    @Mock
+    private RealmLookup realmLookup;
 
     private Saml2EntitySecretMappingManager manager;
 
     @BeforeMethod
     public void setup() {
         initMocks(this);
-        manager = new Saml2EntitySecretMappingManager(configManagerFactory, helper);
+        manager = new Saml2EntitySecretMappingManager(configManagerFactory, helper, realmLookup);
+        given(realmLookup.convertRealmDnToRealmPath(REALM)).willReturn(REALM_PATH);
     }
 
     @Test
@@ -77,7 +82,7 @@ public class Saml2EntitySecretMappingManagerTest {
     @Test
     public void shouldNotGetRealmStoresWhenGetSecretIdentifiersThrowException() throws Exception {
         //given
-        given(helper.getAllEntitySecretIdIdentifiers(REALM)).willThrow(SAML2MetaException.class);
+        given(helper.getAllEntitySecretIdIdentifiers(REALM_PATH)).willThrow(SAML2MetaException.class);
 
         //when
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
@@ -91,7 +96,7 @@ public class Saml2EntitySecretMappingManagerTest {
     @Test
     public void shouldNotGetUnusedMappingsWhenNoKeyStoreIsConfigured() {
         //given
-        given(helper.getRealmStores(REALM)).willReturn(Collections.emptySet());
+        given(helper.getRealmStores(REALM_PATH)).willReturn(Collections.emptySet());
 
         //when
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
@@ -105,7 +110,7 @@ public class Saml2EntitySecretMappingManagerTest {
     public void shouldNotGetUnusedMappingsWhenNoMappingsAvailable() {
         //given
         given(secretStore.mappings()).willReturn(null);
-        given(helper.getRealmStores(REALM)).willReturn(singleton(secretStore));
+        given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
 
         //when
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
@@ -120,7 +125,7 @@ public class Saml2EntitySecretMappingManagerTest {
         //given
         given(secretStore.mappings()).willReturn(mappings);
         given(mappings.idSet()).willReturn(emptySet());
-        given(helper.getRealmStores(REALM)).willReturn(singleton(secretStore));
+        given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
 
         //when
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
@@ -138,7 +143,7 @@ public class Saml2EntitySecretMappingManagerTest {
         given(helper.getAllEntitySecretIdIdentifiers(REALM)).willReturn(secretIds);
         given(secretStore.mappings()).willReturn(mappings);
         given(mappings.idSet()).willReturn(singleton(mappingId));
-        given(helper.getRealmStores(REALM)).willReturn(singleton(secretStore));
+        given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
         given(helper.isUnusedSecretMapping(secretIds, mappingId)).willReturn(false);
 
         //when
@@ -153,10 +158,10 @@ public class Saml2EntitySecretMappingManagerTest {
         //given
         Set <String> secretIds = singleton("secretId");
         String mappingId = "unused.secret.mapping";
-        given(helper.getAllEntitySecretIdIdentifiers(REALM)).willReturn(secretIds);
+        given(helper.getAllEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
         given(secretStore.mappings()).willReturn(mappings);
         given(mappings.idSet()).willReturn(singleton(mappingId));
-        given(helper.getRealmStores(REALM)).willReturn(singleton(secretStore));
+        given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
         given(helper.isUnusedSecretMapping(secretIds, mappingId)).willReturn(true);
 
         //when

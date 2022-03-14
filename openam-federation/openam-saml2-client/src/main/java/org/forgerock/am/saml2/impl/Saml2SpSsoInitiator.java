@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.am.saml2.impl;
 
@@ -113,7 +113,7 @@ public class Saml2SpSsoInitiator implements Saml2SsoInitiator {
     private void saveLoginUrlInCookie(HttpServletRequest request, HttpServletResponse response, String realm) {
         StringBuilder originalUrl = new StringBuilder();
         originalUrl.append(request.getContextPath());
-        originalUrl.append("/XUI/?realm=").append(urlEncodeQueryParameterNameOrValue(realm));
+        originalUrl.append("/?realm=").append(urlEncodeQueryParameterNameOrValue(realm));
 
         String requestedQuery = request.getQueryString();
         if (requestedQuery != null) {

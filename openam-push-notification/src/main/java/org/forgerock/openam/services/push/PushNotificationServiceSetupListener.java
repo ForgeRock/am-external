@@ -11,19 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.services.push;
 
+import java.security.AccessController;
+import java.util.HashSet;
+import java.util.NoSuchElementException;
+import java.util.Set;
+
+import org.forgerock.guice.core.InjectorHolder;
+import org.forgerock.openam.utils.RealmUtils;
+
 import com.sun.identity.security.AdminTokenAction;
 import com.sun.identity.setup.SetupListener;
 import com.sun.identity.sm.SMSException;
-import java.security.AccessController;
-import java.util.HashSet;
-import java.util.Set;
-import org.forgerock.guice.core.InjectorHolder;
-import org.forgerock.openam.utils.RealmUtils;
 
 /**
  * Starts the Push Notification Service on each realm as soon as the server starts, to
@@ -51,8 +54,8 @@ public class PushNotificationServiceSetupListener implements SetupListener {
                             for (String realm : realms) {
                                 try {
                                     service.init(realm);
-                                } catch (PushNotificationException e) {
-                                    //do nothing - service doesn't exist on this realm
+                                } catch (PushNotificationException | NoSuchElementException e) {
+                                    // do nothing - the service doesn't exist on this realm
                                 }
                             }
 

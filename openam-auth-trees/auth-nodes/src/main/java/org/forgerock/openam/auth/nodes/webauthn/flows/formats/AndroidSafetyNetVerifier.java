@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats;
 
@@ -33,7 +33,7 @@ import org.forgerock.util.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.json.webtoken.JsonWebSignature;
 
 /**
@@ -108,7 +108,7 @@ public class AndroidSafetyNetVerifier implements AttestationVerifier {
      */
     protected JsonWebSignature parseJWS(AttestationObject attestationObject) {
         try {
-            return JsonWebSignature.parser(JacksonFactory.getDefaultInstance())
+            return JsonWebSignature.parser(GsonFactory.getDefaultInstance())
                     .parse(new String(attestationObject.attestationStatement.getResponse(), StandardCharsets.UTF_8));
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to parse the attestation statement response as a valid JWS", e);

@@ -11,18 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2015-2021 ForgeRock AS. All Rights Reserved
 -->
 <ul class="list-group">
 {{#each allConsentMappingOutputs}}
     <li class="list-group-item text-left">
         <img
           class="consent-app-image pull-left"
-          alt="{{ displayName }}"
+          alt=""
           src="{{ icon }}"
           height="24"
           width="24" />
-        <h5>{{ displayName }}</h5>
+        <p class='h5'>{{ displayName }}</p>
     <li class="list-group-item text-left {{#unless isLast}}hidden{{/unless}}">
         <label>
             <input

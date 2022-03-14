@@ -11,9 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats;
+
+import static org.forgerock.openam.shared.security.crypto.SignatureSecurityChecks.sanityCheckDerEncodedEcdsaSignatureValue;
 
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -23,12 +25,16 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECParameterSpec;
 import java.util.Arrays;
 
+import org.forgerock.json.jose.jwk.KeyType;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
 import org.forgerock.openam.auth.nodes.webauthn.flows.FlowUtilities;
 import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
+import org.forgerock.util.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +122,8 @@ public class PackedVerifier extends TrustableAttestationVerifier {
         return new VerificationResponse(type, isSignatureValid, cert);
     }
 
-    private boolean isSignatureValid(AttestationObject attestationObject, byte[] clientDataHash, PublicKey publicKey) {
+    @VisibleForTesting
+    boolean isSignatureValid(AttestationObject attestationObject, byte[] clientDataHash, PublicKey publicKey) {
         ByteBuffer buffer = ByteBuffer.allocate(attestationObject.authData.rawAuthenticatorData.length
                 + clientDataHash.length);
         buffer.put(attestationObject.authData.rawAuthenticatorData);
@@ -124,11 +131,17 @@ public class PackedVerifier extends TrustableAttestationVerifier {
         byte[] verificationData = buffer.array();
 
         try {
-            Signature sign = Signature.getInstance(attestationObject.attestationStatement.getAlg()
-                    .getExactAlgorithmName());
+            CoseAlgorithm algorithm = attestationObject.attestationStatement.getAlg();
+            byte[] sig = attestationObject.attestationStatement.getSig();
+            if (algorithm.getKeyType() == KeyType.EC) {
+                ECParameterSpec curveParams = ((ECPublicKey) publicKey).getParams();
+                sanityCheckDerEncodedEcdsaSignatureValue(sig, curveParams);
+            }
+
+            Signature sign = Signature.getInstance(algorithm.getExactAlgorithmName());
             sign.initVerify(publicKey);
             sign.update(verificationData);
-            return sign.verify(attestationObject.attestationStatement.getSig());
+            return sign.verify(sig);
         } catch (InvalidKeyException | NoSuchAlgorithmException | SignatureException e) {
             logger.error("failed to validate webauthn attestation signature", e);
             return false;

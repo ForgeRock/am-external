@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -69,6 +69,9 @@ public class OneTimePasswordCollectorDecisionNodeTest {
         Node node = new OneTimePasswordCollectorDecisionNode(serviceConfig);
         Action result = node.process(treeContext);
         assertThat(result.outcome).isEqualTo("true");
+        //OPENAM-18756 - OTP should be removed from transient state on success
+        assertThat(treeContext.transientState.get(ONE_TIME_PASSWORD)).isNullOrEmpty();
+        assertThat(treeContext.transientState.get(ONE_TIME_PASSWORD_TIMESTAMP)).isNullOrEmpty();
     }
 
     @Test
@@ -83,6 +86,9 @@ public class OneTimePasswordCollectorDecisionNodeTest {
         Node node = new OneTimePasswordCollectorDecisionNode(serviceConfig);
         Action result = node.process(treeContext);
         assertThat(result.outcome).isEqualTo("false");
+        //OPENAM-18756 - OTP should not be removed from transient state on failure
+        assertThat(treeContext.transientState.get(ONE_TIME_PASSWORD).asString()).isEqualTo("654321");
+        assertThat(treeContext.transientState.get(ONE_TIME_PASSWORD_TIMESTAMP)).isNotNull();
     }
 
     @Test

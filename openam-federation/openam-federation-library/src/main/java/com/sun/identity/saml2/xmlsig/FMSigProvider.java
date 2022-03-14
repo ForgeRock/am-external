@@ -28,12 +28,18 @@
  */
 package com.sun.identity.saml2.xmlsig;
 
+import static org.forgerock.openam.shared.security.crypto.SignatureSecurityChecks.sanityCheckRawEcdsaSignatureValue;
+
+import java.security.SignatureException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECParameterSpec;
 import java.util.Collections;
 import java.util.Set;
 
 import javax.xml.xpath.XPathException;
 
+import org.apache.xml.security.algorithms.SignatureAlgorithm;
 import org.apache.xml.security.c14n.Canonicalizer;
 import org.apache.xml.security.exceptions.XMLSecurityException;
 import org.apache.xml.security.keys.KeyInfo;
@@ -206,7 +212,7 @@ public final class FMSigProvider implements SigProvider {
         if (CollectionUtils.isEmpty(verificationCerts)) {
             logger.debug("{}No certificates provided - certificates have to be read from document", classMethod);
         }
-        Element nscontext = org.apache.xml.security.utils.XMLUtils.createDSctx(doc, "ds", Constants.SignatureSpecNS);
+        Element nscontext = XMLUtils.createDSctx(doc, "ds", Constants.SignatureSpecNS);
         Element sigElement;
         try {
             sigElement = (Element) XPathAPI.selectSingleNode(doc, "/*/ds:Signature", nscontext);
@@ -284,6 +290,18 @@ public final class FMSigProvider implements SigProvider {
                 try {
                     logger.debug("{} Using cert to validate signature {}", classMethod,
                             SAML2Utils.getDebugInfoFromCertificate(certificate));
+
+                    if (isEcdsaSignature(signature.getSignedInfo().getSignatureAlgorithm())
+                            && certificate.getPublicKey() instanceof ECPublicKey) {
+                        byte[] sigBytes = signature.getSignatureValue();
+                        ECParameterSpec params= ((ECPublicKey) certificate.getPublicKey()).getParams();
+                        try {
+                            sanityCheckRawEcdsaSignatureValue(sigBytes, params);
+                        } catch (SignatureException e) {
+                            throw new XMLSignatureException(e);
+                        }
+                    }
+
                     if (signature.checkSignatureValue(certificate)) {
                         return true;
                     }
@@ -300,5 +318,19 @@ public final class FMSigProvider implements SigProvider {
         }
 
         return false;
+    }
+
+    private static boolean isEcdsaSignature(SignatureAlgorithm algorithm) {
+        switch (algorithm.getURI()) {
+        case XMLSignature.ALGO_ID_SIGNATURE_ECDSA_RIPEMD160:
+        case XMLSignature.ALGO_ID_SIGNATURE_ECDSA_SHA1:
+        case XMLSignature.ALGO_ID_SIGNATURE_ECDSA_SHA224:
+        case XMLSignature.ALGO_ID_SIGNATURE_ECDSA_SHA256:
+        case XMLSignature.ALGO_ID_SIGNATURE_ECDSA_SHA384:
+        case XMLSignature.ALGO_ID_SIGNATURE_ECDSA_SHA512:
+            return true;
+        default:
+            return false;
+        }
     }
 }

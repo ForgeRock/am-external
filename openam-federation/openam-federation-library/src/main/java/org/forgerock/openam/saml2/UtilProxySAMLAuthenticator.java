@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2021 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
@@ -702,6 +702,7 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             request.setAttribute("spEntityID", data.getSpEntityID());
             request.getRequestDispatcher("/WEB-INF/saml2/jsp/idpWriteToStorage.jsp").forward(request, response);
         } catch (SAML2Exception | NoSuchSecretException e) {
+            logger.error("Fail to redirect authentication", e);
             throw new ServerFaultException(data.getIdpAdapter(), INVALID_SAML_REQUEST);
         } catch (ServletException ex) {
             logger.error("Exception Bad Forward URL: {}", loginUrl.toString());

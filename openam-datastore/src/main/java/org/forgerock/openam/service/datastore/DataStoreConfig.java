@@ -11,28 +11,35 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.service.datastore;
 
 import java.util.Set;
 
+import com.iplanet.am.util.SystemProperties;
+import org.forgerock.openam.ldap.LDAPURL;
+import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.openam.services.datastore.DataStoreId;
+import org.forgerock.openam.sm.ConnectionConfig;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.Reject;
+
+import static com.sun.identity.shared.Constants.LDAP_SM_HEARTBEAT_INTERVAL;
+import static org.forgerock.openam.utils.SchemaAttributeUtils.stripAttributeNameFromValue;
 
 /**
  * A simple model object to represent a data store.
  *
  * @since 6.5.0
  */
-final class DataStoreConfig {
+public final class DataStoreConfig implements ConnectionConfig {
 
     private final DataStoreId id;
-    private final Set<String> serverUrls;
+    private final Set<LDAPURL> serverUrls;
     private final String bindDN;
-    private final String bindPassword;
+    private final char[] bindPassword;
     private final int minimumConnectionPool;
     private final int maximumConnectionPool;
     private final boolean useSsl;
@@ -55,23 +62,23 @@ final class DataStoreConfig {
         return id;
     }
 
-    Set<String> getServerUrls() {
+    public Set<LDAPURL> getLDAPURLs() {
         return serverUrls;
     }
 
-    String getBindDN() {
+    public String getBindDN() {
         return bindDN;
     }
 
-    String getBindPassword() {
+    public char[] getBindPassword() {
         return bindPassword;
     }
 
-    int getMinimumConnectionPool() {
+    public int getMinConnections() {
         return minimumConnectionPool;
     }
 
-    int getMaximumConnectionPool() {
+    public int getMaxConnections() {
         return maximumConnectionPool;
     }
 
@@ -79,32 +86,36 @@ final class DataStoreConfig {
         return useSsl;
     }
 
-    boolean isUseStartTLS() {
+    public boolean isStartTLSEnabled() {
         return useStartTLS;
     }
 
-    boolean isAffinityEnabled() {
+    public boolean isAffinityEnabled() {
         return affinityEnabled;
     }
 
-    static Builder builder(DataStoreId id) {
+    public int getLdapHeartbeat() {
+        return SystemProperties.getAsInt(LDAP_SM_HEARTBEAT_INTERVAL, 10);
+    }
+
+    public static Builder builder(DataStoreId id) {
         return new Builder(id);
     }
 
     /**
      * Builder for building the Data Store Config
      */
-    static final class Builder {
+    public static final class Builder {
 
         private final DataStoreId id;
         private String bindDN;
-        private String bindPassword;
+        private char[] bindPassword;
         private int minimumConnectionPool;
         private int maximumConnectionPool;
         private boolean useSsl;
         private boolean useStartTLS;
         private boolean affinityEnabled;
-        private Set<String> serverUrls;
+        private Set<LDAPURL> serverUrls;
 
         Builder(DataStoreId id) {
             this.id = id;
@@ -112,50 +123,54 @@ final class DataStoreConfig {
 
         Builder withServerUrls(Set<String> serverUrls) {
             Reject.ifTrue(CollectionUtils.isEmpty(serverUrls));
-            this.serverUrls = serverUrls;
+            this.serverUrls = LDAPUtils.convertToLDAPURLs(stripAttributeNameFromValue(serverUrls));
             return this;
         }
 
-        Builder withBindDN(String bindDN) {
-            Reject.ifBlank(bindDN);
+        public Builder withLDAPURLs(Set<LDAPURL> ldapUrls) {
+            Reject.ifTrue(CollectionUtils.isEmpty(ldapUrls));
+            this.serverUrls = ldapUrls;
+            return this;
+        }
+
+        public Builder withBindDN(String bindDN) {
             this.bindDN = bindDN;
             return this;
         }
 
-        Builder withBindPassword(String bindPassword) {
-            Reject.ifBlank(bindPassword);
+        public Builder withBindPassword(char[] bindPassword) {
             this.bindPassword = bindPassword;
             return this;
         }
 
-        Builder withMinimumConnectionPool(int minimumConnectionPool) {
+        public Builder withMinimumConnectionPool(int minimumConnectionPool) {
             Reject.ifTrue(minimumConnectionPool < 0);
             this.minimumConnectionPool = minimumConnectionPool;
             return this;
         }
 
-        Builder withMaximumConnectionPool(int maximumConnectionPool) {
+        public Builder withMaximumConnectionPool(int maximumConnectionPool) {
             Reject.ifTrue(maximumConnectionPool < 0);
             this.maximumConnectionPool = maximumConnectionPool;
             return this;
         }
 
-        Builder withUseSsl(boolean useSsl) {
+        public Builder withUseSsl(boolean useSsl) {
             this.useSsl = useSsl;
             return this;
         }
 
-        Builder withUseStartTLS(boolean useStartTLS) {
+        public Builder withUseStartTLS(boolean useStartTLS) {
             this.useStartTLS = useStartTLS;
             return this;
         }
 
-        Builder withAffinityEnabled(boolean affinityEnabled) {
+        public Builder withAffinityEnabled(boolean affinityEnabled) {
             this.affinityEnabled = affinityEnabled;
             return this;
         }
 
-        DataStoreConfig build() {
+        public DataStoreConfig build() {
             Reject.ifTrue(minimumConnectionPool > maximumConnectionPool,
                     "Minimal pool size must be less or equal to the maximum pool size");
             return new DataStoreConfig(this);

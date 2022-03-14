@@ -30,6 +30,7 @@ package com.sun.identity.saml2.common;
 
 import static org.forgerock.http.util.Uris.urlDecodeQueryParameterNameOrValue;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
+import static org.forgerock.openam.shared.security.crypto.SignatureSecurityChecks.sanityCheckDerEncodedEcdsaSignatureValue;
 
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
@@ -38,6 +39,8 @@ import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECParameterSpec;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -45,6 +48,7 @@ import org.apache.xml.security.algorithms.JCEMapper;
 import org.forgerock.openam.federation.util.XmlSecurity;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
 import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.util.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -253,7 +257,8 @@ public class QuerySignatureUtil {
         return isValidSignature(sig, verificationCerts, newQueryString.getBytes(), signature);
     }
 
-    private static boolean isValidSignature(Signature sig, Set<X509Certificate> certificates, byte[] queryString,
+    @VisibleForTesting
+    static boolean isValidSignature(Signature sig, Set<X509Certificate> certificates, byte[] queryString,
             byte[] signature) throws SAML2Exception {
         final String classMethod = "QuerySignatureUtil.isValidSignature: ";
         Exception firstException = null;
@@ -262,6 +267,11 @@ public class QuerySignatureUtil {
             	logger.debug("{} using cert for signature verification {}"
 						, classMethod
 						, SAML2Utils.getDebugInfoFromCertificate(certificate));
+
+                if (certificate.getPublicKey() instanceof ECPublicKey) {
+                    ECParameterSpec curveParams = ((ECPublicKey) certificate.getPublicKey()).getParams();
+                    sanityCheckDerEncodedEcdsaSignatureValue(signature, curveParams);
+                }
                 sig.initVerify(certificate);
                 sig.update(queryString);
                 if (sig.verify(signature)) {

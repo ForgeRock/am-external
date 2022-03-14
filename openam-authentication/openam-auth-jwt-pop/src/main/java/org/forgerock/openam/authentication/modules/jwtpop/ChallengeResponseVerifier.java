@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.jwtpop;
@@ -30,6 +30,7 @@ import javax.crypto.spec.SecretKeySpec;
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.exceptions.InvalidJwtException;
 import org.forgerock.json.jose.exceptions.JweDecryptionException;
+import org.forgerock.json.jose.exceptions.JwsVerifyingException;
 import org.forgerock.json.jose.jwe.EncryptedJwt;
 import org.forgerock.json.jose.jwe.EncryptionMethod;
 import org.forgerock.json.jose.jwe.JweAlgorithm;
@@ -195,8 +196,12 @@ final class ChallengeResponseVerifier {
             if (signature == null) {
                 throw new AuthLoginException("no signature provided");
             }
-            if (!signatureVerificationHandler.verify(signatureAlgorithm, signingInput.array(),
-                    Base64url.decode(signature))) {
+            try {
+                if (!signatureVerificationHandler.verify(signatureAlgorithm, signingInput.array(),
+                        Base64url.decode(signature))) {
+                    throw new AuthLoginException("signature verification failed");
+                }
+            } catch (JwsVerifyingException e) {
                 throw new AuthLoginException("signature verification failed");
             }
 

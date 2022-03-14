@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.am.saml2.impl;
 
@@ -112,8 +112,9 @@ public class Saml2SpSsoInitiatorTest {
 
         client.initiateSso(request, response, realm, "sp", "idp", Options.defaultOptions());
 
+        // "bnVsbC8_cmVhbG09Lw" base64 decoded is - 'null/?realm=/'. Previously this was 'null/XUI/?realm=/'
         verify(cookieUtils).addCookieToResponseForRequestDomains(eq(request), eq(response), eq(AM_LOCATION_COOKIE),
-                any(), eq(-1));
+                eq("bnVsbC8_cmVhbG09Lw"), eq(-1));
     }
 
     @Test

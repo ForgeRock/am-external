@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -355,5 +355,24 @@ public final class TreeContext {
     public TreeContext copyWithCallbacks(List<? extends Callback> callbacks) {
         return new TreeContext(identityResource, sharedState, transientState, secureState, request, callbacks,
                 resumedFromSuspend, universalId);
+    }
+
+    /**
+     * Copies this TreeContext instance, replacing the callbacks in the context with the provided callbacks and
+     * with the provided new state if input state parameter is not null.
+     *
+     * @param sharedState The new sharedState, if null use previous value.
+     * @param transientState The new transientState, if null use previous value.
+     * @param secureState The new secureState, if null use previous value.
+     * @param callbacks The new callbacks.
+     * @return A new TreeContext instance.
+     */
+    public TreeContext copyWithCallbacksAndState(JsonValue sharedState, JsonValue transientState,
+                                                 JsonValue secureState, List<? extends Callback> callbacks) {
+
+        return new TreeContext(identityResource, (sharedState != null) ? sharedState : this.sharedState,
+                (transientState != null) ? transientState : this.transientState,
+                (secureState != null) ? secureState : this.secureState,
+                request, callbacks, resumedFromSuspend, universalId);
     }
 }
