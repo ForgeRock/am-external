@@ -4,7 +4,7 @@ The contents of this file are subject to the terms of the Common Development and
 You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the specific language governing permission and limitations under the License.
 When distributing Covered Software, include this CDDL Header Notice in each file and include the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL Header, with the fields enclosed by brackets [] replaced by your own identifying information: "Portions copyright [year] [name of copyright owner]".
 
-Copyright 2017-2020 ForgeRock AS.
+Copyright 2017-2022 ForgeRock AS.
 -->
 
 # am-external
@@ -14,6 +14,7 @@ This repository contains OpenAM and AM source code that you can use to modify an
 
 Product Version   |  Branch Name
 ------------------|-----------------
+AM 7.2.0          |  releases/7.2.0
 AM 7.1.2          |  releases/7.1.2
 AM 7.1.1          |  releases/7.1.1
 AM 7.1.0          |  releases/7.1.0
