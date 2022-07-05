@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -26,6 +26,7 @@ import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.WEB_
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -36,6 +37,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import com.sun.identity.shared.validation.PositiveIntegerValidator;
 import org.apache.commons.codec.binary.Hex;
 import org.forgerock.http.util.Json;
 import org.forgerock.json.JsonValue;
@@ -43,6 +45,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
@@ -66,7 +69,6 @@ import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.i18n.PreferredLocales;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.idm.AMIdentity;
@@ -87,6 +89,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
     private static final String REGISTRATION_SCRIPT = RESOURCE_LOCATION + "webauthn-client-registration-script.js";
 
     private static final String DEFAULT_DEVICE_NAME_KEY = "newDeviceName";
+    private static final String POSTPONE_DEVICE_PROFILE_STORAGE = "postponeDeviceProfileStorage";
 
     private final Config config;
     private final Realm realm;
@@ -283,6 +286,17 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         default boolean asScript() {
             return true;
         }
+
+        /**
+         * Maximum stored WebAuthn Device quantity.
+         *
+         * @return the maximum stored WebAuthn Device quantity
+         */
+        @Attribute(order = 150, requiredValue = true, validators = {PositiveIntegerValidator.class})
+        default int maxSavedDevices() {
+            return 0;
+        }
+
     }
 
     /**
@@ -301,11 +315,11 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
      */
     @Inject
     public WebAuthnRegistrationNode(@Assisted Config config, @Assisted Realm realm, RegisterFlow registerFlow,
-            ClientScriptUtilities clientScriptUtilities,
-            UserWebAuthnDeviceProfileManager webAuthnProfileManager,
-            SecureRandom secureRandom, RecoveryCodeGenerator recoveryCodeGenerator,
-            WebAuthnDeviceJsonUtils webAuthnDeviceJsonUtils,
-            IdentityUtils identityUtils, CoreWrapper coreWrapper) {
+                                    ClientScriptUtilities clientScriptUtilities,
+                                    UserWebAuthnDeviceProfileManager webAuthnProfileManager,
+                                    SecureRandom secureRandom, RecoveryCodeGenerator recoveryCodeGenerator,
+                                    WebAuthnDeviceJsonUtils webAuthnDeviceJsonUtils,
+                                    IdentityUtils identityUtils, CoreWrapper coreWrapper) {
         super(clientScriptUtilities, webAuthnProfileManager, secureRandom, recoveryCodeGenerator);
 
         this.config = config;
@@ -319,6 +333,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("WebAuthnRegistrationNode started");
+        NodeState nodeState = context.getStateFor(this);
         String username = context.sharedState.get(USERNAME).asString();
         byte[] challengeBytes = getChallenge(context);
         String registrationScript = clientScriptUtilities.getScriptAsString(REGISTRATION_SCRIPT);
@@ -341,7 +356,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
                 WebAuthnDomException exception = parseError(result.get());
                 logger.error("An error was reported by the DOM.");
                 return Action.goTo(ERROR_OUTCOME_ID).replaceSharedState(
-                        context.sharedState.copy().put(WEB_AUTHENTICATION_DOM_EXCEPTION, exception.toString()))
+                                context.sharedState.copy().put(WEB_AUTHENTICATION_DOM_EXCEPTION, exception.toString()))
                         .build();
             }
 
@@ -353,7 +368,6 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
             //retrieve the domain from the passing in Origin if not specified
             String rpId = getDomain(config.relyingPartyDomain(), context.request.headers.get("origin"),
                     context.request.serverUrl);
-
 
             try {
                 attestationResponse = registerFlow.accept(realm, response.getClientData(),
@@ -390,33 +404,53 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
 
         } else {
             logger.debug("sending callbacks to user for completion");
-            Optional<AMIdentity> user = getAMIdentity(context, identityUtils, coreWrapper);
+            Optional<AMIdentity> user = getAMIdentity(context.universalId, nodeState, identityUtils, coreWrapper);
             if (user.isEmpty()) {
                 logger.warn("getIdentity: Unable to find user {}", username);
                 return Action.goTo(FAILURE_OUTCOME_ID).build();
             }
+
+            //When maxSavedDevice == 0, allow unlimited device to be saved for the user.
+            if (!config.postponeDeviceProfileStorage() && config.maxSavedDevices() > 0) {
+                try {
+                    if (webAuthnProfileManager.getDeviceProfiles(user.get().getName(), user.get().getRealm()).size()
+                            >= config.maxSavedDevices()) {
+                        return Action.goTo(EXCEED_DEVICE_LIMIT_OUTCOME_ID).build();
+                    }
+                } catch (DevicePersistenceException e) {
+                    logger.warn("unable to read existing device profiles", e);
+                    throw new NodeProcessException("Unable to read existing device profiles", e);
+                }
+            }
+
             return getCallbacksForWebAuthnInteraction(config.asScript(), registrationScript,
-                    getScriptContext(challengeBytes, user.get(), config.relyingPartyDomain().orElse(null), context),
+                    getScriptContext(challengeBytes, user.get(),
+                            config.relyingPartyDomain().orElse(null), context),
                     context);
         }
     }
 
-    private Action generateDevice(Action.ActionBuilder outcomeBuilder, ClientScriptResponse response,
-            AttestationObject attestationObject, String username, JsonValue transientState,
-            TreeContext context)
+    private Action generateDevice(Action.ActionBuilder outcomeBuilder, ClientRegistrationScriptResponse response,
+                                  AttestationObject attestationObject, String username, JsonValue transientState,
+                                  TreeContext context)
             throws DevicePersistenceException, CodeException {
         logger.debug("getting user device data");
 
         ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE,
                 WebAuthnRegistrationNode.OutcomeProvider.class.getClassLoader());
+
+        deviceName = bundle.getString(DEFAULT_DEVICE_NAME_KEY);
+        if (response.getDeviceName() != null) {
+            deviceName = response.getDeviceName();
+        }
+
         WebAuthnDeviceSettings device = webAuthnProfileManager.createDeviceProfile(response.getCredentialId(),
                 attestationObject.authData.attestedCredentialData.publicKey,
                 attestationObject.authData.attestedCredentialData.algorithm,
-                bundle.getString(DEFAULT_DEVICE_NAME_KEY));
+                deviceName);
 
         registeredDeviceUuid = device.getUUID();
         credentialId = device.getCredentialId();
-        deviceName = device.getDeviceName();
 
         logger.debug("registeredDeviceUuid: {}, credentialId: {}, deviceName: {}",
                 registeredDeviceUuid, credentialId, deviceName);
@@ -430,7 +464,8 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
                 throw new DevicePersistenceException("Unable to store device in shared state", e);
             }
         } else {
-            Optional<AMIdentity> user = getAMIdentity(context, identityUtils, coreWrapper);
+            Optional<AMIdentity> user = getAMIdentity(context.universalId, context.getStateFor(this), identityUtils,
+                    coreWrapper);
             if (user.isEmpty()) {
                 logger.debug("getIdentity: Unable to find user {}", username);
                 throw new DevicePersistenceException("Unable to store device data");
@@ -447,7 +482,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
     }
 
     private JsonValue getScriptContext(byte[] challengeBytes, AMIdentity user, String configuredRpId,
-            TreeContext context)
+                                       TreeContext context)
             throws NodeProcessException {
         JsonValue scriptContext = json(object());
         scriptContext.put("_action", "webauthn_registration");
@@ -492,7 +527,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
             devices = webAuthnProfileManager.getDeviceProfiles(user.getName(), user.getRealm());
         } catch (DevicePersistenceException e) {
             logger.warn("unable to read existing device profiles");
-            throw new NodeProcessException("Unable to read existing device profiles");
+            throw new NodeProcessException("Unable to read existing device profiles", e);
         }
 
         if (config.excludeCredentials() && !CollectionUtils.isEmpty(devices)) {
@@ -508,7 +543,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
             devices = webAuthnProfileManager.getDeviceProfiles(user.getName(), user.getRealm());
         } catch (DevicePersistenceException e) {
             logger.warn("unable to read existing device profiles");
-            throw new NodeProcessException("Unable to read existing device profiles");
+            throw new NodeProcessException("Unable to read existing device profiles", e);
         }
 
         if (config.excludeCredentials() && !CollectionUtils.isEmpty(devices)) {
@@ -525,7 +560,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
             return new String(Json.writeJson(jsonValue));
         } catch (IOException ioe) {
             logger.error("Internal error generating JSON string. Aborting operation.");
-            throw new NodeProcessException("Unable to generate JSON for webauthn script");
+            throw new NodeProcessException("Unable to generate JSON for webauthn script", ioe);
         }
     }
 
@@ -548,15 +583,27 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
      */
     public static class OutcomeProvider implements org.forgerock.openam.auth.node.api.OutcomeProvider {
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes)
+                throws NodeProcessException {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE,
                     WebAuthnRegistrationNode.OutcomeProvider.class.getClassLoader());
 
-            return ImmutableList.of(
-                    new Outcome(UNSUPPORTED_OUTCOME_ID, bundle.getString(UNSUPPORTED_OUTCOME_ID)),
-                    new Outcome(SUCCESS_OUTCOME_ID, bundle.getString(SUCCESS_OUTCOME_ID)),
-                    new Outcome(FAILURE_OUTCOME_ID, bundle.getString(FAILURE_OUTCOME_ID)),
-                    new Outcome(ERROR_OUTCOME_ID, bundle.getString(ERROR_OUTCOME_ID)));
+            ArrayList<Outcome> outcomes = new ArrayList<>();
+
+            outcomes.add(new Outcome(UNSUPPORTED_OUTCOME_ID, bundle.getString(UNSUPPORTED_OUTCOME_ID)));
+            outcomes.add(new Outcome(SUCCESS_OUTCOME_ID, bundle.getString(SUCCESS_OUTCOME_ID)));
+            outcomes.add(new Outcome(FAILURE_OUTCOME_ID, bundle.getString(FAILURE_OUTCOME_ID)));
+            outcomes.add(new Outcome(ERROR_OUTCOME_ID, bundle.getString(ERROR_OUTCOME_ID)));
+
+            if (nodeAttributes.isNotNull()) {
+                // nodeAttributes is null when the node is created
+                if (!nodeAttributes.get(POSTPONE_DEVICE_PROFILE_STORAGE).required().asBoolean()
+                        && nodeAttributes.get(MAX_SAVED_DEVICES).required().asInteger() > 0) {
+                    outcomes.add(new Outcome(EXCEED_DEVICE_LIMIT_OUTCOME_ID,
+                            bundle.getString(EXCEED_DEVICE_LIMIT_OUTCOME_ID)));
+                }
+            }
+            return outcomes;
         }
     }
 

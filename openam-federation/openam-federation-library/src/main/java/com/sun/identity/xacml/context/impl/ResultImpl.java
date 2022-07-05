@@ -24,10 +24,15 @@
  *
  * $Id: ResultImpl.java,v 1.4 2008/11/10 22:57:05 veiming Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.xacml.context.impl;
+
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.RESOURCE_ID;
+import static com.sun.identity.xacml.common.XACMLConstants.RESULT;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,10 +40,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml.common.SAMLException;
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -207,61 +215,31 @@ public class ResultImpl implements Result {
         this.obligations = obligations;
     }
 
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element resultElement = XMLUtils.createRootElement(document, CONTEXT_NS_PREFIX, CONTEXT_NS_URI, RESULT,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(resultElement);
 
-   /**
-    * Returns a string representation of this object
-    *
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException {
-        return this.toXMLString(true, false);
-    }
-
-   /**
-    * Returns a string representation of this object
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException {
-        StringBuffer sb = new StringBuffer(2000);
-        String nsDeclaration = "";
-        String nsPrefix = "";
-        if (declareNS) {
-            nsDeclaration = XACMLConstants.CONTEXT_NS_DECLARATION;
-        }
-        if (includeNSPrefix) {
-            nsPrefix = XACMLConstants.CONTEXT_NS_PREFIX + ":";
-        }
-        sb.append("<").append(nsPrefix).append(XACMLConstants.RESULT)
-                .append(nsDeclaration);
-        sb.append(" ");
         if (resourceId != null) {
-            sb.append(XACMLConstants.RESOURCE_ID)
-                .append("=")
-                .append(XACMLSDKUtils.quote(resourceId));
+            resultElement.setAttribute(RESOURCE_ID, resourceId);
         }
-        sb.append(">\n");
         if (decision != null) {
-            sb.append(decision.toXMLString(includeNSPrefix, false));
+            resultElement.appendChild(decision.toDocumentFragment(document, includeNSPrefix, false));
         }
         if (status != null) {
-            sb.append(status.toXMLString(includeNSPrefix, false));
+            resultElement.appendChild(status.toDocumentFragment(document, includeNSPrefix, false));
         }
         if (obligations != null) {
-            sb.append(obligations.toXMLString(includeNSPrefix, true));
+            resultElement.appendChild(obligations.toDocumentFragment(document, includeNSPrefix, true));
         }
-        sb.append("</").append(nsPrefix).append(XACMLConstants.RESULT)
-                .append(">\n");
-        return sb.toString();
+
+        return fragment;
     }
 
-   /**
+    /**
     * Checks if the object is mutable
     *
     * @return <code>true</code> if the object is mutable,
@@ -303,7 +281,7 @@ public class ResultImpl implements Result {
                 "missing_local_name"));
         }
 
-        if (!elemName.equals(XACMLConstants.RESULT)) {
+        if (!elemName.equals(RESULT)) {
             logger.error(
                 "ResultImpl.processElement(): invalid local name " + elemName);
             throw new XACMLException(XACMLSDKUtils.xacmlResourceBundle.getString(
@@ -311,7 +289,7 @@ public class ResultImpl implements Result {
         }
 
         String resourceIdValue 
-                = element.getAttribute(XACMLConstants.RESOURCE_ID);
+                = element.getAttribute(RESOURCE_ID);
         if ((resourceIdValue != null) || (resourceIdValue.length() != 0)) {
             resourceId = resourceIdValue;
         } 

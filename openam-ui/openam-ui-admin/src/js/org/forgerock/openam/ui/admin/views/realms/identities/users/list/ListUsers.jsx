@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { identity, isEmpty, omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
 
@@ -58,6 +57,34 @@ class ListUsers extends Component {
     };
 
     render () {
+        const columns = [{
+            title: identity,
+            dataField: "username",
+            formatter: dataFormatReact(
+                <FontAwesomeIconCell icon="address-card" >
+                    <EmphasizedTextCell match={ this.state.searchTerm } />
+                </FontAwesomeIconCell>
+            ),
+            sort: true,
+            text: t("console.identities.users.list.grid.0")
+        }, {
+            title: true,
+            dataField: "cn",
+            formatter: dataFieldObjectPath(dataFormatReact(
+                <EmphasizedTextCell match={ this.state.searchTerm } />
+            ), "[0]"),
+            text: t("console.identities.users.list.grid.1")
+        }, {
+            dataField: "mail",
+            formatter: dataFieldObjectPath(dataFormatReact(
+                <EmphasizedTextCell match={ this.state.searchTerm } />
+            ), "[0]"),
+            text: t("console.identities.users.list.grid.2")
+        }, {
+            dataField: "inetUserStatus",
+            formatter: dataFieldObjectPath(StatusCell, "[0]"),
+            text: t("console.identities.users.list.grid.3")
+        }];
         const list = (
             <List
                 { ...omit(this.props, "children") }
@@ -65,49 +92,11 @@ class ListUsers extends Component {
                     href: this.props.newHref,
                     title: t("console.identities.users.list.callToAction.button")
                 } }
+                columns={ columns }
                 description={ t("console.identities.users.list.callToAction.description") }
                 keyField="username"
                 title={ t("console.identities.users.list.callToAction.title") }
-            >
-                <TableHeaderColumn
-                    columnTitle={ identity }
-                    dataField="username"
-                    dataFormat={ dataFormatReact(
-                        <FontAwesomeIconCell icon="address-card" >
-                            <EmphasizedTextCell match={ this.state.searchTerm } />
-                        </FontAwesomeIconCell>
-                    ) }
-                    dataSort
-                >
-                    { t("console.identities.users.list.grid.0") }
-                </TableHeaderColumn>
-
-                <TableHeaderColumn
-                    columnTitle
-                    dataField="cn"
-                    dataFormat={ dataFieldObjectPath(dataFormatReact(
-                        <EmphasizedTextCell match={ this.state.searchTerm } />
-                    ), "[0]") }
-                >
-                    { t("console.identities.users.list.grid.1") }
-                </TableHeaderColumn>
-
-                <TableHeaderColumn
-                    dataField="mail"
-                    dataFormat={ dataFieldObjectPath(dataFormatReact(
-                        <EmphasizedTextCell match={ this.state.searchTerm } />
-                    ), "[0]") }
-                >
-                    { t("console.identities.users.list.grid.2") }
-                </TableHeaderColumn>
-
-                <TableHeaderColumn
-                    dataField="inetUserStatus"
-                    dataFormat={ dataFieldObjectPath(StatusCell, "[0]") }
-                >
-                    { t("console.identities.users.list.grid.3") }
-                </TableHeaderColumn>
-            </List>
+            />
         );
         const noResults = (
             t("console.identities.users.list.noSuchUser")

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -43,6 +43,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.webauthn.data.AuthData;
 import org.forgerock.openam.auth.nodes.webauthn.flows.AuthenticationFlow;
@@ -276,6 +277,10 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
             }
 
             WebAuthnDeviceSettings device = getEntry(response.getCredentialId(), devices);
+            if (device == null) {
+                logger.warn("No registered device found for credentialId: {}.", credentialId);
+                return Action.goTo(FAILURE_OUTCOME_ID).build();
+            }
 
             registeredDeviceUuid = device.getUUID();
             credentialId = device.getCredentialId();
@@ -305,9 +310,10 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
                             .replaceSharedState(context.sharedState.copy().put(USERNAME, response.getUserHandle()));
                 }
 
+                NodeState nodeState = context.getStateFor(this);
                 return responseAction
                         .addNodeType(context, WEB_AUTHN_AUTH_TYPE)
-                        .withUniversalId(getUniversalId(context, identityUtils).orElse(null))
+                        .withUniversalId(context.universalId.or(() -> getUniversalId(nodeState, identityUtils)))
                         .build();
             } else {
                 logger.debug("returning with failure outcome");
@@ -352,6 +358,9 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         jsonValue.put("_allowCredentials", getAllowCredentialsAsJson(devices));
         jsonValue.put("timeout", String.valueOf(config.timeout() * 1000));
         jsonValue.put("userVerification", config.userVerificationRequirement().getValue());
+        if (config.asScript() && config.isRecoveryCodeAllowed()) {
+            jsonValue.put("allowRecoveryCode", String.valueOf(config.isRecoveryCodeAllowed()));
+        }
 
         StringBuilder sb = new StringBuilder();
         if (configuredRpId != null) {
@@ -399,8 +408,7 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
                 return entry;
             }
         }
-        logger.warn("No registered device found for credentialId: {}.", credentialId);
-        throw new NodeProcessException("Unable to locate registered device.");
+        return null;
     }
 
     /**

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -30,7 +30,7 @@ import static org.forgerock.openam.auth.nodes.AttributeValueDecisionNode.Compari
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Optional;
 
@@ -41,7 +41,6 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -77,7 +76,7 @@ public class AttributeValueDecisionNodeTest {
 
     @BeforeMethod
     public void before() throws Exception {
-        initMocks(this);
+        openMocks(this);
 
         when(config.identityAttribute()).thenReturn("userName");
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();

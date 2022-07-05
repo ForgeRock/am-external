@@ -24,7 +24,7 @@
  *
  * $Id: KeyInfoConfirmationDataImpl.java,v 1.2 2008/06/25 05:47:44 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
@@ -32,19 +32,18 @@ package com.sun.identity.saml2.assertion.impl;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.sun.identity.saml2.assertion.KeyInfoConfirmationData;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -162,50 +161,29 @@ extends SubjectConfirmationDataImpl implements  KeyInfoConfirmationData
         }
         keyInfo = info;
     }
-    /**
-     * Returns a String representation
-     *
-     * @return A String representation
-     * @exception SAML2Exception if something is wrong during conversion
-     */
-     public String toXMLString() throws SAML2Exception
-     {
-         return toXMLString(true, false);
-     }
 
-     public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-     throws SAML2Exception
-     {
-        StringBuffer xml = new StringBuffer();
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = super.toDocumentFragment(elementName, document, includeNSPrefix, declareNS);
+        Node rootElement = fragment.getFirstChild();
 
-            String NS="";
-            String appendNS="";
-            
-            if (declareNS) {
-                NS = SAML2Constants.ASSERTION_DECLARE_STR;
-            }
-            if (includeNSPrefix) {
-                appendNS = SAML2Constants.ASSERTION_PREFIX;
-            }
-
-            xml.append("<").append(appendNS).append(elementName);
-        xml.append(NS).append(" ");
-            xml.append(getElementValue(includeNSPrefix, declareNS));
-
-            if (!getKeyInfo().isEmpty()) {
-                Iterator it = keyInfo.iterator();
-                while (it.hasNext()) {
-                    String key = (String) it.next();
-                    xml.append(key);
+        if (!getKeyInfo().isEmpty()) {
+            for (Object obj : keyInfo) {
+                Document parsedXml = XMLUtils.toDOMDocument((String) obj);
+                if (parsedXml != null) {
+                    rootElement.appendChild(document.adoptNode(parsedXml.getDocumentElement()));
+                } else {
+                    logger.error("KeyInfoConfirmationDataImpl.toDocumentFragment(): KeyData is not well-formed " +
+                            "XML: {}", obj);
                 }
             }
-            
-            xml.append("</").append(appendNS).append(elementName).append(">");
+        }
 
-            return xml.toString();    
-     }
+        return fragment;
+    }
 
-   /**
+    /**
     * Makes the object immutable
     */
     public void makeImmutable()

@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -277,6 +278,7 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      * object.
      */
     public ResponseImpl() {
+        super(SAML2Constants.RESPONSE);
         isMutable = true;
     }
 
@@ -289,6 +291,7 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      */
     public ResponseImpl(org.w3c.dom.Element element)
         throws SAML2Exception {
+        super(SAML2Constants.RESPONSE);
         parseElement(element);
         if (isSigned) {
             signedXMLString = XMLUtils.print(element,
@@ -305,6 +308,7 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      */
     public ResponseImpl(String xmlString)
         throws SAML2Exception {
+        super(SAML2Constants.RESPONSE);
         Document doc = XMLUtils.toDOMDocument(xmlString);
         if (doc == null) {
             throw new SAML2Exception(
@@ -391,84 +395,28 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
         }
     }
 
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @return a String representation of this Object.
-     * @throws SAML2Exception if it could not create String object
-     */
-    public String toXMLString() throws SAML2Exception {
-	return this.toXMLString(true, false);
-    }
-
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *         qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *         within the Element.
-     * @throws SAML2Exception if it could not create String object.
-     * @return a String representation of this Object.
-     **/
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-	throws SAML2Exception {
-	if (isSigned && signedXMLString != null) {
-	    return signedXMLString;
-	}
-	this.validateData();
-        StringBuffer result = new StringBuffer(1000);
-        String prefix = "";
-        String uri = "";
-        if (includeNSPrefix) {
-            prefix = SAML2Constants.PROTOCOL_PREFIX;
-        }
-        if (declareNS) {
-            uri = SAML2Constants.PROTOCOL_DECLARE_STR;
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = super.toDocumentFragment(document, includeNSPrefix, declareNS);
+        if (isSigned && signedXMLString != null) {
+            return fragment;
         }
 
-        result.append("<").append(prefix).append("Response").
-                append(uri).append(" ID=\"").append(responseId).append("\"");
-	if (inResponseTo != null && inResponseTo.trim().length() != 0) {
-	    result.append(" InResponseTo=\"").append(XMLUtils.escapeSpecialCharacters(inResponseTo)).append("\"");
-	}
+        Element rootElement = (Element) fragment.getFirstChild();
 
-        result.append(" Version=\"").append(version).append("\"").
-                append(" IssueInstant=\"").
-                append(DateUtils.toUTCDateFormat(issueInstant)).append("\"");
-        if (destination != null && destination.trim().length() != 0) {
-            result.append(" Destination=\"").append(destination).
-                append("\"");
+        if (assertions != null) {
+            for (Assertion assertion : assertions) {
+                rootElement.appendChild(assertion.toDocumentFragment(document, includeNSPrefix, declareNS));
+            }
         }
-        if (consent != null && consent.trim().length() != 0) {
-            result.append(" Consent=\"").append(consent).append("\"");
+
+        if (encAssertions != null) {
+            for (EncryptedAssertion encryptedAssertion : encAssertions) {
+                rootElement.appendChild(encryptedAssertion.toDocumentFragment(document, includeNSPrefix, declareNS));
+            }
         }
-        result.append(">");
-        if (issuer != null) {
-            result.append(issuer.toXMLString(includeNSPrefix, declareNS));
-        }
-        if (signatureString != null) {
-            result.append(signatureString);
-        }
-        if (extensions != null) {
-            result.append(extensions.toXMLString(includeNSPrefix, declareNS));
-        }
-	result.append(status.toXMLString(includeNSPrefix, declareNS));
-	if (assertions != null) {
-	    Iterator iter = assertions.iterator();
-	    while (iter.hasNext()) {
-		result.append(((Assertion) iter.next()).toXMLString(
-			includeNSPrefix, declareNS));
-	    }
-	}
-	if (encAssertions != null) {
-	    Iterator iter1 = encAssertions.iterator();
-	    while (iter1.hasNext()) {
-		result.append(((EncryptedAssertion) iter1.next()).toXMLString(
-			includeNSPrefix, declareNS));
-	    }
-	}
-        result.append("</").append(prefix).append("Response>");
-        return result.toString();
+
+        return fragment;
     }
 }

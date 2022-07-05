@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.helpers;
@@ -19,13 +19,16 @@ package org.forgerock.openam.auth.nodes.helpers;
 import static com.sun.identity.idm.IdType.USER;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
+import static org.forgerock.openam.utils.StringUtils.isEmpty;
 
+import java.util.Arrays;
 import java.util.Optional;
 
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.identity.idm.IdentityUtils;
-import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,42 +48,50 @@ public final class AuthNodeUserIdentityHelper {
     /**
      * Gets the AMIdentity object from the information stored in TreeContext.
      *
-     * @param context The tree context.
+     *<p>Requires either {@link org.forgerock.openam.auth.node.api.SharedStateConstants#USERNAME} and
+     *  {@link org.forgerock.openam.auth.node.api.SharedStateConstants#REALM} to be present in the state,
+     *  or {@link TreeContext#universalId} to be present in the context.
+     *
+     * @param universalId An optional universal id.
+     * @param nodeState The state data for the node calling this method.
      * @param identityUtils The IdentityUtils instance.
      * @param coreWrapper The CoreWrapper instance.
      * @return The AMIdentity object.
      */
-    public static Optional<AMIdentity> getAMIdentity(TreeContext context,
+    public static Optional<AMIdentity> getAMIdentity(Optional<String> universalId, NodeState nodeState,
             IdentityUtils identityUtils, CoreWrapper coreWrapper) {
-        Optional<String> universalId = getUniversalId(context, identityUtils);
+        universalId = universalId.or(() -> getUniversalId(nodeState, identityUtils));
         Optional<AMIdentity> identity = Optional.empty();
         if (universalId.isPresent()) {
             identity = universalId.map(coreWrapper::getIdentity);
         } else {
             logger.warn("Failed to get the identity based on the information available in the context {}",
-                        context.sharedState.getObject().toString());
+                    Arrays.toString(nodeState.keys().toArray()));
         }
         return identity;
     }
 
     /**
-     * Get the universal id of the identity from the information available in the tree context.
+     * Get the universal id of the identity from the information available in the tree state.
      *
-     * @param context The tree context.
+     *<p>Requires {@link org.forgerock.openam.auth.node.api.SharedStateConstants#USERNAME} and
+     *  {@link org.forgerock.openam.auth.node.api.SharedStateConstants#REALM} to be present in the state.
+     *
+     * @param nodeState The state data for the node calling this method.
      * @param identityUtils An instance of the IdentityUtils.
-     * @return The universal Id.
+     * @return An optional of the universalId if it can be found, else an empty optional.
      */
-    public static Optional<String> getUniversalId(TreeContext context, IdentityUtils identityUtils) {
-        return context.universalId.or(() -> {
-            String username = context.sharedState.get(USERNAME).asString();
-            if (StringUtils.isEmpty(username)) {
-                logger.warn("Could not find the username in the tree context");
-            }
-            String realm = context.sharedState.get(REALM).asString();
-            if (StringUtils.isEmpty(realm)) {
-                logger.warn("Could not find the realm in the tree context");
-            }
-            return identityUtils.getUniversalId(username, realm, USER);
-        });
+    public static Optional<String> getUniversalId(NodeState nodeState, IdentityUtils identityUtils) {
+        JsonValue username = nodeState.get(USERNAME);
+        if (username == null || username.isNull() || isEmpty(username.asString())) {
+            logger.warn("Could not find the username in the tree context");
+            return Optional.empty();
+        }
+        JsonValue realm = nodeState.get(REALM);
+        if (realm == null || realm.isNull() || isEmpty(realm.asString())) {
+            logger.warn("Could not find the realm in the tree context");
+            return Optional.empty();
+        }
+        return identityUtils.getUniversalId(username.asString(), realm.asString(), USER);
     }
 }

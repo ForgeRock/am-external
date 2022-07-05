@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -27,6 +27,7 @@ import static org.forgerock.openam.auth.nodes.DeviceProfile.DEVICE_PROFILE_CONTE
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -50,21 +51,20 @@ import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.openam.scripting.ScriptEvaluator;
-import org.forgerock.openam.scripting.ScriptObject;
-import org.forgerock.openam.scripting.SupportedScriptingLanguage;
-import org.forgerock.openam.scripting.service.ScriptConfiguration;
+import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.domain.ScriptingLanguage;
+import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.utils.JsonValueBuilder;
-
-import com.iplanet.sso.SSOException;
-import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.IdRepoException;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.stubbing.Answer;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.iplanet.sso.SSOException;
+import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.IdRepoException;
 
 public class DeviceMatchNodeTest {
 
@@ -83,19 +83,20 @@ public class DeviceMatchNodeTest {
     @Mock
     DeviceProfilesDao deviceProfilesDao;
 
-    @InjectMocks
     DeviceMatchNode node;
 
     @Mock
     ScriptEvaluator scriptEvaluator;
 
     @Mock
-    ScriptConfiguration scriptConfiguration;
+    Script script;
 
     @BeforeMethod
     public void setup() throws IdRepoException, SSOException {
-        node = null;
         initMocks(this);
+        node = new DeviceMatchNode(deviceProfilesDao, __ -> scriptEvaluator, coreWrapper, mock(IdentityUtils.class),
+                config, realm);
+
         given(realm.asPath()).willReturn("/");
         given(coreWrapper.getIdentity(anyString())).willReturn(amIdentity);
         given(amIdentity.isExists()).willReturn(true);
@@ -330,10 +331,10 @@ public class DeviceMatchNodeTest {
     @Test
     public void testUseScript() throws ScriptException, NodeProcessException {
         given(config.useScript()).willReturn(true);
-        given(scriptConfiguration.getName()).willReturn("mock-script-name");
-        given(scriptConfiguration.getScript()).willReturn("mock-script-body");
-        given(scriptConfiguration.getLanguage()).willReturn(SupportedScriptingLanguage.JAVASCRIPT);
-        given(config.script()).willReturn(scriptConfiguration);
+        given(script.getName()).willReturn("mock-script-name");
+        given(script.getScript()).willReturn("mock-script-body");
+        given(script.getLanguage()).willReturn(ScriptingLanguage.JAVASCRIPT);
+        given(config.script()).willReturn(script);
 
 
         JsonValue metadata = JsonValueBuilder.jsonValue().build();
@@ -354,17 +355,17 @@ public class DeviceMatchNodeTest {
 
         JsonValue transientState = json(object());
 
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithOutcome("true"));
         Action action = node.process(getContext(sharedState, transientState, emptyList()));
 
-        ArgumentCaptor<ScriptObject> scriptCaptor = ArgumentCaptor.forClass(ScriptObject.class);
+        ArgumentCaptor<Script> scriptCaptor = ArgumentCaptor.forClass(Script.class);
         ArgumentCaptor<Bindings> bindingCaptor = ArgumentCaptor.forClass(Bindings.class);
         verify(scriptEvaluator).evaluateScript(scriptCaptor.capture(), bindingCaptor.capture());
 
         assertThat(scriptCaptor.getValue().getName()).isEqualTo("mock-script-name");
         assertThat(scriptCaptor.getValue().getScript()).isEqualTo("mock-script-body");
-        assertThat(scriptCaptor.getValue().getLanguage()).isEqualTo(SupportedScriptingLanguage.JAVASCRIPT);
+        assertThat(scriptCaptor.getValue().getLanguage()).isEqualTo(ScriptingLanguage.JAVASCRIPT);
 
         assertThat(bindingCaptor.getValue().get("sharedState")).isNotNull();
         assertThat(bindingCaptor.getValue().get("transientState")).isNotNull();

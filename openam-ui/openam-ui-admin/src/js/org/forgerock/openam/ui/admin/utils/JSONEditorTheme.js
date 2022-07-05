@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -119,7 +119,7 @@ JSONEditorTheme.getTheme = function (gridColWidth1, gridColWidth2) {
             }
 
             const nodeName = input.nodeName.toLowerCase();
-            if (["div", "input", "select"].includes(nodeName)) {
+            if (["div", "input", "select", "textarea"].includes(nodeName)) {
                 // All Inputs need to be wrapped in a div with the BS grid class added.
                 div.className += `col-sm-${gridColWidth1}`;
                 div.appendChild(input);

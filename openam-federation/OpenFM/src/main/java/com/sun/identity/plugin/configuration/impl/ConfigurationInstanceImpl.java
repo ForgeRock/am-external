@@ -24,7 +24,7 @@
  *
  * $Id: ConfigurationInstanceImpl.java,v 1.12 2009/10/29 00:03:50 exu Exp $
  *
- * Portions Copyrighted 2015-2020 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.plugin.configuration.impl;
 
@@ -44,6 +44,7 @@ import org.forgerock.openam.core.sms.DefaultConfigServiceHolder;
 import org.forgerock.openam.plugin.configuration.ConfigurationAuthorizationException;
 import org.forgerock.openam.services.datastore.DataStoreId;
 import org.forgerock.openam.services.datastore.DataStoreLookup;
+import org.forgerock.openam.sm.ConfigurationAttributesFactory;
 import org.forgerock.openam.sm.exceptions.SmsAuthorizationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -311,7 +312,8 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                         "noConfig", data);
                 }
 
-                DefaultConfigServiceHolder.get().setDefaultsForService(ss.getServiceName(), avPairs, ss.getServiceType(), ss);
+                DefaultConfigServiceHolder.get().setDefaultsForService(ss.getServiceName(),
+                        ConfigurationAttributesFactory.create(avPairs), ss.getServiceType(), ss);
             }
         } catch (SmsAuthorizationException ex) {
             throw new ConfigurationAuthorizationException(ex);
@@ -351,7 +353,7 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                 ServiceConfig sc = scm.getOrganizationConfig(realm, null, dataStoreId);
 
                 if (isEmpty(configName)) {
-                    scm.createOrganizationConfig(realm, avPairs, dataStoreId);
+                    scm.createOrganizationConfig(realm, ConfigurationAttributesFactory.create(avPairs), dataStoreId);
                 } else {
                     if (subConfigId == null) {
                         if (debug.isDebugEnabled()) {
@@ -373,7 +375,7 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                     }
 
                     sc.addSubConfig(configName, subConfigId,
-                        SUBCONFIG_PRIORITY, avPairs);
+                        SUBCONFIG_PRIORITY, ConfigurationAttributesFactory.create(avPairs));
                 }
             } else {
                 if (debug.isDebugEnabled()) {

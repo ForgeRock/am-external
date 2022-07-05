@@ -24,15 +24,33 @@
  *
  * $Id: AuthnRequestImpl.java,v 1.8 2009/06/09 20:28:32 exu Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_CONSUMER_SVC_INDEX;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_CONSUMER_SVC_URL;
+import static com.sun.identity.saml2.common.SAML2Constants.ATTR_CONSUMING_SVC_INDEX;
+import static com.sun.identity.saml2.common.SAML2Constants.AUTHN_REQUEST;
+import static com.sun.identity.saml2.common.SAML2Constants.CONSENT;
+import static com.sun.identity.saml2.common.SAML2Constants.DESTINATION;
+import static com.sun.identity.saml2.common.SAML2Constants.FORCEAUTHN;
+import static com.sun.identity.saml2.common.SAML2Constants.ID;
+import static com.sun.identity.saml2.common.SAML2Constants.ISPASSIVE;
+import static com.sun.identity.saml2.common.SAML2Constants.ISSUE_INSTANT;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOBINDING;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.PROVIDER_NAME;
+import static com.sun.identity.saml2.common.SAML2Constants.VERSION;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -79,7 +97,8 @@ public class AuthnRequestImpl extends RequestAbstractImpl
      */
 
     public AuthnRequestImpl() {
-	isMutable=true;
+        super(AUTHN_REQUEST);
+	    isMutable = true;
     }
 
     /**
@@ -90,8 +109,9 @@ public class AuthnRequestImpl extends RequestAbstractImpl
      *         Object. 
      */
     public AuthnRequestImpl(Element element) throws SAML2Exception {
-	parseDOMElement(element);
-	if (isSigned) {
+        super(AUTHN_REQUEST);
+        parseDOMElement(element);
+	    if (isSigned) {
             signedXMLString = XMLUtils.print(element);
         }
     }
@@ -104,6 +124,7 @@ public class AuthnRequestImpl extends RequestAbstractImpl
      *         Object. 
      */
     public AuthnRequestImpl(String xmlString) throws SAML2Exception {
+        super(AUTHN_REQUEST);
         Document xmlDocument = 
                    XMLUtils.toDOMDocument(xmlString);
         if (xmlDocument == null) {
@@ -435,198 +456,104 @@ public class AuthnRequestImpl extends RequestAbstractImpl
     public String getProviderName() {
         return providerName;
     }
-    
-    /** Returns a String representation of this Object.
-     *
-     *	@exception SAML2Exception if it could not create String object
-     *	@return a  String representation of this Object.
-     */
-    public java.lang.String toXMLString() throws SAML2Exception {
-        return toXMLString(true,false);
-    }
 
-    /** Returns a String representation
-     *
-     *	@param includeNSPrefix determines whether or not the namespace
-     *		qualifier is prepended to the Element when converted
-     *	@param declareNS determines whether or not the namespace is declared
-     *		within the Element.
-     *	@exception SAML2Exception ,if it could not create String object.
-     *	@return a String representation of this Object.
-     **/
-    
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-    throws SAML2Exception {
-	if (isSigned && signedXMLString != null) {
-            return signedXMLString;
-        }
-	validateData();
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        validateData();
         validateAssertionConsumerServiceIndex(assertionConsumerSvcIndex);
         validateAttributeConsumingServiceIndex(attrConsumingSvcIndex);
-	StringBuffer xmlString = new StringBuffer(1000);
-	xmlString.append(SAML2Constants.START_TAG);
-        if (includeNSPrefix) {
-	    xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
+
+        DocumentFragment fragment = document.createDocumentFragment();
+        if (isSigned && signedXMLString != null) {
+            Document signedDoc = XMLUtils.toDOMDocument(signedXMLString);
+            if (signedDoc == null) {
+                throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
+            }
+            fragment.appendChild(document.importNode(signedDoc.getDocumentElement(), true));
+            return fragment;
         }
-	xmlString.append(SAML2Constants.AUTHNREQUEST)
-	         .append(SAML2Constants.SPACE);
 
-	if (declareNS) {
-	    xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR)
-		     .append(SAML2Constants.SPACE);
-		    
-       }
+        Element requestElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+                AUTHN_REQUEST, includeNSPrefix, declareNS);
+        fragment.appendChild(requestElement);
 
-       xmlString.append(SAML2Constants.ID).append(SAML2Constants.EQUAL)
-		.append(SAML2Constants.QUOTE)
-		.append(requestId).append(SAML2Constants.QUOTE)
-		.append(SAML2Constants.SPACE)
-		.append(SAML2Constants.VERSION).append(SAML2Constants.EQUAL)
-	        .append(SAML2Constants.QUOTE)
-		.append(version).append(SAML2Constants.QUOTE)
-		.append(SAML2Constants.SPACE)
-	        .append(SAML2Constants.ISSUE_INSTANT)
-		.append(SAML2Constants.EQUAL)
-		.append(SAML2Constants.QUOTE)
-		.append(DateUtils.toUTCDateFormat(issueInstant))
-		.append(SAML2Constants.QUOTE);
+        requestElement.setAttribute(ID, requestId);
+        requestElement.setAttribute(VERSION, version);
+        requestElement.setAttribute(ISSUE_INSTANT, DateUtils.toUTCDateFormat(issueInstant));
 
-	if ((destinationURI != null) && (destinationURI.length() > 0)) {
-	    xmlString.append(SAML2Constants.SPACE)
-	             .append(SAML2Constants.DESTINATION)
-	             .append(SAML2Constants.EQUAL)
-	 	     .append(SAML2Constants.QUOTE)
-	             .append(destinationURI)
-	 	     .append(SAML2Constants.QUOTE);
-	}
+        if (isNotBlank(destinationURI)) {
+            requestElement.setAttribute(DESTINATION, destinationURI);
+        }
 
-	if ((consent != null) && (consent.length() > 0)) {
-	    xmlString.append(SAML2Constants.SPACE)
-	             .append(SAML2Constants.CONSENT)
-	             .append(SAML2Constants.EQUAL)
-	 	     .append(SAML2Constants.QUOTE)
-	             .append(consent)
-	 	     .append(SAML2Constants.QUOTE);
-	}
+        if (isNotBlank(consent)) {
+            requestElement.setAttribute(CONSENT, consent);
+        }
 
-	if (forceAuthn != null) {
-	    xmlString.append(SAML2Constants.SPACE)
-		     .append(SAML2Constants.FORCEAUTHN)
-		     .append(SAML2Constants.EQUAL)
-	 	     .append(SAML2Constants.QUOTE)
-		     .append(forceAuthn.toString())
-	 	     .append(SAML2Constants.QUOTE);
+        if (forceAuthn != null) {
+            requestElement.setAttribute(FORCEAUTHN, forceAuthn.toString());
+        }
 
-	}
+        if (isPassive != null) {
+            requestElement.setAttribute(ISPASSIVE, isPassive.toString());
+        }
 
-	if (isPassive != null) {
-	    xmlString.append(SAML2Constants.SPACE)
-		     .append(SAML2Constants.ISPASSIVE)
-		     .append(SAML2Constants.EQUAL)
-		     .append(SAML2Constants.QUOTE)
-		     .append(isPassive.toString())
-		     .append(SAML2Constants.QUOTE);
-	}
+        // include assertionConsumerSvcIndex OR
+        // AssertionConsumerServiceURL && ProtocolBinding
+        if (assertionConsumerSvcIndex != null) {
+            requestElement.setAttribute(ASSERTION_CONSUMER_SVC_INDEX, assertionConsumerSvcIndex.toString());
+        } else {
+            if (isNotBlank(protocolBinding))  {
+                requestElement.setAttribute(PROTOBINDING, protocolBinding);
+            }
 
-	// include assertionConsumerSvcIndex OR 
-	// AssertionConsumerServiceURL && ProtocolBinding
-	if (assertionConsumerSvcIndex != null) {
-	    xmlString.append(SAML2Constants.SPACE)
-		     .append(SAML2Constants.ASSERTION_CONSUMER_SVC_INDEX)
-		     .append(SAML2Constants.EQUAL)
-		     .append(SAML2Constants.QUOTE)
-		     .append(assertionConsumerSvcIndex.toString())
-		     .append(SAML2Constants.QUOTE);
-	} else {
-	    if ((protocolBinding != null) && (protocolBinding.length() > 0))  {
-		xmlString.append(SAML2Constants.SPACE)
-		         .append(SAML2Constants.PROTOBINDING)
-		         .append(SAML2Constants.EQUAL)
-		         .append(SAML2Constants.QUOTE)
-		         .append(protocolBinding)
-		         .append(SAML2Constants.QUOTE);
-	    }
+            if (isNotBlank(assertionConsumerServiceURL)) {
+                requestElement.setAttribute(ASSERTION_CONSUMER_SVC_URL, assertionConsumerServiceURL);
+            }
+        }
 
-	    if ((assertionConsumerServiceURL != null) && 
-			(assertionConsumerServiceURL.length() > 0)) {
-		xmlString.append(SAML2Constants.SPACE)
-			 .append(SAML2Constants.ASSERTION_CONSUMER_SVC_URL)
-		         .append(SAML2Constants.EQUAL)
-			 .append(SAML2Constants.QUOTE)
-			 .append(XMLUtils.escapeSpecialCharacters(assertionConsumerServiceURL))
-			 .append(SAML2Constants.QUOTE);
-	    }
-	}
+        if (attrConsumingSvcIndex != null) {
+            requestElement.setAttribute(ATTR_CONSUMING_SVC_INDEX, attrConsumingSvcIndex.toString());
+        }
 
-	if (attrConsumingSvcIndex != null) {
-	    xmlString.append(SAML2Constants.SPACE)
-		     .append(SAML2Constants.ATTR_CONSUMING_SVC_INDEX)
-		     .append(SAML2Constants.EQUAL)
-		     .append(SAML2Constants.QUOTE)
-		     .append(attrConsumingSvcIndex.toString())
-		     .append(SAML2Constants.QUOTE);
-	}
-	
-	if ((providerName != null) && 
-			(providerName.length() > 0)) {
-	    xmlString.append(SAML2Constants.SPACE)
-		     .append(SAML2Constants.PROVIDER_NAME)
-		     .append(SAML2Constants.EQUAL)
-		     .append(SAML2Constants.QUOTE)
-		     .append(providerName)
-		     .append(SAML2Constants.QUOTE);
-	}
+        if (isNotBlank(providerName)) {
+            requestElement.setAttribute(PROVIDER_NAME, providerName);
+        }
 
-	xmlString.append(SAML2Constants.END_TAG);
+        if (nameID != null) {
+            requestElement.appendChild(nameID.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
+        if (isNotBlank(signatureString)) {
+            Document parsedSignature = XMLUtils.toDOMDocument(signatureString);
+            requestElement.appendChild(document.adoptNode(parsedSignature));
+        }
+        if (extensions != null) {
+            requestElement.appendChild(extensions.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
+        if (subject != null) {
+            requestElement.appendChild(subject.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
 
-	if (nameID != null) {
-	    String issuerString = nameID.toXMLString(includeNSPrefix,declareNS);
-	    xmlString.append(SAML2Constants.NEWLINE).append(issuerString);
-	}
-	if ((signatureString != null) && (signatureString.length() > 0)) {
-	    xmlString.append(SAML2Constants.NEWLINE).append(signatureString);
-	}
-	if (extensions != null) {
-	    xmlString.append(SAML2Constants.NEWLINE)
-		     .append(extensions.toXMLString(includeNSPrefix,declareNS));
-	}
-	if (subject != null) {
-	    xmlString.append(SAML2Constants.NEWLINE)
-		     .append(subject.toXMLString(includeNSPrefix,declareNS));
-	}
-	    
-	if (nameIDPolicy != null) {
-	    xmlString.append(SAML2Constants.NEWLINE)
-		     .append(nameIDPolicy.toXMLString(includeNSPrefix,
-						      declareNS));
-	}
+        if (nameIDPolicy != null) {
+            requestElement.appendChild(nameIDPolicy.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
 
-	if (conditions != null) {
-	    xmlString.append(SAML2Constants.NEWLINE)
-		     .append(conditions.toXMLString(includeNSPrefix,declareNS));
-	}
+        if (conditions != null) {
+            requestElement.appendChild(conditions.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
 
-	if (reqAuthnContext != null) {
-	    xmlString.append(SAML2Constants.NEWLINE)
-		     .append(
-			reqAuthnContext.toXMLString(includeNSPrefix,declareNS));
-	}
+        if (reqAuthnContext != null) {
+            requestElement.appendChild(reqAuthnContext.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
 
-	if (scoping != null) {
-	    xmlString.append(SAML2Constants.NEWLINE)
-		     .append(scoping.toXMLString(includeNSPrefix,declareNS));
-	}
+        if (scoping != null) {
+            requestElement.appendChild(scoping.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
 
-	xmlString.append(SAML2Constants.NEWLINE)
-		 .append(SAML2Constants.SAML2_END_TAG)
-		 .append(SAML2Constants.AUTHNREQUEST)	
-		 .append(SAML2Constants.END_TAG);
-	    
-	return xmlString.toString();
+        return fragment;
     }
-    
-    
-    /** 
+
+    /**
      * Makes this object immutable. 
      */
     public void makeImmutable()	 {

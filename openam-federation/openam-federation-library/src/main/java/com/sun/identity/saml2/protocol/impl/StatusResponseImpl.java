@@ -28,21 +28,36 @@
  */
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.CONSENT;
+import static com.sun.identity.saml2.common.SAML2Constants.DESTINATION;
+import static com.sun.identity.saml2.common.SAML2Constants.ID;
+import static com.sun.identity.saml2.common.SAML2Constants.INRESPONSETO;
+import static com.sun.identity.saml2.common.SAML2Constants.ISSUE_INSTANT;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.VERSION;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.List;
 import java.util.Set;
 
 import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.protocol.Extensions;
 import com.sun.identity.saml2.protocol.Status;
 import com.sun.identity.saml2.protocol.StatusResponse;
@@ -75,6 +90,16 @@ public abstract class StatusResponseImpl implements StatusResponse {
     protected boolean isMutable = false;
     protected PublicKey publicKey = null;
     protected String  signedXMLString = null;
+    protected String elementName;
+
+    /**
+     * Sets the container XML element name for this specific Status Response subtype.
+     *
+     * @param elementName the element name such as {@code ManageNameIDResponse}. Don't include the namespace prefix.
+     */
+    protected StatusResponseImpl(String elementName) {
+        this.elementName = elementName;
+    }
 
     /**
      * Returns the value of the version property.
@@ -350,104 +375,57 @@ public abstract class StatusResponseImpl implements StatusResponse {
          }
          return isSignatureValid.booleanValue();
     }   
-    
-    /**
-     * Returns the <code>StatusResponse</code> in an XML document String format
-     * based on the <code>StatusResponse</code> schema described above.
-     *
-     * @return An XML String representing the <code>StatusResponse</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true,false);
-    }
-    
-    /**
-     * Returns the <code>StatusResponse</code> in an XML document String format
-     * based on the <code>StatusResponse</code> schema described above.
-     *
-     * @param includeNSPrefix Determines whether or not the namespace qualifier
-     *        is prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return A XML String representing the <code>StatusResponse</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString(boolean includeNSPrefix,
-    boolean declareNS) throws SAML2Exception {
-        
-        StringBuffer xmlString = new StringBuffer(1000);
-        
-        if (declareNS) {
-            xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR)
-            .append(SAML2Constants.SPACE);
-            
+
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        validateData();
+        DocumentFragment fragment = document.createDocumentFragment();
+        if (isSigned && signedXMLString != null) {
+            Document parsed = XMLUtils.toDOMDocument(signedXMLString);
+            if (parsed == null) {
+                throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
+            }
+            fragment.appendChild(document.adoptNode(parsed.getDocumentElement()));
+            return fragment;
         }
-        
-        xmlString.append(SAML2Constants.ID).append(SAML2Constants.EQUAL)
-        .append(SAML2Constants.QUOTE)
-        .append(responseId).append(SAML2Constants.QUOTE)
-        .append(SAML2Constants.SPACE)
-        .append(SAML2Constants.VERSION).append(SAML2Constants.EQUAL)
-        .append(SAML2Constants.QUOTE)
-        .append(version).append(SAML2Constants.QUOTE)
-        .append(SAML2Constants.SPACE)
-        .append(SAML2Constants.ISSUE_INSTANT)
-        .append(SAML2Constants.EQUAL)
-        .append(SAML2Constants.QUOTE)
-        .append(DateUtils.toUTCDateFormat(issueInstant))
-        .append(SAML2Constants.QUOTE);
-        
-        if ((destination != null) && (destination.length() > 0)) {
-            xmlString.append(SAML2Constants.SPACE)
-            .append(SAML2Constants.DESTINATION)
-            .append(SAML2Constants.EQUAL)
-            .append(SAML2Constants.QUOTE)
-            .append(destination)
-            .append(SAML2Constants.QUOTE);
+        Element responseElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+                elementName, includeNSPrefix, declareNS);
+        fragment.appendChild(responseElement);
+
+        responseElement.setAttribute(ID, responseId);
+        responseElement.setAttribute(VERSION, version);
+        responseElement.setAttribute(ISSUE_INSTANT, DateUtils.toUTCDateFormat(issueInstant));
+
+        if (isNotBlank(destination)) {
+            responseElement.setAttribute(DESTINATION, destination);
         }
-        
-        if ((consent != null) && (consent.length() > 0)) {
-            xmlString.append(SAML2Constants.SPACE)
-            .append(SAML2Constants.CONSENT)
-            .append(SAML2Constants.EQUAL)
-            .append(SAML2Constants.QUOTE)
-            .append(consent)
-            .append(SAML2Constants.QUOTE);
+        if (isNotBlank(consent)) {
+            responseElement.setAttribute(CONSENT, consent);
         }
-        
-        if ((inResponseTo != null) && (inResponseTo.length() > 0)) {
-            xmlString.append(SAML2Constants.SPACE)
-            .append(SAML2Constants.INRESPONSETO)
-            .append(SAML2Constants.EQUAL)
-            .append(SAML2Constants.QUOTE)
-            .append(XMLUtils.escapeSpecialCharacters(inResponseTo))
-            .append(SAML2Constants.QUOTE);
+        if (isNotBlank(inResponseTo)) {
+            responseElement.setAttribute(INRESPONSETO, inResponseTo);
         }
-        
-        xmlString.append(SAML2Constants.END_TAG);
-        
+
         if (issuer != null) {
-            String issuerString = issuer.toXMLString(includeNSPrefix,declareNS);
-            xmlString.append(SAML2Constants.NEWLINE).append(issuerString);
+            responseElement.appendChild(issuer.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
-        if ((signatureString != null) && (signatureString.length() > 0)) {
-            xmlString.append(SAML2Constants.NEWLINE).append(signatureString);
+        if (isNotBlank(signatureString)) {
+            List<Node> sigNodes = SAML2Utils.parseSAMLFragment(signatureString);
+            for (Node node : sigNodes) {
+                responseElement.appendChild(document.adoptNode(node));
+            }
         }
         if (extensions != null) {
-            xmlString.append(SAML2Constants.NEWLINE)
-            .append(extensions.toXMLString(includeNSPrefix,declareNS));
+            responseElement.appendChild(extensions.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
         if (status != null) {
-            xmlString.append(SAML2Constants.NEWLINE)
-            .append(status.toXMLString(includeNSPrefix,declareNS));
+            responseElement.appendChild(status.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
-        
-        return xmlString.toString();
+
+        return fragment;
     }
-    
+
     /**
      * Makes this object immutable.
      */

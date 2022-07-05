@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -31,7 +31,7 @@ import static org.forgerock.openam.auth.nodes.AcceptTermsAndConditionsNode.TERMS
 import static org.forgerock.openam.auth.nodes.utils.IdmIntegrationNodeUtils.OBJECT_MAPPER;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.List;
 
@@ -46,7 +46,6 @@ import org.forgerock.openam.authentication.callbacks.TermsAndConditionsCallback;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.integration.idm.TermsAndConditionsConfig;
-
 import org.mockito.Mock;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -63,7 +62,7 @@ public class AcceptTermsAndConditionsNodeTest {
 
     @BeforeTest
     public void setUp() throws Exception {
-        initMocks(this);
+        openMocks(this);
 
         when(idmIntegrationService.getActiveTerms(any(), any())).thenReturn(activeTerms());
         acceptTermsAndConditionsNode = new AcceptTermsAndConditionsNode(realm, idmIntegrationService);

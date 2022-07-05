@@ -24,7 +24,7 @@
  *
  * $Id: RequestAbstract.java,v 1.2 2008/06/25 05:47:57 qcheng Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.protocol;
 
@@ -38,6 +38,7 @@ import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 
 /** 
  * This interface defines methods for setting and retrieving attributes and 
@@ -47,7 +48,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
 @SupportedAll
 
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS)
-public interface RequestAbstract {
+public interface RequestAbstract extends XmlSerializable {
     
     /** 
      * Sets the <code>Issuer</code> object.
@@ -203,28 +204,6 @@ public interface RequestAbstract {
      * @throws SAML2Exception if the signature could not be verified
      */
     public boolean isSignatureValid(Set<X509Certificate> verificationCerts) throws SAML2Exception;
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @return a String representation of this Object.
-     * @throws SAML2Exception if it could not create String object
-     */
-    public String toXMLString() throws SAML2Exception;
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *         qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *         within the Element.
-     * @throws SAML2Exception if it could not create String object.
-     * @return a String representation of this Object.
-     **/
-    
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-	throws SAML2Exception;
     
         
     /** 

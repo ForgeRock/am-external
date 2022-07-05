@@ -11,11 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static com.sun.identity.idm.IdType.USER;
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonMap;
 import static javax.security.auth.callback.ConfirmationCallback.OK_CANCEL_OPTION;
 import static javax.security.auth.callback.TextOutputCallback.ERROR;
@@ -52,9 +53,9 @@ import org.forgerock.openam.auth.node.api.Action.ActionBuilder;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.SharedStateConstants;
+import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.identity.idm.IdentityUtils;
@@ -98,15 +99,26 @@ public class LdapDecisionNode implements Node {
     private static final String LAST_MODULE_STATE = "lastModuleState";
     private final Logger logger = LoggerFactory.getLogger(LdapDecisionNode.class);
     private final Config config;
-    private final CoreWrapper coreWrapper;
+    /** the CoreWrapper object for the Node. */
+    protected final CoreWrapper coreWrapper;
     private final IdentityUtils identityUtils;
     private ResourceBundle bundle;
     private LDAPAuthUtils ldapUtil;
+    private Set<String> additionalPwdChangeSearchAttrs;
 
     /**
      * The interface Config.
      */
     public interface Config {
+
+        /**
+         * Initialises the configuration if provided dynamically, {@link IdentityStoreDecisionNode}.
+         *
+         * @param context The Tree Context.
+         * @throws NodeProcessException If there is a problem initialising the configuration.
+         */
+        default void initialise(TreeContext context) throws NodeProcessException { }
+
         /**
          * Primary LDAP server configuration.
          *
@@ -269,6 +281,18 @@ public class LdapDecisionNode implements Node {
         default int ldapOperationsTimeout() {
             return 0;
         }
+
+        /**
+         * Filter attributes to be applied in addition to the {@link Config#searchFilterAttributes} when searching for a
+         * user during a password change. The username to search for when processing a password change comes from shared
+         * state and the filter attributes applied during authentication may not provide a match, especially when
+         * {@link Config#returnUserDn()} is {@code true}.
+         *
+         * @return the set of additional user profile attributes to search for.
+         */
+        default Set<String> additionalPasswordChangeSearchAttributes() {
+            return emptySet();
+        }
     }
 
     /**
@@ -290,6 +314,12 @@ public class LdapDecisionNode implements Node {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("LdapDecisionNode started");
+        try {
+            config.initialise(context);
+        } catch (NodeProcessException e) {
+            logger.debug("Failed to initialise LDAP configuration. All executions will have the 'FALSE' outcome.", e);
+            return goTo(LdapOutcome.FALSE).build();
+        }
         ActionBuilder action;
         JsonValue newState = context.sharedState.copy();
         String userName = context.sharedState.get(USERNAME).asString();
@@ -322,8 +352,7 @@ public class LdapDecisionNode implements Node {
             }
         } catch (LDAPUtilException e) {
             logger.error(e.getMessage(), e);
-            ResourceBundle bundle = context.request.locales
-                    .getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
+            ResourceBundle bundle = getBundleInPreferredLocale(context);
             if (e.getResultCode() == null) {
                 logger.warn("Invalid configuration");
                 throw new NodeProcessException(bundle.getString("InvalidConfiguration"));
@@ -378,7 +407,7 @@ public class LdapDecisionNode implements Node {
         logger.debug("In the Password Change screen.");
         ldapUtil.setUserId(userName);
         ldapUtil.setUserPassword(userPassword);
-        ldapUtil.searchForUser();
+        ldapUtil.searchForUser(additionalPwdChangeSearchAttrs);
         if (userClickedSubmit(context)) {
             List<PasswordCallback> passwordCallbacks = context.getCallbacks(PasswordCallback.class);
             String oldPassword = charToString(passwordCallbacks.get(OLD_PASSWORD_CALLBACK).getPassword(),
@@ -394,8 +423,17 @@ public class LdapDecisionNode implements Node {
                             + " than the minimal length of {}", config.minimumPasswordLength());
                 passwordChangeState = ModuleState.PASSWORD_MIN_CHARACTERS;
             } else {
-                ldapUtil.changePassword(oldPassword, newPassword,
-                        confirmPassword);
+                if (ldapUtil.getUserDN() == null) {
+                    logger.warn("Attempt to modify password when userDN not found");
+
+                    // ensure a NodeProcessException is thrown rather than going to the failure outcome which indicates
+                    // that authentication has failed. This is thrown with an InvalidConfiguration message as this could
+                    // be resolved by changing configuration - see OPENAM-18775
+                    throw new NodeProcessException(getBundleInPreferredLocale(context)
+                        .getString("InvalidConfiguration"));
+                }
+
+                ldapUtil.changePassword(oldPassword, newPassword, confirmPassword);
                 passwordChangeState = ldapUtil.getState();
             }
             logger.debug("Password change state :{}", passwordChangeState);
@@ -453,7 +491,7 @@ public class LdapDecisionNode implements Node {
             boolean isSecure = config.ldapConnectionMode() == LDAPS || useStartTLS;
             String baseDn = config.accountSearchBaseDn().stream()
                     .collect(Collectors.joining(","));
-            ldapUtil = new LDAPAuthUtils(config.primaryServers(), config.secondaryServers(),
+            ldapUtil = coreWrapper.getLDAPAuthUtils(config.primaryServers(), config.secondaryServers(),
                     isSecure, bundle, baseDn, DEBUG);
             ldapUtil.setScope(searchScope);
             if (config.userSearchFilter().isPresent()) {
@@ -474,6 +512,7 @@ public class LdapDecisionNode implements Node {
             ldapUtil.setHeartBeatInterval(config.heartbeatInterval());
             ldapUtil.setHeartBeatTimeUnit(config.heartbeatTimeUnit().toString());
             ldapUtil.setOperationTimeout(config.ldapOperationsTimeout());
+            additionalPwdChangeSearchAttrs = config.additionalPasswordChangeSearchAttributes();
 
             logger.debug("bindDN-> " + config.returnUserDn()
                                    + "\nrequiredPasswordLength-> " + config.minimumPasswordLength()
@@ -491,7 +530,8 @@ public class LdapDecisionNode implements Node {
                                    + "\nsecondaryServers-> " + config.secondaryServers()
                                    + "\nheartBeatInterval-> " + config.heartbeatInterval()
                                    + "\nheartBeatTimeUnit-> " + config.heartbeatTimeUnit()
-                                   + "\noperationTimeout-> " + config.ldapOperationsTimeout());
+                                   + "\noperationTimeout-> " + config.ldapOperationsTimeout()
+                                   + "\nadditionalPasswordChangeSearchAttributes-> " + additionalPwdChangeSearchAttrs);
         } catch (LDAPUtilException e) {
             logger.warn("Init Exception");
             throw new NodeProcessException(bundle.getString("NoServer"), e);
@@ -759,9 +799,9 @@ public class LdapDecisionNode implements Node {
     /**
      * Defines the possible outcomes from this Ldap node.
      */
-    public static class LdapOutcomeProvider implements OutcomeProvider {
+    public static class LdapOutcomeProvider implements StaticOutcomeProvider {
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(LdapDecisionNode.BUNDLE,
                     LdapOutcomeProvider.class.getClassLoader());
             return ImmutableList.of(
@@ -783,6 +823,10 @@ public class LdapDecisionNode implements Node {
         }
 
         return LDAPUtils.getName(Dn.valueOf(identity));
+    }
+
+    private ResourceBundle getBundleInPreferredLocale(TreeContext context) {
+        return context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
     }
 
     @Override

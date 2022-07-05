@@ -20,10 +20,8 @@ import static com.sun.identity.shared.Constants.LDAP_SM_HEARTBEAT_INTERVAL;
 import static org.forgerock.openam.ldap.LDAPUtils.CACHED_POOL_OPTIONS;
 import static org.forgerock.openam.ldap.LDAPUtils.newFailoverConnectionFactory;
 import static org.forgerock.openam.utils.SchemaAttributeUtils.stripAttributeNameFromValue;
-import static org.forgerock.opendj.ldap.LdapConnectionFactory.REQUEST_TIMEOUT;
+import static org.forgerock.opendj.ldap.LdapClients.LDAP_CLIENT_REQUEST_TIMEOUT;
 
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -58,7 +56,7 @@ class LdapConnectionFactoryProvider {
         int idleTimeout = SystemProperties.getAsInt(LDAP_CONN_IDLE_TIME_IN_SECS, 0);
         int timeout = SystemProperties.getAsInt(DataLayerConstants.DATA_LAYER_TIMEOUT, 10);
         Options options = Options.defaultOptions()
-                .set(REQUEST_TIMEOUT, Duration.duration((long) timeout, TimeUnit.SECONDS))
+                .set(LDAP_CLIENT_REQUEST_TIMEOUT, Duration.duration((long) timeout, TimeUnit.SECONDS))
                 .set(CACHED_POOL_OPTIONS, new CachedPoolOptions(config.getMinConnections(),
                         config.getMaxConnections(), idleTimeout, TimeUnit.SECONDS))
                 .set(LDAPUtils.AFFINITY_ENABLED, config.isAffinityEnabled());

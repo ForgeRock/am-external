@@ -2,7 +2,7 @@
 <!--
    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 
-   Copyright (c) 2013-2019 ForgeRock AS. All Rights Reserved
+   Copyright (c) 2013-2021 ForgeRock AS. All Rights Reserved
 
    The contents of this file are subject to the terms
    of the Common Development and Distribution License
@@ -28,7 +28,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-parent</artifactId>
-        <version>7.1.2</version>
+        <version>7.2.0</version>
     </parent>
 
     <groupId>org.forgerock.am.examples</groupId>
@@ -73,8 +73,8 @@
     <repositories>
         <repository>
             <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 7.1.2</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.1.2-dependencies</url>
+            <name>ForgeRock Private Release Repository for AM 7.2.0</name>
+            <url>https://maven.forgerock.org/repo/forgerock-openam-7.2.0-dependencies</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>

@@ -24,21 +24,20 @@
  *
  * $Id: AssertionIDRequestImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
@@ -70,7 +69,7 @@ public class AssertionIDRequestImpl extends RequestAbstractImpl
      * Constructor to create <code>AssertionIDRequest</code> Object .
      */
     public AssertionIDRequestImpl() {
-        elementName = SAML2Constants.ASSERTION_ID_REQUEST;
+        super(SAML2Constants.ASSERTION_ID_REQUEST);
         isMutable = true;
     }
 
@@ -82,8 +81,8 @@ public class AssertionIDRequestImpl extends RequestAbstractImpl
      *     Object.
      */
     public AssertionIDRequestImpl(Element element) throws SAML2Exception {
+        super(SAML2Constants.ASSERTION_ID_REQUEST);
         parseDOMElement(element);
-        elementName = SAML2Constants.ASSERTION_ID_REQUEST;
         if (isSigned) {
             signedXMLString = XMLUtils.print(element);
         }
@@ -97,6 +96,7 @@ public class AssertionIDRequestImpl extends RequestAbstractImpl
      *     Object.
      */
     public AssertionIDRequestImpl(String xmlString) throws SAML2Exception {
+        super(SAML2Constants.ASSERTION_ID_REQUEST);
         Document xmlDocument = XMLUtils.toDOMDocument(xmlString
         );
         if (xmlDocument == null) {
@@ -104,7 +104,6 @@ public class AssertionIDRequestImpl extends RequestAbstractImpl
                 "errorObtainingElement"));
         }
         parseDOMElement(xmlDocument.getDocumentElement());
-        elementName = SAML2Constants.ASSERTION_ID_REQUEST;
         if (isSigned) {
             signedXMLString = xmlString;
         }
@@ -135,28 +134,29 @@ public class AssertionIDRequestImpl extends RequestAbstractImpl
         this.assertionIDRefs = assertionIDRefs;
     }
 
-    protected void getXMLString(Set namespaces, StringBuffer attrs,
-        StringBuffer childElements, boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-
-        validateData();
-
-        if (declareNS) {
-            namespaces.add(SAML2Constants.PROTOCOL_DECLARE_STR.trim());
-            namespaces.add(SAML2Constants.ASSERTION_DECLARE_STR.trim());
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = super.toDocumentFragment(document, includeNSPrefix, declareNS);
+        if (isSigned && signedXMLString != null) {
+            return fragment;
         }
 
-        super.getXMLString(namespaces, attrs, childElements, includeNSPrefix,
-            declareNS);
+        Element rootElement = (Element) fragment.getFirstChild();
 
-        for(Iterator iter = assertionIDRefs.iterator(); iter.hasNext();) {
-            AssertionIDRef assertionIDRef = (AssertionIDRef)iter.next();
-            childElements.append(assertionIDRef.toXMLString(
-                includeNSPrefix, declareNS)).append(SAML2Constants.NEWLINE);
-	}
+        if (declareNS) {
+            rootElement.setAttribute("xmlns:saml", SAML2Constants.ASSERTION_NAMESPACE_URI);
+        }
+
+        for (AssertionIDRef idRef : assertionIDRefs) {
+            rootElement.appendChild(idRef.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
+
+        return fragment;
     }
 
     protected void validateData() throws SAML2Exception {
+        super.validateData();
         if ((assertionIDRefs == null) || (assertionIDRefs.isEmpty())) {
             if (logger.isDebugEnabled()) {
                 logger.debug("AssertionIDRequestImpl." +

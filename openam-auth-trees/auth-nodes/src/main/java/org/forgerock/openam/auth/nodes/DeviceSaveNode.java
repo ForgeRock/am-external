@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 
@@ -135,7 +135,8 @@ public class DeviceSaveNode extends SingleOutcomeNode implements DeviceProfile {
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("DeviceProfileSaveNode Started");
         try {
-            AMIdentity identity = getUserIdentity(context, coreWrapper, identityUtils);
+            AMIdentity identity = getUserIdentity(context.universalId, context.getStateFor(this), coreWrapper,
+                    identityUtils);
             save(context, identity);
         } catch (IdRepoException | SSOException e) {
             throw new NodeProcessException(e);

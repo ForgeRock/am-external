@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2019 ForgeRock AS.
+ * Copyright 2014-2021 ForgeRock AS.
  * Portions Copyrighted 2015 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.workflow;
@@ -35,13 +35,14 @@ import java.net.URL;
 import java.security.AccessController;
 import java.text.MessageFormat;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.forgerock.json.jose.utils.Utils;
+import org.forgerock.openam.sm.ConfigurationAttributes;
+import org.forgerock.openam.sm.ConfigurationAttributesFactory;
 import org.forgerock.openam.utils.MapHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -301,7 +302,7 @@ public class ConfigureSocialAuthN extends Task {
         try {
             AMAuthenticationManager mgr = new AMAuthenticationManager(getAdminToken(), realm);
             AMAuthenticationSchema authenticationSchema = mgr.getAuthenticationSchema(type);
-            Map<String, Set<String>> moduleAttrs = authenticationSchema.getAttributeValuesWithoutValidators();
+            ConfigurationAttributes moduleAttrs = authenticationSchema.getAttributeValuesWithoutValidators();
 
             // Override default attributes using the provided attrs, but skip any the auth module doesn't expect
             for (Map.Entry<String, Set<String>> attr : attrs.entrySet()) {
@@ -324,7 +325,7 @@ public class ConfigureSocialAuthN extends Task {
         try {
             String xmlConfig = AMAuthConfigUtils.authConfigurationEntryToXMLString(
                     asList(new AuthConfigurationEntry(authModuleName, "REQUIRED", null)));
-            Map<String, Set<String>> configData = new HashMap<String, Set<String>>();
+            ConfigurationAttributes configData = ConfigurationAttributesFactory.create();
             configData.put("iplanet-am-auth-configuration", asSet(xmlConfig));
 
             AMAuthConfigUtils.createNamedConfig(authChainName, 0, configData, realm, getAdminToken());
@@ -356,7 +357,7 @@ public class ConfigureSocialAuthN extends Task {
             SSOToken token = getAdminToken();
             OrganizationConfigManager ocm = new OrganizationConfigManager(token, realm);
 
-            Map<String, Set<String>> attrs = new HashMap<String, Set<String>>(4);
+            ConfigurationAttributes attrs = ConfigurationAttributesFactory.create(4);
             String prefix = "[" + providerName + "]=";
             attrs.put(SERVICE_DISPLAY_NAME, asSet(prefix + providerName));
             attrs.put(SERVICE_CHAIN_NAME, asSet(prefix + chainName));
@@ -393,9 +394,9 @@ public class ConfigureSocialAuthN extends Task {
      * @param newAttrs Coinciding attributes from here overwrite ones in existing attributes.
      * @return A map containing a combination of the two maps.
      */
-    Map<String, Set<String>> mergeAttributes(Map<String, Set<String>> existingAttrs,
-            Map<String, Set<String>> newAttrs) {
-        Map<String, Set<String>> mergedAttrs = new CaseInsensitiveHashMap(existingAttrs);
+    ConfigurationAttributes mergeAttributes(ConfigurationAttributes existingAttrs,
+                                            ConfigurationAttributes newAttrs) {
+        ConfigurationAttributes mergedAttrs = ConfigurationAttributesFactory.create(existingAttrs);
         for (Map.Entry<String, Set<String>> attr : newAttrs.entrySet()) {
             Set<String> values = attr.getValue();
             Set<String> existingValues = mergedAttrs.get(attr.getKey());

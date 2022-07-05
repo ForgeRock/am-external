@@ -20,7 +20,7 @@
     <parent>
         <artifactId>openam-auth-trees</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>7.1.2</version>
+        <version>7.2.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -52,11 +52,16 @@
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-oauth2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
             <artifactId>openam-certs</artifactId>
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
-            <artifactId>openam-scripting</artifactId>
+            <artifactId>scripting-api</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
@@ -107,6 +112,10 @@
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-auth-scripted</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
             <artifactId>webhook-endpoint</artifactId>
         </dependency>
         <dependency>
@@ -117,6 +126,10 @@
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
@@ -165,4 +178,45 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/js</directory>
+            </resource>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>jslint-maven-plugin</artifactId>
+                <configuration>
+                    <disallowInsecureCharsInRegExp>false</disallowInsecureCharsInRegExp>
+                    <assumeConsoleAlertEtc>true</assumeConsoleAlertEtc>
+                    <!-- variables bound by rhino -->
+                    <predefinedVars>logger,idRepository,username,realm,authState,FAILED,SUCCESS,clientScriptOutputData,
+                        sharedState,requestHeaders,existingSession,fontDetector,output,autoSubmitDelay,submit,java,
+                        org,requestParameters,
+                        JavaImporter,httpClient,rawProfile,normalizedProfile,selectedIdp,identity,scopes,
+                        claimObjects,requestedTypedClaims,accessToken,token,session</predefinedVars>
+                    <excludes>
+                        <exclude>**/authentication-tree-decision-node.js</exclude>
+                        <exclude>**/deviceProfileMatch-decision-node.js</exclude>
+                        <exclude>**/config-provider-node.js</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jslint</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2010-2019 ForgeRock AS.
+ * Copyright 2010-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -65,7 +65,7 @@ public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
 
     private static final Logger logger = LoggerFactory.getLogger(SAML2IDPProxyFRImpl.class);
 
-    public static String IDP_FINDER_ENABLED_IN_SP = "idpFinderEnabled";
+    public static String IDP_FINDER_ENABLED_IN_SP = "useIDPFinder";
 
     public static String SESSION_ATTR_NAME_IDP_LIST = "_IDPLIST_";
     public static String SESSION_ATTR_NAME_RELAYSTATE = "_RELAYSTATE_";

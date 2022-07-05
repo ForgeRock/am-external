@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -85,6 +85,17 @@ abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
      * Length of a generic secret key (in bytes).
      */
     private static final int SECRET_BYTE_LENGTH = 32;
+
+    /**
+     * Maximum saved devices.
+     */
+    static final String MAX_SAVED_DEVICES = "maxSavedDevices";
+
+    /**
+     * Outcome when exceed device limit.
+     */
+    static final String EXCEED_DEVICE_LIMIT_OUTCOME_ID = "exceedDeviceLimit";
+
 
     static final String RESOURCE_LOCATION = "org/forgerock/openam/auth/nodes/webauthn/";
 

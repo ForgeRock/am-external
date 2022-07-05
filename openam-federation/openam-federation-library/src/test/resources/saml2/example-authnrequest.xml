@@ -1,0 +1,58 @@
+<!--
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2021 ForgeRock AS. All Rights Reserved
+ * 
+-->
+
+<samlp:AuthnRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" AssertionConsumerServiceIndex="1"
+                     AttributeConsumingServiceIndex="2" Destination="https://foo.example.com/bar" ForceAuthn="true"
+                     ID="testId" IsPassive="false" IssueInstant="2021-06-02T09:29:37Z" ProviderName="testProvider"
+                     Version="2.0">
+    <saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"
+                 Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient">foo</saml:Issuer>
+    <saml:Subject xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+        <saml:BaseID NameQualifier="testNameQualifier" SPNameQualifier="testSPNameQualifier" /><saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer">
+        <saml:BaseID NameQualifier="testNameQualifier" SPNameQualifier="testSPNameQualifier" /></saml:SubjectConfirmation>
+    </saml:Subject>
+    <samlp:NameIDPolicy AllowCreate="true" Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient"
+                        SPNameQualifier="test"/>
+    <saml:Conditions xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" NotBefore="2021-06-02T08:29:37Z" NotOnOrAfter="2021-06-02T10:29:37Z">
+        <saml:AudienceRestriction>
+            <saml:Audience>https://a.b.com/</saml:Audience>
+            <saml:Audience>https://b.c.com/</saml:Audience>
+        </saml:AudienceRestriction>
+        <saml:OneTimeUse />
+        <saml:ProxyRestriction Count="2">
+            <saml:Audience>https://proxy1.com</saml:Audience>
+            <saml:Audience>https://proxy2.com</saml:Audience>
+        </saml:ProxyRestriction>
+    </saml:Conditions>
+
+    <samlp:RequestedAuthnContext xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" Comparison="exact">
+        <saml:AuthnContextClassRef>a</saml:AuthnContextClassRef>
+        <saml:AuthnContextClassRef>b</saml:AuthnContextClassRef>
+    </samlp:RequestedAuthnContext>
+    <samlp:Scoping ProxyCount="3">
+        <samlp:IDPList>
+            <samlp:IDPEntry Loc="https://idp1.example.com/idp1" Name="idp1" ProviderID="urn:idp:1"/>
+            <samlp:IDPEntry Loc="https://idp2.example.net/idp2" Name="idp2" ProviderID="urn:idp:2"/>
+            <samlp:GetComplete>
+                https://foo.example.com/idps
+            </samlp:GetComplete>
+        </samlp:IDPList>
+        <samlp:RequesterID>
+            https://requester.example.com/
+        </samlp:RequesterID>
+    </samlp:Scoping>
+</samlp:AuthnRequest>

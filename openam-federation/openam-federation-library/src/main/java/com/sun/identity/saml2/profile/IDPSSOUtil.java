@@ -29,8 +29,13 @@
  */
 package com.sun.identity.saml2.profile;
 
+import static com.sun.identity.saml2.common.SAML2Constants.DEFAULT_IDP_ADAPTER;
+import static com.sun.identity.saml2.common.SAML2Constants.IDP_ADAPTER_CLASS;
+import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_IDP_ADAPTER;
+import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_IDP_ATTRIBUTE_MAPPER;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
 import static com.sun.identity.saml2.common.SAML2Utils.getBooleanAttributeValueFromSSOConfig;
+import static com.sun.identity.shared.Constants.EMPTY_SCRIPT_SELECTION;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.saml2.Saml2EntityRole.IDP;
 import static org.forgerock.openam.saml2.Saml2EntityRole.SP;
@@ -76,6 +81,7 @@ import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.name.Names;
 import com.sun.identity.cot.COTException;
 import com.sun.identity.cot.CircleOfTrustDescriptor;
 import com.sun.identity.cot.CircleOfTrustManager;
@@ -1227,11 +1233,15 @@ public class IDPSSOUtil {
             String realm)
             throws SAML2Exception {
 
-        IDPAttributeMapper idpAttrMapper =
-                getIDPAttributeMapper(realm, idpEntityID);
+        IDPAttributeMapper idpAttributeMapper = null;
+        if (isScriptConfigured(realm, idpEntityID, SAML2Constants.IDP_ATTRIBUTE_MAPPER_SCRIPT)) {
+            idpAttributeMapper = InjectorHolder.getInstance(com.google.inject.Key.get(IDPAttributeMapper.class,
+                    Names.named(SCRIPTED_IDP_ATTRIBUTE_MAPPER)));
+        } else {
+            idpAttributeMapper = getIDPAttributeMapper(realm, idpEntityID);
+        }
 
-        List attributes = idpAttrMapper.getAttributes(
-                session, idpEntityID, recipientEntityID, realm);
+        List attributes = idpAttributeMapper.getAttributes(session, idpEntityID, recipientEntityID, realm);
 
         if ((attributes == null) || (attributes.isEmpty())) {
             return null;
@@ -1244,8 +1254,16 @@ public class IDPSSOUtil {
         return attrStatement;
     }
 
+    private static boolean isScriptConfigured(String realm, String idpEntityID, String scriptAttributeName) {
+        String script = getAttributeValueFromIDPSSOConfig(realm, idpEntityID, scriptAttributeName);
+        if (script == null || EMPTY_SCRIPT_SELECTION.equals(script)) {
+            return false;
+        }
+        return true;
+    }
+
     /**
-     * Returns an <code>IDPAttributeMapper</code>
+     * Returns an <code>IDPAttributeMapper</code>.
      *
      * @param realm       the realm name
      * @param idpEntityID the entity id of the identity provider
@@ -2824,7 +2842,7 @@ public class IDPSSOUtil {
     }
 
     /**
-     * Returns a <code>SAML2IdentityProviderAdapter</code>
+     * Returns a <code>SAML2IdentityProviderAdapter</code>.
      *
      * @param realm       the realm name
      * @param idpEntityID the entity id of the identity provider
@@ -2833,7 +2851,57 @@ public class IDPSSOUtil {
      */
     public static SAML2IdentityProviderAdapter getIDPAdapterClass(String realm, String idpEntityID)
             throws SAML2Exception {
-        return SAML2Utils.getIDPAdapterClass(realm, idpEntityID);
+        if (isScriptConfigured(realm, idpEntityID, SAML2Constants.IDP_ADAPTER_SCRIPT)) {
+            return InjectorHolder.getInstance(com.google.inject.Key.get(SAML2IdentityProviderAdapter.class,
+                    Names.named(SCRIPTED_IDP_ADAPTER)));
+        } else {
+            return getIDPAdapterJavaClass(realm, idpEntityID);
+        }
+    }
+
+    /**
+     * Returns a <code>SAML2IdentityProviderAdapter</code>.
+     *
+     * @param realm       the realm name
+     * @param idpEntityID the entity id of the identity provider
+     * @return the <code>SAML2IdentityProviderAdapter</code>
+     * @throws SAML2Exception if the operation is not successful
+     */
+    private static SAML2IdentityProviderAdapter getIDPAdapterJavaClass(String realm, String idpEntityID)
+            throws SAML2Exception {
+        String classMethod = "IDPSSOUtil.getIDPAdapterClass: ";
+        SAML2IdentityProviderAdapter idpAdapter = null;
+        try {
+            String idpAdapterName = getAttributeValueFromIDPSSOConfig(realm, idpEntityID, IDP_ADAPTER_CLASS);
+            if (idpAdapterName == null || idpAdapterName.trim().isEmpty()) {
+                idpAdapterName = DEFAULT_IDP_ADAPTER;
+                if (logger.isDebugEnabled()) {
+                    logger.debug("{} uses {}", classMethod, DEFAULT_IDP_ADAPTER);
+                }
+            }
+
+            // Attempt to retrieve the adapter from the cache
+            idpAdapter = (SAML2IdentityProviderAdapter) IDPCache.idpAdapterCache.get(realm + "$" + idpEntityID + "$"
+                    + idpAdapterName);
+
+            if (idpAdapter == null) {
+                // NB: multiple threads may cause several adapter objects to be created
+                idpAdapter = (SAML2IdentityProviderAdapter) Class.forName(idpAdapterName).newInstance();
+                idpAdapter.initialize(idpEntityID, realm);
+
+                // Add the adapter to the cache after initialization
+                IDPCache.idpAdapterCache.put(realm + "$" + idpEntityID + "$" + idpAdapterName, idpAdapter);
+            } else {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("{} got the IDPAdapter from cache", classMethod);
+                }
+            }
+        } catch (Exception ex) {
+            logger.error(classMethod + " unable to get IDP Adapter.", ex);
+            throw new SAML2Exception(ex);
+        }
+
+        return idpAdapter;
     }
 
     /**

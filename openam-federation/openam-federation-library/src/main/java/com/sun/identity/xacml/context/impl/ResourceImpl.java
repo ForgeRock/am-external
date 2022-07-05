@@ -24,9 +24,17 @@
  *
  * $Id: ResourceImpl.java,v 1.3 2008/06/25 05:48:13 qcheng Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.context.impl;
+
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_SCHEMA_LOCATION_VALUE;
+import static com.sun.identity.xacml.common.XACMLConstants.RESOURCE;
+import static com.sun.identity.xacml.common.XACMLConstants.SCHEMA_LOCATION_ATTR;
+import static com.sun.identity.xacml.common.XACMLConstants.XSI_NS_ATTR;
+import static com.sun.identity.xacml.common.XACMLConstants.XSI_NS_URI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,10 +43,12 @@ import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -67,7 +77,7 @@ import com.sun.identity.xacml.context.Resource;
 @SupportedAll
 public class ResourceImpl implements Resource {
     private static final Logger logger = LoggerFactory.getLogger(ResourceImpl.class);
-    private List  attributes;
+    private List<Attribute>  attributes;
     private Element resourceContent;
     private boolean isMutable = true;
 
@@ -152,7 +162,7 @@ public class ResourceImpl implements Resource {
                     // <ResourceContent>
                     if (childName.equals(XACMLConstants.ATTRIBUTE)) {
                         if (attributes == null) {
-                            attributes = new ArrayList();
+                            attributes = new ArrayList<>();
                         }
                         Attribute attribute = factory.getInstance().
                             createAttribute((Element)child);
@@ -252,82 +262,41 @@ public class ResourceImpl implements Resource {
         }
         if (attributes != null &&  !attributes.isEmpty()) {
              if (this.attributes == null) {
-                 this.attributes = new ArrayList();
+                 this.attributes = new ArrayList<>();
             }
             this.attributes.addAll(attributes);
         }
     }
 
-   /**
-    * Returns a <code>String</code> representation of this object
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException
-    {
-        StringBuffer sb = new StringBuffer(2000);
-        StringBuffer NS = new StringBuffer(100);
-        String appendNS = "";
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element resourceElement = XMLUtils.createRootElement(document, CONTEXT_NS_PREFIX, CONTEXT_NS_URI, RESOURCE,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(resourceElement);
         if (declareNS) {
-            NS.append(XACMLConstants.CONTEXT_NS_DECLARATION)
-                    .append(XACMLConstants.SPACE);
-            NS.append(XACMLConstants.XSI_NS_URI)
-                    .append(XACMLConstants.SPACE)
-                    .append(XACMLConstants.CONTEXT_SCHEMA_LOCATION);
+            resourceElement.setAttribute(XSI_NS_ATTR, XSI_NS_URI);
+            resourceElement.setAttribute(SCHEMA_LOCATION_ATTR, CONTEXT_SCHEMA_LOCATION_VALUE);
         }
-        if (includeNSPrefix) {
-            appendNS = XACMLConstants.CONTEXT_NS_PREFIX + ":";
-        }
-        sb.append("<").append(appendNS).append(XACMLConstants.RESOURCE)
-                .append(NS);
-        sb.append(">");
-        int length = 0;
+
         if (attributes != null) {
-            sb.append("\n");
-            length = attributes.size();
-            for (int i = 0; i < length; i++) {
-                Attribute attr = (Attribute)attributes.get(i);
-                sb.append(attr.toXMLString(includeNSPrefix, false));
+            for (Attribute attribute : attributes) {
+                resourceElement.appendChild(attribute.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
         if (resourceContent != null) {
-            sb.append("\n");
-            // ignore trailing ":"
-            if (includeNSPrefix && (resourceContent.getPrefix() == null)) {
-                resourceContent.setPrefix(appendNS.substring(0, appendNS.length()-1));
+            Element adopted = (Element) document.importNode(resourceContent, true);
+            if (includeNSPrefix && adopted.getPrefix() == null) {
+                adopted = (Element) document.renameNode(adopted, "", CONTEXT_NS_PREFIX + ":" + adopted.getTagName());
             }
-            if(declareNS) {
-                int index = NS.indexOf("=");
-                String namespaceName = NS.substring(0, index);
-                String namespaceURI = NS.substring(index+1);
-                if (resourceContent.getNamespaceURI() == null) {
-                    resourceContent.setAttribute(namespaceName, namespaceURI);
-                    // does not seem to work to append namespace TODO
-                }
-            }
-            sb.append(XMLUtils.print(resourceContent));
+            resourceElement.appendChild(adopted);
         }
-        sb.append("</").append(appendNS).append(XACMLConstants.RESOURCE);
-        sb.append(">\n");
-        return sb.toString();
+
+        return fragment;
     }
 
-   /**
-    * Returns a string representation of this object
-    *
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException {
-        return  toXMLString(true, false);
-    }
-
-   /*
+    /*
     * Makes the object immutable
     */
     public void makeImmutable() {// TODO 

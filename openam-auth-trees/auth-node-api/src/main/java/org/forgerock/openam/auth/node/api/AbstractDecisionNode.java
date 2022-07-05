@@ -11,14 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
 import java.util.List;
 import java.util.ResourceBundle;
 
-import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.SupportedAll;
 import org.forgerock.util.i18n.PreferredLocales;
 
@@ -53,9 +52,9 @@ public abstract class AbstractDecisionNode implements Node {
     /**
      * Provides a static set of outcomes for decision nodes.
      */
-    public static final class OutcomeProvider implements org.forgerock.openam.auth.node.api.OutcomeProvider {
+    public static final class OutcomeProvider implements org.forgerock.openam.auth.node.api.StaticOutcomeProvider {
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale("amAuthTrees",
                     OutcomeProvider.class.getClassLoader());
             return ImmutableList.of(

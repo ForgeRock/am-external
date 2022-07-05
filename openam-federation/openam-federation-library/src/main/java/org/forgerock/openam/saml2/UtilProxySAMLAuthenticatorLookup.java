@@ -282,8 +282,8 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
         try {
             logger.debug("Invoking IDP adapter preSendFailureResponse hook");
             try {
-                data.getIdpAdapter().preSendFailureResponse(request, response, SAML2Constants.SERVER_FAULT,
-                        "UnableToGetAuthnReq");
+                data.getIdpAdapter().preSendFailureResponse(data.getIdpEntityID(), data.getRealm(), request, response,
+                        SAML2Constants.SERVER_FAULT, "UnableToGetAuthnReq");
             } catch (SAML2Exception se2) {
                 logger.error("Error invoking the IDP Adapter", se2);
             }

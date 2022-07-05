@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2021 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.dispatch;
 
@@ -148,7 +148,7 @@ public class MessageDispatcherTest {
         boolean result = messageDispatcher.forget(messageId);
 
         //then
-        assertThat(cache.getIfPresent(messageId.toString())).isNull();
+        assertThat(cache.getIfPresent(messageId)).isNull();
         assertThat(result).isTrue();
     }
 

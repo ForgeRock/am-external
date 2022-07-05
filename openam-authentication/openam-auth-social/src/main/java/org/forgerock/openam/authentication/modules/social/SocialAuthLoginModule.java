@@ -104,12 +104,12 @@ public class SocialAuthLoginModule extends AbstractSocialAuthLoginModule {
                 debug.debug("Got user info for '{}'", userInfo.getSubject());
             }
             return userInfo;
-        } catch (OAuthException e) {
-            debug.debug("Unable to get UserInfo details : {}", e.getMessage(), e);
-            throw new AuthLoginException("Unable to get UserInfo details", e);
         } catch(JwsException jse) {
             debug.error("JwsException: {}", jse.getMessage(), jse);
             throw jse;
+        } catch (Exception e) {
+            debug.debug("Unable to get UserInfo details : {}", e.getMessage(), e);
+            throw new AuthLoginException("Unable to get UserInfo details", e);
         }
     }
 

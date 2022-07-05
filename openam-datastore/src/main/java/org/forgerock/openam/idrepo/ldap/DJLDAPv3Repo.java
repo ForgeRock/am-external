@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2021 ForgeRock AS.
+ * Copyright 2013-2022 ForgeRock AS.
  * Portions Copyright 2016 Nomura Research Institute, Ltd.
  * Portions Copyrighted 2016 Agile Digital Engineering.
  */
@@ -97,11 +97,15 @@ import static org.forgerock.openam.ldap.LDAPConstants.ROLE_FILTER_ATTR;
 import static org.forgerock.openam.ldap.LDAPConstants.STATUS_ACTIVE;
 import static org.forgerock.openam.ldap.LDAPConstants.STATUS_INACTIVE;
 import static org.forgerock.openam.ldap.LDAPConstants.UNIQUE_MEMBER_ATTR;
+import static org.forgerock.openam.ldap.LDAPKeepAlive.DEFAULT_KEEP_ALIVE_INTERVAL;
+import static org.forgerock.openam.ldap.LDAPKeepAlive.DEFAULT_KEEP_ALIVE_TIMEOUT;
+import static org.forgerock.openam.ldap.LDAPKeepAlive.configureKeepAliveAndAvailabilityCheck;
+import static org.forgerock.openam.ldap.LDAPKeepAlive.configureRequestTimeout;
 import static org.forgerock.openam.ldap.LDAPUtils.AFFINITY_ENABLED;
 import static org.forgerock.openam.ldap.LDAPUtils.CACHED_POOL_OPTIONS;
 import static org.forgerock.openam.ldap.LDAPUtils.partiallyEscapeAssertionValue;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
-import static org.forgerock.opendj.ldap.LdapConnectionFactory.REQUEST_TIMEOUT;
+import static org.forgerock.opendj.ldap.LdapClients.LDAP_CLIENT_REQUEST_TIMEOUT;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -117,13 +121,14 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
-import com.iplanet.am.util.SystemProperties;
 import org.forgerock.am.cts.api.DataLayerException;
 import org.forgerock.openam.idrepo.ldap.helpers.ADAMHelper;
 import org.forgerock.openam.idrepo.ldap.helpers.ADHelper;
@@ -182,6 +187,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.iplanet.am.util.SystemProperties;
 import com.iplanet.services.util.Crypt;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.spi.AuthLoginException;
@@ -201,6 +207,7 @@ import com.sun.identity.idm.IdType;
 import com.sun.identity.idm.PasswordPolicyException;
 import com.sun.identity.idm.RepoSearchResults;
 import com.sun.identity.idm.common.IdRepoUtils;
+import com.sun.identity.shared.Constants;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.jaxrpc.SOAPClient;
 import com.sun.identity.sm.SchemaType;
@@ -219,8 +226,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
      * Maps psearchids to persistent search connections, so different datastore instances can share the same psearch
      * connection when appropriate.
      */
-    private static final Map<String, DJLDAPv3PersistentSearch> pSearchMap =
-            new HashMap<>();
+    private static final Map<String, DJLDAPv3PersistentSearch> PERSISTENT_SEARCH_MAP = new HashMap<>();
     private static final String AM_AUTH = "amAuth";
     private static final String PASSWORD_ATTR_NAME = "userPassword";
     private static final AttributeDescription PASSWORD_ATTR_DESC = AttributeDescription.valueOf(PASSWORD_ATTR_NAME);
@@ -314,7 +320,16 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         dnCacheEnabled = CollectionHelper.getBooleanMapAttr(configMap, LDAP_DNCACHE_ENABLED, true);
         if (dnCacheEnabled) {
             int cacheSize = CollectionHelper.getIntMapAttr(configParams, LDAP_DNCACHE_SIZE, 1500, DEBUG);
-            dnCache = CacheBuilder.newBuilder().maximumSize(cacheSize).build();
+            CacheBuilder cacheBuilder = CacheBuilder.newBuilder().maximumSize(cacheSize);
+
+            // As per Guava Cache JavaDoc, when the value for expireAfterAccess is set to zero the cache will
+            // be effectively disabled. Therefore, AM will only use the expiry time when the value is greater
+            // than zero.
+            int dnCacheExpiryTime = SystemProperties.getAsInt(Constants.DN_CACHE_EXPIRE_TIME, 0);
+            if (dnCacheExpiryTime > 0) {
+                cacheBuilder.expireAfterAccess(dnCacheExpiryTime, TimeUnit.MILLISECONDS);
+            }
+            dnCache = cacheBuilder.build();
         }
 
         ldapServers = IdRepoUtils.getPrioritizedLDAPUrls(configParams.get(LDAP_SERVER_LIST));
@@ -328,20 +343,24 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
 
         String username = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_USER_NAME);
         char[] password = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_PASSWORD, "").toCharArray();
-        proxiedAuthorizationEnabled = CollectionHelper.getBooleanMapAttr(configMap, LDAP_PROXIED_AUTHORIZATION_ENABLED, false);
-        proxiedAuthorizationFallbackOnDenied = CollectionHelper.getBooleanMapAttr(configMap, LDAP_PROXIED_AUTHORIZATION_DENIED_FALLBACK, false);
-        heartBeatInterval = CollectionHelper.getIntMapAttr(configParams, LDAP_SERVER_HEARTBEAT_INTERVAL, 10, DEBUG);
+        proxiedAuthorizationEnabled = CollectionHelper.getBooleanMapAttr(configMap, LDAP_PROXIED_AUTHORIZATION_ENABLED,
+                false);
+        proxiedAuthorizationFallbackOnDenied = CollectionHelper.getBooleanMapAttr(configMap,
+                LDAP_PROXIED_AUTHORIZATION_DENIED_FALLBACK, false);
+        heartBeatInterval = CollectionHelper.getIntMapAttr(configParams, LDAP_SERVER_HEARTBEAT_INTERVAL,
+                DEFAULT_KEEP_ALIVE_INTERVAL, DEBUG);
+
         heartBeatTimeUnit = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_HEARTBEAT_TIME_UNIT, "SECONDS");
 
         String connectionMode = CollectionHelper.getMapAttr(configParams, LDAP_CONNECTION_MODE);
         useStartTLS = LDAP_CONNECTION_MODE_STARTTLS.equalsIgnoreCase(connectionMode);
         isSecure = LDAP_CONNECTION_MODE_LDAPS.equalsIgnoreCase(connectionMode);
         beheraSupportEnabled = CollectionHelper.getBooleanMapAttr(configMap, BEHERA_SUPPORT_ENABLED, false);
-        iotIdentitiesEnrichedAsOAuth2Client = CollectionHelper.getBooleanMapAttr(configMap, IDENTITIES_ARE_ENRICHED_AS_OAUTH2CLIENTS,
-                false);
+        iotIdentitiesEnrichedAsOAuth2Client = CollectionHelper.getBooleanMapAttr(configMap,
+                IDENTITIES_ARE_ENRICHED_AS_OAUTH2CLIENTS, false);
         bindConnectionFactory = createConnectionFactory(null, null, minPoolSize, maxPoolSize);
         connectionFactory = createConnectionFactory(username, password, minPoolSize, maxPoolSize);
-        passwordChangeConnectionFactory = createPasswordConnectionFactory(null,null,maxPoolSize);
+        passwordChangeConnectionFactory = createPasswordConnectionFactory(null, null, maxPoolSize);
 
         supportedTypesAndOperations =
                 IdRepoUtils.parseSupportedTypesAndOperations(configParams.get(LDAP_SUPPORTED_TYPES_AND_OPERATIONS));
@@ -428,10 +447,21 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     protected ConnectionFactory<Connection> createConnectionFactory(String username, char[] password, int minPoolSize,
         int maxPoolSize) {
         int idleTimeout = LdapConnectionFactoryProvider.getIdleConnectionTime();
+
+        if (DEBUG.isDebugEnabled()) {
+            DEBUG.debug("LDAP Heartbeat Timeout System Property: "
+                    + SystemProperties.get(Constants.LDAP_HEARTBEAT_TIMEOUT));
+        }
+
+        final int heartBeatTimeout =
+                SystemProperties.getAsInt(Constants.LDAP_HEARTBEAT_TIMEOUT, DEFAULT_KEEP_ALIVE_TIMEOUT);
+
         Options ldapOptions = Options.defaultOptions()
-            .set(REQUEST_TIMEOUT, Duration.duration(defaultTimeLimit, SECONDS))
             .set(CACHED_POOL_OPTIONS, new LDAPUtils.CachedPoolOptions(minPoolSize, maxPoolSize, idleTimeout, SECONDS))
             .set(AFFINITY_ENABLED, affinityEnabled);
+
+        ldapOptions = configureRequestTimeout(ldapOptions, defaultTimeLimit, SECONDS);
+        ldapOptions = configureKeepAliveAndAvailabilityCheck(ldapOptions, heartBeatInterval, heartBeatTimeout, SECONDS);
 
         DataStoreConfig config = DataStoreConfig.builder(null)
                 .withLDAPURLs(LDAPUtils.getLdapUrls(ldapServers, isSecure))
@@ -443,6 +473,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 .withUseStartTLS(useStartTLS)
                 .withAffinityEnabled(affinityEnabled)
                 .build();
+
 
         if (maxPoolSize == 1) {
             return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(
@@ -458,10 +489,11 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     }
 
 
-    protected ConnectionFactory<Connection> createPasswordConnectionFactory(String username, char[] password, int maxPoolSize) {
+    protected ConnectionFactory<Connection> createPasswordConnectionFactory(String username, char[] password,
+                                                                            int maxPoolSize) {
 
         Options ldapOptions = Options.defaultOptions()
-                .set(REQUEST_TIMEOUT, Duration.duration(defaultTimeLimit, SECONDS));
+                .set(LDAP_CLIENT_REQUEST_TIMEOUT, Duration.duration(defaultTimeLimit, SECONDS));
 
         DataStoreConfig config = DataStoreConfig.builder(null)
                 .withLDAPURLs(LDAPUtils.getLdapUrls(ldapServers, isSecure))
@@ -578,7 +610,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         modifyRequest.addModification(ModificationType.ADD, attrName, encodedNewPwd);
 
         if (iotIdentitiesEnrichedAsOAuth2Client) {
-           changeSunKeyValueUserPassword(dn, oldPassword, newPassword);
+            changeSunKeyValueUserPassword(dn, oldPassword, newPassword);
         }
 
         try (Connection conn = createPasswordConnection()) {
@@ -851,7 +883,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         for (Map.Entry<String, Set<String>> attr : attrMap.entrySet()) {
             // Add only attributes whose values are not empty or null
             attributeValue = attr.getValue();
-            if(attributeValue != null  && !attributeValue.isEmpty()) {
+            if (attributeValue != null  && !attributeValue.isEmpty()) {
                 entry.addAttribute(attr.getKey(), attributeValue.toArray());
             }
         }
@@ -1180,7 +1212,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
      * @param token Not used.
      * @param type The type of the identity.
      * @param name The name of the identity.
-     * @param attributes The attributes that needs to be set for the entry.
+     * @param inputAttributes The attributes that needs to be set for the entry.
      * @param isAdd <code>true</code> if the attributes should be ADDed, <code>false</code> if the attributes should be
      * REPLACEd instead.
      * @param isString Whether the provided attributes are in string or binary format.
@@ -1195,7 +1227,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
      *  <li>there was an error while trying to perform the modifications.</li>
      * </ul>
      */
-    private void setAttributes(SSOToken token, IdType type, String name, Map attributes,
+    private void setAttributes(SSOToken token, IdType type, String name, Map inputAttributes,
             boolean isAdd, boolean isString, boolean changeOCs) throws IdRepoException {
         final Dn userDN = getDNSkipExistenceCheck(type, name);
         ModifyRequest modifyRequest = addBeheraControl(LDAPRequests.newModifyRequest(userDN));
@@ -1203,9 +1235,9 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         // check if it's password change request by admin
         String adminPasswordChangeAttr = SystemProperties.get(ADMIN_PASSWORD_CHANGE_REQUEST_ATTR);
         final boolean isAdminPasswordChangeRequest = StringUtils.isNotEmpty(adminPasswordChangeAttr)
-                && attributes.containsKey(adminPasswordChangeAttr);
+                && inputAttributes.containsKey(adminPasswordChangeAttr);
 
-        attributes = removeUndefinedAttributes(type, attributes);
+        Map<String, Object> attributes = removeUndefinedAttributes(type, inputAttributes);
 
         if (type.equals(USER)) {
             if (userSearchAttr.equals(userNamingAttr)
@@ -1271,7 +1303,12 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         }
         if (modifyRequest.getModifications().isEmpty()) {
             if (DEBUG.isDebugEnabled()) {
-                DEBUG.debug("setAttributes: there are no modifications to perform");
+                DEBUG.debug("setAttributes: there are no modifications to perform. {}: {}",
+                        "Input attributes are either empty or not present in LDAP User attributes",
+                        inputAttributes.keySet()
+                                .stream()
+                                .filter(Predicate.not(getDefinedAttributes(type)::contains))
+                                .collect(Collectors.toSet()));
             }
             throw newIdRepoException(IdRepoErrorCode.ILLEGAL_ARGUMENTS);
         }
@@ -1425,7 +1462,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     }
 
     /**
-     * Adds Behera Control to the LDAPRequest
+     * Adds Behera Control to the LDAPRequest.
      */
     private <T extends Request> T addBeheraControl(T request) {
         if (beheraSupportEnabled) {
@@ -1499,6 +1536,13 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         }
         attrNames = removeUndefinedAttributes(type, attrNames);
         if (attrNames.isEmpty()) {
+            if (DEBUG.isDebugEnabled()) {
+                DEBUG.debug("removeAttributes: there are no modifications to perform. {}: {}",
+                        "Input attributes are either empty or not present in LDAP User attributes",
+                        attrNames.stream()
+                                .filter(Predicate.not(getDefinedAttributes(type)::contains))
+                                .collect(Collectors.toSet()));
+            }
             throw newIdRepoException(IdRepoErrorCode.ILLEGAL_ARGUMENTS);
         }
         Dn dn = getDNSkipExistenceCheck(type, name);
@@ -1630,9 +1674,9 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                         Collections.EMPTY_MAP, type);
             } else if (resultCode.equals(ResultCode.TIME_LIMIT_EXCEEDED)
                         || resultCode.equals(ResultCode.CLIENT_SIDE_TIMEOUT)) {
-                    errorCode = RepoSearchResults.TIME_LIMIT_EXCEEDED;
-                } else if (resultCode.equals(ResultCode.SIZE_LIMIT_EXCEEDED)) {
-                    errorCode = RepoSearchResults.SIZE_LIMIT_EXCEEDED;
+                errorCode = RepoSearchResults.TIME_LIMIT_EXCEEDED;
+            } else if (resultCode.equals(ResultCode.SIZE_LIMIT_EXCEEDED)) {
+                errorCode = RepoSearchResults.SIZE_LIMIT_EXCEEDED;
             } else {
                 DEBUG.error("Unexpected error occurred during search. {}", getConnectionInformation(), ere);
                 errorCode = resultCode.intValue();
@@ -1695,7 +1739,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             throw newIdRepoException(IdRepoErrorCode.MEMBERSHIP_TO_USERS_AND_AGENTS_NOT_ALLOWED);
         }
         if (!membersType.equals(USER)) {
-            throw newIdRepoException(IdRepoErrorCode.MEMBERSHIP_NOT_SUPPORTED, CLASS_NAME, membersType.getName(), type.getName());
+            throw newIdRepoException(IdRepoErrorCode.MEMBERSHIP_NOT_SUPPORTED, CLASS_NAME, membersType.getName(),
+                    type.getName());
         }
 
         Dn dn = getDNSkipExistenceCheck(type, name);
@@ -1890,7 +1935,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         } else if (membershipType.equals(IdType.FILTEREDROLE)) {
             return getFilteredRoleMemberships(dn);
         }
-        throw newIdRepoException(IdRepoErrorCode.MEMBERSHIP_NOT_SUPPORTED, CLASS_NAME, type.getName(), membershipType.getName());
+        throw newIdRepoException(IdRepoErrorCode.MEMBERSHIP_NOT_SUPPORTED, CLASS_NAME, type.getName(),
+                membershipType.getName());
     }
 
     /**
@@ -2215,12 +2261,12 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             Set<String> attrs = asSet("objectclass");
             Set<String> objectClasses = getAttributes(token, type, name, attrs).get(OBJECT_CLASS_ATTR);
             if (CollectionUtils.isNotEmpty(objectClasses)) {
-                Set<String>OCValues = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-                OCValues.addAll(objectClasses);
+                Set<String> ocValues = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+                ocValues.addAll(objectClasses);
                 for (Map.Entry<String, Set<String>> entry : mapOfServicesAndOCs.entrySet()) {
                     String serviceName = entry.getKey();
                     Set<String> serviceOCs = entry.getValue();
-                    if (OCValues.containsAll(serviceOCs)) {
+                    if (ocValues.containsAll(serviceOCs)) {
                         results.add(serviceName);
                     }
                 }
@@ -2256,7 +2302,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         if (DEBUG.isDebugEnabled()) {
             DEBUG.debug("getServiceAttributes invoked");
         }
-        return getServiceAttributes(type, name, serviceName, attrNames, new StringAttributeExtractor(), new StringToStringConverter());
+        return getServiceAttributes(type, name, serviceName, attrNames, new StringAttributeExtractor(),
+                new StringToStringConverter());
     }
 
     /**
@@ -2278,7 +2325,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         if (DEBUG.isDebugEnabled()) {
             DEBUG.debug("getBinaryServiceAttributes invoked");
         }
-        return getServiceAttributes(type, name, serviceName, attrNames, new BinaryAttributeExtractor(), new StringToBinaryConverter());
+        return getServiceAttributes(type, name, serviceName, attrNames, new BinaryAttributeExtractor(),
+                new StringToBinaryConverter());
     }
 
     /**
@@ -2374,7 +2422,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         }
         if (type.equals(USER)) {
             if (sType.equals(SchemaType.DYNAMIC)) {
-                throw newIdRepoException(IdRepoErrorCode.CANNOT_MODIFY_SERVICE, CLASS_NAME, sType.toString(), type.getName());
+                throw newIdRepoException(IdRepoErrorCode.CANNOT_MODIFY_SERVICE, CLASS_NAME, sType.toString(),
+                        type.getName());
             } else {
                 setAttributes(token, type, name, attrMap, false, true, false);
             }
@@ -2453,10 +2502,10 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 //be present if top is not defined as superior class.
                 requestedAttrs.add(OBJECT_CLASS_ATTR);
                 Map<String, Set<String>> attributes = getAttributes(token, type, name, requestedAttrs);
-                Set<String>OCValues = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-                OCValues.addAll(attributes.get(OBJECT_CLASS_ATTR));
-                OCValues.removeAll(removeOCs);
-                attrs.put(OBJECT_CLASS_ATTR, OCValues);
+                Set<String> ocValues = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+                ocValues.addAll(attributes.get(OBJECT_CLASS_ATTR));
+                ocValues.removeAll(removeOCs);
+                attrs.put(OBJECT_CLASS_ATTR, ocValues);
                 //we need to only change existing attributes, removal of a non-existing attribute results in failure.
                 //implementing retainAll here for CaseInsensitiveHashMap's keySet
                 for (String string : attrs.keySet()) {
@@ -2509,14 +2558,14 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         }
 
         String pSearchId = getPSearchId();
-        synchronized (pSearchMap) {
-            DJLDAPv3PersistentSearch pSearch = pSearchMap.get(pSearchId);
+        synchronized (PERSISTENT_SEARCH_MAP) {
+            DJLDAPv3PersistentSearch pSearch = PERSISTENT_SEARCH_MAP.get(pSearchId);
             if (pSearch == null) {
                 String username = CollectionHelper.getMapAttr(configMap, LDAP_SERVER_USER_NAME);
                 char[] password = CollectionHelper.getMapAttr(configMap, LDAP_SERVER_PASSWORD, "").toCharArray();
                 int minPoolSize = CollectionHelper.getIntMapAttr(configMap, LDAP_CONNECTION_POOL_MIN_SIZE, 1, DEBUG);
                 pSearch = new DJLDAPv3PersistentSearch(configMap, createConnectionFactory(username, password,
-                    Math.min(minPoolSize, 1), 1));
+                    Math.min(minPoolSize, 1), 2));
                 if (dnCacheEnabled) {
                     pSearch.addMovedOrRenamedListener(this);
                 }
@@ -2526,7 +2575,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 } catch (DataLayerException e) {
                     DEBUG.warn("Persistent search failure to attach connection.", e);
                 }
-                pSearchMap.put(pSearchId, pSearch);
+                PERSISTENT_SEARCH_MAP.put(pSearchId, pSearch);
             } else {
                 pSearch.addListener(idRepoListener, getSupportedTypes());
                 if (dnCacheEnabled) {
@@ -2554,8 +2603,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         } else {
             String pSearchId = getPSearchId();
             DJLDAPv3PersistentSearch pSearchToStop = null;
-            synchronized (pSearchMap) {
-                DJLDAPv3PersistentSearch pSearch = pSearchMap.get(pSearchId);
+            synchronized (PERSISTENT_SEARCH_MAP) {
+                DJLDAPv3PersistentSearch pSearch = PERSISTENT_SEARCH_MAP.get(pSearchId);
                 if (pSearch == null) {
                     DEBUG.error("PSearch is already removed, unable to unregister");
                 } else {
@@ -2563,7 +2612,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                     pSearch.removeListener(idRepoListener);
                     if (!pSearch.hasListeners()) {
                         pSearchToStop = pSearch;
-                        pSearchMap.remove(pSearchId, pSearch);
+                        PERSISTENT_SEARCH_MAP.remove(pSearchId, pSearch);
                     }
                 }
             }
@@ -2771,8 +2820,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         return getDN(type, name, false, userNamingAttr, false, true);
     }
 
-    private Dn getDN(IdType type, String name, boolean shouldGenerate, String searchAttr)
-        throws IdRepoException {
+    private Dn getDN(IdType type, String name, boolean shouldGenerate, String searchAttr) throws IdRepoException {
         return getDN(type, name, shouldGenerate, searchAttr, true, false);
     }
 
@@ -3004,7 +3052,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         }
     }
 
-    private static class StringToStringConverter implements Function<Map<String, Set<String>>, Map<String, Set<String>>, IdRepoException> {
+    private static class StringToStringConverter implements Function<Map<String, Set<String>>, Map<String, Set<String>>,
+            IdRepoException> {
 
         @Override
         public Map<String, Set<String>> apply(Map<String, Set<String>> stringSetMap) {
@@ -3012,7 +3061,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         }
     }
 
-    private static class StringToBinaryConverter implements Function<Map<String, Set<String>>, Map<String, byte[][]>, IdRepoException> {
+    private static class StringToBinaryConverter implements Function<Map<String, Set<String>>, Map<String, byte[][]>,
+            IdRepoException> {
 
         @Override
         public Map<String, byte[][]> apply(Map<String, Set<String>> stringSetMap) {
@@ -3069,7 +3119,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
      */
     @VisibleForTesting
     Map<String, DJLDAPv3PersistentSearch> getPsearchMap() {
-        return pSearchMap;
+        return PERSISTENT_SEARCH_MAP;
     }
 
     /**

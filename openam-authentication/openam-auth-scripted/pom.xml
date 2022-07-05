@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2019 ForgeRock AS. All Rights Reserved
+ * Copyright 2014-2021 ForgeRock AS. All Rights Reserved
  * 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-authentication</artifactId>
-        <version>7.1.2</version>
+        <version>7.2.0</version>
     </parent>
 
     <!-- Component Definition -->
@@ -39,11 +39,60 @@
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
-            <artifactId>openam-scripting</artifactId>
+            <artifactId>scripting-api</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-legacy-debug-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.google.auto.service</groupId>
+            <artifactId>auto-service-annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-http-client</artifactId>
+        </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>${basedir}/src/main/js</directory>
+            </resource>
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>jslint-maven-plugin</artifactId>
+                <configuration>
+                    <disallowInsecureCharsInRegExp>false</disallowInsecureCharsInRegExp>
+                    <assumeConsoleAlertEtc>true</assumeConsoleAlertEtc>
+                    <!-- variables bound by rhino -->
+                    <predefinedVars>logger,idRepository,username,realm,authState,FAILED,SUCCESS,clientScriptOutputData,
+                        sharedState,requestHeaders,existingSession,fontDetector,output,autoSubmitDelay,submit,java,
+                        org,requestParameters,
+                        JavaImporter,httpClient,rawProfile,normalizedProfile,selectedIdp,identity,scopes,
+                        claimObjects,requestedTypedClaims,accessToken,token,session</predefinedVars>
+                    <excludes>
+                        <exclude>**/authentication-client-side.js</exclude>
+                        <exclude>**/authentication-server-side.js</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jslint</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

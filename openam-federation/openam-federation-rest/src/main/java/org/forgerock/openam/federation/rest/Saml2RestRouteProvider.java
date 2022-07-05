@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 package org.forgerock.openam.federation.rest;
 
@@ -37,8 +37,8 @@ import org.forgerock.json.resource.ResourceResponse;
 import org.forgerock.json.resource.UpdateRequest;
 import org.forgerock.openam.federation.rest.hosted.HostedEntitiesCollectionProvider;
 import org.forgerock.openam.federation.rest.remote.RemoteEntitiesCollectionProvider;
-import org.forgerock.openam.rest.AbstractRestRouteProvider;
 import org.forgerock.openam.rest.ResourceRouter;
+import org.forgerock.openam.rest.RestRouteProvider;
 import org.forgerock.openam.rest.authz.CrestPrivilegeAuthzModule;
 import org.forgerock.services.context.Context;
 import org.forgerock.util.promise.Promise;
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Sets up the CREST routes necessary to expose the SAML2 configurations to REST clients.
  */
-public class Saml2RestRouteProvider extends AbstractRestRouteProvider {
+public class Saml2RestRouteProvider implements RestRouteProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(Saml2RestRouteProvider.class);
 

@@ -24,7 +24,7 @@
  *
  * $Id: SubjectConfirmationData.java,v 1.4 2008/06/25 05:47:42 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion;
@@ -37,6 +37,7 @@ import org.forgerock.openam.annotations.SupportedAll;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.sun.identity.saml2.assertion.impl.SubjectConfirmationDataImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 
 /**
  *  The <code>SubjectConfirmationData</code> specifies additional data
@@ -49,7 +50,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  */
  @SupportedAll
 @JsonDeserialize(as=SubjectConfirmationDataImpl.class)
-public interface SubjectConfirmationData {
+public interface SubjectConfirmationData extends XmlSerializable {
 
     /**
      *  Returns the time instant at which the subject can no longer be
@@ -179,27 +180,6 @@ public interface SubjectConfirmationData {
      *  @see #getContentType()
      */
     public void setContentType(String attribute) throws SAML2Exception;
-
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace
-    *        qualifier is
-    *        prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-     throws SAML2Exception;
-
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception;
 
    /**
     * Makes the object immutable

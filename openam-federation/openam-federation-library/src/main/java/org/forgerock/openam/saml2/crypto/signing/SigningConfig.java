@@ -11,12 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 package org.forgerock.openam.saml2.crypto.signing;
 
 import java.security.Key;
 import java.security.cert.X509Certificate;
+
+import org.forgerock.util.annotations.VisibleForTesting;
 
 /**
  * This POJO contains the signing configuration to be used for signing SAML2 XML documents.
@@ -31,7 +33,8 @@ public final class SigningConfig {
     private final String digestMethod;
 
     /**
-     * Creates a new {@link SigningConfig} instance.
+     * Creates a new {@link SigningConfig} instance. Please use {@link SigningConfigFactory} rather than calling this
+     * constructor directly.
      *
      * @param signingKey The signing key.
      * @param certificate The certificate to include in the XML signature. May be null if the certificate should not be
@@ -39,7 +42,8 @@ public final class SigningConfig {
      * @param signingAlgorithm The signing algorithm.
      * @param digestMethod The digest method.
      */
-    SigningConfig(Key signingKey, X509Certificate certificate, String signingAlgorithm,
+    @VisibleForTesting
+    public SigningConfig(Key signingKey, X509Certificate certificate, String signingAlgorithm,
             String digestMethod) {
         this.signingKey = signingKey;
         this.certificate = certificate;

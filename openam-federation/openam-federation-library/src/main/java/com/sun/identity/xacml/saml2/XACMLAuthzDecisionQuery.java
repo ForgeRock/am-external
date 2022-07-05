@@ -24,7 +24,7 @@
  *
  * $Id: XACMLAuthzDecisionQuery.java,v 1.3 2008/06/25 05:48:14 qcheng Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.saml2;
 
@@ -176,26 +176,6 @@ public interface XACMLAuthzDecisionQuery extends RequestAbstract {
      * be determined by calling <code>isMutable</code> on the object.
      */
     public void setRequest(Request request) throws XACMLException;
-
-   /**
-    * Returns a <code>String</code> representation of this object
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException;
-
-   /**
-    * Returns a string representation of this object
-    *
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException;
 
    /**
     * Makes the object immutable

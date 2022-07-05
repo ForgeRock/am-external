@@ -24,7 +24,7 @@
  *
  * $Id: LogoutResponseImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
@@ -57,7 +57,8 @@ implements LogoutResponse {
      *
      */
     public LogoutResponseImpl() {
-        isMutable=true;
+        super(SAML2Constants.LOGOUT_RESPONSE);
+        isMutable = true;
     }
     
     /**
@@ -68,6 +69,7 @@ implements LogoutResponse {
      */
     
     public LogoutResponseImpl(Element element) throws SAML2Exception {
+        super(SAML2Constants.LOGOUT_RESPONSE);
         parseElement(element);
         if (isSigned) {
             signedXMLString = XMLUtils.print(element);
@@ -81,6 +83,7 @@ implements LogoutResponse {
      * @throws SAML2Exception if <code>LogoutResponse</code> cannot be created.
      */
     public LogoutResponseImpl(String xmlString) throws SAML2Exception {
+        super(SAML2Constants.LOGOUT_RESPONSE);
         Document xmlDocument =
         XMLUtils.toDOMDocument(xmlString);
         if (xmlDocument == null) {
@@ -91,55 +94,6 @@ implements LogoutResponse {
         if (isSigned) {
             signedXMLString = xmlString;
         }
-    }
-    
-    /**
-     * Returns the <code>LogoutResponse</code> in an XML document String format
-     * based on the <code>LogoutResponse</code> schema described above.
-     *
-     * @return An XML String representing the <code>LogoutResponse</code>.
-     * @exception SAML2Exception if some error occurs during conversion to
-     *           <code>String</code>.
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true,false);
-    }
-    
-    /**
-     * Returns the <code>LogoutResponse</code> in an XML document String format
-     * based on the <code>LogoutResponse</code> schema described above.
-     *
-     * @param includeNSPrefix Determines whether or not the namespace qualifier
-     *        is prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return A XML String representing the <code>LogoutResponse</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString(boolean includeNSPrefix,
-    boolean declareNS) throws SAML2Exception {
-        if (isSigned && signedXMLString != null) {
-            return signedXMLString;
-        }
-
-        validateData();
-        StringBuffer xmlString = new StringBuffer(1000);
-        xmlString.append(SAML2Constants.START_TAG);
-        if (includeNSPrefix) {
-            xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-        }
-        xmlString.append(SAML2Constants.LOGOUT_RESPONSE)
-        .append(SAML2Constants.SPACE);
-        
-        xmlString.append(super.toXMLString(includeNSPrefix,declareNS));
-        
-        xmlString.append(SAML2Constants.NEWLINE)
-        .append(SAML2Constants.SAML2_END_TAG)
-        .append(SAML2Constants.LOGOUT_RESPONSE)
-        .append(SAML2Constants.END_TAG);
-        
-        return xmlString.toString();
     }
     
     /**

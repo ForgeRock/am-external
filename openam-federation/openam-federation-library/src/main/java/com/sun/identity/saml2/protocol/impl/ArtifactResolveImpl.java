@@ -24,28 +24,39 @@
  *
  * $Id: ArtifactResolveImpl.java,v 1.2 2008/06/25 05:47:58 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.CONSENT;
+import static com.sun.identity.saml2.common.SAML2Constants.DESTINATION;
+import static com.sun.identity.saml2.common.SAML2Constants.ID;
+import static com.sun.identity.saml2.common.SAML2Constants.ISSUE_INSTANT;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.VERSION;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import java.text.ParseException;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.protocol.Artifact;
 import com.sun.identity.saml2.protocol.ArtifactResolve;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
@@ -76,8 +87,9 @@ import com.sun.identity.shared.xml.XMLUtils;
 public class ArtifactResolveImpl extends RequestAbstractImpl
 	implements ArtifactResolve {
 
-    private static final Logger logger = LoggerFactory.getLogger(ArtifactResolveImpl.class);
-    private Artifact artifact = null;
+	private static final Logger logger = LoggerFactory.getLogger(ArtifactResolveImpl.class);
+	public static final String ARTIFACT_RESOLVE = "ArtifactResolve";
+	private Artifact artifact = null;
     private boolean validationDone = false;
     
     protected void validateData() throws SAML2Exception {
@@ -236,7 +248,8 @@ public class ArtifactResolveImpl extends RequestAbstractImpl
      * object.
      */
     public ArtifactResolveImpl() {
-	isMutable = true;
+    	super(ARTIFACT_RESOLVE);
+		isMutable = true;
     }
 
     /**
@@ -248,7 +261,8 @@ public class ArtifactResolveImpl extends RequestAbstractImpl
      */
     public ArtifactResolveImpl(org.w3c.dom.Element element)
         throws SAML2Exception {
-        parseElement(element);
+		super(ARTIFACT_RESOLVE);
+		parseElement(element);
         if (isSigned) {
             signedXMLString = XMLUtils.print(element);
         }
@@ -259,7 +273,8 @@ public class ArtifactResolveImpl extends RequestAbstractImpl
      */
     public ArtifactResolveImpl(String xmlString)
         throws SAML2Exception {
-        Document doc = XMLUtils.toDOMDocument(xmlString);
+		super(ARTIFACT_RESOLVE);
+		Document doc = XMLUtils.toDOMDocument(xmlString);
         if (doc == null) {
             throw new SAML2Exception(
                 SAML2SDKUtils.bundle.getString("errorObtainingElement"));
@@ -296,68 +311,48 @@ public class ArtifactResolveImpl extends RequestAbstractImpl
 	artifact = value;
     }
 
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @return a String representation of this Object.
-     * @throws SAML2Exception if it could not create String object
-     */
-    public String toXMLString() throws SAML2Exception {
-	return this.toXMLString(true, false);
-    }
+	@Override
+	public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+			throws SAML2Exception {
+		this.validateData();
+		DocumentFragment fragment = document.createDocumentFragment();
 
-    /**
-     * Returns a String representation
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *         qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *         within the Element.
-     * @throws SAML2Exception if it could not create String object.
-     * @return a String representation of this Object.
-     **/
+		if (isSigned && signedXMLString != null) {
+			Document doc = XMLUtils.toDOMDocument(signedXMLString);
+			if (doc == null) {
+				throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
+			}
+			fragment.appendChild(document.importNode(doc.getDocumentElement(), true));
+			return fragment;
+		}
 
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-        throws SAML2Exception {
-	if (isSigned && signedXMLString != null) {
-	    return signedXMLString;
-	}
+		Element artifactResolveElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+				"ArtifactResolve", includeNSPrefix, declareNS);
+		fragment.appendChild(artifactResolveElement);
 
-	this.validateData();
-        StringBuffer result = new StringBuffer(1000);
-        String prefix = "";
-        String uri = "";
-        if (includeNSPrefix) {
-            prefix = SAML2Constants.PROTOCOL_PREFIX;
-        }
-        if (declareNS) {
-            uri = SAML2Constants.PROTOCOL_DECLARE_STR;
-        }
+		artifactResolveElement.setAttribute(ID, requestId);
+		artifactResolveElement.setAttribute(VERSION, version);
+		artifactResolveElement.setAttribute(ISSUE_INSTANT, DateUtils.toUTCDateFormat(issueInstant));
 
-        result.append("<").append(prefix).append("ArtifactResolve").
-                append(uri).append(" ID=\"").append(requestId).append("\"").
-		append(" Version=\"").append(version).append("\"").
-		append(" IssueInstant=\"").
-		append(DateUtils.toUTCDateFormat(issueInstant)).append("\"");
-	if (destinationURI != null && destinationURI.trim().length() != 0) {
-	    result.append(" Destination=\"").append(destinationURI).
-		append("\"");
+		if (isNotBlank(destinationURI)) {
+			artifactResolveElement.setAttribute(DESTINATION, destinationURI);
+		}
+		if (isNotBlank(consent)) {
+			artifactResolveElement.setAttribute(CONSENT, consent);
+		}
+		if (nameID != null) {
+			artifactResolveElement.appendChild(nameID.toDocumentFragment(document, includeNSPrefix, declareNS));
+		}
+		if (signatureString != null) {
+			List<Node> sigNodes = SAML2Utils.parseSAMLFragment(signatureString);
+			for (Node node : sigNodes) {
+				artifactResolveElement.appendChild(document.importNode(node, true));
+			}
+		}
+		if (extensions != null) {
+			artifactResolveElement.appendChild(extensions.toDocumentFragment(document, includeNSPrefix, declareNS));
+		}
+		artifactResolveElement.appendChild(artifact.toDocumentFragment(document, includeNSPrefix, declareNS));
+		return fragment;
 	}
-	if (consent != null && consent.trim().length() != 0) {
-	    result.append(" Consent=\"").append(consent).append("\"");
-	}
-	result.append(">");
-	if (nameID != null) {
-	    result.append(nameID.toXMLString(includeNSPrefix, declareNS));
-	}
-	if (signatureString != null) {
-	    result.append(signatureString);
-	}
-	if (extensions != null) {
-	    result.append(extensions.toXMLString(includeNSPrefix, declareNS));
-	}
-	result.append(artifact.toXMLString(includeNSPrefix, declareNS));
-	result.append("</").append(prefix).append("ArtifactResolve>");
-	return result.toString();
-    }
 }

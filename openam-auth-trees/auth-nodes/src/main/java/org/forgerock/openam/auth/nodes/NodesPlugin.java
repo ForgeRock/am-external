@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -28,6 +28,7 @@ import org.forgerock.openam.auth.nodes.oath.OathTokenVerifierNode;
 import org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode;
 import org.forgerock.openam.auth.nodes.push.PushRegistrationNode;
 import org.forgerock.openam.auth.nodes.push.PushResultVerifierNode;
+import org.forgerock.openam.auth.nodes.push.PushWaitNode;
 import org.forgerock.openam.auth.nodes.saml2.Saml2Node;
 import org.forgerock.openam.auth.nodes.saml2.WriteFederationInformationNode;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnAuthenticationNode;
@@ -48,7 +49,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public String getPluginVersion() {
-        return "8.0.3";
+        return "9.0.0";
     }
 
     @Override
@@ -77,14 +78,39 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 && VersionComparison.compareVersionStrings("8.0.0", fromVersion) <= 0) {
             pluginTools.upgradeAuthNode(SocialProviderHandlerNode.class);
         }
-        if (VersionComparison.compareVersionStrings("4.5.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.0.2", fromVersion) <= 0) {
-            pluginTools.upgradeAuthNode(ChoiceCollectorNode.class);
-        }
         if (VersionComparison.compareVersionStrings("3.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.0.3", fromVersion) <= 0) {
+                && VersionComparison.compareVersionStrings("8.2.2", fromVersion) <= 0) {
             pluginTools.upgradeAuthNode(MessageNode.class);
         }
+        if (VersionComparison.compareVersionStrings("1.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.4.1", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(ChoiceCollectorNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("6.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.4.1", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(PushRegistrationNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("7.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.4.1", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(OathRegistrationNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("2.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.5.0", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(PushAuthenticationSenderNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("3.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.4.1", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(WebAuthnRegistrationNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("5.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.4.1", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(WebAuthnDeviceStorageNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("5.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("9.0.0", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(Saml2Node.class);
+        }
+
         super.upgrade(fromVersion);
     }
 
@@ -195,6 +221,21 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 .put("7.0.0", asList(
                         OathRegistrationNode.class,
                         OathTokenVerifierNode.class)
+                )
+                .put("8.1.0", asList(
+                        PassthroughAuthenticationNode.class)
+                )
+                .put("8.2.0", asList(
+                        CaptchaNode.class)
+                )
+                .put("8.3.0", asList(
+                        DebugNode.class)
+                )
+                .put("8.4.0", asList(
+                        SetCustomCookieNode.class)
+                )
+                .put("8.5.0", asList(
+                        PushWaitNode.class)
                 )
                 .build();
     }

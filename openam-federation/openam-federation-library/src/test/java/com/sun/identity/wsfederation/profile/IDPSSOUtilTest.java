@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.profile;
 
@@ -22,6 +22,7 @@ import static org.forgerock.openam.federation.testutils.TestCaseConfigurationIns
 import static org.forgerock.openam.federation.testutils.TestCaseConfigurationInstance.resetConfiguration;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+
 
 import javax.servlet.http.HttpServletRequest;
 

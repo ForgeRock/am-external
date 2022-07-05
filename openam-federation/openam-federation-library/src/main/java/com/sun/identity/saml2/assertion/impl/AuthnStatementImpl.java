@@ -24,12 +24,16 @@
  *
  * $Id: AuthnStatementImpl.java,v 1.2 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 
 package com.sun.identity.saml2.assertion.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
 import java.text.ParseException;
 import java.util.Date;
@@ -38,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -47,7 +52,6 @@ import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.AuthnContext;
 import com.sun.identity.saml2.assertion.AuthnStatement;
 import com.sun.identity.saml2.assertion.SubjectLocality;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.shared.DateUtils;
@@ -411,60 +415,27 @@ public class AuthnStatementImpl implements AuthnStatement {
         return mutable;
     }
 
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *          By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public java.lang.String toXMLString()
-        throws SAML2Exception
-    {
-        return this.toXMLString(true, false);
-    }
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *          prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *          within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public java.lang.String toXMLString(boolean includeNS, boolean declareNS)
-        throws SAML2Exception
-    {
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
         validateData();
-        StringBuffer result = new StringBuffer(1000);
-        String prefix = "";
-        String uri = "";
-        if (includeNS) {
-            prefix = SAML2Constants.ASSERTION_PREFIX;
-        }
-        if (declareNS) {
-            uri = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element authnStatementElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX,
+                ASSERTION_NAMESPACE_URI, "AuthnStatement", includeNSPrefix, declareNS);
+        fragment.appendChild(authnStatementElement);
 
-        result.append("<").append(prefix).append("AuthnStatement").
-            append(uri).append(" AuthnInstant=\"").
-            append(DateUtils.toUTCDateFormat(authnInstant)).append("\"");
-        if (sessionIndex != null && sessionIndex.trim().length() != 0) {
-            result.append(" SessionIndex=\"").append(sessionIndex).append("\"");
+        authnStatementElement.setAttribute("AuthnInstant", DateUtils.toUTCDateFormat(authnInstant));
+        if (isNotBlank(sessionIndex)) {
+            authnStatementElement.setAttribute("SessionIndex", sessionIndex);
         }
         if (sessionNotOnOrAfter != null) {
-            result.append(" SessionNotOnOrAfter=\"").
-                append(DateUtils.toUTCDateFormat(sessionNotOnOrAfter)).
-                append("\"");
+            authnStatementElement.setAttribute("SessionNotOnOrAfter", DateUtils.toUTCDateFormat(sessionNotOnOrAfter));
         }
-        result.append(">");
         if (subjectLocality != null) {
-            result.append(subjectLocality.toXMLString(includeNS, declareNS));
+            authnStatementElement.appendChild(subjectLocality.toDocumentFragment(document, includeNSPrefix, false));
         }
-        result.append(authnContext.toXMLString(includeNS, declareNS));
-        result.append("</").append(prefix).append("AuthnStatement>");
-        return result.toString();
+        authnStatementElement.appendChild(authnContext.toDocumentFragment(document, includeNSPrefix, false));
+
+        return fragment;
     }
 }

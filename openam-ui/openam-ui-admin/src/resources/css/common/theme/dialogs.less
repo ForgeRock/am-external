@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 
 .dialog-danger {
@@ -26,19 +26,27 @@
     }
 
     .modal-footer {
-        border-color: transparent;
+      border-color: transparent;
 
-        .row {
-            .col-md-6 {
-                &:first-child {
-                    padding-right: 6px;
-                }
-                
-                &:last-child {
-                    padding-left: 6px;
-                }
+      .row {
+        .col-md-6 {
+          @media (min-width: @screen-md) {
+            &:first-child {
+                padding-right: 6px;
             }
+
+            &:last-child {
+                padding-left: 6px;
+            }
+          }
+
+          @media (max-width: @screen-md) {
+            &:first-child {
+                padding-bottom: 10px;
+            }
+          }
         }
+      }
     }
 
     .modal-header {

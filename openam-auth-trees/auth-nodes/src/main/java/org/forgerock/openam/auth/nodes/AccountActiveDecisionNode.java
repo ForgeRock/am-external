@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -28,13 +28,14 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iplanet.sso.SSOException;
+import com.google.inject.assistedinject.Assisted;
+import com.sun.identity.authentication.service.AMAccountLockout;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.IdRepoException;
 
 /**
  * Checks if the current user is active.
@@ -53,33 +54,37 @@ public class AccountActiveDecisionNode extends AbstractDecisionNode {
     private final Logger logger = LoggerFactory.getLogger(AccountActiveDecisionNode.class);
     private final CoreWrapper coreWrapper;
     private final IdentityUtils identityUtils;
+    private final AMAccountLockout.Factory amAccountLockoutFactory;
+    private final Realm realm;
 
     /**
      * Create the node.
      *
-     * @param coreWrapper A core wrapper instance.
-     * @param identityUtils An instance of the IdentityUtils.
+     * @param realm                   the realm context
+     * @param coreWrapper             a core wrapper instance
+     * @param identityUtils           an instance of the IdentityUtils
+     * @param amAccountLockoutFactory factory for generating account lockout objects
      */
     @Inject
-    public AccountActiveDecisionNode(CoreWrapper coreWrapper, IdentityUtils identityUtils) {
+    public AccountActiveDecisionNode(@Assisted Realm realm, CoreWrapper coreWrapper, IdentityUtils identityUtils,
+            AMAccountLockout.Factory amAccountLockoutFactory) {
         this.coreWrapper = coreWrapper;
         this.identityUtils = identityUtils;
+        this.amAccountLockoutFactory = amAccountLockoutFactory;
+        this.realm = realm;
     }
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("AccountActiveDecisionNode started");
-        Optional<AMIdentity> userIdentity = getAMIdentity(context, identityUtils, coreWrapper);
+        Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
+                identityUtils, coreWrapper);
         if (userIdentity.isEmpty()) {
             throw new NodeProcessException("Failed to get the identity object");
         }
 
-        try {
-            logger.debug("Checking user account status");
-            return goTo(userIdentity.get().isActive()).build();
-        } catch (IdRepoException | SSOException e) {
-            logger.warn("Exception checking user status", e);
-            throw new NodeProcessException(e);
-        }
+        AMAccountLockout accountLockout = amAccountLockoutFactory.create(this.realm);
+        logger.debug("Checking user account status");
+        return goTo(!accountLockout.isAccountLocked(userIdentity.get().getName())).build();
     }
 }

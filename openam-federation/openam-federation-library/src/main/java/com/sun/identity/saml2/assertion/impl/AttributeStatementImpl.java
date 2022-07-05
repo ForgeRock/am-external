@@ -24,10 +24,13 @@
  *
  * $Id: AttributeStatementImpl.java,v 1.2 2008/06/25 05:47:42 qcheng Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,6 +40,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -45,7 +49,6 @@ import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.Attribute;
 import com.sun.identity.saml2.assertion.AttributeStatement;
 import com.sun.identity.saml2.assertion.EncryptedAttribute;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -272,60 +275,26 @@ public class AttributeStatementImpl implements AttributeStatement {
         return mutable;
     }
 
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *          By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
     @Override
-    public String toXMLString() throws SAML2Exception {
-        return this.toXMLString(true, false);
-    }
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *          prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *          within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    @Override
-    public String toXMLString(boolean includeNS, boolean declareNS) throws SAML2Exception {
-
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
         validateData();
-        StringBuffer result = new StringBuffer(1000);
-        String prefix = "";
-        String uri = "";
-        if (includeNS) {
-            prefix = SAML2Constants.ASSERTION_PREFIX;
-        }
-        if (declareNS) {
-            uri = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-
-        result.append("<").append(prefix).append("AttributeStatement").
-            append(uri).append(">");
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element statementElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                "AttributeStatement", includeNSPrefix, declareNS);
+        fragment.appendChild(statementElement);
 
         if (attrs != null) {
-            Iterator iter = attrs.iterator();
-            while (iter.hasNext()) {
-                result.append(((Attribute) iter.next()).
-                        toXMLString(includeNS, declareNS));
+            for (Attribute attribute : attrs) {
+                statementElement.appendChild(attribute.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
         if (encAttrs != null) {
-            Iterator iter1 = encAttrs.iterator();
-            while (iter1.hasNext()) {
-                result.append(((EncryptedAttribute) iter1.next()).
-                        toXMLString(includeNS, declareNS));
+            for (EncryptedAttribute encryptedAttribute : encAttrs) {
+                statementElement.appendChild(encryptedAttribute.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
-        result.append("</").append(prefix).append("AttributeStatement>");
-        return result.toString();
+
+        return fragment;
     }
 }

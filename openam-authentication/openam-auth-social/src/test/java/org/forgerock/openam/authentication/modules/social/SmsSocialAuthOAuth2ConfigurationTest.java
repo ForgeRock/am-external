@@ -22,13 +22,11 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import org.forgerock.http.oauth2.ClientSecretBasicAuthenticationFilter;
 import org.forgerock.oauth.clients.oauth2.OAuth2ClientConfiguration;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -60,7 +58,7 @@ public class SmsSocialAuthOAuth2ConfigurationTest {
     }
 
     @Test
-    public void shouldBuildTheClientConfiguration() throws URISyntaxException {
+    public void shouldBuildTheClientConfiguration() throws Exception {
         //when
         configuration = new SmsSocialAuthOAuth2Configuration(options);
         OAuth2ClientConfiguration config = (OAuth2ClientConfiguration) configuration.getOAuthClientConfiguration();
@@ -74,7 +72,8 @@ public class SmsSocialAuthOAuth2ConfigurationTest {
         assertThat(config.getScope()).isEqualTo(Arrays.asList("email"));
         assertThat(config.getScopeDelimiter()).isEqualTo(":");
         assertThat(config.getProvider()).isEqualTo("provider");
-        assertThat(config.getAuthenticationFilter()).isInstanceOf(ClientSecretBasicAuthenticationFilter.class);
+        assertThat(config.getAuthenticationFilter()).isInstanceOf(
+                Class.forName("org.forgerock.http.filter.Filters$HttpBasicAuthClientFilter"));
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)

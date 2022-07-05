@@ -24,7 +24,7 @@
  *
  * $Id: NameIDPolicy.java,v 1.2 2008/06/25 05:47:57 qcheng Exp $
  *
- * Portions Copyrighted 2016-2019 ForgeRock AS.
+ * Portions Copyrighted 2016-2021 ForgeRock AS.
  */
 
 
@@ -34,6 +34,7 @@ import org.forgerock.openam.annotations.SupportedAll;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 import com.sun.identity.saml2.protocol.impl.NameIDPolicyImpl;
 
 /** 
@@ -45,7 +46,7 @@ import com.sun.identity.saml2.protocol.impl.NameIDPolicyImpl;
 
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
         defaultImpl = NameIDPolicyImpl.class)
-public interface NameIDPolicy {
+public interface NameIDPolicy extends XmlSerializable {
     
     /** 
      * Returns the value of <code>Format</code> attribute.
@@ -97,28 +98,6 @@ public interface NameIDPolicy {
      * @return value of <code>AllowCreate</code> attribute.
      */
     public boolean isAllowCreate();
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @return String representation of this Object.
-     * @throws SAML2Exception if cannot create String object.
-     */
-    public String toXMLString() throws SAML2Exception ;
-    
-    /** 
-     * Returns a String representation of this object.
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *	      qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *	      within the Element.
-     * @return String representation of this Object.
-     * @throws SAML2Exception if cannot create String object.
-     */
-    
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-    throws SAML2Exception ;
         
     /** 
      * Makes this object immutable. 

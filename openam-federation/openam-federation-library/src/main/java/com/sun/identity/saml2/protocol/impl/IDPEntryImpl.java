@@ -24,18 +24,23 @@
  *
  * $Id: IDPEntryImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.IDPENTRY;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.protocol.IDPEntry;
@@ -172,73 +177,28 @@ public class IDPEntryImpl implements IDPEntry {
 			SAML2SDKUtils.bundle.getString("objectImmutable"));
 	}
     }
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @return a String representation of this Object.
-     * @throws SAML2Exception if cannot create String object.
-     */
-    public String toXMLString() throws SAML2Exception {
-	return toXMLString(true,false);
-    }
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *        qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *        within the Element.
-     * @return the String representation of this Object.
-     * @throws SAML2Exception if cannot create String object.
-     **/
-    
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-	   throws SAML2Exception {
-	validate(providerID);
-	StringBuffer xmlString = new StringBuffer(100);
-	xmlString.append(SAML2Constants.START_TAG);
-	if (includeNSPrefix) {
-	    xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-	}
-	xmlString.append(SAML2Constants.IDPENTRY);
 
-	if (declareNS) {
-            xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
-	}
-	xmlString.append(SAML2Constants.SPACE)
-	         .append(PROVIDERID)
-		 .append(SAML2Constants.EQUAL)
-		 .append(SAML2Constants.QUOTE)
-		 .append(providerID)
-		 .append(SAML2Constants.QUOTE);
+	@Override
+	public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+			throws SAML2Exception {
+		validate(providerID);
+		DocumentFragment fragment = document.createDocumentFragment();
+    	Element idpEntryElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE, IDPENTRY,
+				includeNSPrefix, declareNS);
+    	fragment.appendChild(idpEntryElement);
 
-	if ((name != null) && (name.length() > 0)) {
-	    xmlString.append(SAML2Constants.SPACE)
-		     .append(NAME).append(SAML2Constants.EQUAL)
-		     .append(SAML2Constants.QUOTE)
-		     .append(name)
-		     .append(SAML2Constants.QUOTE);
+    	idpEntryElement.setAttribute(PROVIDERID, providerID);
+    	if (isNotBlank(name)) {
+    		idpEntryElement.setAttribute(NAME, name);
+		}
+    	if (isNotBlank(locationURI)) {
+    		idpEntryElement.setAttribute(LOC, locationURI);
+		}
+
+		return fragment;
 	}
 
-	if ((locationURI != null) && (locationURI.length() > 0)) {
-	    xmlString.append(SAML2Constants.SPACE)
-		     .append(LOC).append(SAML2Constants.EQUAL)
-		     .append(SAML2Constants.QUOTE)
-		     .append(locationURI)
-		     .append(SAML2Constants.QUOTE);
-	}
-		 
-	xmlString.append(SAML2Constants.END_TAG)
-		 .append(SAML2Constants.SAML2_END_TAG)
-		 .append(SAML2Constants.IDPENTRY)
-		 .append(SAML2Constants.END_TAG);
-
-	return xmlString.toString();
-    }
-
-    /** 
+	/**
      * Makes this object immutable. 
      */
     public void makeImmutable() {

@@ -29,9 +29,14 @@
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.NAME_ID_MAPPING_RESPONSE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.STATUS;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -39,12 +44,10 @@ import org.w3c.dom.NodeList;
 import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.EncryptedID;
 import com.sun.identity.saml2.assertion.NameID;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.protocol.NameIDMappingResponse;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
-import com.sun.identity.shared.DateUtils;
 import com.sun.identity.shared.xml.XMLUtils;
 
 public class NameIDMappingResponseImpl extends StatusResponseImpl
@@ -59,6 +62,7 @@ public class NameIDMappingResponseImpl extends StatusResponseImpl
      * Constructor to create <code>ManageNameIDResponse</code> Object. 
      */
     public NameIDMappingResponseImpl() {
+        super(NAME_ID_MAPPING_RESPONSE);
         isMutable = true;
     }
 
@@ -71,6 +75,7 @@ public class NameIDMappingResponseImpl extends StatusResponseImpl
      *     created.
      */
     public NameIDMappingResponseImpl(Element element) throws SAML2Exception {
+        super(NAME_ID_MAPPING_RESPONSE);
         parseElement(element);
         if (isSigned) {
             signedXMLString = XMLUtils.print(element);
@@ -87,6 +92,7 @@ public class NameIDMappingResponseImpl extends StatusResponseImpl
      *     created.
      */
     public NameIDMappingResponseImpl(String xmlString) throws SAML2Exception {
+        super(NAME_ID_MAPPING_RESPONSE);
         Document doc = XMLUtils.toDOMDocument(xmlString);
         if (doc == null) {
             throw new SAML2Exception("errorObtainingElement");
@@ -164,91 +170,27 @@ public class NameIDMappingResponseImpl extends StatusResponseImpl
         }
     }
 
-    /**
-     * Returns the <code>ManageNameIDResponse</code> in an XML document String
-     * format based on the <code>ManageNameIDResponse</code> schema described
-     * above.
-     *
-     * @return An XML String representing the <code>ManageNameIDResponse</code>.
-     * @throws SAML2Exception if it could not create String object.
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true, false);
-    }
-    
-    /**
-     * Returns the <code>ManageNameIDResponse</code> in an XML document String
-     * format based on the <code>ManageNameIDResponse</code> schema described
-     * above.
-     *
-     * @param includeNSPrefix Determines whether the namespace qualifier is
-     *     prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *     within the Element.
-     * @return A XML String representing the <code>ManageNameIDResponse</code>.
-    *  @throws SAML2Exception if it could not create String object.
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = super.toDocumentFragment(document, includeNSPrefix, declareNS);
         if (isSigned && signedXMLString != null) {
-            return signedXMLString;
+            return fragment;
         }
 
-        validateData();
+        Element rootElement = (Element) fragment.getFirstChild();
+        // The old code inserts the NameID or EncryptedNameID elements before the Status, so preserve that behaviour
+        String prefix = includeNSPrefix ? PROTOCOL_PREFIX : "";
+        Node statusNode = XMLUtils.getChildNode(rootElement, prefix + STATUS);
 
-        StringBuffer result= new StringBuffer();
-        String NS="";
-        String NSP="";
-        String uri="";
-            
-        if (declareNS) {
-            NS = SAML2Constants.PROTOCOL_DECLARE_STR;
-            uri=NS;
-        }
-            
-        if (includeNSPrefix) {
-            NSP = SAML2Constants.PROTOCOL_PREFIX;
-        }
-        
-        result.append("<").append(NSP).append("NameIDMappingResponse")
-              .append(uri).append(" ID=\"").append(responseId).append("\"");
-        if (inResponseTo != null && inResponseTo.trim().length() != 0) {
-            result.append(" InResponseTo=\"").append(XMLUtils.escapeSpecialCharacters(inResponseTo)).append("\"");
-        }
-
-        result.append(" Version=\"").append(version).append("\"")
-              .append(" IssueInstant=\"")
-              .append(DateUtils.toUTCDateFormat(issueInstant)).append("\"");
-        if ((destination != null) && (destination.trim().length() != 0)) {
-            result.append(" Destination=\"").append(destination)
-                  .append("\"");
-        }
-        if ((consent != null) && (consent.trim().length() != 0)) {
-            result.append(" Consent=\"").append(consent).append("\"");
-        }
-        result.append(">");
-        if (issuer != null) {
-            result.append(issuer.toXMLString(includeNSPrefix, declareNS));
-        }
-        if (signatureString != null) {
-            result.append(signatureString);
-        }
-        if (extensions != null) {
-            result.append(extensions.toXMLString(includeNSPrefix, declareNS));
-        }
         if (nameID != null) {
-            result.append(nameID.toXMLString(includeNSPrefix,declareNS));
+            rootElement.insertBefore(nameID.toDocumentFragment(document, includeNSPrefix, declareNS), statusNode);
         }
         if (encryptedID != null) {
-            result.append(encryptedID.toXMLString(includeNSPrefix,declareNS));
+            rootElement.insertBefore(encryptedID.toDocumentFragment(document, includeNSPrefix, declareNS), statusNode);
         }
-        
-        result.append(status.toXMLString(includeNSPrefix, declareNS));
 
-        result.append("</").append(NSP).append(elementName).append(">");
-        
-        return result.toString();    
+        return fragment;
     }
 
     /**

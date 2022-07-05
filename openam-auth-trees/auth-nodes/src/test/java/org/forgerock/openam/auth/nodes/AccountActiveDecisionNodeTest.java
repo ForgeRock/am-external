@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -21,10 +21,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Optional;
 
@@ -34,20 +36,15 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
-
-import com.iplanet.sso.SSOException;
-import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.IdRepoException;
-
 import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class AccountActiveDecisionNodeTest {
+import com.sun.identity.authentication.service.AMAccountLockout;
+import com.sun.identity.idm.AMIdentity;
 
-    @Mock
-    private Realm realm;
+public class AccountActiveDecisionNodeTest {
 
     @Mock
     private CoreWrapper coreWrapper;
@@ -58,45 +55,51 @@ public class AccountActiveDecisionNodeTest {
     @Mock
     private IdentityUtils identityUtils;
 
+    @Mock
+    private AMAccountLockout.Factory amAccountLockoutFactory;
+
+    @Mock
+    private AMAccountLockout amAccountLockout;
+
+    @Mock
+    private Realm realm;
+
     private AccountActiveDecisionNode accountActiveDecisionNode;
     private TreeContext context;
 
     @BeforeMethod
     public void setup() {
-        initMocks(this);
+        openMocks(this);
         when(coreWrapper.getIdentity(eq("mockUserId"))).thenReturn(mockUser);
+        when(amAccountLockoutFactory.create(any())).thenReturn(amAccountLockout);
 
         context = new TreeContext(retrieveSharedState(), json(object()),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.of("mockUserId"));
 
-        accountActiveDecisionNode = new AccountActiveDecisionNode(coreWrapper, identityUtils);
+        accountActiveDecisionNode = new AccountActiveDecisionNode(realm, coreWrapper, identityUtils,
+                amAccountLockoutFactory);
     }
 
     @Test
-    public void shouldReturnTrueIfUserIsActive() throws Exception {
-        when(mockUser.isActive()).thenReturn(true);
+    public void shouldReturnTrueIfUserIsNotLockedOut() throws Exception {
+        when(amAccountLockout.isAccountLocked(any())).thenReturn(false);
         assertThat(accountActiveDecisionNode.process(context).outcome).isEqualTo("true");
     }
 
     @Test
-    public void shouldReturnFalseIfUserIsInactive() throws Exception {
-        when(mockUser.isActive()).thenReturn(false);
+    public void shouldReturnFalseIfUserIsLockedOut() throws Exception {
+        when(amAccountLockout.isAccountLocked(any())).thenReturn(true);
         assertThat(accountActiveDecisionNode.process(context).outcome).isEqualTo("false");
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowNodeProcessExceptionOnIdRepoException() throws Exception {
-        when(mockUser.isActive()).thenThrow(new IdRepoException());
-        accountActiveDecisionNode.process(context);
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowNodeProcessExceptionOnSSOException() throws Exception {
-        when(mockUser.isActive()).thenThrow(new SSOException(""));
+    public void shouldThrowNodeExceptionOnMissingUser() throws Exception {
+        context = new TreeContext(json(object(field(USERNAME, "test"))), json(object()),
+                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
         accountActiveDecisionNode.process(context);
     }
 
     private JsonValue retrieveSharedState() {
-        return json(object(field(USERNAME, "test")));
+        return json(object(field(REALM, "realm"), field(USERNAME, "test")));
     }
 }

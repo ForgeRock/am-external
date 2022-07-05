@@ -24,21 +24,33 @@
  *
  * $Id: RequestedAuthnContextImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_DECLARE_STR;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.AUTH_CONTEXT_CLASS_REF;
+import static com.sun.identity.saml2.common.SAML2Constants.COMPARISON;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_DECLARE_STR;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.REQ_AUTHN_CONTEXT;
+import static java.util.stream.Collectors.toList;
+import static org.forgerock.openam.utils.CollectionUtils.isNotEmpty;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -72,8 +84,8 @@ public class RequestedAuthnContextImpl implements RequestedAuthnContext {
     private static final Logger logger = LoggerFactory.getLogger(RequestedAuthnContextImpl.class);
     public final String elementName = "RequestedAuthnContext";
     private boolean mutable = false;
-    private List authnContextClassRef = null;
-    private List authnContextDeclRef = null;
+    private List<String> authnContextClassRef = null;
+    private List<Element> authnContextDeclRef = null;
     private String comparison = null;
     
     /**
@@ -165,10 +177,12 @@ public class RequestedAuthnContextImpl implements RequestedAuthnContext {
                             + "<AuthnContextDeclRef>");
                     throw new SAML2Exception(
                       SAML2SDKUtils.bundle.getString("wrongInput"));
-	        }
+	            }
+                if (authnContextDeclRef == null) {
+                    authnContextDeclRef = new ArrayList<>();
+                }
 
-    	        getAuthnContextDeclRef().add(
-                                XMLUtils.getElementValue((Element)child));
+    	        authnContextDeclRef.add((Element) child);
             }
     	}
     }
@@ -182,7 +196,7 @@ public class RequestedAuthnContextImpl implements RequestedAuthnContext {
      */
     public List getAuthnContextClassRef() {
         if (authnContextClassRef == null) {
-            authnContextClassRef = new ArrayList();
+            authnContextClassRef = new ArrayList<>();
         }
 
     	return authnContextClassRef;
@@ -225,11 +239,11 @@ public class RequestedAuthnContextImpl implements RequestedAuthnContext {
      * @see #setAuthnContextDeclRef(List)
      */
     public List getAuthnContextDeclRef() {
-        if (authnContextDeclRef == null) {
-            authnContextDeclRef = new ArrayList();
+        if (authnContextDeclRef != null) {
+            return authnContextDeclRef.stream().map(XMLUtils::print).collect(toList());
         }
 
-    	return authnContextDeclRef;
+    	return new ArrayList<>();
     }
 
     /**
@@ -254,9 +268,19 @@ public class RequestedAuthnContextImpl implements RequestedAuthnContext {
            throw new SAML2Exception(
              SAML2SDKUtils.bundle.getString("wrongInput"));
         }
-    	
-        authnContextDeclRef = value;
-    	return;
+
+        if (value != null) {
+            List<Element> parsedList = new ArrayList<>(value.size());
+            for (Object elem : value) {
+                String xml = "<saml:AuthnContextDeclRef " + ASSERTION_DECLARE_STR + PROTOCOL_DECLARE_STR + ">" +
+                        elem + "</saml:AuthnContextDeclRef>";
+                Document parsed = XMLUtils.toDOMDocument(xml);
+                parsedList.add(parsed.getDocumentElement());
+            }
+            authnContextDeclRef = parsedList;
+        } else {
+            authnContextDeclRef = null;
+        }
     }
 
     /**
@@ -287,92 +311,45 @@ public class RequestedAuthnContextImpl implements RequestedAuthnContext {
     	return;
     }
 
-    /**
-     * Returns an XML Representation of this object.
-     *
-     * @return A string containing the valid XML for this element
-     * @throws com.sun.identity.saml2.common.SAML2Exception
-     *          if unable to get the XML string. 
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true, false);
-    }
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        if (authnContextClassRef != null && authnContextDeclRef != null) {
+            throw new SAML2Exception("wrongInput");
+        }
 
-    /**
-     * Converts into an XML String.
-     *
-     * @param includeNSPrefix Determines whether or not the namespace qualifier
-     *          is prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *          within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws com.sun.identity.saml2.common.SAML2Exception
-     *          if unable to get the XML string. 
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS) 
-    throws SAML2Exception {
-        StringBuffer xml = new StringBuffer();
-
-        String NS="";
-        String NSP="";
-        String assertNS="";
-        String assertNSP="";
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element contextElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+                REQ_AUTHN_CONTEXT, includeNSPrefix, declareNS);
+        fragment.appendChild(contextElement);
 
         if (declareNS) {
-            NS = SAML2Constants.PROTOCOL_DECLARE_STR;
-            assertNS = SAML2Constants.ASSERTION_DECLARE_STR;
+            contextElement.setAttribute("xmlns:saml", ASSERTION_NAMESPACE_URI);
         }
-        if (includeNSPrefix) {
-            NSP = SAML2Constants.PROTOCOL_PREFIX;
-            assertNSP = SAML2Constants.ASSERTION_PREFIX;
-        }
-
-        xml.append("<").append(NSP).append(elementName);
-        xml.append(NS).append(" ");
 
         if (comparison == null) {
-       	    comparison = "exact";
+            comparison = "exact";
         }
-        
-        xml.append("Comparison=\"");
-        xml.append(comparison);
-        xml.append("\">");
+        contextElement.setAttribute(COMPARISON, comparison);
 
-        if ((authnContextClassRef != null) && (authnContextDeclRef != null)) {
-       	    throw new SAML2Exception("");
-        }
-
-        if ((authnContextClassRef != null) && 
-            (authnContextClassRef != Collections.EMPTY_LIST)) {
-            Iterator it = authnContextClassRef.iterator();
-            while (it.hasNext()) {
-        	String element = (String)it.next();
-                xml.append("<").append(assertNSP);
-                xml.append("AuthnContextClassRef").append(assertNS).append(">");
-                xml.append(element);
-                xml.append("</").append(assertNSP);
-                xml.append("AuthnContextClassRef").append(">");
+        String prefix = includeNSPrefix ? ASSERTION_PREFIX : "";
+        if (isNotEmpty(authnContextClassRef)) {
+            for (String acr : authnContextClassRef) {
+                Element acrElem = document.createElement(prefix + AUTH_CONTEXT_CLASS_REF);
+                acrElem.setTextContent(acr);
+                contextElement.appendChild(acrElem);
             }
         }
 
-        if ((authnContextDeclRef != null) && 
-            (authnContextDeclRef != Collections.EMPTY_LIST)) {
-            Iterator it = authnContextDeclRef.iterator();
-            while (it.hasNext()) {
-        	String element = (String)it.next();
-                xml.append("<").append(assertNSP);
-                xml.append("AuthnContextDeclRef").append(assertNS).append(">");
-                xml.append(element);
-                xml.append("</").append(assertNSP);
-                xml.append("AuthnContextDeclRef").append(">");
+        if (isNotEmpty(authnContextDeclRef)) {
+            for (Element decl : authnContextDeclRef) {
+                contextElement.appendChild(decl);
             }
         }
 
-        xml.append("</").append(NSP).append(elementName).append(">");
-
-        return xml.toString();    
+        return fragment;
     }
-       
+
     /**
      * Makes the obejct immutable
      */

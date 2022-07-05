@@ -24,13 +24,14 @@
  *
  * $Id: NameIDType.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion;
 
 import org.forgerock.openam.annotations.SupportedAll;
 
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 
 /**
  *  The <code>NameIDType</code> is used when an element serves to represent 
@@ -43,7 +44,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  *    <code>SPProvidedID</code>
  */
  @SupportedAll
-public interface NameIDType {
+public interface NameIDType extends XmlSerializable {
 
     /**
      *  Returns the string-valued identifier
@@ -119,26 +120,6 @@ public interface NameIDType {
      *  @exception SAML2Exception if the object is immutable
      */
     public void setFormat(String value) throws SAML2Exception;
-
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-     throws SAML2Exception;
-
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception;
 
    /**
     * Makes the object immutable

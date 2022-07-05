@@ -60,11 +60,14 @@ import com.sun.identity.sm.RequiredValueValidator;
  *       <li> Class of CAPTCHA &lt;div&gt; : h-captcha </li>
  *     </ul>
  * </p>
+ *
+ * @deprecated this has been superseded by the new CaptchaNode node, which should be used in all cases over this node.
  */
 @Node.Metadata(outcomeProvider = SingleOutcomeNode.OutcomeProvider.class,
         configClass = ReCaptchaNode.Config.class,
-        tags = {"risk"},
+        tags = {"risk", "deprecated"},
         namespace = Namespace.PRODUCT)
+@Deprecated
 public class ReCaptchaNode extends SingleOutcomeNode {
     @VisibleForTesting
     static final String SUCCESS = "success";
@@ -141,7 +144,7 @@ public class ReCaptchaNode extends SingleOutcomeNode {
 
         if (!callback.isPresent()) {
             logger.debug("no callback present, creating new ReCaptchaCallback");
-            return send(new ReCaptchaCallback(config.siteKey(), config.apiUri(), config.divClass())).build();
+            return send(new ReCaptchaCallback(config.siteKey(), config.apiUri(), config.divClass(), false)).build();
         }
 
         if (callback.get().getResponse() == null || callback.get().getResponse().isEmpty()) {

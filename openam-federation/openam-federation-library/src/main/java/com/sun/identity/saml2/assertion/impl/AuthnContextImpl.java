@@ -24,9 +24,13 @@
  *
  * $Id: AuthnContextImpl.java,v 1.3 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,12 +39,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.sun.identity.saml2.assertion.AuthnContext;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -433,77 +437,44 @@ public class AuthnContextImpl implements AuthnContext {
         return authenticatingAuthority;
     }
 
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *         By default name space name is prepended to the element name.
-     * @throws com.sun.identity.saml2.common.SAML2Exception
-     *          if the object does not conform to the schema.
-     */
-    public java.lang.String toXMLString()
-        throws com.sun.identity.saml2.common.SAML2Exception
-    {
-        return this.toXMLString(true, false);
-    }
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *                prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *                within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws com.sun.identity.saml2.common.SAML2Exception
-     *          if the object does not conform to the schema.
-     */
-    public java.lang.String toXMLString(boolean includeNS, boolean declareNS)
-        throws com.sun.identity.saml2.common.SAML2Exception
-    {
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
         validateData();
-        StringBuffer result = new StringBuffer(1000);
-        String prefix = "";
-        String uri = "";
-        if (includeNS) {
-            prefix = SAML2Constants.ASSERTION_PREFIX;
-        }
-        if (declareNS) {
-            uri = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element authnContextElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                "AuthnContext", includeNSPrefix, declareNS);
+        fragment.appendChild(authnContextElement);
 
-        result.append("<").append(prefix).append("AuthnContext").
-            append(uri).append(">");
-        if (authnContextClassRef != null &&
-                authnContextClassRef.trim().length() != 0)
-        {
-            result.append("<").append(prefix).append("AuthnContextClassRef").
-                append(uri).append(">").append(authnContextClassRef).
-                append("</").append(prefix).append("AuthnContextClassRef>");
+        String prefix = includeNSPrefix ? ASSERTION_PREFIX : "";
+        if (isNotBlank(authnContextClassRef)) {
+            Element accr = document.createElement(prefix + "AuthnContextClassRef");
+            accr.setTextContent(authnContextClassRef);
+            authnContextElement.appendChild(accr);
         }
-        if (authnContextDecl != null &&
-                authnContextDecl.trim().length() != 0)
-        {
-            result.append(authnContextDecl);
-        } else if (authnContextDeclRef != null &&
-                authnContextDeclRef.trim().length() != 0)
-        {
-            result.append("<").append(prefix).append("AuthnContextDeclRef").
-                append(uri).append(">").append(authnContextDeclRef).
-                append("</").append(prefix).append("AuthnContextDeclRef>");
+        if (isNotBlank(authnContextDecl)) {
+            Document parsedDecl = XMLUtils.toDOMDocument(authnContextDecl);
+            if (parsedDecl != null) {
+                authnContextElement.appendChild(document.adoptNode(parsedDecl.getDocumentElement()));
+            } else {
+                logger.error("AuthnContextImpl.toDocumentFragment(): AuthnContext declaration is malformed: {}",
+                        authnContextDecl);
+            }
+        } else if (isNotBlank(authnContextDeclRef)) {
+            Element declRef = document.createElement(prefix + "AuthnContextDeclRef");
+            declRef.setTextContent(authnContextDeclRef);
+            authnContextElement.appendChild(declRef);
         }
         if (authenticatingAuthority != null) {
             for (String authority : authenticatingAuthority) {
-                if (authority != null && authority.trim().length() != 0) {
-                    result.append("<").append(prefix).
-                        append("AuthenticatingAuthority").append(uri).
-                        append(">").append(authority).append("</").
-                        append(prefix).append("AuthenticatingAuthority>");
+                if (isNotBlank(authority)) {
+                    Element authorityElement = document.createElement(prefix + "AuthenticatingAuthority");
+                    authorityElement.setTextContent(authority);
+                    authnContextElement.appendChild(authorityElement);
                 }
             }
         }
-        result.append("</").append(prefix).append("AuthnContext>");
-        return result.toString();
-    }
 
+        return fragment;
+    }
 }

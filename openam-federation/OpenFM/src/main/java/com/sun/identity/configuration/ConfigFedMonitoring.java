@@ -24,7 +24,7 @@
  *
  * $Id: ConfigFedMonitoring.java,v 1.2 2009/10/29 00:03:51 exu Exp $
  *
- * Portions Copyrighted 2011-2020 ForgeRock AS.
+ * Portions Copyrighted 2011-2022 ForgeRock AS.
  */
 
 package com.sun.identity.configuration;
@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.forgerock.guice.core.InjectorHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,8 +51,8 @@ import com.iplanet.sso.SSOToken;
 import com.sun.identity.cot.COTConstants;
 import com.sun.identity.cot.COTException;
 import com.sun.identity.cot.CircleOfTrustManager;
-import com.sun.identity.monitoring.FederationMonitoringSetupUtils;
-import com.sun.identity.monitoring.MonitoringUtil;
+import com.sun.identity.monitoring.FederationMonitoringSetup;
+import com.sun.identity.monitoring.MonitoringStatusService;
 import com.sun.identity.monitoring.SSOServerRealmFedInfo;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.meta.SAML2MetaException;
@@ -76,6 +77,7 @@ import com.sun.identity.wsfederation.meta.WSFederationMetaManager;
 public class ConfigFedMonitoring {
 
     private final Logger debug = LoggerFactory.getLogger(ConfigFedMonitoring.class);
+    private final FederationMonitoringSetup federationMonitoringSetup;
     SSOToken ssoToken;
     private ArrayList realmList;
 
@@ -87,8 +89,11 @@ public class ConfigFedMonitoring {
     public static final String SAML_AUTHNAUTHORITY = "AuthnAuthority";
     public static final String SAML_ATTRQUERY = "AttrQuery";
     public static final String AFFILIATE = "Affiliate";
+    private final MonitoringStatusService monitoringStatusService;
 
     public ConfigFedMonitoring() {
+        monitoringStatusService = InjectorHolder.getInstance(MonitoringStatusService.class);
+        federationMonitoringSetup = InjectorHolder.getInstance(FederationMonitoringSetup.class);
     }
 
     /*
@@ -107,7 +112,7 @@ public class ConfigFedMonitoring {
         String startDate = sdf.format(date1);
         String classMethod = "ConfigFedMonitoring.configureMonitoring: ";
 
-        if (!MonitoringUtil.isRunning()) {
+        if (!monitoringStatusService.isRunning()) {
             if (debug.isWarnEnabled()) {
                 debug.warn(classMethod + "monitoring is disabled");
             }
@@ -197,7 +202,8 @@ public class ConfigFedMonitoring {
                         samlv2Entities(s2Ents).
                         wsEntities(wsEnts).
                         membEntities(membMap).build();
-                FederationMonitoringSetupUtils.federationConfig(srfi);
+
+                federationMonitoringSetup.federationConfig(srfi, monitoringStatusService);
             }
         } catch (SAML2MetaException e) {
             debug.error(classMethod + "SAML2 ex: " + e.getMessage());

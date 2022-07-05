@@ -24,12 +24,17 @@
  *
  * $Id: EncryptedElementImpl.java,v 1.2 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
+
 import com.sun.identity.saml2.assertion.EncryptedElement;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * Java content class for EncryptedElementType complex type.
@@ -53,33 +58,16 @@ import com.sun.identity.saml2.common.SAML2Exception;
 public abstract class EncryptedElementImpl implements  EncryptedElement {
     protected String xmlString = null;
 
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *          By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString()
-        throws SAML2Exception
-    {
-            return xmlString;
-    }
 
-    /**
-     * Returns a String representation of the element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *          prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *          within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString(boolean includeNS, boolean declareNS)
-        throws SAML2Exception
-    {
-            return xmlString;
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Document parsedDocument = XMLUtils.toDOMDocument(xmlString);
+        if (parsedDocument == null) {
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
+        }
+        fragment.appendChild(document.adoptNode(parsedDocument.getDocumentElement()));
+        return fragment;
     }
-
 }

@@ -24,14 +24,23 @@
  *
  * $Id: ECPRelayStateImpl.java,v 1.2 2008/06/25 05:47:46 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.ecp.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ACTOR;
+import static com.sun.identity.saml2.common.SAML2Constants.ECP_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.ECP_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.MUST_UNDERSTAND;
+import static com.sun.identity.saml2.common.SAML2Constants.RELAY_STATE;
+import static com.sun.identity.saml2.common.SAML2Constants.SOAP_ENV_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.SOAP_ENV_PREFIX;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
 import com.sun.identity.saml2.common.SAML2Constants;
@@ -164,68 +173,25 @@ public class ECPRelayStateImpl implements ECPRelayState {
         this.actor = actor;
     }
 
-    /**
-     * Returns a String representation of this Object.
-     * @return a  String representation of this Object.
-     * @exception SAML2Exception if it could not create String object
-     */
-    public java.lang.String toXMLString() throws SAML2Exception {
-        return toXMLString(true,false);
-    }
-
-    /**
-     *  Returns a String representation
-     *  @param includeNSPrefix determines whether or not the namespace
-     *      qualifier is prepended to the Element when converted
-     *  @param declareNS determines whether or not the namespace is declared
-     *      within the Element.
-     *  @return a String representation of this Object.
-     *  @exception SAML2Exception ,if it could not create String object.
-     */
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-        throws SAML2Exception {
-
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
         validateData();
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element relayStateElement = XMLUtils.createRootElement(document, ECP_PREFIX, ECP_NAMESPACE, RELAY_STATE,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(relayStateElement);
 
-        StringBuffer xml = new StringBuffer(300);
+        relayStateElement.setAttribute("xmlns:soap-env", SOAP_ENV_NAMESPACE);
+        relayStateElement.setAttribute(SOAP_ENV_PREFIX + MUST_UNDERSTAND, mustUnderstand.toString());
+        relayStateElement.setAttribute(SOAP_ENV_PREFIX + ACTOR, actor);
 
-        xml.append(SAML2Constants.START_TAG);
-        if (includeNSPrefix) {
-            xml.append(SAML2Constants.ECP_PREFIX);
-        }
-        xml.append(SAML2Constants.RELAY_STATE);
+        relayStateElement.setTextContent(value);
 
-        if (declareNS) {
-            xml.append(SAML2Constants.SPACE)
-               .append(SAML2Constants.ECP_DECLARE_STR)
-               .append(SAML2Constants.SPACE)
-               .append(SAML2Constants.SOAP_ENV_DECLARE_STR);
-        }
-
-        xml.append(SAML2Constants.SPACE)
-           .append(SAML2Constants.SOAP_ENV_PREFIX)
-           .append(SAML2Constants.MUST_UNDERSTAND)
-           .append(SAML2Constants.EQUAL)
-           .append(SAML2Constants.QUOTE)
-           .append(mustUnderstand.toString())
-           .append(SAML2Constants.QUOTE)
-           .append(SAML2Constants.SPACE)
-           .append(SAML2Constants.SOAP_ENV_PREFIX)
-           .append(SAML2Constants.ACTOR)
-           .append(SAML2Constants.EQUAL)
-           .append(SAML2Constants.QUOTE)
-           .append(actor)
-           .append(SAML2Constants.QUOTE)
-           .append(SAML2Constants.END_TAG)
-           .append(value)
-           .append(SAML2Constants.ECP_END_TAG)
-           .append(SAML2Constants.RELAY_STATE)
-           .append(SAML2Constants.END_TAG);
-
-        return xml.toString();
+        return fragment;
     }
 
-    /** 
+    /**
      * Makes this object immutable. 
      */
     public void makeImmutable() {

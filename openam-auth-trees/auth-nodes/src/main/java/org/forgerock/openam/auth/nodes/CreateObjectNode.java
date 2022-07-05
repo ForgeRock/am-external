@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -38,6 +38,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
@@ -162,9 +163,9 @@ public class CreateObjectNode implements Node {
     /**
      * Defines the possible outcomes from this Create node.
      */
-    public static class CreateObjectOutcomeProvider implements org.forgerock.openam.auth.node.api.OutcomeProvider {
+    public static class CreateObjectOutcomeProvider implements StaticOutcomeProvider {
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(CreateObjectNode.BUNDLE,
                     CreateObjectNode.CreateObjectOutcomeProvider.class.getClassLoader());
             return ImmutableList.of(

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -27,9 +27,9 @@ import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.nodes.utils.IdmIntegrationNodeUtils.OBJECT_MAPPER;
 import static org.forgerock.openam.integration.idm.IdmIntegrationConfig.CONSENT;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.io.IOException;
 import java.util.List;
@@ -44,7 +44,6 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.ConsentMappingCallback;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -68,7 +67,7 @@ public class ConsentNodeTest {
 
     @BeforeMethod
     private void init() throws Exception {
-        initMocks(this);
+        openMocks(this);
 
         // Given
         when(config.message()).thenReturn(singletonMap(Locale.ENGLISH, "Privacy & Consent wording"));

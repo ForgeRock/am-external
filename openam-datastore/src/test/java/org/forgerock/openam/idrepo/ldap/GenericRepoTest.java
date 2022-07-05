@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2019 ForgeRock AS.
+ * Copyright 2013-2021 ForgeRock AS.
  */
 package org.forgerock.openam.idrepo.ldap;
 
@@ -664,7 +664,7 @@ public class GenericRepoTest extends IdRepoTestBase {
         Map<String, Set<String>> attrs = new HashMap<String, Set<String>>(1);
         attrs.put("cn", asSet("()\\\0"));
         Filter filter = idrepo.constructFilter(IdRepo.AND_MOD, attrs);
-        assertThat(filter.toString()).isEqualTo("(&(cn=\\28\\29\\5C\\00))");
+        assertThat(filter.toString()).isEqualTo("(cn=\\28\\29\\5C\\00)");
     }
 
     @Test

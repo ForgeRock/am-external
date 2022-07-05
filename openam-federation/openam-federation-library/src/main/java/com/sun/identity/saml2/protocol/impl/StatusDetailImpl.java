@@ -24,25 +24,30 @@
  *
  * $Id: StatusDetailImpl.java,v 1.2 2008/06/25 05:48:01 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.STATUS_DETAIL;
+import static org.forgerock.openam.utils.CollectionUtils.isNotEmpty;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.protocol.StatusDetail;
 import com.sun.identity.shared.xml.XMLUtils;
 
@@ -116,59 +121,23 @@ public class StatusDetailImpl implements StatusDetail {
         return statusDetailList;
     }
 
-    /**
-     * Returns the <code>StatusDetail</code> in an XML document String format
-     * based on the <code>StatusDetail</code> schema described above.
-     *
-     * @return An XML String representing the <code>StatusDetail</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true,false);
-    }
-
-    /**
-     * Returns the <code>StatusDetail</code> in an XML document String format
-     * based on the <code>StatusDetail</code> schema described above.
-     *
-     * @param includeNSPrefix Determines whether or not the namespace qualifier
-     *        is prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return A XML String representing the <code>StatusDetail</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString(boolean includeNSPrefix,
-    boolean declareNS) throws SAML2Exception {
-        String xmlStr = null;
-        if ((statusDetailList != null) && (!statusDetailList.isEmpty())) {
-            StringBuffer xmlString = new StringBuffer(500);
-            xmlString.append(SAML2Constants.START_TAG);
-            if (includeNSPrefix) {
-                xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        if (isNotEmpty(statusDetailList)) {
+            Element detailElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+                    STATUS_DETAIL, includeNSPrefix, declareNS);
+            fragment.appendChild(detailElement);
+            for (String detail : statusDetailList) {
+                List<Node> parsed = SAML2Utils.parseSAMLFragment(detail);
+                for (Node node : parsed) {
+                    detailElement.appendChild(document.adoptNode(node));
+                }
             }
-            xmlString.append(SAML2Constants.STATUS_DETAIL);
-            if (declareNS) {
-                xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
-            }
-            xmlString.append(SAML2Constants.END_TAG);
-
-            Iterator sdIterator = statusDetailList.iterator();
-            while (sdIterator.hasNext()) {
-                String sdString = (String) sdIterator.next();
-                xmlString.append(SAML2Constants.NEWLINE)
-                .append(sdString);
-            }
-            xmlString.append(SAML2Constants.NEWLINE)
-            .append(SAML2Constants.SAML2_END_TAG)
-            .append(SAML2Constants.STATUS_DETAIL)
-            .append(SAML2Constants.END_TAG);
-
-            xmlStr = xmlString.toString();
         }
-        return xmlStr;
+
+        return fragment;
     }
 
     /**

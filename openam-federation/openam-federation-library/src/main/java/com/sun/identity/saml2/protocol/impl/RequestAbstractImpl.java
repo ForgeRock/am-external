@@ -29,13 +29,20 @@
 package com.sun.identity.saml2.protocol.impl;
 
 
+import static com.sun.identity.saml2.common.SAML2Constants.CONSENT;
+import static com.sun.identity.saml2.common.SAML2Constants.DESTINATION;
+import static com.sun.identity.saml2.common.SAML2Constants.ID;
+import static com.sun.identity.saml2.common.SAML2Constants.ISSUE_INSTANT;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.VERSION;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import java.security.PublicKey;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Set;
@@ -44,6 +51,8 @@ import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -83,7 +92,17 @@ public abstract class RequestAbstractImpl implements RequestAbstract {
     protected boolean isMutable = false;
     protected String  signatureString = null;
     protected String  signedXMLString = null; 
-    protected String elementName = "";
+    protected String elementName;
+
+    /**
+     * Sets the container XML element name.
+     *
+     * @param elementName the container XML element name such as {@code AuthnRequest}. Don't include any namespace
+     *                    prefix.
+     */
+    protected RequestAbstractImpl(String elementName) {
+        this.elementName = elementName;
+    }
  
     /**
      * Sets the <code>Issuer</code> object.
@@ -300,63 +319,51 @@ public abstract class RequestAbstractImpl implements RequestAbstract {
         return isSignatureValid.booleanValue();
     }
 
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @return a String representation of this Object.
-     * @throws SAML2Exception if it could not create String object
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true,false);
-    }
-  
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *         qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *         within the Element.
-     * @throws SAML2Exception if it could not create String object.
-     * @return a String representation of this Object.
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        validateData();
+        DocumentFragment fragment = document.createDocumentFragment();
 
         if (isSigned && signedXMLString != null) {
-            return signedXMLString;
-        }
-
-        Set namespaces = new HashSet();
-        StringBuffer attrs = new StringBuffer();
-        StringBuffer childElements = new StringBuffer();
-
-        getXMLString(namespaces, attrs, childElements, includeNSPrefix,
-            declareNS);
-
-        StringBuffer xmlString = new StringBuffer(1000);
-        xmlString.append(SAML2Constants.START_TAG);
-        if (includeNSPrefix) {
-            xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-        }
-        xmlString.append(elementName);
-        if (!namespaces.isEmpty()) {
-            for(Iterator iter = namespaces.iterator(); iter.hasNext();) {
-                xmlString.append(SAML2Constants.SPACE)
-                         .append((String)iter.next());
+            Document signedDoc = XMLUtils.toDOMDocument(signedXMLString);
+            if (signedDoc == null) {
+                throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
             }
+            fragment.appendChild(document.importNode(signedDoc.getDocumentElement(), true));
+            return fragment;
         }
-        xmlString.append(attrs).append(SAML2Constants.END_TAG)
-                 .append(SAML2Constants.NEWLINE).append(childElements)
-                 .append(SAML2Constants.START_TAG).append("/");
-        if (includeNSPrefix) {
-            xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-        }
-	xmlString.append(elementName).append(SAML2Constants.END_TAG);
 
-        return xmlString.toString();
+        Element rootElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE, elementName,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(rootElement);
+
+        rootElement.setAttribute(ID, requestId);
+        rootElement.setAttribute(VERSION, version);
+        rootElement.setAttribute(ISSUE_INSTANT, DateUtils.toUTCDateFormat(issueInstant));
+
+        if (isNotBlank(destinationURI)) {
+            rootElement.setAttribute(DESTINATION, destinationURI);
+        }
+        if (isNotBlank(consent)) {
+            rootElement.setAttribute(CONSENT, consent);
+        }
+
+        if (nameID != null) {
+            rootElement.appendChild(nameID.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
+        if (isNotBlank(signatureString)) {
+            Document signatureDoc = XMLUtils.toDOMDocument(signatureString);
+            rootElement.appendChild(document.importNode(signatureDoc.getDocumentElement(), true));
+        }
+        if (extensions != null) {
+            rootElement.appendChild(extensions.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
+
+        return fragment;
     }
 
+    @Deprecated(forRemoval = true, since = "8.0.0")
     protected String getAttributesString() throws SAML2Exception {
         StringBuffer xml = new StringBuffer();
 
@@ -387,6 +394,7 @@ public abstract class RequestAbstractImpl implements RequestAbstract {
         return xml.toString();
     }
 
+    @Deprecated(forRemoval = true, since = "8.0.0")
     protected String getElements(boolean includeNSPrefix, boolean declareNS) 
     throws SAML2Exception {
         StringBuffer xml = new StringBuffer();
@@ -485,52 +493,6 @@ public abstract class RequestAbstractImpl implements RequestAbstract {
 		SAML2SDKUtils.bundle.getString("incorrectIssueInstant"));
 	}
 	validateIssueInstant(DateUtils.dateToString(issueInstant));
-    }
-
-    protected void getXMLString(Set namespaces, StringBuffer attrs,
-        StringBuffer childElements, boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-
-        validateData();
-
-        attrs.append(SAML2Constants.SPACE).append(SAML2Constants.ID)
-             .append(SAML2Constants.EQUAL).append(SAML2Constants.QUOTE)
-             .append(requestId).append(SAML2Constants.QUOTE)
-             .append(SAML2Constants.SPACE).append(SAML2Constants.VERSION)
-             .append(SAML2Constants.EQUAL).append(SAML2Constants.QUOTE)
-             .append(version).append(SAML2Constants.QUOTE)
-             .append(SAML2Constants.SPACE).append(SAML2Constants.ISSUE_INSTANT)
-             .append(SAML2Constants.EQUAL).append(SAML2Constants.QUOTE)
-             .append(DateUtils.toUTCDateFormat(issueInstant))
-             .append(SAML2Constants.QUOTE);
-
-        if ((destinationURI != null) && (destinationURI.length() > 0)) {
-            attrs.append(SAML2Constants.SPACE)
-                 .append(SAML2Constants.DESTINATION)
-                 .append(SAML2Constants.EQUAL).append(SAML2Constants.QUOTE)
-                 .append(destinationURI).append(SAML2Constants.QUOTE);
-        }
-
-        if ((consent != null) && (consent.length() > 0)) {
-            attrs.append(SAML2Constants.SPACE)
-                 .append(SAML2Constants.CONSENT).append(SAML2Constants.EQUAL)
-                 .append(SAML2Constants.QUOTE).append(consent)
-                 .append(SAML2Constants.QUOTE);
-        }
-
-	if (nameID != null) {
-	    childElements.append(nameID.toXMLString(includeNSPrefix,declareNS))
-	                 .append(SAML2Constants.NEWLINE);
-	}
-	if ((signatureString != null) && (signatureString.length() > 0)) {
-	    childElements.append(signatureString)
-                         .append(SAML2Constants.NEWLINE);
-	}
-	if (extensions != null) {
-	    childElements.append(extensions.toXMLString(includeNSPrefix,
-                declareNS)).append(SAML2Constants.NEWLINE);
-	}
-
     }
 
     /** 

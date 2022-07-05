@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS. All Rights Reserved
+ * Copyright 2017-2021 ForgeRock AS. All Rights Reserved
  * 
 -->
 
@@ -20,7 +20,7 @@
     <parent>
         <artifactId>openam-authentication</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>7.1.2</version>
+        <version>7.2.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -79,6 +79,11 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-idm-integration-service</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-testng</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

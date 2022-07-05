@@ -24,19 +24,24 @@
  *
  * $Id: DecisionImpl.java,v 1.3 2008/06/25 05:48:12 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.xacml.context.impl;
+
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.DECISION;
 
 import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
-import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
 import com.sun.identity.xacml.common.XACMLSDKUtils;
 import com.sun.identity.xacml.context.Decision;
@@ -124,48 +129,22 @@ public class DecisionImpl implements Decision {
         this.value = value; 
     }
 
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element decisionElement = XMLUtils.createRootElement(document, CONTEXT_NS_PREFIX, CONTEXT_NS_URI, DECISION,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(decisionElement);
 
-   /**
-    * Returns a string representation
-    *
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException {
-        return toXMLString(true, false);
-    }
-
-   /**
-    * Returns a string representation
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException {
-        StringBuffer sb = new StringBuffer(2000);
-        String nsPrefix = "";
-        String nsDeclaration = "";
-        if (declareNS) {
-            nsDeclaration = XACMLConstants.CONTEXT_NS_DECLARATION;
-        }
-        if (includeNSPrefix) {
-            nsPrefix = XACMLConstants.CONTEXT_NS_PREFIX + ":";
-        }
-        sb.append("<").append(nsPrefix).append(XACMLConstants.DECISION)
-                .append(nsDeclaration).append(">");
         if (value != null) {
-            sb.append(value);
+            decisionElement.setTextContent(value);
         }
-        sb.append("</").append(nsPrefix).append(XACMLConstants.DECISION)
-                .append(">\n");
-        return sb.toString();
+
+        return fragment;
     }
 
-   /**
+    /**
     * Checks if the object is mutable
     *
     * @return <code>true</code> if the object is mutable,
@@ -197,7 +176,7 @@ public class DecisionImpl implements Decision {
                 "missing_local_name"));
         }
 
-        if (!elemName.equals(XACMLConstants.DECISION)) {
+        if (!elemName.equals(DECISION)) {
             logger.error(
                     "DecisionImpl.processElement(): invalid local name " 
                     + elemName);

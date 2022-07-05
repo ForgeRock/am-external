@@ -24,9 +24,13 @@
  *
  * $Id: StatusImpl.java,v 1.3 2008/06/25 05:48:13 qcheng Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.context.impl;
+
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.STATUS;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,10 +39,12 @@ import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -174,55 +180,28 @@ public class StatusImpl implements Status {
         this.statusDetail = statusDetail;
     }
 
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element statusElement = XMLUtils.createRootElement(document, CONTEXT_NS_PREFIX, CONTEXT_NS_URI, STATUS,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(statusElement);
 
-
-   /**
-    * Returns a string representation
-    *
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException {
-        return toXMLString(true, false);
-    }
-
-   /**
-    * Returns a string representation
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException {
-        StringBuffer sb = new StringBuffer(2000);
-        String nsPrefix = "";
-        String nsDeclaration = "";
-        if (includeNSPrefix) {
-            nsPrefix = XACMLConstants.CONTEXT_NS_PREFIX + ":";
-        }
-        if (declareNS) {
-            nsDeclaration = XACMLConstants.CONTEXT_NS_DECLARATION;
-        }
-        sb.append("<").append(nsPrefix).append(XACMLConstants.STATUS).
-                append(nsDeclaration).append(">\n");
         if (statusCode != null) {
-            sb.append(statusCode.toXMLString(includeNSPrefix, false)); 
+            statusElement.appendChild(statusCode.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
         if (statusMessage != null) {
-            sb.append(statusMessage.toXMLString(includeNSPrefix, false)); 
+            statusElement.appendChild(statusMessage.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
         if (statusDetail != null) {
-            sb.append(statusDetail.toXMLString(includeNSPrefix, false));
+            statusElement.appendChild(statusDetail.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
-        sb.append("</").append(nsPrefix).append(XACMLConstants.STATUS)
-                .append(">\n");
-        return sb.toString();
+
+        return fragment;
     }
 
-   /**
+    /**
     * Checks if the object is mutable
     *
     * @return <code>true</code> if the object is mutable,

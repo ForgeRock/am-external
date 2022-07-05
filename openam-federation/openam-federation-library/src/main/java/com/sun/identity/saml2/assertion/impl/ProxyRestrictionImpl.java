@@ -24,11 +24,15 @@
  *
  * $Id: ProxyRestrictionImpl.java,v 1.2 2008/06/25 05:47:44 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.assertion.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+import static org.forgerock.openam.utils.CollectionUtils.isNotEmpty;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,12 +41,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.sun.identity.saml2.assertion.ProxyRestriction;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -235,57 +239,25 @@ public class ProxyRestrictionImpl implements ProxyRestriction {
         this.audiences = audiences;
     }
 
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace
-    *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is
-    *        declared within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-        StringBuffer sb = new StringBuffer(2000);
-        String NS = "";
-        String appendNS = "";
-        if (declareNS) {
-            NS = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-        if (includeNSPrefix) {
-            appendNS = SAML2Constants.ASSERTION_PREFIX;
-        }
-        sb.append("<").append(appendNS).append(PROXY_RESTRICTION_ELEMENT).
-            append(NS);
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element proxyRestrictionElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX,
+                ASSERTION_NAMESPACE_URI, PROXY_RESTRICTION_ELEMENT, includeNSPrefix, declareNS);
+        fragment.appendChild(proxyRestrictionElement);
         if (count >= 0) {
-            sb.append(" ").append(COUNT_ATTR).append("=\"").
-                append(count).append("\"");
+            proxyRestrictionElement.setAttribute(COUNT_ATTR, String.valueOf(count));
         }
-        sb.append(">\n");
-
-        int length = 0;
-        if ((audiences != null) && ((length = audiences.size()) > 0)) {
-            for (int i = 0; i < length; i++) {
-                String au = (String)audiences.get(i);
-                sb.append("<").append(appendNS).append(AUDIENCE_ELEMENT).
-                    append(">").append(au).append("</").append(appendNS).
-                    append(AUDIENCE_ELEMENT).append(">\n");
+        if (isNotEmpty(audiences)) {
+            for (String audience : audiences) {
+                String prefix = includeNSPrefix ? ASSERTION_PREFIX : "";
+                Element audienceElement = document.createElement(prefix + AUDIENCE_ELEMENT);
+                audienceElement.setTextContent(audience);
+                proxyRestrictionElement.appendChild(audienceElement);
             }
         }
-        sb.append("</").append(appendNS).
-            append(PROXY_RESTRICTION_ELEMENT).append(">\n");
-
-        return sb.toString();
-    }
-
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception {
-        return this.toXMLString(true, false);
+        return fragment;
     }
 
    /**

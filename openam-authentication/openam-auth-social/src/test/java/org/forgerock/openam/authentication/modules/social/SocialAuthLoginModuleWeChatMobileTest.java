@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -29,11 +29,10 @@ import static org.mockito.Mockito.anyMap;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.isNull;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -56,9 +55,10 @@ import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.promise.Promises;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.testng.MockitoTestNGListener;
 import org.slf4j.Logger;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -69,6 +69,7 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 /**
  * Test class for SocialAuthLoginModuleWeChatMobile.
  */
+@Listeners(MockitoTestNGListener.class)
 public class SocialAuthLoginModuleWeChatMobileTest {
 
     private static final String ORIGINAL_URL = "http://originalUrl";
@@ -116,33 +117,27 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     @Mock
     private Realm realm;
 
-
     @BeforeMethod
     public void setup() throws Exception {
-
-        MockitoAnnotations.initMocks(this);
-
-        when(authModuleHelper.getOriginalUrl(request)).thenReturn(ORIGINAL_URL);
-        when(authModuleHelper.getCookieDomainsForRequest(request))
+        lenient().when(authModuleHelper.getOriginalUrl(request)).thenReturn(ORIGINAL_URL);
+        lenient().when(authModuleHelper.getCookieDomainsForRequest(request))
                 .thenReturn(CollectionUtils.asSet(DOMAIN_1, DOMAIN_2));
 
+        lenient().when(binder.getHttpServletRequest()).thenReturn(request);
+        lenient().when(binder.getHttpServletResponse()).thenReturn(response);
+        lenient().when(request.getHeader(AUTHORIZATION_HEADER)).thenReturn("Bearer token");
+        lenient().when(request.getParameter(OPENID)).thenReturn("OPENID");
 
-        when(binder.getHttpServletRequest()).thenReturn(request);
-        when(binder.getHttpServletResponse()).thenReturn(response);
-        when(request.getHeader(AUTHORIZATION_HEADER)).thenReturn("Bearer token");
-        when(request.getParameter(OPENID)).thenReturn("OPENID");
+        lenient().when(realm.asPath()).thenReturn("/");
 
-        when(realm.asPath()).thenReturn("/");
-
-        given(idmConfigProvider.global())
-                .willReturn(idmConfig);
-        given(idmConfig.enabled()).willReturn(true);
-        given(idmConfig.idmDeploymentUrl()).willReturn("IDM_URL");
-        given(idmConfig.provisioningSigningKeyAlias()).willReturn("test");
-        given(idmConfig.provisioningEncryptionKeyAlias()).willReturn("test");
-        given(idmConfig.provisioningSigningAlgorithm()).willReturn("HS256");
-        given(idmConfig.provisioningEncryptionAlgorithm()).willReturn("RSAES_PKCS1_V1_5");
-        given(idmConfig.provisioningEncryptionMethod()).willReturn("A128CBC_HS256");
+        lenient().when(idmConfigProvider.global()).thenReturn(idmConfig);
+        lenient().when(idmConfig.enabled()).thenReturn(true);
+        lenient().when(idmConfig.idmDeploymentUrl()).thenReturn("IDM_URL");
+        lenient().when(idmConfig.provisioningSigningKeyAlias()).thenReturn("test");
+        lenient().when(idmConfig.provisioningEncryptionKeyAlias()).thenReturn("test");
+        lenient().when(idmConfig.provisioningSigningAlgorithm()).thenReturn("HS256");
+        lenient().when(idmConfig.provisioningEncryptionAlgorithm()).thenReturn("RSAES_PKCS1_V1_5");
+        lenient().when(idmConfig.provisioningEncryptionMethod()).thenReturn("A128CBC_HS256");
 
         module = new SocialAuthLoginModuleWeChatMobile(debug, authModuleHelper, configFunction, clientTokenJwtGenerator,
                 idmConfigProvider);
@@ -316,8 +311,8 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn("user");
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
         given(config.getCfgCreateAccount()).willReturn(true);
-        given(config.getMapToAnonymousUser()).willReturn(true);
-        given(config.getAnonymousUserName()).willReturn("user");
+        lenient().when(config.getMapToAnonymousUser()).thenReturn(true);
+        lenient().when(config.getAnonymousUserName()).thenReturn("user");
 
         //when
         int nextState = module.process(null, ISAuthConstants.LOGIN_START);

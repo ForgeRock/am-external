@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -19,11 +19,11 @@ package org.forgerock.openam.auth.nodes;
 import static java.util.Collections.singletonMap;
 import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
+import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getUniversalId;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getAttributeFromContext;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getObject;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getUsernameFromContext;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.stringAttribute;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getUniversalId;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.ALL_FIELDS;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_MAIL_ATTRIBUTE;
@@ -38,6 +38,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
@@ -148,10 +149,12 @@ public class IdentifyExistingUserNode extends AbstractDecisionNode {
                 idmIntegrationService.storeAttributeInState(copyState, config.identifier(), identifier);
             }
 
+            NodeState globalState = context.getStateFor(this);
+
             return goTo(true)
                     .replaceSharedState(copyState)
-                    .withUniversalId(getUniversalId(context, identityUtils))
-                    .build();
+                    .withUniversalId(context.universalId.or(() -> getUniversalId(globalState, identityUtils)))
+                     .build();
         }
         logger.debug("No {} identified", context.identityResource);
         return goTo(false).build();

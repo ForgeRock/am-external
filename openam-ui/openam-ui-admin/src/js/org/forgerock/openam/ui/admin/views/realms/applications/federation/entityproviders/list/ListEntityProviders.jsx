@@ -11,12 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { Button, ButtonToolbar } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import { identity, upperFirst, omit } from "lodash";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
@@ -80,6 +79,28 @@ class ListEntityProviders extends Component {
     handleSelectedChange = (items) => this.setState({ selectedItems: items });
 
     render () {
+        const columns = [{
+            title: identity,
+            dataField: "entityId",
+            formatter: dataFormatReact(
+                <FontAwesomeIconCell icon="building" >
+                    <EmphasizedTextCell match={ this.state.searchTerm } />
+                </FontAwesomeIconCell>
+            ),
+            sort: true,
+            text: t("console.applications.federation.entityProviders.list.grid.0")
+        }, {
+            title: formatLocale,
+            dataField: "roles",
+            formatter: formatLocale,
+            sort: true,
+            text: t("console.applications.federation.entityProviders.list.grid.1")
+        }, {
+            dataField: "location",
+            formatter: upperFirst,
+            sort: true,
+            text: t("console.applications.federation.entityProviders.list.grid.2")
+        }];
         let content;
         if (this.props.items.length) {
             const numberSelectedText = this.state.selectedItems.length ? `(${this.state.selectedItems.length})` : "";
@@ -93,39 +114,13 @@ class ListEntityProviders extends Component {
                     </ButtonToolbar>
                     <Table
                         { ...omit(this.props, "children") }
+                        columns={ columns }
                         data={ this.props.items }
                         keyField={ "_id" }
                         onRowClick={ this.props.onRowClick }
                         onSelectedChange={ this.handleSelectedChange }
                         selectedItems={ this.state.selectedItems }
-                    >
-                        <TableHeaderColumn
-                            columnTitle={ identity }
-                            dataField="entityId"
-                            dataFormat={ dataFormatReact(
-                                <FontAwesomeIconCell icon="building" >
-                                    <EmphasizedTextCell match={ this.state.searchTerm } />
-                                </FontAwesomeIconCell>
-                            ) }
-                            dataSort
-                        >
-                            { t("console.applications.federation.entityProviders.list.grid.0") }
-                        </TableHeaderColumn>
-                        <TableHeaderColumn
-                            columnTitle={ formatLocale }
-                            dataField="roles"
-                            dataFormat={ formatLocale }
-                        >
-                            { t("console.applications.federation.entityProviders.list.grid.1") }
-                        </TableHeaderColumn>
-                        <TableHeaderColumn
-                            dataField="location"
-                            dataFormat={ upperFirst }
-                            dataSort
-                        >
-                            { t("console.applications.federation.entityProviders.list.grid.2") }
-                        </TableHeaderColumn>
-                    </Table>
+                    />
                 </>
             );
         } else {

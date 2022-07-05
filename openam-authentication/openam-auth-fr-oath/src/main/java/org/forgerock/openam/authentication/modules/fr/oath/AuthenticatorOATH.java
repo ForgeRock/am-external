@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2012-2019 ForgeRock AS.
+ * Copyright 2012-2022 ForgeRock AS.
  * Portions Copyrighted 2014-2015 Nomura Research Institute, Ltd.
  */
 
@@ -23,6 +23,7 @@ import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -127,7 +128,9 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
 
     private boolean outOfSync = false;
 
+    private ResourceBundle bundle = null;
     protected String amAuthOATH = null;
+    protected static final String amAuthAuthenticatorOATH = "amAuthAuthenticatorOATH";
 
     private static final int LOGIN_START = ISAuthConstants.LOGIN_START;
     private static final int LOGIN_OPTIONAL = 2;
@@ -413,6 +416,9 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
             deviceToAuthAgainst = newDevice;
         }
 
+        java.util.Locale locale = getLoginLocale();
+        bundle = amCache.getResBundle(amAuthAuthenticatorOATH, locale);
+
         //get OTP
         String OTP = ((NameCallback) callbacks[0]).getName();
         if (OTP.length() == 0) {
@@ -422,7 +428,8 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
                 throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
             }
 
-            replaceHeader(state, MODULE_NAME + "Attempt " + (attempt + 1) + " of " + totalAttempts);
+            replaceHeader(state, MODULE_NAME + " " + bundle.getString("attempt") + " " + (attempt + 1)
+                    + " " + bundle.getString("of") + " " + totalAttempts);
             return state;
         }
 
@@ -452,7 +459,8 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
                 }
             }
 
-            replaceHeader(state, MODULE_NAME + "Attempt " + (attempt + 1) + " of " + totalAttempts);
+            replaceHeader(state, MODULE_NAME + " " + bundle.getString("attempt") + " " + (attempt + 1)
+                    + " " + bundle.getString("of") + " " + totalAttempts);
             return state;
         }
     }

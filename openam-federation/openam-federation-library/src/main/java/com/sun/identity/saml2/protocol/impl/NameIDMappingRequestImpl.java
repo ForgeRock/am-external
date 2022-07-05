@@ -24,15 +24,17 @@
  *
  * $Id: NameIDMappingRequestImpl.java,v 1.3 2008/11/10 22:57:03 veiming Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+
 import java.util.ListIterator;
-import java.util.Set;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
@@ -59,7 +61,7 @@ public class NameIDMappingRequestImpl extends RequestAbstractImpl
      * Constructor to create <code>ManageNameIDRequest</code> Object. 
      */
     public NameIDMappingRequestImpl() {
-        elementName = "NameIDMappingRequest";
+        super(SAML2Constants.NAME_ID_MAPPING_REQUEST);
         isMutable = true;
     }
 
@@ -72,11 +74,11 @@ public class NameIDMappingRequestImpl extends RequestAbstractImpl
      *     created.
      */
     public NameIDMappingRequestImpl(Element element) throws SAML2Exception {
+        super(SAML2Constants.NAME_ID_MAPPING_REQUEST);
         parseDOMElement(element);
         if (isSigned) {
             signedXMLString = XMLUtils.print(element);
         }
-        elementName = "NameIDMappingRequest";
         makeImmutable();
     }
 
@@ -89,6 +91,7 @@ public class NameIDMappingRequestImpl extends RequestAbstractImpl
      *     created.
      */
     public NameIDMappingRequestImpl(String xmlString) throws SAML2Exception {
+        super(SAML2Constants.NAME_ID_MAPPING_REQUEST);
         Document doc = XMLUtils.toDOMDocument(xmlString);
         if (doc == null) {
             throw new SAML2Exception("errorObtainingElement");
@@ -97,7 +100,6 @@ public class NameIDMappingRequestImpl extends RequestAbstractImpl
         if (isSigned) {
             signedXMLString = xmlString;
         }
-        elementName = "NameIDMappingRequest";
         makeImmutable();
     }
 
@@ -270,41 +272,35 @@ public class NameIDMappingRequestImpl extends RequestAbstractImpl
         }
     }
 
-    protected void getXMLString(Set namespaces, StringBuffer attrs,
-        StringBuffer childElements, boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-
-        validateData();
-
-        if (declareNS) {
-            namespaces.add(SAML2Constants.PROTOCOL_DECLARE_STR.trim());
-            namespaces.add(SAML2Constants.ASSERTION_DECLARE_STR.trim());
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = super.toDocumentFragment(document, includeNSPrefix, declareNS);
+        if (isSigned && signedXMLString != null) {
+            return fragment;
         }
 
-        super.getXMLString(namespaces, attrs, childElements, includeNSPrefix,
-            declareNS);
-
+        Element rootElement = (Element) fragment.getFirstChild();
+        if (declareNS) {
+            rootElement.setAttribute("xmlns:saml", ASSERTION_NAMESPACE_URI);
+        }
 
         if (baseID != null) {
-            childElements.append(baseID.toXMLString(includeNSPrefix,
-                declareNS)).append(SAML2Constants.NEWLINE);
+            rootElement.appendChild(baseID.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
-
         if (nameID != null) {
-            childElements.append(nameID.toXMLString(includeNSPrefix,
-                declareNS)).append(SAML2Constants.NEWLINE);
+            rootElement.appendChild(nameID.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
-                
         if (encryptedID != null) {
-            childElements.append(encryptedID.toXMLString(includeNSPrefix,
-                declareNS)).append(SAML2Constants.NEWLINE);
+            rootElement.appendChild(encryptedID.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
-        
-        childElements.append(nameIDPolicy.toXMLString(includeNSPrefix,
-            declareNS)).append(SAML2Constants.NEWLINE);
+        rootElement.appendChild(nameIDPolicy.toDocumentFragment(document, includeNSPrefix, declareNS));
+
+        return fragment;
     }
 
     protected void validateData() throws SAML2Exception {
+        super.validateData();
         int count = 0;
         if (nameID != null) {
             if ((encryptedID != null) || (baseID != null)) {

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
@@ -44,7 +44,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 
@@ -240,26 +239,6 @@ public class Saml2Node extends AbstractDecisionNode {
         @Attribute(order = 1100)
         default String nameIdFormat() {
             return "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent";
-        }
-
-        /**
-         * Whether SLO is enabled.
-         *
-         * @return Whether SLO is enabled.
-         */
-        @Attribute(order = 1200)
-        default boolean sloEnabled() {
-            return false;
-        }
-
-        /**
-         * The URL users should be redirected to after successful SLO.
-         *
-         * @return The URL users should be redirected to after successful SLO.
-         */
-        @Attribute(order = 1500)
-        default Optional<String> sloRelayState() {
-            return Optional.empty();
         }
     }
 

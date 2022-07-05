@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -19,7 +19,6 @@ import static org.forgerock.openam.auth.node.api.Action.goTo;
 
 import java.util.List;
 
-import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.SupportedAll;
 import org.forgerock.util.i18n.PreferredLocales;
 
@@ -44,9 +43,9 @@ public abstract class SingleOutcomeNode implements Node {
     /**
      * Provides a static single outcome for nodes with a single outcome.
      */
-    public static final class OutcomeProvider implements org.forgerock.openam.auth.node.api.OutcomeProvider {
+    public static final class OutcomeProvider implements org.forgerock.openam.auth.node.api.StaticOutcomeProvider {
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales) {
             return ImmutableList.of(new Outcome(OUTCOME_ID,
                     locales.getBundleInPreferredLocale("amAuthTrees",
                             OutcomeProvider.class.getClassLoader()).getString("singleOutcome")));

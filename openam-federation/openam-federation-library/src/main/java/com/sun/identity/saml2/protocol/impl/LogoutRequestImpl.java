@@ -24,22 +24,35 @@
  *
  * $Id: LogoutRequestImpl.java,v 1.3 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.CONSENT;
+import static com.sun.identity.saml2.common.SAML2Constants.DESTINATION;
+import static com.sun.identity.saml2.common.SAML2Constants.ID;
+import static com.sun.identity.saml2.common.SAML2Constants.ISSUE_INSTANT;
+import static com.sun.identity.saml2.common.SAML2Constants.LOGOUT_REQUEST;
+import static com.sun.identity.saml2.common.SAML2Constants.NOTONORAFTER;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.REASON;
+import static com.sun.identity.saml2.common.SAML2Constants.VERSION;
+import static org.forgerock.openam.utils.CollectionUtils.isNotEmpty;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -51,6 +64,7 @@ import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.protocol.LogoutRequest;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.SessionIndex;
@@ -79,7 +93,8 @@ implements LogoutRequest {
      *
      */
     public LogoutRequestImpl() {
-        isMutable=true;
+        super(LOGOUT_REQUEST);
+        isMutable = true;
     }
     
     /**
@@ -90,6 +105,7 @@ implements LogoutRequest {
      */
     
     public LogoutRequestImpl(Element element) throws SAML2Exception {
+        super(LOGOUT_REQUEST);
         parseElement(element);
         if (isSigned) {
              signedXMLString = XMLUtils.print(element);
@@ -103,6 +119,7 @@ implements LogoutRequest {
      * @throws SAML2Exception if <code>LogoutRequest</code> cannot be created.
      */
     public LogoutRequestImpl(String xmlString) throws SAML2Exception {
+        super(LOGOUT_REQUEST);
         Document xmlDocument =
         XMLUtils.toDOMDocument(xmlString);
         if (xmlDocument == null) {
@@ -276,146 +293,78 @@ implements LogoutRequest {
             SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
     }
-    
-    /**
-     * Returns the <code>LogoutRequest</code> in an XML document String format
-     * based on the <code>LogoutRequest</code> schema described above.
-     *
-     * @return An XML String representing the <code>LogoutRequest</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public java.lang.String toXMLString() throws SAML2Exception {
-        return toXMLString(true,false);
-    }
-    
-    /**
-     * Returns the <code>LogoutRequest</code> in an XML document String format
-     * based on the <code>LogoutRequest</code> schema described above.
-     *
-     * @param includeNSPrefix Determines whether or not the namespace qualifier
-     *        is prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return A XML String representing the <code>LogoutRequest</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-    throws SAML2Exception {
+
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        validateData();
+        DocumentFragment fragment = document.createDocumentFragment();
+
         if (isSigned && signedXMLString != null) {
-            return signedXMLString;
+            Document parsedSig = XMLUtils.toDOMDocument(signedXMLString);
+            if (parsedSig == null) {
+                throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
+            }
+            fragment.appendChild(document.importNode(parsedSig.getDocumentElement(), true));
+            return fragment;
         }
 
-        validateData();
-        StringBuffer xmlString = new StringBuffer(1000);
-        xmlString.append(SAML2Constants.START_TAG);
-        if (includeNSPrefix) {
-            xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
+        Element logoutRequestElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+                LOGOUT_REQUEST, includeNSPrefix, declareNS);
+        fragment.appendChild(logoutRequestElement);
+
+        logoutRequestElement.setAttribute(ID, requestId);
+        logoutRequestElement.setAttribute(VERSION, version);
+        logoutRequestElement.setAttribute(ISSUE_INSTANT, DateUtils.toUTCDateFormat(issueInstant));
+
+        if (isNotBlank(destinationURI)) {
+            logoutRequestElement.setAttribute(DESTINATION, destinationURI);
         }
-        xmlString.append(SAML2Constants.LOGOUT_REQUEST)
-        .append(SAML2Constants.SPACE);
-        
-        if (declareNS) {
-            xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR)
-            .append(SAML2Constants.SPACE);
-            
+
+        if (isNotBlank(consent)) {
+            logoutRequestElement.setAttribute(CONSENT, consent);
         }
-        
-        xmlString.append(SAML2Constants.ID).append(SAML2Constants.EQUAL)
-        .append(SAML2Constants.QUOTE)
-        .append(requestId).append(SAML2Constants.QUOTE)
-        .append(SAML2Constants.SPACE)
-        .append(SAML2Constants.VERSION).append(SAML2Constants.EQUAL)
-        .append(SAML2Constants.QUOTE)
-        .append(version).append(SAML2Constants.QUOTE)
-        .append(SAML2Constants.SPACE)
-        .append(SAML2Constants.ISSUE_INSTANT)
-        .append(SAML2Constants.EQUAL)
-        .append(SAML2Constants.QUOTE)
-        .append(DateUtils.toUTCDateFormat(issueInstant))
-        .append(SAML2Constants.QUOTE);
-        
-        if ((destinationURI != null) && (destinationURI.length() > 0)) {
-            xmlString.append(SAML2Constants.SPACE)
-            .append(SAML2Constants.DESTINATION)
-            .append(SAML2Constants.EQUAL)
-            .append(SAML2Constants.QUOTE)
-            .append(destinationURI)
-            .append(SAML2Constants.QUOTE);
-        }
-        
-        if ((consent != null) && (consent.length() > 0)) {
-            xmlString.append(SAML2Constants.SPACE)
-            .append(SAML2Constants.CONSENT)
-            .append(SAML2Constants.EQUAL)
-            .append(SAML2Constants.QUOTE)
-            .append(consent)
-            .append(SAML2Constants.QUOTE);
-        }
-        
         if (notOnOrAfter != null) {
-            xmlString.append(SAML2Constants.SPACE)
-            .append(SAML2Constants.NOTONORAFTER)
-            .append(SAML2Constants.EQUAL)
-            .append(SAML2Constants.QUOTE)
-            .append(DateUtils.toUTCDateFormat(notOnOrAfter))
-            .append(SAML2Constants.QUOTE);
+            logoutRequestElement.setAttribute(NOTONORAFTER, DateUtils.toUTCDateFormat(notOnOrAfter));
         }
-        
-        if ((reason != null) && (reason.length() > 0)) {
-            xmlString.append(SAML2Constants.SPACE)
-            .append(SAML2Constants.REASON)
-            .append(SAML2Constants.EQUAL)
-            .append(SAML2Constants.QUOTE)
-            .append(reason)
-            .append(SAML2Constants.QUOTE);
+        if (isNotBlank(reason)) {
+            logoutRequestElement.setAttribute(REASON, reason);
         }
-        
-        xmlString.append(SAML2Constants.END_TAG);
-        
+
+        // NB "nameID" here is actually the Issuer from the superclass, nameId (lowercase d) is the local NameID field
         if (nameID != null) {
-            String issuerString = nameID.toXMLString(includeNSPrefix,declareNS);
-            xmlString.append(issuerString);
+            logoutRequestElement.appendChild(nameID.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
-        if ((signatureString != null) && (signatureString.length() > 0)) {
-            xmlString.append(signatureString);
-        }
-        if (extensions != null) {
-            xmlString.append(extensions.toXMLString(includeNSPrefix,declareNS));
-        }
-        if (baseId != null) {
-            xmlString.append(baseId.toXMLString(includeNSPrefix,declareNS));
-        }
-        
-        if (nameId != null) {
-            xmlString.append(nameId.toXMLString(includeNSPrefix,
-            declareNS));
-        }
-        
-        if (encryptedId != null) {
-            xmlString.append(encryptedId.toXMLString(includeNSPrefix,declareNS));
-        }
-        
-        if (sessionIndexList != null && !sessionIndexList.isEmpty()) {
-            Iterator sessionIterator = sessionIndexList.iterator();
-            while (sessionIterator.hasNext()) {
-                ProtocolFactory protoFactory = ProtocolFactory.getInstance();
-                String sessionString = (String) sessionIterator.next();
-                SessionIndex sIndex =
-                protoFactory.createSessionIndex(sessionString);
-                xmlString.append(sIndex.toXMLString(includeNSPrefix,declareNS));
+        if (isNotBlank(signatureString)) {
+            List<Node> sigNodes = SAML2Utils.parseSAMLFragment(signatureString);
+            for (Node node : sigNodes) {
+                logoutRequestElement.appendChild(document.importNode(node, true));
             }
         }
-        
-        xmlString.append(SAML2Constants.SAML2_END_TAG)
-        .append(SAML2Constants.LOGOUT_REQUEST)
-        .append(SAML2Constants.END_TAG);
-        
-        return xmlString.toString();
+        if (extensions != null) {
+            logoutRequestElement.appendChild(extensions.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
+        if (baseId != null) {
+            logoutRequestElement.appendChild(baseId.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
+        if (nameId != null) {
+            logoutRequestElement.appendChild(nameId.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
+        if (encryptedId != null) {
+            logoutRequestElement.appendChild(encryptedId.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
+
+        if (isNotEmpty(sessionIndexList)) {
+            for (String sessionString : sessionIndexList) {
+                ProtocolFactory protoFactory = ProtocolFactory.getInstance();
+                SessionIndex sIndex = protoFactory.createSessionIndex(sessionString);
+                logoutRequestElement.appendChild(sIndex.toDocumentFragment(document, includeNSPrefix, declareNS));
+            }
+        }
+
+        return fragment;
     }
-   
-    
+
     /**
      * Makes this object immutable.
      */

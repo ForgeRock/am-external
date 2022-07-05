@@ -24,7 +24,7 @@
  *
  * $Id: Scoping.java,v 1.2 2008/06/25 05:47:58 qcheng Exp $
  *
- * Portions Copyrighted 2014-2019 ForgeRock AS.
+ * Portions Copyrighted 2014-2021 ForgeRock AS.
  */
 
 
@@ -36,6 +36,7 @@ import org.forgerock.openam.annotations.SupportedAll;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 import com.sun.identity.saml2.protocol.impl.ScopingImpl;
 
 /**
@@ -46,7 +47,7 @@ import com.sun.identity.saml2.protocol.impl.ScopingImpl;
 @SupportedAll
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
         defaultImpl = ScopingImpl.class)
-public interface Scoping {
+public interface Scoping extends XmlSerializable {
 
     /**
      * Returns the <code>IDPList</code> Object.
@@ -99,29 +100,6 @@ public interface Scoping {
      */
 
     public void setProxyCount(Integer proxyCount) throws SAML2Exception;
-
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @return a String representation of this Object.
-     * @throws SAML2Exception if cannot create String object
-     */
-    public String toXMLString() throws SAML2Exception;
-
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *	      qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *	      within the Element.
-     * @return the String representation of this Object.
-     * @throws SAML2Exception if String object cannot be created.
-     **/
-
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-	throws SAML2Exception;
-
 
     /**
      * Makes this object immutable.

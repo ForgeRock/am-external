@@ -11,8 +11,9 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
+
 package org.forgerock.openam.services.push;
 
 import static org.forgerock.openam.services.push.PushMessage.MESSAGE_ID;
@@ -61,8 +62,12 @@ public final class PushNotificationConstants {
     public static final String JWT_RESPONSE_CLAIM_KEY = "response";
     /** Claim set location of deny. */
     public static final String JWT_DENY_CLAIM_KEY = "deny";
+    /** Claim set location of challenge response. */
+    public static final String JWT_CHALLENGE_RESPONSE_KEY = "challengeResponse";
     /** Location in the CTS version of an accepted response of whether the result was accepted or denied. **/
     public static final CoreTokenField CTS_ACCEPT_TOKEN_FIELD = CoreTokenField.INTEGER_ONE;
+    /** Location in the CTS version of a number challenge response. **/
+    public static final CoreTokenField CTS_NUMBER_CHALLENGE_TOKEN_FIELD = CoreTokenField.INTEGER_TWO;
     /** General alg. */
     public static final String HMACSHA256 = "HmacSHA256";
     /** Deny value. */

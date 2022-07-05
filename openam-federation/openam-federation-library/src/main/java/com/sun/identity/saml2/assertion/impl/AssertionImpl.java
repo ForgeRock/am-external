@@ -24,13 +24,16 @@
  *
  * $Id: AssertionImpl.java,v 1.8 2009/05/09 15:43:59 mallas Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+import static java.util.stream.Collectors.toList;
+import static org.forgerock.openam.utils.StringUtils.isBlank;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
-import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -43,6 +46,7 @@ import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -57,7 +61,6 @@ import com.sun.identity.saml2.assertion.Conditions;
 import com.sun.identity.saml2.assertion.EncryptedAssertion;
 import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.assertion.Subject;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.key.EncryptionConfig;
@@ -79,13 +82,13 @@ public class AssertionImpl implements Assertion {
     private Date issueInstant;
     private Subject subject;
     private Advice advice;
-    private String signature;
+    private Node signature;
     private Conditions conditions;
     private String id;
-    private List<Object> statements = new ArrayList();
-    private List<AuthnStatement> authnStatements = new ArrayList();
-    private List<AuthzDecisionStatement> authzDecisionStatements = new ArrayList();
-    private List<AttributeStatement> attributeStatements = new ArrayList();
+    private List<Element> statements = new ArrayList<>();
+    private List<AuthnStatement> authnStatements = new ArrayList<>();
+    private List<AuthzDecisionStatement> authzDecisionStatements = new ArrayList<>();
+    private List<AttributeStatement> attributeStatements = new ArrayList<>();
     private Issuer issuer;
     private boolean isMutable = true;
     private String signedXMLString = null;
@@ -261,7 +264,7 @@ public class AssertionImpl implements Assertion {
         childName = child.getLocalName();
         if ((childName != null) &&
             childName.equals(ASSERTION_SIGNATURE)) {
-            signature = XMLUtils.print((Element)child);
+            signature = (Element) child;
             if (++nextElem >= numOfNodes) {
                 return;
             }
@@ -343,13 +346,13 @@ public class AssertionImpl implements Assertion {
                             createAttributeStatement((Element)child)); 
                     } else if ((childName != null) &&
                         childName.equals(ASSERTION_SIGNATURE)) {
-                        signature = XMLUtils.print((Element)child);
+                        signature = (Element) child;
                     } else {
                         String type = ((Element)child).getAttribute(
                             XSI_TYPE_ATTR);
                         if (childName.equals(ASSERTION_STATEMENT) && 
                                        (type != null && type.length() > 0)) {
-                            statements.add(XMLUtils.print((Element)child));
+                            statements.add((Element) child);
                         } else {
                             logger.error(
                                 "AssertionImpl.processElement(): " + 
@@ -471,7 +474,7 @@ public class AssertionImpl implements Assertion {
      */
     @Override
     public String getSignature() {
-        return signature;
+        return XMLUtils.print(signature);
     }
 
     /**
@@ -531,7 +534,10 @@ public class AssertionImpl implements Assertion {
      */
     @Override
     public List<Object> getStatements() {
-        return statements;
+        if (statements != null) {
+            return statements.stream().map(XMLUtils::print).collect(toList());
+        }
+        return null;
     }
 
     /**
@@ -575,8 +581,17 @@ public class AssertionImpl implements Assertion {
         if (!isMutable) {
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
                 "objectImmutable"));
-        } 
-        this.statements = statements;
+        }
+        if (statements != null) {
+            List<Element> parsedStatements = new ArrayList<>(statements.size());
+            for (Object statement : statements) {
+                Document parsed = XMLUtils.toDOMDocument((String) statement);
+                parsedStatements.add(parsed.getDocumentElement());
+            }
+            this.statements = parsedStatements;
+        } else {
+            this.statements = null;
+        }
     }
 
     /**
@@ -677,7 +692,7 @@ public class AssertionImpl implements Assertion {
     @Override
     public void sign(SigningConfig signingConfig) throws SAML2Exception {
         Element signatureElement = SigManager.getSigInstance().sign(toXMLString(true, true), getID(), signingConfig);
-        signature = XMLUtils.print(signatureElement);
+        signature = signatureElement;
         signedXMLString = XMLUtils.print(signatureElement.getOwnerDocument().getDocumentElement(), "UTF-8");
         makeImmutable();  
     }
@@ -709,126 +724,72 @@ public class AssertionImpl implements Assertion {
         }
     }
 
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace
-    *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-   @Override
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element assertionElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                ASSERTION_ELEMENT, includeNSPrefix, declareNS);
+        fragment.appendChild(assertionElement);
 
-        if ((signature != null) && (signedXMLString != null)) {
-            return signedXMLString;
+        if (isBlank(version)) {
+            logger.error("AssertionImpl.toDocumentFragment(): version missing");
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missing_assertion_version"));
         }
-
-        StringBuffer sb = new StringBuffer(2000);
-        String NS = "";
-        String appendNS = "";
-        if (declareNS) {
-            NS = SAML2Constants.ASSERTION_DECLARE_STR;
+        assertionElement.setAttribute(ASSERTION_VERSION_ATTR, version);
+        if (isBlank(id)) {
+            logger.error("AssertionImpl.toDocumentFragment(): assertion id missing");
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missing_assertion_id"));
         }
-        if (includeNSPrefix) {
-            appendNS = SAML2Constants.ASSERTION_PREFIX;
-        }
-        sb.append("<").append(appendNS).append(ASSERTION_ELEMENT).append(NS);
-        if ((version == null) || (version.length() == 0)) {
-            logger.error(
-                "AssertionImpl.toXMLString(): version missing");
-            throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
-                "missing_assertion_version"));
-        } 
-        sb.append(" ").append(ASSERTION_VERSION_ATTR).append("=\"").
-            append(version).append("\"");
-        if ((id == null) || (id.length() == 0)) {
-            logger.error(
-                "AssertionImpl.toXMLString(): assertion id missing");
-            throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
-                "missing_assertion_id"));
-        } 
-        sb.append(" ").append(ASSERTION_ID_ATTR).append("=\"").
-            append(id).append("\"");
+        assertionElement.setAttribute(ASSERTION_ID_ATTR, id);
         if (issueInstant == null) {
-            logger.error(
-                "AssertionImpl.toXMLString(): issue instant missing");
-            throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
-                "missing_issue_instant")); 
+            logger.error("AssertionImpl.toDocumentFragment(): issue instant missing");
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missing_issue_instant"));
         }
-        String instantStr = DateUtils.toUTCDateFormat(issueInstant);
-        sb.append(" ").append(ASSERTION_ISSUEINSTANT_ATTR).append("=\"").
-            append(instantStr).append("\"").append(">\n");
+        assertionElement.setAttribute(ASSERTION_ISSUEINSTANT_ATTR, DateUtils.toUTCDateFormat(issueInstant));
         if (issuer == null) {
-            logger.error(
-                "AssertionImpl.toXMLString(): issuer missing");
-            throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
-                "missing_subelement_issuer")); 
+            logger.error("AssertionImpl.toDocumentFragment(): issuer missing");
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missing_subelement_issuer"));
         }
-        sb.append(issuer.toXMLString(includeNSPrefix, false));
+        assertionElement.appendChild(issuer.toDocumentFragment(document, includeNSPrefix, false));
+
         if (signature != null) {
-            sb.append(signature); 
+            assertionElement.appendChild(document.importNode(signature, true));
         }
         if (subject != null) {
-            sb.append(subject.toXMLString(includeNSPrefix, false));
+            assertionElement.appendChild(subject.toDocumentFragment(document, includeNSPrefix, false));
         }
         if (conditions != null) {
-            sb.append(conditions.toXMLString(includeNSPrefix, false));
+            assertionElement.appendChild(conditions.toDocumentFragment(document, includeNSPrefix, false));
         }
         if (advice != null) {
-            sb.append(advice.toXMLString(includeNSPrefix, false));
+            assertionElement.appendChild(advice.toDocumentFragment(document, includeNSPrefix, false));
         }
-        int length = 0;
         if (statements != null) {
-            length = statements.size();
-            for (int i = 0; i < length; i++) {
-                String str = (String)statements.get(i);
-                sb.append(str);
+            for (Element statement : statements) {
+                assertionElement.appendChild(document.importNode(statement, true));
             }
         }
         if (authnStatements != null) {
-            length = authnStatements.size();
-            for (int i = 0; i < length; i++) {
-                AuthnStatement st = (AuthnStatement)authnStatements.get(i);
-                sb.append(st.toXMLString(includeNSPrefix, false));
+            for (AuthnStatement statement : authnStatements) {
+                assertionElement.appendChild(statement.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
         if (authzDecisionStatements != null) {
-            length = authzDecisionStatements.size();
-            for (int i = 0; i < length; i++) {
-                AuthzDecisionStatement st = 
-                    (AuthzDecisionStatement)authzDecisionStatements.get(i);
-                sb.append(st.toXMLString(includeNSPrefix, false));
+            for (AuthzDecisionStatement statement : authzDecisionStatements) {
+                assertionElement.appendChild(statement.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
         if (attributeStatements != null) {
-            length = attributeStatements.size();
-            for (int i = 0; i < length; i++) {
-                AttributeStatement st = 
-                    (AttributeStatement)attributeStatements.get(i);
-                sb.append(st.toXMLString(includeNSPrefix, false));
+            for (AttributeStatement statement : attributeStatements) {
+                assertionElement.appendChild(statement.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
-        sb.append("</").append(appendNS).append(ASSERTION_ELEMENT).
-        append(">\n");
-        //return SAML2Utils.removeNewLineChars(sb.toString());
-       return sb.toString();
+
+        return fragment;
     }
 
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-   @Override
-    public String toXMLString() throws SAML2Exception {
-        return this.toXMLString(true, false);
-    }
-
-   /**
+    /**
     * Makes the object immutable
     */
    @Override

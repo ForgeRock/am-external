@@ -24,14 +24,24 @@
  *
  * $Id: ECPRequestImpl.java,v 1.2 2008/06/25 05:47:47 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.ecp.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ACTOR;
+import static com.sun.identity.saml2.common.SAML2Constants.ECP_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.ECP_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.ISPASSIVE;
+import static com.sun.identity.saml2.common.SAML2Constants.MUST_UNDERSTAND;
+import static com.sun.identity.saml2.common.SAML2Constants.PROVIDER_NAME;
+import static com.sun.identity.saml2.common.SAML2Constants.SOAP_ENV_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.SOAP_ENV_PREFIX;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -245,94 +255,37 @@ public class ECPRequestImpl implements ECPRequest {
         this.isPassive = isPassive;
     }
 
-    /**
-     * Returns a String representation of this Object.
-     * @return a  String representation of this Object.
-     * @exception SAML2Exception if it could not create String object
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true,false);
-    }
-
-    /**
-     *  Returns a String representation
-     *  @param includeNSPrefix determines whether or not the namespace
-     *      qualifier is prepended to the Element when converted
-     *  @param declareNS determines whether or not the namespace is declared
-     *      within the Element.
-     *  @return a String representation of this Object.
-     *  @exception SAML2Exception ,if it could not create String object.
-     */
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-        throws SAML2Exception {
-
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
         validateData();
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element requestElement = XMLUtils.createRootElement(document, ECP_PREFIX, ECP_NAMESPACE, REQUEST,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(requestElement);
 
-        StringBuffer xml = new StringBuffer(300);
-
-        xml.append(SAML2Constants.START_TAG);
-        if (includeNSPrefix) {
-            xml.append(SAML2Constants.ECP_PREFIX);
-        }
-        xml.append(REQUEST);
-        if (declareNS) {
-            xml.append(SAML2Constants.SPACE)
-               .append(SAML2Constants.ECP_DECLARE_STR)
-               .append(SAML2Constants.SPACE)
-               .append(SAML2Constants.SOAP_ENV_DECLARE_STR);
-        }
-
-        xml.append(SAML2Constants.SPACE)
-           .append(SAML2Constants.SOAP_ENV_PREFIX)
-           .append(SAML2Constants.MUST_UNDERSTAND)
-           .append(SAML2Constants.EQUAL)
-           .append(SAML2Constants.QUOTE)
-           .append(mustUnderstand.toString())
-           .append(SAML2Constants.QUOTE)
-           .append(SAML2Constants.SPACE)
-           .append(SAML2Constants.SOAP_ENV_PREFIX)
-           .append(SAML2Constants.ACTOR)
-           .append(SAML2Constants.EQUAL)
-           .append(SAML2Constants.QUOTE)
-           .append(actor)
-           .append(SAML2Constants.QUOTE);
+        requestElement.setAttribute("xmlns:soap-env", SOAP_ENV_NAMESPACE);
+        requestElement.setAttribute(SOAP_ENV_PREFIX + MUST_UNDERSTAND, mustUnderstand.toString());
+        requestElement.setAttribute(SOAP_ENV_PREFIX + ACTOR, actor);
 
         if (providerName != null) {
-            xml.append(SAML2Constants.SPACE)
-               .append(SAML2Constants.PROVIDER_NAME)
-               .append(SAML2Constants.EQUAL)
-               .append(SAML2Constants.QUOTE)
-               .append(providerName)
-               .append(SAML2Constants.QUOTE);
+            requestElement.setAttribute(PROVIDER_NAME, providerName);
         }
 
         if (isPassive != null) {
-            xml.append(SAML2Constants.SPACE)
-               .append(SAML2Constants.ISPASSIVE)
-               .append(SAML2Constants.EQUAL)
-               .append(SAML2Constants.QUOTE)
-               .append(isPassive.toString())
-               .append(SAML2Constants.QUOTE);
+            requestElement.setAttribute(ISPASSIVE, isPassive.toString());
         }
 
-        xml.append(SAML2Constants.END_TAG)
-           .append(SAML2Constants.NEWLINE)
-           .append(issuer.toXMLString(includeNSPrefix,declareNS));
+        requestElement.appendChild(issuer.toDocumentFragment(document, includeNSPrefix, declareNS));
 
         if (idpList != null) {
-            xml.append(SAML2Constants.NEWLINE)
-               .append(idpList.toXMLString(includeNSPrefix,declareNS));
+            requestElement.appendChild(idpList.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
 
-        xml.append(SAML2Constants.NEWLINE)
-           .append(SAML2Constants.ECP_END_TAG)
-           .append(REQUEST)
-           .append(SAML2Constants.END_TAG);
-
-        return xml.toString();
+        return fragment;
     }
 
-    /** 
+    /**
      * Makes this object immutable. 
      */
     public void makeImmutable() {
@@ -370,11 +323,11 @@ public class ECPRequestImpl implements ECPRequest {
                 SAML2SDKUtils.bundle.getString("invalidECPRequest"));
         }
         String namespaceURI = element.getNamespaceURI();
-        if (!SAML2Constants.ECP_NAMESPACE.equals(namespaceURI)) {
+        if (!ECP_NAMESPACE.equals(namespaceURI)) {
             if (logger.isDebugEnabled()) {
                 logger.debug("ECPRequestImpl.parseElement:" +
                     " element namespace should be " +
-                    SAML2Constants.ECP_NAMESPACE);
+                    ECP_NAMESPACE);
             }
             throw new SAML2Exception(
                 SAML2SDKUtils.bundle.getString("invalidECPNamesapce"));

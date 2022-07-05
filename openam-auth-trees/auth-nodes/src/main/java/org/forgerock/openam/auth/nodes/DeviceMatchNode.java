@@ -11,14 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 
 package org.forgerock.openam.auth.nodes;
 
-import static org.forgerock.openam.scripting.ScriptConstants.AUTHENTICATION_TREE_DECISION_NODE_NAME;
-import static org.forgerock.openam.scripting.ScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
+import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
+import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE_NAME;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
 
@@ -39,17 +38,18 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.script.AuthNodesGlobalScript;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
 import org.forgerock.openam.identity.idm.IdentityUtils;
-import org.forgerock.openam.scripting.Script;
-import org.forgerock.openam.scripting.ScriptConstants;
-import org.forgerock.openam.scripting.ScriptEvaluator;
-import org.forgerock.openam.scripting.ScriptException;
-import org.forgerock.openam.scripting.ScriptObject;
-import org.forgerock.openam.scripting.SupportedScriptingLanguage;
-import org.forgerock.openam.scripting.service.ScriptConfiguration;
+import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
+import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.ScriptException;
+import org.forgerock.openam.scripting.domain.ScriptingLanguage;
+import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScript;
+import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
@@ -131,15 +131,15 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
          * @return The script configuration.
          */
         @Attribute(order = 400)
-        @Script(AUTHENTICATION_TREE_DECISION_NODE_NAME)
-        default ScriptConfiguration script() {
-            ScriptConstants.GlobalScript scriptDetails = ScriptConstants.GlobalScript.DECISION_NODE_SCRIPT;
+        @ScriptContext(AUTHENTICATION_TREE_DECISION_NODE_NAME)
+        default Script script() {
+            GlobalScript scriptDetails = AuthNodesGlobalScript.DECISION_NODE_SCRIPT;
             try {
-                return ScriptConfiguration.builder()
+                return Script.builder()
                         .setId(scriptDetails.getId())
                         .setName(scriptDetails.getDisplayName())
                         .setScript("")
-                        .setLanguage(SupportedScriptingLanguage.JAVASCRIPT)
+                        .setLanguage(ScriptingLanguage.JAVASCRIPT)
                         .setContext(scriptDetails.getContext())
                         .build();
             } catch (ScriptException e) {
@@ -154,7 +154,7 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
      * other classes from the plugin.
      *
      * @param deviceProfilesDao An DeviceProfilesDao Instance
-     * @param scriptEvaluator   A ScriptEvaluator Instance
+     * @param scriptEvaluatorFactory   A ScriptEvaluatorFactory Instance
      * @param coreWrapper       A CoreWrapper Instance
      * @param identityUtils     An IdentityUtils Instance
      * @param config            Node Configuration
@@ -162,11 +162,11 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
      */
     @Inject
     public DeviceMatchNode(DeviceProfilesDao deviceProfilesDao,
-            @Named(AUTHENTICATION_TREE_DECISION_NODE_NAME) ScriptEvaluator scriptEvaluator,
+            ScriptEvaluatorFactory scriptEvaluatorFactory,
             CoreWrapper coreWrapper, IdentityUtils identityUtils, @Assisted Config config,
             @Assisted Realm realm) {
         this.deviceProfilesDao = deviceProfilesDao;
-        this.scriptEvaluator = scriptEvaluator;
+        this.scriptEvaluator = scriptEvaluatorFactory.create(AUTHENTICATION_TREE_DECISION_NODE);
         this.coreWrapper = coreWrapper;
         this.identityUtils = identityUtils;
         this.config = config;
@@ -184,7 +184,8 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
         }
 
         try {
-            AMIdentity identity = getUserIdentity(context, coreWrapper, identityUtils);
+            AMIdentity identity = getUserIdentity(context.universalId, context.getStateFor(this), coreWrapper,
+                    identityUtils);
             List<JsonValue> devices = deviceProfilesDao
                     .getDeviceProfiles(identity.getName(), realm.asPath());
             Optional<JsonValue> result = devices.stream()
@@ -238,14 +239,13 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
 
     private Action execute(TreeContext context) throws NodeProcessException {
         try {
-            ScriptObject script = new ScriptObject(config.script().getName(), config.script().getScript(),
-                    config.script().getLanguage());
+            Script script = config.script();
             Bindings binding = new SimpleBindings();
             binding.put(SHARED_STATE_IDENTIFIER, context.sharedState);
             binding.put(TRANSIENT_STATE_IDENTIFIER, context.transientState);
             binding.put(CALLBACKS_IDENTIFIER, context.getAllCallbacks());
             binding.put(LOGGER_VARIABLE_NAME, Debug.getInstance("scripts." + AUTHENTICATION_TREE_DECISION_NODE.name()
-                    + "." + config.script().getId()));
+                    + "." + script.getId()));
             binding.put(DEVICE_PROFILES_DAO, deviceProfilesDao);
             scriptEvaluator.evaluateScript(script, binding);
             logger.debug("script {} \n binding {}", script, binding);
@@ -268,10 +268,10 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
      * Provides the authentication node's set of outcomes.
      */
     public static class OutcomeProvider implements
-            org.forgerock.openam.auth.node.api.OutcomeProvider {
+            org.forgerock.openam.auth.node.api.StaticOutcomeProvider {
 
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE,
                     DeviceLocationMatchNode.OutcomeProvider.class.getClassLoader());
 

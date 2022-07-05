@@ -30,6 +30,9 @@
 
 package com.sun.identity.saml2.assertion.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -395,46 +399,63 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
         contentType = attribute;
     }
 
-    /**
-     * Returns a String representation of the element
-     *
-     * @return A String representation
-     * @throws SAML2Exception if something is wrong during conversion
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true, false);
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        return toDocumentFragment(elementName, document, includeNSPrefix, declareNS);
     }
 
-    /**
-     * Returns a String representation of the element
-     *
-     * @param includeNSPrefix Determines whether the namespace qualifier is
-     *                        prepended to the Element when converted
-     * @param declareNS       Determines whether the namespace is declared
-     *                        within the Element.
-     * @return A String representation
-     * @throws SAML2Exception if something is wrong during conversion
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws SAML2Exception {
-        StringBuffer xml = new StringBuffer();
+    DocumentFragment toDocumentFragment(String elementName, Document document, boolean includeNSPrefix,
+            boolean declareNS) {
 
-        String NS = "";
-        String appendNS = "";
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element rootElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                elementName, includeNSPrefix, declareNS);
+        fragment.appendChild(rootElement);
 
-        if (declareNS) {
-            NS = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-        if (includeNSPrefix) {
-            appendNS = SAML2Constants.ASSERTION_PREFIX;
+        if (notOnOrAfter != null) {
+            rootElement.setAttribute(SAML2Constants.NOTONORAFTER, DateUtils.toUTCDateFormat(notOnOrAfter));
         }
 
-        xml.append("<").append(appendNS).append(elementName);
-        xml.append(NS).append(" ");
-        xml.append(getElementValue(includeNSPrefix, declareNS));
-        xml.append("</").append(appendNS).append(elementName).append(">");
+        if (inResponseTo != null) {
+            rootElement.setAttribute(SAML2Constants.INRESPONSETO, inResponseTo);
+        }
 
-        return xml.toString();
+        if (recipient != null) {
+            rootElement.setAttribute("Recipient", recipient);
+        }
+
+        if (notBefore != null) {
+            rootElement.setAttribute(SAML2Constants.NOTBEFORE, DateUtils.toUTCDateFormat(notBefore));
+        }
+
+        if (address != null) {
+            rootElement.setAttribute("Address", address);
+        }
+
+        if (contentType != null) {
+            rootElement.setAttribute("xmlns:xsi", SAML2Constants.NS_XSI);
+            rootElement.setAttribute("xsi:type", contentType);
+        }
+
+        if (!getContent().isEmpty()) {
+            for (Object obj : getContent()) {
+                if (obj instanceof Element) {
+                    rootElement.appendChild(document.importNode((Element) obj, true));
+                } else if (obj instanceof String) {
+                    Document parsedXml = XMLUtils.toDOMDocument((String) obj);
+                    if (parsedXml != null) {
+                        rootElement.appendChild(document.adoptNode(parsedXml.getDocumentElement()));
+                    } else {
+                        logger.error("SubjectConfirmationDataImpl.toDocumentFragment(): content is not well-formed " +
+                                "XML, adding as text node: {}", obj);
+                        rootElement.appendChild(document.createTextNode((String) obj));
+                    }
+                }
+            }
+        }
+
+        return fragment;
     }
 
     /**
@@ -446,7 +467,10 @@ public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
      *                        within the Element.
      * @return A String representation
      * @throws SAML2Exception if something is wrong during conversion
+     * @deprecated Use {@link #toDocumentFragment(Document, boolean, boolean)} instead and then append any additional
+     * content to the first child node.
      */
+    @Deprecated
     protected String getElementValue(boolean includeNSPrefix, boolean declareNS)
             throws SAML2Exception {
         StringBuffer xml = new StringBuffer();

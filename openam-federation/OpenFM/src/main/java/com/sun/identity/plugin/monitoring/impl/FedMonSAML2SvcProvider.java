@@ -24,7 +24,7 @@
  *
  * $Id: FedMonSAML2SvcProvider.java,v 1.3 2009/12/07 19:11:32 bigfatrat Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2022 ForgeRock AS.
  */
 
 /*
@@ -32,6 +32,7 @@
  */
 package com.sun.identity.plugin.monitoring.impl;
 
+import org.forgerock.guice.core.InjectorHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,9 +48,14 @@ public class FedMonSAML2SvcProvider implements FedMonSAML2Svc {
 
     private static Saml2MonitoringService sSAML2Svc;
     private static Logger debug = LoggerFactory.getLogger(FedMonSAML2SvcProvider.class);
+    private final MonitoringServices monitoringServices;
+
+    public FedMonSAML2SvcProvider() {
+        this.monitoringServices = InjectorHolder.getInstance(MonitoringServices.class);
+    }
 
     public void init() {
-        sSAML2Svc = MonitoringServices.getSaml2SvcMBean();
+        sSAML2Svc = monitoringServices.getSaml2SvcMBean();
     }
 
     public void incFedSessionCount() {

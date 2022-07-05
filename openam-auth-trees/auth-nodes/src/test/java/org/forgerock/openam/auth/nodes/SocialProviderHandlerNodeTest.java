@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2021 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -25,6 +25,7 @@ import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.oauth2.OAuth2ScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE;
 import static org.forgerock.openam.auth.nodes.SocialProviderHandlerNode.ALIAS_LIST;
@@ -35,7 +36,10 @@ import static org.forgerock.util.promise.Promises.newResultPromise;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 import java.net.URI;
 import java.util.Collections;
@@ -66,10 +70,10 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.http.CloseableHttpClientHandler;
 import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-import org.forgerock.openam.scripting.ScriptContext;
-import org.forgerock.openam.scripting.ScriptEvaluator;
-import org.forgerock.openam.scripting.SupportedScriptingLanguage;
-import org.forgerock.openam.scripting.service.ScriptConfiguration;
+import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.domain.ScriptingLanguage;
+import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.social.idp.AppleClientConfig;
 import org.forgerock.openam.social.idp.RealmBasedHttpClientHandlerFactory;
 import org.forgerock.openam.social.idp.SocialIdpConfigMapper;
 import org.forgerock.openam.social.idp.OAuth2ClientConfig;
@@ -81,7 +85,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mozilla.javascript.NativeJavaObject;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -147,11 +150,11 @@ public class SocialProviderHandlerNodeTest {
     NativeJavaObject nativeJavaObject;
 
     private SocialProviderHandlerNode node;
-    private ScriptConfiguration scriptConfiguration;
+    private Script script;
 
     @BeforeMethod
     public void setUp() throws Exception {
-        initMocks(this);
+        openMocks(this);
         when(socialIdpConfigMapper.map(realm, testClient)).thenReturn(oAuth2ClientConfiguration);
         when(authModuleHelper.newOAuthClient(any(Realm.class), any(OAuth2ClientConfig.class)))
                 .thenReturn(oAuthClient);
@@ -178,15 +181,15 @@ public class SocialProviderHandlerNodeTest {
                 return json(object());
             }
         }));
-        scriptConfiguration = ScriptConfiguration.builder()
+        script = Script.builder()
                 .setId("1")
-                .setLanguage(SupportedScriptingLanguage.JAVASCRIPT)
+                .setLanguage(ScriptingLanguage.JAVASCRIPT)
                 .setName("test")
                 .setScript("return {};")
-                .setContext(ScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION)
+                .setContext(SOCIAL_IDP_PROFILE_TRANSFORMATION)
                 .build();
-        when(idpConfig.transform()).thenReturn(scriptConfiguration);
-        when(config.script()).thenReturn(scriptConfiguration);
+        when(idpConfig.transform()).thenReturn(script);
+        when(config.script()).thenReturn(script);
         when(config.usernameAttribute()).thenReturn("userName");
         when(config.clientType()).thenReturn(ClientType.BROWSER);
         when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(singletonMap(PROVIDER_NAME, testClient));
@@ -203,7 +206,7 @@ public class SocialProviderHandlerNodeTest {
         when(httpClientHandlerFactory.create(any()))
                 .thenReturn(new CloseableHttpClientHandler(ShutdownManager.getInstance(), Options.defaultOptions()));
         node = new SocialProviderHandlerNode(config, authModuleHelper, providerConfigStore, identityUtils, realm,
-                scriptEvaluator, sessionServiceProvider, idmIntegrationService);
+                __ -> scriptEvaluator, sessionServiceProvider, idmIntegrationService);
     }
 
     @Test
@@ -214,11 +217,11 @@ public class SocialProviderHandlerNodeTest {
 
         Action action = node.process(context);
 
-        Assert.assertTrue(action.sendingCallbacks());
-        Assert.assertEquals(action.callbacks.size(), 1);
-        Assert.assertTrue(action.callbacks.get(0) instanceof RedirectCallback);
-        Assert.assertTrue(((RedirectCallback) action.callbacks.get(0)).getTrackingCookie());
-        Assert.assertEquals(((RedirectCallback) action.callbacks.get(0)).getRedirectUrl(), PROVIDER_REDIRECT);
+        assertTrue(action.sendingCallbacks());
+        assertEquals(action.callbacks.size(), 1);
+        assertTrue(action.callbacks.get(0) instanceof RedirectCallback);
+        assertTrue(((RedirectCallback) action.callbacks.get(0)).getTrackingCookie());
+        assertEquals(((RedirectCallback) action.callbacks.get(0)).getRedirectUrl(), PROVIDER_REDIRECT);
     }
 
     @Test
@@ -235,17 +238,17 @@ public class SocialProviderHandlerNodeTest {
 
         Action action = node.process(context);
 
-        Assert.assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
-        Assert.assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
+        assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
+        assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
                 "testValue");
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).isDefined(ALIAS_LIST)).isTrue();
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList().size()).isEqualTo(1);
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList(String.class).get(0))
                 .isEqualTo(PROVIDER_NAME + "-user");
-        Assert.assertNull(context.request.parameters.get("state"));
-        Assert.assertNull(context.request.parameters.get("code"));
+        assertNull(context.request.parameters.get("state"));
+        assertNull(context.request.parameters.get("code"));
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
@@ -305,11 +308,11 @@ public class SocialProviderHandlerNodeTest {
         ));
         when(nativeJavaObject.unwrap()).thenReturn(objectData);
         when(scriptEvaluator.evaluateScript(any(), any())).thenReturn(nativeJavaObject);
-        ScriptConfiguration scriptConfiguration = ScriptConfiguration.builder().setId("1")
-                .setLanguage(SupportedScriptingLanguage.JAVASCRIPT).setName("test")
+        Script script = Script.builder().setId("1")
+                .setLanguage(ScriptingLanguage.JAVASCRIPT).setName("test")
                 .setScript("return {'attribute1':'value1'};")
-                .setContext(ScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION).build();
-        when(config.script()).thenReturn(scriptConfiguration);
+                .setContext(SOCIAL_IDP_PROFILE_TRANSFORMATION).build();
+        when(config.script()).thenReturn(script);
 
         node.process(context);
 
@@ -336,11 +339,11 @@ public class SocialProviderHandlerNodeTest {
         ));
         when(nativeJavaObject.unwrap()).thenReturn(objectData);
         when(scriptEvaluator.evaluateScript(any(), any())).thenReturn(nativeJavaObject);
-        ScriptConfiguration scriptConfiguration = ScriptConfiguration.builder().setId("1")
-                .setLanguage(SupportedScriptingLanguage.JAVASCRIPT).setName("test")
+        Script script = Script.builder().setId("1")
+                .setLanguage(ScriptingLanguage.JAVASCRIPT).setName("test")
                 .setScript("return {'attribute1':'value1', 'userName':'newValue'};")
-                .setContext(ScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION).build();
-        when(config.script()).thenReturn(scriptConfiguration);
+                .setContext(SOCIAL_IDP_PROFILE_TRANSFORMATION).build();
+        when(config.script()).thenReturn(script);
 
         node.process(context);
 
@@ -366,10 +369,10 @@ public class SocialProviderHandlerNodeTest {
 
         Action action = node.process(context);
 
-        Assert.assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
-        Assert.assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
+        assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
+        assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
                 "testValue");
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).isDefined(ALIAS_LIST)).isTrue();
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList().size()).isEqualTo(2);
@@ -377,8 +380,8 @@ public class SocialProviderHandlerNodeTest {
                 .contains(PROVIDER_NAME + "-user")).isTrue();
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList(String.class)
                 .contains("anotherIdp-user")).isTrue();
-        Assert.assertNull(context.request.parameters.get("state"));
-        Assert.assertNull(context.request.parameters.get("code"));
+        assertNull(context.request.parameters.get("state"));
+        assertNull(context.request.parameters.get("code"));
     }
 
     @Test
@@ -393,10 +396,10 @@ public class SocialProviderHandlerNodeTest {
 
         Action action = node.process(context);
 
-        Assert.assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
-        Assert.assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
+        assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
+        assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
                 "testValue");
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).isDefined(ALIAS_LIST)).isTrue();
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList().size()).isEqualTo(3);
@@ -406,8 +409,8 @@ public class SocialProviderHandlerNodeTest {
                 .contains("anotherIdp-user")).isTrue();
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList(String.class)
                 .contains("existingProvider-bob")).isTrue();
-        Assert.assertNull(context.request.parameters.get("state"));
-        Assert.assertNull(context.request.parameters.get("code"));
+        assertNull(context.request.parameters.get("state"));
+        assertNull(context.request.parameters.get("code"));
     }
 
     @Test
@@ -424,10 +427,10 @@ public class SocialProviderHandlerNodeTest {
 
         Action action = node.process(context);
 
-        Assert.assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
-        Assert.assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
+        assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
+        assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
                 "testValue");
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).isDefined(ALIAS_LIST)).isTrue();
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList().size()).isEqualTo(2);
@@ -435,8 +438,8 @@ public class SocialProviderHandlerNodeTest {
                 .contains(PROVIDER_NAME + "-user")).isTrue();
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList(String.class)
                 .contains("existingProvider-bob")).isTrue();
-        Assert.assertNull(context.request.parameters.get("state"));
-        Assert.assertNull(context.request.parameters.get("code"));
+        assertNull(context.request.parameters.get("state"));
+        assertNull(context.request.parameters.get("code"));
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
@@ -463,14 +466,14 @@ public class SocialProviderHandlerNodeTest {
 
         Action action = node.process(context);
 
-        Assert.assertTrue(action.sendingCallbacks());
-        Assert.assertEquals(action.callbacks.size(), 1);
-        Assert.assertTrue(action.callbacks.get(0) instanceof IdPCallback);
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getClientId(), testClient.clientId());
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getRedirectUri(), testClient.redirectURI());
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getProvider(), testClient.provider());
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getScope(), testClient.scopes());
-        Assert.assertNull(((IdPCallback) action.callbacks.get(0)).getNonce());
+        assertTrue(action.sendingCallbacks());
+        assertEquals(action.callbacks.size(), 1);
+        assertTrue(action.callbacks.get(0) instanceof IdPCallback);
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getClientId(), testClient.clientId());
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getRedirectUri(), testClient.redirectURI());
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getProvider(), testClient.provider());
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getScope(), testClient.scopes());
+        assertNull(((IdPCallback) action.callbacks.get(0)).getNonce());
     }
 
     @Test
@@ -491,15 +494,46 @@ public class SocialProviderHandlerNodeTest {
 
         Action action = node.process(context);
 
-        Assert.assertTrue(action.sendingCallbacks());
-        Assert.assertEquals(action.callbacks.size(), 1);
-        Assert.assertTrue(action.callbacks.get(0) instanceof IdPCallback);
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getClientId(), oidcTestClient.clientId());
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getRedirectUri(), oidcTestClient.redirectURI());
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getProvider(), oidcTestClient.provider());
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getScope(), oidcTestClient.scopes());
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getNonce(), "1234567");
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getAcrValues(), oidcTestClient.acrValues());
+        assertTrue(action.sendingCallbacks());
+        assertEquals(action.callbacks.size(), 1);
+        assertTrue(action.callbacks.get(0) instanceof IdPCallback);
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getClientId(), oidcTestClient.clientId());
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getRedirectUri(), oidcTestClient.redirectURI());
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getProvider(), oidcTestClient.provider());
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getScope(), oidcTestClient.scopes());
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getNonce(), "1234567");
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getAcrValues(), oidcTestClient.acrValues());
+    }
+
+    @Test
+    public void nativeProcessWhenInstructedShouldRequestSDKForUserInfoViaIdPCallback() throws Exception {
+        when(config.clientType()).thenReturn(ClientType.NATIVE);
+        when(providerConfigStore.getProviders(any(Realm.class)))
+                .thenReturn(singletonMap(PROVIDER_NAME, new AppleTestClientRequestingUserInfo()));
+
+        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
+                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
+                new ExternalRequestContext.Builder().build(), emptyList());
+
+        Action action = node.process(context);
+
+        assertEquals(((IdPCallback) action.callbacks.get(0)).isRequestNativeAppForUserInfo(), true);
+    }
+
+    @Test
+    public void defaultNativeProcessShouldNotRequestSDKForUserInfoViaIdPCallback()
+            throws Exception {
+        when(config.clientType()).thenReturn(ClientType.NATIVE);
+        when(providerConfigStore.getProviders(any(Realm.class)))
+                .thenReturn(singletonMap(PROVIDER_NAME, new OidcTestClient()));
+
+        TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
+                json(object(field(SELECTED_IDP, PROVIDER_NAME))),
+                new ExternalRequestContext.Builder().build(), emptyList());
+
+        Action action = node.process(context);
+
+        assertEquals(((IdPCallback) action.callbacks.get(0)).isRequestNativeAppForUserInfo(), false);
     }
 
     @Test
@@ -519,15 +553,15 @@ public class SocialProviderHandlerNodeTest {
 
         Action action = node.process(context);
 
-        Assert.assertTrue(action.sendingCallbacks());
-        Assert.assertEquals(action.callbacks.size(), 1);
-        Assert.assertTrue(action.callbacks.get(0) instanceof IdPCallback);
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getClientId(), oidcTestClient.clientId());
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getRedirectUri(), oidcTestClient.redirectURI());
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getProvider(), oidcTestClient.provider());
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getScope(), oidcTestClient.scopes());
-        Assert.assertNull(((IdPCallback) action.callbacks.get(0)).getNonce());
-        Assert.assertEquals(((IdPCallback) action.callbacks.get(0)).getAcrValues(), oidcTestClient.acrValues());
+        assertTrue(action.sendingCallbacks());
+        assertEquals(action.callbacks.size(), 1);
+        assertTrue(action.callbacks.get(0) instanceof IdPCallback);
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getClientId(), oidcTestClient.clientId());
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getRedirectUri(), oidcTestClient.redirectURI());
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getProvider(), oidcTestClient.provider());
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getScope(), oidcTestClient.scopes());
+        assertNull(((IdPCallback) action.callbacks.get(0)).getNonce());
+        assertEquals(((IdPCallback) action.callbacks.get(0)).getAcrValues(), oidcTestClient.acrValues());
     }
 
     @Test
@@ -539,7 +573,7 @@ public class SocialProviderHandlerNodeTest {
         IdPCallback callback = new IdPCallback(testClient.provider(),
                 testClient.clientId(),
                 testClient.redirectURI(),
-                testClient.scopes(), null, null, null, null);
+                testClient.scopes(), null, null, null, null, false);
 
         callback.setTokenType("id_token");
         callback.setToken("id_token_value");
@@ -553,10 +587,10 @@ public class SocialProviderHandlerNodeTest {
 
         Action action = node.process(context);
 
-        Assert.assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
-        Assert.assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
+        assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
+        assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
                 "testValue");
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).isDefined(ALIAS_LIST)).isTrue();
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList().size()).isEqualTo(1);
@@ -573,7 +607,7 @@ public class SocialProviderHandlerNodeTest {
         IdPCallback callback = new IdPCallback(testClient.provider(),
                 testClient.clientId(),
                 testClient.redirectURI(),
-                testClient.scopes(), null, null, null, null);
+                testClient.scopes(), null, null, null, null, false);
 
         callback.setTokenType("authorization_code");
         callback.setToken("form_post_entry");
@@ -594,10 +628,10 @@ public class SocialProviderHandlerNodeTest {
         //If IdPCallback does not provide the code, it gets the code from request parameter
         assertThat(params.getValue().get("authorization_code")).contains("dummy_auth_code");
 
-        Assert.assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
-        Assert.assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
-        Assert.assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
+        assertTrue(action.transientState.isDefined(SOCIAL_OAUTH_DATA));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).isDefined(PROVIDER_NAME));
+        assertTrue(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).isDefined("testData"));
+        assertEquals(action.transientState.get(SOCIAL_OAUTH_DATA).get(PROVIDER_NAME).get("testData").asString(),
                 "testValue");
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).isDefined(ALIAS_LIST)).isTrue();
         assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get(ALIAS_LIST).asList().size()).isEqualTo(1);
@@ -631,8 +665,8 @@ public class SocialProviderHandlerNodeTest {
         }
 
         @Override
-        public ScriptConfiguration transform() {
-            return scriptConfiguration;
+        public Script transform() {
+            return script;
         }
 
         @Override
@@ -736,6 +770,19 @@ public class SocialProviderHandlerNodeTest {
         @Override
         public String redirectAfterFormPostURI() {
             return null;
+        }
+
+        @Override
+        public String claims() {
+            return "";
+        }
+    }
+
+    private class AppleTestClientRequestingUserInfo extends OidcTestClient implements AppleClientConfig {
+
+        @Override
+        public boolean requestNativeAppForUserInfo() {
+            return true;
         }
     }
 }

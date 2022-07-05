@@ -24,13 +24,15 @@
  *
  * $Id: SAML2Constants.java,v 1.44 2009/11/24 21:53:02 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
 import org.forgerock.openam.annotations.SupportedAll;
 
 import com.sun.identity.cot.COTConstants;
+import com.sun.identity.saml2.plugins.IDPAttributeMapper;
+import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 
 /**
  * This interface defines constants common to all SAMLv2 elements.
@@ -1670,4 +1672,41 @@ public interface SAML2Constants {
      * The property name for setting custom SAML2 credential resolver implementation.
      */
     String SAML2_CREDENTIAL_RESOLVER_PROPERTY = "org.forgerock.openam.saml2.credential.resolver.class";
+
+    String IDP_ATTRIBUTE_MAPPER_SCRIPT = "idpAttributeMapperScript";
+
+    /**
+     * Identity Provider Adapter Script.
+     */
+    String IDP_ADAPTER_SCRIPT = "idpAdapterScript";
+
+    /** Property name used for binding the scripted {@link IDPAttributeMapper} to the guice module.
+            */
+    String SCRIPTED_IDP_ATTRIBUTE_MAPPER = "SCRIPTED_IDP_ATTRIBUTE_MAPPER";
+
+    /**
+     * Property name used for binding the scripted {@link SAML2IdentityProviderAdapter} to the guice module.
+     */
+    String SCRIPTED_IDP_ADAPTER = "SCRIPTED_IDP_ADAPTER";
+
+    /**
+     * Constants for SAML2 scripted plugins
+     */
+    public static class ScriptParams {
+        public static final String LOGGER = "logger";
+        public static final String SESSION = "session";
+        public static final String HOSTED_ENTITYID = "hostedEntityId";
+        public static final String REMOTE_ENTITY = "remoteEntityId";
+        public static final String REALM = "realm";
+        public static final String REQUEST = "request";
+        public static final String RESPONSE = "response";
+        public static final String AUTHN_REQUEST = "authnRequest";
+        public static final String REQ_ID = "reqId";
+        public static final String RELAY_STATE = "relayState";
+        public static final String FAULT_CODE = "faultCode";
+        public static final String FAULT_DETAIL = "faultDetail";
+        public static final String SAML2_RESPONSE = "res";
+        public static final String IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER = "idpAttributeMapperScriptHelper";
+        public static final String IDP_ADAPTER_SCRIPT_HELPER = "idpAdapterScriptHelper";
+    }
 }

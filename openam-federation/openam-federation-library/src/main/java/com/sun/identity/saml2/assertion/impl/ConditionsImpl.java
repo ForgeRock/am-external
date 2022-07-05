@@ -24,11 +24,14 @@
  *
  * $Id: ConditionsImpl.java,v 1.3 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.assertion.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -40,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -50,7 +54,6 @@ import com.sun.identity.saml2.assertion.Condition;
 import com.sun.identity.saml2.assertion.Conditions;
 import com.sun.identity.saml2.assertion.OneTimeUse;
 import com.sun.identity.saml2.assertion.ProxyRestriction;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.shared.DateUtils;
@@ -64,10 +67,10 @@ public class ConditionsImpl implements Conditions {
 
     private static final Logger logger = LoggerFactory.getLogger(ConditionsImpl.class);
     private Date notOnOrAfter;
-    private List<Condition> conditions = new ArrayList();
-    private List<AudienceRestriction> audienceRestrictions = new ArrayList();
-    private List<OneTimeUse> oneTimeUses = new ArrayList();
-    private List<ProxyRestriction> proxyRestrictions = new ArrayList();
+    private List<Condition> conditions = new ArrayList<>();
+    private List<AudienceRestriction> audienceRestrictions = new ArrayList<>();
+    private List<OneTimeUse> oneTimeUses = new ArrayList<>();
+    private List<ProxyRestriction> proxyRestrictions = new ArrayList<>();
     private Date notBefore;
     private boolean isMutable = true;
 
@@ -396,84 +399,42 @@ public class ConditionsImpl implements Conditions {
         return false;
     }
 
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace 
-    *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is 
-    *        declared within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-        StringBuffer sb = new StringBuffer(2000);
-        String NS = "";
-        String appendNS = "";
-        if (declareNS) {
-            NS = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-        if (includeNSPrefix) {
-            appendNS = SAML2Constants.ASSERTION_PREFIX;
-        }
-        sb.append("<").append(appendNS).append(CONDITIONS_ELEMENT).append(NS);
-        String str = null;
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element conditionsElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                CONDITIONS_ELEMENT, includeNSPrefix, declareNS);
+        fragment.appendChild(conditionsElement);
+
         if (notBefore != null) {
-            str = DateUtils.toUTCDateFormat(notBefore);
-            sb.append(" ").append(NOT_BEFORE_ATTR).append("=\"").
-                append(str).append("\"");
-        } 
+            conditionsElement.setAttribute(NOT_BEFORE_ATTR, DateUtils.toUTCDateFormat(notBefore));
+        }
         if (notOnOrAfter != null) {
-            str = DateUtils.toUTCDateFormat(notOnOrAfter);
-            sb.append(" ").append(NOT_ON_OR_AFTER_ATTR).append("=\"").
-                append(str).append("\"");
-        } 
-        sb.append(">\n");
-        int length = 0;
+            conditionsElement.setAttribute(NOT_ON_OR_AFTER_ATTR, DateUtils.toUTCDateFormat(notOnOrAfter));
+        }
         if (conditions != null) {
-            length = conditions.size();
-            for (int i = 0; i < length; i++) {
-                Condition condition = (Condition)conditions.get(i);
-                sb.append(condition.toXMLString(includeNSPrefix, false));
+            for (Condition condition : conditions) {
+                conditionsElement.appendChild(condition.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
         if (audienceRestrictions != null) {
-            length = audienceRestrictions.size();
-            for (int i = 0; i < length; i++) {
-                AudienceRestriction ar = 
-                    (AudienceRestriction)audienceRestrictions.get(i);
-                sb.append(ar.toXMLString(includeNSPrefix, false));
+            for (AudienceRestriction audienceRestriction : audienceRestrictions) {
+                conditionsElement.appendChild(audienceRestriction.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
         if (oneTimeUses != null) {
-            length = oneTimeUses.size();
-            for (int i = 0; i < length; i++) {
-                OneTimeUse ar = 
-                    (OneTimeUse)oneTimeUses.get(i);
-                sb.append(ar.toXMLString(includeNSPrefix, false));
+            for (OneTimeUse oneTimeUse : oneTimeUses) {
+                conditionsElement.appendChild(oneTimeUse.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
         if (proxyRestrictions != null) {
-            length = proxyRestrictions.size();
-            for (int i = 0; i < length; i++) {
-                ProxyRestriction pr = 
-                    (ProxyRestriction)proxyRestrictions.get(i);
-                sb.append(pr.toXMLString(includeNSPrefix, false));
+            for (ProxyRestriction proxyRestriction : proxyRestrictions) {
+                conditionsElement.appendChild(proxyRestriction.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
-        sb.append("</").append(appendNS).append(CONDITIONS_ELEMENT).
-           append(">\n");
-        return sb.toString();
-    }
 
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception {
-        return this.toXMLString(true, false);
+        return fragment;
     }
 
    /**

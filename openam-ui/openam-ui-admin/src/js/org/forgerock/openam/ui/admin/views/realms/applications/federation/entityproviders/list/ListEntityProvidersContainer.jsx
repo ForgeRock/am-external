@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
 import { forEach, isEmpty, isEqual, keyBy, map, values } from "lodash";
@@ -72,7 +72,7 @@ class ListEntityProvidersContainer extends Component {
         });
     };
 
-    handleEdit = ({ entityId, location, roles }) => {
+    handleEdit = (e, { entityId, location, roles }) => {
         const realm = this.props.router.params[0];
         Router.routeTo(Router.configuration.routes.realmsApplicationsFederationEntityProvidersEdit, {
             args: map([realm, location, roles[0], entityId], encodeURIComponent),

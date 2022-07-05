@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
@@ -167,7 +167,8 @@ public class OptOutMultiFactorAuthenticationNode extends SingleOutcomeNode {
      */
     @VisibleForTesting
     AMIdentity getIdentityFromIdentifier(TreeContext context) throws NodeProcessException {
-        Optional<AMIdentity> userIdentity = getAMIdentity(context, identityUtils, coreWrapper);
+        Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
+                identityUtils, coreWrapper);
         if (userIdentity.isEmpty()) {
             throw new NodeProcessException("Failed to get the identity object");
         }

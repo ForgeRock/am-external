@@ -254,6 +254,13 @@
                 "type": "string",
                 "default": "com.sun.identity.saml2.plugins.DefaultIDPAttributeMapper"
               },
+              "attributeMapperScript": {
+                "attributeKey": "idpAttributeMapperScript",
+                "title": "Attribute Mapper Script",
+                "description": "Script for mapping attributes. If a script is not selected, the specified attribute mapper Java Class will be used.",
+                "type": "string",
+                "default": "[Empty]"
+              },
               "attributeMap": {
                 "title": "Attribute Map",
                 "description": "This mapping is the configuration used by the Attribute Mapper. The mapping should be defined as [NameFormatURI|]SAML ATTRIBUTE NAME=PROFILE ATTRIBUTE NAME in assertion. Example: EmailAddress=mail, Address=postaladdress, urn:oasis:names:tc:SAML:2.0:attrname-format:uri|urn:mace:dir:attribute-def:cn=cn The mapper also allows for static values to be defined. To define a static value, enclose the profile attribute name in double quotes. Example: partnerID=\"staticPartnerIDValue\", urn:oasis:names:tc:SAML:2.0:attrname-format:uri|nameID=\"staticNameIDValue\". To flag an attribute as being a binary value and have its value Base64 encoded, add ;binary to the end of the profile attribute name. Example: photo=photo;binary, urn:oasis:names:tc:SAML:2.0:attrname-format:uri|photo=photo;binary",
@@ -588,6 +595,13 @@
                 "attributeKey": "idpAdapter",
                 "title": "IDP Adapter Class",
                 "type": "string"
+              },
+              "idpAdapterScript": {
+                "attributeKey": "idpAdapterScript",
+                "title": "IDP Adapter Script",
+                "description": "Scripted plugin for IDP Adapter. If a script is not selected, the specified IDP Adapter Java Class will be used.",
+                "type": "string",
+                "default": "[Empty]"
               }
             }
           }

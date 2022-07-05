@@ -10,7 +10,7 @@
     "_id" : "3990ce1f-cce6-435b-ae1c-f138e89411c1",
     "identityAttribute" : "userName",
     "identityResource": "managed/user",
-    "patchAsObject" : true,
+    "patchAsObject" : false,
     "ignoredFields" : ["userName"],
     "_type" : {
       "_id" : "PatchObjectNode",

@@ -13,7 +13,7 @@
     "test": "mocha-webpack --opts config/mocha-webpack/configuration.opts"
   },
   "dependencies": {
-    "@forgerock/crest-js": "2.1.10",
+    "@forgerock/crest-js": "2.1.11",
     "@forgerock/javascript-sdk": "2.2.0",
     "ajv": "6.12.3",
     "backbone": "1.4.0",
@@ -29,12 +29,12 @@
     "debug": "3.2.6",
     "font-awesome": "4.7.0",
     "form2js": "1.0.0",
-    "i18next": "15.0.9",
-    "i18next-browser-languagedetector": "3.0.3",
+    "i18next": "21.6.14",
+    "i18next-browser-languagedetector": "6.1.4",
     "jquery": "3.5.1",
     "jquery-i18next": "1.2.1",
     "lodash": "4.17.21",
-    "moment": "2.24.0",
+    "moment": "2.29.3",
     "moment-duration-format": "2.3.2",
     "moment-timezone": "0.4.1",
     "qrcode-generator": "1.4.4",
@@ -44,8 +44,8 @@
     "redux-actions": "2.6.5",
     "selectize": "0.12.6",
     "spin.js": "2.3.2",
-    "urijs": "1.19.10",
     "ua-parser-js": "0.7.30",
+    "urijs": "1.19.11",
     "whatwg-fetch": "3.0.0"
   },
   "devDependencies": {
@@ -103,7 +103,7 @@
     "webpack": "4.39.3",
     "webpack-bundle-analyzer": "3.4.1",
     "webpack-cli": "3.3.10",
-    "webpack-dev-server": "3.11.0",
+    "webpack-dev-server": "3.11.3",
     "webpack-log": "2.0.0",
     "webpack-merge": "4.2.2",
     "webpack-node-externals": "1.7.2",
@@ -111,10 +111,13 @@
   },
   "resolutions": {
     "less/request/har-validator/ajv": "6.12.3",
-    "selectize/sifter/optimist/minimist": "0.2.1",
-    "**/**/json5/minimist": "1.2.5",
-    "**/**/mkdirp/minimist": "1.2.5",
-    "**/**/rc/minimist": "1.2.5",
+    "selectize/sifter/async": "3.2.3",
+    "selectize/sifter/optimist/minimist": "1.2.6",
+    "webpack-dev-server/portfinder/async": "3.2.3",
+    "**/moment": "2.29.3",
+    "**/**/json5/minimist": "1.2.6",
+    "**/**/mkdirp/minimist": "1.2.6",
+    "**/**/rc/minimist": "1.2.6",
     "**/**/underscore": "1.12.1",
     "**/**/path-parse": "1.0.7"
   }

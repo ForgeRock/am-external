@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2018 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.push;
@@ -51,6 +51,8 @@ public final class Constants {
     static final String LOADBALANCER_KEY = "l";
     /** The key for the time to live. */
     static final String TIME_TO_LIVE_KEY = "t";
+    /** The key for the time interval. */
+    static final String TIME_INTERVAL = "i";
 
     /**
      * STATES.

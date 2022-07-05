@@ -24,17 +24,21 @@
  *
  * $Id: NameIDPolicyImpl.java,v 1.5 2008/08/31 05:49:48 bina Exp $
  *
- * Portions Copyrighted 2016-2019 ForgeRock AS.
+ * Portions Copyrighted 2016-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
-import org.forgerock.openam.utils.StringUtils;
+import static com.sun.identity.saml2.common.SAML2Constants.NAMEID_POLICY;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static org.forgerock.openam.utils.StringUtils.isNotEmpty;
+
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.protocol.NameIDPolicy;
@@ -170,74 +174,31 @@ public class NameIDPolicyImpl implements NameIDPolicy {
 	}
 	return allowCreate.booleanValue();
     }
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @return String representation of this Object.
-     * @throws SAML2Exception if cannot create String object.
-     */
-    public String toXMLString() throws SAML2Exception {
-	return toXMLString(true,false);
-    }
-    
-    /** 
-     * Returns a String representation
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *	      qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *	      within the Element.
-     * @return String representation of this Object.
-     * @throws SAML2Exception if cannot create String object.
-     */
-    
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-    throws SAML2Exception {
-	StringBuffer xmlString = new StringBuffer(150);
-	xmlString.append(SAML2Constants.START_TAG);
-	if (includeNSPrefix) {
-            xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-	}
-        xmlString.append(SAML2Constants.NAMEIDPOLICY)
-		 .append(SAML2Constants.SPACE);
 
-	if (declareNS) {
-            xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
+	@Override
+	public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+			throws SAML2Exception {
+    	DocumentFragment fragment = document.createDocumentFragment();
+    	Element policyElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+				NAMEID_POLICY, includeNSPrefix, declareNS);
+    	fragment.appendChild(policyElement);
+
+		if (isNotEmpty(format)) {
+			policyElement.setAttribute(FORMAT, format);
+		}
+
+		if (isNotEmpty(spNameQualifier)) {
+			policyElement.setAttribute(SPNAMEQUALIFIER, spNameQualifier);
+		}
+
+		if (allowCreate != null) {
+			policyElement.setAttribute(ALLOWCREATE, allowCreate.toString());
+		}
+
+		return fragment;
 	}
 
-	if (StringUtils.isNotEmpty(format)) {
-	    xmlString.append(SAML2Constants.SPACE)
-		     .append(FORMAT).append(SAML2Constants.EQUAL)
-		     .append(SAML2Constants.QUOTE)
-		     .append(format).append(SAML2Constants.QUOTE);
-	}
-
-	if (StringUtils.isNotEmpty(spNameQualifier)) {
-	    xmlString.append(SAML2Constants.SPACE)
-	             .append(SPNAMEQUALIFIER).append(SAML2Constants.EQUAL)
-		     .append(SAML2Constants.QUOTE)
-		     .append(spNameQualifier)
-	   	     .append(SAML2Constants.QUOTE);
-	}
-
-	if (allowCreate != null) {
-	    xmlString.append(SAML2Constants.SPACE)
-		     .append(ALLOWCREATE).append(SAML2Constants.EQUAL)
-		     .append(SAML2Constants.QUOTE)
-		     .append(allowCreate.toString())
-	   	     .append(SAML2Constants.QUOTE);
-	}
-
-	xmlString.append(SAML2Constants.END_TAG)
-		 .append(SAML2Constants.SAML2_END_TAG)
-		 .append(SAML2Constants.NAMEIDPOLICY)
-		 .append(SAML2Constants.END_TAG);
-
-	return xmlString.toString();
-    }
-        
-    /** 
+	/**
      * Makes this object immutable. 
      */
     public void makeImmutable() {

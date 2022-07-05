@@ -24,7 +24,7 @@
  *
  * $Id: Artifact.java,v 1.2 2008/06/25 05:47:55 qcheng Exp $
  *
- * Portions Copyrighted 2016-2019 ForgeRock AS.
+ * Portions Copyrighted 2016-2021 ForgeRock AS.
  */
 
 
@@ -34,7 +34,7 @@ package com.sun.identity.saml2.protocol;
 import org.forgerock.openam.annotations.SupportedAll;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 import com.sun.identity.saml2.protocol.impl.ArtifactImpl;
 
 /**
@@ -50,7 +50,7 @@ import com.sun.identity.saml2.protocol.impl.ArtifactImpl;
 
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
         defaultImpl = ArtifactImpl.class)
-public interface Artifact {
+public interface Artifact extends XmlSerializable {
 
     /**
      * Returns the artifact.
@@ -87,28 +87,4 @@ public interface Artifact {
      *		artifact.
      */
     public int getEndpointIndex();
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *		By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString()
-	throws SAML2Exception;
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *		prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *		within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString(boolean includeNS, boolean declareNS)
-	throws SAML2Exception;
-
 }

@@ -24,10 +24,15 @@
  *
  * $Id: SubjectImpl.java,v 1.3 2008/06/25 05:48:13 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.xacml.context.impl;
+
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.SUBJECT;
+import static com.sun.identity.xacml.common.XACMLConstants.SUBJECT_CATEGORY;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -37,10 +42,12 @@ import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -69,7 +76,7 @@ import com.sun.identity.xacml.context.Subject;
 @SupportedAll
 public class SubjectImpl implements Subject {
     private static final Logger logger = LoggerFactory.getLogger(SubjectImpl.class);
-    private List  attributes ;
+    private List<Attribute> attributes ;
     private URI subjectCategory;
     private Attribute subjectCategoryAttribute;
     private boolean isMutable = true;
@@ -152,7 +159,7 @@ public class SubjectImpl implements Subject {
                     String attrChildName = child.getLocalName();
                     if (attrChildName.equals(XACMLConstants.ATTRIBUTE)) {
                         if (this.attributes == null) {
-                        this.attributes = new ArrayList();
+                        this.attributes = new ArrayList<>();
                         }
                         Attribute attribute = factory.getInstance().
                                 createAttribute((Element)child);
@@ -211,7 +218,7 @@ public class SubjectImpl implements Subject {
         }
         if (attributes != null &&  !attributes.isEmpty()) {
             if (this.attributes == null) {
-                this.attributes = new ArrayList();
+                this.attributes = new ArrayList<>();
             }
             this.attributes.addAll(attributes);
         }
@@ -275,73 +282,28 @@ public class SubjectImpl implements Subject {
         }*/
     }
 
-   /**
-    * Returns a <code>String</code> representation of this object
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException
-    {
-        StringBuffer sb = new StringBuffer(2000);
-        StringBuffer NS = new StringBuffer(100);
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element subjectElement = XMLUtils.createRootElement(document, CONTEXT_NS_PREFIX, CONTEXT_NS_URI, SUBJECT,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(subjectElement);
 
-        //TODO: remove the 2 following line
-        includeNSPrefix = false;
-        declareNS = false;
-
-        String appendNS = "";
-        if (declareNS) {
-            NS.append(XACMLConstants.CONTEXT_NS_DECLARATION)
-                    .append(XACMLConstants.SPACE);
-            NS.append(XACMLConstants.XSI_NS_URI)
-                    .append(XACMLConstants.SPACE)
-                    .append(XACMLConstants.CONTEXT_SCHEMA_LOCATION);
-        }
-        if (includeNSPrefix) {
-            appendNS = XACMLConstants.CONTEXT_NS_PREFIX + ":";
-        }
-        sb.append("<").append(appendNS).append(XACMLConstants.SUBJECT)
-                .append(NS);
         if (subjectCategory != null) {
-            sb.append(" ").append(XACMLConstants.SUBJECT_CATEGORY).append("=");
-            sb.append("\"").append(subjectCategory.toString()).append("\"");
+            subjectElement.setAttribute(SUBJECT_CATEGORY, subjectCategory.toString());
         }
-        sb.append(">");
-        int length = 0;
+
         if (attributes != null) {
-            sb.append("\n");
-            length = attributes.size();
-            for (int i = 0; i < length; i++) {
-                Attribute attr = (Attribute)attributes.get(i);
-                sb.append(attr.toXMLString(includeNSPrefix, false));
+            for (Attribute attribute : attributes) {
+                subjectElement.appendChild(attribute.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
-     /*   if (needToCreateSubjectCategory && subjectCategoryAttribute != null) {
-                sb.append(subjectCategoryAttribute.toXMLString(
-                    includeNSPrefix, false));
-        }// its already covered in the previous list of attrs.
-      */
-        sb.append("</").append(appendNS).append(XACMLConstants.SUBJECT);
-        sb.append(">\n");
-        return sb.toString();
+
+        return fragment;
     }
 
-   /**
-    * Returns a string representation of this object
-    *
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException {
-        return toXMLString(true, false);
-    }
-
-   /**
+    /**
     * Makes the object immutable
     */
     public void makeImmutable() {}

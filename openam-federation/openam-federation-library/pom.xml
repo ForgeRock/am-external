@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2011-2021 ForgeRock AS. All Rights Reserved
  * 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-federation</artifactId>
-        <version>7.1.2</version>
+        <version>7.2.0</version>
     </parent>
 
     <!-- Component Definition -->
@@ -78,6 +78,31 @@
                             </includes>
                             <reuseForks>false</reuseForks>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>jslint-maven-plugin</artifactId>
+                <configuration>
+                    <disallowInsecureCharsInRegExp>false</disallowInsecureCharsInRegExp>
+                    <assumeConsoleAlertEtc>true</assumeConsoleAlertEtc>
+                    <!-- variables bound by rhino -->
+                    <predefinedVars>logger,idRepository,username,realm,authState,FAILED,SUCCESS,clientScriptOutputData,
+                        sharedState,requestHeaders,existingSession,fontDetector,output,autoSubmitDelay,submit,java,
+                        org,requestParameters,
+                        JavaImporter,httpClient,rawProfile,normalizedProfile,selectedIdp,identity,scopes,
+                        claimObjects,requestedTypedClaims,accessToken,token,session</predefinedVars>
+                    <excludes>
+                        <exclude>**/saml2-idp-attribute-mapper.js</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jslint</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
@@ -147,6 +172,9 @@
                     <include>*</include>
                 </includes>
                 <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>${basedir}/src/main/js</directory>
             </resource>
         </resources>
     </build>
@@ -230,11 +258,6 @@
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>external</groupId>
-            <artifactId>esapiport</artifactId>
         </dependency>
 
         <dependency>

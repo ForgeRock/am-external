@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -29,16 +29,18 @@ const CookieHelper = {};
  * @param {string} [path] - cookie path.
  * @param {string|Array<string>} [domain] - cookie domain(s).
  * @param {boolean} [secure] - is cookie secure.
+ * @param {string} [samesite] - samesite value.
  * @returns {string} created cookie.
  */
-CookieHelper.createCookie = function (name, value, expirationDate, path, domain, secure) {
+CookieHelper.createCookie = function (name, value, expirationDate, path, domain, secure, samesite) {
     const expirationDatePart = expirationDate ? `;expires=${expirationDate.toGMTString()}` : "";
     const nameValuePart = `${name}=${value}`;
     const pathPart = path ? `;path=${path}` : "";
     const domainPart = domain ? `;domain=${domain}` : "";
     const securePart = secure ? ";secure" : "";
+    const samesitePart = samesite ? `;samesite=${samesite}` : "";
 
-    return nameValuePart + expirationDatePart + pathPart + domainPart + securePart;
+    return nameValuePart + expirationDatePart + pathPart + domainPart + securePart + samesitePart;
 };
 
 /**
@@ -49,17 +51,18 @@ CookieHelper.createCookie = function (name, value, expirationDate, path, domain,
  * @param {string} [path] - cookie path.
  * @param {string|Array<string>} [domains] - cookie domain(s). Use empty array for creating host-only cookies.
  * @param {boolean} [secure] - is cookie secure.
+ * @param {string} [samesite] - samesite value.
  */
-CookieHelper.setCookie = function (name, value, expirationDate, path, domains, secure) {
+CookieHelper.setCookie = function (name, value, expirationDate, path, domains, secure, samesite) {
     if (!_.isArray(domains)) {
         domains = [domains];
     }
 
     if (domains.length === 0) {
-        document.cookie = CookieHelper.createCookie(name, value, expirationDate, path, undefined, secure);
+        document.cookie = CookieHelper.createCookie(name, value, expirationDate, path, undefined, secure, samesite);
     } else {
         _.each(domains, (domain) => {
-            document.cookie = CookieHelper.createCookie(name, value, expirationDate, path, domain, secure);
+            document.cookie = CookieHelper.createCookie(name, value, expirationDate, path, domain, secure, samesite);
         });
     }
 };
@@ -86,11 +89,13 @@ CookieHelper.getCookie = function (name) {
  * @param {string} name - cookie name.
  * @param {string} [path] - cookie path.
  * @param {string|Array<string>} [domains] - cookie domain(s).
+ * @param {boolean} [secure] - is cookie secure.
+ * @param {string} [samesite] - samesite value.
  */
-CookieHelper.deleteCookie = function (name, path, domains) {
+CookieHelper.deleteCookie = function (name, path, domains, secure, samesite) {
     const date = new Date();
     date.setTime(date.getTime() + (-1 * 24 * 60 * 60 * 1000));
-    CookieHelper.setCookie(name, "", date, path, domains);
+    CookieHelper.setCookie(name, "", date, path, domains, secure, samesite);
 };
 
 /**
@@ -99,10 +104,22 @@ CookieHelper.deleteCookie = function (name, path, domains) {
  */
 CookieHelper.cookiesEnabled = function () {
     this.setCookie("cookieTest", "test");
-    if (!this.getCookie("cookieTest")) {
+    if (this.getCookie("cookieTest")) {
+        this.deleteCookie("cookieTest");
+        return true;
+    }
+    const secure = (location.protocol === "https:");
+    this.setCookie("cookieTest", "test", undefined, undefined, undefined, secure, "None");
+    if (this.getCookie("cookieTest")) {
+        this.deleteCookie("cookieTest", undefined, undefined, secure, "None");
+        return true;
+    }
+    const cookieEnabled = (navigator && navigator.cookieEnabled);
+    if (!cookieEnabled) {
+        console.warn("Browser does not have cookies enabled");
         return false;
     }
-    this.deleteCookie("cookieTest");
+    console.warn("Browser fails to set cookies but cookies are enabled.");
     return true;
 };
 

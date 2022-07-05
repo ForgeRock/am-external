@@ -24,11 +24,10 @@
  *
  * $Id: StatusResponse.java,v 1.2 2008/06/25 05:47:58 qcheng Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.protocol;
 
-import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Set;
 
@@ -38,6 +37,7 @@ import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 import com.sun.identity.saml2.protocol.impl.StatusResponseImpl;
 
 /**
@@ -72,7 +72,7 @@ import com.sun.identity.saml2.protocol.impl.StatusResponseImpl;
 @SupportedAll
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
         defaultImpl = StatusResponseImpl.class)
-public interface StatusResponse {
+public interface StatusResponse extends XmlSerializable {
     
     /**
      * Returns the value of the version property.
@@ -266,31 +266,6 @@ public interface StatusResponse {
      * @throws SAML2Exception if it could not sign the StatusResponse.
      */
     void sign(SigningConfig signingConfig) throws SAML2Exception;
-        
-    /**
-     * Returns the <code>StatusResponse</code> in an XML document String format
-     * based on the <code>StatusResponse</code> schema described above.
-     *
-     * @return An XML String representing the <code>StatusResponse</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString() throws SAML2Exception;
-    
-    /**
-     * Returns the <code>StatusResponse</code> in an XML document String format
-     * based on the <code>StatusResponse</code> schema described above.
-     * @param includeNSPrefix Determines whether or not the namespace qualifier 
-     * is prepended to the Element when converted
-     *
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return A XML String representing the <code>StatusResponse</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-    throws SAML2Exception;
     
     /**
      * Makes the object immutable

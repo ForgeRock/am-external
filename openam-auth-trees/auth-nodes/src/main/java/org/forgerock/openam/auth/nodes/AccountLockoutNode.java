@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -28,6 +28,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
@@ -102,6 +103,7 @@ public class AccountLockoutNode extends SingleOutcomeNode {
      *         2. An error happens when AM is setting the user as inactive.
      */
     private void lockoutUserAccount(TreeContext context) throws NodeProcessException {
+        NodeState nodeState = context.getStateFor(this);
         String username = context.sharedState.get(USERNAME).asString();
         ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
         if (username == null || username.isEmpty()) {
@@ -116,7 +118,7 @@ public class AccountLockoutNode extends SingleOutcomeNode {
         logger.debug("username to lockout {}", username);
         logger.debug("realm {}", realm);
 
-        Optional<AMIdentity> userIdentity = getAMIdentity(context, identityUtils,  coreWrapper);
+        Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, nodeState, identityUtils,  coreWrapper);
         if (userIdentity.isEmpty()) {
             logger.debug("Could not find the identity with username {} in the realm {}", username, realm);
             throw new NodeProcessException(bundle.getString("identity.not.found"));

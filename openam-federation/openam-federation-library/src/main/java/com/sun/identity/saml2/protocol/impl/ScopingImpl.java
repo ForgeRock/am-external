@@ -24,10 +24,15 @@
  *
  * $Id: ScopingImpl.java,v 1.5 2009/03/12 20:32:41 huacui Exp $
  *
- * Portions Copyrighted 2014-2019 ForgeRock AS.
+ * Portions Copyrighted 2014-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.SCOPING;
+import static org.forgerock.openam.utils.CollectionUtils.isNotEmpty;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,6 +41,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -173,77 +179,31 @@ public class ScopingImpl implements Scoping {
 	}
     }
 
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @return a  String representation of this Object.
-     * @throws SAML2Exception if cannot create String object
-     */
-    public String toXMLString() throws SAML2Exception {
-	return toXMLString(true,false);
-    }
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
 
-    /**
-     * Returns a String representation
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *	      qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *	      within the Element.
-     * @return the String representation of this Object.
-     * @throws SAML2Exception if String object cannot be created.
-     */
+        if (idpList != null || isNotEmpty(requesterIDList) || proxyCount != null) {
+            Element scopingElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+                    SCOPING, includeNSPrefix, declareNS);
+            fragment.appendChild(scopingElement);
 
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-	throws SAML2Exception {
-
-	String xmlElementString = null;
-        if (idpList != null || (requesterIDList != null && !requesterIDList.isEmpty()) || proxyCount != null) {
-
-	    validateProxyCount(proxyCount);
-	    StringBuilder xmlString = new StringBuilder(300);
-	    xmlString.append(SAML2Constants.START_TAG);
-	    if (includeNSPrefix) {
-		xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-	    }
-	    xmlString.append(SAML2Constants.SCOPING);
-
-	    if (declareNS) {
-                xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
-	    }
-
-	    if (proxyCount != null) {
-                     xmlString.append(SAML2Constants.SPACE)
-			      .append(PROXYCOUNT).append(SAML2Constants.EQUAL)
-			      .append(SAML2Constants.QUOTE)
-			      .append(proxyCount.intValue())
-			      .append(SAML2Constants.QUOTE);
-	    }
-	    xmlString.append(SAML2Constants.END_TAG)
-		     .append(SAML2Constants.NEWLINE);
-
-
-	    if (idpList != null) {
-		xmlString.append(idpList.toXMLString(includeNSPrefix,declareNS))
-			 .append(SAML2Constants.NEWLINE);
-	    }
-
-
-	    if (requesterIDList != null) {
-                for (RequesterID reqID : requesterIDList) {
-                    String reqIDStr = reqID.toXMLString(includeNSPrefix, declareNS);
-                    xmlString.append(reqIDStr).append(SAML2Constants.NEWLINE);
+            if (proxyCount != null) {
+                scopingElement.setAttribute(PROXYCOUNT, proxyCount.toString());
+            }
+            if (idpList != null) {
+                scopingElement.appendChild(idpList.toDocumentFragment(document, includeNSPrefix, false));
+            }
+            if (isNotEmpty(requesterIDList)) {
+                for (RequesterID requesterID : requesterIDList) {
+                    scopingElement.appendChild(requesterID.toDocumentFragment(document, includeNSPrefix, false));
                 }
-	    }
-	    xmlString.append(SAML2Constants.SAML2_END_TAG)
-		     .append(SAML2Constants.SCOPING)
-		     .append(SAML2Constants.END_TAG);
+            }
+        }
 
-	    xmlElementString = xmlString.toString();
-	}
-	return xmlElementString;
+        return fragment;
     }
-
 
     /**
      * Makes this object immutable.

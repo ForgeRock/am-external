@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
@@ -26,6 +26,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Namespace;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.identity.idm.IdentityUtils;
@@ -82,8 +83,9 @@ public class WriteFederationInformationNode extends SingleOutcomeNode {
         }
 
         String infoAttributeValue = attributes.get(infoAttribute).get(0).asString();
+        NodeState nodeState = context.getStateFor(this);
         try {
-            Optional<String> universalId = getUniversalId(context, identityUtils);
+            Optional<String> universalId = context.universalId.or(() -> getUniversalId(nodeState, identityUtils));
             ssoResponseUtils.linkAccounts(infoAttributeValue, universalId.orElse(null));
         } catch (SAML2Exception ex) {
             throw new NodeProcessException("Unable to link accounts", ex);

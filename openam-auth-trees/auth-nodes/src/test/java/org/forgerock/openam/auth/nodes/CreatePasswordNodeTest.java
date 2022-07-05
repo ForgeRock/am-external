@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -21,7 +21,7 @@ import static javax.security.auth.callback.TextOutputCallback.ERROR;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.openam.auth.nodes.CreatePasswordNode.BUNDLE;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -39,7 +39,6 @@ import javax.security.auth.callback.TextOutputCallback;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
-
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -55,7 +54,7 @@ public class CreatePasswordNodeTest {
 
     @BeforeMethod
     public void before() {
-        initMocks(this);
+        openMocks(this);
         when(config.minPasswordLength()).thenReturn(PASSWORD_LENGTH_MIN);
     }
 

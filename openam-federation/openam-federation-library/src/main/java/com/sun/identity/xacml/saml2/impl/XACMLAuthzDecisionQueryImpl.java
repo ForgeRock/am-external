@@ -24,17 +24,30 @@
  *
  * $Id: XACMLAuthzDecisionQueryImpl.java,v 1.4 2008/06/25 05:48:15 qcheng Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.saml2.impl;
 
+import static com.sun.identity.xacml.common.XACMLConstants.INPUT_CONTEXT_ONLY;
+import static com.sun.identity.xacml.common.XACMLConstants.REQUEST_ABSTRACT;
+import static com.sun.identity.xacml.common.XACMLConstants.RETURN_CONTEXT;
+import static com.sun.identity.xacml.common.XACMLConstants.SAML2_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.SAMLP_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.XACML_SAMLP_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.XACML_SAMLP_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.XSI_NS_ATTR;
+import static com.sun.identity.xacml.common.XACMLConstants.XSI_NS_URI;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import java.text.ParseException;
+import java.util.List;
 
 import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -42,6 +55,8 @@ import org.w3c.dom.NodeList;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.impl.RequestAbstractImpl;
 import com.sun.identity.shared.DateUtils;
@@ -119,6 +134,7 @@ public class XACMLAuthzDecisionQueryImpl extends RequestAbstractImpl
      * Default constructor
      */
     public XACMLAuthzDecisionQueryImpl() {
+        super(XACMLConstants.XACML_AUTHZ_DECISION_QUERY);
         isMutable = true;
     }
     
@@ -132,6 +148,7 @@ public class XACMLAuthzDecisionQueryImpl extends RequestAbstractImpl
      * @exception SAML2Exception if it could not process the Element
      */
     public XACMLAuthzDecisionQueryImpl(Element element) throws SAML2Exception {
+        super(XACMLConstants.XACML_AUTHZ_DECISION_QUERY);
         parseDOMElement(element);
         if (isSigned) {
             signedXMLString = XMLUtils.print(element);
@@ -147,6 +164,7 @@ public class XACMLAuthzDecisionQueryImpl extends RequestAbstractImpl
      * @exception XACMLException if it could not process the XML string
      */
     public XACMLAuthzDecisionQueryImpl(String xml) throws SAML2Exception {
+        super(XACMLConstants.XACML_AUTHZ_DECISION_QUERY);
         Document document = XMLUtils.toDOMDocument(xml);
         if (document != null) {
             Element rootElement = document.getDocumentElement();
@@ -277,102 +295,66 @@ public class XACMLAuthzDecisionQueryImpl extends RequestAbstractImpl
         }
         this.request = request;
     }
-    
-    /**
-     * Returns a string representation of this object
-     *
-     * @return a string representation of this object
-     * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString() throws XACMLException {
-        //top level element
-        return toXMLString(true, true);
-    }
 
-    /**
-     * Returns a <code>String</code> representation of this object
-     * @param includeNSPrefix Determines whether or not the namespace qualifier
-     *        is prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return a string representation of this object
-     * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-    throws XACMLException {
-	if (isSigned && signedXMLString != null) {
-	    return signedXMLString;
-	}
-
-	//validateData();
-        StringBuffer sb = new StringBuffer(1000);
-        String nsPrefix = "";
-        String nsDeclaration = "";
-        if (declareNS) {
-            nsDeclaration = XACMLConstants.SAMLP_NS_DECLARATION;
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        if (isSigned && signedXMLString != null) {
+            Document signedDoc = XMLUtils.toDOMDocument(signedXMLString);
+            if (signedDoc == null) {
+                throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
+            }
+            fragment.appendChild(document.importNode(signedDoc.getDocumentElement(), true));
+            return fragment;
         }
-        if (includeNSPrefix) {
-            nsPrefix = XACMLConstants.SAMLP_NS_PREFIX;
-        }
+        validateData();
 
-        sb.append("\n<")
-                .append(XACMLConstants.SAMLP_NS_PREFIX)
-                .append(XACMLConstants.REQUEST_ABSTRACT)
-                .append(XACMLConstants.SAMLP_NS_DECLARATION)
-                .append(XACMLConstants.XSI_TYPE_XACML_AUTHZ_DECISION_QUERY)
-                .append(XACMLConstants.XSI_NS_DECLARATION)
-                .append(XACMLConstants.XACML_SAMLP_NS_DECLARATION)
-            .append(XACMLConstants.SPACE)
-            .append(XACMLConstants.XACML_SAMLP_NS_PREFIX)
-            .append(XACMLConstants.INPUT_CONTEXT_ONLY).append("=")
-            .append(XACMLSDKUtils.quote(Boolean.toString(inputContextOnly)))
-            .append(XACMLConstants.SPACE)
-            .append(XACMLConstants.XACML_SAMLP_NS_PREFIX)
-            .append(XACMLConstants.RETURN_CONTEXT).append("=")
-            .append(XACMLSDKUtils.quote(Boolean.toString(returnContext)))
-            .append(XACMLConstants.SPACE)
-            .append("ID").append("=")
-            .append(XACMLSDKUtils.quote(requestId))
-            .append(XACMLConstants.SPACE)
-            .append("Version").append("=")
-            .append(XACMLSDKUtils.quote(version))
-            .append(XACMLConstants.SPACE)
-            .append("IssueInstant").append("=")
-            .append(XACMLSDKUtils.quote(DateUtils.toUTCDateFormat(
-                    issueInstant)));
-	if (destinationURI != null && destinationURI.trim().length() != 0) {
-	    sb.append(" Destination=\"").append(destinationURI).
-		append("\"");
-	}
-	if (consent != null && consent.trim().length() != 0) {
-	    sb.append(" Consent=\"").append(consent).append("\"");
-	}
-	sb.append(">\n");
+        Element queryElement = XMLUtils.createRootElement(document, SAMLP_NS_PREFIX, SAML2_NS_URI, REQUEST_ABSTRACT,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(queryElement);
+
+        queryElement.setAttribute("xsi:type", "xacml-samlp:XACMLAuthzDecisionQuery");
+        queryElement.setAttribute(XSI_NS_ATTR, XSI_NS_URI);
+        queryElement.setAttribute("xmlns:xacml-samlp", XACML_SAMLP_NS_URI);
+
+        queryElement.setAttribute(XACML_SAMLP_NS_PREFIX + INPUT_CONTEXT_ONLY, Boolean.toString(inputContextOnly));
+        queryElement.setAttribute(XACML_SAMLP_NS_PREFIX + RETURN_CONTEXT, Boolean.toString(returnContext));
+
+        queryElement.setAttribute("ID", requestId);
+        queryElement.setAttribute("Version", version);
+        queryElement.setAttribute("IssueInstant", DateUtils.toUTCDateFormat(issueInstant));
+
+        if (isNotBlank(destinationURI)) {
+            queryElement.setAttribute("Destination", destinationURI);
+        }
+        if (isNotBlank(consent)) {
+            queryElement.setAttribute("Consent", consent);
+        }
         try {
-	if (nameID != null) {
-	    sb.append(nameID.toXMLString(includeNSPrefix, declareNS));
-	}
-	if (signatureString != null) {
-	    sb.append(signatureString);
-	}
-	if (extensions != null) {
-	    sb.append(extensions.toXMLString(includeNSPrefix, declareNS));
-	}
+            if (nameID != null) {
+                queryElement.appendChild(nameID.toDocumentFragment(document, includeNSPrefix, declareNS));
+            }
+            if (signatureString != null) {
+                List<Node> sigNodes = SAML2Utils.parseSAMLFragment(signedXMLString);
+                for (Node node : sigNodes) {
+                    queryElement.appendChild(node);
+                }
+            }
+            if (extensions != null) {
+                queryElement.appendChild(extensions.toDocumentFragment(document, includeNSPrefix, declareNS));
+            }
         } catch (Exception e) {
+            logger.warn("Error converting nameID/signatureString/extensions to XML", e);
         }
 
         if (request != null) {
-            sb.append(request.toXMLString(true, true)).append("\n");
+            queryElement.appendChild(request.toDocumentFragment(document, true, true));
         }
 
-        sb.append("\n</")
-                .append(XACMLConstants.SAMLP_NS_PREFIX)
-                .append(XACMLConstants.REQUEST_ABSTRACT)
-                .append(">\n");
-        return  sb.toString();
+        return fragment;
     }
-    
-    
+
     protected void parseDOMElement(Element element) throws SAML2Exception {
         //TODO: fix
         String value = null;

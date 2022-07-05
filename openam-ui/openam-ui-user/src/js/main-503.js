@@ -21,14 +21,12 @@ import { getCurrentQueryParameters } from "org/forgerock/openam/ui/common/util/u
 import { getTheme } from "org/forgerock/openam/ui/common/util/ThemeManager";
 import { init as i18nInit } from "org/forgerock/commons/ui/common/main/i18n/manager";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
-import LoginHeaderTemplate from "themes/default/templates/common/LoginHeaderTemplate.html";
 import ServiceUnavailableTemplate from "themes/default/templates/common/error/503.html";
 
 const params = getCurrentQueryParameters();
 
 i18nInit().then(() => {
     const loadTemplates = (data) => {
-        $("#loginBaseLogo").html(LoginHeaderTemplate(data));
         $("#content").html(ServiceUnavailableTemplate(data));
     };
 

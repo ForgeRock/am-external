@@ -24,14 +24,21 @@
  *
  * $Id: Environment.java,v 1.2 2008/06/25 05:48:11 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.context;
 
 import java.util.List;
 
-import org.forgerock.openam.annotations.SupportedAll;
+import javax.xml.parsers.ParserConfigurationException;
 
+import org.forgerock.openam.annotations.SupportedAll;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
+
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
+import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLException;
 
 /**
@@ -53,7 +60,7 @@ import com.sun.identity.xacml.common.XACMLException;
  * </pre>
  */
 @SupportedAll
-public interface Environment {
+public interface Environment extends XmlSerializable {
 
     /**
      * Returns zero to many <code>Attribute</code> elements of this object.
@@ -86,8 +93,16 @@ public interface Environment {
     * @return a <code>String</code> representation of this object
     * @exception XACMLException if conversion fails for any reason
      */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException;
+    default String toXMLString(boolean includeNSPrefix, boolean declareNS)
+            throws XACMLException {
+        try {
+            Document document = XMLUtils.newDocument();
+            DocumentFragment fragment = toDocumentFragment(document, includeNSPrefix, declareNS);
+            return XMLUtils.print(fragment);
+        } catch (ParserConfigurationException | SAML2Exception e) {
+            throw new XACMLException(e);
+        }
+    }
 
    /**
     * Returns a string representation of this object
@@ -95,7 +110,9 @@ public interface Environment {
     * @return a string representation of this object
     * @exception XACMLException if conversion fails for any reason
     */
-    public String toXMLString() throws XACMLException;
+    default String toXMLString() throws XACMLException {
+        return toXMLString(true, false);
+    }
 
    /**
     * Makes the object immutable

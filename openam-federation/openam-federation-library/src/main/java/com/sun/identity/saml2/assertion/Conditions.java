@@ -24,7 +24,7 @@
  *
  * $Id: Conditions.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion;
@@ -37,6 +37,7 @@ import org.forgerock.openam.annotations.SupportedAll;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.sun.identity.saml2.assertion.impl.ConditionsImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 
 /**
  * The <code>Conditions</code> defines the SAML constructs that place
@@ -44,7 +45,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  */
 @SupportedAll
 @JsonDeserialize(as=ConditionsImpl.class)
-public interface Conditions {
+public interface Conditions extends XmlSerializable {
 
     /**
      * Returns the time instant at which the subject can no longer 
@@ -162,26 +163,6 @@ public interface Conditions {
      * interval of the <code>Conditions</code>.
      */
     boolean checkDateValidityWithSkew(long someTime, int skewTime);
-
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace
-    *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-     */
-   String toXMLString(boolean includeNSPrefix, boolean declareNS)
-     throws SAML2Exception;
-
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-   String toXMLString() throws SAML2Exception;
 
    /**
     * Makes the object immutable

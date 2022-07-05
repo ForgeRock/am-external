@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn;
@@ -37,6 +37,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.ConfirmationCallback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jwk.JWK;
@@ -62,6 +63,7 @@ import org.testng.annotations.Test;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
+import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import com.sun.identity.authentication.spi.MetadataCallback;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
@@ -166,6 +168,48 @@ public class WebAuthnAuthenticationNodeTest {
         assertThat(result.callbacks.get(1)).isInstanceOf(HiddenValueCallback.class);
     }
 
+    @Test
+    public void testCallbackAsScript() throws NodeProcessException {
+        // Given
+        given(config.asScript()).willReturn(true);
+        given(config.isRecoveryCodeAllowed()).willReturn(true);
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue transientState = json(object());
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+        assertThat(result.outcome).isNull();
+        assertThat(result.callbacks).hasSize(4);
+        assertThat(result.callbacks.get(0)).isInstanceOf(ScriptTextOutputCallback.class);
+        ScriptTextOutputCallback callback = (ScriptTextOutputCallback) result.callbacks.get(0);
+        assertThat(callback.getMessage()).contains("document.getElementById(\"loginButton_0\").click()",
+                "var allowRecoveryCode = 'true' === \"true\"");
+
+        assertThat(result.callbacks.get(2)).isInstanceOf(HiddenValueCallback.class);
+        assertThat(result.callbacks.get(3)).isInstanceOf(ConfirmationCallback.class);
+    }
+
+    @Test
+    public void testCredentialIdNotFound() throws NodeProcessException, DevicePersistenceException {
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue transientState = json(object());
+
+        //Given
+        doReturn(Collections.singletonList(generateDevice())).when(node).getDeviceSettingsFromUsername(any(), any());
+        TreeContext treeContext = getContext(sharedState, transientState, emptyList());
+        HiddenValueCallback hiddenValueCallback = new HiddenValueCallback("id");
+        //The device returned from user's device does not match with "dummy" credential ID
+        String credentialId = EncodingUtilities.base64UrlEncode("dummy");
+        hiddenValueCallback.setValue("dummy::1,2,3,4::1,2,3,4::" + credentialId);
+        treeContext = treeContext.copyWithCallbacks(Collections.singletonList(hiddenValueCallback));
+
+        //When
+        Action result = node.process(treeContext);
+
+        //Then
+        assertThat(result.outcome).isEqualTo("failure");
+
+    }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
             List<? extends Callback> callbacks) {

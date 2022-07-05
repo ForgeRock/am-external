@@ -24,22 +24,26 @@
  *
  * $Id: ActionImpl.java,v 1.2 2008/06/25 05:47:42 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+import static org.forgerock.openam.utils.StringUtils.isBlank;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.sun.identity.saml2.assertion.Action;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -236,67 +240,28 @@ public class ActionImpl implements Action {
         namespace = value;
     }
 
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *         By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString()
-        throws SAML2Exception
-    {
-        return this.toXMLString(true, false);
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        if (isBlank(action)) {
+            logger.debug("ActionImpl.toDocumentFragment: Action value is null or empty.");
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("emptyElementValue"));
+        }
+
+        if (isBlank(namespace)) {
+            logger.debug("ActionImpl.toDocumentFragment: Namespace is empty or missing");
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missingAttribute"));
+        }
+
+
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element actionElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                "Action", includeNSPrefix, declareNS);
+        fragment.appendChild(actionElement);
+
+        actionElement.setAttribute("Namespace", namespace);
+        actionElement.setTextContent(action);
+
+        return fragment;
     }
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *                prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *                within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString(boolean includeNS, boolean declareNS)
-        throws SAML2Exception
-    {
-        // validate the data before output the string
-        if (action == null || action.trim().length() == 0) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("ActionImpl.toXMLString: "+
-                    "Action value is null or empty.");
-            }
-            throw new SAML2Exception(
-                      SAML2SDKUtils.bundle.getString("emptyElementValue"));
-        }
-
-        if (namespace == null || namespace.trim().length() == 0) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("ActionImpl.toXMLString: " +
-                     "Namespace is empty or missing");
-            }
-            throw new SAML2Exception(
-                SAML2SDKUtils.bundle.getString("missingAttribute"));
-        }
-
-        StringBuffer result = new StringBuffer(1000);
-        String prefix = "";
-        String uri = "";
-        if (includeNS) {
-            prefix = SAML2Constants.ASSERTION_PREFIX;
-        }
-        if (declareNS) {
-            uri = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-
-        result.append("<").append(prefix).append("Action").
-                append(uri).append(" Namespace=\"").append(namespace).
-                append("\">");
-        result.append(action);
-        result.append("</").append(prefix).append("Action>");
-        return ((String)result.toString());
-    }
-
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2018 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.sns;
 
@@ -23,20 +23,16 @@ import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.PushMessage;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
+import org.mockito.testng.MockitoTestNGListener;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
+@Listeners(MockitoTestNGListener.class)
 public class SnsPushMessageConverterTest {
 
     @Mock
     private MessageId messageId;
     SnsPushMessageConverter converter = new SnsPushMessageConverter();
-
-    @BeforeMethod
-    public void setup() {
-        MockitoAnnotations.initMocks(this);
-    }
 
     @Test
     public void shouldConvertToFormat() {
@@ -78,6 +74,8 @@ public class SnsPushMessageConverterTest {
         assertThat(apnsDataValue.get("alert")).isString().isEqualTo("subject");
         assertThat(apnsDataValue.get("data")).isString().isEqualTo("body");
         assertThat(apnsDataValue.get("sound")).isString().isEqualTo("default");
+        assertThat(apnsDataValue.get("category")).isString().isEqualTo("authentication");
+        assertThat(apnsDataValue.get("interruption-level")).isString().isEqualTo("time-sensitive");
     }
 
 }

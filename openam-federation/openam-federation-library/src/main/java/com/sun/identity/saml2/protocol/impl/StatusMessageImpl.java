@@ -24,14 +24,24 @@
  *
  * $Id: StatusMessageImpl.java,v 1.2 2008/06/25 05:48:01 qcheng Exp $
  *
+ * Portions Copyrighted 2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
-import com.sun.identity.saml2.common.SAML2Constants;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.STATUS_MESSAGE;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
+import org.w3c.dom.Element;
+
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.protocol.StatusMessage;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * This class defines methods for adding <code>StatusMessage</code> element.
@@ -58,56 +68,17 @@ public class StatusMessageImpl implements StatusMessage {
     public java.lang.String getValue() {
         return messageValue;
     }
-    
-    /**
-     * Returns the <code>StatusMessage</code> in an XML document String format
-     * based on the <code>StatusMessage</code> schema described above.
-     *
-     * @return An XML String representing the <code>StatusMessage</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true,false);
-    }
-    
-    /**
-     * Returns the <code>StatusMessage</code> in an XML document String format
-     * based on the <code>StatusMessage</code> schema described above.
-     *
-     * @param includeNSPrefix Determines whether or not the namespace qualifier
-     * is prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return A XML String representing the <code>StatusMessage</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString(boolean includeNSPrefix,
-    boolean declareNS) throws SAML2Exception {
-        String xmlStr = null;
-        if ((messageValue != null) && (messageValue.length() != 0)) {
-            StringBuffer xmlString = new StringBuffer(500);
-            xmlString.append(SAML2Constants.START_TAG);
-            if (includeNSPrefix) {
-                xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-            }
-            xmlString.append(SAML2Constants.STATUS_MESSAGE);
-            if (declareNS) {
-                xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
-            }
-            xmlString.append(SAML2Constants.END_TAG);
-            
-            xmlString.append(SAML2Constants.NEWLINE)
-            .append(messageValue);
-            
-            xmlString.append(SAML2Constants.NEWLINE)
-            .append(SAML2Constants.SAML2_END_TAG)
-            .append(SAML2Constants.STATUS_MESSAGE)
-            .append(SAML2Constants.END_TAG);
-            
-            xmlStr = xmlString.toString();
+
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        if (isNotBlank(messageValue)) {
+            Element messageElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+                    STATUS_MESSAGE, includeNSPrefix, declareNS);
+            fragment.appendChild(messageElement);
+            messageElement.setTextContent(messageValue);
         }
-        return xmlStr;
+        return fragment;
     }
 }

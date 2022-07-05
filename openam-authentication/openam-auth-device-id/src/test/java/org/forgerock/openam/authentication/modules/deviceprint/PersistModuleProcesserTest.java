@@ -11,21 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.deviceprint;
-
-import com.sun.identity.authentication.spi.AuthLoginException;
-import com.sun.identity.authentication.util.ISAuthConstants;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.ChoiceCallback;
-import javax.security.auth.callback.NameCallback;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.openam.authentication.modules.deviceprint.DeviceIdSave.NAME_PROFILE_STATE;
@@ -33,7 +22,20 @@ import static org.forgerock.openam.authentication.modules.deviceprint.DeviceIdSa
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.ChoiceCallback;
+import javax.security.auth.callback.NameCallback;
+
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import com.sun.identity.authentication.spi.AuthLoginException;
+import com.sun.identity.authentication.util.ISAuthConstants;
 
 public class PersistModuleProcesserTest {
 
@@ -62,7 +64,7 @@ public class PersistModuleProcesserTest {
 
         //Then
         assertThat(newState).isEqualTo(ISAuthConstants.LOGIN_SUCCEED);
-        verifyZeroInteractions(profilePersister);
+        verifyNoInteractions(profilePersister);
     }
 
     @Test
@@ -79,7 +81,7 @@ public class PersistModuleProcesserTest {
 
         //Then
         assertThat(newState).isEqualTo(ISAuthConstants.LOGIN_SUCCEED);
-        verifyZeroInteractions(profilePersister);
+        verifyNoInteractions(profilePersister);
     }
 
     @Test
@@ -119,7 +121,7 @@ public class PersistModuleProcesserTest {
 
         //Then
         assertThat(newState).isEqualTo(SAVE_PROFILE_STATE);
-        verifyZeroInteractions(profilePersister);
+        verifyNoInteractions(profilePersister);
     }
 
     @Test
@@ -139,7 +141,7 @@ public class PersistModuleProcesserTest {
 
         //Then
         assertThat(newState).isEqualTo(NAME_PROFILE_STATE);
-        verifyZeroInteractions(profilePersister);
+        verifyNoInteractions(profilePersister);
     }
 
     @Test
@@ -159,7 +161,7 @@ public class PersistModuleProcesserTest {
 
         //Then
         assertThat(newState).isEqualTo(ISAuthConstants.LOGIN_SUCCEED);
-        verifyZeroInteractions(profilePersister);
+        verifyNoInteractions(profilePersister);
     }
 
     @Test

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -35,6 +35,7 @@ import org.forgerock.openam.services.datastore.DataStoreId;
 import org.forgerock.openam.services.datastore.DataStoreService;
 import org.forgerock.openam.services.datastore.DataStoreServiceChangeNotifier;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
+import org.forgerock.openam.sm.ConfigurationAttributesFactory;
 import org.forgerock.opendj.ldap.ConnectionFactory;
 import org.forgerock.opendj.ldap.LdapException;
 import org.forgerock.util.Action;
@@ -107,7 +108,7 @@ public final class LdapDataStoreServiceTest {
         given(serviceConfigManager.getGlobalConfig("default")).willReturn(globalServiceConfig);
         given(globalServiceConfig.getSubConfig("dataStoreContainer")).willReturn(containerServiceConfig);
         given(containerServiceConfig.getSubConfig("some-data-store")).willReturn(dataStoreSubConfig);
-        given(dataStoreSubConfig.getAttributes()).willReturn(ImmutableMap
+        given(dataStoreSubConfig.getAttributes()).willReturn(ConfigurationAttributesFactory.create(ImmutableMap
                 .<String, Set<String>>builder()
                 .put("serverUrls", Collections.singleton("some.host.name:1389"))
                 .put("bindDN", Collections.singleton("cn=Some User"))
@@ -116,7 +117,7 @@ public final class LdapDataStoreServiceTest {
                 .put("useStartTls", Collections.singleton("false"))
                 .put("minimumConnectionPool", Collections.singleton("1"))
                 .put("maximumConnectionPool", Collections.singleton("10"))
-                .build());
+                .build()));
 
         dataStoreService = new LdapDataStoreService(defaultConnectionFactoryProvider, connectionFactoryProvider,
                 serviceManagerFactory, shutdownManager, Collections.singleton(changeNotifier),

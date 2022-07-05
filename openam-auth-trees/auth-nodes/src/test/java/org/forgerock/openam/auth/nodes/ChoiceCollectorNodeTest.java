@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -26,7 +26,7 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.AUTH_LEVEL
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.TARGET_AUTH_LEVEL;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,9 +39,9 @@ import javax.security.auth.callback.ChoiceCallback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
-import org.forgerock.openam.auth.node.api.TreeMetaData;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.TreeMetaData;
 import org.forgerock.openam.auth.nodes.ChoiceCollectorNode.Config;
 import org.forgerock.openam.authentication.NodeRegistry;
 import org.forgerock.openam.core.realms.Realm;
@@ -69,7 +69,7 @@ public class ChoiceCollectorNodeTest {
 
     @BeforeMethod
     public void before() throws NodeProcessException {
-        initMocks(this);
+        openMocks(this);
         config = whenNodeConfigHasAttributes(2);
     }
 

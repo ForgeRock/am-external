@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.validators;
 
@@ -22,7 +22,7 @@ import static org.forgerock.cuppa.Cuppa.describe;
 import static org.forgerock.cuppa.Cuppa.it;
 import static org.forgerock.cuppa.Cuppa.when;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anySetOf;
+import static org.mockito.ArgumentMatchers.anySetOf;
 import static org.mockito.Mockito.mock;
 
 import java.util.Collections;

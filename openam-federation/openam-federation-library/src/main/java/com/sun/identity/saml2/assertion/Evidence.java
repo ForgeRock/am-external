@@ -24,7 +24,7 @@
  *
  * $Id: Evidence.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
@@ -36,6 +36,7 @@ import java.util.List;
 import org.forgerock.openam.annotations.SupportedAll;
 
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 
 /**
  * The <code>Evidence</code> element contains one or more assertions or
@@ -62,7 +63,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  *
  */
 @SupportedAll
-public interface Evidence {
+public interface Evidence extends XmlSerializable {
 
     /**
      * Makes the object immutable.

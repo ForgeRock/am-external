@@ -11,11 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.helpers;
 
+import static org.forgerock.http.protocol.Status.UNAUTHORIZED;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.PROPERTIES;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.normalizeAttributeName;
 
@@ -594,6 +595,34 @@ public final class IdmIntegrationHelper {
             return idmIntegrationService.getObjectIdentityProviders(realm, locales, identityResource, identityAttribute,
                     identity, passwordAttribute);
         } catch (ResourceException e) {
+            throw new NodeProcessException(e);
+        }
+    }
+
+    /**
+     * Patches an object in IDM as the specified subject.
+     *
+     * @param idmIntegrationService the IdmIntegrationService
+     * @param realm The realm of the requesting tree
+     * @param preferredLocales the preferred locales
+     * @param connectorName the name of the connector in IDM
+     * @param objectType the objectType for the target object in the connector
+     * @param username The username for passthrough authentication
+     * @param password The password for passthrough authentication
+     * @return True iff passthrough authentication was successful
+     * @throws NodeProcessException on failure to test authentication
+     */
+    public static boolean passthroughAuth(IdmIntegrationService idmIntegrationService, Realm realm,
+            PreferredLocales preferredLocales, String connectorName, String objectType, String username,
+            String password) throws NodeProcessException {
+        try {
+            return idmIntegrationService.passthroughAuth(realm, preferredLocales, connectorName, objectType,
+                    username, password);
+        } catch (ResourceException e) {
+            // when invalid credentials are provided, a 401 PermanentException is thrown
+            if (e.getCode() == UNAUTHORIZED.getCode()) {
+                return false;
+            }
             throw new NodeProcessException(e);
         }
     }

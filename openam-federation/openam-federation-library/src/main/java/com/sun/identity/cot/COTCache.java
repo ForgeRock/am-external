@@ -24,7 +24,7 @@
  *
  * $Id: COTCache.java,v 1.2 2008/06/25 05:46:38 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2021 ForgeRock AS.
  */
 package com.sun.identity.cot;
 
@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 public class COTCache {
     
     private static final Logger logger = LoggerFactory.getLogger(COTCache.class);
-    private static Hashtable cotCache = new Hashtable();
+    private static Hashtable<String, CircleOfTrustDescriptor> cotCache = new Hashtable<>();
     private static Logger debug = LoggerFactory.getLogger(COTCache.class);
     
     /**
@@ -89,11 +89,27 @@ public class COTCache {
         }
         cotCache.put(cacheKey, cotDescriptor);
     }
-    
+
+    /**
+     * Invalidate the Circle of Trust Cache for a realm + name.
+     *
+     * @param realm The realm under which the circle of trust resides.
+     * @param name Name of the circle of trust.
+     * @return old <code>CircleOfTrustDescriptor</code> for the circle of trust
+     *        or null if not found.
+     */
+    static CircleOfTrustDescriptor invalidate(String realm, String name) {
+        String classMethod = "CircleOfTrustCache:invalidateCircleOfTrust";
+        String cacheKey = buildCacheKey(realm, name);
+        debug.debug("{}: cacheKey = ", classMethod, cacheKey);
+        return cotCache.remove(cacheKey);
+    }
+
     /**
      * Clears the circle of trust cache.
      */
     static void clear() {
+        debug.debug("CircleOfTrustCache:clear");
         cotCache.clear();
     }
     

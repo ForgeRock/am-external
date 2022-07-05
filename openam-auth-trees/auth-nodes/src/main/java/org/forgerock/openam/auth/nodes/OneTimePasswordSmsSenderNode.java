@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -131,7 +131,8 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
         String phone;
         ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
 
-        Optional<AMIdentity> identity = getAMIdentity(context, identityUtils, coreWrapper);
+        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityUtils,
+                coreWrapper);
         if (identity.isEmpty()) {
             logger.warn("identity not found");
             throw new NodeProcessException(bundle.getString("identity.failure"));

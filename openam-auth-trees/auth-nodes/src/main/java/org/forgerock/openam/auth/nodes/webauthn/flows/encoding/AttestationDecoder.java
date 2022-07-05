@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.encoding;
 
@@ -40,7 +40,7 @@ import org.forgerock.openam.auth.nodes.webauthn.flows.formats.PackedVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorUtilities;
 import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmVerifier;
-import org.forgerock.secrets.keys.VerificationKey;
+import org.forgerock.secrets.keys.CertificateVerificationKey;
 import org.forgerock.util.promise.NeverThrowsException;
 import org.forgerock.util.promise.Promise;
 import org.slf4j.Logger;
@@ -100,7 +100,7 @@ public class AttestationDecoder {
      * @return the data as an AttestationObject.
      */
     public AttestationObject decode(byte[] attestationData, AttestationPreference attestationPreference,
-                                    Promise<Stream<VerificationKey>, NeverThrowsException> secretSource,
+                                    Promise<Stream<CertificateVerificationKey>, NeverThrowsException> secretSource,
                                     boolean enforceRevocationCheck)
             throws DecodingException {
         ByteArrayInputStream bais = new ByteArrayInputStream(attestationData);
@@ -191,7 +191,8 @@ public class AttestationDecoder {
     }
 
     private AttestationVerifier getAttestationVerifier(String fmt, AttestationPreference attestationPreference,
-                                                       Promise<Stream<VerificationKey>, NeverThrowsException> secrets,
+                                                       Promise<Stream<CertificateVerificationKey>,
+                                                               NeverThrowsException> secrets,
                                                        boolean enforcedRevocation) throws DecodingException {
         switch (fmt) {
         case "none":

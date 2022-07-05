@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -48,6 +48,13 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public final class ClientScriptUtilities {
 
+    private static final int DEVICE_NAME_INDEX = 3;
+    private static final int ENCODED_RESPONSE_LENGTH = 4;
+    private static final int CLIENT_DATA_INDEX = 0;
+    private static final int AUTHENTICATOR_DATA_INDEX = 1;
+    private static final int CREDENTIAL_ID_INDEX = 3;
+    private static final int SIGNATURE_INDEX = 2;
+    private static final int USER_HANDLE_INDEX = 4;
     private final Logger logger = LoggerFactory.getLogger(ClientScriptUtilities.class);
     private static final String NUMBER_ENCODING_DELIMITER = ",";
     private static final String WAITING_MESSAGE_KEY = "waiting";
@@ -122,10 +129,11 @@ public final class ClientScriptUtilities {
     ClientAuthenticationScriptResponse parseClientAuthenticationResponse(String encodedResponse,
             boolean useSuppliedUserHandle) {
         String[] resultsArray = encodedResponse.split(RESPONSE_DELIMITER);
-        return new ClientAuthenticationScriptResponse(resultsArray[0],
-                getBytesFromNumberEncoding(resultsArray[1]), resultsArray[3],
-                getBytesFromNumberEncoding(resultsArray[2]),
-                useSuppliedUserHandle ? new String(base64UrlDecode(resultsArray[4])) : null);
+        return new ClientAuthenticationScriptResponse(resultsArray[CLIENT_DATA_INDEX],
+                getBytesFromNumberEncoding(resultsArray[AUTHENTICATOR_DATA_INDEX]),
+                resultsArray[CREDENTIAL_ID_INDEX],
+                getBytesFromNumberEncoding(resultsArray[SIGNATURE_INDEX]),
+                useSuppliedUserHandle ? new String(base64UrlDecode(resultsArray[USER_HANDLE_INDEX])) : null);
     }
 
     /**
@@ -136,8 +144,13 @@ public final class ClientScriptUtilities {
      */
     ClientRegistrationScriptResponse parseClientRegistrationResponse(String encodedResponse) {
         String[] resultsArray = encodedResponse.split(RESPONSE_DELIMITER);
+        String deviceName = null;
+        //The device name is optional
+        if (resultsArray.length == ENCODED_RESPONSE_LENGTH) {
+            deviceName = resultsArray[DEVICE_NAME_INDEX];
+        }
         ClientRegistrationScriptResponse response = new ClientRegistrationScriptResponse(resultsArray[0],
-                getBytesFromNumberEncoding(resultsArray[1]), resultsArray[2]);
+                getBytesFromNumberEncoding(resultsArray[1]), resultsArray[2], deviceName);
         return response;
     }
 

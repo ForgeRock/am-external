@@ -24,7 +24,7 @@
  *
  * $Id: CreateSAML2HostedProviderTemplate.java,v 1.29 2009/11/24 21:49:04 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2020 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.workflow;
 
@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.util.annotations.VisibleForTesting;
 
 import com.sun.identity.cot.COTConstants;
 import com.sun.identity.saml2.common.SAML2Constants;
@@ -40,8 +41,10 @@ import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaSecurityUtils;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
+import com.sun.identity.saml2.xmlenc.FMEncProvider;
 import com.sun.identity.shared.Constants;
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * Create SAML2 Hosted Provider Template.
@@ -830,6 +833,23 @@ public class CreateSAML2HostedProviderTemplate {
         String url,
         Map mapParams
     ) throws SAML2MetaException {
+        String idpSCertAlias = (String)mapParams.get(MetaTemplateParameters.P_IDP_S_CERT);
+        String idpECertAlias = (String)mapParams.get(MetaTemplateParameters.P_IDP_E_CERT);
+
+        String idpSX509Cert = SAML2MetaSecurityUtils.buildX509Certificate(idpSCertAlias);
+        String idpEX509Cert = SAML2MetaSecurityUtils.buildX509Certificate(idpECertAlias);
+
+        addIdentityProviderTemplate(buff, idpAlias, url, idpSX509Cert, idpEX509Cert);
+    }
+
+    @VisibleForTesting
+    static void addIdentityProviderTemplate(
+            StringBuffer buff,
+            String idpAlias,
+            String url,
+            String idpSX509Cert,
+            String idpEX509Cert) {
+
         String maStr = buildMetaAliasInURI(idpAlias);
         
         buff.append(
@@ -837,14 +857,7 @@ public class CreateSAML2HostedProviderTemplate {
             "        WantAuthnRequestsSigned=\"false\"\n" +
             "        protocolSupportEnumeration=\"urn:oasis:names:tc:SAML:2.0:protocol\">\n"
         );
-        
-        String idpSCertAlias = (String)mapParams.get(
-            MetaTemplateParameters.P_IDP_S_CERT);
-        String idpECertAlias = (String)mapParams.get(
-            MetaTemplateParameters.P_IDP_E_CERT);
 
-        String idpSX509Cert = SAML2MetaSecurityUtils.buildX509Certificate(
-            idpSCertAlias);
 
         if (idpSX509Cert != null) {
             buff.append(
@@ -859,8 +872,6 @@ public class CreateSAML2HostedProviderTemplate {
                 "        </KeyDescriptor>\n");
         }
         
-        String idpEX509Cert = SAML2MetaSecurityUtils.buildX509Certificate(
-            idpECertAlias);
         if (idpEX509Cert != null) {
             buff.append(
                 "        <KeyDescriptor use=\"encryption\">\n" +
@@ -870,14 +881,23 @@ public class CreateSAML2HostedProviderTemplate {
                 "                    <X509Certificate>\n" + idpEX509Cert +
                 "                    </X509Certificate>\n" +
                 "                </X509Data>\n" +
-                "            </KeyInfo>\n" +
-                "            <EncryptionMethod Algorithm=" +
-                "\"http://www.w3.org/2001/04/xmlenc#aes128-cbc\">\n" +
-                "                <KeySize xmlns=\"" +
-                SAML2MetaSecurityUtils.NS_XMLENC +"\">" +
-                "128</KeySize>\n" +
-                "            </EncryptionMethod>\n" +
-                "        </KeyDescriptor>\n");
+                "            </KeyInfo>\n");
+
+            FMEncProvider.SUPPORTED_DATA_ENCRYPTION_ALGORITHMS.forEach((alg, keySize) -> {
+                if (keySize == -1) {
+                    // Skip 3DES
+                    return;
+                }
+                buff.append(
+                        "            <EncryptionMethod Algorithm=")
+                        .append("\"").append(XMLUtils.escapeSpecialCharacters(alg)).append("\">\n" +
+                        "                <KeySize xmlns=\"" +
+                        SAML2MetaSecurityUtils.NS_XMLENC +"\">")
+                        .append(keySize).append("</KeySize>\n" +
+                        "            </EncryptionMethod>\n");
+
+            });
+            buff.append("        </KeyDescriptor>\n");
         }
         
         buff.append(
@@ -963,6 +983,22 @@ public class CreateSAML2HostedProviderTemplate {
         String url,
         Map mapParams
     ) throws SAML2MetaException {
+        String spSCertAlias = (String)mapParams.get(MetaTemplateParameters.P_SP_S_CERT);
+        String spECertAlias = (String)mapParams.get(MetaTemplateParameters.P_SP_E_CERT);
+
+        String spSX509Cert = SAML2MetaSecurityUtils.buildX509Certificate(spSCertAlias);
+        String spEX509Cert = SAML2MetaSecurityUtils.buildX509Certificate(spECertAlias);
+
+        addServiceProviderTemplate(buff, spAlias, url, spSX509Cert, spEX509Cert);
+    }
+
+    @VisibleForTesting
+    static void addServiceProviderTemplate(
+            StringBuffer buff,
+            String spAlias,
+            String url,
+            String spSX509Cert,
+            String spEX509Cert) {
         String maStr = buildMetaAliasInURI(spAlias);
         buff.append(
             "    <SPSSODescriptor\n" +
@@ -970,17 +1006,7 @@ public class CreateSAML2HostedProviderTemplate {
             "        WantAssertionsSigned=\"false\"\n" +
             "        protocolSupportEnumeration=\n" +
             "            \"urn:oasis:names:tc:SAML:2.0:protocol\">\n");
-        
-        String spSCertAlias = (String)mapParams.get(
-            MetaTemplateParameters.P_SP_S_CERT);
-        String spECertAlias = (String)mapParams.get(
-            MetaTemplateParameters.P_SP_E_CERT);
 
-        String spSX509Cert = SAML2MetaSecurityUtils.buildX509Certificate(
-            spSCertAlias);
-        String spEX509Cert = SAML2MetaSecurityUtils.buildX509Certificate(
-            spECertAlias);
-        
         if (spSX509Cert != null) {
             buff.append(
                 "        <KeyDescriptor use=\"signing\">\n" +
@@ -1003,14 +1029,19 @@ public class CreateSAML2HostedProviderTemplate {
                 "                    <X509Certificate>\n" + spEX509Cert +
                 "                    </X509Certificate>\n" +
                 "                </X509Data>\n" +
-                "            </KeyInfo>\n" +
-                "            <EncryptionMethod Algorithm=" +
-                "\"http://www.w3.org/2001/04/xmlenc#aes128-cbc\">\n" +
-                "                <KeySize xmlns=\"" +
-                SAML2MetaSecurityUtils.NS_XMLENC +"\">" +
-                "128</KeySize>\n" +
-                "            </EncryptionMethod>\n" +
-                "        </KeyDescriptor>\n");
+                "            </KeyInfo>\n");
+            FMEncProvider.SUPPORTED_DATA_ENCRYPTION_ALGORITHMS.forEach((alg, keySize) -> {
+                if (keySize == -1) {
+                    return;
+                }
+                buff.append(                "            <EncryptionMethod Algorithm=" +
+                        "\"").append(XMLUtils.escapeSpecialCharacters(alg)).append("\">\n" +
+                        "                <KeySize xmlns=\"" +
+                        SAML2MetaSecurityUtils.NS_XMLENC +"\">").append(keySize)
+                        .append("</KeySize>\n" +
+                        "            </EncryptionMethod>\n");
+            });
+            buff.append("        </KeyDescriptor>\n");
         }
         
         buff.append(

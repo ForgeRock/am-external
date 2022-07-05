@@ -24,9 +24,13 @@
  *
  * $Id: ObligationsImpl.java,v 1.3 2008/11/10 22:57:06 veiming Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.policy.impl;
+
+import static com.sun.identity.xacml.common.XACMLConstants.OBLIGATIONS;
+import static com.sun.identity.xacml.common.XACMLConstants.XACML_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.XACML_NS_URI;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -36,10 +40,12 @@ import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -65,7 +71,7 @@ public class ObligationsImpl implements Obligations {
             </xs:sequence>
 	</xs:complexType>
     */
-    private List obligations = new ArrayList(); //Obligation+ 
+    private List<Obligation> obligations = new ArrayList<>(); //Obligation+
     private boolean mutable = true;
 
     /**
@@ -132,13 +138,13 @@ public class ObligationsImpl implements Obligations {
         }
         if (obligations != null) {
             Iterator iter = obligations.iterator();
-            this.obligations = new ArrayList();
+            this.obligations = new ArrayList<>();
             while (iter.hasNext()) {
                 Obligation obligation = (Obligation) iter.next();
                 this.obligations.add(obligation);
             }
         } else {
-            obligations = null;
+            this.obligations = null;
         }
     }
 
@@ -154,59 +160,29 @@ public class ObligationsImpl implements Obligations {
                 XACMLSDKUtils.xacmlResourceBundle.getString("objectImmutable"));
         }
         if (obligations == null) {
-            obligations = new ArrayList();
+            obligations = new ArrayList<>();
         }
         obligations.add(obligation);
     }
 
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element obligationsElement = XMLUtils.createRootElement(document, XACML_NS_PREFIX, XACML_NS_URI, OBLIGATIONS,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(obligationsElement);
 
-   /**
-    * Returns a string representation of this object
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException {
-        StringBuffer sb = new StringBuffer(2000);
-        String nsPrefix = "";
-        String nsDeclaration = "";
-        if (includeNSPrefix) {
-            nsPrefix = XACMLConstants.XACML_NS_PREFIX + ":";
-        }
-        if (declareNS) {
-            nsDeclaration = XACMLConstants.XACML_NS_DECLARATION;
-        }
-        sb.append("<").append(nsPrefix).append(XACMLConstants.OBLIGATIONS)
-            .append(" ").append(nsDeclaration).append(">\n");
-        int length = 0;
         if (obligations != null) {
-            length = obligations.size();
-            for (int i = 0; i < length; i++) {
-                Obligation obligation = (Obligation)obligations.get(i);
-                sb.append(obligation.toXMLString(includeNSPrefix, false));
+            for (Obligation obligation : obligations) {
+                obligationsElement.appendChild(obligation.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
-        sb.append("</").append(nsPrefix)
-                .append(XACMLConstants.OBLIGATIONS).append(">\n");
-        return sb.toString();
-                
+
+        return fragment;
     }
 
-   /**
-    * Returns a string representation of this object
-    *
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException {
-        return toXMLString(true, false);
-    }
-
-   /**
+    /**
     * Makes this object immutable
     */
     public void makeImmutable() {
@@ -247,7 +223,7 @@ public class ObligationsImpl implements Obligations {
                 "missing_local_name"));
         }
 
-        if (!elemName.equals(XACMLConstants.OBLIGATIONS)) {
+        if (!elemName.equals(OBLIGATIONS)) {
             logger.error(
                 "ResponseImpl.processElement: invalid local name " + elemName);
             throw new XACMLException(

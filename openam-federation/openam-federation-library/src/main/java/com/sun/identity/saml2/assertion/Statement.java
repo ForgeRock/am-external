@@ -24,13 +24,13 @@
  *
  * $Id: Statement.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion;
 
 import org.forgerock.openam.annotations.SupportedAll;
 
-import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 
 /**
  * The <code>Statement</code> element is an extension point that allows
@@ -49,7 +49,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  * </pre>
  */
 @SupportedAll
-public interface Statement {
+public interface Statement extends XmlSerializable {
 
     /**
      * Makes the object immutable.
@@ -62,29 +62,5 @@ public interface Statement {
      * @return true if the object is mutable; false otherwise.
      */
     public boolean isMutable();
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *         By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString()
-        throws SAML2Exception;
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *                prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *                within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString(boolean includeNS, boolean declareNS)
-        throws SAML2Exception;
-
 }
 

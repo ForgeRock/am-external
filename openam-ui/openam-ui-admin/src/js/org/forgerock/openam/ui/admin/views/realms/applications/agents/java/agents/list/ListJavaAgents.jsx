@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import { identity, omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -28,6 +27,30 @@ import List from "components/list/List";
 import StatusCell from "components/table/cells/StatusCell";
 
 const ListJavaAgents = (props) => {
+    const columns = [{
+        title: identity,
+        dataField: "_id",
+        formatter: dataFormatReact(
+            <FontAwesomeIconCell icon="male" />
+        ),
+        sort: true,
+        text: t("console.applications.agents.java.agents.list.grid.0")
+    }, {
+        dataField: "globalJ2EEAgentConfig",
+        formatter: dataFieldObjectPath(identity, "agentgroup"),
+        sort: true,
+        text: t("console.applications.agents.java.agents.list.grid.1")
+    }, {
+        dataField: "globalJ2EEAgentConfig",
+        formatter: dataFieldObjectPath((cell) => cell, "repositoryLocation"),
+        sort: true,
+        text: t("console.applications.agents.java.agents.list.grid.2")
+    }, {
+        dataField: "globalJ2EEAgentConfig",
+        formatter: dataFieldObjectPath(StatusCell, "status"),
+        sort: true,
+        text: t("console.applications.agents.java.agents.list.grid.3")
+    }];
     return (
         <Panel className="fr-panel-tab">
             <Panel.Body>
@@ -37,41 +60,10 @@ const ListJavaAgents = (props) => {
                         title: t("console.applications.agents.java.agents.list.callToAction.button"),
                         href: props.newHref
                     } }
+                    columns={ columns }
                     description={ t("console.applications.agents.java.agents.list.callToAction.description") }
                     title={ t("console.applications.agents.java.agents.list.callToAction.title") }
-                >
-                    <TableHeaderColumn
-                        columnTitle={ identity }
-                        dataField="_id"
-                        dataFormat={ dataFormatReact(
-                            <FontAwesomeIconCell icon="male" />
-                        ) }
-                        dataSort
-                    >
-                        { t("console.applications.agents.java.agents.list.grid.0") }
-                    </TableHeaderColumn>
-                    <TableHeaderColumn
-                        dataField="globalJ2EEAgentConfig"
-                        dataFormat={ dataFieldObjectPath(identity, "agentgroup") }
-                        dataSort
-                    >
-                        { t("console.applications.agents.java.agents.list.grid.1") }
-                    </TableHeaderColumn>
-                    <TableHeaderColumn
-                        dataField="globalJ2EEAgentConfig"
-                        dataFormat={ dataFieldObjectPath((cell) => cell, "repositoryLocation") }
-                        dataSort
-                    >
-                        { t("console.applications.agents.java.agents.list.grid.2") }
-                    </TableHeaderColumn>
-                    <TableHeaderColumn
-                        dataField="globalJ2EEAgentConfig"
-                        dataFormat={ dataFieldObjectPath(StatusCell, "status") }
-                        dataSort
-                    >
-                        { t("console.applications.agents.java.agents.list.grid.3") }
-                    </TableHeaderColumn>
-                </List>
+                />
             </Panel.Body>
         </Panel>
     );

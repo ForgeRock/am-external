@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -35,6 +35,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
@@ -123,10 +124,11 @@ public class OneTimePasswordSmtpSenderNode extends SingleOutcomeNode {
         logger.debug("OneTimePasswordSmtpSenderNode started");
 
         ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
+        NodeState nodeState = context.getStateFor(this);
         String email = getEmailFromContext(context);
         if (email == null) {
             String username = context.sharedState.get(USERNAME).asString();
-            Optional<AMIdentity> identity = getAMIdentity(context, identityUtils, coreWrapper);
+            Optional<AMIdentity> identity = getAMIdentity(context.universalId, nodeState, identityUtils, coreWrapper);
             if (identity.isEmpty()) {
                 logger.warn("Identity lookup failed");
                 throw new NodeProcessException(bundle.getString("identity.failure"));

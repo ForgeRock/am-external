@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
@@ -347,9 +347,9 @@ public class CertificateUserExtractorNode extends AbstractDecisionNode {
      * Defines the possible outcomes from this Certificate User Extractor node.
      */
     public static class CertificateUserExtractorOutcomeProvider
-            implements org.forgerock.openam.auth.node.api.OutcomeProvider {
+            implements org.forgerock.openam.auth.node.api.StaticOutcomeProvider {
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE,
                     CertificateUserExtractorOutcomeProvider.class.getClassLoader());
             return ImmutableList.of(

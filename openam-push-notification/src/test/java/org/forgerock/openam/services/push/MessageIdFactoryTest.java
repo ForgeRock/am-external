@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.services.push;
 
@@ -21,12 +21,14 @@ import static org.mockito.BDDMockito.given;
 
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.testng.MockitoTestNGListener;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
 
+@Listeners(MockitoTestNGListener.class)
 public class MessageIdFactoryTest {
 
     @Mock
@@ -37,7 +39,6 @@ public class MessageIdFactoryTest {
 
     @BeforeMethod
     public void setup() {
-        MockitoAnnotations.initMocks(this);
         messageIdFactory = new MessageIdFactory(pushNotificationService);
     }
 

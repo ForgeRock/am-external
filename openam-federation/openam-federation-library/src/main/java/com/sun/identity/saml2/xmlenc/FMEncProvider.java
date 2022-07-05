@@ -24,13 +24,17 @@
  *
  * $Id: FMEncProvider.java,v 1.5 2008/06/25 05:48:03 qcheng Exp $
  *
- * Portions Copyrighted 2014-2020 ForgeRock AS.
+ * Portions Copyrighted 2014-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.xmlenc;
+
+import static org.forgerock.openam.utils.CollectionUtils.entry;
+import static org.forgerock.openam.utils.CollectionUtils.immutableOrderedMap;
 
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -76,6 +80,21 @@ public final class FMEncProvider implements EncProvider {
      */
     private static boolean encryptedKeyInKeyInfo = true;
 
+    /**
+     * Lists the SAML 2.0 data encryption algorithms supported by this provider, along with the key size. Note: for
+     * TripleDES, the keysize is specified as -1 to avoid checking the key size for backwards compatibility. The
+     * entries are listed in order of preference, strongest algorithm first.
+     */
+    public static final Map<String, Integer> SUPPORTED_DATA_ENCRYPTION_ALGORITHMS = immutableOrderedMap(
+            entry(XMLCipher.AES_256_GCM, 256),
+            entry(XMLCipher.AES_192_GCM, 192),
+            entry(XMLCipher.AES_128_GCM, 128),
+            entry(XMLCipher.AES_256, 256),
+            entry(XMLCipher.AES_192, 192),
+            entry(XMLCipher.AES_128, 128),
+            entry(XMLCipher.TRIPLEDES, -1) // Skip key size check for 3DES for backwards compatibility
+    );
+
     static {
         XmlSecurity.init();
         String tmp = SystemConfigurationUtil.getProperty(
@@ -112,16 +131,12 @@ public final class FMEncProvider implements EncProvider {
             logger.error("Null input parameter(s).");
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("nullInput"));
         }
-        if (!dataEncAlgorithm.equals(XMLCipher.AES_128) &&
-                !dataEncAlgorithm.equals(XMLCipher.AES_192) &&
-                !dataEncAlgorithm.equals(XMLCipher.AES_256) &&
-                !dataEncAlgorithm.equals(XMLCipher.TRIPLEDES)) {
+        Integer expectedDataEncStrength = SUPPORTED_DATA_ENCRYPTION_ALGORITHMS.get(dataEncAlgorithm);
+        if (expectedDataEncStrength == null) {
             logger.error("The encryption algorithm '{}' is not supported", dataEncAlgorithm);
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("unsupportedKeyAlg"));
         }
-        if ((dataEncAlgorithm.equals(XMLCipher.AES_128) && dataEncStrength != 128) ||
-                (dataEncAlgorithm.equals(XMLCipher.AES_192) && dataEncStrength != 192) ||
-                (dataEncAlgorithm.equals(XMLCipher.AES_256) && dataEncStrength != 256)) {
+        if (expectedDataEncStrength != -1 && dataEncStrength != expectedDataEncStrength) {
             logger.error("Data encryption algorithm '{}' and strength '{}' mismatch.", dataEncAlgorithm,
                     dataEncStrength);
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("algSizeMismatch"));
@@ -484,15 +499,14 @@ public final class FMEncProvider implements EncProvider {
             throws SAML2Exception {
         KeyGenerator keygen = null;
         try {
-            if (algorithm.equals(XMLCipher.AES_128) ||
-                    algorithm.equals(XMLCipher.AES_192) ||
-                    algorithm.equals(XMLCipher.AES_256)) {
-                keygen = KeyGenerator.getInstance("AES");
-            } else if (algorithm.equals(XMLCipher.TRIPLEDES)) {
-                keygen = KeyGenerator.getInstance("TripleDES");
-            } else {
+            if (!SUPPORTED_DATA_ENCRYPTION_ALGORITHMS.containsKey(algorithm)) {
                 logger.error("generateSecretKey : unsupported algorithm '{}'", algorithm);
                 throw new SAML2Exception(SAML2SDKUtils.bundle.getString("unsupportedKeyAlg"));
+            }
+            if (algorithm.equals(XMLCipher.TRIPLEDES)) {
+                keygen = KeyGenerator.getInstance("TripleDES");
+            } else {
+                keygen = KeyGenerator.getInstance("AES");
             }
 
             if (keyStrength != 0) {
@@ -503,7 +517,7 @@ public final class FMEncProvider implements EncProvider {
             throw new SAML2Exception(ne);
         }
 
-        return (keygen != null) ? keygen.generateKey() : null;
+        return keygen.generateKey();
     }
 
     private Key getEncryptionKey(XMLCipher cipher, Set<PrivateKey> privateKeys, EncryptedKey encryptedKey,

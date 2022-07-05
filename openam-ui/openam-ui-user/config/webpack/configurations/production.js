@@ -11,9 +11,8 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
-
 const TerserWebpackPlugin = require("terser-webpack-plugin");
 const webpackMerge = require("webpack-merge");
 
@@ -73,7 +72,7 @@ module.exports = webpackMerge(common, {
     output: {
         chunkFilename: "[name].[chunkhash].js",
         filename: ({ chunk }) => {
-            return ["main-authorize", "main-device"].includes(chunk.name)
+            return ["main-authorize", "main-device", "main-uma"].includes(chunk.name)
                 ? "[name].js"
                 : "[name].[chunkhash].js";
         }

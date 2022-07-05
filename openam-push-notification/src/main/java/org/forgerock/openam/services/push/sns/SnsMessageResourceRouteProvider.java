@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2021 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.sns;
 
@@ -22,7 +22,6 @@ import static org.forgerock.openam.rest.Routers.none;
 import javax.inject.Inject;
 
 import org.forgerock.openam.audit.AuditConstants.Component;
-import org.forgerock.openam.rest.AbstractRestRouteProvider;
 import org.forgerock.openam.rest.ResourceRouter;
 import org.forgerock.openam.rest.RestRouteProvider;
 
@@ -31,7 +30,7 @@ import org.forgerock.openam.rest.RestRouteProvider;
  *
  * @since 13.5.0
  */
-public class SnsMessageResourceRouteProvider extends AbstractRestRouteProvider {
+public class SnsMessageResourceRouteProvider implements RestRouteProvider {
 
     /**
      * The path on which the endpoint produced will be accessible.

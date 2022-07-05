@@ -24,10 +24,14 @@
  *
  * $Id: ResponseImpl.java,v 1.4 2008/11/10 22:57:05 veiming Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.xacml.context.impl;
+
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.RESPONSE;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,10 +41,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml.common.SAMLException;
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -69,7 +76,7 @@ public class ResponseImpl implements Response {
 
 
     private static final Logger logger = LoggerFactory.getLogger(ResponseImpl.class);
-    private List results = new ArrayList(); //Result+ 
+    private List<Result> results = new ArrayList<>(); //Result+
     private boolean mutable = true;
 
     /** 
@@ -135,7 +142,7 @@ public class ResponseImpl implements Response {
         }
         if (values != null) {
             Iterator iter = values.iterator();
-            results = new ArrayList();
+            results = new ArrayList<>();
             while (iter.hasNext()) {
                 Result value = (Result) iter.next();
                 results.add(value);
@@ -158,59 +165,29 @@ public class ResponseImpl implements Response {
                 XACMLSDKUtils.xacmlResourceBundle.getString("objectImmutable"));
         }
         if (results == null) {
-            results = new ArrayList();
+            results = new ArrayList<>();
         }
         results.add(result);
     }
 
-   /**
-    * Returns a string representation of this object
-    *
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException {
-        //top level element, declare namespace
-        return this.toXMLString(true, true);
-    }
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element responseElement = XMLUtils.createRootElement(document, CONTEXT_NS_PREFIX, CONTEXT_NS_URI, RESPONSE,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(responseElement);
 
-   /**
-    * Returns a string representation of this object
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException {
-        StringBuffer sb = new StringBuffer(2000);
-        String nsPrefix = "";
-        String nsDeclaration = "";
-        if (includeNSPrefix) {
-            nsPrefix = XACMLConstants.CONTEXT_NS_PREFIX + ":";
-        }
-        if (declareNS) {
-            nsDeclaration = XACMLConstants.CONTEXT_NS_DECLARATION;
-        }
-        sb.append("<").append(nsPrefix).append(XACMLConstants.RESPONSE).
-            append(nsDeclaration).append(">\n");
-        int length = 0;
         if (results != null) {
-            length = results.size();
-            for (int i = 0; i < length; i++) {
-                Result result = (Result)results.get(i);
-                sb.append(result.toXMLString(includeNSPrefix, false));
+            for (Result result : results) {
+                responseElement.appendChild(result.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
-        sb.append("</").append(nsPrefix)
-                .append(XACMLConstants.RESPONSE).append(">\n");
-        return sb.toString();
+
+        return fragment;
     }
 
-
-   /**
+    /**
     * Checks if the object is mutable
     *
     * @return <code>true</code> if the object is mutable,
@@ -263,7 +240,7 @@ public class ResponseImpl implements Response {
                 "missing_local_name"));
         }
 
-        if (!elemName.equals(XACMLConstants.RESPONSE)) {
+        if (!elemName.equals(RESPONSE)) {
             logger.error(
                 "ResponseImpl.processElement(): invalid local name " + elemName);
             throw new XACMLException(

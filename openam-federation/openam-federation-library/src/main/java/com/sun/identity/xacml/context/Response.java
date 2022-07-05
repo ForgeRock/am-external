@@ -24,14 +24,21 @@
  *
  * $Id: Response.java,v 1.2 2008/06/25 05:48:12 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.context;
 
 import java.util.List;
 
-import org.forgerock.openam.annotations.SupportedAll;
+import javax.xml.parsers.ParserConfigurationException;
 
+import org.forgerock.openam.annotations.SupportedAll;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
+
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
+import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLException;
 
 /**
@@ -39,7 +46,7 @@ import com.sun.identity.xacml.common.XACMLException;
  * one or more <code>Result</code>s issued by policy decision point
  */
 @SupportedAll
-public interface Response {
+public interface Response extends XmlSerializable {
 
     /**
      * Returns the <code>Result</code>s of this object
@@ -66,25 +73,35 @@ public interface Response {
      */
     public void setResults(List results) throws XACMLException;
 
-   /**
-    * Returns a string representation of this object
-    *
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException;
-
-   /**
-    * Returns a string representation of this object
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
+    /**
+     * Returns a string representation
+     *
+     * @return a string representation
+     * @exception XACMLException if conversion fails for any reason
      */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException;
+    default String toXMLString() throws XACMLException {
+        return toXMLString(true, false);
+    }
+
+    /**
+     * Returns a string representation
+     * @param includeNSPrefix Determines whether or not the namespace qualifier
+     *        is prepended to the Element when converted
+     * @param declareNS Determines whether or not the namespace is declared
+     *        within the Element.
+     * @return a string representation
+     * @exception XACMLException if conversion fails for any reason
+     */
+    default String toXMLString(boolean includeNSPrefix, boolean declareNS)
+            throws XACMLException {
+        try {
+            Document document = XMLUtils.newDocument();
+            DocumentFragment fragment = toDocumentFragment(document, includeNSPrefix, declareNS);
+            return XMLUtils.print(fragment);
+        } catch (ParserConfigurationException | SAML2Exception e) {
+            throw new XACMLException(e);
+        }
+    }
 
    /**
     * Checks if the object is mutable

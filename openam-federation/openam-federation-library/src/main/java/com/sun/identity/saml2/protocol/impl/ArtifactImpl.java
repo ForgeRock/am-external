@@ -24,15 +24,18 @@
  *
  * $Id: ArtifactImpl.java,v 1.2 2008/06/25 05:47:58 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
 import com.sun.identity.saml2.common.SAML2Constants;
@@ -325,53 +328,20 @@ public class ArtifactImpl implements Artifact {
 	return endpointIndex;
     }
 
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *		By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString()
-	throws SAML2Exception {
-	return this.toXMLString(true, false);
-    }
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *		prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *		within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString(boolean includeNS, boolean declareNS)
-	throws SAML2Exception {
-	if (artifact == null || artifact.trim().length() == 0) {
-	    if (logger.isDebugEnabled()) {
-		logger.debug("ArtifactImpl.toXMLString: artifact "
-		    + "value is empty");
-	    }
-	    throw new SAML2Exception(
-		SAML2SDKUtils.bundle.getString("missingElementValue"));
-	}
-
-	StringBuffer xml = new StringBuffer(200);
-        String prefix = "";
-        if (includeNS) {
-            prefix = SAML2Constants.PROTOCOL_PREFIX;
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        if (StringUtils.isBlank(artifact)) {
+            logger.debug("ArtifactImpl.toXMLString: artifact value is empty");
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missingElementValue"));
         }
 
-        String uri = "";
-        if (declareNS) {
-            uri = SAML2Constants.PROTOCOL_DECLARE_STR;
-        }
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element rootElement = XMLUtils.createRootElement(document, SAML2Constants.PROTOCOL_PREFIX,
+                SAML2Constants.PROTOCOL_NAMESPACE, "Artifact", includeNSPrefix, declareNS);
+        rootElement.setTextContent(artifact);
+        fragment.appendChild(rootElement);
 
-        xml.append("<").append(prefix).append("Artifact").append(uri).
-                append(">").append(artifact).append("</").append(prefix).
-                append("Artifact>");
-        return xml.toString();
+        return fragment;
     }
 }

@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { identity, omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -26,6 +25,15 @@ import FontAwesomeIconCell from "components/table/cells/FontAwesomeIconCell";
 import List from "components/list/List";
 
 const ListRestSTS = (props) => {
+    const columns = [{
+        title: identity,
+        dataField: "_id",
+        formatter: dataFormatReact(
+            <FontAwesomeIconCell icon="credit-card" />
+        ),
+        sort: true,
+        text: t("console.sts.rest.list.grid.0")
+    }];
     return (
         <Panel className="fr-panel-tab">
             <Panel.Body>
@@ -35,20 +43,10 @@ const ListRestSTS = (props) => {
                         title: t("console.sts.rest.list.callToAction.button"),
                         href: props.newHref
                     } }
+                    columns={ columns }
                     description={ t("console.sts.rest.list.callToAction.description") }
                     title={ t("console.sts.rest.list.callToAction.title") }
-                >
-                    <TableHeaderColumn
-                        columnTitle={ identity }
-                        dataField="_id"
-                        dataFormat={ dataFormatReact(
-                            <FontAwesomeIconCell icon="credit-card" />
-                        ) }
-                        dataSort
-                    >
-                        { t("console.sts.rest.list.grid.0") }
-                    </TableHeaderColumn>
-                </List>
+                />
             </Panel.Body>
         </Panel>
     );

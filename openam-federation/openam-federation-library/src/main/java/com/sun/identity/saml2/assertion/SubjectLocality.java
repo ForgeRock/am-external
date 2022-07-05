@@ -24,7 +24,7 @@
  *
  * $Id: SubjectLocality.java,v 1.2 2008/06/25 05:47:42 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
@@ -36,6 +36,7 @@ import org.forgerock.openam.annotations.SupportedAll;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.sun.identity.saml2.assertion.impl.SubjectLocalityImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 
 /**
  * The <code>SubjectLocality</code> element specifies the DNS domain name
@@ -58,7 +59,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  */
 @SupportedAll
 @JsonDeserialize(as=SubjectLocalityImpl.class)
-public interface SubjectLocality {
+public interface SubjectLocality extends XmlSerializable {
 
     /**
      * Makes the object immutable.
@@ -107,29 +108,5 @@ public interface SubjectLocality {
      * @see #getAddress()
      */
     void setAddress(String value)
-        throws SAML2Exception;
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *         By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    String toXMLString()
-        throws SAML2Exception;
-
-    /**
-     * Returns a String representation of the
-     * <code>SubjectLocality</code> element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *                prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *                within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    String toXMLString(boolean includeNS, boolean declareNS)
         throws SAML2Exception;
 }

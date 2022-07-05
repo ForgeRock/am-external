@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -115,8 +115,8 @@ public class TimerStopNode extends SingleOutcomeNode {
         }
 
         long elapsedTime = currentTimeMillis() - startTime;
-        logger.debug("{} recording elapsed time {}ms (since {}) in {}",
-                TimerStopNode.class.getSimpleName(), elapsedTime, config.startTimeProperty());
+        logger.debug("{} recording elapsed time {}ms (since {} in property {})",
+                TimerStopNode.class.getSimpleName(), elapsedTime, startTime, config.startTimeProperty());
 
         timer.record(elapsedTime, TimeUnit.MILLISECONDS);
 

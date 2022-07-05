@@ -22,7 +22,7 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -49,7 +49,6 @@ import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 
@@ -107,10 +106,17 @@ public class IDPSSOFederate {
                 logger.debug("Invoking IDP adapter preSendFailureResponse hook");
                 final SAML2IdentityProviderAdapter idpAdapter = ex.getIdpAdapter();
                 if (idpAdapter != null) {
-                    idpAdapter.preSendFailureResponse(request, response, ex.getFaultCode(), ex.getDetail());
+                    IDPSSOFederate federate = new IDPSSOFederate(false);
+                    IDPRequestValidator validator = federate.saml2ActorFactory.getIDPRequestValidator(reqBinding, false);
+                    String idpMetaAlias = validator.getMetaAlias(request);
+                    String realm = validator.getRealmByMetaAlias(idpMetaAlias);
+                    String idpEntityID = validator.getIDPEntity(idpMetaAlias, realm, false);
+
+                    idpAdapter.preSendFailureResponse(idpEntityID, realm, request, response, ex.getFaultCode(),
+                            ex.getDetail());
                 }
-            } catch (SAML2Exception se2) {
-                logger.error("Error invoking the IDP Adapter", se2);
+            } catch (SAML2Exception | ClientFaultException | ServerFaultException e) {
+                logger.error("Error invoking the IDP Adapter", e);
             }
 
             SAMLUtils.sendError(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, ex.getMessageCode(),

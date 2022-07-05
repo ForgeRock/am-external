@@ -24,7 +24,7 @@
  *
  * $Id: ManageNameIDResponseImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
@@ -38,7 +38,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.protocol.ManageNameIDResponse;
@@ -58,13 +57,15 @@ import com.sun.identity.shared.xml.XMLUtils;
 public class ManageNameIDResponseImpl 
 extends StatusResponseImpl implements ManageNameIDResponse {
     private static final Logger logger = LoggerFactory.getLogger(ManageNameIDResponseImpl.class);
+    public static final String MANAGE_NAME_ID_RESPONSE = "ManageNameIDResponse";
     public final String elementName = "ManageNameIDResponse";
 
     /**
      * Constructor to create <code>ManageNameIDResponse</code> Object. 
      */
     public ManageNameIDResponseImpl() {
-    	isMutable = true;
+        super(MANAGE_NAME_ID_RESPONSE);
+        isMutable = true;
     }
 
     /**
@@ -76,6 +77,7 @@ extends StatusResponseImpl implements ManageNameIDResponse {
      *         if <code>ManageNameIDRequest<code> cannot be created.
      */
     public ManageNameIDResponseImpl(Element element) throws SAML2Exception {
+        super(MANAGE_NAME_ID_RESPONSE);
     	parseElement(element);
     	if (isSigned) {
             signedXMLString = XMLUtils.print(element);
@@ -92,7 +94,8 @@ extends StatusResponseImpl implements ManageNameIDResponse {
      *        if <code>ManageNameIDRequest<code> cannot be created.
      */
     public ManageNameIDResponseImpl(String xmlString) throws SAML2Exception {
-    	Document doc = XMLUtils.toDOMDocument(xmlString);
+        super(MANAGE_NAME_ID_RESPONSE);
+        Document doc = XMLUtils.toDOMDocument(xmlString);
 		if (doc == null) {
 		    throw new SAML2Exception("errorObtainingElement");
 		}
@@ -163,54 +166,5 @@ extends StatusResponseImpl implements ManageNameIDResponse {
                 }
     	    }
     	}
-    }
-
-    /**
-     * Returns the <code>ManageNameIDResponse</code> in an XML 
-     * document String format based on the <code>ManageNameIDResponse</code> 
-     * schema described above.
-     * @return An XML String representing the <code>ManageNameIDResponse</code>.
-     * @throws SAML2Exception ,if it could not create String object.
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true, false);
-    }
-    
-    /**
-     * Returns the <code>ManageNameIDResponse</code> in an XML document 
-     * String format based on the <code>ManageNameIDResponse</code> schema 
-     * described above.
-     * @param includeNSPrefix Determines whether the namespace qualifier is
-     *        prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return A XML String representing the <code>ManageNameIDResponse</code>.
-    *  @throws SAML2Exception if it could not create String object.
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-    throws SAML2Exception {
-        if (isSigned && signedXMLString != null) {
-            return signedXMLString;
-        }
-
-        StringBuffer xml = new StringBuffer();
-    	String NS="";
-    	String NSP="";
-    	
-    	if (declareNS) {
-    	    NS = SAML2Constants.PROTOCOL_DECLARE_STR;
-    	}
-    	
-    	if (includeNSPrefix) {
-    	    NSP = SAML2Constants.PROTOCOL_PREFIX;
-    	}
-
-        xml.append("<").append(NSP).append(elementName).append(" ");
-
-        xml.append(super.toXMLString(includeNSPrefix, includeNSPrefix));
-        
-        xml.append("</").append(NSP).append(elementName).append(">");
-        
-        return xml.toString();    
     }
 }

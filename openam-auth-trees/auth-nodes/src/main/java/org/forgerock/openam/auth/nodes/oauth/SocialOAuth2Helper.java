@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.oauth;
 
@@ -26,6 +26,8 @@ import static org.forgerock.openam.oauth2.OAuth2Constants.ClientPurpose.RP_ID_TO
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.REQUEST;
 import static org.forgerock.openam.social.idp.ClientAuthenticationMethod.SELF_SIGNED_TLS_CLIENT_AUTH;
 import static org.forgerock.openam.social.idp.ClientAuthenticationMethod.TLS_CLIENT_AUTH;
+import static org.forgerock.openam.social.idp.UserInfoResponseType.SIGNED_JWT;
+import static org.forgerock.openam.social.idp.UserInfoResponseType.SIGNED_THEN_ENCRYPTED_JWT;
 import static org.forgerock.openam.utils.Time.getClock;
 
 import java.math.BigInteger;
@@ -54,6 +56,8 @@ import org.forgerock.oauth.clients.oauth2.OAuth2ClientConfiguration;
 import org.forgerock.oauth.clients.oidc.JwtRequestParameterOption;
 import org.forgerock.oauth.clients.oidc.OpenIDConnectClient;
 import org.forgerock.oauth.clients.oidc.OpenIDConnectClientConfiguration;
+import org.forgerock.oauth.resolvers.service.OpenIdResolverService;
+import org.forgerock.oauth.resolvers.service.OpenIdResolverServiceConfigurator;
 import org.forgerock.oauth.resolvers.service.OpenIdResolverServiceConfiguratorImpl;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
@@ -198,10 +202,22 @@ public class SocialOAuth2Helper {
             //OpenIdConnectClient handles the JWKStore cache that needs to be provided during instantiation.
             //Other OAuthClient implementations don't have built in support for that.
             if (OpenIDConnectClient.class.isAssignableFrom(oauthClient)) {
-                instance = new AMOpenIDConnectClient(handler, (OpenIDConnectClientConfiguration) config, getClock(),
-                        getSecureRandom(), openIdResolverServiceFactory.create(realm, RP_ID_TOKEN_DECRYPTION),
-                        new OpenIdResolverServiceConfiguratorImpl(), (OpenIDConnectClientConfig) idpConfig,
-                        secrets.getRealmSecrets(realm));
+
+                if (userInfoSignedOrSignedAndEncrypted((OpenIDConnectClientConfig) idpConfig)) {
+                    // Create the AMOpenIDConnectClient which is capable of decrypting the encrypted user info and
+                    // verifying signed user info response.
+                    instance = new AMOpenIDConnectClient(handler, (OpenIDConnectClientConfiguration) config, getClock(),
+                            getSecureRandom(), openIdResolverServiceFactory.create(realm, RP_ID_TOKEN_DECRYPTION),
+                            new OpenIdResolverServiceConfiguratorImpl(), (OpenIDConnectClientConfig) idpConfig,
+                            secrets.getRealmSecrets(realm));
+                } else {
+                    instance = oauthClient.getConstructor(Handler.class, config.getClass(), Clock.class,
+                                    SecureRandom.class, OpenIdResolverService.class,
+                                    OpenIdResolverServiceConfigurator.class)
+                            .newInstance(handler, config, getClock(), getSecureRandom(),
+                                    openIdResolverServiceFactory.create(realm, RP_ID_TOKEN_DECRYPTION),
+                                    new OpenIdResolverServiceConfiguratorImpl());
+                }
             } else {
                 instance = oauthClient.getConstructor(Handler.class, config.getClass(), Clock.class, SecureRandom.class)
                         .newInstance(handler, config, getClock(), getSecureRandom());
@@ -366,5 +382,10 @@ public class SocialOAuth2Helper {
         }
 
         return defaultHandler;
+    }
+
+    private boolean userInfoSignedOrSignedAndEncrypted(OpenIDConnectClientConfig idpConfig) {
+        return idpConfig.userInfoResponseType() == SIGNED_JWT
+                || idpConfig.userInfoResponseType() == SIGNED_THEN_ENCRYPTED_JWT;
     }
 }

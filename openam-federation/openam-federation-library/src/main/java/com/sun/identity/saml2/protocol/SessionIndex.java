@@ -24,7 +24,7 @@
  *
  * $Id: SessionIndex.java,v 1.2 2008/06/25 05:47:58 qcheng Exp $
  *
- * Portions Copyrighted 2016-2019 ForgeRock AS.
+ * Portions Copyrighted 2016-2021 ForgeRock AS.
  */
 
 
@@ -33,7 +33,7 @@ package com.sun.identity.saml2.protocol;
 import org.forgerock.openam.annotations.SupportedAll;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 import com.sun.identity.saml2.protocol.impl.SessionIndexImpl;
 
 /**
@@ -51,7 +51,7 @@ import com.sun.identity.saml2.protocol.impl.SessionIndexImpl;
 
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
         defaultImpl = SessionIndexImpl.class)
-public interface SessionIndex {
+public interface SessionIndex extends XmlSerializable {
     
     /**
      * Returns the <code>SessionIndex</code> value.
@@ -60,29 +60,4 @@ public interface SessionIndex {
      *
      */
     public java.lang.String getValue();
-   
-    /**
-     * Returns the <code>SessionIndex</code> in an XML document String format
-     * based on the <code>SessionIndex</code> schema described above.
-     *
-     * @return A XML String representing the <code>SessionIndex</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString() throws SAML2Exception;
-    
-    /**
-     * Returns the <code>SessionIndex</code> in an XML document String format
-     * based on the <code>SessionIndex</code> schema described above.
-     * @param includeNSPrefix Determines whether or not the namespace qualifier 
-     * is prepended to the Element when converted
-     *
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return A XML String representing the <code>SessionIndex</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-    throws SAML2Exception;
 }

@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import { identity, omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -27,6 +26,15 @@ import List from "components/list/List";
 import PageHeader from "components/PageHeader";
 
 const ListTrees = (props) => {
+    const columns = [{
+        title: identity,
+        dataField: "_id",
+        formatter: dataFormatReact(
+            <FontAwesomeIconCell icon="tree" />
+        ),
+        sort: true,
+        text: t("console.authentication.trees.list.grid.0")
+    }];
     return (
         <div>
             <PageHeader title={ t("console.authentication.trees.list.title") } />
@@ -38,20 +46,10 @@ const ListTrees = (props) => {
                             title: t("console.authentication.trees.list.callToAction.button"),
                             href: props.newHref
                         } }
+                        columns={ columns }
                         description={ t("console.authentication.trees.list.callToAction.description") }
                         title={ t("console.authentication.trees.list.callToAction.title") }
-                    >
-                        <TableHeaderColumn
-                            columnTitle={ identity }
-                            dataField="_id"
-                            dataFormat={ dataFormatReact(
-                                <FontAwesomeIconCell icon="tree" />
-                            ) }
-                            dataSort
-                        >
-                            { t("console.authentication.trees.list.grid.0") }
-                        </TableHeaderColumn>
-                    </List>
+                    />
                 </Panel.Body>
             </Panel>
         </div>

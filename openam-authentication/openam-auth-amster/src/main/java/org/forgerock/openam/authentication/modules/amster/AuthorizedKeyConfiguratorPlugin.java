@@ -73,7 +73,7 @@ public class AuthorizedKeyConfiguratorPlugin implements ConfiguratorPlugin {
     public static void createLocalAmsterKey(boolean authorizeKey) {
         try {
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-            generator.initialize(2048);
+            generator.initialize(3072);
             KeyPair keyPair = generator.generateKeyPair();
             String directory = AMHomeDirectoryService.getHomeDirectory().getAmsterKeysDir();
             HomeDirectoryUtils.createMissingDirectory(directory);

@@ -31,6 +31,7 @@ import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.core.realms.RealmTestHelper;
+import org.forgerock.openam.sm.ConfigurationAttributes;
 import org.forgerock.openam.wsfederation.common.ActiveRequestorException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -45,9 +46,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPMessage;
 import java.security.Principal;
 import java.util.Collections;
-import java.util.Map;
 
-import static com.sun.identity.authentication.util.ISAuthConstants.AUTHCONFIG_ORG;
 import static com.sun.identity.authentication.util.ISAuthConstants.AUTH_LEVEL_REQUEST_ATTR;
 import static com.sun.identity.authentication.util.ISAuthConstants.PRINCIPAL_UID_REQUEST_ATTR;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -90,6 +89,8 @@ public class DefaultWsFedAuthenticatorTest {
     @Mock
     ServiceConfig organizationConfig;
     @Mock
+    ConfigurationAttributes configurationAttributes;
+    @Mock
     HttpServletResponse response;
     @Mock
     SOAPMessage soapMessage;
@@ -111,8 +112,9 @@ public class DefaultWsFedAuthenticatorTest {
         when(coreWrapper.getAdminToken()).thenReturn(mock(SSOToken.class));
         when(coreWrapper.getServiceConfigManager(any(), any())).thenReturn(serviceConfigManager);
         when(serviceConfigManager.getOrganizationConfig(any(), any())).thenReturn(organizationConfig);
-        when(organizationConfig.getAttributes())
-                .thenReturn(Map.of(AUTHCONFIG_ORG, Collections.singleton(AUTHN_SERVICE_NAME)));
+        when(organizationConfig.getAttributes()).thenReturn(configurationAttributes);
+        when(configurationAttributes.get(ISAuthConstants.AUTHCONFIG_ORG)).thenReturn(
+                Collections.singleton(AUTHN_SERVICE_NAME));
         when(realmLookup.lookup(any())).thenReturn(realm);
         when(ssoTokenManager.createSSOToken(anyString())).thenReturn(ssoToken);
         when(ssoToken.getPrincipal()).thenReturn(principal);

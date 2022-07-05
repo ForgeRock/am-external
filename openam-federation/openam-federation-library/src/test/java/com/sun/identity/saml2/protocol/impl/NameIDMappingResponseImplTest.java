@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Date;
 
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.w3c.dom.Document;
 
@@ -36,7 +37,11 @@ public class NameIDMappingResponseImplTest {
         NameID nameID = new NameIDImpl();
         nameID.setValue("test");
         nameIDMappingResponse.setNameID(nameID);
-        nameIDMappingResponse.setStatus(new StatusImpl());
+        StatusImpl status = new StatusImpl();
+        StatusCodeImpl statusCode = new StatusCodeImpl();
+        statusCode.setValue("testCode");
+        status.setStatusCode(statusCode);
+        nameIDMappingResponse.setStatus(status);
         nameIDMappingResponse.setIssueInstant(new Date());
         nameIDMappingResponse.setInResponseTo(inResponseTo);
 
@@ -47,5 +52,52 @@ public class NameIDMappingResponseImplTest {
         // Then
         assertThat(doc.getDocumentElement().hasAttribute("oops")).isFalse();
         assertThat(doc.getDocumentElement().getAttribute("InResponseTo")).isEqualTo(inResponseTo);
+    }
+
+    @DataProvider
+    public Object[][] xmlTestCases() {
+        return new Object[][] {
+                { true, true, "<samlp:NameIDMappingResponse xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\" " +
+                        "ID=\"testID\" InResponseTo=\"testInResponseTo\" IssueInstant=\"2286-11-20T17:46:40Z\" " +
+                        "Version=\"2.0\"" +
+                        ">" +
+                        "<saml:NameID xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">test</saml:NameID>" +
+                        "<samlp:Status><samlp:StatusCode Value=\"testCode\"/></samlp:Status>" +
+                        "</samlp:NameIDMappingResponse>" },
+                { true, false, "<samlp:NameIDMappingResponse ID=\"testID\" InResponseTo=\"testInResponseTo\" " +
+                        "IssueInstant=\"2286-11-20T17:46:40Z\" Version=\"2.0\">" +
+                        "<saml:NameID>test</saml:NameID>" +
+                        "<samlp:Status><samlp:StatusCode Value=\"testCode\"/></samlp:Status>" +
+                        "</samlp:NameIDMappingResponse>" },
+                { false, false, "<NameIDMappingResponse ID=\"testID\" InResponseTo=\"testInResponseTo\" " +
+                        "IssueInstant=\"2286-11-20T17:46:40Z\" Version=\"2.0\">" +
+                        "<NameID>test</NameID>" +
+                        "<Status><StatusCode Value=\"testCode\"/></Status>" +
+                        "</NameIDMappingResponse>" }
+        };
+    }
+
+    @Test(dataProvider = "xmlTestCases")
+    public void testToXmlString(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
+        // Given
+        NameIDMappingResponseImpl response = new NameIDMappingResponseImpl();
+        NameID nameID = new NameIDImpl();
+        nameID.setValue("test");
+        response.setNameID(nameID);
+        response.setID("testID");
+        response.setVersion("2.0");
+        StatusImpl status = new StatusImpl();
+        StatusCodeImpl statusCode = new StatusCodeImpl();
+        statusCode.setValue("testCode");
+        status.setStatusCode(statusCode);
+        response.setStatus(status);
+        response.setIssueInstant(new Date(10000000000000L));
+        response.setInResponseTo("testInResponseTo");
+
+        // When
+        String xml = response.toXMLString(includeNS, declareNS);
+
+        // Then
+        assertThat(xml).isEqualToIgnoringWhitespace(expectedXml);
     }
 }

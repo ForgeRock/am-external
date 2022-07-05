@@ -18,10 +18,10 @@ package org.forgerock.openam.auth.nodes;
 import static org.forgerock.json.test.assertj.AssertJJsonValueAssert.assertThat;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.emptyTreeContext;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -33,7 +33,7 @@ import java.security.SecureRandom;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.mockito.ArgumentMatcher;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -83,7 +83,7 @@ public class OneTimePasswordGeneratorNodeTest {
         given(serviceConfig.length()).willReturn(otpSize);
         HOTPAlgorithm errorGenerator = mock(HOTPAlgorithm.class);
         when(errorGenerator.generateOTP(
-                Matchers.argThat(anyByteArrayMatcher),
+                ArgumentMatchers.argThat(anyByteArrayMatcher),
                 anyLong(),
                 anyInt(),
                 anyBoolean(),

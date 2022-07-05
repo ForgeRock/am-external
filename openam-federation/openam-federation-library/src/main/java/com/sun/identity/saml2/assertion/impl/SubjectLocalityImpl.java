@@ -24,22 +24,27 @@
  *
  * $Id: SubjectLocalityImpl.java,v 1.2 2008/06/25 05:47:44 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 
 package com.sun.identity.saml2.assertion.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
+import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import com.sun.identity.saml2.assertion.SubjectLocality;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -215,52 +220,21 @@ public class SubjectLocalityImpl implements SubjectLocality {
         address = value;
     }
 
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *        By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString()
-        throws SAML2Exception
-    {
-        return this.toXMLString(true, false);
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element subjectLocalityElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX,
+                ASSERTION_NAMESPACE_URI, "SubjectLocality", includeNSPrefix, declareNS);
+        fragment.appendChild(subjectLocalityElement);
+
+        if (isNotBlank(address)) {
+            subjectLocalityElement.setAttribute("Address", address);
+        }
+        if (isNotBlank(dnsName)) {
+            subjectLocalityElement.setAttribute("DNSName", dnsName);
+        }
+
+        return fragment;
     }
-
-    /**
-     * Returns a String representation of the
-     * <code>SubjectLocality</code> element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *                prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *                within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString(boolean includeNS, boolean declareNS)
-        throws SAML2Exception
-    {
-        StringBuffer result = new StringBuffer(1000);
-        String prefix = "";
-        String uri = "";
-        if (includeNS) {
-            prefix = SAML2Constants.ASSERTION_PREFIX;
-        }
-        if (declareNS) {
-            uri = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-
-        result.append("<").append(prefix).append("SubjectLocality").append(uri);
-        if (address != null && address.trim().length() != 0) {
-            result.append(" Address=\"").append(address).append("\"");
-        }
-        if (dnsName != null && dnsName.trim().length() != 0) {
-            result.append(" DNSName=\"").append(dnsName).append("\"");
-        }
-        result.append("></").append(prefix).append("SubjectLocality>");
-        return result.toString();
-    }
-
 }

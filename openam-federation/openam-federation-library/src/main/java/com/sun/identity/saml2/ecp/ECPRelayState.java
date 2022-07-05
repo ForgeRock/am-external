@@ -24,20 +24,21 @@
  *
  * $Id: ECPRelayState.java,v 1.2 2008/06/25 05:47:46 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.ecp;
 
 import org.forgerock.openam.annotations.SupportedAll;
 
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 
 /** 
  *  The <code>ECPRelayState</code> interface defines methods for properties
  *  required by an ECP RelayState.
  */
  @SupportedAll
-public interface ECPRelayState {
+public interface ECPRelayState extends XmlSerializable {
     
     /** 
      * Returns the value of the <code>RelayState</code>.
@@ -86,28 +87,6 @@ public interface ECPRelayState {
      * @throws SAML2Exception if the object is immutable.
      */
     public void setActor(String actor) throws SAML2Exception;
-
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @return a String representation of this Object.
-     * @throws SAML2Exception if cannot create String object.
-     */
-    public String toXMLString() throws SAML2Exception;
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *        qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *        within the Element.
-     * @return the String representation of this Object.
-     * @throws SAML2Exception if cannot create String object.
-     **/
-    
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-	   throws SAML2Exception;
 
     /** 
      * Makes this object immutable. 

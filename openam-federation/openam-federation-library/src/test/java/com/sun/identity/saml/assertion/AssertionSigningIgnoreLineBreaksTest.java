@@ -11,13 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package com.sun.identity.saml.assertion;
 
 import static com.sun.identity.saml.assertion.AssertionTestUtil.getSignedWSFedAssertionXml;
 import static com.sun.identity.saml.common.SAMLConstants.TAG_ASSERTION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+
 
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;

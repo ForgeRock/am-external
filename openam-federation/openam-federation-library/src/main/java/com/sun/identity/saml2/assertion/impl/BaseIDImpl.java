@@ -24,19 +24,22 @@
  *
  * $Id: BaseIDImpl.java,v 1.2 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.assertion.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
 import com.sun.identity.saml2.assertion.BaseID;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -126,48 +129,21 @@ public class BaseIDImpl extends BaseIDAbstractImpl implements BaseID {
         }
     }
 
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace 
-    *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is 
-    *        declared within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-        StringBuffer sb = new StringBuffer(2000);
-        String NS = "";
-        String appendNS = "";
-        if (declareNS) {
-            NS = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-        if (includeNSPrefix) {
-            appendNS = SAML2Constants.ASSERTION_PREFIX;
-        }
-        sb.append("<").append(appendNS).append(BASE_ID_ELEMENT).append(NS);
-        String nq = getNameQualifier();
-        if (nq != null) {
-            sb.append(" ").append(NAME_QUALIFIER_ATTR).append("=\"").
-                append(nq).append("\"");
-        } 
-        String spnq = getSPNameQualifier();
-        if (spnq != null) {
-            sb.append(" ").append(SP_NAME_QUALIFIER_ATTR).append("=\"").
-                append(spnq).append("\"");
-        }
-        sb.append(" />");
-        return sb.toString();
-    }
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS) {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element baseIdElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                BASE_ID_ELEMENT, includeNSPrefix, declareNS);
+        fragment.appendChild(baseIdElement);
 
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception {
-        return this.toXMLString(true, false);
+        String nameQualifier = getNameQualifier();
+        if (nameQualifier != null) {
+            baseIdElement.setAttribute(NAME_QUALIFIER_ATTR, nameQualifier);
+        }
+        String spNameQualifier = getSPNameQualifier();
+        if (spNameQualifier != null) {
+            baseIdElement.setAttribute(SP_NAME_QUALIFIER_ATTR, spNameQualifier);
+        }
+        return fragment;
     }
 }

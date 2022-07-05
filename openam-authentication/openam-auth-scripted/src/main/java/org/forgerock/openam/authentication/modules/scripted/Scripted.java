@@ -11,12 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2020 ForgeRock AS.
+ * Copyright 2014-2021 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.scripted;
 
-import static org.forgerock.openam.scripting.ScriptConstants.EMPTY_SCRIPT_SELECTION;
-import static org.forgerock.openam.scripting.ScriptContext.AUTHENTICATION_SERVER_SIDE;
+import static org.forgerock.openam.authentication.service.AuthModuleScriptContext.AUTHENTICATION_SERVER_SIDE;
 
 import java.security.Principal;
 import java.util.Collections;
@@ -34,22 +33,22 @@ import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.http.client.request.HttpClientRequest;
 import org.forgerock.http.client.request.HttpClientRequestFactory;
-import org.forgerock.openam.scripting.ScriptEvaluator;
-import org.forgerock.openam.scripting.ScriptObject;
-import org.forgerock.openam.scripting.SupportedScriptingLanguage;
-import org.forgerock.openam.scripting.factories.ScriptHttpClientFactory;
+import org.forgerock.openam.core.realms.RealmLookupException;
+import org.forgerock.openam.core.realms.Realms;
+import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.ScriptingLanguage;
+import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
-import org.forgerock.openam.scripting.service.ScriptConfiguration;
-import org.forgerock.openam.scripting.service.ScriptingService;
-import org.forgerock.openam.scripting.service.ScriptingServiceFactory;
+import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.persistence.ScriptStore;
+import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
 import org.forgerock.openam.utils.StringUtils;
-import org.forgerock.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
-import com.google.inject.name.Names;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import com.sun.identity.authentication.spi.AMLoginModule;
@@ -58,6 +57,7 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.debug.Debug;
+import com.sun.identity.sm.ChoiceValues;
 import com.sun.identity.sm.DNMapper;
 
 /**
@@ -93,7 +93,7 @@ public class Scripted extends AMLoginModule {
     private String realm;
     private boolean clientSideScriptEnabled;
     private ScriptEvaluator scriptEvaluator;
-    private ScriptingService scriptingService;
+    private ScriptStore scriptStore;
     public Map moduleConfiguration;
 
     /** Debug logger instance used by scripts to log error/debug messages. */
@@ -117,7 +117,7 @@ public class Scripted extends AMLoginModule {
         realm = DNMapper.orgNameToRealmName(getRequestOrg());
         moduleConfiguration = options;
 
-        scriptingService = initialiseScriptingService();
+        scriptStore = initialiseScriptingService();
         scriptEvaluator = getScriptEvaluator();
         clientSideScriptEnabled = getClientSideScriptEnabled();
         httpClient = getHttpClient();
@@ -137,10 +137,13 @@ public class Scripted extends AMLoginModule {
         return getAMIdentityRepository(getRequestOrg());
     }
 
-    private ScriptingService initialiseScriptingService() {
-        ScriptingServiceFactory scriptingServiceFactory =
-                InjectorHolder.getInstance(Key.get(new TypeLiteral<ScriptingServiceFactory>() {}));
-        return scriptingServiceFactory.create(getRequestOrg());
+    private ScriptStore initialiseScriptingService() {
+        ScriptStoreFactory scriptStoreFactory = InjectorHolder.getInstance(ScriptStoreFactory.class);
+        try {
+            return scriptStoreFactory.create(Realms.of(realm));
+        } catch (RealmLookupException e) {
+            throw new IllegalArgumentException("Cannot find realm " + realm, e);
+        }
     }
 
     /**
@@ -171,12 +174,12 @@ public class Scripted extends AMLoginModule {
     }
 
     private int evaluateServerSideScript(String clientScriptOutputData, int state) throws AuthLoginException {
-        Pair<String, ScriptObject> script = getServerSideScript();
+        Script script = getServerSideScript();
         Bindings scriptVariables = new SimpleBindings();
         scriptVariables.put(REQUEST_DATA_VARIABLE_NAME, getScriptHttpRequestWrapper());
         scriptVariables.put(CLIENT_SCRIPT_OUTPUT_DATA_VARIABLE_NAME, clientScriptOutputData);
         scriptVariables.put(LOGGER_VARIABLE_NAME,
-                Debug.getInstance("scripts." + AUTHENTICATION_SERVER_SIDE.name() + "." + script.getFirst()));
+                Debug.getInstance("scripts." + AUTHENTICATION_SERVER_SIDE.name() + "." + script.getId()));
         scriptVariables.put(STATE_VARIABLE_NAME, state);
         scriptVariables.put(SHARED_STATE, sharedState);
         scriptVariables.put(USERNAME_VARIABLE_NAME, userName);
@@ -187,7 +190,7 @@ public class Scripted extends AMLoginModule {
         scriptVariables.put(IDENTITY_REPOSITORY, identityRepository);
 
         try {
-            scriptEvaluator.evaluateScript(script.getSecond(), scriptVariables);
+            scriptEvaluator.evaluateScript(script, scriptVariables);
         } catch (ScriptException e) {
             DEBUG.debug("Error running server side scripts", e);
             throw new AuthLoginException("Error running script", e);
@@ -218,27 +221,25 @@ public class Scripted extends AMLoginModule {
         return clientScriptOutputData;
     }
 
-    private Pair<String, ScriptObject> getServerSideScript() throws AuthLoginException {
+    private Script getServerSideScript() throws AuthLoginException {
         String scriptId = getConfigValue(SERVER_SCRIPT_ATTRIBUTE_NAME);
         try {
-            if (EMPTY_SCRIPT_SELECTION.equals(scriptId)) {
-                return Pair.of(null, new ScriptObject("DefaultScript", "", SupportedScriptingLanguage.JAVASCRIPT));
+            if (ChoiceValues.EMPTY_SCRIPT_SELECTION.equals(scriptId)) {
+                return Script.EMPTY_SCRIPT;
             }
-            ScriptConfiguration config = scriptingService.get(scriptId);
-            return Pair.of(scriptId, new ScriptObject(config.getName(), config.getScript(), config.getLanguage()));
-        } catch (org.forgerock.openam.scripting.ScriptException e) {
+            return scriptStore.get(scriptId);
+        } catch (org.forgerock.openam.scripting.domain.ScriptException e) {
             DEBUG.error("Error retrieving server side script", e);
             throw new AuthLoginException("Error retrieving script", e);
         }
     }
 
     private ScriptEvaluator getScriptEvaluator() {
-        return InjectorHolder.getInstance(
-                Key.get(ScriptEvaluator.class, Names.named(AUTHENTICATION_SERVER_SIDE.name())));
+        return InjectorHolder.getInstance(ScriptEvaluatorFactory.class).create(AUTHENTICATION_SERVER_SIDE);
     }
 
     private ChfHttpClient getHttpClient() {
-        SupportedScriptingLanguage scriptType = getScriptType();
+        ScriptingLanguage scriptType = getScriptType();
 
         if (scriptType == null) {
             return null;
@@ -258,13 +259,13 @@ public class Scripted extends AMLoginModule {
         }
 
         String clientSideScriptId = getConfigValue(CLIENT_SCRIPT_ATTR_NAME);
-        if (EMPTY_SCRIPT_SELECTION.equals(clientSideScriptId)) {
+        if (ChoiceValues.EMPTY_SCRIPT_SELECTION.equals(clientSideScriptId)) {
             return script;
         }
 
         try {
-            script = scriptingService.get(clientSideScriptId).getScript();
-        } catch (org.forgerock.openam.scripting.ScriptException e) {
+            script = scriptStore.get(clientSideScriptId).getScript();
+        } catch (org.forgerock.openam.scripting.domain.ScriptException e) {
             DEBUG.error("Error retrieving client side script", e);
         }
         return script;
@@ -291,9 +292,9 @@ public class Scripted extends AMLoginModule {
         return scriptAndSelfSubmitCallback;
     }
 
-    private SupportedScriptingLanguage getScriptType() {
+    private ScriptingLanguage getScriptType() {
         try {
-            return (SupportedScriptingLanguage)getServerSideScript().getSecond().getLanguage();
+            return getServerSideScript().getLanguage();
         } catch (AuthLoginException e) {
             DEBUG.error("Error retrieving server side scripting language", e);
         }

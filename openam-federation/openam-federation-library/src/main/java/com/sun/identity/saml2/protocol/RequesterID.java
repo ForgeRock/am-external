@@ -24,7 +24,7 @@
  *
  * $Id: RequesterID.java,v 1.2 2008/06/25 05:47:57 qcheng Exp $
  *
- * Portions Copyrighted 2016-2019 ForgeRock AS.
+ * Portions Copyrighted 2016-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.protocol;
 
@@ -33,6 +33,7 @@ import org.forgerock.openam.annotations.SupportedAll;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 import com.sun.identity.saml2.protocol.impl.RequesterIDImpl;
 
 /** 
@@ -44,7 +45,7 @@ import com.sun.identity.saml2.protocol.impl.RequesterIDImpl;
 
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
         defaultImpl = RequesterIDImpl.class)
-public interface RequesterID {
+public interface RequesterID extends XmlSerializable {
             
     /** 
      * Returns the value of the <code>RequesterID</code> URI.
@@ -62,28 +63,6 @@ public interface RequesterID {
      * @see #getValue
      */
     public void setValue(String value) throws SAML2Exception;
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @return a  String representation of this Object.
-     * @throws SAML2Exception if cannot convert to String.
-     */
-    public String toXMLString() throws SAML2Exception;
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @param includeNSPrefix determines whether or not the namespace 
-     *        qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *        within the Element.
-     * @throws SAML2Exception if cannot convert to String.
-     * @return a String representation of this Object.
-     **/
-            
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-	throws SAML2Exception;
     
     /** 
      * Makes this object immutable. 

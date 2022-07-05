@@ -11,9 +11,11 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2016-2019 ForgeRock AS. All Rights Reserved
+  Copyright 2016-2022 ForgeRock AS. All Rights Reserved
 }}
-{{#each columns}}<td>{{this.data}}</td>{{/each}}
+{{#each columns}}
+    <td>{{#if this.usePlaceholder}}{{t 'common.form.passwordPlaceholder'}}{{else}}{{this.data}}{{/if}}</td>
+{{/each}}
 <td class="fr-col-btn-2">
     <div class="btn-group">
         <button class="btn btn-link" data-edit-row title="{{t 'common.form.edit'}}"><i class="fa fa-pencil"></i></button>

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -20,15 +20,23 @@ import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.MFA_METHOD;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.PUSH_METHOD;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.CHALLENGE_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.CONTEXT_INFO_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.CUSTOM_PAYLOAD_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.LOADBALANCER_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MECHANISM_ID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.NOTIFICATION_MESSAGE_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_TYPE_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.TIME_INTERVAL_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.TIME_TO_LIVE_KEY;
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.CIBA_BINDING_MESSAGE;
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT;
+import static org.forgerock.openam.utils.Time.getCalendarInstance;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -74,6 +82,9 @@ import org.forgerock.openam.services.push.dispatch.predicates.PushMessageChallen
 import org.forgerock.openam.services.push.dispatch.predicates.SignedJwtVerificationPredicate;
 import org.forgerock.openam.session.SessionCookies;
 import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.utils.JsonObject;
+import org.forgerock.openam.utils.JsonValueBuilder;
+import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +106,23 @@ public class PushAuthenticationSenderNode implements Node {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PushAuthenticationSenderNode.class);
     private static final String BUNDLE = PushAuthenticationSenderNode.class.getName();
+
+    /** Maximum accepted size for a custom payload in kilobytes. */
+    private static final int MAX_PAYLOAD_SIZE = 3;
+    /** Kilobyte, multiple of the unit byte, Base 2 (1024 bytes). */
+    public static final int KILOBYTE = 1024;
+    /** Json attribute name for Device Location.*/
+    private static final String LOCATION_ATTRIBUTE_NAME = "location";
+    /** Json attribute name for Device userAgent.*/
+    private static final String USERAGENT_ATTRIBUTE_NAME = "userAgent";
+    /** Json attribute name for Device platform.*/
+    private static final String IP_ATTRIBUTE_NAME = "remoteIp";
+    /** IP attribute name in the Header of the HTTP Request.*/
+    private static final String HEADER_IP_ATTRIBUTE_NAME = "x-real-ip";
+    /** userAgent attribute name in the Header of the HTTP Request.*/
+    private static final String HEADER_USERAGENT_ATTRIBUTE_NAME = "user-agent";
+    /** Device Profile shared state key.*/
+    private static final String DEVICE_PROFILE_KEY = "forgeRock.device.profile";
 
     private final Config config;
     private final UserPushDeviceProfileManager userPushDeviceProfileManager;
@@ -177,36 +205,57 @@ public class PushAuthenticationSenderNode implements Node {
 
     private MessageId sendMessage(TreeContext context, Config config, String realm, String username,
                                PushDeviceSettings device) throws NodeProcessException {
-
+        Calendar calendarInstance = getCalendarInstance();
         String communicationId = device.getCommunicationId();
         String mechanismId = device.getDeviceMechanismUID();
-
         String challenge = userPushDeviceProfileManager.createRandomBytes();
 
+        // Parse push message
+        String pushMessage = getLocalisedUserMessage(context, config);
+        pushMessage = pushMessage.replaceAll("\\{\\{user\\}\\}", username);
+        pushMessage = pushMessage.replaceAll("\\{\\{issuer\\}\\}", device.getIssuer());
+
+        // Add default keys to the claim
         JwtClaimsSetBuilder jwtClaimsSetBuilder = new JwtClaimsSetBuilder()
                 .claim(MECHANISM_ID_KEY, mechanismId)
                 .claim(LOADBALANCER_KEY, Base64.encode(sessionCookies.getLBCookie().getBytes()))
                 .claim(CHALLENGE_KEY, challenge)
+                .claim(NOTIFICATION_MESSAGE_KEY, pushMessage)
+                .claim(PUSH_TYPE_KEY, config.pushType().getValue())
+                .claim(TIME_INTERVAL_KEY, String.valueOf(calendarInstance.getTimeInMillis()))
                 .claim(TIME_TO_LIVE_KEY, String.valueOf(config.messageTimeout() / 1000));
+
+        // Add any custom payload attributes to the claim
+        String payloadAttributes = getPayloadAttributes(context, config);
+        if (StringUtils.isNotEmpty(payloadAttributes)) {
+            validatePayloadSize(payloadAttributes);
+            jwtClaimsSetBuilder.claim(CUSTOM_PAYLOAD_KEY, payloadAttributes);
+        }
+
+        // If share context info is enabled, try to obtain this information from Device Profile Collector node
+        // and request to add to the claim.
+        if (config.contextInfo()) {
+            String contextInfo = getContextInfo(context);
+            jwtClaimsSetBuilder.claim(CONTEXT_INFO_KEY, contextInfo);
+        }
+
+        // Prepare set of predicates
+        byte[] secret = Base64.decode(device.getSharedSecret());
+        Set<Predicate> servicePredicates = new HashSet<>();
+        servicePredicates.add(new SignedJwtVerificationPredicate(secret, JWT));
+        servicePredicates.add(new PushMessageChallengeResponsePredicate(secret, challenge, JWT));
+
+        // Update claims and state for the selected push type
+        config.pushType().updateClaims(jwtClaimsSetBuilder);
+        config.pushType().updateState(context, this);
 
         String jwt = new SignedJwtBuilderImpl(new SigningManager()
                 .newHmacSigningHandler(Base64.decode(device.getSharedSecret())))
                 .claims(jwtClaimsSetBuilder.build())
                 .headers().alg(JwsAlgorithm.HS256).done().build();
 
-        String pushMessage = getLocalisedUserMessage(context, config);
-
-        pushMessage = pushMessage.replaceAll("\\{\\{user\\}\\}", username);
-        pushMessage = pushMessage.replaceAll("\\{\\{issuer\\}\\}", device.getIssuer());
-
         MessageId messageId = messageIdFactory.create(DefaultMessageTypes.AUTHENTICATE);
         PushMessage message = new PushMessage(communicationId, jwt, pushMessage, messageId);
-
-        Set<Predicate> servicePredicates = new HashSet<>();
-        servicePredicates.add(
-                new SignedJwtVerificationPredicate(Base64.decode(device.getSharedSecret()), JWT));
-        servicePredicates.add(
-                new PushMessageChallengeResponsePredicate(Base64.decode(device.getSharedSecret()), challenge, JWT));
 
         PushNotificationService pushNotificationService = getPushNotificationService(realm);
 
@@ -232,7 +281,8 @@ public class PushAuthenticationSenderNode implements Node {
 
     // The username in the shared state is not necessarily the actual username of the user (example: email address)
     private AMIdentity getIdentityFromIdentifier(TreeContext context) throws NodeProcessException {
-        Optional<AMIdentity> identity = getAMIdentity(context, identityUtils, coreWrapper);
+        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityUtils,
+                coreWrapper);
         if (identity.isEmpty()) {
             throw new NodeProcessException("Failed to fetch identity.");
         }
@@ -283,6 +333,64 @@ public class PushAuthenticationSenderNode implements Node {
         });
     }
 
+    private String getPayloadAttributes(TreeContext context, Config config) {
+        JsonObject payload = JsonValueBuilder.jsonValue();
+        for (String key : config.customPayload()) {
+            if (context.getStateFor(this).isDefined(key)) {
+                payload.put(key, context.getStateFor(this).get(key));
+            }
+        }
+        return payload.build().toString();
+    }
+
+    private void validatePayloadSize(String raw) throws NodeProcessException {
+        if (raw.getBytes().length > (new BigDecimal(MAX_PAYLOAD_SIZE).doubleValue() * KILOBYTE)) {
+            throw new NodeProcessException("Payload data exceed maximum accepted size");
+        }
+    }
+
+    /**
+     * Obtain context information from the request and device profile collected data.
+     * @param context the current {@link TreeContext} which will provide access to request attributes.
+     * @return JSON String representing the context information.
+     */
+    private String getContextInfo(TreeContext context) {
+        JsonObject contextInfo = JsonValueBuilder.jsonValue();
+
+        // Obtain location from the Device Profile if available
+        if (context.getStateFor(this).isDefined(DEVICE_PROFILE_KEY)) {
+            JsonValue profile = context.getStateFor(this).get(DEVICE_PROFILE_KEY);
+            if (profile != null) {
+                if (profile.isDefined(LOCATION_ATTRIBUTE_NAME)) {
+                    contextInfo.put(LOCATION_ATTRIBUTE_NAME, profile.get(LOCATION_ATTRIBUTE_NAME).asMap());
+                }
+            }
+        }
+
+        // Obtain IP address from the current request
+        String ipAddress = getHeaderAttribute(context, HEADER_IP_ATTRIBUTE_NAME);
+        if (ipAddress != null) {
+            contextInfo.put(IP_ATTRIBUTE_NAME, ipAddress);
+        }
+
+        // Obtain userAgent from the current request
+        String userAgent = getHeaderAttribute(context, HEADER_USERAGENT_ATTRIBUTE_NAME);
+        if (userAgent != null) {
+            contextInfo.put(USERAGENT_ATTRIBUTE_NAME, userAgent);
+        }
+
+        return contextInfo.build().toString();
+    }
+
+    private String getHeaderAttribute(TreeContext context, String attribute) {
+        String value = null;
+        if (context.request.headers.containsKey(attribute)) {
+            List<String> list = context.request.headers.get(attribute);
+            value = String.valueOf(list.get(0));
+        }
+        return value;
+    }
+
     /**
      * Configuration for the node.
      */
@@ -312,6 +420,34 @@ public class PushAuthenticationSenderNode implements Node {
         @Attribute(order = 300)
         default boolean mandatory() {
             return false;
+        }
+
+        /**
+         * Specifies whether to obtain context info from the device profile collector.
+         *
+         * @return true if the context info are to be collected.
+         */
+        @Attribute(order = 400)
+        default boolean contextInfo() {
+            return false;
+        }
+
+        /**
+         * Allows administrators to add custom attributes in the Push payload.
+         * @return List of attributes in the sharedState.
+         */
+        @Attribute(order = 500)
+        default Set<String> customPayload() {
+            return Collections.emptySet();
+        }
+
+        /**
+         * Specifies the type of Push notification.
+         * @return push type as string.
+         */
+        @Attribute(order = 600)
+        default PushType pushType() {
+            return PushType.DEFAULT;
         }
     }
 

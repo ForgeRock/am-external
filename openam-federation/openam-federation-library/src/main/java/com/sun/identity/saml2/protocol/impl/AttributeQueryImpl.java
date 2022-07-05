@@ -24,18 +24,20 @@
  *
  * $Id: AttributeQueryImpl.java,v 1.3 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static org.forgerock.openam.utils.CollectionUtils.isNotEmpty;
+
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Set;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
@@ -55,7 +57,7 @@ public class AttributeQueryImpl
      * Constructor to create <code>AttributeQuery</code> Object .
      */
     public AttributeQueryImpl() {
-        elementName = SAML2Constants.ATTRIBUTE_QUERY;
+        super(SAML2Constants.ATTRIBUTE_QUERY);
         isMutable = true;
     }
 
@@ -67,8 +69,8 @@ public class AttributeQueryImpl
      *     Object.
      */
     public AttributeQueryImpl(Element element) throws SAML2Exception {
+        super(SAML2Constants.ATTRIBUTE_QUERY);
         parseDOMElement(element);
-        elementName = SAML2Constants.ATTRIBUTE_QUERY;
         if (isSigned) {
             signedXMLString = XMLUtils.print(element);
         }
@@ -82,6 +84,7 @@ public class AttributeQueryImpl
      *     Object.
      */
     public AttributeQueryImpl(String xmlString) throws SAML2Exception {
+        super(SAML2Constants.ATTRIBUTE_QUERY);
         Document xmlDocument =
             XMLUtils.toDOMDocument(xmlString);
         if (xmlDocument == null) {
@@ -89,7 +92,6 @@ public class AttributeQueryImpl
                 SAML2SDKUtils.bundle.getString("errorObtainingElement"));
         }
         parseDOMElement(xmlDocument.getDocumentElement());
-        elementName = SAML2Constants.ATTRIBUTE_QUERY;
         if (isSigned) {
             signedXMLString = xmlString;
         }
@@ -120,25 +122,26 @@ public class AttributeQueryImpl
         this.attributes = attributes;
     }
 
-    protected void getXMLString(Set namespaces, StringBuffer attrs,
-        StringBuffer childElements, boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-
-        if (declareNS) {
-            namespaces.add(SAML2Constants.PROTOCOL_DECLARE_STR.trim());
-            namespaces.add(SAML2Constants.ASSERTION_DECLARE_STR.trim());
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = super.toDocumentFragment(document, includeNSPrefix, declareNS);
+        if (isSigned && signedXMLString != null) {
+            return fragment;
         }
 
-        super.getXMLString(namespaces, attrs, childElements, includeNSPrefix,
-            declareNS);
+        Element rootElement = (Element) fragment.getFirstChild();
+        if (declareNS) {
+            rootElement.setAttribute("xmlns:saml", ASSERTION_NAMESPACE_URI);
+        }
 
-        if ((attributes != null) && (!attributes.isEmpty())) {
-            for(Iterator iter = attributes.iterator(); iter.hasNext(); ) {
-                Attribute attribute = (Attribute)iter.next();
-                childElements.append(attribute.toXMLString(includeNSPrefix,
-                    declareNS)).append(SAML2Constants.NEWLINE);
+        if (isNotEmpty(attributes)) {
+            for (Attribute attribute : attributes) {
+                rootElement.appendChild(attribute.toDocumentFragment(document, includeNSPrefix, declareNS));
             }
         }
+
+        return fragment;
     }
 
     /**

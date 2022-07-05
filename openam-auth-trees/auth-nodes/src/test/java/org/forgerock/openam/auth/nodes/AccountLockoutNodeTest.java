@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -26,7 +26,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.core.CoreWrapper;
@@ -67,7 +67,7 @@ public class AccountLockoutNodeTest {
 
     @BeforeMethod
     public void before() throws Exception {
-        initMocks(this);
+        openMocks(this);
         when(config.lockAction()).thenReturn(AccountLockoutNode.LockStatus.LOCK);
         given(coreWrapper.getIdentity(anyString())).willReturn(userIdentity);
         given(coreWrapper.realmOf(anyString())).willReturn(realm);

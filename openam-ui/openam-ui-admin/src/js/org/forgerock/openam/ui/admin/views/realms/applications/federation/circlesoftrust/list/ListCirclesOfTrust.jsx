@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import { identity, omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -28,6 +27,26 @@ import StatusCell from "components/table/cells/StatusCell";
 
 const simpleArrayFormat = (cell) => cell.join(", ");
 
+const columns = [{
+    title: identity,
+    dataField: "_id",
+    formatter: dataFormatReact(
+        <FontAwesomeIconCell icon="circle-o-notch" />
+    ),
+    sort: true,
+    text: t("console.applications.federation.circlesoftrust.list.grid.0")
+}, {
+    title: simpleArrayFormat,
+    dataField: "trustedProviders",
+    formatter: simpleArrayFormat,
+    text: t("console.applications.federation.circlesoftrust.list.grid.1")
+}, {
+    dataField: "status",
+    formatter: StatusCell,
+    sort: true,
+    text: t("console.applications.federation.circlesoftrust.list.grid.2")
+}];
+
 const ListCirclesOfTrust = (props) => (
     <Panel>
         <Panel.Body>
@@ -37,34 +56,10 @@ const ListCirclesOfTrust = (props) => (
                     title: t("console.applications.federation.circlesoftrust.list.callToAction.button"),
                     href: props.newHref
                 } }
+                columns={ columns }
                 description={ t("console.applications.federation.circlesoftrust.list.callToAction.description") }
                 title={ t("console.applications.federation.circlesoftrust.list.callToAction.title") }
-            >
-                <TableHeaderColumn
-                    columnTitle={ identity }
-                    dataField="_id"
-                    dataFormat={ dataFormatReact(
-                        <FontAwesomeIconCell icon="circle-o-notch" />
-                    ) }
-                    dataSort
-                >
-                    { t("console.applications.federation.circlesoftrust.list.grid.0") }
-                </TableHeaderColumn>
-                <TableHeaderColumn
-                    columnTitle={ simpleArrayFormat }
-                    dataField="trustedProviders"
-                    dataFormat={ simpleArrayFormat }
-                >
-                    { t("console.applications.federation.circlesoftrust.list.grid.1") }
-                </TableHeaderColumn>
-                <TableHeaderColumn
-                    dataField="status"
-                    dataFormat={ StatusCell }
-                    dataSort
-                >
-                    { t("console.applications.federation.circlesoftrust.list.grid.2") }
-                </TableHeaderColumn>
-            </List>
+            />
         </Panel.Body>
     </Panel>
 );

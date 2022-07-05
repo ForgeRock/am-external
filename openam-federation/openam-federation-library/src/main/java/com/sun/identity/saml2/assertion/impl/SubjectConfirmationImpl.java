@@ -27,14 +27,17 @@
  */
 
 /*
- * Portions Copyrighted 2013-2019 ForgeRock AS.
+ * Portions Copyrighted 2013-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion.impl;
 
+import static org.forgerock.openam.utils.StringUtils.isBlank;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -328,61 +331,43 @@ public class SubjectConfirmationImpl implements SubjectConfirmation {
         method = value;
     }
 
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace 
-    *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is 
-    *        declared within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS) throws SAML2Exception {
-        StringBuilder sb = new StringBuilder(2000);
-        String NS = "";
-        String appendNS = "";
-        if (declareNS) {
-            NS = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-        if (includeNSPrefix) {
-            appendNS = SAML2Constants.ASSERTION_PREFIX;
-        }
-        sb.append("<").append(appendNS).append(SUBJECT_CONFIRMATION_ELEMENT).append(NS);
-        if ((method == null) || (method.trim().length() == 0)) {
-            logger.error("SubjectConfirmationImpl.toXMLString(): method missing");
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element subjectConfirmationElement = XMLUtils.createRootElement(document, SAML2Constants.ASSERTION_PREFIX,
+                SAML2Constants.ASSERTION_NAMESPACE_URI, SUBJECT_CONFIRMATION_ELEMENT, includeNSPrefix, declareNS);
+        fragment.appendChild(subjectConfirmationElement);
+
+        if (isBlank(method)) {
+            logger.error("SubjectConfirmationImpl.toDocumentFragment(): method missing");
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missing_confirmation_method"));
-        } 
-        sb.append(" ").append(METHOD_ATTR).append("=\"").append(method).append("\"").append(">\n");
+        }
+        subjectConfirmationElement.setAttribute(METHOD_ATTR, method);
+
         if ((baseId != null) || (nameId != null) || (encryptedId != null)) {
             if ((baseId != null) && (nameId == null) && (encryptedId == null)) {
-                sb.append(baseId.toXMLString(includeNSPrefix, false));
+                subjectConfirmationElement.appendChild(baseId.toDocumentFragment(document, includeNSPrefix, false));
             } else if ((nameId != null) && (baseId == null) && (encryptedId == null)) {
-                sb.append(nameId.toXMLString(includeNSPrefix, false));
+                subjectConfirmationElement.appendChild(nameId.toDocumentFragment(document, includeNSPrefix, false));
             } else if ((encryptedId != null) && (baseId == null) && (nameId == null)) {
-                sb.append(encryptedId.toXMLString(includeNSPrefix, false));
+                subjectConfirmationElement.appendChild(encryptedId.toDocumentFragment(document, includeNSPrefix,
+                        false));
             } else {
-                logger.error("SubjectConfirmationImpl.toXMLString(): more than one types of id specified");
+                logger.error("SubjectConfirmationImpl.toDocumentFragment(): more than one types of id specified");
                 throw new SAML2Exception(SAML2SDKUtils.bundle.getString("too_many_ids_specified"));
             }
         }
         if (subjectConfirmationData != null) {
-            sb.append(subjectConfirmationData.toXMLString(includeNSPrefix, false));
+            subjectConfirmationElement.appendChild(subjectConfirmationData.toDocumentFragment(document,
+                    includeNSPrefix, false));
         }
-        sb.append("</").append(appendNS).append(SUBJECT_CONFIRMATION_ELEMENT).append(">\n");
-        return sb.toString();
+
+        return fragment;
     }
 
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception {
-        return this.toXMLString(true, false);
-    }
-
-   /**
+    /**
     * Makes the object immutable
     */
     public void makeImmutable() {

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -22,7 +22,7 @@ import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -42,13 +42,12 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmTestHelper;
-import org.forgerock.openam.scripting.ScriptEvaluator;
-import org.forgerock.openam.scripting.ScriptObject;
-import org.forgerock.openam.scripting.SupportedScriptingLanguage;
-import org.forgerock.openam.scripting.factories.ScriptHttpClientFactory;
-import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
+import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
-import org.forgerock.openam.scripting.service.ScriptConfiguration;
+import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
+import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
+import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -59,6 +58,7 @@ import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
 @Listeners(RealmTestHelper.RealmFixture.class)
@@ -68,7 +68,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     ScriptEvaluator scriptEvaluator;
 
     @Mock
-    ScriptConfiguration scriptConfiguration;
+    Script script;
 
     @Mock
     ScriptHttpClientFactory httpClientFactory;
@@ -76,8 +76,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     @Mock
     ScriptedDecisionNode.Config serviceConfig;
 
-    @Mock
-    ListMultimap<String, String> headers;
+    ListMultimap<String, String> headers = ImmutableListMultimap.of();
 
     @Mock
     ScriptIdentityRepository.Factory scriptIdentityRepositoryFactory;
@@ -93,32 +92,32 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     @BeforeMethod
     public void setup() throws Exception {
         initMocks(this);
-        given(scriptConfiguration.getName()).willReturn("mock-script-name");
-        given(scriptConfiguration.getScript()).willReturn("mock-script-body");
-        given(scriptConfiguration.getLanguage()).willReturn(SupportedScriptingLanguage.JAVASCRIPT);
-        given(serviceConfig.script()).willReturn(scriptConfiguration);
+        given(script.getName()).willReturn("mock-script-name");
+        given(script.getScript()).willReturn("mock-script-body");
+        given(script.getLanguage()).willReturn(ScriptingLanguage.JAVASCRIPT);
+        given(serviceConfig.script()).willReturn(script);
         given(serviceConfig.outcomes()).willReturn(ImmutableList.of("a", "b"));
-        node = new ScriptedDecisionNode(scriptEvaluator, serviceConfig, null, httpClientFactory,
+        node = new ScriptedDecisionNode(__ -> scriptEvaluator, serviceConfig, null, httpClientFactory,
                 mockRealm, scriptIdentityRepositoryFactory, secrets);
     }
 
     @Test
     public void correctScriptIsEvaluated() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithOutcome("a"));
         node.process(getContext());
 
-        ArgumentCaptor<ScriptObject> scriptCaptor = ArgumentCaptor.forClass(ScriptObject.class);
+        ArgumentCaptor<Script> scriptCaptor = ArgumentCaptor.forClass(Script.class);
         verify(scriptEvaluator).evaluateScript(scriptCaptor.capture(), any(Bindings.class));
 
         assertThat(scriptCaptor.getValue().getName()).isEqualTo("mock-script-name");
         assertThat(scriptCaptor.getValue().getScript()).isEqualTo("mock-script-body");
-        assertThat(scriptCaptor.getValue().getLanguage()).isEqualTo(SupportedScriptingLanguage.JAVASCRIPT);
+        assertThat(scriptCaptor.getValue().getLanguage()).isEqualTo(ScriptingLanguage.JAVASCRIPT);
     }
 
     @Test
     public void scriptIsPassedState() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithOutcomeAndOutput("a", "foo:bar"));
         given(serviceConfig.outputs()).willReturn(ImmutableList.of("foo"));
         JsonValue sharedState = json(object(field("foo", "bar")));
@@ -126,7 +125,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
         node.process(getContext(sharedState, transientState));
 
         ArgumentCaptor<Bindings> bindingCaptor = ArgumentCaptor.forClass(Bindings.class);
-        verify(scriptEvaluator).evaluateScript(any(ScriptObject.class), bindingCaptor.capture());
+        verify(scriptEvaluator).evaluateScript(any(Script.class), bindingCaptor.capture());
 
         assertThat(json(bindingCaptor.getValue().get("sharedState")).diff(sharedState).size() == 0).isTrue();
         assertThat(json(bindingCaptor.getValue().get("transientState")).diff(transientState).size() == 1).isTrue();
@@ -135,21 +134,21 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     @Test
     public void scriptProvidesDeclaredOutputs() throws Exception {
         given(serviceConfig.outputs()).willReturn(ImmutableList.of("out"));
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithOutcomeAndOutput("a", "out:put"));
         JsonValue sharedState = json(object(field("foo", "bar")));
         JsonValue transientState = json(object(field("fizz", "buzz")));
         node.process(getContext(sharedState, transientState));
 
         ArgumentCaptor<Bindings> bindingCaptor = ArgumentCaptor.forClass(Bindings.class);
-        verify(scriptEvaluator).evaluateScript(any(ScriptObject.class), bindingCaptor.capture());
+        verify(scriptEvaluator).evaluateScript(any(Script.class), bindingCaptor.capture());
 
         assertThat(json(bindingCaptor.getValue().get("sharedState")).isDefined("out")).isTrue();
     }
 
     @Test
     public void scriptIsPassedParameter() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithOutcome("a"));
         JsonValue sharedState = json(object(field("foo", "bar")));
         JsonValue transientState = json(object(field("fizz", "buzz")));
@@ -169,14 +168,14 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
         node.process(getContext(sharedState, transientState, request));
 
         ArgumentCaptor<Bindings> bindingCaptor = ArgumentCaptor.forClass(Bindings.class);
-        verify(scriptEvaluator).evaluateScript(any(ScriptObject.class), bindingCaptor.capture());
+        verify(scriptEvaluator).evaluateScript(any(Script.class), bindingCaptor.capture());
 
         Assert.assertEquals(bindingCaptor.getValue().get("requestParameters"), request.parameters);
     }
 
     @Test
     public void whenScriptSetsOutcomeToConfiguredOutcomeItReturnsANodeResultWithTheOutcome() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithOutcome("a"));
         Action result = node.process(getContext());
 
@@ -187,7 +186,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     public void whenScriptSetsAnAction() throws Exception {
         // Given
         Action action = Action.goTo("a").build();
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithAction(action));
 
         // When
@@ -201,7 +200,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     public void whenScriptSetsAnActionWithInvalidOutcome() throws Exception {
         // Given
         Action action = Action.goTo("c").build();
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithAction(action));
 
         // When
@@ -215,7 +214,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     public void whenScriptSetsAnActionAndOutcome() throws Exception {
         // Given
         Action action = Action.goTo("a").build();
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithActionAndOutcome("a", action));
 
         // When
@@ -228,7 +227,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     @Test
     public void whenActionIsNotCorrectType() throws Exception {
         // Given
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithActionAndOutcome("a", new Object()));
 
         // When
@@ -244,7 +243,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
         Map<String, Object> extraAuditInfo = new HashMap<>();
         extraAuditInfo.put("key", "value");
         JsonValue auditEntryDetail = json(object(field("auditInfo", extraAuditInfo)));
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithOutcomeAndAuditEntryDetail("a", extraAuditInfo));
 
         // When
@@ -258,7 +257,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void whenScriptSetsOutcomeToValueNotConfiguredItThrowsException() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithOutcome("c"));
         node.process(getContext());
     }
@@ -270,7 +269,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void whenScriptSetsOutcomeToNonBooleanItThrowsNodeProcessException() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
                 .will(answerWithOutcome(1));
         node.process(getContext());
     }
@@ -278,7 +277,8 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     @Test
     public void whenScriptThrowsExceptionItThrowsNodeProcessException() throws Exception {
         Throwable scriptException = new ScriptException("problem");
-        given(scriptEvaluator.evaluateScript(any(ScriptObject.class), any(Bindings.class))).willThrow(scriptException);
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
+                .willThrow(scriptException);
 
         assertThatThrownBy(() -> node.process(getContext())).isExactlyInstanceOf(NodeProcessException.class)
                 .hasCause(scriptException);

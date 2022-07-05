@@ -24,24 +24,31 @@
  *
  * $Id: ObligationImpl.java,v 1.3 2008/11/10 22:57:06 veiming Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.policy.impl;
 
+import static com.sun.identity.xacml.common.XACMLConstants.FULFILL_ON;
+import static com.sun.identity.xacml.common.XACMLConstants.OBLIGATION;
+import static com.sun.identity.xacml.common.XACMLConstants.OBLIGATION_ID;
+import static com.sun.identity.xacml.common.XACMLConstants.XACML_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.XACML_NS_URI;
+
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -61,7 +68,7 @@ public class ObligationImpl implements Obligation {
     private static final Logger logger = LoggerFactory.getLogger(ObligationImpl.class);
     private URI obligationId = null; //required
     private String fulfillOn = null; //optional
-    private List attributeAssignments = null; //required
+    private List<Element> attributeAssignments = null; //required
     private boolean mutable = true;
 
     /**
@@ -114,7 +121,7 @@ public class ObligationImpl implements Obligation {
         }
 
       // First check that we're really parsing an Obligation
-      if (! element.getLocalName().equals(XACMLConstants.OBLIGATION)) {
+      if (! element.getLocalName().equals(OBLIGATION)) {
             logger.error(
                 "ObligationImpl.processElement(): invalid root element");
             throw new XACMLException( XACMLSDKUtils.xacmlResourceBundle.getString(
@@ -123,7 +130,7 @@ public class ObligationImpl implements Obligation {
       NamedNodeMap attrs = element.getAttributes();
 
       try {
-          obligationId = new URI(attrs.getNamedItem(XACMLConstants.OBLIGATION_ID)
+          obligationId = new URI(attrs.getNamedItem(OBLIGATION_ID)
                 .getNodeValue());
       } catch (Exception e) {
             throw new XACMLException( XACMLSDKUtils.xacmlResourceBundle.getString(
@@ -134,7 +141,7 @@ public class ObligationImpl implements Obligation {
                 "attribute_missing"));
       }
       try {
-          fulfillOn = attrs.getNamedItem(XACMLConstants.FULFILL_ON)
+          fulfillOn = attrs.getNamedItem(FULFILL_ON)
                 .getNodeValue();
       } catch (Exception e) {
             throw new XACMLException( XACMLSDKUtils.xacmlResourceBundle.getString(
@@ -238,89 +245,53 @@ public class ObligationImpl implements Obligation {
       if (attributeAssignments == null) {
           return;
       }
-      Iterator iter = attributeAssignments.iterator();
-      while (iter.hasNext()) {
-          Object obj = iter.next();
-          if (!(obj instanceof Element)) {
+        for (Object obj : attributeAssignments) {
+            if (!(obj instanceof Element)) {
                 throw new XACMLException(
-                    XACMLSDKUtils.xacmlResourceBundle.getString(
-                    "not_xml_element"));
-          }
-          Element elem = (Element)obj;
-          String aid = elem.getAttribute(XACMLConstants.ATTRIBUTE_ID);
-          if ((aid == null) || (aid.length() == 0)) {
+                        XACMLSDKUtils.xacmlResourceBundle.getString(
+                                "not_xml_element"));
+            }
+            Element elem = (Element) obj;
+            String aid = elem.getAttribute(XACMLConstants.ATTRIBUTE_ID);
+            if ((aid == null) || (aid.length() == 0)) {
                 throw new XACMLException(
-                    XACMLSDKUtils.xacmlResourceBundle.getString(
-                    "missing_attribute"));
-          }
-          String dt = elem.getAttribute(XACMLConstants.DATA_TYPE);
-          if ((dt == null) || (dt.length() == 0)) {
+                        XACMLSDKUtils.xacmlResourceBundle.getString(
+                                "missing_attribute"));
+            }
+            String dt = elem.getAttribute(XACMLConstants.DATA_TYPE);
+            if ((dt == null) || (dt.length() == 0)) {
                 throw new XACMLException(
-                    XACMLSDKUtils.xacmlResourceBundle.getString(
-                    "missing_attribute"));
-          }
-      }
-      this.attributeAssignments = attributeAssignments;
-    }
-
-   /**
-    * Returns a string representation of this object
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException {
-        StringBuffer sb = new StringBuffer(2000);
-        String nsPrefix = "";
-        String nsDeclaration = "";
-        if (includeNSPrefix) {
-            nsPrefix = XACMLConstants.XACML_NS_PREFIX + ":";
-        }
-        if (declareNS) {
-            nsDeclaration = XACMLConstants.XACML_NS_DECLARATION;
-        }
-        sb.append("<").append(nsPrefix)
-                .append(XACMLConstants.OBLIGATION);
-        if(declareNS) {
-            sb.append(" ").append(nsDeclaration);
-        }
-        if (obligationId != null) {
-            sb.append(" ").append(XACMLConstants.OBLIGATION_ID).append("=")
-                .append(XACMLSDKUtils.quote(obligationId.toString()));
-        }
-        if (fulfillOn != null) {
-            sb.append(" ").append(XACMLConstants.FULFILL_ON).append("=")
-                .append(XACMLSDKUtils.quote(fulfillOn));
-        }
-        sb.append(">\n");
-        int length = 0;
-        if (attributeAssignments != null) {
-            length = attributeAssignments.size();
-            for (int i = 0; i < length; i++) {
-                Element elem = (Element)attributeAssignments.get(i);
-                sb.append(XMLUtils.print(elem));
+                        XACMLSDKUtils.xacmlResourceBundle.getString(
+                                "missing_attribute"));
             }
         }
-        sb.append("</").append(nsPrefix)
-                .append(XACMLConstants.OBLIGATION).append(">\n");
-        return sb.toString();
+      this.attributeAssignments = (List<Element>) attributeAssignments;
     }
 
-   /**
-    * Returns a string representation of this object
-    *
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException {
-        return toXMLString(true, true);
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element obligationElement = XMLUtils.createRootElement(document, XACML_NS_PREFIX, XACML_NS_URI, OBLIGATION,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(obligationElement);
+
+        if (obligationId != null) {
+            obligationElement.setAttribute(OBLIGATION_ID, obligationId.toString());
+        }
+        if (fulfillOn != null) {
+            obligationElement.setAttribute(FULFILL_ON, fulfillOn);
+        }
+        if (attributeAssignments != null) {
+            for (Element attributeAssignment : attributeAssignments) {
+                obligationElement.appendChild(document.importNode(attributeAssignment, true));
+            }
+        }
+
+        return fragment;
     }
 
-   /**
+    /**
     * Makes this object immutable
     */
     public void makeImmutable() {

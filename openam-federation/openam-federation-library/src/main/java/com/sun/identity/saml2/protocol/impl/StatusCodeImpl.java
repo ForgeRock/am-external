@@ -24,15 +24,22 @@
  *
  * $Id: StatusCodeImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions copyright 2014-2019 ForgeRock AS.
+ * Portions copyright 2014-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.STATUS_CODE;
+import static com.sun.identity.saml2.common.SAML2Constants.VALUE;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -140,69 +147,25 @@ public class StatusCodeImpl implements StatusCode {
             SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
     }
-    
-    /**
-     * Returns the <code>StatusCode</code> in an XML document String format
-     * based on the <code>StatusCode</code> schema described above.
-     *
-     * @return An XML String representing the <code>StatusCode</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true,false);
-    }
-    
-    /**
-     * Returns the <code>StatusCode</code> in an XML document String format
-     * based on the <code>StatusCode</code> schema described above.
-     *
-     * @param includeNSPrefix Determines whether or not the namespace qualifier 
-     *        is prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return A XML String representing the <code>StatusCode</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString(boolean includeNSPrefix,
-    boolean declareNS) throws SAML2Exception {
-        String xmlStr = null;
-        if ((statusCodeValue != null) && (statusCodeValue.length() != 0)) {
-            StringBuffer xmlString = new StringBuffer(500);
-            xmlString.append(SAML2Constants.START_TAG);
-            if (includeNSPrefix) {
-                xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-            }
-            xmlString.append(SAML2Constants.STATUS_CODE);
-            if (declareNS) {
-                xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
-            }
-            xmlString.append(SAML2Constants.SPACE);
-            
-            xmlString.append(SAML2Constants.VALUE)
-            .append(SAML2Constants.EQUAL)
-            .append(SAML2Constants.QUOTE)
-            .append(statusCodeValue)
-            .append(SAML2Constants.QUOTE);
-            
-            xmlString.append(SAML2Constants.END_TAG);
-            
+
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        if (isNotBlank(statusCodeValue)) {
+            Element codeElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE, STATUS_CODE,
+                    includeNSPrefix, declareNS);
+            fragment.appendChild(codeElement);
+
+            codeElement.setAttribute(VALUE, statusCodeValue);
             if (statusCode != null) {
-                xmlString.append(SAML2Constants.NEWLINE)
-                .append(statusCode.toXMLString(includeNSPrefix,declareNS));
+                codeElement.appendChild(statusCode.toDocumentFragment(document, includeNSPrefix, false));
             }
-            
-            xmlString.append(SAML2Constants.NEWLINE)
-            .append(SAML2Constants.SAML2_END_TAG)
-            .append(SAML2Constants.STATUS_CODE)
-            .append(SAML2Constants.END_TAG);
-            
-            xmlStr = xmlString.toString();
         }
-        return xmlStr;
+
+        return fragment;
     }
-    
+
     /**
      * Makes this object immutable.
      */

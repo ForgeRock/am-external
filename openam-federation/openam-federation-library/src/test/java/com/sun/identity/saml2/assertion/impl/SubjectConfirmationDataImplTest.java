@@ -18,6 +18,10 @@ package com.sun.identity.saml2.assertion.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Date;
+import java.util.List;
+
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.w3c.dom.Document;
 
@@ -39,5 +43,54 @@ public class SubjectConfirmationDataImplTest {
         // Then
         assertThat(doc.getDocumentElement().hasAttribute("oops")).isFalse();
         assertThat(doc.getDocumentElement().getAttribute("InResponseTo")).isEqualTo(inResponseTo);
+    }
+
+    @DataProvider
+    public Object[][] xmlTestCases() {
+        return new Object[][] {
+                { true, true, "<saml:SubjectConfirmationData xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\" " +
+                        "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+                        "Address=\"TestAddress\" " +
+                        "InResponseTo=\"TestInResponseTo\" " +
+                        "NotBefore=\"1970-01-01T00:16:40Z\" " +
+                        "NotOnOrAfter=\"1970-01-03T07:33:20Z\" " +
+                        "Recipient=\"TestRecipient\" " +
+                        "xsi:type=\"test\"><a/><b/></saml:SubjectConfirmationData>" },
+                { true, false, "<saml:SubjectConfirmationData " +
+                        "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+                        "Address=\"TestAddress\" " +
+                        "InResponseTo=\"TestInResponseTo\" " +
+                        "NotBefore=\"1970-01-01T00:16:40Z\" " +
+                        "NotOnOrAfter=\"1970-01-03T07:33:20Z\" " +
+                        "Recipient=\"TestRecipient\" " +
+                        "xsi:type=\"test\"><a/><b/></saml:SubjectConfirmationData>" },
+                { false, false, "<SubjectConfirmationData " +
+                        "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+                        "Address=\"TestAddress\" " +
+                        "InResponseTo=\"TestInResponseTo\" " +
+                        "NotBefore=\"1970-01-01T00:16:40Z\" " +
+                        "NotOnOrAfter=\"1970-01-03T07:33:20Z\" " +
+                        "Recipient=\"TestRecipient\" " +
+                        "xsi:type=\"test\"><a/><b/></SubjectConfirmationData>" }
+        };
+    }
+
+    @Test(dataProvider = "xmlTestCases")
+    public void testToXmlString(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
+        // Given
+        SubjectConfirmationDataImpl subjectConfirmationData = new SubjectConfirmationDataImpl();
+        subjectConfirmationData.setInResponseTo("TestInResponseTo");
+        subjectConfirmationData.setAddress("TestAddress");
+        subjectConfirmationData.setContentType("test");
+        subjectConfirmationData.setRecipient("TestRecipient");
+        subjectConfirmationData.setNotBefore(new Date(1000000L));
+        subjectConfirmationData.setNotOnOrAfter(new Date(200000000L));
+        subjectConfirmationData.setContent(List.of("<a/>", "<b/>"));
+
+        // When
+        String xml = subjectConfirmationData.toXMLString(includeNS, declareNS);
+
+        // Then
+        assertThat(xml).isEqualToIgnoringWhitespace(expectedXml);
     }
 }

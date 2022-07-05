@@ -24,7 +24,7 @@
  *
  * $Id: AccessAccept.java,v 1.2 2008/06/25 05:42:00 qcheng Exp $
  *
- * Portions Copyrighted 2011-2019 ForgeRock AS.
+ * Portions Copyrighted 2011-2022 ForgeRock AS.
  * Portions Copyrighted [2015] [Intellectual Reserve, Inc (IRI)]
  */
 package com.sun.identity.authentication.modules.radius;
@@ -41,12 +41,15 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
+import com.sun.identity.authentication.spi.AuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.identity.authentication.modules.radius.client.ChallengeException;
 import com.sun.identity.authentication.modules.radius.client.RadiusConn;
 import com.sun.identity.authentication.modules.radius.client.RejectException;
+import com.sun.identity.authentication.service.AMAuthErrorCode;
+import com.sun.identity.authentication.service.AuthException;
 import com.sun.identity.authentication.spi.AMLoginModule;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.InvalidPasswordException;
@@ -82,6 +85,7 @@ public class RADIUS extends AMLoginModule {
     private RadiusConn radiusConn = null;
     private boolean getCredentialsFromSharedState;
     private ChallengeException cException = null;
+    private boolean stopRadiusBind = false;
 
     /**
      * Initializes this <code>LoginModule</code>.
@@ -161,6 +165,9 @@ public class RADIUS extends AMLoginModule {
                     if ((sharedSecret == null) || (sharedSecret.length() == 0)) {
                         debug.error("RADIUS initialization failure; no Shared Secret");
                     }
+                    stopRadiusBind = CollectionHelper.getBooleanMapAttr(options,
+                            "openam-auth-radius-stop-bind-after-inmemory-locked-enabled", false );
+                    debug.debug("Stop Radius bind after user inmemory locked-out enabled {} ",stopRadiusBind);
                 } catch (Exception ex) {
                     debug.error("RADIUS parameters initialization failure", ex);
                 }
@@ -242,6 +249,9 @@ public class RADIUS extends AMLoginModule {
             storeUsernamePasswd(username, tmpPasswd);
 
             try {
+                if (stopRadiusBind) {
+                    checkLockoutAndThrowException();
+                }
                 succeeded = false;
                 radiusConn.authenticate(username, tmpPasswd);
             } catch (RejectException re) {
@@ -302,6 +312,10 @@ public class RADIUS extends AMLoginModule {
                 setDynamicText(2);
 
                 return ISAuthConstants.LOGIN_CHALLENGE;
+            } catch (AuthException e) {
+                shutdown();
+                setFailureID(username);
+                throw new AuthLoginException(AM_AUTH_RADIUS, "RadiusAccountlocked", null, e);
             } catch (Exception e) {
                 if (getCredentialsFromSharedState && !isUseFirstPassEnabled()) {
                     getCredentialsFromSharedState = false;
@@ -324,6 +338,9 @@ public class RADIUS extends AMLoginModule {
             }
 
             try {
+                if (stopRadiusBind) {
+                    checkLockoutAndThrowException();
+                }
                 succeeded = false;
                 radiusConn.replyChallenge(username, passwd, cException);
             } catch (ChallengeException ce) {
@@ -363,6 +380,10 @@ public class RADIUS extends AMLoginModule {
                 shutdown();
                 setFailureID(username);
                 throw new AuthLoginException(AM_AUTH_RADIUS, "RadiusLoginFailed", null);
+            } catch (AuthException e) {
+                shutdown();
+                setFailureID(username);
+                throw new AuthLoginException(AM_AUTH_RADIUS, "RadiusAccountlocked", null, e);
             } catch (Exception e) {
                 debug.error("RADIUS challenge Authentication Failed ", e);
                 shutdown();
@@ -469,6 +490,23 @@ public class RADIUS extends AMLoginModule {
         ((PasswordCallback) cbk).clearPassword();
 
         return new String(pwd);
+    }
+
+    /**
+     * Checks the in-memory account lockout status,
+     *  - throws AuthException if locked.
+     *  - throws AuthLoginException if account lockout check fails.
+     */
+    private void checkLockoutAndThrowException() throws AuthException, AuthLoginException {
+        try {
+            if (isAccountLocked(username)) {
+                debug.debug("Radius User account {} locked", username);
+                throw new AuthException(AMAuthErrorCode.AUTH_USER_LOCKED);
+            }
+        } catch (AuthenticationException e) {
+            debug.debug("Failed while checking account lockout status of {}", username);
+            throw new AuthLoginException(AM_AUTH_RADIUS, "RadiusLoginFailed", null);
+        }
     }
 
     /**

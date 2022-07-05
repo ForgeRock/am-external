@@ -13,15 +13,6 @@
  *
  * Copyright 2019-2021 ForgeRock AS. All Rights Reserved
 -->
-<script type="text/javascript">
-    function onloadCallback() {
-        var textarea = document.getElementById("g-recaptcha-response");
-        textarea.setAttribute("aria-hidden", "true");
-        textarea.setAttribute("aria-label", "do not use");
-        textarea.setAttribute("aria-readonly", "true");
-    }
-</script>
-<script src="{{apiUri}}?onload=onloadCallback"></script>
 <script>
 var loginButton_0 = document.getElementById("loginButton_0"),
     callback_index = {{index}},
@@ -30,19 +21,64 @@ var loginButton_0 = document.getElementById("loginButton_0"),
         know ReCaptcha is by itself on the page. In this case we will hide loginButton_0
         and click it to submit the form automatically when ReCaptcha is complete.
     */
-    standaloneMode = callback_index === 0 && loginButton_0 && loginButton_0.name === "callback_1";
+    standaloneMode = callback_index === 0 && loginButton_0 && loginButton_0.name === "callback_1",
+    isV3 = {{reCaptchaV3}},
+    src = "{{apiUri}}",
+    script = document.createElement("script");
+
+function onloadCallback() {
+    ["g-recaptcha-response", "h-captcha-response"].forEach(elementName => {
+        document.getElementsByName(elementName).forEach(textarea => {
+            textarea.setAttribute("aria-hidden", "true");
+            textarea.setAttribute("aria-label", "do not use");
+            textarea.setAttribute("aria-readonly", "true");
+        });
+    });
+    if (isV3 && standaloneMode) {
+        loginButton_0.click();
+    }
+}
+if ( src.includes("?") ) {
+    src += "&onload=onloadCallback";
+} else {
+    src += "?onload=onloadCallback";
+}
+if ( isV3 ) {
+    src += "&render={{siteKey}}";
+    function reCaptchaV3Handler(event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        grecaptcha.ready(function() {
+            grecaptcha.execute('{{siteKey}}', {action: 'submit'}).then(function(token) {
+                loginButton_0.removeEventListener("click", reCaptchaV3Handler);
+                handleCaptchaCallback(token);
+                loginButton_0.addEventListener("click", reCaptchaV3Handler);
+            });
+        });
+    };
+
+    loginButton_0.addEventListener("click", reCaptchaV3Handler);
+    document.getElementById("captchaCallback").remove();
+}
+
+
 
 if (standaloneMode) {
+    // CAPTCHA node is only element on this page
     loginButton_0.style.display = "none";
 }
 
-function handleCaptchaCallback(response) {
-   document.getElementById("{{id}}").value = response;
+// load the CAPTCHA JS library
+script.setAttribute("src", src);
+document.getElementsByTagName("head")[0].appendChild(script);
 
-   if (standaloneMode) {
+function handleCaptchaCallback(response) {
+    document.getElementById("{{id}}").value = response;
+    if (standaloneMode || isV3) {
        loginButton_0.click();
-   }
+    }
 }
+
 </script>
 
 <style>
@@ -54,7 +90,8 @@ function handleCaptchaCallback(response) {
 }
 </style>
 
-<div class="{{divClass}} captcha"
+<div id="captchaCallback"
+     class="{{divClass}} captcha"
      data-sitekey="{{siteKey}}"
      data-callback="handleCaptchaCallback"></div>
 

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn;
@@ -22,6 +22,7 @@ package org.forgerock.openam.auth.nodes.webauthn;
 public class ClientRegistrationScriptResponse extends ClientScriptResponse {
 
     private final byte[] attestationData;
+    private final String deviceName;
 
     /**
      * Constructor for registration script data.
@@ -29,11 +30,14 @@ public class ClientRegistrationScriptResponse extends ClientScriptResponse {
      * @param clientData the clientData from the device
      * @param attestationData the attestationData from the device
      * @param credentialId the identifier of this credential
+     * @param deviceName the device name for the device
      */
-    public ClientRegistrationScriptResponse(String clientData, byte[] attestationData, String credentialId) {
+    public ClientRegistrationScriptResponse(String clientData, byte[] attestationData,
+                                            String credentialId, String deviceName) {
         super(clientData, credentialId);
 
         this.attestationData = attestationData;
+        this.deviceName = deviceName;
     }
 
     /**
@@ -45,4 +49,11 @@ public class ClientRegistrationScriptResponse extends ClientScriptResponse {
         return attestationData;
     }
 
+    /**
+     * Retrieve the device name.
+     * @return the device name.
+     */
+    public String getDeviceName() {
+        return deviceName;
+    }
 }

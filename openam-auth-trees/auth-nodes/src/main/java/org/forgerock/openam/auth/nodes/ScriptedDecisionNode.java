@@ -17,26 +17,38 @@ package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.Action.goTo;
-import static org.forgerock.openam.scripting.ScriptConstants.AUTHENTICATION_TREE_DECISION_NODE_NAME;
-import static org.forgerock.openam.scripting.ScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.AUDIT_ENTRY_DETAIL;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.CALLBACKS_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.EXISTING_SESSION;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HEADERS_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HTTP_CLIENT_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.ID_REPO_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.LOGGER_VARIABLE_NAME;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.QUERY_PARAMETER_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.REALM_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.SECRETS_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.SHARED_STATE_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.TRANSIENT_STATE_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertHeadersToModifiableObjects;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertParametersToModifiableObjects;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getAuditEntryDetails;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getHttpClient;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getSessionProperties;
+import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
+import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE_NAME;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import javax.inject.Named;
 import javax.inject.Provider;
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
 
-import org.forgerock.guava.common.collect.ListMultimap;
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.JsonValueException;
@@ -49,15 +61,13 @@ import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.scripting.Script;
-import org.forgerock.openam.scripting.ScriptEvaluator;
-import org.forgerock.openam.scripting.ScriptObject;
+import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
 import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
-import org.forgerock.openam.scripting.SupportedScriptingLanguage;
-import org.forgerock.openam.scripting.factories.ScriptHttpClientFactory;
+import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
-import org.forgerock.openam.scripting.service.ScriptConfiguration;
-import org.forgerock.openam.session.Session;
+import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
@@ -65,8 +75,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
-import com.iplanet.dpro.session.SessionException;
-import com.iplanet.dpro.session.SessionID;
 import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.shared.debug.Debug;
 
@@ -80,33 +88,10 @@ import com.sun.identity.shared.debug.Debug;
         tags = {"utilities"})
 public class ScriptedDecisionNode implements Node {
 
-    private static final String HEADERS_IDENTIFIER = "requestHeaders";
-    private static final String EXISTING_SESSION = "existingSession";
-    private static final String STATE_IDENTIFIER = "nodeState";
-
-    /*
-     * @deprecated Use {@link #STATE_IDENTIFIER} instead as this method does not leak implementation detail
-     * of the specific type of state.
-     */
-    @Deprecated
-    private static final String SHARED_STATE_IDENTIFIER = "sharedState";
-
-    /*
-     * @deprecated Use {@link #STATE_IDENTIFIER} instead as this method does not leak implementation detail
-     * of the specific type of state.
-     */
-    @Deprecated
-    private static final String TRANSIENT_STATE_IDENTIFIER = "transientState";
     private static final String OUTCOME_IDENTIFIER = "outcome";
     private static final String ACTION_IDENTIFIER = "action";
-    private static final String HTTP_CLIENT_IDENTIFIER = "httpClient";
-    private static final String LOGGER_VARIABLE_NAME = "logger";
-    private static final String REALM_IDENTIFIER = "realm";
-    private static final String CALLBACKS_IDENTIFIER = "callbacks";
-    private static final String QUERY_PARAMETER_IDENTIFIER = "requestParameters";
-    private static final String ID_REPO_IDENTIFIER = "idRepository";
-    private static final String SECRETS_IDENTIFIER = "secrets";
-    private static final String AUDIT_ENTRY_DETAIL = "auditEntryDetail";
+    /* Whether the tree has been resumed from having been suspended. */
+    private static final String RESUMED_FROM_SUSPEND = "resumedFromSuspend";
     private static final String WILDCARD = "*";
 
     /**
@@ -119,9 +104,9 @@ public class ScriptedDecisionNode implements Node {
          * @return The script configuration.
          */
         @Attribute(order = 100)
-        @Script(AUTHENTICATION_TREE_DECISION_NODE_NAME)
-        default ScriptConfiguration script() {
-            return ScriptConfiguration.EMPTY_SCRIPT;
+        @ScriptContext(AUTHENTICATION_TREE_DECISION_NODE_NAME)
+        default Script script() {
+            return Script.EMPTY_SCRIPT;
         }
 
         /**
@@ -166,7 +151,7 @@ public class ScriptedDecisionNode implements Node {
     /**
      * Guice constructor.
      *
-     * @param scriptEvaluator A script evaluator.
+     * @param scriptEvaluatorFactory A script evaluator factory.
      * @param config The node configuration.
      * @param sessionServiceProvider provides Sessions.
      * @param httpClientFactory provides http clients.
@@ -175,37 +160,27 @@ public class ScriptedDecisionNode implements Node {
      * @param secrets provides access to the secrets API for this node's script
      */
     @Inject
-    public ScriptedDecisionNode(@Named(AUTHENTICATION_TREE_DECISION_NODE_NAME) ScriptEvaluator scriptEvaluator,
+    public ScriptedDecisionNode(ScriptEvaluatorFactory scriptEvaluatorFactory,
             @Assisted Config config, Provider<SessionService> sessionServiceProvider,
             ScriptHttpClientFactory httpClientFactory, @Assisted Realm realm,
             ScriptIdentityRepository.Factory scriptIdentityRepoFactory,
             ScriptedSecrets secrets) {
-        this.scriptEvaluator = scriptEvaluator;
+        this.scriptEvaluator = scriptEvaluatorFactory.create(AUTHENTICATION_TREE_DECISION_NODE);
         this.config = config;
         this.sessionServiceProvider = sessionServiceProvider;
-        this.httpClient = getHttpClient(httpClientFactory);
+        this.httpClient = getHttpClient(config.script(), httpClientFactory);
         this.realm = realm;
         this.scriptIdentityRepo = scriptIdentityRepoFactory.create(realm);
         this.auditEntryDetail = null;
         this.secrets = secrets;
     }
 
-    private ChfHttpClient getHttpClient(ScriptHttpClientFactory httpClientFactory) {
-        SupportedScriptingLanguage scriptType = config.script().getLanguage();
 
-        if (scriptType == null) {
-            return null;
-        }
-
-        return httpClientFactory.getScriptHttpClient(scriptType);
-    }
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("ScriptedDecisionNode started");
         try {
-            ScriptObject script = new ScriptObject(config.script().getName(), config.script().getScript(),
-                    config.script().getLanguage());
             Bindings binding = new SimpleBindings();
             JsonValue filteredShared = filterInputs(context.sharedState);
             JsonValue filteredTransient = filterInputs(context.transientState);
@@ -221,10 +196,13 @@ public class ScriptedDecisionNode implements Node {
             binding.put(HTTP_CLIENT_IDENTIFIER, httpClient);
             binding.put(REALM_IDENTIFIER, realm.asPath());
             if (!StringUtils.isEmpty(context.request.ssoTokenId)) {
-                binding.put(EXISTING_SESSION, getSessionProperties(context.request.ssoTokenId));
+                binding.put(EXISTING_SESSION, getSessionProperties(sessionServiceProvider.get(),
+                        context.request.ssoTokenId));
             }
             binding.put(QUERY_PARAMETER_IDENTIFIER, convertParametersToModifiableObjects(context.request.parameters));
             binding.put(AUDIT_ENTRY_DETAIL, auditEntryDetail);
+            binding.put(RESUMED_FROM_SUSPEND, context.hasResumedFromSuspend());
+            Script script = config.script();
             scriptEvaluator.evaluateScript(script, binding);
             logger.debug("script {} \n binding {}", script, binding);
             if (!allOutputsArePresent(filteredShared, filteredTransient)) {
@@ -233,15 +211,7 @@ public class ScriptedDecisionNode implements Node {
             checkForUnexpectedOutputs(filteredShared, filteredTransient);
             transferOutputs(filteredShared, context.sharedState);
             transferOutputs(filteredTransient, context.transientState);
-            Object rawAuditEntryDetail = binding.get(AUDIT_ENTRY_DETAIL);
-            if (rawAuditEntryDetail != null) {
-                if (rawAuditEntryDetail instanceof String || rawAuditEntryDetail instanceof Map) {
-                    auditEntryDetail = json(object(field("auditInfo", rawAuditEntryDetail)));
-                } else {
-                    logger.warn("script auditEntryDetail not type String or Map");
-                    throw new NodeProcessException("Invalid auditEntryDetail type from script");
-                }
-            }
+            auditEntryDetail = getAuditEntryDetails(binding);
             Object actionResult = binding.get(ACTION_IDENTIFIER);
             if (actionResult != null) {
                 if (actionResult instanceof Action) {
@@ -341,50 +311,6 @@ public class ScriptedDecisionNode implements Node {
                 }
             });
         }
-    }
-
-
-    /**
-     * The request headers are unmodifiable, this prevents them being converted into javascript. This method
-     * iterates the underlying collections, adding the values to modifiable collections.
-     *
-     * @param input the headers.
-     * @return the headers in modifiable collections.
-     */
-    private Map<String, List<String>> convertHeadersToModifiableObjects(ListMultimap<String, String> input) {
-        Map<String, List<String>> mapCopy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (String key : input.keySet()) {
-            mapCopy.put(key, new ArrayList<>(input.get(key)));
-        }
-        return mapCopy;
-    }
-
-    /**
-     * The request parameters are unmodifiable, this prevents them being converted into javascript. This method
-     * copies unmofifiable to modifiable collections.
-     *
-     * @param input the parameters.
-     * @return the parameters in modifiable collections.
-     */
-    private Map<String, List<String>> convertParametersToModifiableObjects(Map<String, List<String>> input) {
-        Map<String, List<String>> mapCopy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map.Entry<String, List<String>> entry : input.entrySet()) {
-            mapCopy.put(entry.getKey(), entry.getValue().stream().collect(Collectors.toList()));
-        }
-        return mapCopy;
-    }
-
-    private Map<String, String> getSessionProperties(String ssoTokenId) {
-        Map<String, String> properties = null;
-        try {
-            Session session = sessionServiceProvider.get().getSession(new SessionID(ssoTokenId));
-            if (session != null) {
-                properties = new HashMap<>(session.getProperties());
-            }
-        } catch (SessionException e) {
-            logger.error("Failed to get existing session", e);
-        }
-        return properties;
     }
 
     @Override

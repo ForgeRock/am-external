@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.jwtpop;
@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.jose.jwk.KeyUseConstants.ENC;
 import static org.forgerock.json.jose.jwk.KeyUseConstants.SIG;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.security.KeyPairGenerator;
 import java.security.interfaces.ECPublicKey;
@@ -54,13 +54,13 @@ public class ResponseEncryptionStrategyTest {
 
     @BeforeMethod
     public void setup() {
-        initMocks(this);
+        openMocks(this);
     }
 
     @Test
     public void shouldUseEphemeralKeyPairForEcdhe() {
         assertThat(ResponseEncryptionStrategy.ECDHE.getEncryptionKeyPair(mockJwkSetProvider)).isInstanceOf(EcJWK.class);
-        verifyZeroInteractions(mockJwkSetProvider);
+        verifyNoInteractions(mockJwkSetProvider);
     }
 
     @Test

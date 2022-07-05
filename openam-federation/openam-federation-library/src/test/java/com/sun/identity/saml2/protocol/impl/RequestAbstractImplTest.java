@@ -16,12 +16,18 @@
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.willCallRealMethod;
 import static org.mockito.Mockito.mock;
 
+import java.util.Date;
+import java.util.List;
+
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import com.sun.identity.saml2.assertion.impl.IssuerImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 public class RequestAbstractImplTest {
@@ -34,5 +40,74 @@ public class RequestAbstractImplTest {
 
         // When
         request.validateID("x\" oops=\"bad\"");
+    }
+
+    @DataProvider
+    public Object[][] xmlTestCases() {
+        return new Object[][] {
+                { true, true, "<samlp:test " +
+                        "xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\" " +
+                        "Consent=\"testConsent\" " +
+                        "Destination=\"https://test.example.com/\" " +
+                        "ID=\"testID\" " +
+                        "IssueInstant=\"2001-09-09T01:46:40Z\" " +
+                        "Version=\"2.0\">" +
+                        "<saml:Issuer xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">testIssuer</saml:Issuer>" +
+                        "<samlp:Extensions>" +
+                        "<samlp:Extension>foo</samlp:Extension></samlp:Extensions>" +
+                        "</samlp:test>" },
+                { true, false, "<samlp:test " +
+                        "Consent=\"testConsent\" " +
+                        "Destination=\"https://test.example.com/\" " +
+                        "ID=\"testID\" " +
+                        "IssueInstant=\"2001-09-09T01:46:40Z\" " +
+                        "Version=\"2.0\">" +
+                        "<saml:Issuer>testIssuer</saml:Issuer>" +
+                        "<samlp:Extensions>" +
+                        "<samlp:Extension xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\">foo</samlp:Extension>" +
+                        "</samlp:Extensions>" +
+                        "</samlp:test>" },
+                { false, false, "<test " +
+                        "Consent=\"testConsent\" " +
+                        "Destination=\"https://test.example.com/\" " +
+                        "ID=\"testID\" " +
+                        "IssueInstant=\"2001-09-09T01:46:40Z\" " +
+                        "Version=\"2.0\">" +
+                        "<Issuer>testIssuer</Issuer>" +
+                        "<Extensions>" +
+                        "<samlp:Extension xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\">foo</samlp:Extension>" +
+                        "</Extensions>" +
+                        "</test>" }
+        };
+    }
+
+    @Test(dataProvider = "xmlTestCases")
+    public void testToXmlString(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
+        // Given
+        RequestAbstractImpl requestAbstract = new StubRequest();
+        requestAbstract.setConsent("testConsent");
+        requestAbstract.setDestination("https://test.example.com/");
+        requestAbstract.setID("testID");
+        IssuerImpl issuer = new IssuerImpl();
+        issuer.setValue("testIssuer");
+        requestAbstract.setIssuer(issuer);
+        requestAbstract.setVersion("2.0");
+        requestAbstract.setIssueInstant(new Date(1000000000000L));
+        ExtensionsImpl extensions = new ExtensionsImpl();
+        extensions.setAny(List.of("<samlp:Extension>foo</samlp:Extension>"));
+        requestAbstract.setExtensions(extensions);
+
+        // When
+        String xml = requestAbstract.toXMLString(includeNS, declareNS);
+
+        // Then
+        assertThat(xml).isEqualToIgnoringWhitespace(expectedXml);
+    }
+
+    private static class StubRequest extends RequestAbstractImpl {
+        public StubRequest() {
+            super("test");
+            isMutable = true;
+        }
     }
 }

@@ -33,6 +33,7 @@ import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_KBAINFO_ATTRIBUTE;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -191,7 +192,8 @@ public class KbaVerifyNode extends AbstractDecisionNode {
         Map<String, String> questions = kbaConfig.getQuestions().get(questionId);
         if (!questions.isEmpty()) {
             Map<Locale, String> locales = questions.entrySet().stream()
-                    .collect(toMap(e -> Locale.forLanguageTag(e.getKey()), e -> e.getValue()));
+                    .collect(toMap(e -> Locale.forLanguageTag(e.getKey()), e -> e.getValue(),
+                        (value1, value2) -> value2, LinkedHashMap::new));
 
             return getLocalisedMessage(context, localeSelector, this.getClass(), locales, "questions.default");
         }

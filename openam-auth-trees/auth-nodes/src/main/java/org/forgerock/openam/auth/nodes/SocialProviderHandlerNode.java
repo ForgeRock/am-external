@@ -11,12 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2021 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
 
-import static com.sun.identity.idm.IdType.USER;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
 import static org.forgerock.json.JsonPointer.ptr;
@@ -25,10 +24,23 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.oauth.clients.twitter.TwitterClient.OAUTH_TOKEN;
 import static org.forgerock.oauth.clients.twitter.TwitterClient.OAUTH_VERIFIER;
+import static org.forgerock.oauth2.OAuth2ScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION;
+import static org.forgerock.oauth2.OAuth2ScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME;
 import static org.forgerock.openam.auth.node.api.Action.goTo;
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.ClientType.NATIVE;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.CALLBACKS_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.EXISTING_SESSION;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HEADERS_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.LOGGER_VARIABLE_NAME;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.QUERY_PARAMETER_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.REALM_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.SHARED_STATE_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.TRANSIENT_STATE_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertHeadersToModifiableObjects;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertParametersToModifiableObjects;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getSessionProperties;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.IDPS;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.SELECTED_IDP;
@@ -36,8 +48,6 @@ import static org.forgerock.openam.oauth2.OAuth2Constants.Params.CODE;
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.REQUEST;
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.REQUEST_URI;
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.STATE;
-import static org.forgerock.openam.scripting.ScriptConstants.SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME;
-import static org.forgerock.openam.scripting.ScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -49,24 +59,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.TreeMap;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Provider;
 import javax.script.Bindings;
 import javax.script.SimpleBindings;
 import javax.security.auth.callback.Callback;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import org.forgerock.guava.common.collect.ListMultimap;
 import org.forgerock.json.JsonValue;
 import org.forgerock.oauth.DataStore;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthException;
 import org.forgerock.oauth.UserInfo;
+import org.forgerock.oauth.clients.apple.AppleClient;
 import org.forgerock.oauth.clients.oauth2.OAuth2Client;
 import org.forgerock.oauth.clients.oidc.OpenIDConnectClient;
 import org.forgerock.oauth.clients.twitter.TwitterClient;
@@ -75,8 +80,8 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.OutputState;
+import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper;
 import org.forgerock.openam.auth.nodes.oauth.SharedStateAdaptor;
@@ -86,12 +91,11 @@ import org.forgerock.openam.authentication.modules.common.mapping.DefaultAccount
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-import org.forgerock.openam.scripting.Script;
-import org.forgerock.openam.scripting.ScriptEvaluator;
-import org.forgerock.openam.scripting.ScriptObject;
-import org.forgerock.openam.scripting.SupportedScriptingLanguage;
-import org.forgerock.openam.scripting.service.ScriptConfiguration;
-import org.forgerock.openam.session.Session;
+import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptingLanguage;
+import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
 import org.forgerock.openam.social.idp.OAuthClientConfig;
 import org.forgerock.openam.social.idp.OpenIDConnectClientConfig;
 import org.forgerock.openam.social.idp.SocialIdentityProviders;
@@ -101,14 +105,16 @@ import org.mozilla.javascript.NativeJavaObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
-import com.iplanet.dpro.session.SessionException;
-import com.iplanet.dpro.session.SessionID;
 import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.authentication.service.AuthD;
 import com.sun.identity.authentication.spi.RedirectCallback;
 import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.IdType;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.sm.RequiredValueValidator;
 
@@ -121,16 +127,8 @@ import com.sun.identity.sm.RequiredValueValidator;
         tags = {"social", "federation", "platform"})
 public class SocialProviderHandlerNode implements Node {
     private static final String BUNDLE = "org.forgerock.openam.auth.nodes.SocialProviderHandlerNode";
-    private static final String HEADERS_IDENTIFIER = "requestHeaders";
-    private static final String EXISTING_SESSION = "existingSession";
     private static final String RAW_PROFILE_DATA = "rawProfile";
     private static final String NORMALIZED_PROFILE_DATA = "normalizedProfile";
-    private static final String SHARED_STATE_IDENTIFIER = "sharedState";
-    private static final String TRANSIENT_STATE_IDENTIFIER = "transientState";
-    private static final String LOGGER_VARIABLE_NAME = "logger";
-    private static final String REALM_IDENTIFIER = "realm";
-    private static final String CALLBACKS_IDENTIFIER = "callbacks";
-    private static final String QUERY_PARAMETER_IDENTIFIER = "requestParameters";
     private static final String AM_USER_ALIAS_LIST_ATTRIBUTE_NAME = "iplanet-am-user-alias-list";
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final String FORM_POST_ENTRY = "form_post_entry";
@@ -164,8 +162,8 @@ public class SocialProviderHandlerNode implements Node {
          * @return The script configuration
          */
         @Attribute(order = 100, validators = {RequiredValueValidator.class})
-        @Script(SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME)
-        ScriptConfiguration script();
+        @ScriptContext(SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME)
+        Script script();
 
         /**
          * The attribute in which username may be found.
@@ -197,7 +195,7 @@ public class SocialProviderHandlerNode implements Node {
      * @param providerConfigStore service containing social provider configurations
      * @param identityUtils an instance of the IdentityUtils
      * @param realm the realm context
-     * @param scriptEvaluator service to execute script
+     * @param scriptEvaluatorFactory factory for ScriptEvaluators
      * @param sessionServiceProvider  provider of the session service
      * @param idmIntegrationService service that provides connectivity to IDM
      */
@@ -207,7 +205,7 @@ public class SocialProviderHandlerNode implements Node {
             SocialIdentityProviders providerConfigStore,
             IdentityUtils identityUtils,
             @Assisted Realm realm,
-            @Named(SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME) ScriptEvaluator scriptEvaluator,
+            ScriptEvaluatorFactory scriptEvaluatorFactory,
             Provider<SessionService> sessionServiceProvider,
             IdmIntegrationService idmIntegrationService) {
         this.config = config;
@@ -215,7 +213,7 @@ public class SocialProviderHandlerNode implements Node {
         this.providerConfigStore = providerConfigStore;
         this.identityUtils = identityUtils;
         this.realm = realm;
-        this.scriptEvaluator = scriptEvaluator;
+        this.scriptEvaluator = scriptEvaluatorFactory.create(SOCIAL_IDP_PROFILE_TRANSFORMATION);
         this.sessionServiceProvider = sessionServiceProvider;
         this.idmIntegrationService = idmIntegrationService;
     }
@@ -273,8 +271,16 @@ public class SocialProviderHandlerNode implements Node {
 
             parameters.put(OAuth2Client.TOKEN_TYPE, Collections.singletonList(callback.getTokenType()));
             if (callback.getToken().equals(FORM_POST_ENTRY)) {
+                // During non iOS app flows Apple sends the user info as request parameter along
+                // with authorization code, we read it here and set it on the parameters where
+                // the commons Apple client expects to find it.
+                parameters.put(AppleClient.USER, context.request.parameters.get(AppleClient.USER));
                 parameters.put(callback.getTokenType(), context.request.parameters.remove(CODE));
             } else {
+                // During the native iOS app flow Apple native SDK receives the user info along with the ID Token
+                // and SDK sends it to AM as part of callback. Here we read it from the callback and set it on the
+                // parameters where the commons Apple client expects to find it.
+                parameters.put(AppleClient.USER, Collections.singletonList(callback.getUserInfo()));
                 parameters.put(callback.getTokenType(), Collections.singletonList(callback.getToken()));
             }
 
@@ -303,6 +309,10 @@ public class SocialProviderHandlerNode implements Node {
             parameters.put(CODE, context.request.parameters.remove(CODE));
             parameters.put(OAUTH_TOKEN, context.request.parameters.get(OAUTH_TOKEN));
             parameters.put(OAUTH_VERIFIER, context.request.parameters.get(OAUTH_VERIFIER));
+            // During the web based flow Apple sends the user info as request parameter along
+            // with authorization code, we read it here and set it on the parameters where
+            // the commons Apple client expects to find it.
+            parameters.put(AppleClient.USER, context.request.parameters.get(AppleClient.USER));
 
             try {
                 client.handlePostAuth(dataStore, parameters).getOrThrow();
@@ -390,7 +400,7 @@ public class SocialProviderHandlerNode implements Node {
                     getAliasList(context, identity, user, contextId));
         }
 
-        Optional<String> universalId = identityUtils.getUniversalId(resolvedId, realm.asPath(), USER);
+        Optional<String> universalId = identityUtils.getUniversalId(resolvedId, realm.asPath(), IdType.USER);
 
         return goTo(user.isPresent()
                 ? SocialAuthOutcome.ACCOUNT_EXISTS.name()
@@ -467,11 +477,9 @@ public class SocialProviderHandlerNode implements Node {
         return callback;
     }
 
-    private JsonValue evaluateScript(TreeContext context, ScriptConfiguration scriptConfig,
+    private JsonValue evaluateScript(TreeContext context, Script script,
             String inputKey, JsonValue inputData) throws NodeProcessException {
         try {
-            ScriptObject script = new ScriptObject(scriptConfig.getName(), scriptConfig.getScript(),
-                    scriptConfig.getLanguage());
             Bindings binding = new SimpleBindings();
             binding.put(SHARED_STATE_IDENTIFIER, context.sharedState.getObject());
             binding.put(TRANSIENT_STATE_IDENTIFIER, context.transientState.getObject());
@@ -479,10 +487,11 @@ public class SocialProviderHandlerNode implements Node {
             binding.put(HEADERS_IDENTIFIER, convertHeadersToModifiableObjects(context.request.headers));
             binding.put(LOGGER_VARIABLE_NAME,
                     Debug.getInstance("scripts." + SOCIAL_IDP_PROFILE_TRANSFORMATION.name()
-                            + "." + scriptConfig.getId()));
+                            + "." + script.getId()));
             binding.put(REALM_IDENTIFIER, realm.asPath());
             if (!StringUtils.isEmpty(context.request.ssoTokenId)) {
-                binding.put(EXISTING_SESSION, getSessionProperties(context.request.ssoTokenId));
+                binding.put(EXISTING_SESSION,
+                        getSessionProperties(sessionServiceProvider.get(), context.request.ssoTokenId));
             }
             binding.put(QUERY_PARAMETER_IDENTIFIER,
                     convertParametersToModifiableObjects(context.request.parameters));
@@ -498,8 +507,8 @@ public class SocialProviderHandlerNode implements Node {
         }
     }
 
-    private JsonValue evaluateScript(ScriptObject script, Bindings binding) throws javax.script.ScriptException {
-        if (script.getLanguage().equals(SupportedScriptingLanguage.JAVASCRIPT)) {
+    private JsonValue evaluateScript(Script script, Bindings binding) throws javax.script.ScriptException {
+        if (script.getLanguage().equals(ScriptingLanguage.JAVASCRIPT)) {
             NativeJavaObject result = scriptEvaluator.evaluateScript(script, binding);
             return (JsonValue) result.unwrap();
         } else {
@@ -507,48 +516,6 @@ public class SocialProviderHandlerNode implements Node {
         }
     }
 
-    /**
-     * The request headers are unmodifiable, this prevents them being converted into javascript. This method
-     * iterates the underlying collections, adding the values to modifiable collections.
-     *
-     * @param input the headers
-     * @return the headers in modifiable collections
-     */
-    private Map<String, List<String>> convertHeadersToModifiableObjects(ListMultimap<String, String> input) {
-        Map<String, List<String>> mapCopy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (String key : input.keySet()) {
-            mapCopy.put(key, new ArrayList<>(input.get(key)));
-        }
-        return mapCopy;
-    }
-
-    /**
-     * The request parameters are unmodifiable, this prevents them being converted into javascript. This method
-     * copies unmofifiable to modifiable collections.
-     *
-     * @param input the parameters
-     * @return the parameters in modifiable collections
-     */
-    private Map<String, List<String>> convertParametersToModifiableObjects(Map<String, List<String>> input) {
-        Map<String, List<String>> mapCopy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map.Entry<String, List<String>> entry : input.entrySet()) {
-            mapCopy.put(entry.getKey(), new ArrayList<>(entry.getValue()));
-        }
-        return mapCopy;
-    }
-
-    private Map<String, String> getSessionProperties(String ssoTokenId) {
-        Map<String, String> properties = null;
-        try {
-            Session session = sessionServiceProvider.get().getSession(new SessionID(ssoTokenId));
-            if (session != null) {
-                properties = new HashMap<>(session.getProperties());
-            }
-        } catch (SessionException e) {
-            logger.error("Failed to get existing session", e);
-        }
-        return properties;
-    }
 
     private List<String> getAliasList(TreeContext context, String identity, Optional<JsonValue> user,
             Optional<String> contextId) throws NodeProcessException {
@@ -586,9 +553,9 @@ public class SocialProviderHandlerNode implements Node {
     /**
      * Defines the possible outcomes from this node.
      */
-    public static class SocialAuthOutcomeProvider implements OutcomeProvider {
+    public static class SocialAuthOutcomeProvider implements StaticOutcomeProvider {
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE,
                     SocialAuthOutcomeProvider.class.getClassLoader());
             return ImmutableList.of(

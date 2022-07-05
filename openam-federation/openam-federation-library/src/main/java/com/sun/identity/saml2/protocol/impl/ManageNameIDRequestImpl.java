@@ -24,7 +24,7 @@
  *
  * $Id: ManageNameIDRequestImpl.java,v 1.3 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
@@ -33,6 +33,7 @@ package com.sun.identity.saml2.protocol.impl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -52,6 +53,7 @@ import com.sun.identity.shared.xml.XMLUtils;
 public class ManageNameIDRequestImpl 
    extends RequestAbstractImpl implements ManageNameIDRequest {
     private static final Logger logger = LoggerFactory.getLogger(ManageNameIDRequestImpl.class);
+    public static final String MANAGE_NAME_ID_REQUEST = "ManageNameIDRequest";
     public final String elementName = "ManageNameIDRequest";
     private NewEncryptedID newEncryptedID = null;
     private EncryptedID encryptedID = null;
@@ -63,6 +65,7 @@ public class ManageNameIDRequestImpl
      * Constructor to create <code>ManageNameIDRequest</code> Object. 
      */
     public ManageNameIDRequestImpl() {
+        super(MANAGE_NAME_ID_REQUEST);
         isMutable = true;
     }
 
@@ -75,7 +78,8 @@ public class ManageNameIDRequestImpl
      *         if <code>ManageNameIDRequest<code> cannot be created.
      */
     public ManageNameIDRequestImpl(Element element) throws SAML2Exception {
-    	parseElement(element);
+        super(MANAGE_NAME_ID_REQUEST);
+        parseElement(element);
     	if (isSigned) {
             signedXMLString = XMLUtils.print(element);
         }
@@ -91,7 +95,8 @@ public class ManageNameIDRequestImpl
      *        if <code>ManageNameIDRequest<code> cannot be created.
      */
     public ManageNameIDRequestImpl(String xmlString) throws SAML2Exception {
-    	Document doc = XMLUtils.toDOMDocument(xmlString);
+        super(MANAGE_NAME_ID_REQUEST);
+        Document doc = XMLUtils.toDOMDocument(xmlString);
 	if (doc == null) {
 	    throw new SAML2Exception("errorObtainingElement");
 	}
@@ -327,90 +332,43 @@ public class ManageNameIDRequestImpl
         return;
     }
 
-    /** Returns a String representation of this Object.
-    *
-    *  @exception SAML2Exception , if it could not create String object
-    *  @return a  String representation of this Object.
-    */
-    public String toXMLString()
-    throws SAML2Exception 
-    {
-        return toXMLString(true, false);
-    }
-   
-    /** Returns a String representation
-    *
-    *  @param includeNSPrefix determines whether or not the namespace
-    *          qualifier is prepended to the Element when converted
-    *  @param declareNS determines whether or not the namespace is declared
-    *          within the Element.
-    *  @exception SAML2Exception ,if it could not create String object.
-    *  @return a String , String representation of this Object.
-    **/
-   
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-    throws SAML2Exception
-    {   
-    	if (isSigned && signedXMLString != null) {
-            return signedXMLString;
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        if (newID != null && newEncryptedID != null) {
+            throw new SAML2Exception("wrongInput");
         }
 
-        StringBuffer xml = new StringBuffer();
-
-        if ((newID != null) && (newEncryptedID != null)) {
-        	throw new SAML2Exception("wrongInput");
+        if ((newID != null || newEncryptedID != null) && terminate) {
+            throw new SAML2Exception("wrongInput");
         }
 
-        if (((newID != null) || (newEncryptedID != null)) && 
-                                                 (terminate == true)) {
-        	throw new SAML2Exception("wrongInput");
+        DocumentFragment fragment = super.toDocumentFragment(document, includeNSPrefix, declareNS);
+        if (isSigned && signedXMLString != null) {
+            return fragment;
         }
-
-    	String NS="";
-    	String NSP="";
-    	
-    	if (declareNS) {
-    	    NS = SAML2Constants.PROTOCOL_DECLARE_STR;
-    	}
-    	
-    	if (includeNSPrefix) {
-    	    NSP = SAML2Constants.PROTOCOL_PREFIX;
-    	}
-
-        xml.append("<").append(NSP).append(elementName);
-        xml.append(NS).append(" ");
-
-        xml.append(getAttributesString());
-
-        xml.append(">");
-
-        xml.append(getElements(includeNSPrefix, declareNS));
-
+        Node rootElement = fragment.getFirstChild();
         if (nameid != null) {
-            xml.append(nameid.toXMLString(includeNSPrefix, declareNS));
+            rootElement.appendChild(nameid.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
-                
         if (encryptedID != null) {
-            xml.append(encryptedID.toXMLString());
+            rootElement.appendChild(encryptedID.toDocumentFragment(document, includeNSPrefix, true));
         }
-        
         if (newID != null) {
-            xml.append(newID.toXMLString(includeNSPrefix, declareNS));
+            rootElement.appendChild(newID.toDocumentFragment(document, includeNSPrefix, declareNS));
         }
-        
         if (newEncryptedID != null) {
-            xml.append(newEncryptedID.toXMLString());
+            rootElement.appendChild(newEncryptedID.toDocumentFragment(document, includeNSPrefix, true));
         }
-        
-        if (terminate == true) {
-            xml.append("<").append(NSP).append("Terminate/>");
+        if (terminate) {
+            String prefix = includeNSPrefix ? SAML2Constants.PROTOCOL_PREFIX : "";
+            Element terminate = document.createElement(prefix + "Terminate");
+            rootElement.appendChild(terminate);
         }
-        
-        xml.append("</").append(NSP).append(elementName).append(">");
 
-        return xml.toString();    
+        return fragment;
     }
-    
+
     /**
      * Makes this object immutable.
      */

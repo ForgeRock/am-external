@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -44,7 +44,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.LifecycleNode;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.validators.GreaterThanZeroValidator;
 import org.forgerock.openam.core.CoreWrapper;
@@ -143,9 +143,9 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
     /**
      * Provides a static set of outcomes for decision nodes.
      */
-    public static class RetryLimitDecisionNodeOutcomeProvider implements OutcomeProvider {
+    public static class RetryLimitDecisionNodeOutcomeProvider implements StaticOutcomeProvider {
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
             return ImmutableList.of(
                     new Outcome(RETRY, bundle.getString("retryOutcome")),
@@ -166,7 +166,8 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
     }
 
     private AMIdentity getIdentityFromContext(TreeContext context) throws NodeProcessException {
-        Optional<AMIdentity> identity = getAMIdentity(context, identityUtils, coreWrapper);
+        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityUtils,
+                coreWrapper);
         if (identity.isEmpty()) {
             logger.warn("identity not found");
             throw new NodeProcessException("identity.failure");
@@ -243,7 +244,8 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
         @Override
         public void clearAttribute(TreeContext context) throws NodeProcessException {
             try {
-                Optional<AMIdentity> amIdentity = getAMIdentity(context, identityUtils, coreWrapper);
+                Optional<AMIdentity> amIdentity = getAMIdentity(context.universalId,
+                        context.getStateFor(RetryLimitDecisionNode.this), identityUtils, coreWrapper);
                 if (amIdentity.isPresent()) {
                     AMIdentity identity = amIdentity.get();
                     Set<String> retryLimitNodeCounts = identity.getAttribute(RETRY_COUNT_ATTRIBUTE);
@@ -278,7 +280,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
                 identity.store();
             } catch (IdRepoException e) {
                 if (OBJECTCLASS_VIOLATION.intValue() == e.getLdapErrorIntCode()) {
-                    logger.debug("Failed to save retryLimitNodeCount to user: Identity Repo has not been upgraded.");
+                    logger.error("Failed to save retryLimitNodeCount to user: Identity Repo has not been upgraded.");
                     return;
                 }
                 throw new NodeProcessException("attribute.failure");

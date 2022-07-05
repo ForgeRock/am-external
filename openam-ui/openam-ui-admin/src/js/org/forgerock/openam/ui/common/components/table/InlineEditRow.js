@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -22,12 +22,20 @@ import NewRowTemplate from "templates/common/components/table/NewRow";
 import ReadOnlyRowTemplate from "templates/common/components/table/ReadOnlyRow";
 import ValidatorsManager from "org/forgerock/commons/ui/common/main/ValidatorsManager";
 
+const PASSWORD_COLUMNS = ["org.forgerock.openam.httpclienthandler.system.proxy.password"];
+
 const getSelectOptions = (options, selectedValue) => {
     return _.map(options, (value) => ({ value, isSelected: value === selectedValue }));
 };
 
+const isPasswordProperty = (propertyName) => {
+    return _.includes(PASSWORD_COLUMNS, propertyName);
+};
+
 const getColumns = (rowData, rowSchema) => {
     const columns = [];
+    // Apply this to the value column only
+    const isPasswordRow = isPasswordProperty(rowData["key"]);
     _.each(rowSchema.properties, (property, propertyName) => {
         columns[property.propertyOrder] = {
             data: rowData[propertyName],
@@ -35,6 +43,10 @@ const getColumns = (rowData, rowSchema) => {
         };
         if (property.enum) {
             columns[property.propertyOrder].selectOptions = getSelectOptions(property.enum, rowData[propertyName]);
+        }
+        // May not be on advanced tab.
+        if (rowSchema.properties.value && property.propertyOrder === rowSchema.properties.value.propertyOrder) {
+            columns[property.propertyOrder].usePlaceholder = isPasswordRow;
         }
     });
     return columns;
@@ -55,6 +67,21 @@ const getRowDataFromDom = (rowSchema, domElement) => {
         rowData[propertyName] = domValue ? domValue.trim() : domValue;
     });
     return rowData;
+};
+
+const setTypeOfValueField = (rowSchema, domElement) => {
+    // The edit value field should use password type input to mask the value.
+    const rowData = getRowDataFromDom(rowSchema, domElement);
+    const element = "input";
+    if (rowSchema.properties.value.enum) {
+        // Only change text/password values, not selects.
+        return;
+    }
+    if (isPasswordProperty(rowData["key"])) {
+        domElement.find(`${element}[data-row-${rowSchema.properties.value.propertyOrder}]`).attr("type", "password");
+    } else {
+        domElement.find(`${element}[data-row-${rowSchema.properties.value.propertyOrder}]`).attr("type", "text");
+    }
 };
 
 export default Backbone.View.extend({
@@ -124,7 +151,12 @@ export default Backbone.View.extend({
     },
 
     addRow (event) {
-        if (event.type === "keyup" && event.keyCode !== 13) { return; }
+        if (event.type === "keyup") {
+            setTypeOfValueField(this.rowSchema, this.$el);
+            if (event.keyCode !== 13) {
+                return;
+            }
+        }
         ValidatorsManager.validateAllFields(this.$el);
         const domData = getRowDataFromDom(this.rowSchema, this.$el);
         if (this.isDataValid(domData, this.rowSchema)) {
@@ -134,7 +166,12 @@ export default Backbone.View.extend({
     },
 
     saveRow (event) {
-        if (event.type === "keyup" && event.keyCode !== 13) { return; }
+        if (event.type === "keyup") {
+            setTypeOfValueField(this.rowSchema, this.$el);
+            if (event.keyCode !== 13) {
+                return;
+            }
+        }
         ValidatorsManager.validateAllFields(this.$el);
         const domData = getRowDataFromDom(this.rowSchema, this.$el);
         if (this.isDataValid(domData, this.rowSchema)) {

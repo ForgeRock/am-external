@@ -24,13 +24,19 @@
  *
  * $Id: XACMLAuthzDecisionStatement.java,v 1.4 2008/06/25 05:48:15 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.saml2;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.forgerock.openam.annotations.SupportedAll;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 
 import com.sun.identity.saml2.assertion.Statement;
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLException;
 import com.sun.identity.xacml.context.Request;
 import com.sun.identity.xacml.context.Response;
@@ -121,7 +127,9 @@ public interface XACMLAuthzDecisionStatement extends Statement {
      *         By default name space name is prepended to the element name.
      * @throws XACMLException if the object does not conform to the schema.
      */
-    public String toXMLString() throws XACMLException;
+    default String toXMLString() throws XACMLException {
+        return toXMLString(true, false);
+    }
 
     /**
      * Returns a String representation of the element.
@@ -133,7 +141,15 @@ public interface XACMLAuthzDecisionStatement extends Statement {
      * @return A string containing the valid XML for this element
      * @throws XACMLException if the object does not conform to the schema.
      */
-    public String toXMLString(boolean includeNS, boolean declareNS)
-        throws XACMLException;
+    default String toXMLString(boolean includeNS, boolean declareNS)
+        throws XACMLException {
+        try {
+            Document document = XMLUtils.newDocument();
+            DocumentFragment fragment = toDocumentFragment(document, includeNS, declareNS);
+            return XMLUtils.print(fragment);
+        } catch (ParserConfigurationException | SAML2Exception e) {
+            throw new XACMLException(e);
+        }
+    }
  
 }

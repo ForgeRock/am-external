@@ -24,19 +24,23 @@
  *
  * $Id: NameIDImpl.java,v 1.3 2008/06/25 05:47:44 qcheng Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.EncryptedID;
 import com.sun.identity.saml2.assertion.NameID;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.key.EncryptionConfig;
@@ -125,73 +129,40 @@ public class NameIDImpl extends NameIDTypeImpl implements NameID {
                 encryptionConfig, recipientEntityID, "EncryptedID");
         return AssertionFactory.getInstance().createEncryptedID(el);
     }
-    
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace 
-    *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is 
-    *        declared within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-        StringBuffer sb = new StringBuffer(2000);
-        String NS = "";
-        String appendNS = "";
-        if (declareNS) {
-            NS = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-        if (includeNSPrefix) {
-            appendNS = SAML2Constants.ASSERTION_PREFIX;
-        }
-        sb.append("<").append(appendNS).append(NAME_ID_ELEMENT).append(NS);
-        String nameQualifier = getNameQualifier();
-        if ((nameQualifier != null)
-            && (nameQualifier.trim().length() != 0)) {
-            sb.append(" ").append(NAME_QUALIFIER_ATTR).append("=\"").
-                append(nameQualifier).append("\"");
-        } 
-        String spNameQualifier = getSPNameQualifier();
-        if ((spNameQualifier != null)
-            && (spNameQualifier.trim().length() != 0)) {
-            sb.append(" ").append(SP_NAME_QUALIFIER_ATTR).append("=\"").
-                append(spNameQualifier).append("\"");
-        } 
-        String format = getFormat();
-        if ((format != null) && (format.trim().length() != 0)) {
-            sb.append(" ").append(FORMAT_ATTR).append("=\"").
-                append(format).append("\"");
-        } 
-        String spProvidedID = getSPProvidedID();
-        if ((spProvidedID != null)
-            && (spProvidedID.trim().length() != 0)) {
-            sb.append(" ").append(SP_PROVIDED_ID_ATTR).append("=\"").
-                append(spProvidedID).append("\"");
-        } 
-        sb.append(">");
-        String value = getValue();
-        if ((value != null) && (value.trim().length() != 0)) {
-            sb.append(XMLUtils.escapeSpecialCharacters(value));
-        } else {
-            logger.error(
-                "NameIDImpl.processElement(): name identifier is missing");
-            throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
-                "missing_name_identifier"));
-        } 
-        sb.append("</").append(appendNS).append(NAME_ID_ELEMENT).
-            append(">");
-        return sb.toString();
-    }
 
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception {
-        return this.toXMLString(true, false);
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element nameIdElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                NAME_ID_ELEMENT, includeNSPrefix, declareNS);
+        fragment.appendChild(nameIdElement);
+
+        String nameQualifier = getNameQualifier();
+        if (isNotBlank(nameQualifier)) {
+            nameIdElement.setAttribute(NAME_QUALIFIER_ATTR, nameQualifier);
+        }
+        String spNameQualifier = getSPNameQualifier();
+        if (isNotBlank(spNameQualifier)) {
+            nameIdElement.setAttribute(SP_NAME_QUALIFIER_ATTR, spNameQualifier);
+        }
+        String format = getFormat();
+        if (isNotBlank(format)) {
+            nameIdElement.setAttribute(FORMAT_ATTR, format);
+        }
+        String spProvidedID = getSPProvidedID();
+        if (isNotBlank(spProvidedID)) {
+            nameIdElement.setAttribute(SP_PROVIDED_ID_ATTR, spProvidedID);
+        }
+        String value = getValue();
+        if (isNotBlank(value)) {
+            nameIdElement.setTextContent(value);
+        } else {
+            logger.error("NameIDImpl.toDocumentFragment(): name identifier is missing");
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missing_name_identifier"));
+        }
+
+        return fragment;
     }
 }

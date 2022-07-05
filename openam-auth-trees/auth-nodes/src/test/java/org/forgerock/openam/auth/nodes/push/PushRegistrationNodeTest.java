@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -50,7 +50,10 @@ import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.security.auth.callback.Callback;
@@ -62,6 +65,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.helpers.LocalizationHelper;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
 import org.forgerock.openam.core.CoreWrapper;
@@ -111,8 +115,19 @@ public class PushRegistrationNodeTest {
     AMIdentity userIdentity;
     @Mock
     IdentityUtils identityUtils;
+    @Mock
+    private LocalizationHelper localizationHelper;
 
     PushRegistrationNode node;
+
+    static final String MESSAGE = "Scan the QR code image below with the ForgeRock Authenticator app to "
+            + "register your device with your login";
+
+    static final Map<Locale, String> MAP_SCAN_MESSAGE = new HashMap<>() {{
+        put(Locale.CANADA, MESSAGE);
+    }};
+
+    static final Locale DEFAULT_LOCALE = Locale.CANADA;
 
     @BeforeMethod
     public void setup() {
@@ -187,6 +202,8 @@ public class PushRegistrationNodeTest {
         assertThat(result.sharedState.get(PUSH_REGISTRATION_TIMEOUT).asInteger())
                 .isEqualTo(REGISTER_DEVICE_POLL_INTERVAL);
         assertThat(result.sharedState.get(MESSAGE_ID_KEY).asString()).isNotEmpty();
+        String message = ((TextOutputCallback) result.callbacks.get(0)).getMessage();
+        assertThat(message).contains(MESSAGE);
     }
 
     @Test
@@ -410,6 +427,10 @@ public class PushRegistrationNodeTest {
         given(config.bgColor()).willReturn(bgColor);
         given(config.imgUrl()).willReturn(imgUrl);
         given(config.generateRecoveryCodes()).willReturn(generateRecoveryCodes);
+        given(config.scanQRCodeMessage()).willReturn(MAP_SCAN_MESSAGE);
+
+        localizationHelper = mock(LocalizationHelper.class);
+        given(localizationHelper.getLocalizedMessage(any(), any(), any(), anyString())).willReturn(MESSAGE);
 
         node = spy(
                 new PushRegistrationNode(
@@ -421,7 +442,8 @@ public class PushRegistrationNodeTest {
                         messageIdFactory,
                         deviceProfileHelper,
                         new MultiFactorNodeDelegate(mock(AuthenticatorDeviceServiceFactory.class)),
-                        identityUtils
+                        identityUtils,
+                        localizationHelper
                 )
         );
     }

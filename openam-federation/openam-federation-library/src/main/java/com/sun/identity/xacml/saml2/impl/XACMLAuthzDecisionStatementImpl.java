@@ -24,12 +24,19 @@
  *
  * $Id: XACMLAuthzDecisionStatementImpl.java,v 1.4 2008/11/10 22:57:06 veiming Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 
 package com.sun.identity.xacml.saml2.impl;
+
+import static com.sun.identity.xacml.common.XACMLConstants.SAML_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.SAML_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.SAML_STATEMENT;
+import static com.sun.identity.xacml.common.XACMLConstants.XACML_SAML_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.XSI_NS_ATTR;
+import static com.sun.identity.xacml.common.XACMLConstants.XSI_NS_URI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,10 +44,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -195,59 +204,30 @@ public class XACMLAuthzDecisionStatementImpl
         this.request = request; 
    }
 
-   /**
-    * Returns a string representation
-    *
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException {
-        //top level element, declare namespace
-        return toXMLString(true, true);
-    }
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
 
-   /**
-    * Returns a string representation
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException {
-        StringBuffer sb = new StringBuffer(2000);
-        String xacmlSamlNsPrefix = "";
-        String xacmlSamlNsDeclaration = "";
-        if (declareNS) {
-            xacmlSamlNsDeclaration = XACMLConstants.XACML_SAML_NS_DECLARATION;
-        }
-        if (includeNSPrefix) {
-            xacmlSamlNsPrefix = XACMLConstants.XACML_SAML_NS_PREFIX;
-        }
-        sb.append("\n<")
-                .append(XACMLConstants.SAML_NS_PREFIX)
-                .append(XACMLConstants.SAML_STATEMENT)
-                .append(XACMLConstants.SAML_NS_DECLARATION)
-                .append(XACMLConstants.XSI_TYPE_XACML_AUTHZ_DECISION_STATEMENT)
-                .append(XACMLConstants.XSI_NS_DECLARATION)
-                .append(XACMLConstants.XACML_SAML_NS_DECLARATION)
-                .append(">\n");
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element statementElement = XMLUtils.createRootElement(document, SAML_NS_PREFIX, SAML_NS_URI, SAML_STATEMENT,
+                true, true); // Old code always declares saml: namespace so preserve that behaviour
+        fragment.appendChild(statementElement);
+
+        statementElement.setAttribute("xsi:type", "xacml-saml:XACMLAuthzDecisionStatement");
+        statementElement.setAttribute(XSI_NS_ATTR, XSI_NS_URI);
+        statementElement.setAttribute("xmlns:xacml-saml", XACML_SAML_NS_URI);
+
         if (response != null) {
-            sb.append(response.toXMLString(includeNSPrefix, true));
+            statementElement.appendChild(response.toDocumentFragment(document, includeNSPrefix, true));
         }
         if (request != null) {
-            sb.append(request.toXMLString(includeNSPrefix, true));
+            statementElement.appendChild(request.toDocumentFragment(document, includeNSPrefix, true));
         }
-        sb.append("</")
-                .append(XACMLConstants.SAML_NS_PREFIX)
-                .append(XACMLConstants.SAML_STATEMENT)
-                .append(">");
-        return sb.toString();
+
+        return fragment;
     }
 
-   /**
+    /**
     * Checks if the object is mutable
     *
     * @return <code>true</code> if the object is mutable,

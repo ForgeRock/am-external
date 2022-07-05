@@ -24,10 +24,18 @@
  *
  * $Id: ActionImpl.java,v 1.3 2008/06/25 05:48:12 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.xacml.context.impl;
+
+import static com.sun.identity.xacml.common.XACMLConstants.ACTION;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_SCHEMA_LOCATION_VALUE;
+import static com.sun.identity.xacml.common.XACMLConstants.SCHEMA_LOCATION_ATTR;
+import static com.sun.identity.xacml.common.XACMLConstants.XSI_NS_ATTR;
+import static com.sun.identity.xacml.common.XACMLConstants.XSI_NS_URI;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,10 +44,12 @@ import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -68,7 +78,7 @@ import com.sun.identity.xacml.context.ContextFactory;
 public class ActionImpl implements Action {
     
     private static final Logger logger = LoggerFactory.getLogger(ActionImpl.class);
-    private List  attributes ;
+    private List<Attribute>  attributes ;
     private boolean mutable = true;
     
     
@@ -150,7 +160,7 @@ public class ActionImpl implements Action {
                     String attrChildName = child.getLocalName();
                     if (attrChildName.equals(XACMLConstants.ATTRIBUTE)) {
                         if (this.attributes == null) {
-                            this.attributes = new ArrayList();
+                            this.attributes = new ArrayList<>();
                         }
                         Attribute attribute = factory.getInstance().
                                 createAttribute((Element)child);
@@ -193,63 +203,34 @@ public class ActionImpl implements Action {
         }
         if (attributes != null &&  !attributes.isEmpty()) {
             if (this.attributes == null) {
-                this.attributes = new ArrayList();
+                this.attributes = new ArrayList<>();
             }
             this.attributes.addAll(attributes);
         }
     }
-    
-    /**
-     * Returns a <code>String</code> representation of this object
-     * @param includeNSPrefix Determines whether or not the namespace qualifier
-     *        is prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return a string representation of this object
-     * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS) 
-        throws XACMLException {
-        StringBuffer sb = new StringBuffer(2000);
-        StringBuffer namespaceBuffer = new StringBuffer(100);
-        String nsDeclaration = "";
+
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element actionElement = XMLUtils.createRootElement(document, CONTEXT_NS_PREFIX, CONTEXT_NS_URI, ACTION,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(actionElement);
+
         if (declareNS) {
-            namespaceBuffer.append(XACMLConstants.CONTEXT_NS_DECLARATION).
-                append(XACMLConstants.SPACE);
-            namespaceBuffer.append(XACMLConstants.XSI_NS_URI).
-                append(XACMLConstants.SPACE).append(XACMLConstants.
-                CONTEXT_SCHEMA_LOCATION);
+            actionElement.setAttribute(XSI_NS_ATTR, XSI_NS_URI);
+            actionElement.setAttribute(SCHEMA_LOCATION_ATTR, CONTEXT_SCHEMA_LOCATION_VALUE);
         }
-        if (includeNSPrefix) {
-            nsDeclaration = XACMLConstants.CONTEXT_NS_PREFIX + ":";
-        }
-        sb.append("<").append(nsDeclaration).append(XACMLConstants.ACTION).
-            append(namespaceBuffer);
-        sb.append(">");
-        int length = 0;
+
         if (attributes != null) {
-            sb.append("\n");
-            length = attributes.size();
-            for (int i = 0; i < length; i++) {
-                Attribute attr = (Attribute)attributes.get(i);
-                sb.append(attr.toXMLString(includeNSPrefix, false));
+            for (Attribute attribute : attributes) {
+                actionElement.appendChild(attribute.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
-        sb.append("</").append(nsDeclaration).append(XACMLConstants.ACTION);
-        sb.append(">\n");
-        return sb.toString();
+
+        return fragment;
     }
-    
-    /**
-     * Returns a string representation of this object
-     *
-     * @return a string representation of this object
-     * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString() throws XACMLException {
-        return toXMLString(true, false);
-    }
-    
+
     /**
      * Makes the object immutable
      */

@@ -11,21 +11,33 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { identity, omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
-
 import dataFormatReact from "components/table/cells/dataFormatReact";
 import FontAwesomeIconCell from "components/table/cells/FontAwesomeIconCell";
 import List from "components/list/List";
 
 const ListIdentityGatewayAgents = (props) => {
+    const columns = [{
+        title: identity,
+        dataField: "_id",
+        formatter: dataFormatReact(
+            <FontAwesomeIconCell icon="arrows-h" />
+        ),
+        sort: true,
+        text: t("console.applications.agents.identityGateway.agents.list.grid.0")
+    }, {
+        dataField: "agentgroup",
+        sort: true,
+        text: t("console.applications.agents.identityGateway.agents.list.grid.1")
+    }];
+
     return (
         <Panel className="fr-panel-tab">
             <Panel.Body>
@@ -35,27 +47,11 @@ const ListIdentityGatewayAgents = (props) => {
                         title: t("console.applications.agents.identityGateway.agents.list.callToAction.button"),
                         href: props.newHref
                     } }
+                    columns={ columns }
                     description={
                         t("console.applications.agents.identityGateway.agents.list.callToAction.description") }
                     title={ t("console.applications.agents.identityGateway.agents.list.callToAction.title") }
-                >
-                    <TableHeaderColumn
-                        columnTitle={ identity }
-                        dataField="_id"
-                        dataFormat={ dataFormatReact(
-                            <FontAwesomeIconCell icon="arrows-h" />
-                        ) }
-                        dataSort
-                    >
-                        {t("console.applications.agents.identityGateway.agents.list.grid.0")}
-                    </TableHeaderColumn>
-                    <TableHeaderColumn
-                        dataField="agentgroup"
-                        dataSort
-                    >
-                        {t("console.applications.agents.identityGateway.agents.list.grid.1")}
-                    </TableHeaderColumn>
-                </List>
+                />
             </Panel.Body>
         </Panel>
     );

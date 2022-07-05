@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import { identity, omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -28,6 +27,20 @@ import List from "components/list/List";
 import StatusCell from "components/table/cells/StatusCell";
 
 const ListOAuth2Groups = (props) => {
+    const columns = [{
+        title: identity,
+        dataField: "_id",
+        formatter: dataFormatReact(
+            <FontAwesomeIconCell icon="list-alt" />
+        ),
+        sort: true,
+        text: t("console.applications.oauth2.clients.groups.list.grid.0")
+    }, {
+        dataField: "coreOAuth2ClientConfig",
+        formatter: dataFieldObjectPath(StatusCell, "status"),
+        sort: true,
+        text: t("console.applications.oauth2.clients.groups.list.grid.1")
+    }];
     return (
         <Panel className="fr-panel-tab">
             <Panel.Body>
@@ -37,27 +50,10 @@ const ListOAuth2Groups = (props) => {
                         title: t("console.applications.oauth2.clients.groups.list.callToAction.button"),
                         href: props.newHref
                     } }
+                    columns={ columns }
                     description={ t("console.applications.oauth2.clients.groups.list.callToAction.description") }
                     title={ t("console.applications.oauth2.clients.groups.list.callToAction.title") }
-                >
-                    <TableHeaderColumn
-                        columnTitle={ identity }
-                        dataField="_id"
-                        dataFormat={ dataFormatReact(
-                            <FontAwesomeIconCell icon="list-alt" />
-                        ) }
-                        dataSort
-                    >
-                        { t("console.applications.oauth2.clients.groups.list.grid.0") }
-                    </TableHeaderColumn>
-                    <TableHeaderColumn
-                        dataField="coreOAuth2ClientConfig"
-                        dataFormat={ dataFieldObjectPath(StatusCell, "status") }
-                        dataSort
-                    >
-                        { t("console.applications.oauth2.clients.groups.list.grid.1") }
-                    </TableHeaderColumn>
-                </List>
+                />
             </Panel.Body>
         </Panel>
     );

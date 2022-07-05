@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.sns;
 
@@ -49,6 +49,10 @@ public class SnsPushMessageConverter implements PushMessageConverter {
     private static final String APNS_DATA = "data";
     private static final String APNS_SOUND = "sound";
     private static final String APNS_DEFAULT_SOUND = "default";
+    private static final String APNS_CATEGORY = "category";
+    private static final String APNS_DEFAULT_CATEGORY = "authentication";
+    private static final String APNS_INTERRUPTION_LEVEL = "interruption-level";
+    private static final String APNS_DEFAULT_INTERRUPTION = "time-sensitive";
 
     private static final String DEFAULT = "default";
 
@@ -65,6 +69,8 @@ public class SnsPushMessageConverter implements PushMessageConverter {
                 field(APNS_APS, object(
                         field(APNS_ALERT, message.getSubject()),
                         field(APNS_SOUND, APNS_DEFAULT_SOUND),
+                        field(APNS_CATEGORY, APNS_DEFAULT_CATEGORY),
+                        field(APNS_INTERRUPTION_LEVEL, APNS_DEFAULT_INTERRUPTION),
                         field(MESSAGE_ID, message.getMessageId().toString()),
                         field(APNS_DATA, message.getBody()),
                         field(APNS_CONTENT_AVAILABLE, APNS_CONTENT_AVAILABLE_TRUE)))));

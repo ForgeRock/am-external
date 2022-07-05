@@ -11,21 +11,25 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
+
 package org.forgerock.openam.auth.nodes.push;
 
 import static org.forgerock.openam.auth.node.api.Action.goTo;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_CONTENT_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_NUMBER_CHALLENGE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.EXPIRED;
 import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.FALSE;
 import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.TRUE;
 import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.WAITING;
+import static org.forgerock.openam.services.push.PushNotificationConstants.JWT_CHALLENGE_RESPONSE_KEY;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
@@ -37,6 +41,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.Node.Metadata;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.Config;
 import org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushReceiveOutcomeProvider;
@@ -87,7 +92,7 @@ public class PushResultVerifierNode implements Node {
      */
     @Inject
     public PushResultVerifierNode(PushNotificationService pushNotificationService,
-            MessageIdFactory messageIdFactory) {
+                                  MessageIdFactory messageIdFactory) {
         this.pushNotificationService = pushNotificationService;
         this.messageIdFactory = messageIdFactory;
     }
@@ -123,6 +128,9 @@ public class PushResultVerifierNode implements Node {
                 messageHandler.delete(messageId);
                 if (pushContent != null) {
                     newSharedState.put(PUSH_CONTENT_KEY, pushContent);
+                    if (context.getStateFor(this).isDefined(PUSH_NUMBER_CHALLENGE_KEY)) {
+                        return validateNumberChallengeResponse(context, pushContent);
+                    }
                 }
                 return finishNode(TRUE, context);
             case DENIED:
@@ -136,6 +144,15 @@ public class PushResultVerifierNode implements Node {
         } catch (PushNotificationException | CoreTokenException ex) {
             throw new NodeProcessException("An unexpected error occurred while verifying the push result", ex);
         }
+    }
+
+    private Action validateNumberChallengeResponse(TreeContext context, JsonValue pushContent) {
+        int validAnswer = Integer.parseInt(Objects
+                .requireNonNull(context.getStateFor(this).get(PUSH_NUMBER_CHALLENGE_KEY))
+                .asString());
+
+        int response = pushContent.get(JWT_CHALLENGE_RESPONSE_KEY).asInteger();
+        return finishNode(response == validAnswer ? TRUE : FALSE, context);
     }
 
     private Action finishNode(PushResultVerifierOutcome outcome, TreeContext context) {
@@ -181,10 +198,10 @@ public class PushResultVerifierNode implements Node {
     /**
      * Provides the possible outcomes for the push result verifier node.
      */
-    public static class PushReceiveOutcomeProvider implements OutcomeProvider {
+    public static class PushReceiveOutcomeProvider implements StaticOutcomeProvider {
 
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE, OutcomeProvider.class.getClassLoader());
             List<Outcome> outcomes = Arrays.stream(PushResultVerifierOutcome.values())
                     .map(outcome -> new Outcome(outcome.name(),

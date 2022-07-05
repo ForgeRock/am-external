@@ -24,10 +24,11 @@
  *
  * $Id: CircleOfTrustManager.java,v 1.13 2009/10/28 23:58:56 exu Exp $
  *
- * Portions Copyrighted 2016-2020 ForgeRock AS.
+ * Portions Copyrighted 2016-2021 ForgeRock AS.
  */
 package com.sun.identity.cot;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -586,14 +587,16 @@ public class CircleOfTrustManager {
             }
             if (cotDesc.add(entityId, protocolType)) {
                 modifyCircleOfTrust(realm, cotDesc);
+                debug.debug("{}entityid '{}' circle of trust {} in Realm {} added", classMethod, entityId,
+                        cotName, realm);
+            } else {
+                debug.debug("{}entityid '{}' circle of trust {} in Realm {} already found added", classMethod,
+                        entityId, cotName, realm);
             }
         } catch (JAXBException jbe) {
-            debug.error(classMethod, jbe);
-            String[] data = { jbe.getMessage(),cotName,entityId,
-            realm};
-            LogUtil.error(Level.INFO,
-                    LogUtil.CONFIG_ERROR_CREATE_COT_DESCRIPTOR,
-                    data);
+            String[] data = { jbe.getMessage(),cotName,entityId, realm};
+            debug.error("{}{}", classMethod, LogUtil.CONFIG_ERROR_ADD_COT_MEMBER, Arrays.toString(data), jbe);
+            LogUtil.error(Level.INFO, LogUtil.CONFIG_ERROR_ADD_COT_MEMBER, data);
             throw new COTException(jbe);
         }
     }
@@ -665,12 +668,17 @@ public class CircleOfTrustManager {
 
             if (cotDesc.remove(entityId, protocolType)) {
                 modifyCircleOfTrust(realm, cotDesc);
+                COTCache.invalidate(realm, cotName);
+                debug.debug("{}entityid '{}' in the circle of trust {} in Realm {} removed", classMethod, entityId,
+                        cotName, realm);
+            } else {
+                debug.debug("{}entityid '{}' in the circle of trust {} in Realm {} not found for remove", classMethod,
+                        entityId, cotName, realm);
             }
         } catch (ConfigurationException | JAXBException e) {
-            debug.error(classMethod, e);
             String[] data = { e.getMessage(), cotName, entityId, realm };
-            LogUtil.error(Level.INFO,
-                    LogUtil.CONFIG_ERROR_REMOVE_COT_MEMBER,data);
+            debug.error("{}{}", classMethod, LogUtil.CONFIG_ERROR_REMOVE_COT_MEMBER, Arrays.toString(data), e);
+            LogUtil.error(Level.INFO, LogUtil.CONFIG_ERROR_REMOVE_COT_MEMBER,data);
             throw new COTException(e);
         }
     }
@@ -766,7 +774,7 @@ public class CircleOfTrustManager {
             throw new COTException(e);
         }
     }
-    
+
     /**
      * Returns the circle of trust under the realm.
      *
@@ -776,7 +784,21 @@ public class CircleOfTrustManager {
      * attributes of the given CircleOfTrust.
      * @throws COTException if unable to retrieve the circle of trust.
      */
-    public CircleOfTrustDescriptor getCircleOfTrust(String realm, String name)
+    public CircleOfTrustDescriptor getCircleOfTrust(String realm, String name) throws COTException {
+        return getCircleOfTrust(realm, name, true);
+    }
+
+    /**
+     * Returns the circle of trust under the realm.
+     *
+     * @param realm The realm under which the circle of trust resides.
+     * @param name Name of the circle of trust.
+     * @param useCache use cache first.
+     * @return <code>SAML2CircleOfTrustDescriptor</code> containing the
+     * attributes of the given CircleOfTrust.
+     * @throws COTException if unable to retrieve the circle of trust.
+     */
+    public CircleOfTrustDescriptor getCircleOfTrust(String realm, String name, boolean useCache)
         throws COTException {
         String classMethod = "COTManager.getCircleOfTrust :";
         if (realm == null) {
@@ -787,7 +809,7 @@ public class CircleOfTrustManager {
         String[] data = { name, realm };
         
         CircleOfTrustDescriptor cotDesc = COTCache.getCircleOfTrust(realm,name);
-        if (cotDesc != null) {
+        if (cotDesc != null && useCache) {
             LogUtil.access(Level.FINE, LogUtil.COT_FROM_CACHE, data);
         } else {
             try {

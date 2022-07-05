@@ -24,15 +24,19 @@
  *
  * $Id: AuthnQueryImpl.java,v 1.3 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
 
-import java.util.ListIterator;
-import java.util.Set;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.SESSION_INDEX;
 
+import java.util.ListIterator;
+
+import org.forgerock.openam.utils.StringUtils;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
 import com.sun.identity.saml2.common.SAML2Constants;
@@ -53,7 +57,7 @@ public class AuthnQueryImpl extends SubjectQueryAbstractImpl
      * Constructor to create <code>AuthnQuery</code> Object .
      */
     public AuthnQueryImpl() {
-        elementName = SAML2Constants.AUTHN_QUERY;
+        super(SAML2Constants.AUTHN_QUERY);
         isMutable = true;
     }
 
@@ -65,8 +69,8 @@ public class AuthnQueryImpl extends SubjectQueryAbstractImpl
      *     Object. 
      */
     public AuthnQueryImpl(Element element) throws SAML2Exception {
+        super(SAML2Constants.AUTHN_QUERY);
         parseDOMElement(element);
-        elementName = SAML2Constants.AUTHN_QUERY;
         if (isSigned) {
             signedXMLString = XMLUtils.print(element);
         }
@@ -80,6 +84,7 @@ public class AuthnQueryImpl extends SubjectQueryAbstractImpl
      *     Object. 
      */
     public AuthnQueryImpl(String xmlString) throws SAML2Exception {
+        super(SAML2Constants.AUTHN_QUERY);
         Document xmlDocument = 
             XMLUtils.toDOMDocument(xmlString);
         if (xmlDocument == null) {
@@ -87,7 +92,6 @@ public class AuthnQueryImpl extends SubjectQueryAbstractImpl
                 SAML2SDKUtils.bundle.getString("errorObtainingElement"));
         }
         parseDOMElement(xmlDocument.getDocumentElement());
-        elementName = SAML2Constants.AUTHN_QUERY;
         if (isSigned) {
             signedXMLString = xmlString;
         }
@@ -147,32 +151,31 @@ public class AuthnQueryImpl extends SubjectQueryAbstractImpl
         this.sessionIndex = sessionIndex;
     }
 
-    protected void getXMLString(Set namespaces, StringBuffer attrs,
-        StringBuffer childElements, boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-
-        if (declareNS) {
-            namespaces.add(SAML2Constants.PROTOCOL_DECLARE_STR.trim());
-            namespaces.add(SAML2Constants.ASSERTION_DECLARE_STR.trim());
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = super.toDocumentFragment(document, includeNSPrefix, declareNS);
+        if (isSigned && signedXMLString != null) {
+            return fragment;
         }
 
-        super.getXMLString(namespaces, attrs, childElements, includeNSPrefix,
-            declareNS);
+        Element rootElement = (Element) fragment.getFirstChild();
+        if (declareNS) {
+            rootElement.setAttribute("xmlns:saml", ASSERTION_NAMESPACE_URI);
+        }
 
-	if ((sessionIndex != null) && (sessionIndex.length() > 0)) {
-	    attrs.append(SAML2Constants.SPACE)
-                 .append(SAML2Constants.SESSION_INDEX)
-	         .append(SAML2Constants.EQUAL).append(SAML2Constants.QUOTE)
-	         .append(sessionIndex).append(SAML2Constants.QUOTE);
-	}
+        if (StringUtils.isNotBlank(sessionIndex)) {
+            rootElement.setAttribute(SESSION_INDEX, sessionIndex);
+        }
 
-	if (requestedAuthnContext != null) {
-            childElements.append(requestedAuthnContext.toXMLString(
-                includeNSPrefix, declareNS)).append(SAML2Constants.NEWLINE);
-	}
+        if (requestedAuthnContext != null) {
+            rootElement.appendChild(requestedAuthnContext.toDocumentFragment(document, includeNSPrefix, declareNS));
+        }
+
+        return fragment;
     }
 
-    /** 
+    /**
      * Parses attributes of the Docuemnt Element for this object.
      * 
      * @param element the Document Element of this object.

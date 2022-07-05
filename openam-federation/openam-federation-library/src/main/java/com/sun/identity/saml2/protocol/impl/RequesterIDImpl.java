@@ -24,18 +24,23 @@
  *
  * $Id: RequesterIDImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
 
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.REQUESTERID;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.protocol.RequesterID;
@@ -110,57 +115,23 @@ public class RequesterIDImpl implements RequesterID {
 	} else {
 	    throw new SAML2Exception("objectImmutable");
 	}
-    }	
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @return a  String representation of this Object.
-     * @throws SAML2Exception if cannot convert to String.
-     */
-    public String toXMLString() throws SAML2Exception {
-	return toXMLString(true,false);
     }
-    
-    /** 
-     * Returns a String representation
-     *
-     * @param includeNSPrefix determines whether or not the namespace 
-     *        qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *        within the Element.
-     * @throws SAML2Exception if cannot convert to String.
-     * @return a String representation of this Object.
-     */
-            
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-	throws SAML2Exception {
-	String reqIDXMLString = null;
-	if ((requesterIdURI != null) && (requesterIdURI.length() > 0)) {
-	    StringBuffer xmlString = new StringBuffer(100);
-	    xmlString.append(SAML2Constants.START_TAG);
-	    if (includeNSPrefix) {
-		xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-	    }
-	    xmlString.append(SAML2Constants.REQUESTERID);
 
-	    if (declareNS) {
-		xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
-	    }
-	    xmlString.append(SAML2Constants.END_TAG)
-		     .append(SAML2Constants.NEWLINE)
-	             .append(requesterIdURI)
-		     .append(SAML2Constants.NEWLINE)
-		     .append(SAML2Constants.SAML2_END_TAG)
-	             .append(SAML2Constants.REQUESTERID)
-	             .append(SAML2Constants.END_TAG);
+	@Override
+	public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+			throws SAML2Exception {
+    	DocumentFragment fragment = document.createDocumentFragment();
+    	if (isNotBlank(requesterIdURI)) {
+			Element requesterIdElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+					REQUESTERID, includeNSPrefix, declareNS);
+			fragment.appendChild(requesterIdElement);
+			requesterIdElement.setTextContent(requesterIdURI);
+		}
 
-	    reqIDXMLString = xmlString.toString();
+		return fragment;
 	}
-	return reqIDXMLString;
-    }
-    
-    /** 
+
+    /**
      * Makes this object immutable. 
      */
     public void makeImmutable() {

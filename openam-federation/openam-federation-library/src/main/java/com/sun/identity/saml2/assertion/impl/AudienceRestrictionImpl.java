@@ -24,9 +24,13 @@
  *
  * $Id: AudienceRestrictionImpl.java,v 1.2 2008/06/25 05:47:42 qcheng Exp $
  *
- * Portions Copyrighted 2014-2019 ForgeRock AS.
+ * Portions Copyrighted 2014-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+import static org.forgerock.openam.utils.CollectionUtils.isEmpty;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -35,6 +39,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -192,57 +197,29 @@ public class AudienceRestrictionImpl
         this.audiences = audiences;
     }
 
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace 
-    *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is 
-    *        declared within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-        StringBuilder sb = new StringBuilder(2000);
-        String NS = "";
-        String appendNS = "";
-        if (declareNS) {
-            NS = SAML2Constants.ASSERTION_DECLARE_STR;
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element audienceRestrictionElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX,
+                ASSERTION_NAMESPACE_URI, AUDIENCE_RESTRICTION_ELEMENT, includeNSPrefix, declareNS);
+        fragment.appendChild(audienceRestrictionElement);
+
+        if (isEmpty(audiences)) {
+            logger.error("AudienceRestrictionImpl.toDocumentFragment(): AudienceRestriction has no subelements");
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missing_subelements"));
         }
-        if (includeNSPrefix) {
-            appendNS = SAML2Constants.ASSERTION_PREFIX;
+        String prefix = includeNSPrefix ? ASSERTION_PREFIX : "";
+        for (String audience : audiences) {
+            Element audienceElement = document.createElement(prefix + AUDIENCE_ELEMENT);
+            audienceElement.setTextContent(audience);
+            audienceRestrictionElement.appendChild(audienceElement);
         }
-        sb.append("<").append(appendNS).
-            append(AUDIENCE_RESTRICTION_ELEMENT).append(NS).append(">\n");
-        if (audiences != null) {
-            for (String audience : audiences) {
-                sb.append("<").append(appendNS).append(AUDIENCE_ELEMENT).append(">").
-                        append(XMLUtils.escapeSpecialCharacters(audience)).
-                        append("</").append(appendNS).append(AUDIENCE_ELEMENT).append(">\n");
-            }
-        } else {
-            logger.error(
-                "AudienceRestrictionImpl.processElement(): "
-                + "AudienceRestriction has no subelements");
-            throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
-                "missing_subelements"));
-        }
-        sb.append("</").append(appendNS).
-            append(AUDIENCE_RESTRICTION_ELEMENT).append(">\n");
-        return sb.toString();
+
+        return fragment;
     }
 
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception {
-        return this.toXMLString(true, false);
-    }
-
-   /**
+    /**
     * Makes the object immutable
     */
     public void makeImmutable() {

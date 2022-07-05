@@ -24,11 +24,14 @@
  *
  * $Id: SubjectImpl.java,v 1.3 2008/06/25 05:47:44 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.assertion.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,6 +40,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -47,7 +51,6 @@ import com.sun.identity.saml2.assertion.EncryptedID;
 import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.assertion.Subject;
 import com.sun.identity.saml2.assertion.SubjectConfirmation;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -304,92 +307,60 @@ public class SubjectImpl implements Subject {
                 "objectImmutable"));
         }
         baseId = value;
-    } 
+    }
 
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace 
-    *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is 
-    *        declared within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
 
-        StringBuffer sb = new StringBuffer(2000);
-        String NS = "";
-        String appendNS = "";
-        if (declareNS) {
-            NS = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-        if (includeNSPrefix) {
-            appendNS = SAML2Constants.ASSERTION_PREFIX;
-        }
-        sb.append("<").append(appendNS).append(SUBJECT_ELEMENT).
-            append(NS).append(">\n");
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element subjectElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                SUBJECT_ELEMENT, includeNSPrefix, declareNS);
+        fragment.appendChild(subjectElement);
 
         boolean idFound = false;
         if (baseId != null) {
-            sb.append(baseId.toXMLString(includeNSPrefix, false));
+            subjectElement.appendChild(baseId.toDocumentFragment(document, includeNSPrefix, false));
             idFound = true;
         }
 
         if (nameId != null) {
             if (idFound) {
-                logger.error("SubjectImpl.toXMLString(): "
-                    + "more than one types of id specified");
-                throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
-                      "too_many_ids_specified"));
+                logger.error("SubjectImpl.toDocumentFragment(): more than one type of id specified");
+                throw new SAML2Exception(SAML2SDKUtils.bundle.getString("too_many_ids_specified"));
             } else {
-                sb.append(nameId.toXMLString(includeNSPrefix, false));
+                subjectElement.appendChild(nameId.toDocumentFragment(document, includeNSPrefix, false));
                 idFound = true;
             }
         }
 
         if (encryptedId != null) {
             if (idFound) {
-                logger.error("SubjectImpl.toXMLString(): "
-                    + "more than one types of id specified");
-                throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
-                      "too_many_ids_specified"));
+                logger.error("SubjectImpl.toDocumentFragment(): more than one type of id specified");
+                throw new SAML2Exception(SAML2SDKUtils.bundle.getString("too_many_ids_specified"));
             } else {
-                sb.append(encryptedId.toXMLString(includeNSPrefix, false));
+                subjectElement.appendChild(encryptedId.toDocumentFragment(document, includeNSPrefix, false));
                 idFound = true;
             }
         }
 
-        int length = subjectConfirmations.size();
-        if (length == 0) {
+        if (subjectConfirmations.isEmpty()) {
             if (!idFound) {
-                logger.error("SubjectImpl.toXMLString(): Need at "
-                    + "least one id or one subject confirmation in a subject");
+                logger.error(
+                        "SubjectImpl.toXMLString(): Need at least one id or one subject confirmation in a subject");
                 throw new SAML2Exception(SAML2SDKUtils.bundle.getString(
-                    "need_at_least_one_id_or_on_SubjectConfirmation"));
+                        "need_at_least_one_id_or_on_SubjectConfirmation"));
             }
         } else {
-            for (int i = 0; i < length; i++) {
-                SubjectConfirmation sc = 
-                    (SubjectConfirmation)subjectConfirmations.get(i);
-                sb.append(sc.toXMLString(includeNSPrefix, false));
+            for (SubjectConfirmation subjectConfirmation : subjectConfirmations) {
+                subjectElement.appendChild(subjectConfirmation.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
-        sb.append("</").append(appendNS).append(SUBJECT_ELEMENT).append(">");
-        return sb.toString();
+
+        return fragment;
     }
 
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception {
-        return this.toXMLString(true, false);
-    }
-
-   /**
+    /**
     * Makes the object immutable
     */
     public void makeImmutable() {

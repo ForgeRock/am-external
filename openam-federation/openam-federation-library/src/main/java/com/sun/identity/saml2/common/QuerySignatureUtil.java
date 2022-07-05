@@ -264,7 +264,7 @@ public class QuerySignatureUtil {
         Exception firstException = null;
         for (X509Certificate certificate : certificates) {
             try {
-            	logger.debug("{} using cert for signature verification {}"
+             	logger.debug("{} using cert for signature verification {}"
 						, classMethod
 						, SAML2Utils.getDebugInfoFromCertificate(certificate));
 

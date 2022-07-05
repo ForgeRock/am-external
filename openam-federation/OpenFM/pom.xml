@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-federation</artifactId>
-        <version>7.1.2</version>
+        <version>7.2.0</version>
     </parent>
 
     <!-- Component Definition -->
@@ -118,6 +118,10 @@
             <artifactId>service-config-api</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.forgerock.am</groupId>
@@ -132,6 +136,17 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-federation-library</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>scripting-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-legacy-debug-api</artifactId>
         </dependency>
 
         <dependency>
@@ -154,6 +169,21 @@
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-federation-library</artifactId>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-module-testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-api-mockito2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.powermock</groupId>
+            <artifactId>powermock-module-junit4</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

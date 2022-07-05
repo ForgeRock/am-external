@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.identity.idm.IdentityUtils;
@@ -98,15 +99,16 @@ interface DeviceProfile {
     /**
      * Retrieve the user identity.
      *
-     * @param context The TreeContext
+     * @param universalId the un
+     * @param nodeState The NodeState
      * @param coreWrapper An instace of the CoreWrapper
      * @param identityUtils An instance of the IdentityUtils,
      * @return The identity represent the user.
      * @throws NodeProcessException When username not found from context or datasource or inactive
      */
-    default AMIdentity getUserIdentity(TreeContext context, CoreWrapper coreWrapper, IdentityUtils identityUtils)
-            throws NodeProcessException, IdRepoException, SSOException {
-        Optional<AMIdentity> userIdentity = getAMIdentity(context, identityUtils, coreWrapper);
+    default AMIdentity getUserIdentity(Optional<String> universalId, NodeState nodeState, CoreWrapper coreWrapper,
+            IdentityUtils identityUtils) throws NodeProcessException, IdRepoException, SSOException {
+        Optional<AMIdentity> userIdentity = getAMIdentity(universalId, nodeState, identityUtils, coreWrapper);
         if (userIdentity.isEmpty() || !userIdentity.get().isExists() || !userIdentity.get().isActive()) {
             throw new NodeProcessException("User does not exist or inactive");
         }

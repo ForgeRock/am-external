@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -37,6 +37,18 @@ final class PushNodeConstants {
     static final String LOADBALANCER_KEY = "l";
     /** The key for the time to live. */
     static final String TIME_TO_LIVE_KEY = "t";
+    /** The key for the time interval. */
+    static final String TIME_INTERVAL_KEY = "i";
+    /** The key for the custom payload. */
+    static final String CUSTOM_PAYLOAD_KEY = "p";
+    /** The key for the notification message. */
+    static final String NOTIFICATION_MESSAGE_KEY = "m";
+    /** The key for the push notification type. */
+    static final String PUSH_TYPE_KEY = "k";
+    /** The key for the challenge numbers type. */
+    static final String NUMBERS_CHALLENGE_KEY = "n";
+    /** The key for the context info. */
+    static final String CONTEXT_INFO_KEY = "x";
 
     /**
      * QR CODE KEYS.
@@ -67,6 +79,8 @@ final class PushNodeConstants {
     static final String PUSH_CHALLENGE_KEY = "pushChallengeKey";
     static final String PUSH_DEVICE_PROFILE_KEY = "pushDeviceProfile";
     static final String PUSH_REGISTRATION_TIMEOUT = "pushRegistrationTimeout";
+    static final String PUSH_NUMBER_CHALLENGE_KEY = "pushNumberChallengeKey";
+    static final String DEVICE_PROFILE_KEY = "forgeRock.device.profile";
 
     /**
      * The name of the JSON field which holds the push response's content inside the authentication shared state.

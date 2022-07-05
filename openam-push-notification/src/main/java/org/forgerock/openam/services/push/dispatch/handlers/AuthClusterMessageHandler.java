@@ -11,14 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.services.push.dispatch.handlers;
 
 import static org.forgerock.openam.services.push.PushNotificationConstants.ACCEPT_VALUE;
 import static org.forgerock.openam.services.push.PushNotificationConstants.DENY_VALUE;
+import static org.forgerock.openam.services.push.PushNotificationConstants.CTS_NUMBER_CHALLENGE_TOKEN_FIELD;
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT;
+import static org.forgerock.openam.services.push.PushNotificationConstants.JWT_CHALLENGE_RESPONSE_KEY;
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT_DENY_CLAIM_KEY;
 
 import javax.inject.Inject;
@@ -32,6 +34,7 @@ import org.forgerock.am.cts.api.tokens.Token;
 import org.forgerock.am.cts.exceptions.CoreTokenException;
 import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.PushNotificationConstants;
+import org.forgerock.openam.utils.JsonValueBuilder;
 
 /**
  * Authentication cluster message handler.
@@ -55,20 +58,36 @@ public class AuthClusterMessageHandler extends AbstractClusterMessageHandler {
     @Override
     public void update(Token token, JsonValue content) throws CoreTokenException {
 
-        Jwt possibleDeny = jwtReconstruction.reconstructJwt(content.get(JWT).asString(), SignedJwt.class);
+        Jwt jwt = jwtReconstruction.reconstructJwt(content.get(JWT).asString(), SignedJwt.class);
 
-        if (possibleDeny.getClaimsSet().getClaim(JWT_DENY_CLAIM_KEY) != null) {
+        if (jwt.getClaimsSet().getClaim(JWT_DENY_CLAIM_KEY) != null) {
             token.setAttribute(PushNotificationConstants.CTS_ACCEPT_TOKEN_FIELD, DENY_VALUE);
         } else {
             token.setAttribute(PushNotificationConstants.CTS_ACCEPT_TOKEN_FIELD, ACCEPT_VALUE);
         }
 
+        if (jwt.getClaimsSet().getClaim(JWT_CHALLENGE_RESPONSE_KEY) != null) {
+            token.setAttribute(CTS_NUMBER_CHALLENGE_TOKEN_FIELD,
+                    Integer.parseInt(jwt.getClaimsSet().getClaim(JWT_CHALLENGE_RESPONSE_KEY).toString()));
+        }
+
         ctsPersistentStore.upsert(token);
     }
 
-
     @Override
-    public JsonValue getContents(MessageId messageId) {
-        return null; //not useful in standard impl.
+    public JsonValue getContents(MessageId messageId) throws CoreTokenException {
+        Token coreToken = ctsPersistentStore.read(messageId.toString());
+
+        if (coreToken == null) {
+            return null;
+        }
+
+        if (coreToken.getAttribute(CTS_NUMBER_CHALLENGE_TOKEN_FIELD) != null) {
+            return JsonValueBuilder.jsonValue()
+                    .put(JWT_CHALLENGE_RESPONSE_KEY, coreToken.getAttribute(CTS_NUMBER_CHALLENGE_TOKEN_FIELD))
+                    .build();
+        }
+
+        return null;
     }
 }

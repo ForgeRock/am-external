@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2010-2019 ForgeRock AS.
+ * Copyright 2010-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins;
@@ -40,7 +40,7 @@ public interface SAML2IdentityProviderAdapter {
      * @param hostedEntityID entity ID for the hosted IDP
      * @param realm realm of the hosted IDP
      */
-    public void initialize(String hostedEntityID, String realm);
+    void initialize(String hostedEntityID, String realm);
 
     /**
      * Invokes when OpenAM receives the authentication request for the first time
@@ -57,7 +57,7 @@ public interface SAML2IdentityProviderAdapter {
      * @return true if browser redirection is happening after processing, false otherwise. Default to false.
      * @throws SAML2Exception for any exceptions occurring in the adapter. The federation process will continue.
      */
-    public boolean preSingleSignOn(
+    boolean preSingleSignOn(
             String hostedEntityID,
             String realm,
             HttpServletRequest request,
@@ -82,7 +82,7 @@ public interface SAML2IdentityProviderAdapter {
      * @return true if browser redirection is happening after processing, false otherwise. Default to false.
      * @throws SAML2Exception for any exceptions occurring in the adapter. The federation process will continue.
      */
-    public boolean preAuthentication(
+    boolean preAuthentication(
             String hostedEntityID,
             String realm,
             HttpServletRequest request,
@@ -109,7 +109,7 @@ public interface SAML2IdentityProviderAdapter {
      * @return true if browser redirection happened after processing, false otherwise. Default to false.
      * @throws SAML2Exception if error occurs. The federation process will continue.
      */
-    public boolean preSendResponse(
+    boolean preSendResponse(
             AuthnRequest authnRequest,
             String hostProviderID,
             String realm,
@@ -136,7 +136,7 @@ public interface SAML2IdentityProviderAdapter {
      * @param relayState The relayState that will be used in the redirect
      * @throws SAML2Exception If an error occurs. The federation process will continue.
      */
-    public void preSignResponse(
+    void preSignResponse(
             AuthnRequest authnRequest,
             Response res,
             String hostProviderID,
@@ -146,7 +146,8 @@ public interface SAML2IdentityProviderAdapter {
             String relayState) throws SAML2Exception;
 
     /**
-     * Called before a SAML error message is returned.
+     * This was previously called before a SAML error message was returned - now superceded by
+     * {@link SAML2IdentityProviderAdapter#preSendFailureResponse(String, String, HttpServletRequest, HttpServletResponse, String, String)}.
      * This method is not triggered during IDP initiated SSO.
      *
      * @param request        HttpServletRequest
@@ -154,11 +155,38 @@ public interface SAML2IdentityProviderAdapter {
      * @param faultCode      the fault code that will be returned in the SAML response
      * @param faultDetail    the fault detail that will be returned in the SAML response
      * @throws SAML2Exception if error occurs. The federation process will continue.
+     *
+     * @deprecated since 7.2.0 use {@link
+     * SAML2IdentityProviderAdapter#preSendFailureResponse(String, String, HttpServletRequest, HttpServletResponse, String, String)}.
      */
-    public void preSendFailureResponse(
+    @Deprecated(forRemoval = true, since = "7.2.0")
+    void preSendFailureResponse(
             HttpServletRequest request,
             HttpServletResponse response,
             String faultCode,
             String faultDetail)
             throws SAML2Exception;
+
+    /**
+     * Called before a SAML error message is returned.
+     * This method is not triggered during IDP initiated SSO.
+     *
+     * @param hostedEntityID The entity ID of the IdP.
+     * @param realm          The realm the IdP belongs to.
+     * @param request        HttpServletRequest
+     * @param response       HttpServletResponse
+     * @param faultCode      the fault code that will be returned in the SAML response
+     * @param faultDetail    the fault detail that will be returned in the SAML response
+     * @throws SAML2Exception if error occurs. The federation process will continue.
+     */
+    default void preSendFailureResponse(
+            String hostedEntityID,
+            String realm,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String faultCode,
+            String faultDetail)
+            throws SAML2Exception {
+        preSendFailureResponse(request, response, faultCode, faultDetail);
+    }
 }

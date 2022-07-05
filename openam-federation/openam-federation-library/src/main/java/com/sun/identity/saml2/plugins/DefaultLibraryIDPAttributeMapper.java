@@ -24,7 +24,7 @@
  *
  * $Id: DefaultLibraryIDPAttributeMapper.java,v 1.3 2009/11/30 21:11:08 exu Exp $
  *
- * Portions Copyrighted 2013-2019 ForgeRock AS.
+ * Portions Copyrighted 2013-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins;
@@ -42,17 +42,14 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.util.encode.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
-import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.Attribute;
 import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * This class <code>DefaultLibraryIDPAttributeMapper</code> implements the
@@ -113,10 +110,16 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultLibraryIDPAttributeMapper.class);
 
+    private final AttributeMapperPluginHelper pluginHelper;
+
+    private final ValidationHelper validationHelper;
+
     /**
      * Constructor
      */
     public DefaultLibraryIDPAttributeMapper() {
+        this.pluginHelper = new AttributeMapperPluginHelper();
+        this.validationHelper = new ValidationHelper();
     }
 
     /**
@@ -131,18 +134,9 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
      */
     public List getAttributes(Object session, String hostEntityID, String remoteEntityID, String realm)
             throws SAML2Exception {
- 
-        if (hostEntityID == null) {
-            throw new SAML2Exception(bundle.getString("nullHostEntityID"));
-        }
-
-        if (realm == null) {
-            throw new SAML2Exception(bundle.getString("nullHostEntityID"));
-        }
-       
-        if (session == null) {
-            throw new SAML2Exception(bundle.getString("nullSSOToken"));
-        }
+        validationHelper.validateRealm(realm);
+        validationHelper.validateHostedEntity(hostEntityID);
+        validationHelper.validateSession(session);
 
         String debugMethod = "DefaultLibraryIDPAttributeMapper.getAttributes: ";
 
@@ -184,12 +178,10 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
                         }
                     }
                     if (!stringAttributes.isEmpty()) {
-                        stringValueMap = dsProvider.getAttributes(
-                            SessionManager.getProvider().getPrincipalName(session), stringAttributes);
+                        stringValueMap = pluginHelper.getAttributes(session, stringAttributes);
                     }
                     if (!binaryAttributes.isEmpty()) {
-                        binaryValueMap = dsProvider.getBinaryAttributes(
-                                SessionManager.getProvider().getPrincipalName(session), binaryAttributes);
+                        binaryValueMap = pluginHelper.getBinaryAttributes(session, binaryAttributes);
                     }
                 } catch (DataStoreProviderException dse) {
                     logger.warn(debugMethod + "Error accessing the datastore.", dse);
@@ -219,7 +211,8 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
                     if (isBinaryAttribute(localAttribute)) {
                         // Remove the flag as not used for lookup
                         localAttribute = removeBinaryAttributeFlag(localAttribute);
-                        attributeValues = getBinaryAttributeValues(samlAttribute, localAttribute, binaryValueMap);
+                        attributeValues = pluginHelper.getBinaryAttributeValues(samlAttribute, localAttribute,
+                                binaryValueMap);
                     } else {
                         if (stringValueMap != null && !stringValueMap.isEmpty()) {
                             attributeValues = stringValueMap.get(localAttribute);
@@ -239,8 +232,7 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
                 if (CollectionUtils.isEmpty(attributeValues)) {
                     logger.debug(debugMethod + "{} not found in user profile or SSOToken.", localAttribute);
                 } else {
-                    attributes.add(getSAMLAttribute(samlAttribute, nameFormat,
-                            attributeValues, hostEntityID, remoteEntityID, realm));
+                    attributes.add(pluginHelper.createSAMLAttribute(samlAttribute, nameFormat, attributeValues));
                 }
             }
 
@@ -253,61 +245,6 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
     }
 
     /**
-     * Decides whether it needs to escape XML special characters for attribute
-     * values or not.
-     * @param hostEntityID Entity ID for hosted provider.
-     * @param remoteEntityID Entity ID for remote provider.
-     * @param realm the providers are in.
-     * @return <code>true</code> if it should escape special characters for
-     *   attribute values; <code>false</code> otherwise.
-     */
-    protected boolean needToEscapeXMLSpecialCharacters(String hostEntityID, String remoteEntityID, String realm) {
-        return true;
-    }
-
-    /**
-     * Returns the SAML <code>Attribute</code> object.
-     *
-     * @param name attribute name.
-     * @param nameFormat Name format of the attribute
-     * @param values attribute values.
-     * @param hostEntityID Entity ID for hosted provider.
-     * @param remoteEntityID Entity ID for remote provider.
-     * @param realm the providers are in.
-     * @return SAML <code>Attribute</code> element.
-     * @exception SAML2Exception if any failure.
-     */
-    protected Attribute getSAMLAttribute(String name, String nameFormat,
-         Set<String> values, String hostEntityID, String remoteEntityID, String realm) throws SAML2Exception {
-
-        if (name == null) {
-            throw new SAML2Exception(bundle.getString("nullInput"));
-        }
-
-        AssertionFactory factory = AssertionFactory.getInstance();
-        Attribute attribute =  factory.createAttribute();
-
-        attribute.setName(name);
-        if (nameFormat != null) {
-            attribute.setNameFormat(nameFormat);
-        }
-        if (values != null && !values.isEmpty()) {
-            boolean toEscape = needToEscapeXMLSpecialCharacters(hostEntityID, remoteEntityID, realm);
-            List<String> list = new ArrayList<String>();
-            for (String value : values) {
-                if (toEscape) {
-                    list.add(XMLUtils.escapeSpecialCharacters(value));
-                } else {
-                    list.add(value);
-                }
-            }
-            attribute.setAttributeValueString(list);
-        }
-
-        return attribute;
-    }
-
-    /**
      * Return true if ignore profile is enabled for this realm.
      *
      * @param session SSOToken to check the profile creation attributes.
@@ -316,41 +253,5 @@ public class DefaultLibraryIDPAttributeMapper extends DefaultAttributeMapper imp
      */
     protected boolean isIgnoredProfile(Object session, String realm) {
         return true;
-    }
-
-    /**
-     * Return a Set of Base64 encoded String values that represent the binary attribute values.
-     * @param localAttribute the attribute to find in the map.
-     * @param samlAttribute the SAML attribute that will be assigned these values
-     * @param binaryValueMap the map of binary values for the all binary attributes.
-     * @return Set of Base64 encoded String values for the given binary attribute values.
-     */
-    private Set<String> getBinaryAttributeValues(String samlAttribute, String localAttribute,
-                                                 Map<String, byte[][]> binaryValueMap) {
-
-        Set<String> result = null;
-        String debugMethod = "DefaultLibraryIDPAttributeMapper.getBinaryAttributeValues: ";
-
-        // Expect to find the value in the binary Map
-        if (binaryValueMap != null && !binaryValueMap.isEmpty()) {
-            byte[][] values = binaryValueMap.get(localAttribute);
-            if (values != null && values.length > 0) {
-                // Base64 encode the binary values before they are added as an attribute value
-                result = new HashSet<String>(values.length);
-                for (byte[] value : values) {
-                    result.add(Base64.encode(value));
-                }
-                logger.debug(debugMethod + "adding {} as a binary for attribute named {}",
-                        localAttribute, samlAttribute);
-            } else {
-                logger.debug(debugMethod + "{} was flagged as a binary but no value was found",
-                        localAttribute);
-            }
-        } else {
-            logger.debug(debugMethod + "{} was flagged as a binary but binary value map was empty or null",
-                    localAttribute);
-        }
-
-        return result;
     }
 }

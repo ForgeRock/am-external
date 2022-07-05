@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -155,10 +155,10 @@ public class DeviceGeoFencingNode extends AbstractDecisionNode implements Device
      * Provides the authentication node's set of outcomes.
      */
     public static class OutcomeProvider implements
-            org.forgerock.openam.auth.node.api.OutcomeProvider {
+            org.forgerock.openam.auth.node.api.StaticOutcomeProvider {
 
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE,
                     DeviceGeoFencingNode.OutcomeProvider.class.getClassLoader());
 

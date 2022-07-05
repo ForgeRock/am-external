@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2021 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
@@ -59,7 +59,7 @@ public abstract class AbstractMultiFactorNode implements Node {
     private static final Logger logger = LoggerFactory.getLogger(AbstractMultiFactorNode.class);
 
     /** How often to poll AM for a response in milliseconds. */
-    public static final int REGISTER_DEVICE_POLL_INTERVAL = 5000;
+    public static final int REGISTER_DEVICE_POLL_INTERVAL = 2000;
 
     /**  Success outcome Id. */
     public static final String SUCCESS_OUTCOME_ID = "successOutcome";
@@ -235,7 +235,8 @@ public abstract class AbstractMultiFactorNode implements Node {
      * @throws NodeProcessException if failed to get the identity object.
      */
     public AMIdentity getIdentity(TreeContext context) throws NodeProcessException {
-        Optional<AMIdentity> userIdentity = getAMIdentity(context, identityUtils, coreWrapper);
+        Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
+                identityUtils, coreWrapper);
         if (userIdentity.isEmpty()) {
             throw new NodeProcessException("Failed to get the identity object");
         }

@@ -24,7 +24,7 @@
  *
  * $Id: StatusDetail.java,v 1.2 2008/06/25 05:47:58 qcheng Exp $
  *
- * Portions Copyrighted 2016-2019 ForgeRock AS.
+ * Portions Copyrighted 2016-2021 ForgeRock AS.
  */
 
 
@@ -36,6 +36,7 @@ import org.forgerock.openam.annotations.SupportedAll;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 import com.sun.identity.saml2.protocol.impl.StatusDetailImpl;
 
 /**
@@ -61,7 +62,7 @@ import com.sun.identity.saml2.protocol.impl.StatusDetailImpl;
 
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
         defaultImpl = StatusDetailImpl.class)
-public interface StatusDetail {
+public interface StatusDetail extends XmlSerializable {
 
     /**
      * Returns the value of the Any property.
@@ -80,31 +81,6 @@ public interface StatusDetail {
      * @see #getAny
      */
     public void setAny(List<String> anyList) throws SAML2Exception;
-
-    /**
-     * Returns the <code>StatusDetail</code> in an XML document String format
-     * based on the <code>StatusDetail</code> schema described above.
-     *
-     * @return An XML String representing the <code>StatusDetail</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString() throws SAML2Exception;
-
-    /**
-     * Returns the <code>StatusDetail</code> in an XML document String format
-     * based on the <code>StatusDetail</code> schema described above.
-     *
-     * @param includeNSPrefix Determines whether or not the namespace qualifier
-     *        is prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *        within the Element.
-     * @return A XML String representing the <code>StatusDetail</code>.
-     * @throws SAML2Exception if some error occurs during conversion to
-     *         <code>String</code>.
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-    throws SAML2Exception;
 
     /**
      * Makes the obejct immutable

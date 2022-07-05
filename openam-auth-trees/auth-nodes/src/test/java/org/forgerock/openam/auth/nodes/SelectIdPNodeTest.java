@@ -46,7 +46,7 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.SelectIdPCallback;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-import org.forgerock.openam.scripting.service.ScriptConfiguration;
+import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.social.idp.OAuthClientConfig;
 import org.forgerock.openam.social.idp.SocialIdentityProviders;
 
@@ -243,7 +243,7 @@ public class SelectIdPNodeTest {
             }
 
             @Override
-            public ScriptConfiguration transform() {
+            public Script transform() {
                 return null;
             }
         };

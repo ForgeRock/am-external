@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -42,10 +42,10 @@ import static org.mockito.Mockito.anyMap;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.isNull;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.util.Collections;
@@ -78,9 +78,10 @@ import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.promise.Promises;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.testng.MockitoTestNGListener;
 import org.slf4j.Logger;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -91,6 +92,7 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 /**
  * Test class for SocialAuthLoginModule.
  */
+@Listeners(MockitoTestNGListener.class)
 public class SocialAuthLoginModuleTest {
 
     private static final Subject SUBJECT = null;
@@ -156,41 +158,36 @@ public class SocialAuthLoginModuleTest {
         public Enumeration<String> getKeys() {
             return Collections.emptyEnumeration();
         }
-
-
     };
 
     @BeforeMethod
     public void setup() throws Exception {
-        MockitoAnnotations.initMocks(this);
+        lenient().when(request.getParameterMap()).thenReturn(requestParameters);
 
-        when(request.getParameterMap()).thenReturn(requestParameters);
-
-        when(authModuleHelper.getOriginalUrl(request)).thenReturn(ORIGINAL_URL);
-        when(authModuleHelper.getCookieDomainsForRequest(request))
+        lenient().when(authModuleHelper.getOriginalUrl(request)).thenReturn(ORIGINAL_URL);
+        lenient().when(authModuleHelper.getCookieDomainsForRequest(request))
                 .thenReturn(CollectionUtils.asSet(DOMAIN_1, DOMAIN_2));
 
-        when(binder.getHttpServletRequest()).thenReturn(request);
-        when(binder.getHttpServletResponse()).thenReturn(response);
+        lenient().when(binder.getHttpServletRequest()).thenReturn(request);
+        lenient().when(binder.getHttpServletResponse()).thenReturn(response);
 
-        when(configFunction.apply(anyMap())).thenReturn(config);
+        lenient().when(configFunction.apply(anyMap())).thenReturn(config);
 
-        when(dataStore.retrieveData()).thenReturn(jsonValue);
-        when(jsonValue.get(ACCESS_TOKEN)).thenReturn(JsonValue.json(ACCESS_TOKEN_1));
-        when(config.getCfgLogoutUrl()).thenReturn(LOGOUT_URL);
-        when(config.getCfgLogoutBehaviour()).thenReturn(LOGOUT_BEHAVIOUR);
+        lenient().when(dataStore.retrieveData()).thenReturn(jsonValue);
+        lenient().when(jsonValue.get(ACCESS_TOKEN)).thenReturn(JsonValue.json(ACCESS_TOKEN_1));
+        lenient().when(config.getCfgLogoutUrl()).thenReturn(LOGOUT_URL);
+        lenient().when(config.getCfgLogoutBehaviour()).thenReturn(LOGOUT_BEHAVIOUR);
 
-        when(realm.asPath()).thenReturn("/");
+        lenient().when(realm.asPath()).thenReturn("/");
 
-        given(idmConfigProvider.global())
-                .willReturn(idmConfig);
-        given(idmConfig.enabled()).willReturn(true);
-        given(idmConfig.idmDeploymentUrl()).willReturn("IDM_URL");
-        given(idmConfig.provisioningSigningKeyAlias()).willReturn("test");
-        given(idmConfig.provisioningEncryptionKeyAlias()).willReturn("test");
-        given(idmConfig.provisioningSigningAlgorithm()).willReturn("HS256");
-        given(idmConfig.provisioningEncryptionAlgorithm()).willReturn("RSAES_PKCS1_V1_5");
-        given(idmConfig.provisioningEncryptionMethod()).willReturn("A128CBC_HS256");
+        lenient().when(idmConfigProvider.global()).thenReturn(idmConfig);
+        lenient().when(idmConfig.enabled()).thenReturn(true);
+        lenient().when(idmConfig.idmDeploymentUrl()).thenReturn("IDM_URL");
+        lenient().when(idmConfig.provisioningSigningKeyAlias()).thenReturn("test");
+        lenient().when(idmConfig.provisioningEncryptionKeyAlias()).thenReturn("test");
+        lenient().when(idmConfig.provisioningSigningAlgorithm()).thenReturn("HS256");
+        lenient().when(idmConfig.provisioningEncryptionAlgorithm()).thenReturn("RSAES_PKCS1_V1_5");
+        lenient().when(idmConfig.provisioningEncryptionMethod()).thenReturn("A128CBC_HS256");
 
 
         this.module = new SocialAuthLoginModule(debug, authModuleHelper, configFunction, clientTokenJwtGenerator,
@@ -211,7 +208,7 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test(expectedExceptions = NullPointerException.class)
-    public void shouldFailWhenOptionsIsNull() throws Exception {
+    public void shouldFailWhenOptionsIsNull() {
         //given
         this.options = null;
 
@@ -357,10 +354,10 @@ public class SocialAuthLoginModuleTest {
 
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.empty());
-        given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
+        lenient().when(authModuleHelper.provisionUser(anyString(), any(), anyMap())).thenReturn(user);
 
-        given(profileNormalizer.getNormalisedAttributes(userInfo, null))
-                .willReturn(ImmutableMap.of("name", CollectionUtils.asSet(user)));
+        lenient().when(profileNormalizer.getNormalisedAttributes(userInfo, null))
+                .thenReturn(ImmutableMap.of("name", CollectionUtils.asSet(user)));
 
         given(config.getCfgCreateAccount()).willReturn(false);
         given(config.getSaveAttributesToSessionFlag()).willReturn(true);
@@ -392,7 +389,7 @@ public class SocialAuthLoginModuleTest {
 
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.empty());
-        given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
+        lenient().when(authModuleHelper.provisionUser(anyString(), any(), anyMap())).thenReturn(user);
 
         given(profileNormalizer.getNormalisedAttributes(userInfo, null))
                 .willReturn(ImmutableMap.of("name", CollectionUtils.asSet(user)));
@@ -450,8 +447,8 @@ public class SocialAuthLoginModuleTest {
         given(client.handlePostAuth(eq(dataStore), anyMap())).willReturn(Promises.newResultPromise(jsonValue));
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
 
-        given(dataStore.retrieveData())
-                .willReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
+        lenient().when(dataStore.retrieveData())
+                .thenReturn(JsonValue.json(JsonValue.object(JsonValue.field(ACCESS_TOKEN, "access_token_1"))));
 
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.empty());
@@ -557,12 +554,9 @@ public class SocialAuthLoginModuleTest {
         NameCallback nameCallback = mock(NameCallback.class);
         given(confirmationCallback.getSelectedIndex()).willReturn(0);
         given(nameCallback.getName()).willReturn("activationCode");
-        given(authModuleHelper.getRandomData()).willReturn("activationCode");
         given(authModuleHelper.isValidActivationCodeReturned(any(), anyString())).willReturn(true);
         given(binder.getCallback(CREATE_USER_STATE))
                 .willReturn(new Callback[] {nameCallback, nameCallback, confirmationCallback});
-        given(profileNormalizer.getNormalisedAttributes(userInfo, null))
-                .willReturn(ImmutableMap.of("name", CollectionUtils.asSet(user)));
         given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
 

@@ -1,0 +1,13 @@
+{
+    "common": {
+        "form": {
+            "copyright" : "Copyright &copy; 2010-2022 ForgeRock AS. All rights reserved."
+        }
+    },
+    "form": {
+        "cancel": "Cancel",
+        "continue": "Continue",
+        "description": "This application is requesting access to your account",
+        "remember": "Remember this authorization"
+    }
+}

@@ -24,7 +24,7 @@
  *
  * $Id: StatusMessageImpl.java,v 1.3 2008/06/25 05:48:13 qcheng Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.context.impl;
 
@@ -32,8 +32,10 @@ import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -122,47 +124,18 @@ public class StatusMessageImpl implements StatusMessage {
         this.value = value;
     }
 
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element statusMessageElement = XMLUtils.createRootElement(document, XACMLConstants.CONTEXT_NS_PREFIX,
+                XACMLConstants.CONTEXT_NS_URI, XACMLConstants.STATUS_MESSAGE, includeNSPrefix, declareNS);
+        fragment.appendChild(statusMessageElement);
+        statusMessageElement.setTextContent(value);
+        return fragment;
+    }
+
     /**
-    * Returns a string representation
-    *
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException {
-        return toXMLString(true, false);
-    }
-
-   /**
-    * Returns a string representation
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException {
-        StringBuffer sb = new StringBuffer(2000);
-        String nsDeclaration = "";
-        String nsPrefix = "";
-        if (declareNS) {
-            nsDeclaration = XACMLConstants.CONTEXT_NS_DECLARATION;
-        }
-        if (includeNSPrefix) {
-            nsPrefix = XACMLConstants.CONTEXT_NS_PREFIX + ":";
-        }
-        sb.append("<").append(nsPrefix)
-                .append(XACMLConstants.STATUS_MESSAGE)
-                .append(nsDeclaration).append(">")
-                .append(value)
-                .append("</").append(nsPrefix)
-                .append(XACMLConstants.STATUS_MESSAGE)
-                .append(">\n");
-        return sb.toString();
-    }
-
-   /**
     * Checks if the object is mutable
     *
     * @return <code>true</code> if the object is mutable,

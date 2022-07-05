@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2010-2017 ForgeRock AS.
+ * Copyright 2010-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins;
@@ -37,6 +37,7 @@ public class DefaultIDPAdapter implements SAML2IdentityProviderAdapter {
     /**
      * Default implementation, takes no action.
      */
+    @Override
     public void initialize(String hostedEntityID, String realm) {
         // Do nothing
     }
@@ -44,6 +45,7 @@ public class DefaultIDPAdapter implements SAML2IdentityProviderAdapter {
     /**
      * Default implementation, takes no action and returns false (no interruption to processing).
      */
+    @Override
     public boolean preSingleSignOn(
             String hostedEntityID,
             String realm,
@@ -57,6 +59,7 @@ public class DefaultIDPAdapter implements SAML2IdentityProviderAdapter {
     /**
      * Default implementation, takes no action and returns false (no interruption to processing).
      */
+    @Override
     public boolean preAuthentication(
             String hostedEntityID,
             String realm,
@@ -72,6 +75,7 @@ public class DefaultIDPAdapter implements SAML2IdentityProviderAdapter {
     /**
      * Default implementation, takes no action and returns false (no interruption to processing).
      */
+    @Override
     public boolean preSendResponse(
             AuthnRequest authnRequest,
             String hostProviderID,
@@ -87,7 +91,22 @@ public class DefaultIDPAdapter implements SAML2IdentityProviderAdapter {
     /**
      * Default implementation, takes no action.
      */
+    @Override
     public void preSendFailureResponse(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            String faultCode,
+            String faultDetail) throws SAML2Exception {
+        // Do nothing
+    }
+
+    /**
+     * Default implementation, takes no action.
+     */
+    @Override
+    public void preSendFailureResponse(
+            String hostedEntityID,
+            String realm,
             HttpServletRequest request,
             HttpServletResponse response,
             String faultCode,
@@ -97,7 +116,7 @@ public class DefaultIDPAdapter implements SAML2IdentityProviderAdapter {
 
     @Override
     public void preSignResponse(AuthnRequest authnRequest, Response res, String hostProviderID, String realm,
-        HttpServletRequest request, Object session, String relayState) throws SAML2Exception {
+                                HttpServletRequest request, Object session, String relayState) throws SAML2Exception {
         // Do nothing
     }
 }

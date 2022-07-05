@@ -708,7 +708,8 @@ Handlebars.registerHelper("callbackRender", function () {
         case "ReCaptchaCallback": result += renderPartial("ReCaptcha", {
             siteKey: _.find(this.output, { name: "recaptchaSiteKey" }).value,
             apiUri: _.find(this.output, { name: "captchaApiUri" }).value,
-            divClass: _.find(this.output, { name: "captchaDivClass" }).value
+            divClass: _.find(this.output, { name: "captchaDivClass" }).value,
+            reCaptchaV3: _.find(this.output, { name: "reCaptchaV3" }).value
         }); break;
         case "BooleanAttributeInputCallback": result += renderPartial("Checkbox", { errorMessages }); break;
         case "NumberAttributeInputCallback":

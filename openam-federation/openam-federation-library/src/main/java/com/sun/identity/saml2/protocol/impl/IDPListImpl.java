@@ -24,11 +24,15 @@
  *
  * $Id: IDPListImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.IDPLIST;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +42,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -153,69 +158,25 @@ public class IDPListImpl implements IDPList {
         }
     }
 
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @return a String representation of this Object.
-     * @throws SAML2Exception cannot create String object.
-     */
-    public String toXMLString() throws SAML2Exception {
-        return toXMLString(true,false);
-    }
-
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *        qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *        within the Element.
-     * @return the String representation of this Object.
-     * @throws SAML2Exception cannot create String object.
-     **/
-
-    public String toXMLString(boolean includeNSPrefix,boolean declareNS)
-    throws SAML2Exception {
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
         validateIDPEntryList(idpEntryList);
-        StringBuffer xmlString = new StringBuffer(150);
-        xmlString.append(SAML2Constants.START_TAG);
-        if (includeNSPrefix) {
-            xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-        }
-        xmlString.append(SAML2Constants.IDPLIST).append(SAML2Constants.SPACE);
 
-        if (declareNS) {
-            xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
-        }
-        xmlString.append(SAML2Constants.END_TAG)
-        .append(SAML2Constants.NEWLINE);
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element idpListElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE, IDPLIST,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(idpListElement);
 
-        if ((idpEntryList == null) || (idpEntryList.isEmpty())) {
-            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("noIDPEntry"));
-        }
-
-        Iterator i = idpEntryList.iterator();
-        while (i.hasNext()) {
-            IDPEntry idpEntry = (IDPEntry)i.next();
-            if (idpEntry != null) {
-                String idpEntryStr =
-                        idpEntry.toXMLString(includeNSPrefix,declareNS);
-                xmlString.append(idpEntryStr).append(SAML2Constants.NEWLINE);
-            }
+        for (IDPEntry idpEntry : idpEntryList) {
+            idpListElement.appendChild(idpEntry.toDocumentFragment(document, includeNSPrefix, false));
         }
         if (getComplete != null) {
-            xmlString.append(getComplete.toXMLString(includeNSPrefix,declareNS))
-            .append(SAML2Constants.NEWLINE);
+            idpListElement.appendChild(getComplete.toDocumentFragment(document, includeNSPrefix, false));
         }
 
-        xmlString.append(SAML2Constants.SAML2_END_TAG)
-        .append(SAML2Constants.IDPLIST)
-        .append(SAML2Constants.END_TAG);
-
-
-        return xmlString.toString();
+        return fragment;
     }
-
 
     /**
      * Makes this object immutable.

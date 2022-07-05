@@ -24,11 +24,14 @@
  *
  * $Id: AdviceImpl.java,v 1.4 2008/06/25 05:47:42 qcheng Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.assertion.impl;
+
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,16 +40,17 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml.common.SAMLException;
 import com.sun.identity.saml2.assertion.Advice;
 import com.sun.identity.saml2.assertion.Assertion;
 import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.AssertionIDRef;
 import com.sun.identity.saml2.assertion.EncryptedAssertion;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -149,7 +153,7 @@ public class AdviceImpl implements Advice {
                 String childName = child.getLocalName();
                 if (childName != null) {
                     String ns = child.getNamespaceURI();
-                    if (SAML2Constants.ASSERTION_NAMESPACE_URI.equals(ns)) {
+                    if (ASSERTION_NAMESPACE_URI.equals(ns)) {
 
                         if (childName.equals(ASSERTION_ID_REF_ELEMENT)) {
                             assertionIDRefs.add(AssertionFactory.getInstance().
@@ -300,84 +304,51 @@ public class AdviceImpl implements Advice {
         this.additionalInfo = info;
     }
 
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace 
-    *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is 
-    *        declared within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-        StringBuffer sb = new StringBuffer(2000);
-        String NS = "";
-        String appendNS = "";
-        if (declareNS) {
-            NS = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-        if (includeNSPrefix) {
-            appendNS = SAML2Constants.ASSERTION_PREFIX;
-        }
-        sb.append("<").append(appendNS).append(ADVICE_ELEMENT).
-            append(NS).append(">\n");
-        int length = 0;
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element adviceElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                ADVICE_ELEMENT, includeNSPrefix, declareNS);
+        fragment.appendChild(adviceElement);
+
         if (assertionIDRefs != null) {
-            length = assertionIDRefs.size();
-            for (int i = 0; i < length; i++) {
-                AssertionIDRef assertionIDRef =
-                    (AssertionIDRef)assertionIDRefs.get(i);
-                sb.append(assertionIDRef.toXMLString(includeNSPrefix, false));
+            for (AssertionIDRef assertionIDRef : assertionIDRefs) {
+                adviceElement.appendChild(assertionIDRef.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
         if (assertionURIRefs != null) {
-            length = assertionURIRefs.size();
-            for (int i = 0; i < length; i++) {
-                String str = (String)assertionURIRefs.get(i);
-                sb.append("<").append(appendNS).
-                    append(ASSERTION_URI_REF_ELEMENT).append(">").
-                    append(str).append("</").append(appendNS).
-                    append(ASSERTION_URI_REF_ELEMENT).append(">\n");
+            for (String uriRef : assertionURIRefs) {
+                String prefix = includeNSPrefix ? ASSERTION_PREFIX : "";
+                Element uriRefElement = document.createElement(prefix + ASSERTION_URI_REF_ELEMENT);
+                uriRefElement.setTextContent(uriRef);
+                adviceElement.appendChild(uriRefElement);
             }
         }
         if (assertions != null) {
-            length = assertions.size();
-            for (int i = 0; i < length; i++) {
-                Assertion assertion = (Assertion)assertions.get(i);
-                sb.append(assertion.toXMLString(includeNSPrefix, false));
+            for (Assertion assertion : assertions) {
+                adviceElement.appendChild(assertion.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
         if (encryptedAssertions != null) {
-            length = encryptedAssertions.size();
-            for (int i = 0; i < length; i++) {
-                EncryptedAssertion ea = 
-                    (EncryptedAssertion)encryptedAssertions.get(i);
-                sb.append(ea.toXMLString(includeNSPrefix, false));
+            for (EncryptedAssertion encryptedAssertion : encryptedAssertions) {
+                adviceElement.appendChild(encryptedAssertion.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
         if (additionalInfo != null) {
-            length = additionalInfo.size();
-            for (int i = 0; i < length; i++) {
-                String str = (String)additionalInfo.get(i);
-                sb.append(str).append("\n"); 
+            for (String additionalInfo : additionalInfo) {
+                Document parsed = XMLUtils.toDOMDocument(additionalInfo);
+                if (parsed == null) {
+                    throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
+                }
+                adviceElement.appendChild(document.adoptNode(parsed.getDocumentElement()));
             }
         }
-        sb.append("</").append(appendNS).append(ADVICE_ELEMENT).append(">");
-        return sb.toString();
+
+        return fragment;
     }
 
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception {
-        return this.toXMLString(true, false);
-    }
-
-   /**
+    /**
     * Makes the object immutable
     */
     public void makeImmutable() {

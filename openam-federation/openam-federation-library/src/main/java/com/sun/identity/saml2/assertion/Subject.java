@@ -24,7 +24,7 @@
  *
  * $Id: Subject.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 
 
@@ -37,6 +37,7 @@ import org.forgerock.openam.annotations.SupportedAll;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.sun.identity.saml2.assertion.impl.SubjectImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 
 /** 
  * The <code>Subject</code> specifies the principal that is the subject
@@ -46,7 +47,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  */
 @SupportedAll
 @JsonDeserialize(as=SubjectImpl.class)
-public interface Subject {
+public interface Subject extends XmlSerializable {
 
     /**
      *  Returns the encrypted identifier
@@ -108,26 +109,6 @@ public interface Subject {
      *  @exception SAML2Exception if the object is immutable
      */
     public void setBaseID(BaseID value) throws SAML2Exception;
-
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-     throws SAML2Exception;
-
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception;
 
    /**
     * Makes the object immutable

@@ -24,12 +24,14 @@
  *
  * $Id: AgentProvider.java,v 1.1 2009/06/19 02:43:57 bigfatrat Exp $
  *
- * Portions Copyrighted 2011-2020 ForgeRock AS.
+ * Portions Copyrighted 2011-2022 ForgeRock AS.
  */
 package com.sun.identity.plugin.monitoring.impl;
 
+import org.forgerock.guice.core.InjectorHolder;
+
 import com.sun.identity.monitoring.MonitoringServices;
-import com.sun.identity.monitoring.MonitoringUtil;
+import com.sun.identity.monitoring.MonitoringStatusService;
 import com.sun.identity.plugin.monitoring.FedMonAgent;
 
 /**
@@ -38,7 +40,12 @@ import com.sun.identity.plugin.monitoring.FedMonAgent;
 
 public class AgentProvider implements FedMonAgent {
 
+    private final MonitoringServices monitoringServices;
+    private final MonitoringStatusService monitoringStatusService;
+
     public AgentProvider() {
+        this.monitoringServices = InjectorHolder.getInstance(MonitoringServices.class);
+        this.monitoringStatusService = InjectorHolder.getInstance(MonitoringStatusService.class);
     }
 
     public void init() {
@@ -48,28 +55,28 @@ public class AgentProvider implements FedMonAgent {
      *  Returns whether agent is "running" or not
      */
     public boolean isRunning() {
-        return MonitoringUtil.isRunning();
+        return monitoringStatusService.isRunning();
     }
 
     /*
      *  Returns the pointer to the SAML2 service mbean
      */
     public Object getSaml2SvcMBean() {
-        return MonitoringServices.getSaml2SvcMBean();
+        return monitoringServices.getSaml2SvcMBean();
     }
 
     /*
      *  Returns the pointer to the Fed COTs mbean
      */
     public Object getFedCOTsMBean() {
-        return MonitoringServices.getFedCOTsMBean();
+        return monitoringServices.getFedCOTsMBean();
     }
 
     /*
      *  Returns the pointer to the Federation Entities mbean
      */
     public Object getFedEntsMBean() {
-        return MonitoringServices.getFedEntsMBean();
+        return monitoringServices.getFedEntsMBean();
     }
 }
 

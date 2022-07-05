@@ -31,21 +31,25 @@
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import java.text.ParseException;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.protocol.ArtifactResponse;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.shared.DateUtils;
@@ -70,6 +74,7 @@ import com.sun.identity.shared.xml.XMLUtils;
 public class ArtifactResponseImpl extends StatusResponseImpl
 	implements ArtifactResponse {
     private static final Logger logger = LoggerFactory.getLogger(ArtifactResponseImpl.class);
+    public static final String ARTIFACT_RESPONSE = "ArtifactResponse";
     private String anyString = null;
     
     private void parseElement(Element element)
@@ -243,6 +248,7 @@ public class ArtifactResponseImpl extends StatusResponseImpl
      * object.
      */
     public ArtifactResponseImpl() {
+        super(ARTIFACT_RESPONSE);
         isMutable = true;
     }
 
@@ -255,6 +261,7 @@ public class ArtifactResponseImpl extends StatusResponseImpl
      */
     public ArtifactResponseImpl(org.w3c.dom.Element element)
         throws SAML2Exception {
+        super(ARTIFACT_RESPONSE);
         parseElement(element);
         if (isSigned) {
             signedXMLString = XMLUtils.print(element);
@@ -267,6 +274,7 @@ public class ArtifactResponseImpl extends StatusResponseImpl
      */
     public ArtifactResponseImpl(String xmlString)
         throws SAML2Exception {
+        super(ARTIFACT_RESPONSE);
         Document doc = XMLUtils.toDOMDocument(xmlString);
         if (doc == null) {
             throw new SAML2Exception(
@@ -305,73 +313,23 @@ public class ArtifactResponseImpl extends StatusResponseImpl
 	}
     }
 
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @return a String representation of this Object.
-     * @throws SAML2Exception if it could not create String object
-     */
-    public String toXMLString() throws SAML2Exception {
-	return this.toXMLString(true, false);
-    }
-
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *         qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *         within the Element.
-     * @throws SAML2Exception if it could not create String object.
-     * @return a String representation of this Object.
-     **/
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-	throws SAML2Exception {
-	if (isSigned && signedXMLString != null) {
-	    return signedXMLString;
-	}
-	this.validateData();
-        StringBuffer result = new StringBuffer(1000);
-        String prefix = "";
-        String uri = "";
-        if (includeNSPrefix) {
-            prefix = SAML2Constants.PROTOCOL_PREFIX;
-        }
-        if (declareNS) {
-            uri = SAML2Constants.PROTOCOL_DECLARE_STR;
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = super.toDocumentFragment(document, includeNSPrefix, declareNS);
+        if (isSigned && signedXMLString != null) {
+            return fragment;
         }
 
-        result.append("<").append(prefix).append("ArtifactResponse").
-                append(uri).append(" ID=\"").append(responseId).append("\"");
-	if (inResponseTo != null && inResponseTo.trim().length() != 0) {
-	    result.append(" InResponseTo=\"").append(XMLUtils.escapeSpecialCharacters(inResponseTo)).append("\"");
-	}
-	
-        result.append(" Version=\"").append(version).append("\"").
-                append(" IssueInstant=\"").
-                append(DateUtils.toUTCDateFormat(issueInstant)).append("\"");
-        if (destination != null && destination.trim().length() != 0) {
-            result.append(" Destination=\"").append(destination).
-                append("\"");
+        Element rootElement = (Element) fragment.getFirstChild();
+
+        if (isNotBlank(anyString)) {
+            List<Node> parsed = SAML2Utils.parseSAMLFragment(anyString);
+            for (Node node : parsed) {
+                rootElement.appendChild(document.adoptNode(node));
+            }
         }
-        if (consent != null && consent.trim().length() != 0) {
-            result.append(" Consent=\"").append(consent).append("\"");
-        }
-        result.append(">");
-        if (issuer != null) {
-            result.append(issuer.toXMLString(includeNSPrefix, declareNS));
-        }
-        if (signatureString != null) {
-            result.append(signatureString);
-        }
-        if (extensions != null) {
-            result.append(extensions.toXMLString(includeNSPrefix, declareNS));
-        }
-	result.append(status.toXMLString(includeNSPrefix, declareNS));
-	if (anyString != null && anyString.trim().length() != 0) {
-	    result.append(anyString);
-	}
-        result.append("</").append(prefix).append("ArtifactResponse>");
-        return result.toString();
+
+        return fragment;
     }
 }

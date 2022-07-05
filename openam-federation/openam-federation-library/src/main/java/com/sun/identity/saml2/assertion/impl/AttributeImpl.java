@@ -28,6 +28,13 @@
  */
 package com.sun.identity.saml2.assertion.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+import static com.sun.identity.saml2.common.SAML2Constants.ATTRIBUTE;
+import static java.util.stream.Collectors.toList;
+import static org.forgerock.openam.utils.StringUtils.isBlank;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -83,19 +91,19 @@ import com.sun.identity.shared.xml.XMLUtils;
 public class AttributeImpl implements Attribute {
 
     private static final Logger logger = LoggerFactory.getLogger(AttributeImpl.class);
-    private List attrValues = null;
-    private List valueStrings = null;
+    private List<Node> attrValues = null;
+    private List<String> valueStrings = null;
     private String name = null;
     private String nameFormat = null;
     private String friendlyName = null;
-    private Map anyMap = null;
+    private Map<String, String> anyMap = null;
     private boolean mutable = true;
 
     /**
      * Verifies if the input xmlstring can be converted to an AttributeValue
      * Element. If so, return the element value.
      */
-    private String validateAndGetAttributeValue(String value)
+    private Element validateAndGetAttributeValue(String value)
         throws SAML2Exception
     {
         Document doc = XMLUtils.toDOMDocument(value);
@@ -127,7 +135,7 @@ public class AttributeImpl implements Attribute {
             throw new SAML2Exception(
                       SAML2SDKUtils.bundle.getString("wrongInput"));
         }
-        return XMLUtils.getChildrenValue(element);
+        return element;
     }
 
     // used by the constructors.
@@ -173,7 +181,7 @@ public class AttributeImpl implements Attribute {
                         SAML2Constants.ASSERTION_NAMESPACE_URI))
                     {
                         if (anyMap == null) {
-                            anyMap = new HashMap();
+                            anyMap = new HashMap<>();
                         }
                         anyMap.put(attrName, attrValue);
                     }
@@ -191,11 +199,11 @@ public class AttributeImpl implements Attribute {
             if ((childName = child.getLocalName()) != null) {
                 if (childName.equals("AttributeValue")) {
                     if (attrValues == null) {
-                        attrValues = new ArrayList();
+                        attrValues = new ArrayList<>();
                     }
-                    attrValues.add(XMLUtils.print(child));
+                    attrValues.add(child);
                     if (valueStrings == null) {
-                        valueStrings = new ArrayList();
+                        valueStrings = new ArrayList<>();
                     }
                     valueStrings.add(XMLUtils.getChildrenValue((Element)child));
                 } else {
@@ -298,7 +306,12 @@ public class AttributeImpl implements Attribute {
      * @see #setAttributeValue(List)
      */
     public List getAttributeValue() {
-        return attrValues;
+        if (attrValues != null) {
+            return attrValues.stream()
+                    .map(XMLUtils::print)
+                    .collect(toList());
+        }
+        return null;
     }
 
     /**
@@ -319,12 +332,13 @@ public class AttributeImpl implements Attribute {
         }
         if (value != null) {
             Iterator iter = value.iterator();
-            attrValues = new ArrayList();
-            valueStrings = new ArrayList();
+            attrValues = new ArrayList<>();
+            valueStrings = new ArrayList<>();
             while (iter.hasNext()) {
                 String attr = (String) iter.next();
-                valueStrings.add(validateAndGetAttributeValue(attr));
-                attrValues.add(attr);
+                Element node = validateAndGetAttributeValue(attr);
+                valueStrings.add(XMLUtils.getChildrenValue(node));
+                attrValues.add(node);
             }
         } else {
             attrValues = null;
@@ -361,16 +375,20 @@ public class AttributeImpl implements Attribute {
         }
         // for each value in the list; add tag; add to attrValues
         if (value != null) {
-            attrValues = new ArrayList();
-            valueStrings = new ArrayList();
+            attrValues = new ArrayList<>();
+            valueStrings = new ArrayList<>();
             Iterator iter = value.iterator();
             while (iter.hasNext()) {
                 String attr = (String) iter.next();
-                attrValues.add("<saml:AttributeValue " +
-                    "xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" " +
-                    "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "+
-                    "xsi:type=\"xs:string\">" + attr +
-                    "</saml:AttributeValue>");
+                // TODO: the value here should really just be a string, so use setTextContent instead. Currently all
+                // callers manually escape XML characters before calling this method.
+                Document doc = XMLUtils.toDOMDocument("<saml:AttributeValue " +
+                        "xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" " +
+                        "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+                        "xmlns:saml=\"" + ASSERTION_NAMESPACE_URI + "\" " +
+                        "xsi:type=\"xs:string\">" + attr +
+                        "</saml:AttributeValue>");
+                attrValues.add(doc.getDocumentElement());
                 valueStrings.add(attr);
             }
         } else {
@@ -497,80 +515,39 @@ public class AttributeImpl implements Attribute {
         return AssertionFactory.getInstance().createEncryptedAttribute(el);
     }
 
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *         By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString()
-        throws SAML2Exception
-    {
-        return this.toXMLString(true, false);
-    }
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *                prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *                within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString(boolean includeNS, boolean declareNS)
-        throws SAML2Exception
-    {
-        if (name == null || name.trim().length() == 0) {
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        if (isBlank(name)) {
             if (logger.isDebugEnabled()) {
-                logger.debug("AttributeImpl.toXMLString:"
-                     + " missing Attribute Name.");
+                logger.debug("AttributeImpl.toDocumentFragment: missing Attribute Name.");
             }
-            throw new SAML2Exception(
-                SAML2SDKUtils.bundle.getString("missingAttribute"));
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("missingAttribute"));
         }
 
-        StringBuffer result = new StringBuffer(1000);
-        String prefix = "";
-        String uri = "";
-        if (includeNS) {
-            prefix = SAML2Constants.ASSERTION_PREFIX;
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element attributeElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                ATTRIBUTE, includeNSPrefix, declareNS);
+        fragment.appendChild(attributeElement);
+
+        attributeElement.setAttribute("Name", name);
+        if (isNotBlank(nameFormat)) {
+            attributeElement.setAttribute("NameFormat", nameFormat);
         }
-        if (declareNS) {
-            uri = SAML2Constants.ASSERTION_DECLARE_STR;
+        if (isNotBlank(friendlyName)) {
+            attributeElement.setAttribute("FriendlyName", friendlyName);
         }
 
-        result.append("<").append(prefix).append("Attribute").
-            append(uri).append(" Name=\"").append(name).append("\"");
-        if (nameFormat != null && nameFormat.trim().length() != 0) {
-            result.append(" NameFormat=\"").append(nameFormat).append("\"");
-        }
-        if (friendlyName != null && friendlyName.trim().length() != 0) {
-            result.append(" FriendlyName=\"").append(friendlyName).append("\"");
-        }
         if (anyMap != null) {
-            Iterator keyIter = anyMap.keySet().iterator();
-            while (keyIter.hasNext()) {
-                String key = (String) keyIter.next();
-                String value = (String) anyMap.get(key);
-                if (value == null) {
-                    value = "";
-                }
-                result.append(" ").append(key).append("=\"").append(value).
-                    append("\"");
-            }
+            anyMap.forEach(attributeElement::setAttribute);
         }
-        result.append(">");
-        if (attrValues != null) {
-            Iterator iter = attrValues.iterator();
-            while (iter.hasNext()) {
-                result.append((String) iter.next());
-            }
-        }
-        result.append("</").append(prefix).append("Attribute>");
-        return result.toString();
 
+        if (attrValues != null) {
+            for (Node value : attrValues) {
+                attributeElement.appendChild(document.importNode(value, true));
+            }
+        }
+
+        return fragment;
     }
 }

@@ -24,7 +24,7 @@
  *
  * $Id: RequestedAuthnContext.java,v 1.2 2008/06/25 05:47:57 qcheng Exp $
  *
- * Portions Copyrighted 2016-2019 ForgeRock AS.
+ * Portions Copyrighted 2016-2021 ForgeRock AS.
  */
 
 
@@ -36,6 +36,7 @@ import org.forgerock.openam.annotations.SupportedAll;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 import com.sun.identity.saml2.protocol.impl.RequestedAuthnContextImpl;
 
 /**
@@ -52,7 +53,7 @@ import com.sun.identity.saml2.protocol.impl.RequestedAuthnContextImpl;
 
 @JsonTypeInfo(include = JsonTypeInfo.As.PROPERTY, use = JsonTypeInfo.Id.CLASS,
         defaultImpl = RequestedAuthnContextImpl.class)
-public interface RequestedAuthnContext {
+public interface RequestedAuthnContext extends XmlSerializable {
 
     /**
      * Returns list of authentication context class references. References
@@ -103,26 +104,6 @@ public interface RequestedAuthnContext {
      * @throws SAML2Exception if <code>Object</code> is immutable.
      */
     void setComparison(String value) throws SAML2Exception;
-
-    /**
-     * Returns a String representation of this Object.
-     * 
-     * @return a String representation of this Object.
-     * @throws SAML2Exception if it failed to pasrse the object.
-     */
-    String toXMLString() throws SAML2Exception;
-	
-    /**
-     * Returns a String representation of this Object.
-     *
-     * @param includeNSPrefix true to prepend the namespace qualifier
-     *        to the Element.
-     * @param declareNS true to declare the namespace within the Element.
-     * @return the String representation of this Object.
-     * @throws SAML2Exception if it failed to pasrse the object.
-     */ 
-    String toXMLString(boolean includeNSPrefix, boolean declareNS)
-           throws SAML2Exception;
 
     /** 
     * Makes this object immutable by making this object unmodifiable.

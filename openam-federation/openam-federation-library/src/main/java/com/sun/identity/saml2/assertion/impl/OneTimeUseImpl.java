@@ -24,15 +24,22 @@
  *
  * $Id: OneTimeUseImpl.java,v 1.2 2008/06/25 05:47:44 qcheng Exp $
  *
+ * Portions Copyrighted 2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.assertion.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
+
 import com.sun.identity.saml2.assertion.OneTimeUse;
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * The <code>OneTimeUse</code> indicates that the assertion should be
@@ -73,38 +80,13 @@ public class OneTimeUseImpl
     public OneTimeUseImpl(Element element) throws SAML2Exception {
     }
 
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace 
-    *        qualifier is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is 
-    *        declared within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
-        StringBuffer sb = new StringBuffer(2000);
-        String NS = "";
-        String appendNS = "";
-        if (declareNS) {
-            NS = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-        if (includeNSPrefix) {
-            appendNS = SAML2Constants.ASSERTION_PREFIX;
-        }
-        sb.append("<").append(appendNS).append(ONETIMEUSE_ELEMENT).
-            append(NS).append(" />\n");
-        return sb.toString();
-    }
-
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    public String toXMLString() throws SAML2Exception {
-        return this.toXMLString(true, false);
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element oneTimeUseElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
+                ONETIMEUSE_ELEMENT, includeNSPrefix, declareNS);
+        fragment.appendChild(oneTimeUseElement);
+        return fragment;
     }
 }

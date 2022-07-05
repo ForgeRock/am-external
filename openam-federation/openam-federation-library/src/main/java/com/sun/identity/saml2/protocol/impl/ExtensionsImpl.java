@@ -24,25 +24,31 @@
  *
  * $Id: ExtensionsImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.EXTENSIONS;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+import static java.util.stream.Collectors.toList;
+import static org.forgerock.openam.utils.CollectionUtils.isNotEmpty;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
+import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.protocol.Extensions;
 import com.sun.identity.shared.xml.XMLUtils;
 
@@ -53,7 +59,7 @@ import com.sun.identity.shared.xml.XMLUtils;
 public class ExtensionsImpl implements Extensions {
     
     private boolean isMutable=false;
-    private List extensionsList=null;
+    private List<Node> extensionsList = null;
 
     /**
      * Constructor to create the <code>Extensions</code> Object.
@@ -98,12 +104,20 @@ public class ExtensionsImpl implements Extensions {
      * @see #getAny()
      */
     public void setAny(List value) throws SAML2Exception {
-	if (isMutable) {
-	    extensionsList = value;
-	} else {
-	    throw new SAML2Exception(
-		    SAML2SDKUtils.bundle.getString("objectImmutable"));
-	}
+		if (isMutable) {
+			if (value != null) {
+				List<Node> extensions = new ArrayList<>(value.size());
+				for (Object obj : value) {
+					extensions.addAll(SAML2Utils.parseSAMLFragment((String) obj));
+				}
+				extensionsList = extensions;
+			} else {
+				extensionsList = null;
+			}
+		} else {
+			throw new SAML2Exception(
+				SAML2SDKUtils.bundle.getString("objectImmutable"));
+		}
     }
 		
     /** 
@@ -113,62 +127,32 @@ public class ExtensionsImpl implements Extensions {
      * @see #setAny(List)
      */
     public List getAny() {
-	return extensionsList;
+    	if (extensionsList != null) {
+    		return extensionsList.stream().map(XMLUtils::print).collect(toList());
+		} else {
+    		return null;
+		}
     }
-    
-    /** 
-     * Returns a String representation of this object.
-     *
-     * @return a String representation of this object.
-     * @throws SAML2Exception if cannot convert to String.
-     */
-    public String toXMLString() throws SAML2Exception {
-	return toXMLString(true,false);
-    }
-    
-    /** 
-     * Returns a String representation of this object.
-     *
-     * @param includeNSPrefix determines whether or not the namespace
-     *	      qualifier is prepended to the Element when converted
-     * @param declareNS determines whether or not the namespace is declared
-     *	      within the Element.
-     * @return the String representation of this Object.
-     * @throws SAML2Exception if cannot convert to String.
-     */
-    
-    public String toXMLString(boolean includeNSPrefix,
-            boolean declareNS) throws SAML2Exception {
-        String xmlStr = null;
-	if ((extensionsList != null) && (!extensionsList.isEmpty())) {
-	    StringBuffer xmlString = new StringBuffer(500);
-	    xmlString.append(SAML2Constants.START_TAG);
-	    if (includeNSPrefix) {
-		xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-	    }
-	    xmlString.append(SAML2Constants.EXTENSIONS);
-	    if (declareNS) {
-		xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
-	    }
-	    xmlString.append(SAML2Constants.END_TAG);
 
-	    Iterator extIterator = extensionsList.iterator();
-	    while (extIterator.hasNext()) {
-		String extString = (String) extIterator.next();
-	        xmlString.append(SAML2Constants.NEWLINE)
-		         .append(extString);
-	    }
-	    xmlString.append(SAML2Constants.NEWLINE)
-		     .append(SAML2Constants.SAML2_END_TAG)
-		     .append(SAML2Constants.EXTENSIONS)
-		     .append(SAML2Constants.END_TAG);
+	@Override
+	public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+			throws SAML2Exception {
+    	DocumentFragment fragment = document.createDocumentFragment();
 
-	    xmlStr = xmlString.toString();
+		if (isNotEmpty(extensionsList)) {
+			Element extensionsElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+					EXTENSIONS, includeNSPrefix, declareNS);
+			fragment.appendChild(extensionsElement);
+
+			for (Node node : extensionsList) {
+				extensionsElement.appendChild(document.importNode(node, true));
+			}
+		}
+
+		return fragment;
 	}
-	return xmlStr;
-    }
-    
-    /** 
+
+	/**
      * Makes this object immutable. 
      */
     public void makeImmutable() {
@@ -196,7 +180,7 @@ public class ExtensionsImpl implements Extensions {
 	    for (int i = 0; i < nList.getLength(); i++) {
 		Node childNode = nList.item(i);
 	        if (childNode.getLocalName() != null) {
-		    extensionsList.add(XMLUtils.print(childNode));
+		    extensionsList.add(childNode);
 		}
 	    }
 	    if ((extensionsList != null) && (!extensionsList.isEmpty())) {

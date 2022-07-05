@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn;
@@ -24,12 +24,15 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
+import static org.forgerock.openam.auth.nodes.webauthn.AbstractWebAuthnNode.WEB_AUTHN_DEVICE_DATA;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.MockitoAnnotations.initMocks;
 
+import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -39,13 +42,19 @@ import javax.security.auth.callback.Callback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jwk.JWK;
+import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
+import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
+import org.forgerock.openam.auth.nodes.webauthn.data.AttestationResponse;
+import org.forgerock.openam.auth.nodes.webauthn.data.AttestedCredentialData;
+import org.forgerock.openam.auth.nodes.webauthn.data.AuthData;
 import org.forgerock.openam.auth.nodes.webauthn.flows.RegisterFlow;
 import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.EncodingUtilities;
+import org.forgerock.openam.auth.nodes.webauthn.flows.exceptions.WebAuthnRegistrationException;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
@@ -132,6 +141,9 @@ public class WebAuthnRegistrationNodeTest {
         given(config.relyingPartyDomain()).willReturn(Optional.of("example.com"));
         given(config.acceptedSigningAlgorithms()).willReturn(Collections.singleton(CoseAlgorithm.ES256));
         given(config.excludeCredentials()).willReturn(true);
+        given(config.postponeDeviceProfileStorage()).willReturn(true);
+        given(config.maxSavedDevices()).willReturn(2);
+
         given(webAuthnDeviceProfileManager.getDeviceProfiles(any(), any()))
                 .willReturn(Collections.singletonList(generateDevice()));
 
@@ -142,7 +154,7 @@ public class WebAuthnRegistrationNodeTest {
 
     @Test
     public void testCallback()
-            throws NodeProcessException {
+            throws NodeProcessException, WebAuthnRegistrationException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
         JsonValue transientState = json(object());
 
@@ -186,13 +198,117 @@ public class WebAuthnRegistrationNodeTest {
         assertThat(callback.getOutputValue().get("relyingPartyId").asString()).isEqualTo("id: \"example.com\",");
         assertThat(callback.getOutputValue().get("_type").asString()).isEqualTo("WebAuthn");
 
-
         assertThat(result.callbacks.get(1)).isInstanceOf(HiddenValueCallback.class);
     }
 
+    @Test
+    public void testCallbackWithDeviceLimit()
+            throws NodeProcessException, WebAuthnRegistrationException, DevicePersistenceException {
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue transientState = json(object());
+
+        given(config.postponeDeviceProfileStorage()).willReturn(false);
+        given(config.maxSavedDevices()).willReturn(2);
+        given(webAuthnDeviceProfileManager.getDeviceProfiles(any(), any())).willReturn(
+                Arrays.asList(generateDevice(), generateDevice()));
+
+        //When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        //Then
+        assertThat(result.outcome).isEqualTo("exceedDeviceLimit");
+    }
+
+    @Test
+    public void testDeviceName() throws NodeProcessException, WebAuthnRegistrationException, IOException {
+        //given
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue transientState = json(object());
+
+        TreeContext treeContext = getContext(sharedState, transientState, emptyList());
+        HiddenValueCallback hiddenValueCallback = new HiddenValueCallback("id");
+        hiddenValueCallback.setValue("dummy::1,2,3,4::dummy::customDeviceName");
+        treeContext = treeContext.copyWithCallbacks(Collections.singletonList(hiddenValueCallback));
+
+        final RsaJWK jwk = RsaJWK.parse("{"
+                + "      \"kty\": \"RSA\","
+                + "      \"n\": \"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAt"
+                + "            VT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn6"
+                + "            4tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FD"
+                + "            W2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n9"
+                + "            1CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINH"
+                + "            aQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw\","
+                + "      \"e\": \"AQAB\","
+                + "      \"alg\": \"RS256\","
+                + "      \"kid\": \"2011-04-29\""
+                + "     }");
+
+        AttestationObject attestationObject = new AttestationObject(null, new AuthData(null,
+                null, 0,
+                new AttestedCredentialData("dummy".getBytes(), 0, "credentialId".getBytes(),
+                        jwk, null), null), null);
+
+        given(registerFlow.accept(any(), any(), any(), any(), any(), any(), any(), any())).willReturn(
+                new AttestationResponse(attestationObject, null));
+
+        given(webAuthnDeviceProfileManager.createDeviceProfile(any(), any(), any(), any())).willCallRealMethod();
+        given(webAuthnDeviceJsonUtils.toJsonValue(any())).willCallRealMethod();
+
+        //when
+        Action result = node.process(treeContext);
+
+        //then
+        JsonValue value = result.transientState.get(WEB_AUTHN_DEVICE_DATA);
+        assertThat(value.get("deviceName").asString()).isEqualTo("customDeviceName");
+
+    }
+
+    @Test
+    public void testWithoutDeviceName() throws NodeProcessException, WebAuthnRegistrationException, IOException {
+        //given
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue transientState = json(object());
+
+        TreeContext treeContext = getContext(sharedState, transientState, emptyList());
+        HiddenValueCallback hiddenValueCallback = new HiddenValueCallback("id");
+        hiddenValueCallback.setValue("dummy::1,2,3,4::dummy");
+        treeContext = treeContext.copyWithCallbacks(Collections.singletonList(hiddenValueCallback));
+
+        final RsaJWK jwk = RsaJWK.parse("{"
+                + "      \"kty\": \"RSA\","
+                + "      \"n\": \"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAt"
+                + "            VT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn6"
+                + "            4tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FD"
+                + "            W2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n9"
+                + "            1CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINH"
+                + "            aQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw\","
+                + "      \"e\": \"AQAB\","
+                + "      \"alg\": \"RS256\","
+                + "      \"kid\": \"2011-04-29\""
+                + "     }");
+
+        AttestationObject attestationObject = new AttestationObject(null, new AuthData(null,
+                null, 0,
+                new AttestedCredentialData("dummy".getBytes(), 0, "credentialId".getBytes(),
+                        jwk, null), null), null);
+
+        given(registerFlow.accept(any(), any(), any(), any(), any(), any(), any(), any())).willReturn(
+                new AttestationResponse(attestationObject, null));
+
+        given(webAuthnDeviceProfileManager.createDeviceProfile(any(), any(), any(), any())).willCallRealMethod();
+        given(webAuthnDeviceJsonUtils.toJsonValue(any())).willCallRealMethod();
+
+        //when
+        Action result = node.process(treeContext);
+        JsonValue value = result.transientState.get(WEB_AUTHN_DEVICE_DATA);
+
+        //then
+        assertThat(value.get("deviceName").asString()).isEqualTo("New Security Key");
+
+    }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
-            List<? extends Callback> callbacks) {
+                                   List<? extends Callback> callbacks) {
         return new TreeContext(sharedState, transientState, new Builder().build(), callbacks, Optional.empty());
     }
 

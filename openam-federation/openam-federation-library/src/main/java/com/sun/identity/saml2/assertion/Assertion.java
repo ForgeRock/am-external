@@ -24,11 +24,10 @@
  *
  * $Id: Assertion.java,v 1.2 2008/06/25 05:47:39 qcheng Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion;
 
-import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.List;
@@ -40,6 +39,7 @@ import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.sun.identity.saml2.assertion.impl.AssertionImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 import com.sun.identity.saml2.key.EncryptionConfig;
 
 /**
@@ -50,7 +50,7 @@ import com.sun.identity.saml2.key.EncryptionConfig;
  */
 @SupportedAll
 @JsonDeserialize(as=AssertionImpl.class)
-public interface Assertion {
+public interface Assertion extends XmlSerializable {
 
     /**
      * Returns the version number of the assertion.
@@ -276,26 +276,6 @@ public interface Assertion {
      * @throws SAML2Exception if error occurs during the encryption process.
      */
     EncryptedAssertion encrypt(EncryptionConfig encryptionConfig, String recipientEntityID) throws SAML2Exception;
-
-   /**
-    * Returns a String representation
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-     */
-    String toXMLString(boolean includeNSPrefix, boolean declareNS)
-     throws SAML2Exception;
-
-   /**
-    * Returns a String representation
-    *
-    * @return A String representation
-    * @exception SAML2Exception if something is wrong during conversion
-    */
-    String toXMLString() throws SAML2Exception;
 
    /**
     * Makes the object immutable

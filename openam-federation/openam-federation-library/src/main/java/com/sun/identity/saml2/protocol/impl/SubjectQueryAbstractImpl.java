@@ -24,16 +24,17 @@
  *
  * $Id: SubjectQueryAbstractImpl.java,v 1.2 2008/06/25 05:48:01 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
 
 import java.util.ListIterator;
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
@@ -49,7 +50,15 @@ abstract public class SubjectQueryAbstractImpl
     private static final Logger logger = LoggerFactory.getLogger(SubjectQueryAbstractImpl.class);
     protected Subject subject;
 
-    /** 
+    /**
+     * {@inheritDoc}
+     * @param elementName {@inheritDoc}
+     */
+    protected SubjectQueryAbstractImpl(String elementName) {
+        super(elementName);
+    }
+
+    /**
      * Returns the <code>Subject</code> object. 
      *
      * @return the <code>Subject</code> object. 
@@ -74,19 +83,22 @@ abstract public class SubjectQueryAbstractImpl
 	this.subject = subject;
     }
 
-    protected void getXMLString(Set namespaces, StringBuffer attrs,
-        StringBuffer childElements, boolean includeNSPrefix, boolean declareNS)
-        throws SAML2Exception {
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = super.toDocumentFragment(document, includeNSPrefix, declareNS);
+        if (isSigned && signedXMLString != null) {
+            return fragment;
+        }
 
-        validateData();
+        Element rootElement = (Element) fragment.getFirstChild();
+        rootElement.appendChild(subject.toDocumentFragment(document, includeNSPrefix, declareNS));
 
-        super.getXMLString(namespaces, attrs, childElements, includeNSPrefix,
-            declareNS);
-        childElements.append(subject.toXMLString(includeNSPrefix,
-            declareNS)).append(SAML2Constants.NEWLINE);
+        return fragment;
     }
 
     protected void validateData() throws SAML2Exception {
+        super.validateData();
         if (subject == null) {
             if (logger.isDebugEnabled()) {
                 logger.debug("SubjectQueryAbstractImpl." +

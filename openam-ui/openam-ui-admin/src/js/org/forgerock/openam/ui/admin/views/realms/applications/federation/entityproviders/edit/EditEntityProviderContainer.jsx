@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2021 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
 import PropTypes from "prop-types";
@@ -30,6 +30,7 @@ import Loading from "components/Loading";
 import Oops from "components/Oops";
 import withRouter from "org/forgerock/commons/ui/common/components/hoc/withRouter";
 import withRouterPropType from "org/forgerock/commons/ui/common/components/hoc/withRouterPropType";
+import { getAllByScriptType } from "org/forgerock/openam/ui/admin/services/realm/ScriptsService";
 
 class EditEntityProviderContainer extends Component {
     static propTypes = {
@@ -43,11 +44,16 @@ class EditEntityProviderContainer extends Component {
     async componentDidMount () {
         const [realm, location,, entityId] = this.props.router.params;
         try {
-            const [instance, schema] = await Promise.all([
+            const [instance, schema, idpATMScriptsResponse, idpAdapterScripts] = await Promise.all([
                 getInstance(realm, location, entityId),
-                getSchema(realm, location)
+                getSchema(realm, location),
+                getAllByScriptType(realm, "SAML2_IDP_ATTRIBUTE_MAPPER"),
+                getAllByScriptType(realm, "SAML2_IDP_ADAPTER")
             ]);
 
+            /* eslint-disable react/no-did-mount-set-state */
+            this.setState({ idpATMScripts: idpATMScriptsResponse.result });
+            this.setState({ idpAdapterScripts: idpAdapterScripts.result });
             this.props.setInstance(instance);
             this.props.setSchema(convertFormatToIsPassword(schema));
         } catch (error) {
@@ -57,14 +63,52 @@ class EditEntityProviderContainer extends Component {
         }
     }
 
+    /**
+     * Create a JSON Schema for scripts.
+     * This would contain all the realm scripts.
+     * @param scriptProperty a script property retrieved from the schema
+     * @param scripts a list of scripts retrieved from the scripts API
+     * @returns {{enumNames, options: {enum_titles}, description, title, type: string, enum, exampleValue: string}}
+     */
+    createScriptsSchema (scriptProperty, scripts) {
+        const enums = scripts.map((item) => { return item._id; });
+        enums.push("[Empty]");
+        const enumTitles = scripts.map((item) => { return item.name; });
+        enumTitles.push("--- Select a script ---");
+
+        return {
+            title: scriptProperty.title,
+            description: scriptProperty.description,
+            "enum": enums,
+            options: {
+                "enum_titles": enumTitles
+            },
+            enumNames: enumTitles,
+            type: "string",
+            exampleValue: ""
+        };
+    }
+
     render () {
         if (this.state.isFetching) {
             return <Loading />;
         } else if (this.state.fetchError) {
             return <Oops />;
         } else {
-            const [,, role] = this.props.router.params;
+            const [, location, role] = this.props.router.params;
             const schema = this.props.schema.properties[role];
+            // TODO: Review role condition on SP implementation
+            if (role === "identityProvider" && location === "hosted") {
+                // IDP Attribute Mapper Script
+                const assertionProcessing = schema.properties.assertionProcessing;
+                const atmProperties = assertionProcessing.properties.attributeMapper.properties;
+                /* eslint-disable max-len */
+                atmProperties.attributeMapperScript = this.createScriptsSchema(atmProperties.attributeMapperScript, this.state.idpATMScripts);
+                // IDP Adapter Script
+                const idpAdapterProperties = schema.properties.advanced.properties.idpAdapter.properties;
+                /* eslint-disable max-len */
+                idpAdapterProperties.idpAdapterScript = this.createScriptsSchema(idpAdapterProperties.idpAdapterScript, this.state.idpAdapterScripts);
+            }
             return schema
                 ? <EditEntityProvider schema={ schema } />
                 : <Oops />;

@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Date;
 
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.w3c.dom.Document;
 
@@ -47,4 +48,51 @@ public class ArtifactResponseImplTest {
         assertThat(doc.getDocumentElement().getAttribute("InResponseTo")).isEqualTo(inResponseTo);
     }
 
+    @DataProvider
+    public Object[][] xmlTestCases() {
+        return new Object[][] {
+                { true, true, "<samlp:ArtifactResponse xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\" " +
+                        "ID=\"test\" InResponseTo=\"testInResponseTo\" " +
+                        "IssueInstant=\"2286-11-20T17:46:40Z\" Version=\"2.0\"" +
+                        "><samlp:Status>" +
+                        "<samlp:StatusCode Value=\"testCode\"/></samlp:Status>" +
+                        "<saml:test xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\"/><foo>test</foo>" +
+                        "</samlp:ArtifactResponse>" },
+                { true, false, "<samlp:ArtifactResponse " +
+                        "ID=\"test\" InResponseTo=\"testInResponseTo\" " +
+                        "IssueInstant=\"2286-11-20T17:46:40Z\" Version=\"2.0\"" +
+                        "><samlp:Status>" +
+                        "<samlp:StatusCode Value=\"testCode\"/></samlp:Status>" +
+                        "<saml:test xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\"/><foo>test</foo>" +
+                        "</samlp:ArtifactResponse>" },
+                { false, false, "<ArtifactResponse " +
+                        "ID=\"test\" InResponseTo=\"testInResponseTo\" " +
+                        "IssueInstant=\"2286-11-20T17:46:40Z\" Version=\"2.0\"" +
+                        "><Status><StatusCode Value=\"testCode\"/></Status>" +
+                        "<saml:test xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\"/><foo>test</foo>" +
+                        "</ArtifactResponse>" }
+        };
+    }
+
+    @Test(dataProvider = "xmlTestCases")
+    public void testToXml(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
+        // Given
+        ArtifactResponseImpl artifactResponse = new ArtifactResponseImpl();
+        artifactResponse.setID("test");
+        artifactResponse.setVersion("2.0");
+        artifactResponse.setIssueInstant(new Date(10000000000000L));
+        StatusImpl status = new StatusImpl();
+        StatusCodeImpl statusCode = new StatusCodeImpl();
+        statusCode.setValue("testCode");
+        status.setStatusCode(statusCode);
+        artifactResponse.setStatus(status);
+        artifactResponse.setInResponseTo("testInResponseTo");
+        artifactResponse.setAny("<saml:test/><foo>test</foo>");
+
+        // When
+        String xml = artifactResponse.toXMLString(includeNS, declareNS);
+
+        // Then
+        assertThat(xml).isEqualToIgnoringWhitespace(expectedXml);
+    }
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2020 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.push;
 
@@ -28,13 +28,16 @@ import static org.forgerock.openam.authentication.modules.push.Constants.RECOVER
 import static org.forgerock.openam.authentication.modules.push.Constants.STATE_EMERGENCY;
 import static org.forgerock.openam.authentication.modules.push.Constants.STATE_EMERGENCY_USED;
 import static org.forgerock.openam.authentication.modules.push.Constants.STATE_WAIT;
+import static org.forgerock.openam.authentication.modules.push.Constants.TIME_INTERVAL;
 import static org.forgerock.openam.authentication.modules.push.Constants.TIME_TO_LIVE_KEY;
 import static org.forgerock.openam.authentication.modules.push.Constants.USERNAME_CALLBACK_LOCATION_POSITION;
 import static org.forgerock.openam.authentication.modules.push.Constants.USERNAME_STATE;
 import static org.forgerock.openam.authentication.modules.push.Constants.USE_EMERGENCY_CODE;
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT;
+import static org.forgerock.openam.utils.Time.getCalendarInstance;
 
 import java.security.Principal;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -390,7 +393,7 @@ public class AuthenticatorPush extends AbstractPushModule {
     }
 
     private boolean sendMessage(PushDeviceSettings device) {
-
+        Calendar calendarInstance = getCalendarInstance();
         String communicationId = device.getCommunicationId();
         String mechanismId = device.getDeviceMechanismUID();
 
@@ -400,6 +403,7 @@ public class AuthenticatorPush extends AbstractPushModule {
                 .claim(Constants.MECHANISM_ID_KEY, mechanismId)
                 .claim(LOADBALANCER_KEY, Base64.encode((lbCookieValue).getBytes()))
                 .claim(CHALLENGE_KEY, challenge)
+                .claim(TIME_INTERVAL, String.valueOf(calendarInstance.getTimeInMillis()))
                 .claim(TIME_TO_LIVE_KEY, String.valueOf(timeout / 1000));
 
         String jwt = new SignedJwtBuilderImpl(new SigningManager()

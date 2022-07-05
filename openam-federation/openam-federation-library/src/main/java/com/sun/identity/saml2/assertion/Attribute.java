@@ -24,7 +24,7 @@
  *
  * $Id: Attribute.java,v 1.2 2008/06/25 05:47:40 qcheng Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion;
@@ -37,6 +37,7 @@ import org.forgerock.openam.annotations.SupportedAll;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.sun.identity.saml2.assertion.impl.AttributeImpl;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.XmlSerializable;
 import com.sun.identity.saml2.key.EncryptionConfig;
 
 /**
@@ -65,7 +66,7 @@ import com.sun.identity.saml2.key.EncryptionConfig;
  */
 @SupportedAll
 @JsonDeserialize(as=AttributeImpl.class)
-public interface Attribute {
+public interface Attribute extends XmlSerializable {
 
     /**
      * Makes the object immutable.
@@ -200,27 +201,5 @@ public interface Attribute {
      * @throws SAML2Exception if error occurs during the encryption process.
      */
     EncryptedAttribute encrypt(EncryptionConfig encryptionConfig, String recipientEntityID) throws SAML2Exception;
- 
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *         By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    String toXMLString() throws SAML2Exception;
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *                prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *                within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    String toXMLString(boolean includeNS, boolean declareNS) throws SAML2Exception;
-
 }
 

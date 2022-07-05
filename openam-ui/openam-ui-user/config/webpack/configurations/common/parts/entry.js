@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 module.exports = {
@@ -22,5 +22,6 @@ module.exports = {
     "main": "./src/js/main.js",
     "main-503": "./src/js/main-503.js",
     "main-authorize": "./src/js/main-authorize.js",
-    "main-device": "./src/js/main-device.js"
+    "main-device": "./src/js/main-device.js",
+    "main-uma": "./src/js/main-uma.js"
 };

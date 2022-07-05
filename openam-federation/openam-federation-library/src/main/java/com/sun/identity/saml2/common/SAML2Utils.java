@@ -98,6 +98,9 @@ import org.forgerock.util.Reject;
 import org.forgerock.util.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import com.sun.identity.common.HttpURLConnectionManager;
 import com.sun.identity.common.SystemConfigurationException;
@@ -2852,54 +2855,6 @@ public class SAML2Utils extends SAML2SDKUtils {
     }
 
     /**
-     * Returns a <code>SAML2IdentityProviderAdapter</code>
-     *
-     * @param realm       the realm name
-     * @param idpEntityID the entity id of the identity provider
-     * @return the <code>SAML2IdentityProviderAdapter</code>
-     * @throws SAML2Exception if the operation is not successful
-     */
-    public static SAML2IdentityProviderAdapter getIDPAdapterClass(
-            String realm, String idpEntityID)
-            throws SAML2Exception {
-        String classMethod = "SAML2Utils.getIDPAdapterClass: ";
-        String idpAdapterName = null;
-        SAML2IdentityProviderAdapter idpAdapter = null;
-        try {
-            idpAdapterName = IDPSSOUtil.getAttributeValueFromIDPSSOConfig(
-                    realm, idpEntityID, SAML2Constants.IDP_ADAPTER_CLASS);
-            if (idpAdapterName == null || idpAdapterName.trim().isEmpty()) {
-                idpAdapterName = SAML2Constants.DEFAULT_IDP_ADAPTER;
-                if (debug.isDebugEnabled()) {
-                    debug.debug(classMethod + " uses " + SAML2Constants.DEFAULT_IDP_ADAPTER);
-                }
-            }
-
-            // Attempt to retrieve the adapter from the cache
-            idpAdapter = (SAML2IdentityProviderAdapter) IDPCache.idpAdapterCache.get(realm + "$" + idpEntityID + "$" + idpAdapterName);
-
-            if (idpAdapter == null) {
-                // NB: multiple threads may cause several adapter objects to be created
-                idpAdapter = (SAML2IdentityProviderAdapter) Class.forName(idpAdapterName).newInstance();
-                idpAdapter.initialize(idpEntityID, realm);
-
-                // Add the adapter to the cache after initialization
-                IDPCache.idpAdapterCache.put(realm + "$" + idpEntityID + "$" + idpAdapterName, idpAdapter);
-            } else {
-                if (debug.isDebugEnabled()) {
-                    debug.debug(classMethod + " got the IDPAdapter from cache");
-                }
-            }
-        } catch (Exception ex) {
-            debug.error(classMethod + " unable to get IDP Adapter.", ex);
-            throw new SAML2Exception(ex);
-        }
-
-        return idpAdapter;
-    }
-
-
-    /**
      * Returns an <code>SP</code> adapter class
      *
      * @param spEntityID the entity id of the service provider
@@ -4767,6 +4722,33 @@ public class SAML2Utils extends SAML2SDKUtils {
      */
     public static String getSingleValuedSessionProperty(Object session, String propertyName) throws SessionException {
         return SessionManager.getProvider().getProperty(session, propertyName)[0];
+    }
+
+    /**
+     * Parses a fragment of SAML2 XML. The fragment XML is first wrapped in a dummy XML element that declares
+     * common SAML namespace prefixes:
+     * <ul>
+     *     <li>{@code saml:} - {@code urn:oasis:names:tc:SAML:2.0:assertion}</li>
+     *     <li>{@code samlp:} - {@code urn:oasis:names:tc:SAML:2.0:protocol}</li>
+     * </ul>
+     *
+     * @param xmlFragment the SAML XML fragment to parse.
+     * @return a list of the nodes parsed from the fragment.
+     * @throws SAML2Exception if the XML cannot be parsed.
+     */
+    public static List<Node> parseSAMLFragment(String xmlFragment) throws SAML2Exception {
+        String xml = "<dummy " + SAML2Constants.ASSERTION_DECLARE_STR + SAML2Constants.PROTOCOL_DECLARE_STR + ">"
+                + xmlFragment + "</dummy>";
+        Document parsed = XMLUtils.toDOMDocument(xml);
+        if (parsed == null) {
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
+        }
+        NodeList children = parsed.getDocumentElement().getChildNodes();
+        List<Node> childNodes = new ArrayList<>(children.getLength());
+        for (int i = 0; i < children.getLength(); ++i) {
+            childNodes.add(children.item(i));
+        }
+        return childNodes;
     }
 
     public static int getKeySizeFromEncryptionMethod(EncryptionMethodType encryptionMethod) {

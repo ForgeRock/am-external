@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -176,7 +176,7 @@ public class IdentifyExistingUserNodeTest {
         assertThat(process.sharedState.get("_id").asString()).isEqualTo(expectedSharedState.get("_id").asString());
         assertThat(process.sharedState.get(IDM_IDPS).getObject()).isEqualTo(
                 expectedSharedState.get(IDM_IDPS).getObject());
-        assertThat(process.sharedState.isDefined(USERNAME));
+        assertThat(process.sharedState.isDefined(USERNAME)).isTrue();
         assertThat(process.outcome).isEqualTo(expectedOutcome);
 
     }

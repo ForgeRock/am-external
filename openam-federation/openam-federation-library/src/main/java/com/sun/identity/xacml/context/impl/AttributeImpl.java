@@ -24,9 +24,16 @@
  *
  * $Id: AttributeImpl.java,v 1.4 2008/11/10 22:57:05 veiming Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.context.impl;
+
+import static com.sun.identity.xacml.common.XACMLConstants.ATTRIBUTE;
+import static com.sun.identity.xacml.common.XACMLConstants.ATTRIBUTE_ID;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.DATATYPE;
+import static com.sun.identity.xacml.common.XACMLConstants.ISSUER;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -36,11 +43,13 @@ import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -74,7 +83,7 @@ public class AttributeImpl implements Attribute {
     URI id = null;
     URI type = null;
     String issuer = null;
-    private List values ;
+    private List<Element> values ;
     private boolean isMutable = true;
 
    /** 
@@ -130,7 +139,7 @@ public class AttributeImpl implements Attribute {
         }
 
       // First check that we're really parsing an Attribute
-      if (! element.getLocalName().equals(XACMLConstants.ATTRIBUTE)) {
+      if (! element.getLocalName().equals(ATTRIBUTE)) {
             logger.error(
                 "AttributeImpl.processElement(): invalid root element");
             throw new XACMLException( 
@@ -140,7 +149,7 @@ public class AttributeImpl implements Attribute {
       NamedNodeMap attrs = element.getAttributes();
 
       try {
-          id = new URI(attrs.getNamedItem(XACMLConstants.ATTRIBUTE_ID)
+          id = new URI(attrs.getNamedItem(ATTRIBUTE_ID)
                 .getNodeValue());
       } catch (Exception e) {
             throw new XACMLException( 
@@ -184,9 +193,9 @@ public class AttributeImpl implements Attribute {
               (node.getNodeType() == Node.ATTRIBUTE_NODE)) {
               if (node.getLocalName().equals(XACMLConstants.ATTRIBUTE_VALUE)) {
                   if (values == null) {
-                      values = new ArrayList();
+                      values = new ArrayList<>();
                   }
-                  values.add(node);
+                  values.add((Element) node);
               }
           }
       }
@@ -357,7 +366,7 @@ public class AttributeImpl implements Attribute {
                 "objectImmutable"));
         }
         if (this.values == null) {
-            this.values = new ArrayList();
+            this.values = new ArrayList<>();
         }
         if (stringValues == null || stringValues.isEmpty()) {
             throw new XACMLException(
@@ -384,104 +393,40 @@ public class AttributeImpl implements Attribute {
         }
     }
 
-   /**
-    * Returns a <code>String</code> representation of this object
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException 
-    {
-        StringBuffer sb = new StringBuffer(2000);
-        StringBuffer NS = new StringBuffer(100);
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element attributeElement = XMLUtils.createRootElement(document, CONTEXT_NS_PREFIX, CONTEXT_NS_URI, ATTRIBUTE,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(attributeElement);
 
-        //TODO: remove the following 2 lines
-        includeNSPrefix = false;
-        declareNS = false;
-
-        String appendNS = "";
-        if (declareNS) {
-            NS.append(XACMLConstants.CONTEXT_NS_DECLARATION)
-            .append(XACMLConstants.SPACE);
-            NS.append(XACMLConstants.XSI_NS_URI).append(XACMLConstants.SPACE)
-            .append(XACMLConstants.CONTEXT_SCHEMA_LOCATION);
-        }
-        if (includeNSPrefix) {
-            appendNS = XACMLConstants.CONTEXT_NS_PREFIX + ":";
-        }
-        sb.append("<").append(appendNS).append(XACMLConstants.ATTRIBUTE)
-                .append(NS);
-        sb.append(XACMLConstants.SPACE);
         if (id != null) {
-            sb.append(XACMLConstants.ATTRIBUTE_ID).append("=").append("\"").
-                    append(id.toString());
-            sb.append("\"").append(XACMLConstants.SPACE);
+            attributeElement.setAttribute(ATTRIBUTE_ID, id.toString());
         }
         if (type != null) {
-            sb.append(XACMLConstants.DATATYPE).append("=").append("\"").
-                    append(type.toString());
-            sb.append("\"").append(XACMLConstants.SPACE);
+            attributeElement.setAttribute(DATATYPE, type.toString());
         }
         if (issuer != null) {
-            sb.append(XACMLConstants.ISSUER).append("=").append("\"")
-                    .append(issuer).
-                    append("\"");
+            attributeElement.setAttribute(ISSUER, issuer);
         }
-        sb.append(">");
-        int length = 0;
-        String xmlString = null;
-        if (values != null && !values.isEmpty()) {
-            for (int i=0; i < values.size(); i++) {
-                Element value = (Element)values.get(i);
-                sb.append("\n");
-                // ignore trailing ":"
-                if (includeNSPrefix && (value.getPrefix() == null)) {
-                    value.setPrefix(appendNS.substring(0, appendNS.length()-1));
+
+        if (values != null) {
+            for (Element value : values) {
+                Element adopted = (Element) document.importNode(value, true);
+                if (includeNSPrefix && adopted.getPrefix() == null) {
+                    adopted = (Element) document.renameNode(adopted, "",
+                            CONTEXT_NS_PREFIX + ":" + adopted.getTagName());
                 }
-                if(declareNS) {
-                    int index = NS.indexOf("=");
-                    String namespaceName = NS.substring(0, index);
-                    String namespaceURI = NS.substring(index+1);
-                    if (value.getNamespaceURI() == null) {
-                        value.setAttribute(namespaceName, namespaceURI);
-                        // does not seem to work to append namespace TODO
-                    }
-                }
-                sb.append(XMLUtils.print(value));
-             }
-        } else { // values are empty put empty tags
-            // This should not happen, not schema compliant
-            /*
-             sb.append("<").append(appendNS)
-                     .append(XACMLConstants.ATTRIBUTE_VALUE);
-             sb.append(NS).append(">").append("\n"); 
-             sb.append("</").append(appendNS)
-                     .append(XACMLConstants.ATTRIBUTE_VALUE);
-             sb.append(">").append("\n");
-             */
+                attributeElement.appendChild(adopted);
+                attributeElement.normalize();
+            }
         }
-        sb.append("\n</").append(appendNS).append(XACMLConstants.ATTRIBUTE);
-        sb.append(">\n");
-        return  sb.toString();
-    }
-            
 
-   /**
-    * Returns a string representation of this object
-    *
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-    */
-
-    public String toXMLString() throws XACMLException {
-        return toXMLString(true, false);
+        return fragment;
     }
 
-   /**
+    /**
     * Makes the object immutable
     */
     public void makeImmutable() {//TODO

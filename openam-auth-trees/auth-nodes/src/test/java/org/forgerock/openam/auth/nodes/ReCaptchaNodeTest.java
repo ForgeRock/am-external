@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -84,7 +84,7 @@ public class ReCaptchaNodeTest {
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void shouldThrowExceptionIfNoResponseProvided() throws Exception {
-        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS);
+        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, false);
         TreeContext context = new TreeContext(json(object()),
                 new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
         node.process(context);
@@ -92,7 +92,7 @@ public class ReCaptchaNodeTest {
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void shouldThrowExceptionIfResponseCannotBeVerified() throws Exception {
-        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS);
+        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, false);
         callback.setResponse("response");
         TreeContext context = new TreeContext(json(object()),
         new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
@@ -106,7 +106,7 @@ public class ReCaptchaNodeTest {
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void shouldThrowExceptionIfResponseContainsFailure() throws Exception {
-        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS);
+        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, false);
         callback.setResponse(SUCCESS);
         TreeContext context = new TreeContext(json(object()),
                 new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
@@ -122,7 +122,7 @@ public class ReCaptchaNodeTest {
 
     @Test
     public void shouldContinueToNextNodeIfResponseContainsSuccess() throws Exception {
-        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS);
+        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, false);
         callback.setResponse("response");
         TreeContext context = new TreeContext(json(object()),
                 new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());

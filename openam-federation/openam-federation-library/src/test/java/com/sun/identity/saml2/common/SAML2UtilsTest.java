@@ -23,6 +23,21 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.RandomStringUtils;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+
 import com.google.common.collect.ImmutableMap;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorType;
@@ -32,18 +47,6 @@ import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.shared.encode.URLEncDec;
-import org.apache.commons.lang.RandomStringUtils;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 public class SAML2UtilsTest {
 
@@ -268,5 +271,17 @@ public class SAML2UtilsTest {
                 .getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor().add(spssoDescriptorType);
         entityDescriptorElement.getValue().setEntityID(spEntityID);
         return entityDescriptorElement;
+    }
+
+    @Test
+    public void testParseSamlFragment() throws Exception {
+        List<Node> nodes = SAML2Utils.parseSAMLFragment("<saml:Extension>foo</saml:Extension><samlp:Artifact/>");
+        assertThat(nodes).hasSize(2);
+        assertThat(nodes).allMatch(Element.class::isInstance);
+        assertThat(nodes.get(0).getLocalName()).isEqualTo("Extension");
+        assertThat(nodes.get(0).getNamespaceURI()).isEqualTo("urn:oasis:names:tc:SAML:2.0:assertion");
+        assertThat(nodes.get(0).getTextContent()).isEqualTo("foo");
+        assertThat(nodes.get(1).getLocalName()).isEqualTo("Artifact");
+        assertThat(nodes.get(1).getNamespaceURI()).isEqualTo("urn:oasis:names:tc:SAML:2.0:protocol");
     }
 }

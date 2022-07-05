@@ -24,14 +24,20 @@
  *
  * $Id: AssertionIDRefImpl.java,v 1.2 2008/06/25 05:47:42 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_ID_REF;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
+import static org.forgerock.openam.utils.StringUtils.isBlank;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -138,51 +144,21 @@ public class AssertionIDRefImpl implements AssertionIDRef {
         return mutable;
     }
 
-    /**
-     * Returns a String representation of the element.
-     *
-     * @return A string containing the valid XML for this element.
-     *     By default name space name is prepended to the element name.
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString() throws SAML2Exception
-    {
-        return toXMLString(true, false);
-    }
-
-    /**
-     * Returns a String representation of the element.
-     *
-     * @param includeNS Determines whether or not the namespace qualifier is
-     *     prepended to the Element when converted
-     * @param declareNS Determines whether or not the namespace is declared
-     *     within the Element.
-     * @return A string containing the valid XML for this element
-     * @throws SAML2Exception if the object does not conform to the schema.
-     */
-    public String toXMLString(boolean includeNS, boolean declareNS)
-        throws SAML2Exception
-    {
-        if ((value == null) || (value.trim().length() == 0)) {
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        if (isBlank(value)) {
             if (logger.isDebugEnabled()) {
-                logger.debug("AssertionIDRefImpl.toXMLString: "+
-                    "AssertionIDRef value is null or empty.");
+                logger.debug("AssertionIDRefImpl.toDocumentFragment: AssertionIDRef value is null or empty.");
             }
-            throw new SAML2Exception(SAML2Utils.bundle.getString(
-                "emptyElementValue"));
+            throw new SAML2Exception(SAML2Utils.bundle.getString("emptyElementValue"));
         }
-
-        String prefix = "";
-        String uri = "";
-        if (includeNS) {
-            prefix = SAML2Constants.ASSERTION_PREFIX;
-        }
-        if (declareNS) {
-            uri = SAML2Constants.ASSERTION_DECLARE_STR;
-        }
-
-        return ("<" + prefix + SAML2Constants.ASSERTION_ID_REF + uri + ">" +
-            value + "</" + prefix + SAML2Constants.ASSERTION_ID_REF + ">");
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element assertionIDRefElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX,
+                ASSERTION_NAMESPACE_URI, ASSERTION_ID_REF, includeNSPrefix, declareNS);
+        fragment.appendChild(assertionIDRefElement);
+        assertionIDRefElement.setTextContent(value);
+        return fragment;
     }
 
     private void parseElement(Element element) throws SAML2Exception

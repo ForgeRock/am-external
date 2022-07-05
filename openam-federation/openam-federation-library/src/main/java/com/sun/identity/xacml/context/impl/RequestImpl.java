@@ -24,9 +24,17 @@
  *
  * $Id: RequestImpl.java,v 1.4 2008/11/10 22:57:05 veiming Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.context.impl;
+
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_PREFIX;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_NS_URI;
+import static com.sun.identity.xacml.common.XACMLConstants.CONTEXT_SCHEMA_LOCATION_VALUE;
+import static com.sun.identity.xacml.common.XACMLConstants.REQUEST;
+import static com.sun.identity.xacml.common.XACMLConstants.SCHEMA_LOCATION_ATTR;
+import static com.sun.identity.xacml.common.XACMLConstants.XSI_NS_ATTR;
+import static com.sun.identity.xacml.common.XACMLConstants.XSI_NS_URI;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -37,10 +45,12 @@ import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 import com.sun.identity.xacml.common.XACMLException;
@@ -73,13 +83,13 @@ import com.sun.identity.xacml.context.Subject;
 public class RequestImpl implements Request {
 
     private static final Logger logger = LoggerFactory.getLogger(RequestImpl.class);
-    private List subjects = new ArrayList();
-    private List resources = new ArrayList();
+    private List<Subject> subjects = new ArrayList<>();
+    private List<Resource> resources = new ArrayList<>();
     private Action action = null;
     private Environment env = null;
     private boolean isMutable = true;
     
-    private  static Set supportedSubjectCategory = new HashSet();
+    private static Set<String> supportedSubjectCategory = new HashSet<>();
     static {
         supportedSubjectCategory.add(XACMLConstants.ACCESS_SUBJECT);
         supportedSubjectCategory.add(XACMLConstants.
@@ -418,69 +428,40 @@ public class RequestImpl implements Request {
         env = argEnv;
     }
 
-   /**
-    * Returns a <code>String</code> representation of this object
-    * @param includeNSPrefix Determines whether or not the namespace qualifier
-    *        is prepended to the Element when converted
-    * @param declareNS Determines whether or not the namespace is declared
-    *        within the Element.
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-     */
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-            throws XACMLException {
-        StringBuffer sb = new StringBuffer(2000);
-        StringBuffer namespaceBuffer = new StringBuffer(100);
-        String nsDeclaration = "";
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element requestElement = XMLUtils.createRootElement(document, CONTEXT_NS_PREFIX, CONTEXT_NS_URI, REQUEST,
+                includeNSPrefix, declareNS);
+        fragment.appendChild(requestElement);
         if (declareNS) {
-            namespaceBuffer.append(XACMLConstants.CONTEXT_NS_DECLARATION).
-                append(XACMLConstants.SPACE);
-            namespaceBuffer.append(XACMLConstants.XSI_NS_URI).
-                append(XACMLConstants.SPACE).append(XACMLConstants.
-                CONTEXT_SCHEMA_LOCATION);
+            requestElement.setAttribute(XSI_NS_ATTR, XSI_NS_URI);
+            requestElement.setAttribute(SCHEMA_LOCATION_ATTR, CONTEXT_SCHEMA_LOCATION_VALUE);
         }
-        if (includeNSPrefix) {
-            nsDeclaration = XACMLConstants.CONTEXT_NS_PREFIX + ":";
-        }
-        sb.append("\n<").append(nsDeclaration).append(XACMLConstants.REQUEST).
-            append(namespaceBuffer).append(">\n");
-        int length = 0;
-        if (subjects != null && !subjects.isEmpty()) {
-            length = subjects.size();
-            for (int i = 0; i < length; i++) {
-                Subject sub = (Subject)subjects.get(i);
-                sb.append(sub.toXMLString(includeNSPrefix, false));
+
+        if (subjects != null) {
+            for (Subject subject : subjects) {
+                requestElement.appendChild(subject.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
-        if (resources != null && !resources.isEmpty()) {
-            length = resources.size();
-            for (int i = 0; i < length; i++) {
-                Resource resource = (Resource)resources.get(i);
-                sb.append(resource.toXMLString(includeNSPrefix, false));
+        if (resources != null) {
+            for (Resource resource : resources) {
+                requestElement.appendChild(resource.toDocumentFragment(document, includeNSPrefix, false));
             }
         }
         if (action != null) {
-            sb.append(action.toXMLString(includeNSPrefix, false));
+            requestElement.appendChild(action.toDocumentFragment(document, includeNSPrefix, false));
         }
         if (env != null) {
-            sb.append(env.toXMLString(includeNSPrefix, false));
+            requestElement.appendChild(env.toDocumentFragment(document, includeNSPrefix, false));
         }
-        sb.append("</").append(nsDeclaration).append(XACMLConstants.REQUEST).
-        append(">\n");
-        return sb.toString();
+
+        return fragment;
     }
 
-   /**
-    * Returns a string representation of this object
-    *
-    * @return a string representation of this object
-    * @exception XACMLException if conversion fails for any reason
-    */
-    public String toXMLString() throws XACMLException {
-        return this.toXMLString(true, false);
-    }
-
-   /**
+    /**
     * Makes the object immutable
     */
     public void makeImmutable() {}

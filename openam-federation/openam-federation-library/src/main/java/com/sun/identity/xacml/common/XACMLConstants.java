@@ -24,7 +24,7 @@
  *
  * $Id: XACMLConstants.java,v 1.5 2009/09/22 23:00:15 madan_ranganath Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 package com.sun.identity.xacml.common;
 
@@ -63,6 +63,11 @@ public class  XACMLConstants {
      * Constant for SAML2 Protocol namespace prefix
      */
     public static String SAMLP_NS_PREFIX = "samlp:";
+
+    /**
+     * SAML2 Protocol namespace URI.
+     */
+    public static final String SAML2_NS_URI = "urn:oasis:names:tc:SAML:2.0:protocol";
     
     /**
      * Constant for SAML2 protocol namespace declaration
@@ -137,12 +142,14 @@ public class  XACMLConstants {
      */
     public static String CONTEXT_NS_DECLARATION =
     " xmlns:xacml-context=\"urn:oasis:names:tc:xacml:2.0:context:schema:os\" ";
-    
-    /*
+
+    public static final String XSI_NS_ATTR = "xmlns:xsi";
+
+    /**
      * Constant for XMLSchema-instance URI
      */
-    public static String XSI_NS_URI = 
-        "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"";
+    public static final String XSI_NS_URI =
+        "http://www.w3.org/2001/XMLSchema-instance";
     
     /**
      * Constant for xsi name space delcaration
@@ -159,10 +166,22 @@ public class  XACMLConstants {
     /**
      * XACML context schema location 
      */
-    public static String CONTEXT_SCHEMA_LOCATION=
+    public static final String CONTEXT_SCHEMA_LOCATION=
     "xsi:schemaLocation=\"urn:oasis:names:tc:xacml:2.0:context:schema:os http:"
         +"//docs.oasis-open.org/xacml/access_control-xacml"
         +"-2.0-context-schema-os.xsd\"";
+
+    /**
+     * The {@code xsi:schemeLocation} attribute name.
+     */
+    public static final String SCHEMA_LOCATION_ATTR = "xsi:schemaLocation";
+
+    /**
+     * The location declaration for the XACML Context schema, to be used with {@link #SCHEMA_LOCATION_ATTR}.
+     */
+    public static final String CONTEXT_SCHEMA_LOCATION_VALUE =
+            "urn:oasis:names:tc:xacml:2.0:context:schema:os " +
+                    "http://docs.oasis-open.org/xacml/access_control-xacml-2.0-context-schema-os.xsd";
         
     /**
      * Constant for RequestAbstract

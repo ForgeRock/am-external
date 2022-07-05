@@ -24,17 +24,21 @@
  *
  * $Id: GetCompleteImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2021 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import static com.sun.identity.saml2.common.SAML2Constants.GETCOMPLETE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
+import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
+
 import org.w3c.dom.Document;
+import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.protocol.GetComplete;
@@ -110,54 +114,19 @@ public class GetCompleteImpl implements GetComplete {
                         SAML2SDKUtils.bundle.getString("objectImmutable"));
 	}
     }
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @return a String representation of this Object.
-     * @throws SAML2Exception if cannot convert to String.
-     */
-    public String toXMLString() throws SAML2Exception {
-	return toXMLString(true,false);
-    }
-    
-    /** 
-     * Returns a String representation of this Object.
-     *
-     * @param  includeNSPrefix determines whether or not the namespace
-     *         qualifier is prepended to the Element when converted.
-     * @param  declareNS determines whether or not the namespace is declared.
-     *         within the Element.
-     * @throws SAML2Exception if cannot convert to String.
-     * @return String representation of this object.
-     */
-    
-    public String toXMLString(boolean includeNSPrefix, boolean declareNS)
-    throws SAML2Exception {
-	String xmlElementStr = null;
-	if ((getCompleteURI != null) && (getCompleteURI.length() > 0)) {
-	    StringBuffer xmlString = new StringBuffer(100);
-	    xmlString.append(SAML2Constants.START_TAG);
-	    if (includeNSPrefix) {
-		xmlString.append(SAML2Constants.PROTOCOL_PREFIX);
-	    }
-	    xmlString.append(SAML2Constants.GETCOMPLETE);
 
-	    if (declareNS) {
-		xmlString.append(SAML2Constants.PROTOCOL_DECLARE_STR);
-	    }
-	    xmlString.append(SAML2Constants.END_TAG)
-		     .append(SAML2Constants.NEWLINE)
-	             .append(getCompleteURI).append(SAML2Constants.NEWLINE)
-                     .append(SAML2Constants.SAML2_END_TAG)
-                     .append(SAML2Constants.GETCOMPLETE)
-                     .append(SAML2Constants.END_TAG);
-	    xmlElementStr=xmlString.toString();
-	}
-	return xmlElementStr;
+    @Override
+    public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
+            throws SAML2Exception {
+        DocumentFragment fragment = document.createDocumentFragment();
+        Element getCompleteElement = XMLUtils.createRootElement(document, PROTOCOL_PREFIX, PROTOCOL_NAMESPACE,
+                GETCOMPLETE, includeNSPrefix, declareNS);
+        fragment.appendChild(getCompleteElement);
+        getCompleteElement.setTextContent(getCompleteURI);
+        return fragment;
     }
-        
-    /** 
+
+    /**
      * Makes this object immutable. 
      *
      */
