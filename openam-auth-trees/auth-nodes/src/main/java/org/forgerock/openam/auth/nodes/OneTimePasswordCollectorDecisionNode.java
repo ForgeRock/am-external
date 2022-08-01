@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -81,7 +81,7 @@ public class OneTimePasswordCollectorDecisionNode extends AbstractDecisionNode {
         this.nodeSharedStateCrypto = nodeSharedStateCrypto;
     }
 
-    private static final String BUNDLE = "org/forgerock/openam/auth/nodes/OneTimePasswordCollectorDecisionNode";
+    private static final String BUNDLE = OneTimePasswordCollectorDecisionNode.class.getName();
 
     @Override
     public Action process(TreeContext context) {
@@ -103,12 +103,9 @@ public class OneTimePasswordCollectorDecisionNode extends AbstractDecisionNode {
             JsonValue decryptedOtp = nodeSharedStateCrypto.decrypt(encryptedOtp.asString());
             otp = decryptedOtp.get(ONE_TIME_PASSWORD);
             otpTimestamp = decryptedOtp.get(ONE_TIME_PASSWORD_TIMESTAMP);
-            context.sharedState.remove(ONE_TIME_PASSWORD_ENCRYPTED);
         } else {
             otp = context.sharedState.get(ONE_TIME_PASSWORD);
             otpTimestamp = context.sharedState.get(ONE_TIME_PASSWORD_TIMESTAMP);
-            context.sharedState.remove(ONE_TIME_PASSWORD);
-            context.sharedState.remove(ONE_TIME_PASSWORD_TIMESTAMP);
         }
 
         boolean passwordMatches = otp.isString()
@@ -116,6 +113,16 @@ public class OneTimePasswordCollectorDecisionNode extends AbstractDecisionNode {
                 && otpTimestamp.isNumber()
                 && isWithinExpiryTime(otpTimestamp.asLong());
         logger.debug("passwordMatches {}", passwordMatches);
+
+        if (passwordMatches) {
+            if (encryptedOtp.isNotNull()) {
+                context.sharedState.remove(ONE_TIME_PASSWORD_ENCRYPTED);
+            } else {
+                context.sharedState.remove(ONE_TIME_PASSWORD);
+                context.sharedState.remove(ONE_TIME_PASSWORD_TIMESTAMP);
+            }
+        }
+
         return goTo(passwordMatches).build();
     }
 

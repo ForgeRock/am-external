@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -47,7 +47,7 @@ public class PasswordCollectorNode extends SingleOutcomeNode {
     public interface Config {
     }
 
-    private static final String BUNDLE = "org/forgerock/openam/auth/nodes/PasswordCollectorNode";
+    private static final String BUNDLE = PasswordCollectorNode.class.getName();
     private final Logger logger = LoggerFactory.getLogger("amAuth");
 
     @Override

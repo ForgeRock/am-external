@@ -81,8 +81,7 @@ public class OneTimePasswordSmsSenderNode extends OneTimePasswordNodeCommon {
 
     private final Config config;
 
-    private static final String BUNDLE = OneTimePasswordSmsSenderNode.class.getName().replace(".",
-            "/");
+    private static final String BUNDLE = OneTimePasswordSmsSenderNode.class.getName();
 
     /**
      * Constructs a new OneTimePasswordSmsSenderNode instance.

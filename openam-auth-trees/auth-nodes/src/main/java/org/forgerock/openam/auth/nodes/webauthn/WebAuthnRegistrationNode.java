@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -77,7 +77,7 @@ import com.sun.identity.sm.RequiredValueValidator;
         configClass = WebAuthnRegistrationNode.Config.class)
 public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
 
-    private static final String BUNDLE = RESOURCE_LOCATION + "WebAuthnRegistrationNode";
+    private static final String BUNDLE = WebAuthnRegistrationNode.class.getName();
     private static final String REGISTRATION_SCRIPT = RESOURCE_LOCATION + "webauthn-client-registration-script.js";
 
     private static final String DEFAULT_DEVICE_NAME_KEY = "newDeviceName";

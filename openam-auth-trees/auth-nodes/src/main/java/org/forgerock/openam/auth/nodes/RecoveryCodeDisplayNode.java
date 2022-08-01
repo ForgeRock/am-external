@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -41,7 +41,7 @@ import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
         configClass = RecoveryCodeDisplayNode.Config.class)
 public class RecoveryCodeDisplayNode extends SingleOutcomeNode {
 
-    private static final String BUNDLE = "org/forgerock/openam/auth/nodes/RecoveryCodeDisplayNode";
+    private static final String BUNDLE = RecoveryCodeDisplayNode.class.getName();
     private static final String SCRIPT = "org/forgerock/openam/auth/nodes/RecoveryCodeDisplayNode.js";
 
     /**

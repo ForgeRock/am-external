@@ -24,7 +24,7 @@
  *
  * $Id: FSPreLogin.java,v 1.6 2008/08/19 19:11:04 veiming Exp $
  *
- * Portions Copyrighted 2015-2017 ForgeRock AS.
+ * Portions Copyrighted 2015-2022 ForgeRock AS.
  */
 
 package com.sun.identity.federation.login;
@@ -56,6 +56,8 @@ import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.liberty.LibertyManager;
+import org.owasp.esapi.ESAPI;
+import org.owasp.esapi.errors.EncodingException;
 
 
 /**
@@ -503,7 +505,7 @@ public class FSPreLogin {
                     .append(IFSConstants.AMPERSAND)
                     .append(IFSConstants.META_ALIAS)
                     .append(IFSConstants.EQUAL_TO)
-                    .append(httpRequest.getParameter(IFSConstants.META_ALIAS))
+                    .append(ESAPI.encoder().encodeForURL(httpRequest.getParameter(IFSConstants.META_ALIAS)))
                     .toString();
                 if (FSUtils.debug.messageEnabled()) {
                     FSUtils.debug.message(
@@ -517,6 +519,10 @@ public class FSPreLogin {
             FSUtils.debug.error("FSPreLogin::setMetaInfo."
                 + " FSLoginHelperException Exception caught. ", exp);
             throw new FSPreLoginException("FSPreLogin::FSLoginHelperException");
+        } catch (EncodingException ex) {
+            FSUtils.debug.error("FSPreLogin::setMetaInfo."
+                    + " ESAPI EncodingException caught. ", ex);
+            throw new FSPreLoginException("FSPreLogin::EncodingException");
         }
     }
 
@@ -550,13 +556,13 @@ public class FSPreLogin {
             }
             String returnURL = null;
             Map retMap = new HashMap();
-            String metaAlias = request.getParameter(IFSConstants.META_ALIAS);
+            String metaAlias = ESAPI.encoder().encodeForURL(request.getParameter(IFSConstants.META_ALIAS));
             Map cookieMap = getCookieMap(cookieArray);
             setMetaInfo(metaAlias,request);
            
             if (LibertyManager.isLECPProfile(request)) {
                 String headerName = LibertyManager.getLECPHeaderName();
-                String headerValue = request.getHeader(headerName);
+                String headerValue = ESAPI.encoder().encodeForURL(request.getHeader(headerName));
                 response.setHeader(headerName, headerValue);
             }
            

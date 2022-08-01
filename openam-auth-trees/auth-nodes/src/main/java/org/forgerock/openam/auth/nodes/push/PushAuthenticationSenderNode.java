@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -90,7 +90,7 @@ import com.sun.identity.shared.encode.Base64;
 public class PushAuthenticationSenderNode implements Node {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("amAuth");
-    private static final String BUNDLE = "org/forgerock/openam/auth/nodes/push/PushAuthenticationSenderNode";
+    private static final String BUNDLE = PushAuthenticationSenderNode.class.getName();
 
     private final Config config;
     private final UserPushDeviceProfileManager userPushDeviceProfileManager;

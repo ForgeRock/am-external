@@ -11,10 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
-import { BootstrapTable } from "react-bootstrap-table";
+import BootstrapTable from "react-bootstrap-table-next";
+import paginationFactory from "react-bootstrap-table2-paginator";
 import { find, map, without } from "lodash";
 import PropTypes from "prop-types";
 import React from "react";
@@ -32,22 +33,47 @@ const Table = ({ keyField, onRowClick, onSelectedChange, options = {}, selectedI
     const handleSelectAll = (isSelected, rows) => onSelectedChange(isSelected ? rows : []);
     const fetchInfo = options.dataTotalSize ? { dataTotalSize: options.dataTotalSize } : undefined;
 
+    // Get the pagination configuration from the options prop
+    const pagination = {
+        page: options.page,
+        sizePerPage: options.sizePerPage,
+        totalSize: options.dataTotalSize,
+        hidePageListOnlyOnePage: true,
+        onSizePerPageChange: options.onSizePerPageList,
+        onPageChange: options.onPageChange
+    };
     return (
         <BootstrapTable
+            columns={ restProps.columns }
             fetchInfo={ fetchInfo }
             keyField={ keyField }
-            options={ {
-                onRowClick,
-                ...options
-            } }
-            pagination={ options.pagination }
+            // BootstrapTable requires an onTableChange prop to be passed,
+            // we don't need to use it so pass an empty function
+            onTableChange={ function () {} } // eslint-disable-line
+            pagination={ options.pagination ? paginationFactory(pagination) : undefined }
             ref={ tableRef }
             remote={ options.remote }
+            rowEvents={ {
+                onClick: onRowClick
+            } }
             selectRow={ {
                 bgColor: "#f7f7f7",
                 className: "active",
                 columnWidth: "50px",
-                customComponent: RowSelection,
+                selectionRenderer: ({ checked, disabled, rowIndex }) => ( // eslint-disable-line
+                    <RowSelection
+                        checked={ checked }
+                        disabled={ disabled }
+                        rowIndex={ rowIndex }
+                    />
+                ),
+                selectionHeaderRenderer: ({ checked, indeterminate, disabled = false, rowIndex = "Header" }) => ( // eslint-disable-line
+                    <RowSelection
+                        checked={ indeterminate ? "indeterminate" : checked }
+                        disabled={ disabled }
+                        rowIndex={ rowIndex }
+                    />
+                ),
                 mode: "checkbox",
                 onSelect: handleSelect,
                 onSelectAll: handleSelectAll,

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -50,7 +50,7 @@ public final class ClientScriptUtilities {
     private static final String NUMBER_ENCODING_DELIMITER = ",";
     private static final String WAITING_MESSAGE_KEY = "waiting";
     private static final String SPINNER_SCRIPT = "org/forgerock/openam/auth/nodes/webauthn/webauthn-spinner.js";
-    private static final String BUNDLE = ClientScriptUtilities.class.getName().replace(".", "/");
+    private static final String BUNDLE = ClientScriptUtilities.class.getName();
 
     /** Delimits various sections in client's responses. */
     static final String RESPONSE_DELIMITER = "::";

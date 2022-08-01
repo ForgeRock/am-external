@@ -252,7 +252,7 @@ public final class FMSigProvider implements SigProvider {
             SAML2SDKUtils.debug.message("{}No certificates provided - certificates have to be read from document",
                     classMethod);
         }
-        Element nscontext = org.apache.xml.security.utils.XMLUtils.createDSctx(doc, "ds", Constants.SignatureSpecNS);
+        Element nscontext = XMLUtils.createDSctx(doc, "ds", Constants.SignatureSpecNS);
         Element sigElement;
         try {
             sigElement = (Element) XPathAPI.selectSingleNode(doc, "/*/ds:Signature", nscontext);

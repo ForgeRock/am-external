@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import PropTypes from "prop-types";
@@ -39,6 +39,8 @@ class HeaderSelection extends Component {
         this.input = input;
     }
 
+    handleSelect () {}
+
     render () {
         return (
             <input
@@ -46,7 +48,7 @@ class HeaderSelection extends Component {
                 className="react-bs-select-all"
                 id={ `checkbox${this.props.rowIndex}` }
                 name={ `checkbox${this.props.rowIndex}` }
-                onChange={ this.props.onChange }
+                onChange={ this.handleSelect }
                 ref={ this.setRef }
                 type="checkbox"
             />
@@ -56,7 +58,6 @@ class HeaderSelection extends Component {
 
 HeaderSelection.propTypes = {
     checked: PropTypes.oneOf([true, false, "indeterminate"]).isRequired,
-    onChange: PropTypes.func.isRequired,
     rowIndex: PropTypes.string.isRequired
 };
 

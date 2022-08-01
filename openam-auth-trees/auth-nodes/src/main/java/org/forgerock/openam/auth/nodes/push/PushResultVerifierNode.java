@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.push;
 
@@ -68,7 +68,7 @@ import com.google.common.collect.ImmutableList;
 public class PushResultVerifierNode implements Node {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PushResultVerifierNode.class);
-    private static final String BUNDLE = "org/forgerock/openam/auth/nodes/push/PushResultVerifierNode";
+    private static final String BUNDLE = PushResultVerifierNode.class.getName();
     private final PushNotificationService pushNotificationService;
     private final MessageIdFactory messageIdFactory;
 

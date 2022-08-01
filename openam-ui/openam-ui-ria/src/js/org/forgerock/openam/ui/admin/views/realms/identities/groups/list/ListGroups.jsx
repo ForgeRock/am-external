@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { ButtonToolbar, Panel } from "react-bootstrap";
 import { isEmpty, omit } from "lodash";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -35,6 +34,12 @@ const ListGroups = (props) => {
         )
         : null;
 
+    const columns = [{
+        dataField: "username",
+        formatter: IconCell("fa-folder"),
+        sort: true,
+        text: t("console.identities.groups.list.grid.0")
+    }];
     return (
         <Panel className="fr-panel-tab">
             <Panel.Body>
@@ -46,15 +51,12 @@ const ListGroups = (props) => {
                         title: t("console.identities.groups.list.callToAction.button")
                     } }
                     additionalButtons={ <AllAuthenticatedButton /> }
+                    columns={ columns }
                     description={ t("console.identities.groups.list.callToAction.description") }
                     keyField="username"
                     onPageChange={ props.onPageChange }
                     title={ t("console.identities.groups.list.callToAction.title") }
-                >
-                    <TableHeaderColumn dataField="username" dataFormat={ IconCell("fa-folder") } dataSort>
-                        { t("console.identities.groups.list.grid.0") }
-                    </TableHeaderColumn>
-                </List>
+                />
             </Panel.Body>
         </Panel>
     );

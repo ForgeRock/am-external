@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -35,7 +35,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public String getPluginVersion() {
-        return "4.6.0";
+        return "4.6.3";
     }
 
     @Override
@@ -51,6 +51,14 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 && VersionComparison.compareVersionStrings("4.6.0", fromVersion) < 0) {
             pluginTools.upgradeAuthNode(RetryLimitDecisionNode.class);
         }
+        if (VersionComparison.compareVersionStrings("1.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("4.6.3", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(ChoiceCollectorNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("3.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("4.6.2", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(MessageNode.class);
+        }
         super.upgrade(fromVersion);
     }
 
@@ -58,6 +66,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
     protected Map<String, Iterable<? extends Class<? extends Node>>> getNodesByVersion() {
         return ImmutableMap.of(
             "1.0.0", asList(
+                ChoiceCollectorNode.class,
                 AuthLevelDecisionNode.class,
                 DataStoreDecisionNode.class,
                 PasswordCollectorNode.class,

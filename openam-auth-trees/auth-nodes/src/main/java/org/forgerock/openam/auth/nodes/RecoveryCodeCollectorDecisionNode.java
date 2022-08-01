@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -56,7 +56,7 @@ import com.google.inject.assistedinject.Assisted;
 public class RecoveryCodeCollectorDecisionNode extends AbstractDecisionNode {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("amAuth");
-    private static final String BUNDLE = "org/forgerock/openam/auth/nodes/RecoveryCodeCollectorDecisionNode";
+    private static final String BUNDLE = RecoveryCodeCollectorDecisionNode.class.getName();
     private final Config config;
     private final UserPushDeviceProfileManager pushDeviceProfileManager;
     private final UserOathDeviceProfileManager oathDeviceProfileManager;

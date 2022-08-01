@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import PropTypes from "prop-types";
@@ -32,9 +32,7 @@ class RowSelection extends Component {
         this.handleSelect = this.handleSelect.bind(this);
     }
 
-    handleSelect (event) {
-        this.props.onChange(event, this.props.rowIndex);
-    }
+    handleSelect () {}
 
     render () {
         if (this.props.rowIndex === "Header") {
@@ -67,7 +65,6 @@ class RowSelection extends Component {
 RowSelection.propTypes = {
     checked: PropTypes.oneOf([true, false, "indeterminate"]).isRequired,
     disabled: PropTypes.bool.isRequired,
-    onChange: PropTypes.func.isRequired,
     rowIndex: PropTypes.oneOfType([
         PropTypes.string,
         PropTypes.number

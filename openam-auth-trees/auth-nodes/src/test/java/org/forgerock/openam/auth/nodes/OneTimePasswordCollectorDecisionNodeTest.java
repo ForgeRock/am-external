@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -85,6 +85,30 @@ public class OneTimePasswordCollectorDecisionNodeTest {
 
         // Then
         assertThat(result.outcome).isEqualTo("true");
+        //OPENAM-18756 - OTP should be removed from shared state on success
+        assertThat(treeContext.sharedState.get(ONE_TIME_PASSWORD_ENCRYPTED)).isNullOrEmpty();
+    }
+
+    @Test
+    public void processReturnsTrueOutcomeIfUnencryptedOTPIsEqualToInputOTPAndNotExpired() throws Exception {
+        // Given
+        PasswordCallback callback = new PasswordCallback("prompt", false);
+        callback.setPassword("123456".toCharArray());
+        TreeContext treeContext = getContext(json(object(
+                        field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
+                        field(ONE_TIME_PASSWORD, "123456"))),
+                        singletonList(callback));
+        given(serviceConfig.passwordExpiryTime()).willReturn(5L);
+        Node node = new OneTimePasswordCollectorDecisionNode(serviceConfig, nodeSharedStateCrypto);
+
+        // When
+        Action result = node.process(treeContext);
+
+        // Then
+        assertThat(result.outcome).isEqualTo("true");
+        //OPENAM-18756 - OTP should be removed from shared state on success
+        assertThat(treeContext.sharedState.get(ONE_TIME_PASSWORD)).isNullOrEmpty();
+        assertThat(treeContext.sharedState.get(ONE_TIME_PASSWORD_TIMESTAMP)).isNullOrEmpty();
     }
 
     @Test
@@ -105,6 +129,30 @@ public class OneTimePasswordCollectorDecisionNodeTest {
 
         // Then
         assertThat(result.outcome).isEqualTo("false");
+        //OPENAM-18756 - OTP should NOT be removed from shared state on success
+        assertThat(treeContext.sharedState.get(ONE_TIME_PASSWORD_ENCRYPTED).asString()).isEqualTo("encryptedOtpString");
+    }
+
+    @Test
+    public void processReturnsFalseOutcomeIfUnencryptedOTPIsNotEqualToInputOTPAndNotExpired() throws Exception {
+        // Given
+        PasswordCallback callback = new PasswordCallback("prompt", false);
+        callback.setPassword("123456".toCharArray());
+        TreeContext treeContext = getContext(json(object(
+                        field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
+                        field(ONE_TIME_PASSWORD, "654321"))),
+                singletonList(callback));
+        given(serviceConfig.passwordExpiryTime()).willReturn(5L);
+        Node node = new OneTimePasswordCollectorDecisionNode(serviceConfig, nodeSharedStateCrypto);
+
+        // When
+        Action result = node.process(treeContext);
+
+        // Then
+        assertThat(result.outcome).isEqualTo("false");
+        //OPENAM-18756 - OTP should NOT be removed from shared state on success
+        assertThat(treeContext.sharedState.get(ONE_TIME_PASSWORD).asString()).isEqualTo("654321");
+        assertThat(treeContext.sharedState.get(ONE_TIME_PASSWORD_TIMESTAMP)).isNotNull();
     }
 
     @Test

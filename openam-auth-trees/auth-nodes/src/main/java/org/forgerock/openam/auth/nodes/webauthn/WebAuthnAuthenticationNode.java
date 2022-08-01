@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -45,6 +45,7 @@ import org.forgerock.openam.auth.nodes.webauthn.flows.AuthenticationFlow;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
+import org.forgerock.util.annotations.VisibleForTesting;
 import org.forgerock.util.i18n.PreferredLocales;
 
 import com.google.common.base.Strings;
@@ -64,7 +65,7 @@ import com.sun.identity.sm.DNMapper;
         configClass = WebAuthnAuthenticationNode.Config.class)
 public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
 
-    private static final String BUNDLE = RESOURCE_LOCATION + "WebAuthnAuthenticationNode";
+    private static final String BUNDLE = WebAuthnAuthenticationNode.class.getName();
     private static final String AUTH_SCRIPT = RESOURCE_LOCATION + "webauthn-client-auth-script.js";
 
     private static final String IS_RECOVERY_CODE_ALLOWED = "isRecoveryCodeAllowed";
@@ -175,13 +176,7 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         try {
             logger.debug("getting user data and device data");
             String username = context.sharedState.get(USERNAME).asString();
-            AMIdentity user = IdUtils.getIdentity(username, context.sharedState.get(REALM).asString());
-            if (user == null) {
-                logger.debug("returning with failure outcome. Unable to find user {}", username);
-                return Action.goTo(FAILURE_OUTCOME_ID).build();
-            }
-            devices = webAuthnProfileManager.getDeviceProfiles(user.getName(),
-                    DNMapper.orgNameToRealmName(user.getRealm()));
+            devices = getDeviceSettingsFromUsername(username, context.sharedState.get(REALM).asString());
             if (devices.isEmpty()) {
                 return Action.goTo(NO_DEVICE_OUTCOME_ID).build();
             }
@@ -243,6 +238,29 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         }
     }
 
+    /**
+     * Retrieve the device settings from user.
+     *
+     * @param username The username.
+     * @param realm    The Realm.
+     * @return Device Settings which associated with the user.
+     * @throws DevicePersistenceException Failed to retrieve user devices.
+     */
+    @VisibleForTesting
+    protected List<WebAuthnDeviceSettings> getDeviceSettingsFromUsername(String username, String realm)
+            throws DevicePersistenceException {
+        List<WebAuthnDeviceSettings> devices;
+        logger.debug("getting user data and device data");
+        AMIdentity user = IdUtils.getIdentity(username, realm);
+        if (user == null) {
+            throw new DevicePersistenceException("getIdentity: Unable to find user " + username);
+        } else {
+            devices = webAuthnProfileManager.getDeviceProfiles(user.getName(),
+                    DNMapper.orgNameToRealmName(user.getRealm()));
+        }
+        return devices;
+    }
+
     private Map<String, String> getScriptContext(byte[] challengeBytes, List<WebAuthnDeviceSettings> devices,
                                                  String configuredRpId) {
         Map<String, String> scriptContext = new HashMap<>();
@@ -250,6 +268,9 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         scriptContext.put("acceptableCredentials", clientScriptUtilities.getDevicesAsJavaScript(devices));
         scriptContext.put("timeout", String.valueOf(config.timeout() * 1000));
         scriptContext.put("userVerification", config.userVerificationRequirement().getValue());
+        if (config.asScript() && config.isRecoveryCodeAllowed()) {
+            scriptContext.put("allowRecoveryCode", String.valueOf(config.isRecoveryCodeAllowed()));
+        }
 
         StringBuilder sb = new StringBuilder();
         if (configuredRpId != null) {

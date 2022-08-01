@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -47,7 +47,7 @@ import com.google.inject.assistedinject.Assisted;
         configClass      = PollingWaitNode.Config.class)
 public class PollingWaitNode implements Node {
 
-    private static final String BUNDLE = PollingWaitNode.class.getName().replace(".", "/");
+    private static final String BUNDLE = PollingWaitNode.class.getName();
     private static final int EXIT_PRESSED = 0;
     private static final int EXIT_NOT_PRESSED = 100;
     private final Config config;

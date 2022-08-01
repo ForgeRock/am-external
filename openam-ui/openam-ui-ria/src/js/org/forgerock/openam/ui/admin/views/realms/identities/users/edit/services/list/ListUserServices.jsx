@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { Panel } from "react-bootstrap";
 import { map, omit } from "lodash";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 import Router from "org/forgerock/commons/ui/common/main/Router";
@@ -25,7 +24,13 @@ import Router from "org/forgerock/commons/ui/common/main/Router";
 import IconCell from "components/table/cells/IconCell";
 import List from "components/list/List";
 
-const nameFormatter = (cell, row) => IconCell("fa-plug")(row.name);
+const nameFormatter = (cell, row) => {
+    const capitalize = (str) => {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    };
+    const rowName = row.name || capitalize(cell);
+    return IconCell("fa-plug")(rowName);
+};
 const ListUserServices = (props) => {
     const menuItems = map(props.creatables, (creatable) => ({
         href: `#${Router.getLink(
@@ -34,6 +39,13 @@ const ListUserServices = (props) => {
         )}`,
         title: creatable.name
     }));
+
+    const columns = [{
+        dataField: "_id",
+        formatter: nameFormatter,
+        sort: true,
+        text: t("console.identities.users.edit.services.list.grid.0")
+    }];
     return (
         <Panel className="fr-panel-tab">
             <Panel.Body>
@@ -43,13 +55,10 @@ const ListUserServices = (props) => {
                         menuItems,
                         title: t("console.identities.users.edit.services.list.callToAction.button")
                     } }
+                    columns={ columns }
                     description={ t("console.identities.users.edit.services.list.callToAction.description") }
                     title={ t("console.identities.users.edit.services.list.callToAction.title") }
-                >
-                    <TableHeaderColumn dataField="_id" dataFormat={ nameFormatter } dataSort>
-                        { t("console.identities.users.edit.services.list.grid.0") }
-                    </TableHeaderColumn>
-                </List>
+                />
             </Panel.Body>
         </Panel>
     );

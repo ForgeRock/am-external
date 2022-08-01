@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import { omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -27,6 +26,18 @@ import List from "components/list/List";
 import StatusCell from "components/table/cells/StatusCell";
 
 const ListJavaAgentGroups = (props) => {
+    const columns = [{
+        dataField: "_id",
+        formatter: IconCell("fa-folder"),
+        sort: true,
+        text: t("console.applications.agents.java.groups.list.grid.0")
+    }, {
+        dataField: "globalJ2EEAgentConfig",
+        formatter: dataFieldObjectPath(StatusCell, "status"),
+        sort: true,
+        text: t("console.applications.agents.java.groups.list.grid.1")
+    }];
+
     return (
         <Panel className="fr-panel-tab">
             <Panel.Body>
@@ -36,20 +47,10 @@ const ListJavaAgentGroups = (props) => {
                         title: t("console.applications.agents.common.groups.list.callToAction.button"),
                         href: props.newHref
                     } }
+                    columns={ columns }
                     description={ t("console.applications.agents.java.groups.list.callToAction.description") }
                     title={ t("console.applications.agents.java.groups.list.callToAction.title") }
-                >
-                    <TableHeaderColumn dataField="_id" dataFormat={ IconCell("fa-folder") } dataSort>
-                        { t("console.applications.agents.java.groups.list.grid.0") }
-                    </TableHeaderColumn>
-                    <TableHeaderColumn
-                        dataField="globalJ2EEAgentConfig"
-                        dataFormat={ dataFieldObjectPath(StatusCell, "status") }
-                        dataSort
-                    >
-                        { t("console.applications.agents.java.groups.list.grid.1") }
-                    </TableHeaderColumn>
-                </List>
+                />
             </Panel.Body>
         </Panel>
     );

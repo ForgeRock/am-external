@@ -20,6 +20,7 @@ import static javax.security.auth.callback.TextOutputCallback.ERROR;
 import static javax.security.auth.callback.TextOutputCallback.INFORMATION;
 import static javax.security.auth.callback.TextOutputCallback.WARNING;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.HeartbeatTimeUnit.SECONDS;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMode.LDAP;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMode.LDAPS;
@@ -27,6 +28,7 @@ import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMod
 import static org.forgerock.openam.ldap.LDAPConstants.STATUS_ACTIVE;
 import static org.forgerock.openam.ldap.LDAPConstants.STATUS_INACTIVE;
 import static org.forgerock.openam.ldap.ModuleState.CHANGE_AFTER_RESET;
+import static org.forgerock.openam.ldap.ModuleState.PASSWORD_UPDATED_SUCCESSFULLY;
 
 import java.util.List;
 import java.util.Optional;
@@ -84,7 +86,7 @@ public class LdapDecisionNode implements Node {
     private static final int CONFIRM_PASSWORD_CALLBACK = 2;
     private static final String LDAP_FLOW_STATE_KEY = "LdapFlowState";
     private static final Debug DEBUG = Debug.getInstance("amAuth");
-    private static final String BUNDLE = "org/forgerock/openam/auth/nodes/LdapDecisionNode";
+    private static final String BUNDLE = LdapDecisionNode.class.getName();
     private static final String USER_STATUS_ATTRIBUTE = "inetuserstatus";
     private static final String LAST_MODULE_STATE = "lastModuleState";
     private final Logger logger = LoggerFactory.getLogger("amAuth");
@@ -384,6 +386,9 @@ public class LdapDecisionNode implements Node {
             }
             logger.debug("Password change state :{}", passwordChangeState);
             action = processPasswordChange(passwordChangeState);
+            if (passwordChangeState == PASSWORD_UPDATED_SUCCESSFULLY) {
+                action.replaceTransientState(context.transientState.copy().put(PASSWORD, newPassword));
+            }
         } else {
             if (userPasswordHasBeenReset(context)) {
                 action = goTo(LdapOutcome.CANCELLED);

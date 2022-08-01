@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -48,11 +48,10 @@ class LdapConnectionFactoryProvider {
 
     ConnectionFactory createLdapConnectionFactory(DataStoreConfig config) {
         Options ldapOptions = populateLdapOptions(config);
-        Set <LDAPURL> ldapUrls = LDAPUtils.getLdapUrls(
-                LDAPUtils.convertToLDAPURLs(stripAttributeNameFromValue(config.getServerUrls())), config.isUseSsl());
+        Set <LDAPURL> ldapUrls = LDAPUtils.getLdapUrls(config.getLDAPURLs(), config.isUseSsl());
         int heartBeatInterval = SystemProperties.getAsInt(LDAP_SM_HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL_DEFAULT);
-        return newFailoverConnectionFactory(ldapUrls, config.getBindDN(), config.getBindPassword().toCharArray(),
-                heartBeatInterval, TimeUnit.SECONDS.toString(), config.isUseStartTLS(), false, ldapOptions);
+        return newFailoverConnectionFactory(ldapUrls, config.getBindDN(), config.getBindPassword(),
+                heartBeatInterval, TimeUnit.SECONDS.toString(), config.isStartTLSEnabled(), false, ldapOptions);
     }
 
     private Options populateLdapOptions(DataStoreConfig config) {
@@ -60,8 +59,8 @@ class LdapConnectionFactoryProvider {
         int timeout = SystemProperties.getAsInt(DataLayerConstants.DATA_LAYER_TIMEOUT, 10);
         Options options = Options.defaultOptions()
                 .set(REQUEST_TIMEOUT, Duration.duration((long) timeout, TimeUnit.SECONDS))
-                .set(CACHED_POOL_OPTIONS, new CachedPoolOptions(config.getMinimumConnectionPool(),
-                        config.getMaximumConnectionPool(), idleTimeout, TimeUnit.SECONDS))
+                .set(CACHED_POOL_OPTIONS, new CachedPoolOptions(config.getMinConnections(),
+                        config.getMaxConnections(), idleTimeout, TimeUnit.SECONDS))
                 .set(LDAPUtils.AFFINITY_ENABLED, config.isAffinityEnabled());
         return options;
     }

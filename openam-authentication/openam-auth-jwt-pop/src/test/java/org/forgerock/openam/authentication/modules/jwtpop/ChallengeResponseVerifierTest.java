@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.jwtpop;
@@ -29,6 +29,7 @@ import java.util.Date;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.forgerock.json.jose.builders.JwtBuilderFactory;
+import org.forgerock.json.jose.exceptions.JwsVerifyingException;
 import org.forgerock.json.jose.jwe.EncryptionMethod;
 import org.forgerock.json.jose.jwe.JweAlgorithm;
 import org.forgerock.json.jose.jwk.EcJWK;
@@ -190,7 +191,7 @@ public class ChallengeResponseVerifierTest {
         verifier.verify(callback);
     }
 
-    @Test(expectedExceptions = AuthLoginException.class)
+    @Test(expectedExceptions = JwsVerifyingException.class)
     public void shouldRejectIncorrectlySignedResponse() throws Exception {
         // Given
         // Attempt to trick AM into accepting a JWT signed using the public key but with a symmetric algorithm,

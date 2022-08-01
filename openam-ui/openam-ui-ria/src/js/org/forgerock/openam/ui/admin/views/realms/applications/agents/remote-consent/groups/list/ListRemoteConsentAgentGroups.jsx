@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import { omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -25,6 +24,12 @@ import IconCell from "components/table/cells/IconCell";
 import List from "components/list/List";
 
 const ListRemoteConsentAgentGroups = (props) => {
+    const columns = [{
+        dataField: "_id",
+        formatter: IconCell("fa-folder"),
+        sort: true,
+        text: t("console.applications.agents.remoteConsent.groups.list.grid.0")
+    }];
     return (
         <Panel className="fr-panel-tab">
             <Panel.Body>
@@ -34,13 +39,10 @@ const ListRemoteConsentAgentGroups = (props) => {
                         title: t("console.applications.agents.common.groups.list.callToAction.button"),
                         href: props.newHref
                     } }
+                    columns={ columns }
                     description={ t("console.applications.agents.remoteConsent.groups.list.callToAction.description") }
                     title={ t("console.applications.agents.remoteConsent.groups.list.callToAction.title") }
-                >
-                    <TableHeaderColumn dataField="_id" dataFormat={ IconCell("fa-folder") } dataSort>
-                        { t("console.applications.agents.remoteConsent.groups.list.grid.0") }
-                    </TableHeaderColumn>
-                </List>
+                />
             </Panel.Body>
         </Panel>
     );

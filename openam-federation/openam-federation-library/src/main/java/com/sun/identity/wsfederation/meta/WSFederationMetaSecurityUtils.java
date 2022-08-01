@@ -24,7 +24,7 @@
  *
  * $Id: WSFederationMetaSecurityUtils.java,v 1.6 2009/10/28 23:58:59 exu Exp $
  *
- * Portions Copyrighted 2011-2019 ForgeRock AS
+ * Portions Copyrighted 2011-2021 ForgeRock AS
  */
 package com.sun.identity.wsfederation.meta;
 
@@ -56,6 +56,7 @@ import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.locale.Locale;
+import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.shared.xml.XPathAPI;
 import com.sun.identity.wsfederation.jaxb.entityconfig.AttributeType;
 import com.sun.identity.wsfederation.jaxb.entityconfig.BaseConfigType;
@@ -239,9 +240,7 @@ public final class WSFederationMetaSecurityUtils {
         
         NodeList sigElements = null;
         try {
-            Element nscontext =
-                    org.apache.xml.security.utils.XMLUtils
-                            .createDSctx (doc,"ds", Constants.SignatureSpecNS);
+            Element nscontext = XMLUtils.createDSctx (doc,"ds", Constants.SignatureSpecNS);
             sigElements =
                     XPathAPI.selectNodeList(doc, "//ds:Signature", nscontext);
         } catch (Exception ex) {

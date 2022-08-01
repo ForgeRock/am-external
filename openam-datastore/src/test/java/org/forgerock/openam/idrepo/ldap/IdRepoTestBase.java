@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2019 ForgeRock AS.
+ * Copyright 2013-2021 ForgeRock AS.
  */
 
 package org.forgerock.openam.idrepo.ldap;
@@ -22,7 +22,9 @@ import javax.annotation.Nullable;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import com.google.inject.AbstractModule;
@@ -39,6 +41,8 @@ import org.forgerock.openam.audit.AuditEventPublisher;
 import org.forgerock.openam.audit.AuditEventPublisherImpl;
 import org.forgerock.openam.audit.AuditServiceProvider;
 import org.forgerock.openam.auditors.SMSAuditor;
+import org.forgerock.openam.ldap.LDAPURL;
+import org.forgerock.openam.sm.ConnectionConfig;
 import org.forgerock.openam.sm.datalayer.providers.LdapConnectionFactoryProvider;
 import org.forgerock.opendj.ldap.Connection;
 import org.forgerock.opendj.ldap.ConnectionFactory;
@@ -74,13 +78,15 @@ public abstract class IdRepoTestBase extends PowerMockTestCase {
         @Override
         protected org.forgerock.openam.sm.datalayer.api.ConnectionFactory<Connection>
         createConnectionFactory(String username, char[] password, int minPoolSize, int maxPoolSize) {
-            return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(new FakeConnectionFactory());
+            return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(new FakeConnectionFactory(),
+                    new FakeConnectionConfig());
         }
 
         @Override
         protected org.forgerock.openam.sm.datalayer.api.ConnectionFactory<Connection>
         createPasswordConnectionFactory(String username, char[] password, int maxPoolSize) {
-            return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(new FakeConnectionFactory());
+            return LdapConnectionFactoryProvider.wrapExistingConnectionFactory(new FakeConnectionFactory(),
+                    new FakeConnectionConfig());
         }
 
 
@@ -145,6 +151,49 @@ public abstract class IdRepoTestBase extends PowerMockTestCase {
         @Override
         public Connection getConnection() throws LdapException {
             return cf.getConnection();
+        }
+    }
+
+    private class FakeConnectionConfig implements ConnectionConfig {
+
+        @Override
+        public Set<LDAPURL> getLDAPURLs() {
+            return Collections.EMPTY_SET;
+        }
+
+        @Override
+        public String getBindDN() {
+            return null;
+        }
+
+        @Override
+        public char[] getBindPassword() {
+            return new char[0];
+        }
+
+        @Override
+        public int getMaxConnections() {
+            return 0;
+        }
+
+        @Override
+        public int getMinConnections() {
+            return 0;
+        }
+
+        @Override
+        public int getLdapHeartbeat() {
+            return 0;
+        }
+
+        @Override
+        public boolean isAffinityEnabled() {
+            return false;
+        }
+
+        @Override
+        public boolean isStartTLSEnabled() {
+            return false;
         }
     }
 

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2021 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -27,6 +27,7 @@ import static org.forgerock.openam.services.datastore.DataStoreServiceChangeNoti
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -223,10 +224,23 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
 
             Map<String, Set<String>> attributes = dataStoreSubConfig.getAttributes();
 
+            Set<String> serverUrls;
+            if (attributes.containsKey(SERVER_URLS)) {
+                serverUrls = attributes.get(SERVER_URLS);
+            } else {
+                // During upgrade from 6.5.0 AM this service is accessed,
+                // since the configuration hasn't been upgraded yet
+                // the old attributes are used.
+                String hostname = getMapAttr(attributes, SERVER_HOSTNAME);
+                String port = getMapAttr(attributes, SERVER_PORT);
+                serverUrls = Collections.singleton("[0]=" + hostname + ":" + port);
+            }
+
+            String bindPassword = getMapAttr(attributes, BIND_PASSWORD);
             return DataStoreConfig.builder(dataStoreId)
                     .withServerUrls(attributes.get(SERVER_URLS))
                     .withBindDN(getMapAttr(attributes, BIND_DN))
-                    .withBindPassword(getMapAttr(attributes, BIND_PASSWORD))
+                    .withBindPassword(bindPassword != null ? bindPassword.toCharArray() : null)
                     .withMinimumConnectionPool(parseInt(getMapAttr(attributes, MINIMUM_CONNECTION_POOL)))
                     .withMaximumConnectionPool(parseInt(getMapAttr(attributes, MAXIMUM_CONNECTION_POOL)))
                     .withUseSsl(getBooleanMapAttr(attributes, USE_SSL, false))

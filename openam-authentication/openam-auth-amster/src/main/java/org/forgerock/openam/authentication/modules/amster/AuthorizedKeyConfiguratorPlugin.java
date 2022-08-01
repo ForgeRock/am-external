@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.amster;
@@ -21,7 +21,10 @@ import static com.sun.identity.shared.encode.Base64.encode;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static org.forgerock.openam.utils.StringUtils.isEmpty;
+import static org.forgerock.openam.utils.file.FileUtils.createFileWithPermissions;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -30,6 +33,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
@@ -89,8 +94,9 @@ public class AuthorizedKeyConfiguratorPlugin implements ConfiguratorPlugin {
     }
 
     private static void writePrivateKey(String directory, KeyPair keyPair) throws IOException {
-        try (JcaPEMWriter pemWriter = new JcaPEMWriter(new OutputStreamWriter(new FileOutputStream(
-                new File(directory, KEY_FILE))))) {
+        Path fileWithPermissions = createFileWithPermissions(Paths.get(directory, KEY_FILE), OWNER_READ, OWNER_WRITE);
+        File keyFile = fileWithPermissions.toFile();
+        try (JcaPEMWriter pemWriter = new JcaPEMWriter(new OutputStreamWriter(new FileOutputStream(keyFile)))) {
             pemWriter.writeObject(keyPair.getPrivate());
         }
     }
@@ -110,7 +116,8 @@ public class AuthorizedKeyConfiguratorPlugin implements ConfiguratorPlugin {
     }
 
     private static void writePublicKeyFile(String directory, String keyLine, String file) throws IOException {
-        File authorizedKeys = new File(directory, file);
+        Path fileWithPermissions = createFileWithPermissions(Paths.get(directory, file), OWNER_READ, OWNER_WRITE);
+        File authorizedKeys = fileWithPermissions.toFile();
         Files.write(authorizedKeys.toPath(), keyLine.getBytes(US_ASCII), authorizedKeys.exists() ? APPEND : CREATE);
     }
 

@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { Badge, Panel } from "react-bootstrap";
 import { noop } from "lodash";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
 
@@ -49,8 +48,8 @@ class ListMappings extends Component {
         return <span>{ cell[0] }</span>;
     }
 
-    aliasesDataFormat (cell) {
-        return <Badge>{ cell.length }</Badge>;
+    aliasesDataFormat (cellLength) {
+        return <Badge>{ cellLength }</Badge>;
     }
 
     handleCreate (data) {
@@ -83,7 +82,7 @@ class ListMappings extends Component {
         }, noop);
     }
 
-    handleTableRowClick (rowData) {
+    handleTableRowClick (e, rowData) {
         this.setState({ editRowInstance: rowData });
         this.handleEditModalShow();
     }
@@ -114,43 +113,51 @@ class ListMappings extends Component {
             : null;
 
         const tableHeaderColumns = this.props.schema
-            ? [
-                <TableHeaderColumn
-                    columnTitle
-                    dataField="secretId"
-                    dataSort
-                    key="secretId"
-                >
-                    <TitleWithPopover
-                        popover={ this.props.schema.properties.secretId.description }
-                        title={ this.props.schema.properties.secretId.title }
-                    />
-                </TableHeaderColumn>,
-                <TableHeaderColumn
-                    columnTitle={ this.activeAliasTitle }
-                    dataField="aliases"
-                    dataFormat={ this.activeAliasDataFormat }
-                    key="activeAlias"
-                >
-                    <TitleWithPopover
-                        popover={ t("console.secretStores.edit.mappings.grid.activeAlias.description") }
-                        title={ t("console.secretStores.edit.mappings.grid.activeAlias.title") }
-                    />
-                </TableHeaderColumn>,
-                <TableHeaderColumn
-                    dataAlign="center"
-                    dataField="aliases"
-                    dataFormat={ this.aliasesDataFormat }
-                    key="aliases"
-                    width="100px"
-                >
-                    <TitleWithPopover
-                        popover={ this.props.schema.properties.aliases.description }
-                        title={ this.props.schema.properties.aliases.title }
-                    />
-                </TableHeaderColumn>
-            ]
-            : null;
+            ? [{
+                text: "", // Text is a required prop
+                columnTitle: true,
+                dataField: "secretId",
+                headerFormatter: (column, colIndex, components) => { // eslint-disable-line
+                    return (
+                        <span>
+                            <TitleWithPopover
+                                popover={ this.props.schema.properties.secretId.description }
+                                title={ this.props.schema.properties.secretId.title }
+                            />
+                            { components.sortElement }
+                        </span>
+                    );
+                },
+                sort: true
+            }, {
+                text: "", // Text is a required prop
+                columnTitle: this.activeAliasTitle,
+                dataField: "aliases",
+                formatter: this.activeAliasDataFormat,
+                headerFormatter: () => {
+                    return (
+                        <TitleWithPopover
+                            popover={ t("console.secretStores.edit.mappings.grid.activeAlias.description") }
+                            title={ t("console.secretStores.edit.mappings.grid.activeAlias.title") }
+                        />
+                    );
+                }
+            }, {
+                text: "", // Text is a required prop
+                dataField: "aliases.length",
+                formatter: this.aliasesDataFormat,
+                align: "center",
+                headerFormatter: () => {
+                    return (
+                        <TitleWithPopover
+                            popover={ this.props.schema.properties.aliases.description }
+                            title={ this.props.schema.properties.aliases.title }
+                        />
+                    );
+                },
+                headerStyle: { width: "100px" }
+            }]
+            : [];
 
         return (
             <Panel.Body>
@@ -159,6 +166,7 @@ class ListMappings extends Component {
                         handleOnClick: this.handleCreateModalShow,
                         title: t("console.secretStores.edit.mappings.callToAction.button")
                     } }
+                    columns={ tableHeaderColumns }
                     description={ t("console.secretStores.edit.mappings.callToAction.description") }
                     isFetching={ this.props.isFetching }
                     items={ this.props.instances }
@@ -166,9 +174,7 @@ class ListMappings extends Component {
                     onDelete={ this.props.onDelete }
                     onRowClick={ this.handleTableRowClick }
                     title={ t("console.secretStores.edit.mappings.callToAction.title") }
-                >
-                    { tableHeaderColumns }
-                </List>
+                />
                 { createMappingModal }
                 { editMappingModal }
             </Panel.Body>

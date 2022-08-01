@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-radius</artifactId>
-        <version>6.5.4</version>
+        <version>6.5.5</version>
     </parent>
     <artifactId>openam-radius-cli</artifactId>
     <name>OpenAM RADIUS CLI</name>

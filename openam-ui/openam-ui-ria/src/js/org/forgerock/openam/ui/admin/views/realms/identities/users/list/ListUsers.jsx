@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -27,6 +26,25 @@ import List from "components/list/List";
 import StatusCell from "components/table/cells/StatusCell";
 
 const ListUsers = (props) => {
+    const columns = [{
+        dataField: "username",
+        formatter: IconCell("fa-address-card"),
+        sort: true,
+        text: t("console.identities.users.list.grid.0")
+    }, {
+        dataField: "givenName",
+        text: t("console.identities.users.list.grid.1")
+    }, {
+        dataField: "sn",
+        text: t("console.identities.users.list.grid.2")
+    }, {
+        dataField: "mail",
+        text: t("console.identities.users.list.grid.3")
+    }, {
+        dataField: "inetUserStatus",
+        formatter: dataFieldObjectPath(StatusCell, "[0]"),
+        text: t("console.identities.users.list.grid.4")
+    }];
     return (
         <Panel className="fr-panel-tab">
             <Panel.Body>
@@ -36,29 +54,11 @@ const ListUsers = (props) => {
                         href: props.newHref,
                         title: t("console.identities.users.list.callToAction.button")
                     } }
+                    columns={ columns }
                     description={ t("console.identities.users.list.callToAction.description") }
                     keyField="username"
                     title={ t("console.identities.users.list.callToAction.title") }
-                >
-                    <TableHeaderColumn dataField="username" dataFormat={ IconCell("fa-address-card") } dataSort>
-                        { t("console.identities.users.list.grid.0") }
-                    </TableHeaderColumn>
-                    <TableHeaderColumn dataField="givenName">
-                        { t("console.identities.users.list.grid.1") }
-                    </TableHeaderColumn>
-                    <TableHeaderColumn dataField="sn">
-                        { t("console.identities.users.list.grid.2") }
-                    </TableHeaderColumn>
-                    <TableHeaderColumn dataField="mail">
-                        { t("console.identities.users.list.grid.3") }
-                    </TableHeaderColumn>
-                    <TableHeaderColumn
-                        dataField="inetUserStatus"
-                        dataFormat={ dataFieldObjectPath(StatusCell, "[0]") }
-                    >
-                        { t("console.identities.users.list.grid.4") }
-                    </TableHeaderColumn>
-                </List>
+                />
             </Panel.Body>
         </Panel>
     );

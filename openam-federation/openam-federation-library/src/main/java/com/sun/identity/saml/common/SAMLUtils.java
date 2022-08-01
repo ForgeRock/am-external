@@ -24,7 +24,7 @@
  *
  * $Id: SAMLUtils.java,v 1.16 2010/01/09 19:41:06 qcheng Exp $
  *
- * Portions Copyrighted 2012-2020 ForgeRock AS.
+ * Portions Copyrighted 2012-2022 ForgeRock AS.
  */
 
 package com.sun.identity.saml.common;
@@ -33,6 +33,7 @@ import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -62,6 +63,7 @@ import javax.xml.soap.MimeHeaders;
 
 import org.apache.xml.security.c14n.Canonicalizer;
 import org.forgerock.openam.federation.util.XmlSecurity;
+import org.owasp.esapi.ESAPI;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -744,7 +746,7 @@ public class SAMLUtils  extends SAMLUtilsCommon {
             }
             out.println("</P>\n");
         }
-        out.println("<FORM METHOD=\"POST\" ACTION=\"" + targeturl + "\">");
+        out.println("<FORM METHOD=\"POST\" ACTION=\"" + ESAPI.encoder().encodeForHTMLAttribute(targeturl) + "\">");
         if (assertion != null) {
             it = assertion.iterator();
             while (it.hasNext()) {
@@ -1711,11 +1713,12 @@ public class SAMLUtils  extends SAMLUtilsCommon {
           try {
               Canonicalizer c14n = Canonicalizer.getInstance(
                   "http://www.w3.org/TR/2001/REC-xml-c14n-20010315");
-              byte outputBytes[] = c14n.canonicalizeSubtree(node);
+              ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+              c14n.canonicalizeSubtree(node, outputStream);
               DocumentBuilder documentBuilder = 
                  XMLUtils.getSafeDocumentBuilder(false);
               Document doc = documentBuilder.parse(
-                  new ByteArrayInputStream(outputBytes));
+                  new ByteArrayInputStream(outputStream.toByteArray()));
               Element result = doc.getDocumentElement();
               return result;
           } catch (Exception e) {

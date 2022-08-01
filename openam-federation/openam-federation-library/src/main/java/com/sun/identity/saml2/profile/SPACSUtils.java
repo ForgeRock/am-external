@@ -24,7 +24,7 @@
  *
  * $Id: SPACSUtils.java,v 1.48 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2022 ForgeRock AS.
  * Portions Copyrighted 2016 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.saml2.profile;
@@ -175,6 +175,8 @@ public class SPACSUtils {
                     orgName, hostEntityId, SAML2Constants.ACS_SERVICE,
                     SAML2Constants.HTTP_ARTIFACT))
             {
+                SAML2Utils.debug.error("SPACSUtils.getResponse: binding <{}> not supported by entity <{}>",
+                        SAML2Constants.HTTP_ARTIFACT, hostEntityId);
                 SAMLUtils.sendError(request, response,
                         response.SC_BAD_REQUEST,
                         "unsupportedBinding",
@@ -191,6 +193,8 @@ public class SPACSUtils {
                         orgName, hostEntityId, SAML2Constants.ACS_SERVICE,
                         SAML2Constants.PAOS))
                 {
+                    SAML2Utils.debug.error("SPACSUtils.getResponse: binding <{}> not supported by entity <{}>",
+                            SAML2Constants.PAOS, hostEntityId);
                     SAMLUtils.sendError(request, response,
                             response.SC_BAD_REQUEST,
                             "unsupportedBinding",
@@ -205,6 +209,8 @@ public class SPACSUtils {
                         orgName, hostEntityId, SAML2Constants.ACS_SERVICE,
                         SAML2Constants.HTTP_POST))
                 {
+                    SAML2Utils.debug.error("SPACSUtils.getResponse: binding <{}> not supported by entity <{}>",
+                            SAML2Constants.HTTP_POST, hostEntityId);
                     SAMLUtils.sendError(request, response,
                             response.SC_BAD_REQUEST,
                             "unsupportedBinding",
@@ -217,6 +223,8 @@ public class SPACSUtils {
             }
         } else {
             // not supported
+            SAML2Utils.debug.error("SPACSUtils.getResponse: HTTP method <{}> not supported",
+                    method);
             SAMLUtils.sendError(request, response,
                     response.SC_METHOD_NOT_ALLOWED,
                     "notSupportedHTTPMethod",

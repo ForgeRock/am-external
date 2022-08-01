@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React, { Fragment } from "react";
 
@@ -27,6 +26,16 @@ import List from "components/list/List";
 import PageHeader from "components/PageHeader";
 
 const ListSecretStores = (props) => {
+    const columns = [{
+        dataField: "_id",
+        formatter: IconCell("fa-eye"),
+        sort: true,
+        text: t("console.secretStores.list.grid.0")
+    }, {
+        dataField: "_type",
+        formatter: dataFieldObjectPath((cell) => cell, "name"),
+        text: t("console.secretStores.list.grid.1")
+    }];
     return (
         <Fragment>
             <PageHeader title={ t("console.secretStores.list.title") } />
@@ -38,21 +47,12 @@ const ListSecretStores = (props) => {
                             title: t("console.secretStores.list.callToAction.button"),
                             href: props.newHref
                         } }
+                        columns={ columns }
                         description={ t("console.secretStores.list.callToAction.description") }
                         onDelete={ props.onDelete }
                         onRowClick={ props.onRowClick }
                         title={ t("console.secretStores.list.callToAction.title") }
-                    >
-                        <TableHeaderColumn dataField="_id" dataFormat={ IconCell("fa-eye") } dataSort>
-                            { t("console.secretStores.list.grid.0") }
-                        </TableHeaderColumn>
-                        <TableHeaderColumn
-                            dataField="_type"
-                            dataFormat={ dataFieldObjectPath((cell) => cell, "name") }
-                        >
-                            { t("console.secretStores.list.grid.1") }
-                        </TableHeaderColumn>
-                    </List>
+                    />
                 </Panel.Body>
             </Panel>
         </Fragment>

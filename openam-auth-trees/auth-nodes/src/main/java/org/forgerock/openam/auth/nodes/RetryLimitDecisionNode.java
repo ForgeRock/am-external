@@ -65,7 +65,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
 
     private static final String RETRY = "Retry";
     private static final String REJECT = "Reject";
-    private static final String BUNDLE = RetryLimitDecisionNode.class.getName().replace(".", "/");
+    private static final String BUNDLE = RetryLimitDecisionNode.class.getName();
     private static final String RETRY_COUNT_ATTRIBUTE = "retryLimitNodeCount";
 
 

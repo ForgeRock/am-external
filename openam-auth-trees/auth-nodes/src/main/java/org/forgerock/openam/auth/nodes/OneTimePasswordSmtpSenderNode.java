@@ -50,8 +50,7 @@ import com.sun.identity.idm.IdRepoException;
         configClass = OneTimePasswordSmtpSenderNode.Config.class)
 public class OneTimePasswordSmtpSenderNode extends OneTimePasswordNodeCommon {
 
-    private static final String BUNDLE = OneTimePasswordSmtpSenderNode.class.getName()
-            .replace('.', '/');
+    private static final String BUNDLE = OneTimePasswordSmtpSenderNode.class.getName();
     private final Logger logger = LoggerFactory.getLogger("amAuth");
     private final Config config;
     private final CoreWrapper coreWrapper;

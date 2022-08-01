@@ -11,14 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import { isEmpty, isEqual, map, omit } from "lodash";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
-
 import ListToolbar from "./ListToolbar";
 import ListCallToAction from "./ListCallToAction";
 import Loading from "components/Loading";
@@ -82,7 +80,7 @@ class List extends Component {
             content = (
                 <div>
                     { toolbar }
-                    <Table { ...tableProperties }>{ this.props.children }</Table>
+                    <Table { ...tableProperties } />
                 </div>
             );
         }
@@ -96,9 +94,7 @@ List.defaultProps = {
 };
 
 List.propTypes = {
-    children: PropTypes.arrayOf(PropTypes.shape({
-        type: PropTypes.oneOf([TableHeaderColumn]).isRequired
-    })),
+    columns: PropTypes.arrayOf(PropTypes.object).isRequired,
     isFetching: PropTypes.bool.isRequired,
     items: PropTypes.arrayOf(PropTypes.object).isRequired,
     keyField: PropTypes.string,

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2018 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -29,22 +29,25 @@ var obj = {};
  * @param {String} [path] - cookie path.
  * @param {String|String[]} [domain] - cookie domain(s).
  * @param {Boolean} [secure] - is cookie secure.
+ * @param {String} [samesite] - samesite value.
  * @returns {String} created cookie.
  */
-obj.createCookie = function (name, value, expirationDate, path, domain, secure) {
+obj.createCookie = function (name, value, expirationDate, path, domain, secure, samesite) {
     var expirationDatePart,
         nameValuePart,
         pathPart,
         domainPart,
-        securePart;
+        securePart,
+        samesitePart;
 
     expirationDatePart = expirationDate ? ";expires=" + expirationDate.toGMTString() : "";
     nameValuePart = name + "=" + value;
     pathPart = path ? ";path=" + path : "";
     domainPart = domain ? ";domain=" + domain : "";
     securePart = secure ? ";secure" : "";
+    samesitePart = samesite ? ";samesite=" + samesite : "";
 
-    return nameValuePart + expirationDatePart + pathPart + domainPart + securePart;
+    return nameValuePart + expirationDatePart + pathPart + domainPart + securePart + samesitePart;
 };
 
 /**
@@ -55,17 +58,18 @@ obj.createCookie = function (name, value, expirationDate, path, domain, secure) 
  * @param {String} [path] - cookie path.
  * @param {String|String[]} [domain] - cookie domain(s). Use empty array for creating host-only cookies.
  * @param {Boolean} [secure] - is cookie secure.
+ * @param {String} [samesite] - samesite value.
  */
-obj.setCookie = function (name, value, expirationDate, path, domains, secure) {
+obj.setCookie = function (name, value, expirationDate, path, domains, secure, samesite) {
     if (!_.isArray(domains)) {
         domains = [domains];
     }
 
     if (domains.length === 0) {
-        document.cookie = obj.createCookie(name, value, expirationDate, path, undefined, secure);
+        document.cookie = obj.createCookie(name, value, expirationDate, path, undefined, secure, samesite);
     } else {
         _.each(domains, function(domain) {
-            document.cookie = obj.createCookie(name, value, expirationDate, path, domain, secure);
+            document.cookie = obj.createCookie(name, value, expirationDate, path, domain, secure, samesite);
         });
     }
 };
@@ -92,11 +96,13 @@ obj.getCookie = function (c_name) {
  * @param {String} name - cookie name.
  * @param {String} [path] - cookie path.
  * @param {String|String[]} [domain] - cookie domain(s).
+ * @param {Boolean} [secure] - is cookie secure.
+ * @param {String} [samesite] - samesite value.
  */
-obj.deleteCookie = function(name, path, domains) {
+obj.deleteCookie = function(name, path, domains, secure, samesite) {
     var date = new Date();
     date.setTime(date.getTime() + (-1 * 24 * 60 * 60 * 1000));
-    obj.setCookie(name, "", date, path, domains);
+    obj.setCookie(name, "", date, path, domains, secure, samesite);
 };
 
 /**
@@ -105,10 +111,22 @@ obj.deleteCookie = function(name, path, domains) {
  */
 obj.cookiesEnabled = function() {
     this.setCookie("cookieTest", "test");
-    if (!this.getCookie("cookieTest")) {
+    if (this.getCookie("cookieTest")) {
+        this.deleteCookie("cookieTest");
+        return true;
+    }
+    const secure = (location.protocol === "https:");
+    this.setCookie("cookieTest", "test", undefined, undefined, undefined, secure, "None");
+    if (this.getCookie("cookieTest")) {
+        this.deleteCookie("cookieTest", undefined, undefined, secure, "None");
+        return true;
+    }
+    const cookieEnabled = (navigator && navigator.cookieEnabled);
+    if (!cookieEnabled) {
+        console.warn("Browser does not have cookies enabled");
         return false;
     }
-    this.deleteCookie("cookieTest");
+    console.warn("Browser fails to set cookies but cookies are enabled.");
     return true;
 };
 

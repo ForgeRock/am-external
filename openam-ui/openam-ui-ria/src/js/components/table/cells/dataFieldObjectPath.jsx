@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 import { get } from "lodash";
 
@@ -36,7 +36,7 @@ import { get } from "lodash";
  * @see https://github.com/AllenFang/react-bootstrap-table/issues/50
  */
 const dataFieldObjectPath = (wrappedFunction, path) => {
-    return (cell, row, formatExtraData, rowIdx) => {
+    return (cell, row, rowIdx, formatExtraData) => {
         return wrappedFunction(get(cell, path), row, formatExtraData, rowIdx);
     };
 };
