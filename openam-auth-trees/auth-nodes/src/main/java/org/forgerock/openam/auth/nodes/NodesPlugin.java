@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -48,7 +48,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public String getPluginVersion() {
-        return "8.0.3";
+        return "8.0.5";
     }
 
     @Override
@@ -77,13 +77,25 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 && VersionComparison.compareVersionStrings("8.0.0", fromVersion) <= 0) {
             pluginTools.upgradeAuthNode(SocialProviderHandlerNode.class);
         }
-        if (VersionComparison.compareVersionStrings("4.5.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.0.2", fromVersion) <= 0) {
-            pluginTools.upgradeAuthNode(ChoiceCollectorNode.class);
-        }
         if (VersionComparison.compareVersionStrings("3.0.0", fromVersion) >= 0
                 && VersionComparison.compareVersionStrings("8.0.3", fromVersion) <= 0) {
             pluginTools.upgradeAuthNode(MessageNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("1.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.0.4", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(ChoiceCollectorNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("6.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.0.4", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(PushRegistrationNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("7.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.0.4", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(OathRegistrationNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("5.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("8.0.5", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(Saml2Node.class);
         }
         super.upgrade(fromVersion);
     }

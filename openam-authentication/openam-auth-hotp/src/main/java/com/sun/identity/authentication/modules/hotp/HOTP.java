@@ -24,7 +24,7 @@
  *
  * $Id: HOTP.java,v 1.1 2009/03/24 23:52:12 pluo Exp $
  *
- * Portions Copyrighted 2012-2019 ForgeRock AS.
+ * Portions Copyrighted 2012-2022 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 
@@ -223,7 +223,8 @@ public class HOTP extends AMLoginModule {
                                 throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
                             }
                             substituteHeader(state,
-                                    MODULE_NAME + " Attempt " + (attempt + 1) + " of " + hotpRetryMaxAttempts);
+                                    MODULE_NAME + " " + bundle.getString("attempt") + " " + (attempt + 1)
+                                            + " " + bundle.getString("of") + " " + hotpRetryMaxAttempts);
                             return currentState;
                         }
 
@@ -237,7 +238,8 @@ public class HOTP extends AMLoginModule {
                                 throw new InvalidPasswordException("amAuth", "invalidPasswd", null);
                             }
                             substituteHeader(state,
-                                    MODULE_NAME + " Attempt " + (attempt + 1) + " of " + hotpRetryMaxAttempts);
+                                    MODULE_NAME + " " + bundle.getString("attempt") + " " + (attempt + 1)
+                                            + " " + bundle.getString("of") + " " + hotpRetryMaxAttempts);
                             return state;
                         }
 

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 .table-container {
     /* Prevents tables from overflowing when the container is too thin. This can and does happen. */
@@ -137,4 +137,13 @@
             }
         }
     }
+}
+
+.react-bootstrap-table th[data-row-selection] {
+  width: 50px;
+}
+
+.react-bootstrap-table-pagination .pagination {
+  float: right;
+  margin: 0 0 10px 0;
 }

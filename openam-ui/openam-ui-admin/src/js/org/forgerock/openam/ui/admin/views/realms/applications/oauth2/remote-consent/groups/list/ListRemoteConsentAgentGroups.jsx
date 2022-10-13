@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import { identity, omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -26,6 +25,15 @@ import FontAwesomeIconCell from "components/table/cells/FontAwesomeIconCell";
 import List from "components/list/List";
 
 const ListRemoteConsentAgentGroups = (props) => {
+    const columns = [{
+        title: identity,
+        dataField: "_id",
+        formatter: dataFormatReact(
+            <FontAwesomeIconCell icon="folder" />
+        ),
+        sort: true,
+        text: t("console.applications.oauth2.remoteConsent.groups.list.grid.0")
+    }];
     return (
         <Panel className="fr-panel-tab">
             <Panel.Body>
@@ -35,20 +43,10 @@ const ListRemoteConsentAgentGroups = (props) => {
                         title: t("console.applications.agents.common.groups.list.callToAction.button"),
                         href: props.newHref
                     } }
+                    columns={ columns }
                     description={ t("console.applications.oauth2.remoteConsent.groups.list.callToAction.description") }
                     title={ t("console.applications.oauth2.remoteConsent.groups.list.callToAction.title") }
-                >
-                    <TableHeaderColumn
-                        columnTitle={ identity }
-                        dataField="_id"
-                        dataFormat={ dataFormatReact(
-                            <FontAwesomeIconCell icon="folder" />
-                        ) }
-                        dataSort
-                    >
-                        { t("console.applications.oauth2.remoteConsent.groups.list.grid.0") }
-                    </TableHeaderColumn>
-                </List>
+                />
             </Panel.Body>
         </Panel>
     );

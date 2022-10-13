@@ -11,13 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import { Button, FormControl, Form, Table as BootstrapTable } from "react-bootstrap";
+import cellEditFactory from "react-bootstrap-table2-editor";
 import { map, omit, partial } from "lodash";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React, { Component } from "react";
 
@@ -41,7 +41,7 @@ class KeyValueField extends Component {
         this.setState({ showAdd: false });
     };
 
-    handleAfterSaveCell = ({ key, value }) => {
+    handleAfterSaveCell = (before, after, { key, value }) => {
         this.props.onChange({
             ...this.props.formData,
             [key]: value
@@ -61,17 +61,11 @@ class KeyValueField extends Component {
     };
 
     handleSubmit = () => {
-        const error = this.tableRef.handleAddRow(this.state);
-
-        if (error) {
-            this.setState({ error });
-        } else {
-            this.props.onChange({
-                ...this.props.formData,
-                [this.state.key]: this.state.value
-            });
-            this.setState(initialState);
-        }
+        this.props.onChange({
+            ...this.props.formData,
+            [this.state.key]: this.state.value
+        });
+        this.setState(initialState);
     };
 
     rowDeleteComponent = (data, row) => {
@@ -141,32 +135,38 @@ class KeyValueField extends Component {
             )
             : null;
 
+        const columns = [{
+            dataField: "key",
+            formatter: this.rowTextComponent,
+            sort: false,
+            text: t("common.form.key")
+        }, {
+            dataField: "value",
+            formatter: this.rowTextComponent,
+            text: t("common.form.value")
+        }, {
+            formatter: this.rowDeleteComponent,
+            text: t("common.form.value"),
+            align: "center",
+            classes: "fr-col-btn-1",
+            editable: false
+        }];
+
         return (
             <div className="key-value-field clearfix">
                 <ReactBootstrapTable
-                    cellEdit={ {
+                    cellEdit={ cellEditFactory({
                         afterSaveCell: this.handleAfterSaveCell,
                         mode: "click"
-                    } }
+                    }) }
+                    columns={ columns }
                     condensed
                     data={ arrayData }
                     idField="key"
+                    keyField="key"
                     selectRow={ { hideSelectColumn: true } }
                     tableRef={ this.setRef }
-                >
-                    <TableHeaderColumn dataField="key" dataFormat={ this.rowTextComponent } isKey>
-                        { t("common.form.key") }
-                    </TableHeaderColumn>
-                    <TableHeaderColumn dataField="value" dataFormat={ this.rowTextComponent }>
-                        { t("common.form.value") }
-                    </TableHeaderColumn>
-                    <TableHeaderColumn
-                        columnClassName="fr-col-btn-1"
-                        dataAlign="center"
-                        dataFormat={ this.rowDeleteComponent }
-                        editable={ false }
-                    />
-                </ReactBootstrapTable>
+                />
                 { newKeyValueComponent }
                 { errorComponent }
                 { addButton }

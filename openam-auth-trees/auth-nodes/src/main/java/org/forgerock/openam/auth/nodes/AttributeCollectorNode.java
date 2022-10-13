@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -149,9 +150,15 @@ public class AttributeCollectorNode extends SingleOutcomeNode {
             return send(callbacks).build();
         }
 
+        List<String> requestedCallbackNames =
+            callbacks.stream().map(AttributeInputCallback::getName).collect(Collectors.toList());
+
+        // retrieve and validate callbacks
+        List<AttributeInputCallback> userCallbacks =
+            validateUserCallbacks(context.getCallbacks(AttributeInputCallback.class), requestedCallbackNames);
+
         // try again if callbacks missing required data
-        List<AttributeInputCallback> userCallbacks = context.getCallbacks(AttributeInputCallback.class);
-        if (!checkRequiredAttributes(userCallbacks)) {
+        if (!checkRequiredAttributes(userCallbacks, requestedCallbackNames)) {
             logger.debug("Re-collecting missing required attributes");
             return send(callbacks).build();
         }
@@ -178,6 +185,26 @@ public class AttributeCollectorNode extends SingleOutcomeNode {
                 .replaceTransientState(context.transientState.copy())
                 .replaceSharedState(sharedState)
                 .build();
+    }
+
+    /**
+     * Ensure that the callbacks received were the callbacks requested. Drop any unexpected callbacks.
+     *
+     * @param receivedCallbacks the callbacks received
+     * @param requestedCallbackNames the names of the callbacks requested
+     */
+    private List<AttributeInputCallback> validateUserCallbacks(List<AttributeInputCallback> receivedCallbacks,
+                                                               List<String> requestedCallbackNames) {
+        Map<Boolean, List<AttributeInputCallback>> callbacksRequested = receivedCallbacks.stream()
+            .collect(Collectors.partitioningBy(callback -> requestedCallbackNames.contains(callback.getName())));
+
+        final List<AttributeInputCallback> validCallbacks = callbacksRequested.get(true);
+        final List<AttributeInputCallback> invalidCallbacks = callbacksRequested.get(false);
+
+        invalidCallbacks.forEach(cb ->
+            logger.debug("Ignoring unrequested callback with name:{} and value:{}", cb.getName(), cb.getValue()));
+
+        return validCallbacks;
     }
 
     private List<AttributeInputCallback> generateCallbacks(TreeContext context) throws NodeProcessException {
@@ -379,18 +406,32 @@ public class AttributeCollectorNode extends SingleOutcomeNode {
     /**
      * Test whether all attributes are required and, if so, whether all attributes collected are non-null.
      *
-     * @param callbacks the callbacks to test
+     * @param receivedCallbacks the callbacks received
+     * @param requestedCallbackNames the names of the callbacks requested
      * @return true if not required or all attributes have values
      */
-    private boolean checkRequiredAttributes(List<AttributeInputCallback> callbacks) {
-        return !config.required() || callbacks.stream().noneMatch(callback -> {
-            if (callback.isEmpty()) {
-                logger.debug("Required attribute {} is missing", callback.getName());
-                return true;
-            } else {
+    private boolean checkRequiredAttributes(List<AttributeInputCallback> receivedCallbacks,
+                                            List<String> requestedCallbackNames) {
+        if (config.required()) {
+            boolean receivedCallbacksNonNull = receivedCallbacks.stream().noneMatch(callback -> {
+                requestedCallbackNames.remove(callback.getName());
+                if (callback.isEmpty()) {
+                    logger.debug("Required attribute {} is missing", callback.getName());
+                    return true;
+                } else {
+                    return false;
+                }
+            });
+
+            if (!requestedCallbackNames.isEmpty()) {
+                logger.debug("Missing required attribute(s): {}", String.join(",", requestedCallbackNames));
                 return false;
+            } else {
+                return receivedCallbacksNonNull;
             }
-        });
+        } else {
+            return true;
+        }
     }
 
     /**

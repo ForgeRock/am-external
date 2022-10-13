@@ -132,6 +132,37 @@ public class KbaVerifyNodeTest {
     }
 
     @DataProvider
+    public Object[][] preferredLanguage() {
+        return new Object[][] {
+                { Locale.ENGLISH, "Question One?" },
+                { Locale.FRENCH, "Question Une?" },
+                { Locale.GERMAN, "Unable to find translation." },
+                { null, "Question One?" }
+        };
+    }
+
+    @Test(dataProvider = "preferredLanguage")
+    public void callbacksAbsentNoLocaleShouldReturnEnglish(Locale locale, String question) throws Exception {
+        // Given
+        kbaConfig.setMinimumAnswersToVerify(2);
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(locale);
+        JsonValue sharedState = json(object(
+                field(OBJECT_ATTRIBUTES, object(
+                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+                ))
+        ));
+
+        // When
+        Action action = node.process(getContext(emptyList(), sharedState));
+
+        // Then
+        assertThat(action.outcome).isEqualTo(null);
+        assertThat(action.callbacks).hasSize(2);
+        assertThat(((PasswordCallback) action.callbacks.get(0)).getPrompt()).isEqualTo(question);
+        assertThat(((PasswordCallback) action.callbacks.get(1)).getPrompt()).isEqualTo("custom?");
+    }
+
+    @DataProvider
     public Object[][] sharedStateData() {
         return new Object[][]{
             {json(object(

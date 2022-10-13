@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { identity, omit } from "lodash";
 import { Panel } from "react-bootstrap";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 
@@ -28,6 +27,19 @@ import List from "components/list/List";
 import PageHeader from "components/PageHeader";
 
 const ListDataStores = (props) => {
+    const columns = [{
+        title: identity,
+        dataField: "_id",
+        formatter: dataFormatReact(
+            <FontAwesomeIconCell icon="database" />
+        ),
+        sort: true,
+        text: t("console.datastores.list.grid.0")
+    }, {
+        dataField: "_type",
+        formatter: dataFieldObjectPath(identity, "name"),
+        text: t("console.datastores.list.grid.1")
+    }];
     return (
         <div>
             <PageHeader title={ t("console.datastores.title") } />
@@ -39,26 +51,10 @@ const ListDataStores = (props) => {
                             title: t("console.datastores.list.callToAction.button"),
                             href: props.newHref
                         } }
+                        columns={ columns }
                         description={ t("console.datastores.list.callToAction.description") }
                         title={ t("console.datastores.list.callToAction.title") }
-                    >
-                        <TableHeaderColumn
-                            columnTitle={ identity }
-                            dataField="_id"
-                            dataFormat={ dataFormatReact(
-                                <FontAwesomeIconCell icon="database" />
-                            ) }
-                            dataSort
-                        >
-                            { t("console.datastores.list.grid.0") }
-                        </TableHeaderColumn>
-                        <TableHeaderColumn
-                            dataField="_type"
-                            dataFormat={ dataFieldObjectPath(identity, "name") }
-                        >
-                            { t("console.datastores.list.grid.1") }
-                        </TableHeaderColumn>
-                    </List>
+                    />
                 </Panel.Body>
             </Panel>
         </div>

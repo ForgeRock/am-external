@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -22,11 +22,15 @@ import java.util.stream.IntStream;
 import org.forgerock.openam.federation.rest.schema.hosted.identity.AuthContextItem;
 import org.forgerock.openam.objectenricher.EnricherContext;
 import org.forgerock.openam.objectenricher.mapper.ValueMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Mapper to go from string representation to an {@link AuthContextItem} instance.
  */
 public class IdpAuthContextMapper extends ValueMapper<List<String>, List<AuthContextItem>> {
+
+    private static final Logger logger = LoggerFactory.getLogger(IdpAuthContextMapper.class);
 
     @Override
     public List<AuthContextItem> map(List<String> values, EnricherContext context) {
@@ -49,7 +53,14 @@ public class IdpAuthContextMapper extends ValueMapper<List<String>, List<AuthCon
             indexType = AuthContextItem.Key.fromValue(authnData[0]);
             indexValue = authnData[1];
         }
-        return new AuthContextItem(components[0], indexType, indexValue, Integer.valueOf(components[1]));
+        Integer authnLevel = 0;
+        try {
+            authnLevel = Integer.valueOf(components[1]);
+        } catch (NumberFormatException e) {
+            logger.warn("Provided Authentication Context level is invalid, defaulting to 0. Error: {}",
+                    e.getMessage());
+        }
+        return new AuthContextItem(components[0], indexType, indexValue, authnLevel);
     }
 
     @Override
@@ -63,7 +74,7 @@ public class IdpAuthContextMapper extends ValueMapper<List<String>, List<AuthCon
         StringBuilder sb = new StringBuilder()
                 .append(authContextItem.getContextReference())
                 .append("|")
-                .append(authContextItem.getLevel())
+                .append(authContextItem.getLevel() != null ? authContextItem.getLevel() : 0)
                 .append("|");
         if (authContextItem.getKey() != null) {
             sb.append(authContextItem.getKey())

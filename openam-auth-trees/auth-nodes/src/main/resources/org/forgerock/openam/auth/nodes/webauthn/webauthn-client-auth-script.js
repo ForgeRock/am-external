@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 if (!window.PublicKeyCredential) {
@@ -38,5 +38,17 @@ navigator.credentials.get({ "publicKey" : options })
         document.getElementById("loginButton_0").click();
     }).catch(function (err) {
         document.getElementById('webAuthnOutcome').value = "ERROR" + "::" + err;
-        document.getElementById("loginButton_0").click();
+        var allowRecoveryCode = 'true' === "{allowRecoveryCode}";
+        if (allowRecoveryCode) {
+            var loginButton = document.getElementById("loginButton_0");
+            if (loginButton) {
+                var prev = loginButton.previousElementSibling;
+                if (prev && prev.nodeName == "DIV") {
+                    prev.getElementsByTagName("div")[0].innerHTML = "<i class=\"fa fa-times-circle text-primary\"> "
+                        + err + "</i>";
+                }
+            }
+        } else {
+            document.getElementById("loginButton_0").click();
+        }
     });

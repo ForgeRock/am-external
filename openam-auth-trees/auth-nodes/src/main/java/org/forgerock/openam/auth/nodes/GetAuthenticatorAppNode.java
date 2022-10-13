@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -60,11 +60,19 @@ public class GetAuthenticatorAppNode extends SingleOutcomeNode {
     /** The link for the ForgeRock Authenticator app on Google Play Store. */
     static final String GOOGLE_APP_LINK = "https://play.google.com/store/apps/details?id=com.forgerock.authenticator";
     /** The Apple app store name. */
-    private static final String APPLE_APP_STORE = "Apple App Store";
+    private static final String APPLE_APP_STORE = "appleStore";
     /** The Google app store name. */
-    private static final String GOOGLE_PLAY_STORE = "Google Play Store";
+    private static final String GOOGLE_PLAY_STORE = "googlePlay";
     /** The callback ID which will render the JavaScript with App Links. */
     private static final String CALLBACK_ELEMENT_ID = "callback_0";
+    /** The key to replace the Apple Store URL. */
+    static final String APPLE_APP_LINK_REGEX = "\\{\\{appleLink\\}\\}";
+    /** The key to replace the Google Play Store URL. */
+    static final String GOOGLE_APP_LINK_REGEX = "\\{\\{googleLink\\}\\}";
+    /** The key to replace the Apple Store URL. */
+    static final String APPLE_APP_LABEL_REGEX = "\\{\\{appleLabel\\}\\}";
+    /** The key to replace the Google Play Store URL. */
+    static final String GOOGLE_APP_LABEL_REGEX = "\\{\\{googleLabel\\}\\}";
 
     private static final String BUNDLE = GetAuthenticatorAppNode.class.getName();
     private static final Logger LOGGER = LoggerFactory.getLogger(GetAuthenticatorAppNode.class);
@@ -116,10 +124,19 @@ public class GetAuthenticatorAppNode extends SingleOutcomeNode {
         String appleLink = StringUtils.isBlank(config.appleLink()) ? APPLE_APP_LINK : config.appleLink();
         String googleLink = StringUtils.isBlank(config.appleLink()) ? GOOGLE_APP_LINK : config.googleLink();
 
-        message = message.replaceAll("\\{\\{appleLink\\}\\}",
-                "<a target='_blank' href='" + appleLink + "'>" + APPLE_APP_STORE + "</a>");
-        message = message.replaceAll("\\{\\{googleLink\\}\\}",
-                "<a target='_blank' href='" + googleLink + "'>" + GOOGLE_PLAY_STORE + "</a>");
+        if (message.contains("{appleLabel}") || message.contains("{googleLabel}")) {
+            message = message.replaceAll(APPLE_APP_LABEL_REGEX, getLocalizedResource(context, APPLE_APP_STORE));
+            message = message.replaceAll(GOOGLE_APP_LABEL_REGEX, getLocalizedResource(context, GOOGLE_PLAY_STORE));
+            message = message.replaceAll(APPLE_APP_LINK_REGEX, appleLink);
+            message = message.replaceAll(GOOGLE_APP_LINK_REGEX, googleLink);
+        } else {
+            message = message.replaceAll(APPLE_APP_LINK_REGEX,
+                    "<a target='_blank' href='" + appleLink + "'>"
+                            + getLocalizedResource(context, APPLE_APP_STORE) + "</a>");
+            message = message.replaceAll(GOOGLE_APP_LINK_REGEX,
+                    "<a target='_blank' href='" + googleLink + "'>"
+                            + getLocalizedResource(context, GOOGLE_PLAY_STORE) + "</a>");
+        }
 
         String script = "document.getElementById(\"" + GetAuthenticatorAppNode.CALLBACK_ELEMENT_ID
                 + "\").innerHTML=\"<center>" + message + "</center>\"";
@@ -149,6 +166,20 @@ public class GetAuthenticatorAppNode extends SingleOutcomeNode {
         ResourceBundle bundle = preferredLocales.getBundleInPreferredLocale(GetAuthenticatorAppNode.BUNDLE,
                 GetAuthenticatorAppNode.class.getClassLoader());
         return bundle.getString(defaultMessageKey);
+    }
+
+    /**
+     * Get the localized resource.
+     *
+     * @param context The context of the tree authentication.
+     * @param defaultKey The key for the default message in the resource bundle
+     * @return The localized string
+     */
+    private String getLocalizedResource(TreeContext context, String defaultKey) {
+        PreferredLocales preferredLocales = context.request.locales;
+        ResourceBundle bundle = preferredLocales.getBundleInPreferredLocale(GetAuthenticatorAppNode.BUNDLE,
+                GetAuthenticatorAppNode.class.getClassLoader());
+        return bundle.getString(defaultKey);
     }
 
     /**

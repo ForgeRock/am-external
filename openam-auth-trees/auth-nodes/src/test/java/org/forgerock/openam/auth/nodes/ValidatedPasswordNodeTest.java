@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -23,6 +23,7 @@ import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_PASSWORD_ATTRIBUTE;
@@ -49,6 +50,7 @@ import org.forgerock.openam.authentication.callbacks.ValidatedPasswordCallback;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.util.i18n.PreferredLocales;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -148,6 +150,57 @@ public class ValidatedPasswordNodeTest {
         assertThat(action.transientState.isDefined(OBJECT_ATTRIBUTES)).isTrue();
         assertThat(action.transientState.get(OBJECT_ATTRIBUTES).get(DEFAULT_IDM_PASSWORD_ATTRIBUTE).asString())
                 .isEqualTo("mypw");
+    }
+
+    @Test
+    public void processWithStateContainingIdShouldAppendIdToIdentityResource() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(
+                field(FIELD_CONTENT_ID, "id"),
+                field(OBJECT_ATTRIBUTES, object(
+                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+
+                ))
+        ));
+        JsonValue transientState = json(object());
+
+        // When
+        when(config.validateInput()).thenReturn(true);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        when(idmIntegrationService.validateInput(any(), any(), captor.capture(), any(), any())).thenReturn(json(object(
+                field("result", false),
+                field("failedPolicyRequirements", array(
+                        object(
+                                field("policyRequirements", array(
+                                        object(
+                                                field("policyRequirement", "IS_NEW")
+                                        )
+                                )),
+                                field("property", DEFAULT_IDM_PASSWORD_ATTRIBUTE)
+                        )
+                ))
+        )));
+        ValidatedPasswordCallback callback = new ValidatedPasswordCallback("Password", false, json(array()), false);
+        callback.setPassword("mypw".toCharArray());
+        node.process(getContext(singletonList(callback), sharedState, transientState));
+
+        // Then
+        assertThat(captor.getValue()).isEqualTo("managed/user/id");
+    }
+
+    @Test
+    public void processWithStateContainingNoIdForIdentityResource() throws Exception {
+        // When
+        when(config.validateInput()).thenReturn(true);
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        when(idmIntegrationService.validateInput(any(), any(), captor.capture(), any(), any())).thenReturn(json(object(
+                field("result", true))));
+        ValidatedPasswordCallback callback = new ValidatedPasswordCallback("Password", false, json(array()), false);
+        callback.setPassword("mypw".toCharArray());
+        node.process(getContext(singletonList(callback), json(object()), json(object())));
+
+        // Then
+        assertThat(captor.getValue()).isEqualTo("managed/user");
     }
 
     @Test

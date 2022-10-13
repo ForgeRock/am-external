@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { Panel } from "react-bootstrap";
 import { identity, map, omit } from "lodash";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import PropTypes from "prop-types";
 import React from "react";
 import Router from "org/forgerock/commons/ui/common/main/Router";
@@ -34,6 +33,15 @@ const ListUserServices = (props) => {
         )}`,
         title: creatable.name
     }));
+    const columns = [{
+        title: identity,
+        dataField: "name",
+        formatter: dataFormatReact(
+            <FontAwesomeIconCell icon="plug" />
+        ),
+        sort: true,
+        text: t("console.identities.users.edit.services.list.grid.0")
+    }];
     return (
         <Panel className="fr-panel-tab">
             <Panel.Body>
@@ -43,21 +51,10 @@ const ListUserServices = (props) => {
                         menuItems,
                         title: t("console.identities.users.edit.services.list.callToAction.button")
                     } }
+                    columns={ columns }
                     description={ t("console.identities.users.edit.services.list.callToAction.description") }
                     title={ t("console.identities.users.edit.services.list.callToAction.title") }
-                >
-                    <TableHeaderColumn
-                        columnTitle={ identity }
-                        dataField="name"
-                        dataFormat={ dataFormatReact(
-                            <FontAwesomeIconCell icon="plug" />
-                        ) }
-                        dataSort
-                    >
-
-                        { t("console.identities.users.edit.services.list.grid.0") }
-                    </TableHeaderColumn>
-                </List>
+                />
             </Panel.Body>
         </Panel>
     );

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -19,11 +19,11 @@ package org.forgerock.openam.auth.nodes;
 import static java.util.Collections.singletonMap;
 import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
+import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getUniversalIdFromIdentityUtils;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getAttributeFromContext;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getObject;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getUsernameFromContext;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.stringAttribute;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getUniversalId;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.ALL_FIELDS;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_MAIL_ATTRIBUTE;
@@ -150,7 +150,7 @@ public class IdentifyExistingUserNode extends AbstractDecisionNode {
 
             return goTo(true)
                     .replaceSharedState(copyState)
-                    .withUniversalId(getUniversalId(context, identityUtils))
+                    .withUniversalId(getUniversalIdFromIdentityUtils(context, identityUtils))
                     .build();
         }
         logger.debug("No {} identified", context.identityResource);

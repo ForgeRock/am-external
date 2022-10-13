@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
@@ -27,7 +27,7 @@ import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_I
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.HIDDEN_CALLCABK_ID;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.IMG_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.ISSUER_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.SCAN_QR_CODE_MSG;
+import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.SCAN_QR_CODE_MSG_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.ALGORITHM_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.COUNTER_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_CHECKSUM;
@@ -43,8 +43,10 @@ import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.SECRET_QR_C
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.TOTP_URI_HOST_QR_CODE_KEY;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
@@ -62,6 +64,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.helpers.LocalizationHelper;
 import org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.core.CoreWrapper;
@@ -101,6 +104,7 @@ public class OathRegistrationNode extends AbstractMultiFactorNode {
     private final Config config;
     private final Realm realm;
     private final OathDeviceProfileHelper deviceProfileHelper;
+    private final LocalizationHelper localizationHelper;
 
     /**
      * The Oath registration node constructor.
@@ -111,6 +115,7 @@ public class OathRegistrationNode extends AbstractMultiFactorNode {
      * @param deviceProfileHelper stores device profiles.
      * @param multiFactorNodeDelegate shared utilities common to second factor implementations.
      * @param identityUtils an instance of the IdentityUtils.
+     * @param localizationHelper the localization helper class.
      */
     @Inject
     public OathRegistrationNode(@Assisted Config config,
@@ -118,11 +123,13 @@ public class OathRegistrationNode extends AbstractMultiFactorNode {
             CoreWrapper coreWrapper,
             OathDeviceProfileHelper deviceProfileHelper,
             MultiFactorNodeDelegate<AuthenticatorOathService> multiFactorNodeDelegate,
-            IdentityUtils identityUtils) {
+            IdentityUtils identityUtils,
+            LocalizationHelper localizationHelper) {
         super(realm, coreWrapper, multiFactorNodeDelegate, identityUtils);
         this.config = config;
         this.realm = realm;
         this.deviceProfileHelper = deviceProfileHelper;
+        this.localizationHelper = localizationHelper;
     }
 
     @Override
@@ -185,7 +192,7 @@ public class OathRegistrationNode extends AbstractMultiFactorNode {
         try {
             AMIdentity userIdentity = getIdentity(context);
 
-            List<Callback> callbacks = createScanQRCodeCallbacks(oathDeviceSettings, userIdentity);
+            List<Callback> callbacks = createScanQRCodeCallbacks(context, oathDeviceSettings, userIdentity);
 
             JsonValue sharedState = context.sharedState.copy()
                     .put(OATH_DEVICE_PROFILE_KEY, deviceProfileHelper.encodeDeviceSettings(oathDeviceSettings));
@@ -201,16 +208,19 @@ public class OathRegistrationNode extends AbstractMultiFactorNode {
     /**
      * Creates a set of callbacks used to display the QRCode for scanning.
      *
+     * @param context The context of the tree authentication.
      * @param deviceProfile the Oath device's settings.
      * @param identity the AM identity.
      * @return List of callbacks used for scan the QRCode.
      * @throws NodeProcessException if unable to create the callbacks.
      */
-    private List<Callback> createScanQRCodeCallbacks(OathDeviceSettings deviceProfile, AMIdentity identity)
-            throws NodeProcessException {
+    private List<Callback> createScanQRCodeCallbacks(TreeContext context, OathDeviceSettings deviceProfile,
+                                                     AMIdentity identity) throws NodeProcessException {
         Map<String, String> params = buildURIParameters(deviceProfile);
 
-        Callback textOutputCallback = new TextOutputCallback(TextOutputCallback.INFORMATION, SCAN_QR_CODE_MSG);
+        String message = localizationHelper.getLocalizedMessage(context, OathRegistrationNode.class,
+                config.scanQRCodeMessage(), SCAN_QR_CODE_MSG_KEY);
+        Callback textOutputCallback = new TextOutputCallback(TextOutputCallback.INFORMATION, message);
         Callback hiddenCallback = createHiddenCallback(identity, params);
         Callback qrCodeCallback = createQRCodeCallback(identity, params);
 
@@ -448,6 +458,15 @@ public class OathRegistrationNode extends AbstractMultiFactorNode {
         @Attribute(order = 120)
         default int truncationOffset() {
             return DEFAULT_TRUNCATION_OFFSET;
+        }
+
+        /**
+         * The message to displayed to user to scan the QR code.
+         * @return The mapping of locales to scan QR code messages.
+         */
+        @Attribute(order = 130)
+        default Map<Locale, String> scanQRCodeMessage() {
+            return Collections.emptyMap();
         }
     }
 

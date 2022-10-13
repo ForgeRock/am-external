@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { bindActionCreators } from "redux";
@@ -86,7 +86,7 @@ class ListGlobalSecretStoresContainer extends Component {
         });
     };
 
-    handleEdit = ({ _id, _type }) => {
+    handleEdit = (e, { _id, _type }) => {
         Router.routeTo(Router.configuration.routes.editGlobalSecretStores, {
             args: map([_type._id, _id], encodeURIComponent),
             trigger: true

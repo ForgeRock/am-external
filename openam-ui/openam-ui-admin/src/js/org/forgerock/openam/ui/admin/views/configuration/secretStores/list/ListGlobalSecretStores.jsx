@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { Grid, ListGroup, ListGroupItem, Panel } from "react-bootstrap";
 import { identity, omit } from "lodash";
 import { t } from "i18next";
-import { TableHeaderColumn } from "react-bootstrap-table";
 import Block from "components/Block";
 import PropTypes from "prop-types";
 import React from "react";
@@ -43,6 +42,19 @@ const ListGlobalSecretStores = ({ singletonStoreTypes, ...restProps }) => {
             { storeType.name }
         </ListGroupItem>
     ));
+    const columns = [{
+        title: identity,
+        dataField: "_id",
+        formatter: dataFormatReact(
+            <FontAwesomeIconCell icon="eye" />
+        ),
+        sort: true,
+        text: t("console.secretStores.list.grid.0")
+    }, {
+        dataField: "_type",
+        formatter: dataFieldObjectPath(identity, "name"),
+        text: t("console.secretStores.list.grid.1")
+    }];
 
     return (
         <Grid>
@@ -77,26 +89,10 @@ const ListGlobalSecretStores = ({ singletonStoreTypes, ...restProps }) => {
                                 title: t("console.secretStores.list.callToAction.button"),
                                 href: newStoreHref
                             } }
+                            columns={ columns }
                             description={ t("console.secretStores.list.callToAction.description") }
                             title={ t("console.secretStores.list.callToAction.title") }
-                        >
-                            <TableHeaderColumn
-                                columnTitle={ identity }
-                                dataField="_id"
-                                dataFormat={ dataFormatReact(
-                                    <FontAwesomeIconCell icon="eye" />
-                                ) }
-                                dataSort
-                            >
-                                { t("console.secretStores.list.grid.0") }
-                            </TableHeaderColumn>
-                            <TableHeaderColumn
-                                dataField="_type"
-                                dataFormat={ dataFieldObjectPath(identity, "name") }
-                            >
-                                { t("console.secretStores.list.grid.1") }
-                            </TableHeaderColumn>
-                        </List>
+                        />
                     </Block>
                 </Panel.Body>
             </Panel>

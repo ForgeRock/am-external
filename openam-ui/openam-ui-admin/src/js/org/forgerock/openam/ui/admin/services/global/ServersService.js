@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -39,6 +39,10 @@ const arrayToObject = (valuesArray) => _.reduce(valuesArray, (result, item) => {
     return result;
 }, {});
 
+const removeEncryptedValues = (valuesObject) => _.omitBy(valuesObject, (value, key) => {
+    return key.endsWith("-encrypted");
+});
+
 const getSchema = (server, section) => ServersService.serviceCall({
     url: fetchUrl(`/global-config/servers/${server}/properties/${section}?_action=schema`,
         { realm: false }),
@@ -51,7 +55,7 @@ const getValues = (server, section) => ServersService.serviceCall({
     headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" }
 }).then((response) => {
     if (section === ADVANCED_SECTION) {
-        response = _.sortBy(objectToArray(response), (value) => value.key);
+        response = _.sortBy(objectToArray(removeEncryptedValues(response)), (value) => value.key);
     }
     return new JSONValues(response);
 });
@@ -59,7 +63,7 @@ const getValues = (server, section) => ServersService.serviceCall({
 const updateServer = (section, data, id = DEFAULT_SERVER) => {
     let modifiedData = data;
     if (section === ADVANCED_SECTION) {
-        modifiedData = arrayToObject(data[ADVANCED_SECTION]);
+        modifiedData = removeEncryptedValues(arrayToObject(data[ADVANCED_SECTION]));
     }
     return ServersService.serviceCall({
         url: fetchUrl(`/global-config/servers/${id}/properties/${section}`, { realm: false }),

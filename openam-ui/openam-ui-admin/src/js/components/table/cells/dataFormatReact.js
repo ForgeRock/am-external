@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 import React from "react";
@@ -39,7 +39,7 @@ import React from "react";
  *  </Table>
  */
 const dataFormatReact = (element) =>
-    (cell, row, formatExtraData, rowIdx) =>
+    (cell, row, rowIdx, formatExtraData) =>
         React.cloneElement(element, { cell, row, formatExtraData, rowIdx });
 
 export default dataFormatReact;

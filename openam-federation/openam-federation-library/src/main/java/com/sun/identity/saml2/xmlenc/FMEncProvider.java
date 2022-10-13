@@ -24,7 +24,7 @@
  *
  * $Id: FMEncProvider.java,v 1.5 2008/06/25 05:48:03 qcheng Exp $
  *
- * Portions Copyrighted 2014-2020 ForgeRock AS.
+ * Portions Copyrighted 2014-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.xmlenc;
 
@@ -196,9 +196,13 @@ public final class FMEncProvider implements EncProvider {
         }
         EncryptedKey encryptedKey = null;
         try {
-            encryptedKey = cipher.encryptKey(doc, secretKey,
-                    rsaOaepConfig.map(RsaOaepConfig::getMaskGenerationFunction).orElse(null),
-                    rsaOaepConfig.map(RsaOaepConfig::getOaepParams).orElse(null));
+            if (XMLCipher.RSA_OAEP.equalsIgnoreCase(keyTransportAlgorithm) || !rsaOaepConfig.isPresent()) {
+                encryptedKey = cipher.encryptKey(doc, secretKey);
+            } else {
+                encryptedKey = cipher.encryptKey(doc, secretKey,
+                        rsaOaepConfig.map(RsaOaepConfig::getMaskGenerationFunction).orElse(null),
+                        rsaOaepConfig.map(RsaOaepConfig::getOaepParams).orElse(null));
+            }
         } catch (XMLEncryptionException xe3) {
             logger.error("Failed to encrypt secret key with public key", xe3);
             throw new SAML2Exception(SAML2SDKUtils.bundle.getString("failedEncryptingSecretKeyWithPublicKey"));

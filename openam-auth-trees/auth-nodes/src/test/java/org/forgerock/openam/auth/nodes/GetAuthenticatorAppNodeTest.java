@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -21,9 +21,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.nodes.GetAuthenticatorAppNode.APPLE_APP_LINK;
-import static org.forgerock.openam.auth.nodes.GetAuthenticatorAppNode.CONTINUE_LABEL_KEY;
 import static org.forgerock.openam.auth.nodes.GetAuthenticatorAppNode.GOOGLE_APP_LINK;
-import static org.forgerock.openam.auth.nodes.GetAuthenticatorAppNode.MESSAGE_KEY;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -59,12 +58,16 @@ public class GetAuthenticatorAppNodeTest {
 
     GetAuthenticatorAppNode node;
 
+    static final String MESSAGE = "Get the app from the {{appleLink}} or on {{googleLink}}";
+    static final String CONTINUE_LABEL = "Continue";
+
     static final Map<Locale, String> MAP_DEFAULT_MESSAGE = new HashMap<>() {{
-        put(Locale.CANADA, MESSAGE_KEY);
+        put(Locale.CANADA, MESSAGE);
     }};
     static final Map<Locale, String> MAP_CONTINUE_LABEL = new HashMap<>() {{
-        put(Locale.CANADA, CONTINUE_LABEL_KEY);
+        put(Locale.CANADA, CONTINUE_LABEL);
     }};
+    static final Locale DEFAULT_LOCALE = Locale.CANADA;
 
     @BeforeMethod
     public void setup() throws NodeProcessException {
@@ -105,7 +108,7 @@ public class GetAuthenticatorAppNodeTest {
     @Test
     public void shouldDisplayCorrectOptions() throws Exception {
         // Given
-        String[] options = {CONTINUE_LABEL_KEY};
+        String[] options = {CONTINUE_LABEL};
 
         whenNodeConfigHasDefaultValues();
 
@@ -149,6 +152,86 @@ public class GetAuthenticatorAppNodeTest {
         assertThat(result.outcome).isNullOrEmpty();
     }
 
+    @Test
+    public void shouldDisplayCorrectDefaultMessage() throws Exception {
+        // Given
+        JsonValue sharedState = json(object());
+        JsonValue transientState = json(object());
+        String expectedMessage = "<center>Get the app from the <a target='_blank' "
+                + "href='https://itunes.apple.com/app/forgerock-authenticator/id1038442926'>Apple App Store</a> or on "
+                + "<a target='_blank' href='https://play.google.com/store/apps/details?id=com.forgerock.authenticator'>"
+                + "Google Play Store</a></center>";
+
+        whenNodeConfigHasDefaultValues();
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        // Then
+        assertThat(result.callbacks.size()).isEqualTo(2);
+        assertThat(result.callbacks.get(0)).isInstanceOf(ScriptTextOutputCallback.class);
+        assertThat(result.callbacks.get(1)).isInstanceOf(ConfirmationCallback.class);
+        String message = ((ScriptTextOutputCallback) result.callbacks.get(0)).getMessage();
+        assertThat(message).contains(expectedMessage);
+    }
+
+    @Test
+    public void shouldDisplayCorrectMessageWithLabels() throws Exception {
+        // Given
+        JsonValue sharedState = json(object());
+        JsonValue transientState = json(object());
+        String expectedMessage = "<center>Apple: <a target='_blank' "
+                + "href='https://itunes.apple.com/app/forgerock-authenticator/id1038442926'>Apple App Store</a>"
+                + "</center>";
+
+        String message = "Apple: <a target='_blank' href='{{appleLink}}'>{{appleLabel}}</a>";
+        Map<Locale, String> customGetAppMessage = new HashMap<>() {{
+            put(Locale.CANADA, message);
+        }};
+
+        whenNodeConfigHasDefaultValues(customGetAppMessage, MAP_CONTINUE_LABEL,
+                APPLE_APP_LINK, GOOGLE_APP_LINK, DEFAULT_LOCALE);
+
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        // Then
+        assertThat(result.callbacks.size()).isEqualTo(2);
+        assertThat(result.callbacks.get(0)).isInstanceOf(ScriptTextOutputCallback.class);
+        assertThat(result.callbacks.get(1)).isInstanceOf(ConfirmationCallback.class);
+        String resultMessage = ((ScriptTextOutputCallback) result.callbacks.get(0)).getMessage();
+        assertThat(resultMessage).contains(expectedMessage);
+    }
+
+    @Test
+    public void shouldDisplayCorrectLocalizedMessage() throws Exception {
+        // Given
+        JsonValue sharedState = json(object());
+        JsonValue transientState = json(object());
+
+        String message = "Holen Sie sich die App von {{appleLink}} oder auf {{googleLink}}";
+        Map<Locale, String> customGetAppMessage = new HashMap<>() {{
+            put(Locale.GERMANY, message);
+        }};
+        Map<Locale, String> continueLabel = new HashMap<>() {{
+            put(Locale.GERMANY, "Fortsetzen");
+        }};
+
+        whenNodeConfigHasDefaultValues(customGetAppMessage, continueLabel,
+                APPLE_APP_LINK, GOOGLE_APP_LINK, Locale.GERMANY);
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        // Then
+        assertThat(result.callbacks.size()).isEqualTo(2);
+        assertThat(result.callbacks.get(0)).isInstanceOf(ScriptTextOutputCallback.class);
+        assertThat(result.callbacks.get(1)).isInstanceOf(ConfirmationCallback.class);
+        assertThat(((ScriptTextOutputCallback) result.callbacks.get(0)).getMessage())
+                .contains("Holen Sie sich die App von");
+    }
+
     private TreeContext getContext() {
         return new TreeContext(JsonValue.json(object()),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
@@ -163,18 +246,23 @@ public class GetAuthenticatorAppNodeTest {
 
     private void whenNodeConfigHasDefaultValues() {
         whenNodeConfigHasDefaultValues(MAP_DEFAULT_MESSAGE, MAP_CONTINUE_LABEL,
-                APPLE_APP_LINK, GOOGLE_APP_LINK);
+                APPLE_APP_LINK, GOOGLE_APP_LINK, DEFAULT_LOCALE);
     }
 
-    private void whenNodeConfigHasDefaultValues(Map<Locale, String> message,
+    private void whenNodeConfigHasDefaultValues(
+            Map<Locale, String> message,
             Map<Locale, String> continueLabel,
             String appleLink,
-            String googleLink) {
+            String googleLink,
+            Locale locale) {
         config = mock(GetAuthenticatorAppNode.Config.class);
         given(config.message()).willReturn(message);
         given(config.continueLabel()).willReturn(continueLabel);
         given(config.appleLink()).willReturn(appleLink);
         given(config.googleLink()).willReturn(googleLink);
+
+        localeSelector = mock(LocaleSelector.class);
+        given(localeSelector.getBestLocale(any(), any())).willReturn(locale);
 
         node = spy(
                 new GetAuthenticatorAppNode(

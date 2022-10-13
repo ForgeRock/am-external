@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.trustanchor;
 
@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 
 import javax.inject.Singleton;
 
-import org.forgerock.secrets.keys.VerificationKey;
+import org.forgerock.secrets.keys.CertificateVerificationKey;
 import org.forgerock.util.promise.NeverThrowsException;
 import org.forgerock.util.promise.Promise;
 import org.slf4j.Logger;
@@ -45,7 +45,8 @@ public class TrustAnchorUtilities {
      * @param secrets incoming promise.
      * @return set of trust anchors contained within the secrets, or null.
      */
-    public Set<TrustAnchor> trustAnchorsFromSecrets(Promise<Stream<VerificationKey>, NeverThrowsException> secrets) {
+    public Set<TrustAnchor> trustAnchorsFromSecrets(Promise<Stream<CertificateVerificationKey>,
+            NeverThrowsException> secrets) {
         Set<TrustAnchor> anchors = null;
 
         if (secrets != null) {

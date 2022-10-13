@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
 import { find, forEach, get, map, result } from "lodash";
@@ -60,7 +60,7 @@ class ListUserServicesContainer extends Component {
         });
     }
 
-    handleEdit = (item) => {
+    handleEdit = (e, item) => {
         const id = item._id;
         const realm = this.props.router.params[0];
         const userId = this.props.router.params[1];

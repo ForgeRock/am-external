@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import PropTypes from "prop-types";
@@ -25,10 +25,7 @@ import HeaderSelection from "./HeaderSelection";
 * @returns {ReactElement} react row selection component
 */
 class RowSelection extends Component {
-    handleSelect = (event) => {
-        this.props.onChange(event, this.props.rowIndex);
-    };
-
+    handleSelect = () => {};
     render () {
         /* eslint-disable jsx-a11y/label-has-associated-control */
         if (this.props.rowIndex === "Header") {
@@ -60,7 +57,6 @@ class RowSelection extends Component {
 RowSelection.propTypes = {
     checked: PropTypes.oneOf([true, false, "indeterminate"]).isRequired,
     disabled: PropTypes.bool.isRequired,
-    onChange: PropTypes.func.isRequired,
     rowIndex: PropTypes.oneOfType([
         PropTypes.string,
         PropTypes.number

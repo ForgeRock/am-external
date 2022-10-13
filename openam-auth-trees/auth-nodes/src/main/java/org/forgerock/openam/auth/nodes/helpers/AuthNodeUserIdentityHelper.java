@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.helpers;
@@ -65,22 +65,34 @@ public final class AuthNodeUserIdentityHelper {
 
     /**
      * Get the universal id of the identity from the information available in the tree context.
+     * Returns the existing universalId from the context if already populated.
      *
      * @param context The tree context.
      * @param identityUtils An instance of the IdentityUtils.
      * @return The universal Id.
      */
     public static Optional<String> getUniversalId(TreeContext context, IdentityUtils identityUtils) {
-        return context.universalId.or(() -> {
-            String username = context.sharedState.get(USERNAME).asString();
-            if (StringUtils.isEmpty(username)) {
-                logger.warn("Could not find the username in the tree context");
-            }
-            String realm = context.sharedState.get(REALM).asString();
-            if (StringUtils.isEmpty(realm)) {
-                logger.warn("Could not find the realm in the tree context");
-            }
-            return identityUtils.getUniversalId(username, realm, USER);
-        });
+        return context.universalId.or(() -> getUniversalIdFromIdentityUtils(context, identityUtils));
+    }
+
+
+    /**
+     * Always returns the universal id of the identity from the user information in the tree context.
+     * Ignores the universalId in the context if already populated and returns the universalId using identityUtils.
+     *
+     * @param context The tree context.
+     * @param identityUtils An instance of the IdentityUtils.
+     * @return The universal Id.
+     */
+    public static Optional<String> getUniversalIdFromIdentityUtils(TreeContext context, IdentityUtils identityUtils) {
+        String username = context.sharedState.get(USERNAME).asString();
+        if (StringUtils.isEmpty(username)) {
+            logger.warn("Could not find the username in the tree context");
+        }
+        String realm = context.sharedState.get(REALM).asString();
+        if (StringUtils.isEmpty(realm)) {
+            logger.warn("Could not find the realm in the tree context");
+        }
+        return identityUtils.getUniversalId(username, realm, USER);
     }
 }

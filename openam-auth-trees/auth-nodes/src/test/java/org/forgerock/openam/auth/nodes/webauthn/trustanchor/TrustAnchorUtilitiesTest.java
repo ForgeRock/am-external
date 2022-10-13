@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.trustanchor;
 
@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.forgerock.secrets.keys.VerificationKey;
+import org.forgerock.secrets.keys.CertificateVerificationKey;
 import org.forgerock.util.promise.NeverThrowsException;
 import org.forgerock.util.promise.Promise;
 import org.mockito.Mock;
@@ -38,7 +38,7 @@ import org.testng.annotations.Test;
 public class TrustAnchorUtilitiesTest {
 
     @Mock
-    VerificationKey mockVerificationKey;
+    CertificateVerificationKey mockVerificationKey;
     @Mock
     X509Certificate mockCertificate;
 
@@ -53,9 +53,10 @@ public class TrustAnchorUtilitiesTest {
     @Test
     public void testTrustAnchorCreation() {
         //given
-        List<VerificationKey> keys = new ArrayList<>();
+        List<CertificateVerificationKey> keys = new ArrayList<>();
         keys.add(mockVerificationKey);
-        Promise<Stream<VerificationKey>, NeverThrowsException> secretSource = newResultPromise(keys.stream());
+        Promise<Stream<CertificateVerificationKey>, NeverThrowsException> secretSource = newResultPromise(
+                keys.stream());
 
         given(mockVerificationKey.getCertificate(X509Certificate.class)).willReturn(Optional.of(mockCertificate));
 

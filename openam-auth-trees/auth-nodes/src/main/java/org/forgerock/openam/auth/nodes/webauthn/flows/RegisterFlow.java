@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
@@ -48,7 +48,7 @@ import org.forgerock.openam.secrets.SecretsProviderFacade;
 import org.forgerock.openam.shared.secrets.Labels;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.JsonValueBuilder;
-import org.forgerock.secrets.keys.VerificationKey;
+import org.forgerock.secrets.keys.CertificateVerificationKey;
 import org.forgerock.util.promise.NeverThrowsException;
 import org.forgerock.util.promise.Promise;
 import org.slf4j.Logger;
@@ -103,12 +103,12 @@ public class RegisterFlow {
 
         AttestationPreference attestationPreference = config.attestationPreference();
         UserVerificationRequirement userVerificationRequirement = config.userVerificationRequirement();
-        Promise<Stream<VerificationKey>, NeverThrowsException> secretSource = null;
+        Promise<Stream<CertificateVerificationKey>, NeverThrowsException> secretSource = null;
 
         if (config.trustStoreAlias().isPresent()) {
             SecretsProviderFacade spf = secrets.getRealmSecrets(realm);
             secretSource = spf.getValidSecrets(purpose(String.format(Labels.WEBAUTHN_TRUST_STORE,
-                    config.trustStoreAlias().get()), VerificationKey.class));
+                    config.trustStoreAlias().get()), CertificateVerificationKey.class));
         }
 
         // 7.1.1 & 7.1.2

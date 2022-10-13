@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
@@ -65,9 +65,8 @@ public final class MultiFactorConstants {
     public static final int NUM_RECOVEY_CODES = 10;
 
 
-    /** Scan the QR Code message.*/
-    public static final String SCAN_QR_CODE_MSG = "Scan the barcode image below with the ForgeRock Authenticator app "
-            + "to register your device with your login.";
+    /** Scan the QR Code message key.*/
+    public static final String SCAN_QR_CODE_MSG_KEY = "default.scanQRCodeMessage";
 
     /**
      * DEFAULT VALUES.

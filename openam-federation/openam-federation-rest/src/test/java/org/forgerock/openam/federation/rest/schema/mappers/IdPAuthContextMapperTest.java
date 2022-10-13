@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -44,6 +44,19 @@ public class IdPAuthContextMapperTest {
         assertThat(entry.getKey()).isNull();
         assertThat(entry.getValue()).isNull();
         assertThat(entry.getLevel()).isEqualTo(3);
+        assertThat(entry.getContextReference())
+                .isEqualTo("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport");
+    }
+
+    @Test
+    public void shouldConvertEntryWithoutLevel() {
+        List<AuthContextItem> converted = mapper.map(
+                singletonList("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport|||"), ROOT);
+        assertThat(converted).hasSize(1);
+        AuthContextItem entry = converted.get(0);
+        assertThat(entry.getKey()).isNull();
+        assertThat(entry.getValue()).isNull();
+        assertThat(entry.getLevel()).isEqualTo(0);
         assertThat(entry.getContextReference())
                 .isEqualTo("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport");
     }
@@ -87,6 +100,22 @@ public class IdPAuthContextMapperTest {
         List<String> actual = mapper.inverse(mappedValue, ROOT);
         // Then
         assertThat(actual.get(1)).isEqualTo("urn:oasis:names:tc:SAML:2.0:ac:classes:Password|5||");
+    }
+
+    @Test
+    public void shouldInverseEntryWithoutLevel() {
+        // Given
+        AuthContextItem defaultItem = new AuthContextItem("urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocol",
+                SERVICE,
+                "yeah", 5);
+        this.authContextItem = new AuthContextItem("urn:oasis:names:tc:SAML:2.0:ac:classes:Password", null, "", null);
+        List<AuthContextItem> mappedValue = new ArrayList<>();
+        mappedValue.add(defaultItem);
+        mappedValue.add(this.authContextItem);
+        // When
+        List<String> actual = mapper.inverse(mappedValue, ROOT);
+        // Then
+        assertThat(actual.get(1)).isEqualTo("urn:oasis:names:tc:SAML:2.0:ac:classes:Password|0||");
     }
 
     @Test

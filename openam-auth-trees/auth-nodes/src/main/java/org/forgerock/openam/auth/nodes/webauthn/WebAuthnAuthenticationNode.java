@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -352,6 +352,9 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         jsonValue.put("_allowCredentials", getAllowCredentialsAsJson(devices));
         jsonValue.put("timeout", String.valueOf(config.timeout() * 1000));
         jsonValue.put("userVerification", config.userVerificationRequirement().getValue());
+        if (config.asScript() && config.isRecoveryCodeAllowed()) {
+            jsonValue.put("allowRecoveryCode", String.valueOf(config.isRecoveryCodeAllowed()));
+        }
 
         StringBuilder sb = new StringBuilder();
         if (configuredRpId != null) {

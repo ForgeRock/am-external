@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -372,6 +372,121 @@ public class AttributeCollectorNodeTest {
         assertThat(action.callbacks.get(0)).isInstanceOf(StringAttributeInputCallback.class);
         assertThat(((StringAttributeInputCallback) action.callbacks.get(0)).getName()).isEqualTo("description");
         assertThat(((StringAttributeInputCallback) action.callbacks.get(0)).isRequired()).isFalse();
+    }
+
+    @Test
+    public void unrequestedCallbacksAreNotAddedToSharedState() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(
+            field(OBJECT_ATTRIBUTES, object(
+                field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+            ))
+        ));
+        returnObject = false;
+        List<Callback> callbacks = new ArrayList<>();
+        callbacks.add(new StringAttributeInputCallback("givenName", "First Name", "First", true));
+
+        // Add unrequested callback
+        callbacks.add(new StringAttributeInputCallback("description", "HAX", "HAXXED", true));
+
+        // When
+        initIdmPayloads();
+        Action action = node.process(getContext(callbacks, sharedState));
+
+        // Then
+        assertThat(action.sharedState.isDefined(OBJECT_ATTRIBUTES)).isTrue();
+        assertThat(action.sharedState.get(OBJECT_ATTRIBUTES).get("givenName").asString()).isEqualTo("First");
+
+        // Unrequested callback should NOT be added to shared state
+        assertThat(action.sharedState.get(OBJECT_ATTRIBUTES).get("description").asString()).isNullOrEmpty();
+    }
+
+    @Test
+    public void missingMandatoryRequestedCallbacksResendsCallbacks() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(
+            field(OBJECT_ATTRIBUTES, object(
+                field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+            ))
+        ));
+        returnObject = false;
+        List<Callback> callbacks = new ArrayList<>();
+        callbacks.add(new StringAttributeInputCallback("givenName", "First Name", "First", true));
+        callbacks.add(new StringAttributeInputCallback("sn", "Last Name", "Last", true));
+        callbacks.add(new StringAttributeInputCallback("mail", "Email Address", "nobody@example.com", true));
+        callbacks.add(new BooleanAttributeInputCallback("preferences/updates", "Send me updates", false, true));
+        // missing requested 'Age' callback completely
+
+        // When
+        initIdmPayloads();
+        when(config.required()).thenReturn(true);
+        Action action = node.process(getContext(callbacks, sharedState));
+
+        // Then
+        assertThat(action.sendingCallbacks()).isTrue();
+    }
+
+    @Test
+    public void nullMandatoryRequestedCallbacksResendsCallbacks() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(
+            field(OBJECT_ATTRIBUTES, object(
+                field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+            ))
+        ));
+        returnObject = false;
+        List<Callback> callbacks = new ArrayList<>();
+        callbacks.add(new StringAttributeInputCallback("givenName", "First Name", "First", true));
+        callbacks.add(new StringAttributeInputCallback("sn", "Last Name", "Last", true));
+        callbacks.add(new StringAttributeInputCallback("mail", "Email Address", "nobody@example.com", true));
+        callbacks.add(new BooleanAttributeInputCallback("preferences/updates", "Send me updates", false, true));
+        // add Age callback but with null value
+        callbacks.add(new NumberAttributeInputCallback("age", "Age", null, true));
+
+        // When
+        initIdmPayloads();
+        when(config.required()).thenReturn(true);
+        Action action = node.process(getContext(callbacks, sharedState));
+
+        // Then
+        assertThat(action.sendingCallbacks()).isTrue();
+    }
+
+    @Test
+    public void nullMandatoryNonRequestedCallbacksDoesNotResendCallbacks() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(
+            field(OBJECT_ATTRIBUTES, object(
+                field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+            ))
+        ));
+        returnObject = false;
+        List<Callback> callbacks = new ArrayList<>();
+        callbacks.add(new StringAttributeInputCallback("givenName", "First Name", "First", true));
+        callbacks.add(new StringAttributeInputCallback("sn", "Last Name", "Last", true));
+        callbacks.add(new StringAttributeInputCallback("mail", "Email Address", "nobody@example.com", true));
+        callbacks.add(new BooleanAttributeInputCallback("preferences/updates", "Send me updates", false, true));
+        callbacks.add(new NumberAttributeInputCallback("age", "Age", 21.0, true));
+
+        // Add unrequested callback with null value
+        callbacks.add(new StringAttributeInputCallback("description", "HAX", null, true));
+
+        // When
+        initIdmPayloads();
+        when(config.required()).thenReturn(true);
+        Action action = node.process(getContext(callbacks, sharedState));
+
+        // Then
+        assertThat(action.sharedState.isDefined(OBJECT_ATTRIBUTES)).isTrue();
+        assertThat(action.sharedState.get(OBJECT_ATTRIBUTES).get("givenName").asString()).isEqualTo("First");
+        assertThat(action.sharedState.get(OBJECT_ATTRIBUTES).get("sn").asString()).isEqualTo("Last");
+        assertThat(action.sharedState.get(OBJECT_ATTRIBUTES).get("mail").asString()).isEqualTo("nobody@example.com");
+        assertThat(action.sharedState.get(OBJECT_ATTRIBUTES).get("preferences").get("updates")
+            .asBoolean()).isEqualTo(false);
+        assertThat(action.sharedState.get(OBJECT_ATTRIBUTES).get("age").asDouble()).isEqualTo(21.0);
+
+        // Unrequested callback should NOT be added to shared state
+        assertThat(action.sharedState.get(OBJECT_ATTRIBUTES).get("description").asString()).isNullOrEmpty();
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {

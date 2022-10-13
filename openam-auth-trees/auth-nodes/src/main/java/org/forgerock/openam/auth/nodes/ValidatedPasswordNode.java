@@ -11,12 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getSchema;
@@ -204,8 +205,12 @@ public class ValidatedPasswordNode extends SingleOutcomeNode {
      */
     private boolean checkPassword(TreeContext context, String password) throws NodeProcessException {
         logger.debug("Validating new password");
+        final JsonValue id = context.getStateFor(this).get(FIELD_CONTENT_ID);
+        final String fullIdentityResource = (id != null) && id.isNotNull()
+                ? context.identityResource + "/" + id.asString()
+                : context.identityResource;
         JsonValue result = validateInput(idmIntegrationService, realm, context.request.locales,
-                context.identityResource, mapContextToObject(context).put(config.passwordAttribute(), password),
+                fullIdentityResource, mapContextToObject(context).put(config.passwordAttribute(), password),
                 new HashSet<>(Collections.singletonList(config.passwordAttribute())));
         if (!result.isDefined("result")) {
             throw new NodeProcessException("Communication failure");

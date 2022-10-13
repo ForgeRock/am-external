@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -25,7 +25,7 @@ import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_T
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.HIDDEN_CALLCABK_ID;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.IMG_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.ISSUER_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.SCAN_QR_CODE_MSG;
+import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.SCAN_QR_CODE_MSG_KEY;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.URI_PATH_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.AUTH_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.CHALLENGE_QR_CODE_KEY;
@@ -42,9 +42,11 @@ import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.SHARED_SECR
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -62,6 +64,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.helpers.LocalizationHelper;
 import org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
@@ -115,6 +118,7 @@ public class PushRegistrationNode extends AbstractMultiFactorNode {
     private final SessionCookies sessionCookies;
     private final MessageIdFactory messageIdFactory;
     private final PushDeviceProfileHelper deviceProfileHelper;
+    private final LocalizationHelper localizationHelper;
 
     /**
      * The Push registration node constructor.
@@ -128,6 +132,7 @@ public class PushRegistrationNode extends AbstractMultiFactorNode {
      * @param deviceProfileHelper stores device profiles.
      * @param multiFactorNodeDelegate shared utilities common to second factor implementations.
      * @param identityUtils an instance of the IdentityUtils.
+     * @param localizationHelper the localization helper class.
      */
     @Inject
     public PushRegistrationNode(@Assisted Config config, @Assisted Realm realm, CoreWrapper coreWrapper,
@@ -136,7 +141,8 @@ public class PushRegistrationNode extends AbstractMultiFactorNode {
             MessageIdFactory messageIdFactory,
             PushDeviceProfileHelper deviceProfileHelper,
             MultiFactorNodeDelegate<AuthenticatorPushService> multiFactorNodeDelegate,
-            IdentityUtils identityUtils) {
+            IdentityUtils identityUtils,
+            LocalizationHelper localizationHelper) {
         super(realm, coreWrapper, multiFactorNodeDelegate, identityUtils);
         this.config = config;
         this.realm = realm;
@@ -144,6 +150,7 @@ public class PushRegistrationNode extends AbstractMultiFactorNode {
         this.sessionCookies = sessionCookies;
         this.messageIdFactory = messageIdFactory;
         this.deviceProfileHelper = deviceProfileHelper;
+        this.localizationHelper = localizationHelper;
     }
 
     @Override
@@ -402,18 +409,18 @@ public class PushRegistrationNode extends AbstractMultiFactorNode {
             throws NodeProcessException {
         Map<String, String> params = buildURIParameters(deviceProfile, messageId, challenge, context);
 
-        Callback textOutputCallback = new TextOutputCallback(TextOutputCallback.INFORMATION, SCAN_QR_CODE_MSG);
+        String message = localizationHelper.getLocalizedMessage(context, PushRegistrationNode.class,
+                config.scanQRCodeMessage(), SCAN_QR_CODE_MSG_KEY);
+        Callback textOutputCallback = new TextOutputCallback(TextOutputCallback.INFORMATION, message);
         Callback hiddenCallback = createHiddenCallback(identity, params);
         Callback qrCodeCallback = createQRCodeCallback(identity, params);
 
-        List<Callback> callbacks = ImmutableList.of(
+        return ImmutableList.of(
                 textOutputCallback,
                 qrCodeCallback,
                 hiddenCallback,
                 getPollingWaitCallback()
         );
-
-        return callbacks;
     }
 
     /**
@@ -586,6 +593,15 @@ public class PushRegistrationNode extends AbstractMultiFactorNode {
         @Attribute(order = 60)
         default boolean generateRecoveryCodes() {
             return true;
+        }
+
+        /**
+         * The message to displayed to user to scan the QR code.
+         * @return The mapping of locales to scan QR code messages.
+         */
+        @Attribute(order = 70)
+        default Map<Locale, String> scanQRCodeMessage() {
+            return Collections.emptyMap();
         }
     }
 

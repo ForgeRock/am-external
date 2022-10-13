@@ -304,7 +304,7 @@
               "localAuthUrl": {
                 "attributeKey": "localAuthURL",
                 "title": "Local Authentication Url",
-                "description": "For local authentication",
+                "description": "Use this property to specify an alternative URL to redirect to after validating the SAML2 assertion from IDP, for example, if you have created a custom user interface.",
                 "type": "string"
               },
               "intermediateUrl": {
