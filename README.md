@@ -4,7 +4,7 @@ The contents of this file are subject to the terms of the Common Development and
 You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the specific language governing permission and limitations under the License.
 When distributing Covered Software, include this CDDL Header Notice in each file and include the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL Header, with the fields enclosed by brackets [] replaced by your own identifying information: "Portions copyright [year] [name of copyright owner]".
 
-Copyright 2017-2022 ForgeRock AS.
+Copyright 2017-2023 ForgeRock AS.
 -->
 
 # am-external
@@ -74,12 +74,10 @@ The `openam-authentication` and `openam-ui` only exists in releases/14.0.0 and l
 In order to build the code in this repository you will need to configure maven to be able to authenticate to the ForgeRock maven repository. You can do that by following the advice in this ForgeRock knowledge base article;
 <https://backstage.forgerock.com/knowledge/kb/article/a74096897>
 
-It's also easier to work with the repository if you [create](https://confluence.atlassian.com/bitbucketserver045/using-bitbucket-server/controlling-access-to-code/using-ssh-keys-to-secure-git-operations/creating-ssh-keys) an SSH key and [add](https://confluence.atlassian.com/bitbucketserver045/using-bitbucket-server/controlling-access-to-code/using-ssh-keys-to-secure-git-operations/ssh-access-keys-for-system-use) it to your Bitbucket profile to allow you to clone the source code with an SSH URL.
-
 Once done you can clone the repository, checkout the branch corresponding to the version of OpenAM or AM that you're working with and run `mvn clean install`;
 
 ```
-git clone ssh://git@stash.forgerock.org:7999/openam/am-external.git
+git clone https://github.com/ForgeRock/am-external.git
 cd am-external
 git checkout releases/5.5.0
 mvn clean install
@@ -87,7 +85,7 @@ mvn clean install
 You can also just build sub directories of the repository. For example if you only want to build the authentication modules;
 
 ```
-git clone ssh://git@stash.forgerock.org:7999/openam/am-external.git
+git clone https://github.com/ForgeRock/am-external.git
 cd am-external
 git checkout releases/5.5.0
 cd openam-authentication
