@@ -11,7 +11,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2015-2019 ForgeRock AS. All Rights Reserved
+  Copyright 2015-2022 ForgeRock AS. All Rights Reserved
 }}
 <form class="form">
 
@@ -48,7 +48,7 @@
         <label class="sr-only separator" for="input-password">
             <span>{{t 'common.user.password'}}</span>
         </label>
-        <input type="password" placeholder="{{t 'common.user.password'}}" id="input-password" name="user.userPassword" class="form-control input-lg"
+        <input type="password" spellcheck="false" placeholder="{{t 'common.user.password'}}" id="input-password" name="user.userPassword" class="form-control input-lg"
             data-validation-dependents="input-confirmPassword" data-validator-event="keyup"
             data-validator="required minLength" minLength="8"/>
     </div>
@@ -57,7 +57,7 @@
         <label class="sr-only separator" for="input-confirmPassword">
             <span>{{t 'common.user.confirmPassword'}}</span>
         </label>
-        <input type="password" placeholder="{{t 'common.user.confirmPassword'}}" id="input-confirmPassword" class="form-control input-lg" data-validator="passwordConfirm" passwordField="input-password" data-validator-event="keyup" required />
+        <input type="password" spellcheck="false" placeholder="{{t 'common.user.confirmPassword'}}" id="input-confirmPassword" class="form-control input-lg" data-validator="passwordConfirm" passwordField="input-password" data-validator-event="keyup" required />
     </div>
 
     <input type="hidden" id="input-inetUserStatus" name="user.inetUserStatus" value="Active" aria-hidden="true" />

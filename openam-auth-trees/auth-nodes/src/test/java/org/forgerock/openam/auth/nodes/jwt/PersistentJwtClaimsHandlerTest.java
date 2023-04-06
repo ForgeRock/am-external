@@ -11,14 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.jwt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.Mockito.lenient;
 
 import java.util.Collections;
 import java.util.Enumeration;
@@ -28,20 +29,33 @@ import java.util.ResourceBundle;
 
 import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.MockedConstruction;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 
-import com.iplanet.sso.SSOException;
-import com.sun.identity.idm.IdRepoException;
+import com.sun.identity.idm.AMIdentity;
 
+/**
+ * Tests for {@link PersistentJwtClaimsHandler}.
+ */
+@RunWith(MockitoJUnitRunner.class)
 public class PersistentJwtClaimsHandlerTest {
-    private static final String ID_ATTRIBUTE = "id";
     private static final String OPENAM_USER_CLAIM_KEY = "openam.usr";
     private static final String RLM_CLAIM_KEY = "openam.rlm";
     private static final String USR_CLAIM_KEY = "openam.usr";
     private static final String ATY_CLAIM_KEY = "openam.aty";
     private static final String CLIENTIP_CLAIM_KEY = "openam.clientip";
+
+    private ResourceBundle resourceBundle;
+    private String orgName;
+    private String clientId;
+    private String service;
+    private String clientIp;
 
     @Mock
     private Jwt jwt;
@@ -49,22 +63,108 @@ public class PersistentJwtClaimsHandlerTest {
     @Mock
     private JwtClaimsSet jwtClaimsSet;
 
-    private PersistentJwtClaimsHandler persistentJwtClaimsHandler = new PersistentJwtClaimsHandler();
-    private ResourceBundle resourceBundle;
-    private String orgName;
-    private String clientId;
-    private String service;
-    private String clientIp;
+    @InjectMocks
+    private PersistentJwtClaimsHandler persistentJwtClaimsHandler;
 
-    @BeforeMethod
-    public void before() throws IdRepoException, SSOException {
-        initMocks(this);
+    @Before
+    public void before() {
         orgName = "orgname";
         clientId = "clientId";
         service = "service";
         clientIp = "clientIp";
+        resourceBundle = stubResourceBundle();
+    }
 
-        resourceBundle = new ResourceBundle() {
+    @Test
+    public void testCreateJwtAuthContextNullPointers() {
+        Map<String, String> authContext = persistentJwtClaimsHandler.createJwtAuthContext(null, clientId, service,
+                clientIp);
+        assertThat(authContext.get(RLM_CLAIM_KEY)).isNull();
+        authContext = persistentJwtClaimsHandler.createJwtAuthContext(orgName, null, service, clientIp);
+        assertThat(authContext.get(USR_CLAIM_KEY)).isNull();
+        authContext = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, null, clientIp);
+        assertThat(authContext.get(ATY_CLAIM_KEY)).isNull();
+        authContext = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, service, null);
+        assertThat(authContext.get(CLIENTIP_CLAIM_KEY)).isNull();
+    }
+
+    @Test
+    public void testGetClaimsSetContextNullClaims() {
+        given(jwt.getClaimsSet()).willReturn(jwtClaimsSet);
+        lenient().when(jwtClaimsSet.getClaim(any())).thenReturn(null);
+        assertThatThrownBy(() -> persistentJwtClaimsHandler.getClaimsSetContext(jwt, resourceBundle))
+                .isInstanceOf(InvalidPersistentJwtException.class)
+                .hasMessage("Claims context not found");
+    }
+
+    @Test
+    public void testValidateClaimsPositive() throws Exception {
+        Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, service,
+                clientIp);
+        persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, clientIp, true);
+    }
+
+    @Test
+    public void testValidateClaimsWrongRequestOrg() {
+        Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext("Wrong", clientId, service,
+                clientIp);
+        assertThatThrownBy(() -> persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, clientIp,
+                true))
+                .isInstanceOf(InvalidPersistentJwtException.class)
+                .hasMessage("Wrong Realm");
+    }
+
+    @Test
+    public void testValidateClaimsWrongIpNotEnforced() throws Exception {
+        Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, service,
+                clientIp);
+        persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, "WrongIp", false);
+    }
+
+    @Test
+    public void testValidateClaimsWrongIpEnforced() {
+        Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, service,
+                clientIp);
+        assertThatThrownBy(() -> persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, "WrongIp",
+                true))
+                .isInstanceOf(InvalidPersistentJwtException.class)
+                .hasMessage("Authentication failed. Client IP is different.");
+    }
+
+    @Test
+    public void getUsernameNullClaims() {
+        assertThatThrownBy(() -> persistentJwtClaimsHandler.getUsername(null, resourceBundle))
+                .isInstanceOf(InvalidPersistentJwtException.class)
+                .hasMessage("Authentication failed. Cannot read the user from null claims.");
+    }
+
+    @Test
+    public void getUsernameEmptyClaims() {
+        Map<String, String> userMap = new HashMap<>();
+        assertThatThrownBy(() -> persistentJwtClaimsHandler.getUsername(userMap, resourceBundle))
+                .isInstanceOf(InvalidPersistentJwtException.class)
+                .hasMessage("Authentication failed. Cannot read the user from empty claims.");
+    }
+
+    @Test
+    public void shouldGetUsername() throws Exception {
+        String universalId = "id=demo,ou=user,dc=openam,dc=example,dc=com";
+        String expectedUsername = "demo";
+        try (MockedConstruction<AMIdentity> ignored = Mockito.mockConstructionWithAnswer(AMIdentity.class,
+                invocation -> expectedUsername)) {
+            // Given
+            Map<String, String> userMap = Map.of(OPENAM_USER_CLAIM_KEY, universalId);
+
+            // When
+            String username = persistentJwtClaimsHandler.getUsername(userMap, resourceBundle);
+
+            // Then
+            assertThat(username).isEqualTo(expectedUsername);
+        }
+    }
+
+    private static ResourceBundle stubResourceBundle() {
+        return new ResourceBundle() {
             @Override
             protected Object handleGetObject(String key) {
                 switch (key) {
@@ -91,80 +191,4 @@ public class PersistentJwtClaimsHandlerTest {
             }
         };
     }
-
-    @Test
-    public void testCreateJwtAuthContextNullPointers() throws Exception {
-        Map<String, String> authContext = persistentJwtClaimsHandler.createJwtAuthContext(null, clientId, service,
-                clientIp);
-        assertThat(authContext.get(RLM_CLAIM_KEY)).isNull();
-        authContext = persistentJwtClaimsHandler.createJwtAuthContext(orgName, null, service, clientIp);
-        assertThat(authContext.get(USR_CLAIM_KEY)).isNull();
-        authContext = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, null, clientIp);
-        assertThat(authContext.get(ATY_CLAIM_KEY)).isNull();
-        authContext = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, service, null);
-        assertThat(authContext.get(CLIENTIP_CLAIM_KEY)).isNull();
-    }
-
-    @Test(expectedExceptions = InvalidPersistentJwtException.class)
-    public void testGetClaimsSetContextNullClaims() throws Exception {
-        given(jwt.getClaimsSet()).willReturn(jwtClaimsSet);
-        given(jwtClaimsSet.getClaim(any())).willReturn(null);
-        persistentJwtClaimsHandler.getClaimsSetContext(jwt, resourceBundle);
-    }
-
-    @Test
-    public void testValidateClaimsPositive() throws Exception {
-        Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, service,
-                clientIp);
-        persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, clientIp, true);
-    }
-
-    @Test(expectedExceptions = InvalidPersistentJwtException.class)
-    public void testValidateClaimsWrongRequestOrg() throws Exception {
-        Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext("Wrong", clientId, service,
-                clientIp);
-        persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, clientIp, true);
-    }
-
-    @Test
-    public void testValidateClaimsWrongIpNotEnforced() throws Exception {
-        Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, service,
-                clientIp);
-        persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, "WrongIp", false);
-    }
-
-    @Test(expectedExceptions = InvalidPersistentJwtException.class)
-    public void testValidateClaimsWrongIpEnforced() throws Exception {
-        Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, service,
-                clientIp);
-        persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, "WrongIp", true);
-    }
-
-    @Test
-    public void getUsernameValidUser() throws Exception {
-        Map<String, String> userMap = new HashMap<>();
-        userMap.put(OPENAM_USER_CLAIM_KEY, ID_ATTRIBUTE + "=" + "testUser,otherfield=value");
-        String userName = persistentJwtClaimsHandler.getUsername(userMap, resourceBundle);
-        assertThat(userName).isEqualTo("testUser");
-    }
-
-    @Test(expectedExceptions = InvalidPersistentJwtException.class)
-    public void getUsernameNullClaims() throws Exception {
-        persistentJwtClaimsHandler.getUsername(null, resourceBundle);
-    }
-
-    @Test(expectedExceptions = InvalidPersistentJwtException.class)
-    public void getUsernameEmptyClaims() throws Exception {
-        Map<String, String> userMap = new HashMap<>();
-        persistentJwtClaimsHandler.getUsername(userMap, resourceBundle);
-    }
-
-    @Test
-    public void getUsernameNoUser() throws Exception {
-        Map<String, String> userMap = new HashMap<>();
-        userMap.put(OPENAM_USER_CLAIM_KEY, "field=value,otherfield=value");
-        String userName = persistentJwtClaimsHandler.getUsername(userMap, resourceBundle);
-        assertThat(userName).isNull();
-    }
-
 }

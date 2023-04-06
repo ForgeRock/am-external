@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
@@ -27,7 +27,6 @@ import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
 public class AttestationStatement {
 
     private List<X509Certificate> attestnCerts;
-    private byte[] caCert;
     private byte[] sig;
     private byte[] certInfo;
     private byte[] pubArea;
@@ -50,22 +49,6 @@ public class AttestationStatement {
      */
     public void setAttestnCerts(List<X509Certificate> attestnCerts) {
         this.attestnCerts = attestnCerts;
-    }
-
-    /**
-     * The ca cert.
-     * @return the ca cert.
-     */
-    public byte[] getCaCert() {
-        return caCert;
-    }
-
-    /**
-     * the ca cert.
-     * @param caCert the cert.
-     */
-    public void setCaCert(byte[] caCert) {
-        this.caCert = caCert;
     }
 
     /**

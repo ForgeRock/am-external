@@ -24,7 +24,7 @@
  *
  * $Id: DefaultLibrarySPAccountMapper.java,v 1.12 2009/03/12 20:34:45 huacui Exp $
  *
- * Portions Copyrighted 2013-2020 ForgeRock AS.
+ * Portions Copyrighted 2013-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -46,6 +46,7 @@ import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.sun.identity.plugin.datastore.DataStoreProvider;
 import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.saml2.assertion.Assertion;
 import com.sun.identity.saml2.assertion.Attribute;
@@ -55,6 +56,7 @@ import com.sun.identity.saml2.assertion.EncryptedID;
 import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2InvalidUserException;
 import com.sun.identity.saml2.common.SAML2Utils;
 
 /**
@@ -258,6 +260,18 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
            }
            // assume it is the same as the auto fed attribute name 
            autoFedMapAttribute = autoFedAttribute;
+        }
+
+        DataStoreProvider dataStoreProvider = dsProvider;
+        for (String s : autoFedAttributeValue) {
+            try {
+                if (dataStoreProvider.isUsernameUniversalId(s)) {
+                    throw new SAML2InvalidUserException("Invalid user");
+                }
+            } catch (DataStoreProviderException e) {
+                logger.error("Invalid universalId username", e);
+                throw new SAML2InvalidUserException("Invalid user");
+            }
         }
 
         try {

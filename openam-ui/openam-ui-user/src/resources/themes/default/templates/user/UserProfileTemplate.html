@@ -11,7 +11,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2015-2019 ForgeRock AS. All Rights Reserved
+  Copyright 2015-2023 ForgeRock AS. All Rights Reserved
 }}
 <div class="container">
     <div class="page-header">
@@ -50,7 +50,7 @@
                     <div class="form-group" data-form-group>
                         <label class="col-sm-3 control-label" for="input-password">{{t "common.user.newPassword"}}</label>
                         <div class="col-sm-6">
-                            <input class="form-control" type="password" id="input-password" name="password" value="" placeholder="{{t 'common.form.passwordPlaceholder'}}"
+                            <input class="form-control" type="password" id="input-password" name="password" spellcheck="false" value="" placeholder="{{t 'common.form.passwordPlaceholder'}}"
                                 data-validator="required minLength" minLength="8" data-validation-dependents="input-confirmPassword" data-validator-event="keyup" />
                             <div role="status" class="validation-message"></div>
                             <span class="form-control-feedback"><i class='fa validation-icon'></i></span>
@@ -59,7 +59,7 @@
                     <div class="form-group" data-form-group>
                         <label class="col-sm-3 control-label" for="input-confirmPassword">{{t 'common.user.confirmNewPassword'}}</label>
                         <div class="col-sm-6">
-                            <input class="form-control" type="password" id="input-confirmPassword" value="" placeholder="{{t 'common.form.passwordPlaceholder'}}"
+                            <input class="form-control" type="password" id="input-confirmPassword" spellcheck="false" value="" placeholder="{{t 'common.form.passwordPlaceholder'}}"
                                 data-validator="passwordConfirm" data-validator-event="keyup" passwordField="input-password" />
                             <div role="status" class="validation-message"></div>
                             <span class="form-control-feedback"><i class='fa validation-icon'></i></span>

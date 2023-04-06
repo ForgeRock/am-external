@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.profile;
 
@@ -26,6 +26,13 @@ import static org.mockito.Mockito.mock;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.sun.identity.saml2.assertion.SubjectConfirmationData;
+import com.sun.identity.saml2.assertion.impl.SubjectConfirmationDataImpl;
+import com.sun.identity.saml2.assertion.impl.SubjectConfirmationImpl;
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.protocol.impl.ResponseImpl;
+import com.sun.identity.saml2.protocol.impl.StatusCodeImpl;
+import com.sun.identity.saml2.protocol.impl.StatusImpl;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -33,6 +40,8 @@ import org.testng.annotations.Test;
 
 import com.sun.identity.cot.CircleOfTrustDescriptor;
 import com.sun.identity.cot.CircleOfTrustManager;
+
+import java.util.Date;
 
 public class IDPSSOUtilTest {
 
@@ -76,6 +85,55 @@ public class IDPSSOUtilTest {
                         "https://am.example.com:443/UI/Login?realm=testIdpWithRootContext"}
         };
     }
+    @DataProvider
+    public Object[][] xmlMappingForDestinationParamTestingAmpEscaping() {
+        return new Object[][] {
+                { true, true, "<samlp:Response xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\" " +
+                        "Destination=\"https://example.com?param=3420GJKDL&amp;sec=394fJDl90\" " +
+                        "ID=\"testID\" InResponseTo=\"testInResponseTo\" " +
+                        "IssueInstant=\"2001-09-09T01:46:40Z\" Version=\"2.0\">" +
+                        "<samlp:Status>" +
+                        "<samlp:StatusCode Value=\"testCode\"/></samlp:Status>" +
+                        "</samlp:Response>" },
+                { true, false, "<samlp:Response " +
+                        "Destination=\"https://example.com?param=3420GJKDL&amp;sec=394fJDl90\" " +
+                        "ID=\"testID\" InResponseTo=\"testInResponseTo\" " +
+                        "IssueInstant=\"2001-09-09T01:46:40Z\" Version=\"2.0\">" +
+                        "<samlp:Status>" +
+                        "<samlp:StatusCode Value=\"testCode\"/></samlp:Status>" +
+                        "</samlp:Response>" },
+                { false, false, "<Response " +
+                        "Destination=\"https://example.com?param=3420GJKDL&amp;sec=394fJDl90\"" +
+                        "ID=\"testID\" InResponseTo=\"testInResponseTo\" " +
+                        "IssueInstant=\"2001-09-09T01:46:40Z\" Version=\"2.0\">" +
+                        "<Status>" +
+                        "<StatusCode Value=\"testCode\"/></Status>" +
+                        "</Response>" }
+        };
+    }
+    @DataProvider
+    public Object[][] xmlMappingForSubjectConfirmationTestingAmpEscaping() {
+        return new Object[][] {
+                { true, true, "<saml:SubjectConfirmation xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\" " +
+                        "Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\">" +
+                        "<saml:SubjectConfirmationData " +
+                        "Recipient=\"https://testurl.com?param=asd1231&amp;another=232ff2\" " +
+                        "/>" +
+                        "</saml:SubjectConfirmation>" },
+                { true, false, "<saml:SubjectConfirmation Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\">" +
+                        "<saml:SubjectConfirmationData " +
+                        "Recipient=\"https://testurl.com?param=asd1231&amp;another=232ff2\" " +
+                        "/>" +
+                        "</saml:SubjectConfirmation>" },
+                { false, false, "<SubjectConfirmation Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\">" +
+                        "<SubjectConfirmationData " +
+                        "Recipient=\"https://testurl.com?param=asd1231&amp;another=232ff2\" " +
+                        "/>" +
+                        "</SubjectConfirmation>\n" }
+        };
+    }
+
+
 
     @Test(dataProvider = "mappingData")
     public void testGetAuthenticationServiceURL(String realm, String extendedMetadataPath, String contextPath,
@@ -86,5 +144,44 @@ public class IDPSSOUtilTest {
         configureWsFed(realm, "/wsfedmetadata/idp.xml", "/wsfedmetadata/" + extendedMetadataPath);
 
         assertThat(getAuthenticationServiceURL(realm, "openam-wsfed-idp", request)).isEqualTo(expectedLoginUrl);
+    }
+    @Test(dataProvider = "xmlMappingForDestinationParamTestingAmpEscaping")
+    public void testToXmlStringConversionOfAmpersandInDestinationField(
+            boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
+        // Given
+        ResponseImpl response = new ResponseImpl();
+        response.setID("testID");
+        response.setInResponseTo("testInResponseTo");
+        response.setVersion("2.0");
+        response.setIssueInstant(new Date(1000000000000L));
+        response.setDestination("https://example.com?param=3420GJKDL&sec=394fJDl90");
+        StatusImpl status = new StatusImpl();
+        StatusCodeImpl statusCode = new StatusCodeImpl();
+        statusCode.setValue("testCode");
+        status.setStatusCode(statusCode);
+        response.setStatus(status);
+
+        // When
+        String xml = response.toXMLString(includeNS, declareNS);
+
+        // Then
+        assertThat(xml).isEqualToIgnoringWhitespace(expectedXml);
+    }
+
+
+    @Test(dataProvider = "xmlMappingForSubjectConfirmationTestingAmpEscaping")
+    public void testToXmlStringWithEscapedChars(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
+        // Given
+        SubjectConfirmationImpl subjectConfirmation = new SubjectConfirmationImpl();
+        subjectConfirmation.setMethod(SAML2Constants.SUBJECT_CONFIRMATION_METHOD_BEARER);
+        SubjectConfirmationData subjectConfirmationData = new SubjectConfirmationDataImpl();
+        subjectConfirmationData.setRecipient("https://testurl.com?param=asd1231&another=232ff2");
+        subjectConfirmation.setSubjectConfirmationData(subjectConfirmationData);
+
+        // When
+        String xml = subjectConfirmation.toXMLString(includeNS, declareNS);
+
+        // Then
+        assertThat(xml).isEqualToIgnoringWhitespace(expectedXml);
     }
 }

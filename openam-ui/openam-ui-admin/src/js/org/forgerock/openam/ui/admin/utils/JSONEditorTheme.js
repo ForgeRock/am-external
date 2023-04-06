@@ -89,6 +89,9 @@ JSONEditorTheme.getTheme = function (gridColWidth1, gridColWidth2) {
             if (type !== "checkbox") {
                 input.className += "form-control";
             }
+            if (type === "password") {
+                input.setAttribute("spellcheck", "false");
+            }
             if (placeholder) {
                 input.setAttribute("placeholder", placeholder);
             }

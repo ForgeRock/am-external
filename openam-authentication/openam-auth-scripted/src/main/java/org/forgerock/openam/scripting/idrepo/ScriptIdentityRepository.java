@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2020 ForgeRock AS.
+ * Copyright 2014-2022 ForgeRock AS.
  */
 package org.forgerock.openam.scripting.idrepo;
 
@@ -144,7 +144,7 @@ public class ScriptIdentityRepository {
         }
         
         try {
-            IdSearchResults searchResults = identityRepository.searchIdentities(IdType.USER, userName, idsc);
+            IdSearchResults searchResults = identityRepository.searchIdentitiesByUsername(IdType.USER, userName, idsc);
             if (searchResults != null) {
                 results = searchResults.getSearchResults();
             }
@@ -154,7 +154,7 @@ public class ScriptIdentityRepository {
                 final Map<String, Set<String>> searchAVP = CollectionUtils.toAvPairMap(userSearchAttributes, userName);
                 idsc.setSearchModifiers(IdSearchOpModifier.OR, searchAVP);
                 // workaround as data store always adds 'user-naming-attribute' to searchfilter
-                searchResults = identityRepository.searchIdentities(IdType.USER, "*", idsc);
+                searchResults = identityRepository.searchIdentitiesByUsername(IdType.USER, "*", idsc);
                 if (searchResults != null) {
                     results = searchResults.getSearchResults();
                 }

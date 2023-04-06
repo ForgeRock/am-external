@@ -11,11 +11,9 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.encoding;
-
-import static org.forgerock.openam.auth.nodes.webauthn.flows.CertificateFactory.createCerts;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -141,24 +139,8 @@ public class AttestationDecoder {
 
         for (DataItem attSmtKey : attSmtMap.getKeys()) {
             if (((UnicodeString) attSmtKey).getString().equals("x5c")) {
-                //cut the last cert at the CA if it exists (all formats except FIDOU2F)
-                List<DataItem> items = ((Array) attSmtMap.get(attSmtKey)).getDataItems();
-                if (items.size() > 1) {
-                    attestationStatement.setCaCert(((ByteString) items.remove(items.size() - 1)).getBytes());
-                }
-
-                //take the rest
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                for (DataItem item : items) {
-                    byte[] bytes = ((ByteString) item).getBytes();
-                    baos.write(bytes, 0, bytes.length);
-                }
-                byte[] certsByte = baos.toByteArray();
-
-                List<X509Certificate> certs = createCerts(certsByte);
-                if (certs != null) {
-                    attestationStatement.setAttestnCerts(certs);
-                }
+                List<DataItem> x5cItems = ((Array) attSmtMap.get(attSmtKey)).getDataItems();
+                attestationStatement.setAttestnCerts(decodeAttestnCerts(x5cItems));
             }
             if (((UnicodeString) attSmtKey).getString().equals("sig")) {
                 attestationStatement.setSig(((ByteString) attSmtMap.get(attSmtKey)).getBytes());
@@ -188,6 +170,39 @@ public class AttestationDecoder {
             }
         }
         return attestationStatement;
+    }
+
+    private List<X509Certificate> decodeAttestnCerts(List<DataItem> x5cItems) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        for (DataItem item : x5cItems) {
+            byte[] bytes = ((ByteString) item).getBytes();
+            baos.write(bytes, 0, bytes.length);
+        }
+        byte[] certsByte = baos.toByteArray();
+
+        List<X509Certificate> certs = createCerts(certsByte);
+
+        // cut the chain at the root CA cert if it exists (all formats except FIDOU2F)
+        if (certs != null && certs.size() > 1) {
+            X509Certificate lastCert = certs.get(certs.size() - 1);
+            if (lastCert.getIssuerX500Principal().equals(lastCert.getSubjectX500Principal())) {
+                // self-signed, so it's a root CA and can be ignored
+                certs.remove(certs.size() - 1);
+            }
+        }
+
+        return certs;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<X509Certificate> createCerts(byte[] certData) {
+        try {
+            java.security.cert.CertificateFactory cf = java.security.cert.CertificateFactory.getInstance("X509");
+            return (List<X509Certificate>) cf.generateCertificates(new ByteArrayInputStream(certData));
+        } catch (Exception e) {
+            logger.warn("failed to convert certificate data into a certificate objects", e);
+            return null;
+        }
     }
 
     private AttestationVerifier getAttestationVerifier(String fmt, AttestationPreference attestationPreference,

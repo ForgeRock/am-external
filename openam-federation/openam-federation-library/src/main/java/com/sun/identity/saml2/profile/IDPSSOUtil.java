@@ -24,7 +24,7 @@
  *
  * $Id: IDPSSOUtil.java,v 1.56 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2021 ForgeRock AS.
+ * Portions Copyrighted 2010-2023 ForgeRock AS.
  * Portions Copyrighted 2013 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.profile;
@@ -850,7 +850,7 @@ public class IDPSSOUtil {
         Issuer issuer = AssertionFactory.getInstance().createIssuer();
         issuer.setValue(idpEntityID);
         res.setIssuer(issuer);
-        res.setDestination(XMLUtils.escapeSpecialCharacters(acsURL));
+        res.setDestination(acsURL);
         return res;
     }
 
@@ -1629,7 +1629,7 @@ public class IDPSSOUtil {
         SubjectConfirmationData scd = AssertionFactory.getInstance().
                 createSubjectConfirmationData();
 
-        scd.setRecipient(XMLUtils.escapeSpecialCharacters(acsURL));
+        scd.setRecipient(acsURL);
 
         if (inResponseTo != null) {
             scd.setInResponseTo(inResponseTo);
@@ -3185,6 +3185,7 @@ public class IDPSSOUtil {
      * @param sessionIndex The session index to remove.
      */
     public static void removeIdPSessionFromCachesAndFailoverStore(String sessionIndex) {
+        logger.debug("Removing IDPSession from SAML2 token repository, sessionIndex: {}", sessionIndex);
         IDPCache.idpSessionsByIndices.remove(sessionIndex);
         if ((agent != null) && agent.isRunning() && (saml2Svc != null)){
             saml2Svc.setIdpSessionCount((long)IDPCache.idpSessionsByIndices.size());

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -19,7 +19,6 @@ package org.forgerock.openam.auth.nodes;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.EMAIL_ADDRESS;
-import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.oauth.AbstractSocialAuthLoginNode.SocialAuthOutcome.NO_ACCOUNT;
 import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.DEFAULT_OAUTH2_SCOPE_DELIMITER;
@@ -30,6 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.inject.Inject;
 
@@ -249,14 +249,15 @@ public class SocialGoogleNode extends AbstractSocialAuthLoginNode {
      * @param profileNormalizer User profile normaliser
      * @param identityUtils The identity utils implementation.
      * @param realm The relevant realm.
+     * @param nodeId The UUID of the current authentication tree node.
      * @throws NodeProcessException if there is a problem during construction.
      */
     @Inject
     public SocialGoogleNode(@Named("CloseableHttpClientHandler") Handler handler, @Assisted GoogleOAuth2Config config,
             @Assisted Realm realm, SocialOAuth2Helper authModuleHelper, ProfileNormalizer profileNormalizer,
-            IdentityUtils identityUtils) throws NodeProcessException {
+            IdentityUtils identityUtils, @Assisted UUID nodeId) throws NodeProcessException {
         super(config, authModuleHelper, authModuleHelper.newOAuthClient(realm, getOAuthClientConfiguration(config),
-                handler), profileNormalizer, identityUtils);
+                handler), profileNormalizer, identityUtils, nodeId);
     }
 
     private static OAuthClientConfiguration getOAuthClientConfiguration(GoogleOAuth2Config config) {
@@ -276,9 +277,7 @@ public class SocialGoogleNode extends AbstractSocialAuthLoginNode {
 
     @Override
     public InputState[] getInputs() {
-        return new InputState[] {
-            new InputState(REALM)
-        };
+        return super.getInputs();
     }
 
     @Override

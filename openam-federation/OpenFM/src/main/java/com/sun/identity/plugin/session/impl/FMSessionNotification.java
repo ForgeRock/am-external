@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2021 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 package com.sun.identity.plugin.session.impl;
 
@@ -31,6 +31,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.forgerock.am.cts.continuous.watching.ContinuousListener;
+import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.Reject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,6 +104,10 @@ public class FMSessionNotification {
             String sessionIndex = sessionProperties.get(SAML2Constants.IDP_SESSION_INDEX);
             if (sessionIndex != null) {
                 updateSessionIndex(sessionId, sessionIndex);
+            }
+            String doNotRemoveSessionIndex = sessionProperties.get(SAML2Constants.DO_NOT_REMOVE_SAML2_IDPSESSION);
+            if (StringUtils.isNotBlank(doNotRemoveSessionIndex)) {
+                setDoNotRemoveSessionIndex(sessionId, doNotRemoveSessionIndex);
             }
         }
 
@@ -194,9 +199,34 @@ public class FMSessionNotification {
         if (reg != null) {
             try {
                 reg.updateSessionIndex(sessionIndex);
-                debug.debug("{} Updated sessionIndex to {}", classMethod, sessionIndex);
+                debug.debug("{} Updated sessionIndex to {} for sessionId {}", classMethod, sessionIndex, sessionId);
             } catch (SSOException ex) {
                 debug.debug("{} Failed to set sessionIndex to {}", classMethod, sessionIndex);
+            }
+        } else {
+            debug.debug("{} Failed to update store for sessionId", classMethod);
+        }
+    }
+
+    /**
+     * Update the cached session's' doNotRemoveSessionIndex property to a specific value.
+     * @param sessionId The sessionId to update.
+     * @param value The value to set/update for the property.
+     */
+    public void setDoNotRemoveSessionIndex(String sessionId, String value) {
+        Reject.ifNull(sessionId);
+
+        final String classMethod = "FMSessionNotification.setDoNotRemoveSessionIndex:";
+
+        Registration reg = store.get(sessionId);
+        if (reg != null) {
+            try {
+                reg.setDoNotRemoveSessionIndex(value);
+                debug.debug("{} Updated session {}, {} to {}", classMethod, sessionId,
+                        SAML2Constants.DO_NOT_REMOVE_SAML2_IDPSESSION, value);
+            } catch (SSOException ex) {
+                debug.debug("{} Failed to set session {} {} to {}", classMethod, sessionId,
+                        SAML2Constants.DO_NOT_REMOVE_SAML2_IDPSESSION, value);
             }
         } else {
             debug.debug("{} Failed to update store for sessionId", classMethod);
@@ -272,6 +302,17 @@ public class FMSessionNotification {
          */
         private void updateSessionIndex(String sessionIndex) throws SSOException {
             session.setProperty(SAML2Constants.IDP_SESSION_INDEX, sessionIndex);
+        }
+
+        /**
+         * Sets the flag that indicates to any invalidation logic performed on the session that the associated
+         * sessionIndex value should not be removed (IDPSession).
+         *
+         * @param value String value of true, sets the property to false otherwise
+         * @throws SSOException
+         */
+        private void setDoNotRemoveSessionIndex(String value) throws SSOException {
+            session.setProperty(SAML2Constants.DO_NOT_REMOVE_SAML2_IDPSESSION, Boolean.valueOf(value).toString());
         }
 
         /**

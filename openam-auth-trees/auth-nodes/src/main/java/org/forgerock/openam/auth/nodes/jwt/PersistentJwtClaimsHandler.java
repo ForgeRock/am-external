@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.jwt;
@@ -22,11 +22,19 @@ import java.util.ResourceBundle;
 
 import org.forgerock.caf.authentication.framework.AuthenticationFramework;
 import org.forgerock.json.jose.jwt.Jwt;
+import org.forgerock.opendj.ldap.Dn;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.IdRepoException;
 
 /**
  * Handles several operations relating to Jwt claims.
  */
 public class PersistentJwtClaimsHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(PersistentJwtClaimsHandler.class);
 
     private static final String RLM_CLAIM_KEY = "openam.rlm";
     private static final String USR_CLAIM_KEY = "openam.usr";
@@ -110,12 +118,24 @@ public class PersistentJwtClaimsHandler {
         if (username == null) {
             throw new InvalidPersistentJwtException(bundle.getString("auth.failed.no.user.empty.claims"));
         }
-        Map<String, String> userAttributes = new HashMap<>();
-        for (String entry : username.split(",")) {
-            String[] pair = entry.split("=");
-            userAttributes.put(pair[0], pair[1]);
+        return parseUniversalIdToUsername(username);
+    }
+
+    /**
+     * Parses the universalId.
+     *
+     * @param username the universal id
+     * @return the username.
+     * @throws InvalidPersistentJwtException if it cannot get the username.
+     */
+    private String parseUniversalIdToUsername(String username) throws InvalidPersistentJwtException {
+        try {
+            return new AMIdentity(Dn.valueOf(username), null).getName();
+        } catch (IdRepoException e) {
+            logger.warn("Failed to parse universal id '{}' from claim '{}'", username, OPENAM_USER_CLAIM_KEY, e);
+            throw new InvalidPersistentJwtException("Failed to parse universal Id from claim: "
+                    + OPENAM_USER_CLAIM_KEY, e);
         }
-        return userAttributes.get(ID_ATTRIBUTE);
     }
 
     private void validateRequestOrg(String jwtOrg, String requestOrg, ResourceBundle bundle)

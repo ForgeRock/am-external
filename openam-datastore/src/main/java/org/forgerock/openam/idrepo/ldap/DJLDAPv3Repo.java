@@ -74,6 +74,8 @@ import static org.forgerock.openam.ldap.LDAPConstants.LDAP_ROLE_SEARCH_SCOPE;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_SEARCH_SCOPE;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_SERVER_HEARTBEAT_INTERVAL;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_SERVER_HEARTBEAT_TIME_UNIT;
+import static org.forgerock.openam.ldap.LDAPConstants.LDAP_SERVER_KEEPALIVE_SEARCH_BASE;
+import static org.forgerock.openam.ldap.LDAPConstants.LDAP_SERVER_KEEPALIVE_SEARCH_FILTER;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_SERVER_LIST;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_SERVER_PASSWORD;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_SERVER_ROOT_SUFFIX;
@@ -98,6 +100,8 @@ import static org.forgerock.openam.ldap.LDAPConstants.STATUS_ACTIVE;
 import static org.forgerock.openam.ldap.LDAPConstants.STATUS_INACTIVE;
 import static org.forgerock.openam.ldap.LDAPConstants.UNIQUE_MEMBER_ATTR;
 import static org.forgerock.openam.ldap.LDAPKeepAlive.DEFAULT_KEEP_ALIVE_INTERVAL;
+import static org.forgerock.openam.ldap.LDAPKeepAlive.DEFAULT_KEEP_ALIVE_SEARCH_BASE;
+import static org.forgerock.openam.ldap.LDAPKeepAlive.DEFAULT_KEEP_ALIVE_SEARCH_FILTER;
 import static org.forgerock.openam.ldap.LDAPKeepAlive.DEFAULT_KEEP_ALIVE_TIMEOUT;
 import static org.forgerock.openam.ldap.LDAPKeepAlive.configureKeepAliveAndAvailabilityCheck;
 import static org.forgerock.openam.ldap.LDAPKeepAlive.configureRequestTimeout;
@@ -105,7 +109,8 @@ import static org.forgerock.openam.ldap.LDAPUtils.AFFINITY_ENABLED;
 import static org.forgerock.openam.ldap.LDAPUtils.CACHED_POOL_OPTIONS;
 import static org.forgerock.openam.ldap.LDAPUtils.partiallyEscapeAssertionValue;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
-import static org.forgerock.opendj.ldap.LdapClients.LDAP_CLIENT_REQUEST_TIMEOUT;
+import static org.forgerock.opendj.ldap.LdapClients.*;
+import static org.forgerock.opendj.ldap.messages.Requests.newSearchRequest;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -241,6 +246,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
     private Map<String, String> creationAttributeMapping;
     private int heartBeatInterval = 10;
     private String heartBeatTimeUnit;
+    private String keepAliveSearchBase;
+    private String keepAliveSearchFilter;
     private String rootSuffix;
     private String userStatusAttr;
     private boolean alwaysActive;
@@ -352,6 +359,11 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
 
         heartBeatTimeUnit = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_HEARTBEAT_TIME_UNIT, "SECONDS");
 
+        keepAliveSearchBase = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_KEEPALIVE_SEARCH_BASE,
+                DEFAULT_KEEP_ALIVE_SEARCH_BASE);
+        keepAliveSearchFilter = CollectionHelper.getMapAttr(configParams, LDAP_SERVER_KEEPALIVE_SEARCH_FILTER,
+                DEFAULT_KEEP_ALIVE_SEARCH_FILTER);
+
         String connectionMode = CollectionHelper.getMapAttr(configParams, LDAP_CONNECTION_MODE);
         useStartTLS = LDAP_CONNECTION_MODE_STARTTLS.equalsIgnoreCase(connectionMode);
         isSecure = LDAP_CONNECTION_MODE_LDAPS.equalsIgnoreCase(connectionMode);
@@ -461,7 +473,8 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             .set(AFFINITY_ENABLED, affinityEnabled);
 
         ldapOptions = configureRequestTimeout(ldapOptions, defaultTimeLimit, SECONDS);
-        ldapOptions = configureKeepAliveAndAvailabilityCheck(ldapOptions, heartBeatInterval, heartBeatTimeout, SECONDS);
+        ldapOptions = configureKeepAliveAndAvailabilityCheck(ldapOptions, heartBeatInterval, heartBeatTimeout, SECONDS,
+                keepAliveSearchBase.trim(), keepAliveSearchFilter);
 
         DataStoreConfig config = DataStoreConfig.builder(null)
                 .withLDAPURLs(LDAPUtils.getLdapUrls(ldapServers, isSecure))
@@ -494,6 +507,11 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
 
         Options ldapOptions = Options.defaultOptions()
                 .set(LDAP_CLIENT_REQUEST_TIMEOUT, Duration.duration(defaultTimeLimit, SECONDS));
+
+        final int heartBeatTimeout =
+                SystemProperties.getAsInt(Constants.LDAP_HEARTBEAT_TIMEOUT, DEFAULT_KEEP_ALIVE_TIMEOUT);
+        ldapOptions = configureKeepAliveAndAvailabilityCheck(ldapOptions, heartBeatInterval, heartBeatTimeout, SECONDS,
+                keepAliveSearchBase.trim(), keepAliveSearchFilter);
 
         DataStoreConfig config = DataStoreConfig.builder(null)
                 .withLDAPURLs(LDAPUtils.getLdapUrls(ldapServers, isSecure))
@@ -561,7 +579,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 DEBUG.debug("An error occurred while trying to authenticate a user: " + ere);
             }
             if (resultCode.equals(ResultCode.INVALID_CREDENTIALS)) {
-                throw new InvalidPasswordException(AM_AUTH, "InvalidUP", null, userName, null);
+                throw new InvalidPasswordException(AM_AUTH, "InvalidUP", null, userName, false, null);
             } else if (resultCode.equals(ResultCode.UNWILLING_TO_PERFORM)
                     || resultCode.equals(ResultCode.CONSTRAINT_VIOLATION)) {
                 throw new AuthLoginException(AM_AUTH, "FAuth", null);
@@ -1608,7 +1626,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         List<Filter> filters = new ArrayList<>();
 
         if (crestQuery.hasQueryId()) {
-            filters.add(Filter.valueOf(searchAttr + "=" + partiallyEscapeAssertionValue(crestQuery.getQueryId())));
+            filters.add(Filter.valueOf(searchAttr + "=" + partiallyEscapeAssertionValue(crestQuery.getQueryId(), crestQuery.isAllowWildCards())));
         } else if (!crestQuery.getQueryFilter().equals(QueryFilter.alwaysTrue())) {
             filters.add(crestQuery.getQueryFilter().accept(new LdapFromJsonQueryFilterVisitor(getSearchAttribute(type)),
                                                            null));
@@ -1617,7 +1635,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         filters.add(getObjectClassFilter(type));
 
         Filter filter = Filter.and(filters);
-        Filter tempFilter = constructFilter(filterOp, avPairs);
+        Filter tempFilter = constructFilter(filterOp, avPairs, crestQuery.isAllowWildCardsForAvPairs());
         if (tempFilter != null) {
             filter = Filter.and(tempFilter, filter);
         }
@@ -2606,7 +2624,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
             synchronized (PERSISTENT_SEARCH_MAP) {
                 DJLDAPv3PersistentSearch pSearch = PERSISTENT_SEARCH_MAP.get(pSearchId);
                 if (pSearch == null) {
-                    DEBUG.error("PSearch is already removed, unable to unregister");
+                    DEBUG.debug("PSearch is already removed, unable to unregister");
                 } else {
                     pSearch.removeMovedOrRenamedListener(this);
                     pSearch.removeListener(idRepoListener);
@@ -2946,14 +2964,14 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         return dn;
     }
 
-    protected Filter constructFilter(int operation, Map<String, Set<String>> attributes) {
+    protected Filter constructFilter(int operation, Map<String, Set<String>> attributes, boolean allowWildcards) {
         if (attributes == null || attributes.isEmpty()) {
             return null;
         }
         Set<Filter> filters = new LinkedHashSet<>(attributes.size());
         for (Map.Entry<String, Set<String>> entry : attributes.entrySet()) {
             for (String value : entry.getValue()) {
-                filters.add(Filter.valueOf(entry.getKey() + "=" + partiallyEscapeAssertionValue(value)));
+                filters.add(Filter.valueOf(entry.getKey() + "=" + partiallyEscapeAssertionValue(value, allowWildcards)));
             }
         }
         Filter filter;

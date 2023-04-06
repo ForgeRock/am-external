@@ -29,10 +29,12 @@ import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_G
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_ISSUER;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_CODE_DEVICE_NAME;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_CODE_KEY;
+import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.SCAN_QR_CODE_MSG_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_CHECKSUM;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_MIN_SHARED_SECRET_LENGTH;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_TOTP_INTERVAL;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_DEVICE_PROFILE_KEY;
+import static org.forgerock.openam.auth.nodes.oath.OathRegistrationNode.NEXT_LABEL;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -292,7 +294,10 @@ public class OathRegistrationNodeTest {
         given(config.scanQRCodeMessage()).willReturn(MAP_SCAN_MESSAGE);
 
         localizationHelper = mock(LocalizationHelper.class);
-        given(localizationHelper.getLocalizedMessage(any(), any(), any(), anyString())).willReturn(MESSAGE);
+        given(localizationHelper.getLocalizedMessage(any(), any(), any(), eq(SCAN_QR_CODE_MSG_KEY)))
+                .willReturn(MESSAGE);
+        given(localizationHelper.getLocalizedMessageWithDefault(any(), any(), any(), anyString(), eq(NEXT_LABEL)))
+                .willReturn(NEXT_LABEL);
 
         node = spy(
                 new OathRegistrationNode(

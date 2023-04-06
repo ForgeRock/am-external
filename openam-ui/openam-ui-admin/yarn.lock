@@ -5551,17 +5551,17 @@ moment-duration-format@2.3.2:
   resolved "https://maven.forgerock.org:443/artifactory/api/npm/npm-virtual/moment-duration-format/-/moment-duration-format-2.3.2.tgz#5fa2b19b941b8d277122ff3f87a12895ec0d6212"
   integrity sha1-X6Kxm5QbjSdxIv8/h6EolewNYhI=
 
-moment-timezone@0.4.1, moment-timezone@^0.4.0:
-  version "0.4.1"
-  resolved "https://maven.forgerock.org:443/artifactory/api/npm/npm-virtual/moment-timezone/-/moment-timezone-0.4.1.tgz#81f598c3ad5e22cdad796b67ecd8d88d0f5baa06"
-  integrity sha1-gfWYw61eIs2teWtn7NjYjQ9bqgY=
+moment-timezone@0.5.37, moment-timezone@^0.4.0:
+  version "0.5.37"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/moment-timezone/-/moment-timezone-0.5.37.tgz#adf97f719c4e458fdb12e2b4e87b8bec9f4eef1e"
+  integrity sha512-uEDzDNFhfaywRl+vwXxffjjq1q0Vzr+fcQpQ1bU0kbzorfS7zVtZnCnGc8mhWmF39d4g4YriF6kwA75mJKE/Zg==
   dependencies:
-    moment ">= 2.6.0"
+    moment ">= 2.9.0"
 
-moment@2.29.3, "moment@>= 2.6.0", moment@^2.10:
-  version "2.29.3"
-  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/moment/-/moment-2.29.3.tgz#edd47411c322413999f7a5940d526de183c031f3"
-  integrity sha512-c6YRvhEo//6T2Jz/vVtYzqBzwvPT95JBQ+smCytzf7c50oMZRsR/a4w88aD34I+/QVSfnoAnSBFPJHItlOMJVw==
+moment@2.29.4, "moment@>= 2.9.0", moment@^2.10:
+  version "2.29.4"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/moment/-/moment-2.29.4.tgz#3dbe052889fe7c1b2ed966fcb3a77328964ef108"
+  integrity sha512-5LC9SOxjSc2HF6vO2CyuTDNivEdoz2IvyJJGj6X8DJ0eFyfszE0QiEd+iXmBvUP3WHxSjFH/vIsA0EN00cgr8w==
 
 move-concurrently@^1.0.1:
   version "1.0.1"

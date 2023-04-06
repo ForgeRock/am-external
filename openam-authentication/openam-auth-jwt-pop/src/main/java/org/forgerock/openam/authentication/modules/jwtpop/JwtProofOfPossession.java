@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.jwtpop;
@@ -283,7 +283,7 @@ public class JwtProofOfPossession extends AMLoginModule {
             searchControl.setMaxResults(1);
             searchControl.setAllReturnAttributes(false);
             try {
-                final IdSearchResults result = identityRepository.searchIdentities(IdType.USER, subject, searchControl);
+                final IdSearchResults result = identityRepository.searchIdentitiesByUsername(IdType.USER, subject, searchControl);
                 if (result.getErrorCode() != IdSearchResults.SUCCESS) {
                     DEBUG.debug("JwtProofOfPossession.getSubjectJwkSet(): error result: {}", result.getErrorCode());
                     return new JWKSet();

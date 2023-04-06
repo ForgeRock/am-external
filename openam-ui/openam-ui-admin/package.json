@@ -37,9 +37,9 @@
         "jquery-i18next": "1.2.1",
         "jquery-sortable": "0.9.13",
         "lodash": "4.17.21",
-        "moment": "2.29.3",
+        "moment": "2.29.4",
         "moment-duration-format": "2.3.2",
-        "moment-timezone": "0.4.1",
+        "moment-timezone": "0.5.37",
         "ms": "2.1.2",
         "prop-types": "15.7.2",
         "react": "16.9.0",
@@ -134,8 +134,9 @@
         "selectize/sifter/async": "3.2.3",
         "selectize/sifter/optimist/minimist": "1.2.6",
         "webpack-dev-server/portfinder/async": "3.2.3",
-        "**/moment": "2.29.3",
+        "**/moment": "2.29.4",
         "**/**/underscore": "1.12.1",
-        "**/**/path-parse": "1.0.7"
+        "**/**/path-parse": "1.0.7",
+        "eonasdan-bootstrap-datetimepicker/moment-timezone": "0.5.37"
     }
 }

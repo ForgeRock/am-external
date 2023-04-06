@@ -24,7 +24,7 @@
  *
  * $Id: JDBC.java,v 1.5 2008/08/28 21:56:45 madan_ranganath Exp $
  *
- * Portions Copyrighted 2011-2019 ForgeRock AS.
+ * Portions Copyrighted 2011-2022 ForgeRock AS.
  * Portions Copyrighted 2012 Open Source Solution Technology Corporation
  */
 
@@ -435,7 +435,7 @@ public class JDBC extends AMLoginModule {
             debug.debug("password not match. Auth failed.");
             setFailureID(userName);
             throw new InvalidPasswordException(amAuthJDBC, "loginFailed",
-                null, userName, null);
+                null, userName, isReturningPrincipalAsDn(), null);
         }
     }
 

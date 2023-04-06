@@ -1,0 +1,64 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 0 (0x0)
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=UK, CN=root, ST=root, L=root, O=root, OU=root, CN=root/emailAddress=root
+        Validity
+            Not Before: Oct  7 15:53:57 2022 GMT
+            Not After : Sep 13 15:53:57 2122 GMT
+        Subject: C=UK, ST=intermediate, O=intermediate, OU=intermediate, CN=intermediate/emailAddress=intermediate
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (1024 bit)
+                Modulus:
+                    00:b6:ae:39:d9:46:ca:c5:d3:e8:61:c2:36:a4:1b:
+                    a0:27:1f:49:c2:a0:68:0e:91:43:02:de:bd:c4:e7:
+                    6f:d9:11:37:60:23:ba:75:9f:9a:a7:d5:1b:12:0a:
+                    38:58:fc:7f:3b:81:c1:f1:3d:57:06:6e:1e:71:53:
+                    7e:f1:1d:03:8a:61:95:88:80:71:09:e5:53:84:9a:
+                    7e:a3:2a:8b:0c:5a:12:b3:f1:76:a8:08:e2:ea:7c:
+                    7d:a3:78:a4:bf:e2:85:45:c4:e7:58:29:bc:37:ab:
+                    b2:7d:e9:69:61:ae:06:ba:42:da:8d:50:62:f1:c9:
+                    54:9c:34:ee:d5:c8:8e:d3:b5
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Authority Key Identifier: 
+                DirName:/C=UK/CN=root/ST=root/L=root/O=root/OU=root/CN=root/emailAddress=root
+                serial:A2:01:CB:12:69:A3:D5:FB
+
+            X509v3 Basic Constraints: 
+                CA:TRUE
+            X509v3 Key Usage: 
+                Digital Signature, Non Repudiation, Key Encipherment, Data Encipherment, Key Agreement, Certificate Sign
+            X509v3 Extended Key Usage: 
+                TLS Web Client Authentication
+    Signature Algorithm: sha256WithRSAEncryption
+         59:40:d8:eb:6e:99:fd:37:8d:c8:6a:ee:68:ad:54:65:08:c6:
+         dc:ae:da:4f:47:f8:73:fd:0c:8a:96:35:43:43:20:95:e6:eb:
+         7f:e1:d5:94:f1:ed:50:52:3b:72:3f:c4:36:f7:ec:c0:73:64:
+         bd:64:82:1f:80:ac:c7:36:01:70:c3:19:e8:14:15:fd:a2:62:
+         39:61:a6:bd:0f:33:3b:3d:b0:af:05:0a:02:7f:24:b4:c6:59:
+         5e:22:ea:68:83:48:a7:9f:d8:f7:12:cf:bc:7a:51:bb:5f:2e:
+         ff:bf:23:87:1a:91:bc:ee:d3:b0:80:8d:be:5c:81:ea:c7:f1:
+         1f:aa
+-----BEGIN CERTIFICATE-----
+MIIDSzCCArSgAwIBAgIBADANBgkqhkiG9w0BAQsFADB8MQswCQYDVQQGEwJVSzEN
+MAsGA1UEAwwEcm9vdDENMAsGA1UECAwEcm9vdDENMAsGA1UEBwwEcm9vdDENMAsG
+A1UECgwEcm9vdDENMAsGA1UECwwEcm9vdDENMAsGA1UEAwwEcm9vdDETMBEGCSqG
+SIb3DQEJARYEcm9vdDAgFw0yMjEwMDcxNTUzNTdaGA8yMTIyMDkxMzE1NTM1N1ow
+gYYxCzAJBgNVBAYTAlVLMRUwEwYDVQQIDAxpbnRlcm1lZGlhdGUxFTATBgNVBAoM
+DGludGVybWVkaWF0ZTEVMBMGA1UECwwMaW50ZXJtZWRpYXRlMRUwEwYDVQQDDAxp
+bnRlcm1lZGlhdGUxGzAZBgkqhkiG9w0BCQEWDGludGVybWVkaWF0ZTCBnzANBgkq
+hkiG9w0BAQEFAAOBjQAwgYkCgYEAtq452UbKxdPoYcI2pBugJx9JwqBoDpFDAt69
+xOdv2RE3YCO6dZ+ap9UbEgo4WPx/O4HB8T1XBm4ecVN+8R0DimGViIBxCeVThJp+
+oyqLDFoSs/F2qAji6nx9o3ikv+KFRcTnWCm8N6uyfelpYa4GukLajVBi8clUnDTu
+1ciO07UCAwEAAaOBzzCBzDCBmQYDVR0jBIGRMIGOoYGApH4wfDELMAkGA1UEBhMC
+VUsxDTALBgNVBAMMBHJvb3QxDTALBgNVBAgMBHJvb3QxDTALBgNVBAcMBHJvb3Qx
+DTALBgNVBAoMBHJvb3QxDTALBgNVBAsMBHJvb3QxDTALBgNVBAMMBHJvb3QxEzAR
+BgkqhkiG9w0BCQEWBHJvb3SCCQCiAcsSaaPV+zAMBgNVHRMEBTADAQH/MAsGA1Ud
+DwQEAwIC/DATBgNVHSUEDDAKBggrBgEFBQcDAjANBgkqhkiG9w0BAQsFAAOBgQBZ
+QNjrbpn9N43Iau5orVRlCMbcrtpPR/hz/QyKljVDQyCV5ut/4dWU8e1QUjtyP8Q2
+9+zAc2S9ZIIfgKzHNgFwwxnoFBX9omI5Yaa9DzM7PbCvBQoCfyS0xlleIupog0in
+n9j3Es+8elG7Xy7/vyOHGpG87tOwgI2+XIHqx/Efqg==
+-----END CERTIFICATE-----

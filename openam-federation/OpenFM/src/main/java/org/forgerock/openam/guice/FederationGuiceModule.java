@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2021 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 package org.forgerock.openam.guice;
 
@@ -23,7 +23,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+
 import org.forgerock.openam.audit.context.AMExecutorServiceFactory;
+import com.sun.identity.plugin.session.impl.FMSessionNotification;
 import org.forgerock.openam.federation.config.Saml2DataStoreListener;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
 import org.forgerock.openam.saml2.plugins.SecretsSaml2CredentialResolver;
@@ -62,6 +64,7 @@ public class FederationGuiceModule extends AbstractModule {
                 Names.named(SCRIPTED_IDP_ATTRIBUTE_MAPPER))).to(ScriptedIdpAttributeMapper.class);
         bind(Key.get(SAML2IdentityProviderAdapter.class,
                 Names.named(SCRIPTED_IDP_ADAPTER))).to(ScriptedIdpAdapter.class);
+        bind(FMSessionNotification.class).in(Singleton.class);
     }
 
     @Provides

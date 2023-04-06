@@ -24,7 +24,7 @@
  *
  * $Id: SAML2Constants.java,v 1.44 2009/11/24 21:53:02 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2021 ForgeRock AS.
+ * Portions Copyrighted 2010-2023 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -1688,6 +1688,18 @@ public interface SAML2Constants {
      * Property name used for binding the scripted {@link SAML2IdentityProviderAdapter} to the guice module.
      */
     String SCRIPTED_IDP_ADAPTER = "SCRIPTED_IDP_ADAPTER";
+
+    /*
+     * Constant that flags a session as not needing its associated IDP Session token to be removed.
+     *
+     * When a session upgrade occurs, both the old and new user sessions include the sessionIndex value,
+     * which references the IDPSession. To avoid invalidation of the old session removing the IDPSession,
+     * set a property in the cached session to indicate that this should not be invalidated.
+     * Note: This replaces previous code that set the value to dummy, which causes another issue if two transactions
+     * overlap and upgrade the same old session (the later one sets a value of dummy in the new session causing
+     * failures for any subsequent SAML2 SSO flows).
+     */
+    String DO_NOT_REMOVE_SAML2_IDPSESSION = "doNotRemoveSAML2IDPSession";
 
     /**
      * Constants for SAML2 scripted plugins

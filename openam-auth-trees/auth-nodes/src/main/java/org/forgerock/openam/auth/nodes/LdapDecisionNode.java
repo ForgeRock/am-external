@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -322,8 +322,9 @@ public class LdapDecisionNode implements Node {
         }
         ActionBuilder action;
         JsonValue newState = context.sharedState.copy();
-        String userName = context.sharedState.get(USERNAME).asString();
+        String sharedStateSubmittedUsername = context.sharedState.get(USERNAME).asString();
         String realm = context.sharedState.get(REALM).asString();
+        String username = sharedStateSubmittedUsername;
         try {
             ldapUtil = initializeLDAP(context);
             String userPassword = context.getState(SharedStateConstants.PASSWORD).asString();
@@ -332,13 +333,13 @@ public class LdapDecisionNode implements Node {
                 ldapUtil.setDynamicProfileCreationEnabled(true);
                 ldapUtil.setUserAttributes(ImmutableSet.of(USER_STATUS_ATTRIBUTE));
                 String userStatus = STATUS_INACTIVE;
-                if (authenticateUser(ldapUtil, userName, userPassword)) {
+                if (authenticateUser(ldapUtil, sharedStateSubmittedUsername, userPassword)) {
                     userStatus = STATUS_ACTIVE;
                     if (ldapUtil.getUserAttributeValues().containsKey(USER_STATUS_ATTRIBUTE)) {
                         userStatus = ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE).iterator().next();
                     }
                 }
-                String username = getUserNameFromIdentity(ldapUtil.getUserId());
+                username = getUserNameFromIdentity(ldapUtil.getUserId());
                 if (StringUtils.isNotEmpty(username)) {
                     newState.put(USERNAME, username);
                 }
@@ -348,7 +349,7 @@ public class LdapDecisionNode implements Node {
                 action = processLogin(ldapUtil.getState(), newState, context);
             } else {
                 logger.debug("processing password change");
-                action = processPasswordChange(context, userName, userPassword);
+                action = processPasswordChange(context, sharedStateSubmittedUsername, userPassword);
             }
         } catch (LDAPUtilException e) {
             logger.error(e.getMessage(), e);
@@ -370,7 +371,7 @@ public class LdapDecisionNode implements Node {
             }
         }
         return action
-                .withUniversalId(identityUtils.getUniversalId(userName, realm, USER))
+                .withUniversalId(identityUtils.getUniversalId(username, realm, USER))
                 .replaceSharedState(newState).build();
     }
 
@@ -420,7 +421,7 @@ public class LdapDecisionNode implements Node {
             ModuleState passwordChangeState;
             if (newPassword.length() < config.minimumPasswordLength()) {
                 logger.debug("LDAP.process: new password less"
-                            + " than the minimal length of {}", config.minimumPasswordLength());
+                        + " than the minimal length of {}", config.minimumPasswordLength());
                 passwordChangeState = ModuleState.PASSWORD_MIN_CHARACTERS;
             } else {
                 if (ldapUtil.getUserDN() == null) {
@@ -430,7 +431,7 @@ public class LdapDecisionNode implements Node {
                     // that authentication has failed. This is thrown with an InvalidConfiguration message as this could
                     // be resolved by changing configuration - see OPENAM-18775
                     throw new NodeProcessException(getBundleInPreferredLocale(context)
-                        .getString("InvalidConfiguration"));
+                            .getString("InvalidConfiguration"));
                 }
 
                 ldapUtil.changePassword(oldPassword, newPassword, confirmPassword);
@@ -515,23 +516,23 @@ public class LdapDecisionNode implements Node {
             additionalPwdChangeSearchAttrs = config.additionalPasswordChangeSearchAttributes();
 
             logger.debug("bindDN-> " + config.returnUserDn()
-                                   + "\nrequiredPasswordLength-> " + config.minimumPasswordLength()
-                                   + "\nbaseDN-> " + config.adminDn()
-                                   + "\nuserNamingAttr-> " + config.userProfileAttribute()
-                                   + "\nuserSearchAttr(s)-> " + config.searchFilterAttributes()
-                                   + "\nuserCreationAttrs-> " + config.userCreationAttrs()
-                                   + "\nsearchFilter-> " + config.userSearchFilter()
-                                   + "\nsearchScope-> " + searchScope
-                                   + "\nisSecure-> " + isSecure
-                                   + "\nuseStartTLS-> " + useStartTLS
-                                   + "\ntrustAll-> " + config.trustAllServerCertificates()
-                                   + "\nbeheraEnabled->" + config.beheraEnabled()
-                                   + "\nprimaryServers-> " + config.primaryServers()
-                                   + "\nsecondaryServers-> " + config.secondaryServers()
-                                   + "\nheartBeatInterval-> " + config.heartbeatInterval()
-                                   + "\nheartBeatTimeUnit-> " + config.heartbeatTimeUnit()
-                                   + "\noperationTimeout-> " + config.ldapOperationsTimeout()
-                                   + "\nadditionalPasswordChangeSearchAttributes-> " + additionalPwdChangeSearchAttrs);
+                    + "\nrequiredPasswordLength-> " + config.minimumPasswordLength()
+                    + "\nbaseDN-> " + config.adminDn()
+                    + "\nuserNamingAttr-> " + config.userProfileAttribute()
+                    + "\nuserSearchAttr(s)-> " + config.searchFilterAttributes()
+                    + "\nuserCreationAttrs-> " + config.userCreationAttrs()
+                    + "\nsearchFilter-> " + config.userSearchFilter()
+                    + "\nsearchScope-> " + searchScope
+                    + "\nisSecure-> " + isSecure
+                    + "\nuseStartTLS-> " + useStartTLS
+                    + "\ntrustAll-> " + config.trustAllServerCertificates()
+                    + "\nbeheraEnabled->" + config.beheraEnabled()
+                    + "\nprimaryServers-> " + config.primaryServers()
+                    + "\nsecondaryServers-> " + config.secondaryServers()
+                    + "\nheartBeatInterval-> " + config.heartbeatInterval()
+                    + "\nheartBeatTimeUnit-> " + config.heartbeatTimeUnit()
+                    + "\noperationTimeout-> " + config.ldapOperationsTimeout()
+                    + "\nadditionalPasswordChangeSearchAttributes-> " + additionalPwdChangeSearchAttrs);
         } catch (LDAPUtilException e) {
             logger.warn("Init Exception");
             throw new NodeProcessException(bundle.getString("NoServer"), e);
@@ -586,10 +587,10 @@ public class LdapDecisionNode implements Node {
             String message = Locale.formatMessage(bundle.getString("GraceLogins"), ldapUtil.getGraceLogins());
             List<Callback> callbacks = ldapUtil.getGraceLogins() == 1
                     ? passwordChangeCallbacks(INFORMATION, message,
-                                              new ConfirmationCallback(
-                                                      OK_CANCEL_OPTION,
-                                                      new String[]{bundle.getString("confirmationSubmit")},
-                                                      0))
+                    new ConfirmationCallback(
+                            OK_CANCEL_OPTION,
+                            new String[]{bundle.getString("confirmationSubmit")},
+                            0))
                     : passwordChangeCallbacks(INFORMATION, message);
             loginResult = Action.send(callbacks);
             break;
@@ -687,15 +688,15 @@ public class LdapDecisionNode implements Node {
 
     private List<Callback> passwordChangeCallbacks(int messageType, String message) {
         return passwordChangeCallbacks(messageType,
-                                       message,
-                                       new ConfirmationCallback(OK_CANCEL_OPTION,
-                                                                new String[]{bundle.getString("confirmationSubmit"),
-                                                                        bundle.getString("confirmationCancel")},
-                                                                1));
+                message,
+                new ConfirmationCallback(OK_CANCEL_OPTION,
+                        new String[]{bundle.getString("confirmationSubmit"),
+                                bundle.getString("confirmationCancel")},
+                        1));
     }
 
     private List<Callback> passwordChangeCallbacks(int messageType, String message,
-                                                   ConfirmationCallback confirmationCallback) {
+            ConfirmationCallback confirmationCallback) {
         return ImmutableList.of(
                 new TextOutputCallback(messageType, message.toUpperCase()),
                 new PasswordCallback(bundle.getString("oldPasswordCallback"), false),

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -21,7 +21,6 @@ import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.session.SessionConstants.PERSISTENT_COOKIE_SESSION_PROPERTY;
 
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -183,7 +182,8 @@ public class PersistentCookieDecisionNode extends AbstractDecisionNode implement
                 actionBuilder = actionBuilder
                         .replaceSharedState(context.sharedState.copy().put(USERNAME, userName))
                         .withUniversalId(identityUtils.getUniversalId(userName, realm, USER))
-                        .putSessionProperty(PERSISTENT_COOKIE_SESSION_PROPERTY, config.persistentCookieName())
+                        .putSessionProperty(generateSessionPropertyName(config.persistentCookieName()),
+                                config.persistentCookieName())
                         .addSessionHook(UpdatePersistentCookieTreeHook.class, nodeId, getClass().getSimpleName());
             } catch (InvalidPersistentJwtException e) {
                 logger.error(e.getLocalizedMessage());

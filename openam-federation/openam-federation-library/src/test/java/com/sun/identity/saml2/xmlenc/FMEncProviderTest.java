@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2022 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.xmlenc;
@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.xml.security.encryption.XMLCipher;
@@ -28,9 +29,11 @@ import org.testng.annotations.Test;
 import org.testng.annotations.DataProvider;
 import org.w3c.dom.Element;
 
+import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.key.RsaOaepConfig;
 import com.sun.identity.shared.xml.XMLUtils;
+import com.sun.identity.xmlenc.EncryptionConstants;
 
 public class FMEncProviderTest {
 
@@ -67,5 +70,49 @@ public class FMEncProviderTest {
 
         // Then
         assertThat(XMLUtils.print(decrypted)).isEqualToIgnoringWhitespace(xml);
+        assertThat(XMLUtils.print(encrypted)).contains(
+                "<xenc11:MGF xmlns:xenc11=\"http://www.w3.org/2009/xmlenc11#\"",
+                "Algorithm=\"" + RsaOaepConfig.getDefaultConfigForKeyTransportAlgorithm(XMLCipher.RSA_OAEP_11).get()
+                        .getMaskGenerationFunction() + "\"");
+    }
+
+    @Test(dataProvider = "dataEncryptionAlgorithms")
+    public void testDataEncryptionOAEPMGF1SHA1(String dataEncryptionAlgorithm, int keySize) throws Exception {
+        // Given
+        FMEncProvider encProvider = new FMEncProvider();
+        String xml = "<test><foo/></test>";
+        EncryptionConfig config = new EncryptionConfig(keyPair.getPublic(), dataEncryptionAlgorithm, keySize,
+                XMLCipher.RSA_OAEP, RsaOaepConfig.getDefaultConfigForKeyTransportAlgorithm(XMLCipher.RSA_OAEP));
+
+        // When
+        Element encrypted = encProvider.encrypt(xml, config, null, "test");
+        Element decrypted = encProvider.decrypt(XMLUtils.print(encrypted), Set.of(keyPair.getPrivate()));
+
+        // Then
+        assertThat(XMLUtils.print(decrypted)).isEqualToIgnoringWhitespace(xml);
+        assertThat(XMLUtils.print(encrypted)).doesNotContain(
+                "<xenc11:MGF xmlns:xenc11=\"http://www.w3.org/2009/xmlenc11#\" " +
+                        "Algorithm=\"http://www.w3.org/2009/xmlenc11#mgf1sha1\"/>");
+    }
+
+    @Test(dataProvider = "dataEncryptionAlgorithms")
+    public void testOAEPEncryptionMethodWithMGFP1MaskIsOptional(String dataEncryptionAlgorithm, int keySize)
+            throws Exception {
+        // Given
+        FMEncProvider encProvider = new FMEncProvider();
+        String xml = "<test><foo/></test>";
+        EncryptionConfig config = new EncryptionConfig(keyPair.getPublic(), dataEncryptionAlgorithm, keySize,
+                XMLCipher.RSA_OAEP_11, Optional.of(new RsaOaepConfig(XMLCipher.SHA256,
+                EncryptionConstants.ENC_KEY_ENC_METHOD_MGF_MGF1_SHA1, null)));
+
+        // When
+        Element encrypted = encProvider.encrypt(xml, config, null, "test");
+        Element decrypted = encProvider.decrypt(XMLUtils.print(encrypted), Set.of(keyPair.getPrivate()));
+
+        // Then
+        assertThat(XMLUtils.print(decrypted)).isEqualToIgnoringWhitespace(xml);
+        assertThat(XMLUtils.print(encrypted)).doesNotContain(
+                "<xenc11:MGF xmlns:xenc11=\"http://www.w3.org/2009/xmlenc11#\"",
+                "Algorithm=\"" + EncryptionConstants.ENC_KEY_ENC_METHOD_MGF_MGF1_SHA1 + "\"");
     }
 }

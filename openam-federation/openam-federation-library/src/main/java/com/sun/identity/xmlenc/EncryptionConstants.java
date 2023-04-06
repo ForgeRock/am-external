@@ -24,6 +24,7 @@
  *
  * $Id: EncryptionConstants.java,v 1.3 2008/06/25 05:48:16 qcheng Exp $
  *
+ * Portions Copyrighted 2022 ForgeRock AS.
  */
 
 
@@ -55,5 +56,7 @@ public class EncryptionConstants {
         "http://www.w3.org/2001/04/xmlenc#kw-aes128";
     public static final String ENC_KEY_ENC_METHOD_AES_256 = 
         "http://www.w3.org/2001/04/xmlenc#kw-aes256";
+
+    public static final String ENC_KEY_ENC_METHOD_MGF_MGF1_SHA1 = "http://www.w3.org/2009/xmlenc11#mgf1sha1";
         
 }

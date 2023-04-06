@@ -31,6 +31,7 @@ import org.testng.annotations.Test;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.Optional;
 
 import static java.util.Collections.emptyList;
@@ -137,6 +138,39 @@ public class LocalizationHelperTest {
 
         //THEN
         assertThat(message).isEqualTo(null);
+    }
+
+    @Test(expectedExceptions = MissingResourceException.class)
+    public void shouldThrowMissingResourceExceptionWhenNoLocalizationsAndNotInResourceBundle()
+            throws NodeProcessException {
+        initialiseMockConfig();
+
+        //GIVEN
+        LocalizationHelper localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
+
+        //WHEN
+        String message = localizationHelper.getLocalizedMessage(getContext(), LocalizationHelper.class,
+                null, "test.not.present.in.file");
+
+        //THEN
+        assertThat(message).isEqualTo(null);
+    }
+
+    @Test
+    public void shouldReturnDefaultValueWhenNoLocalizationsAndNotInResourceBundle()
+            throws NodeProcessException {
+        initialiseMockConfig();
+        String defaultValue = "test.default.value";
+
+        //GIVEN
+        LocalizationHelper localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
+
+        //WHEN
+        String message = localizationHelper.getLocalizedMessageWithDefault(getContext(), LocalizationHelper.class,
+                null, "test.not.present.in.file", defaultValue);
+
+        //THEN
+        assertThat(message).isEqualTo(defaultValue);
     }
 
     private TreeContext getContext() {

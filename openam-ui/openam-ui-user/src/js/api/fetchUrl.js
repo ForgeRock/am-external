@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 
 /**
@@ -28,6 +28,8 @@ const throwIfPathHasNoLeadingSlash = (path) => {
 };
 const normaliseRealmAliasResourcePath = (alias) => `/realms/${alias}`;
 const normaliseRealmResourcePath = (realm) => realm.replace(/\//g, "/realms/");
+const replaceBackslashWithSlash = (realm) => realm.replace(/\\/g, "/");
+const removePathTraversalCharacters = (realm) => realm.replace(/\/(\.|%2e|%2E){2}/g, "");
 const redesignateRootRealm = (realm, rootIdentifier) => {
     const isRootRealm = realm === "/";
     return isRootRealm ? rootIdentifier : `${rootIdentifier}${realm}`;
@@ -56,7 +58,9 @@ const redesignateRootRealm = (realm, rootIdentifier) => {
 const fetchUrl = (path, { realm = store.getState().local.session.realm } = {}) => {
     throwIfPathHasNoLeadingSlash(path);
     if (!realm) { return path; }
-
+    // backslashes are treated as slashes by a browser so should be replaced with slashes before processing the realm
+    realm = replaceBackslashWithSlash(realm);
+    realm = removePathTraversalCharacters(realm);
     if (hasLeadingSlash(realm)) {
         realm = redesignateRootRealm(realm, ROOT_REALM_IDENTIFIER);
         realm = normaliseRealmResourcePath(realm);

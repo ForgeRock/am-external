@@ -136,7 +136,7 @@
             "complete" : "Complete",
             "confirm": "Confirm",
             "continue" : "Continue",
-            "copyright" : "Copyright &copy; 2010-2022 ForgeRock AS. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2023 ForgeRock AS. All rights reserved.",
             "create" : "Create",
             "createdAt" : "Created at",
             "createNew": "Create New",
@@ -1750,7 +1750,7 @@
             "delete": {
                 "title": "Delete __objectName__?",
                 "titleInProgress": "Deleting...",
-                "message_interval": "(1){Deleting <strong>__names__</strong> will permanently remove it.};;(2-5){Deleting <strong>__names__</strong> will permanently remove them.};;(6-inf){Deleting these <strong>__count__</strong> __objectName, lowercase__ will permanently remove them.};;",
+                "message_interval": "(1)[Deleting <strong>__names__</strong> will permanently remove it.];;(2-5)[Deleting <strong>__names__</strong> will permanently remove them.];;(6-inf)[Deleting these <strong>__count__</strong> __objectName, lowercase__ will permanently remove them.];;",
                 "no": "No, Keep __objectName__",
                 "yes": "Yes, Delete __objectName__"
             }

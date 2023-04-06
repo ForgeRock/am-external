@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2015-2022 ForgeRock AS. All Rights Reserved
 -->
 <div class="{{#if errorMessages.length}}has-error{{/if}}">
   <label class="aria-label sr-only separator" for="{{id}}">
@@ -26,6 +26,9 @@
     data-validator-event="keyup"
     class="form-control input-lg"
     placeholder="{{prompt}}"
+    {{#if (isPassword type)}}
+    spellcheck="false"
+    {{/if}}
     {{#equals index 0}}autofocus{{/equals}} />
   
   {{#each errorMessages}}

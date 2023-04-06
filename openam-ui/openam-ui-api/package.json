@@ -7,7 +7,7 @@
     "start": "grunt"
   },
   "dependencies": {
-    "swagger-ui-dist": "3.26.2",
+    "swagger-ui-dist": "4.13.2",
     "swagger-ui-themes": "3.0.1"
   },
   "devDependencies": {

@@ -24,7 +24,7 @@
   
    $Id: fedletEncode.jsp,v 1.1 2009/11/12 17:30:30 exu Exp $
 
-   Portions Copyrighted 2016 ForgeRock AS.
+   Portions Copyrighted 2016-2022 ForgeRock AS.
 --%>
 
 <%@page contentType="text/html; charset=UTF-8" %> 
@@ -79,7 +79,7 @@
             out.println(
             "<form name=\"frm\" action=\"fedletEncode.jsp\" method=\"post\">");
             out.println(rb.getString("prompt-pwd"));
-            out.println("<input type=\"text\" name=\"password\" />");
+            out.println("<input type=\"text\" name=\"password\" spellcheck=\"false\"/>");
             out.println("<input type=\"submit\" value=\"" +
                 rb.getString("btn-encode") + "\" />");
             out.println("</form>");

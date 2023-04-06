@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -116,7 +116,7 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
             logError(e, "Exception in data store decision node");
         }
         return action
-                .withUniversalId(identityUtils.getUniversalId(username, realm, USER))
+                .withUniversalId(identityUtils.getUniversalId(username, realm, getIdentityType()))
                 .replaceSharedState(context.sharedState.copy())
                 .replaceTransientState(context.transientState.copy()).build();
     }

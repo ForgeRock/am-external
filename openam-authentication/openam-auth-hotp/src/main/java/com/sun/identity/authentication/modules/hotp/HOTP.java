@@ -24,7 +24,7 @@
  *
  * $Id: HOTP.java,v 1.1 2009/03/24 23:52:12 pluo Exp $
  *
- * Portions Copyrighted 2012-2022 ForgeRock AS.
+ * Portions Copyrighted 2012-2023 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 
@@ -294,5 +294,10 @@ public class HOTP extends AMLoginModule {
         currentConfig = null;
         enteredHOTPCode = null;
         userSearchAttributes = Collections.emptySet();
+    }
+
+    @Override
+    public boolean isReturningPrincipalAsDn() {
+        return userUUID != null;
     }
 }

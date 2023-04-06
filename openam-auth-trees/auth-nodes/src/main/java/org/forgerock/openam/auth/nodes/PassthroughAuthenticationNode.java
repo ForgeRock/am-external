@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -131,7 +131,7 @@ public class PassthroughAuthenticationNode implements Node {
                 .or(() -> stringAttribute(getAttributeFromContext(idmIntegrationService, context,
                         DEFAULT_PASSWORD_ATTRIBUTE)));
 
-        if (identity.isEmpty() || password.isEmpty()) {
+        if (identity.isEmpty() || password.isEmpty() || password.get().isEmpty()) {
             return goTo(NodeOutcome.MISSING.name()).build();
         }
 

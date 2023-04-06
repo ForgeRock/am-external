@@ -11,13 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.concurrent.TimeUnit.HOURS;
-import static org.forgerock.openam.session.SessionConstants.PERSISTENT_COOKIE_SESSION_PROPERTY;
 
 import java.util.UUID;
 
@@ -141,7 +140,8 @@ public class SetPersistentCookieNode extends SingleOutcomeNode implements Persis
         logger.debug("SetPersistentCookieNode started");
         logger.debug("persistent cookie set");
         return goToNext()
-                .putSessionProperty(PERSISTENT_COOKIE_SESSION_PROPERTY, config.persistentCookieName())
+                .putSessionProperty(generateSessionPropertyName(config.persistentCookieName()),
+                        config.persistentCookieName())
                 .addSessionHook(CreatePersistentCookieTreeHook.class, nodeId, getClass().getSimpleName())
                 .build();
     }
