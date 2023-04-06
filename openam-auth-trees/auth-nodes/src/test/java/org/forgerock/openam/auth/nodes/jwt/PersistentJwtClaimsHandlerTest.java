@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.jwt;
 
@@ -28,8 +28,12 @@ import java.util.ResourceBundle;
 
 import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
+import org.forgerock.openam.core.realms.RealmTestHelper;
+import org.junit.AfterClass;
 import org.mockito.Mock;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import com.iplanet.sso.SSOException;
@@ -49,12 +53,25 @@ public class PersistentJwtClaimsHandlerTest {
     @Mock
     private JwtClaimsSet jwtClaimsSet;
 
+    private static RealmTestHelper realmHelper;
+
     private PersistentJwtClaimsHandler persistentJwtClaimsHandler = new PersistentJwtClaimsHandler();
     private ResourceBundle resourceBundle;
     private String orgName;
     private String clientId;
     private String service;
     private String clientIp;
+
+    @BeforeClass
+    public void setupClass() {
+        realmHelper = new RealmTestHelper();
+        realmHelper.setupRealmClass();
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        realmHelper.tearDownRealmClass();
+    }
 
     @BeforeMethod
     public void before() throws IdRepoException, SSOException {
@@ -140,14 +157,6 @@ public class PersistentJwtClaimsHandlerTest {
         persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, "WrongIp", true);
     }
 
-    @Test
-    public void getUsernameValidUser() throws Exception {
-        Map<String, String> userMap = new HashMap<>();
-        userMap.put(OPENAM_USER_CLAIM_KEY, ID_ATTRIBUTE + "=" + "testUser,otherfield=value");
-        String userName = persistentJwtClaimsHandler.getUsername(userMap, resourceBundle);
-        assertThat(userName).isEqualTo("testUser");
-    }
-
     @Test(expectedExceptions = InvalidPersistentJwtException.class)
     public void getUsernameNullClaims() throws Exception {
         persistentJwtClaimsHandler.getUsername(null, resourceBundle);
@@ -159,12 +168,25 @@ public class PersistentJwtClaimsHandlerTest {
         persistentJwtClaimsHandler.getUsername(userMap, resourceBundle);
     }
 
-    @Test
-    public void getUsernameNoUser() throws Exception {
-        Map<String, String> userMap = new HashMap<>();
-        userMap.put(OPENAM_USER_CLAIM_KEY, "field=value,otherfield=value");
-        String userName = persistentJwtClaimsHandler.getUsername(userMap, resourceBundle);
-        assertThat(userName).isNull();
+    @DataProvider
+    private Object[][] usernamesFromUniversalIds() {
+        return new Object[][]{
+                {"demo", "id=demo,ou=user,dc=openam,dc=example,dc=com"},
+                {"demo=bad", "id=demo=bad,ou=user,dc=openam,dc=example,dc=com"},
+                {"bad=demo", "id=bad=demo,ou=user,dc=openam,dc=example,dc=com"},
+                {"demo=bad,blah=blah", "id=demo=bad\\,blah=blah,ou=user,dc=openam,dc=example,dc=com"},
+                {"bad=demo,blah=blah", "id=bad=demo\\,blah=blah,ou=user,dc=openam,dc=example,dc=com"},
+                {"demo=bad", "id=demo=bad,ou=user,dc=openam,o=sub,ou=services,dc=openam,dc=example,dc=com"},
+                {"bad=demo", "id=bad=demo,ou=user,dc=openam,o=sub,ou=services,dc=openam,dc=example,dc=com"},
+                {"demo=bad,blah=blah", "id=demo=bad\\,blah=blah,ou=user,o=sub,ou=services,dc=openam,dc=example,dc=com"},
+                {"bad=demo,blah=blah", "id=bad=demo\\,blah=blah,ou=user,o=sub,ou=services,dc=openam,dc=example,dc=com"}
+        };
     }
 
+    @Test(dataProvider = "usernamesFromUniversalIds")
+    public void ensureCorrectUsernameFromUniversalId(String expectedUsername, String universalId) throws Exception {
+        Map<String, String> userMap = Map.of(OPENAM_USER_CLAIM_KEY, universalId);
+        String username = persistentJwtClaimsHandler.getUsername(userMap, resourceBundle);
+        assertThat(username).isEqualTo(expectedUsername);
+    }
 }

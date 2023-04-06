@@ -24,15 +24,15 @@
  *
  * $Id: SAML2Constants.java,v 1.44 2009/11/24 21:53:02 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2021 ForgeRock AS.
+ * Portions Copyrighted 2010-2023 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.saml2.plugins.IDPAdapter;
 
 import com.sun.identity.cot.COTConstants;
 import com.sun.identity.saml2.plugins.IDPAttributeMapper;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 
 /**
  * This interface defines constants common to all SAMLv2 elements.
@@ -705,7 +705,12 @@ public interface SAML2Constants {
      * Map to the implementation class for initialization.
      */
     public String SP_ADAPTER_ENV = "spAdapterEnv";
-    
+
+    /**
+     * Service Provider Adapter Script.
+     */
+    public String SP_ADAPTER_SCRIPT = "spAdapterScript";
+
     /**
      * Fedlet adapter implementation class.
      */
@@ -1673,6 +1678,9 @@ public interface SAML2Constants {
      */
     String SAML2_CREDENTIAL_RESOLVER_PROPERTY = "org.forgerock.openam.saml2.credential.resolver.class";
 
+    /**
+     * Identity Provider Attribute Mapper Script.
+     */
     String IDP_ATTRIBUTE_MAPPER_SCRIPT = "idpAttributeMapperScript";
 
     /**
@@ -1685,9 +1693,26 @@ public interface SAML2Constants {
     String SCRIPTED_IDP_ATTRIBUTE_MAPPER = "SCRIPTED_IDP_ATTRIBUTE_MAPPER";
 
     /**
-     * Property name used for binding the scripted {@link SAML2IdentityProviderAdapter} to the guice module.
+     * Property name used for binding the scripted {@link IDPAdapter} to the guice module.
      */
     String SCRIPTED_IDP_ADAPTER = "SCRIPTED_IDP_ADAPTER";
+
+    /**
+     * Property name used for binding the scripted {@link SPAdapter} to the guice module.
+     */
+    String SCRIPTED_SP_ADAPTER = "SCRIPTED_SP_ADAPTER";
+
+    /*
+     * Constant that flags a session as not needing its associated IDP Session token to be removed.
+     *
+     * When a session upgrade occurs, both the old and new user sessions include the sessionIndex value,
+     * which references the IDPSession. To avoid invalidation of the old session removing the IDPSession,
+     * set a property in the cached session to indicate that this should not be invalidated.
+     * Note: This replaces previous code that set the value to dummy, which causes another issue if two transactions
+     * overlap and upgrade the same old session (the later one sets a value of dummy in the new session causing
+     * failures for any subsequent SAML2 SSO flows).
+     */
+    String DO_NOT_REMOVE_SAML2_IDPSESSION = "doNotRemoveSAML2IDPSession";
 
     /**
      * Constants for SAML2 scripted plugins
@@ -1708,5 +1733,17 @@ public interface SAML2Constants {
         public static final String SAML2_RESPONSE = "res";
         public static final String IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER = "idpAttributeMapperScriptHelper";
         public static final String IDP_ADAPTER_SCRIPT_HELPER = "idpAdapterScriptHelper";
+        public static final String SP_ADAPTER_SCRIPT_HELPER = "spAdapterScriptHelper";
+        public static final String HTTP_CLIENT = "httpClient";
+        public static final String IDP_ENTITY_ID = "idpEntityId";
+        public static final String OUT = "out";
+        public static final String PROFILE = "profile";
+        public static final String IS_FEDERATION= "isFederation";
+        public static final String FAILURE_CODE = "failureCode";
+        public static final String USER_ID = "userID";
+        public static final String ID_REQUEST = "idRequest";
+        public static final String ID_RESPONSE = "idResponse";
+        public static final String LOGOUT_REQUEST = "logoutRequest";
+        public static final String LOGOUT_RESPONSE = "logoutResponse";
     }
 }

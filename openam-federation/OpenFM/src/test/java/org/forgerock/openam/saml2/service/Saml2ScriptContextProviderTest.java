@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.saml2.service;
 
@@ -20,8 +20,10 @@ import static com.sun.identity.shared.Constants.EMPTY_SCRIPT_SELECTION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ADAPTER_SCRIPT;
 import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT;
+import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_SP_ADAPTER_SCRIPT;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ADAPTER;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ATTRIBUTE_MAPPER;
+import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_SP_ADAPTER;
 import static org.forgerock.openam.scripting.domain.ScriptingLanguage.JAVASCRIPT;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
@@ -30,6 +32,7 @@ import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.scripting.domain.Script;
@@ -93,7 +96,7 @@ public class Saml2ScriptContextProviderTest {
 
     @Test
     public void shouldReturnAllSaml2ScriptContexts() {
-        assertThat(provider.get().size()).isEqualTo(2);
+        assertThat(provider.get().size()).isEqualTo(3);
     }
 
     @Test
@@ -102,9 +105,10 @@ public class Saml2ScriptContextProviderTest {
         List<ScriptContextDetails> actual = provider.get();
 
         // Then
-        assertThat(actual.get(0).getName()).isEqualTo(SAML2_IDP_ATTRIBUTE_MAPPER.name());
-        assertThat(actual.get(0).getDefaultScriptId()).isEqualTo(SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT.getId());
-        assertThat(actual.get(0).getWhiteList())
+        Optional<ScriptContextDetails> context = getScriptContextDetails(actual, SAML2_IDP_ATTRIBUTE_MAPPER);
+        assertThat(context.isPresent()).isTrue();
+        assertThat(context.get().getDefaultScriptId()).isEqualTo(SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT.getId());
+        assertThat(context.get().getWhiteList())
                 .containsAll(Arrays.asList("java.lang.String", "com.sun.identity.saml2.common.SAML2Exception"));
     }
 
@@ -114,10 +118,24 @@ public class Saml2ScriptContextProviderTest {
         List<ScriptContextDetails> actual = provider.get();
 
         // Then
-        assertThat(actual.get(1).getName()).isEqualTo(SAML2_IDP_ADAPTER.name());
-        assertThat(actual.get(1).getDefaultScriptId()).isEqualTo(SAML2_IDP_ADAPTER_SCRIPT.getId());
-        assertThat(actual.get(1).getWhiteList())
+        Optional<ScriptContextDetails> context = getScriptContextDetails(actual, SAML2_IDP_ADAPTER);
+        assertThat(context.isPresent()).isTrue();
+        assertThat(context.get().getDefaultScriptId()).isEqualTo(SAML2_IDP_ADAPTER_SCRIPT.getId());
+        assertThat(context.get().getWhiteList())
                 .containsAll(Arrays.asList("java.lang.String", "com.sun.identity.saml2.plugins.scripted.IdpAdapterScriptHelper"));
+    }
+
+    @Test
+    public void shouldReturnSaml2SpAdapterContext() {
+        // When
+        List<ScriptContextDetails> actual = provider.get();
+
+        // Then
+        Optional<ScriptContextDetails> context = getScriptContextDetails(actual, SAML2_SP_ADAPTER);
+        assertThat(context.isPresent()).isTrue();
+        assertThat(context.get().getDefaultScriptId()).isEqualTo(SAML2_SP_ADAPTER_SCRIPT.getId());
+        assertThat(context.get().getWhiteList())
+                .containsAll(Arrays.asList("java.lang.String", "com.sun.identity.saml2.plugins.scripted.SpAdapterScriptHelper"));
     }
 
     @Test
@@ -160,6 +178,9 @@ public class Saml2ScriptContextProviderTest {
         provider.getUsageCount(realm, givenScript);
     }
 
+    private Optional<ScriptContextDetails> getScriptContextDetails(List<ScriptContextDetails> scriptContextDetails, Saml2ScriptContext match) {
+        return scriptContextDetails.stream().filter(s -> s.getName().equals(match.name())).findFirst();
+    }
 
     private void mockSamlEntityConfig(String scriptId) throws SAML2MetaException {
         when(saml2MetaManager.getAllHostedEntityConfigs(realm.asPath())).thenReturn(List.of(entityConfigElement));

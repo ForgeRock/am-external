@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -20,13 +20,16 @@ import static org.forgerock.openam.auth.node.api.Action.goTo;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_CONTENT_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_MESSAGE_EXPIRATION;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_NUMBER_CHALLENGE_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.TIME_TO_LIVE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.EXPIRED;
 import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.FALSE;
 import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.TRUE;
 import static org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushResultVerifierOutcome.WAITING;
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT_CHALLENGE_RESPONSE_KEY;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -52,6 +55,7 @@ import org.forgerock.openam.services.push.MessageState;
 import org.forgerock.openam.services.push.PushNotificationException;
 import org.forgerock.openam.services.push.PushNotificationService;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
+import org.forgerock.openam.utils.Time;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,13 +141,44 @@ public class PushResultVerifierNode implements Node {
                 messageHandler.delete(messageId);
                 return finishNode(FALSE, context);
             case UNKNOWN:
-                return Action.goTo(WAITING.name()).build();
+                return waitResponse(context);
             default:
                 throw new NodeProcessException("Unrecognized push message status: " + state);
             }
         } catch (PushNotificationException | CoreTokenException ex) {
             throw new NodeProcessException("An unexpected error occurred while verifying the push result", ex);
         }
+    }
+
+    private Action waitResponse(TreeContext context) {
+        LOGGER.debug("Waiting for push authentication message to be processed.");
+        if (!context.sharedState.isDefined(TIME_TO_LIVE_KEY)) {
+            LOGGER.debug("TIME_TO_LIVE_KEY not present in the SharedState. Ignoring PushSender timeout.");
+            return Action.goTo(WAITING.name()).build();
+        }
+
+        if (!context.sharedState.isDefined(PUSH_MESSAGE_EXPIRATION)) {
+            JsonValue newSharedState = setMessageExpiration(context.sharedState);
+            return Action.goTo(WAITING.name())
+                    .replaceSharedState(newSharedState)
+                    .build();
+        } else if (isMessageExpired(context.sharedState)) {
+            return finishNode(EXPIRED, context);
+        } else {
+            return Action.goTo(WAITING.name()).build();
+        }
+    }
+
+    private JsonValue setMessageExpiration(JsonValue sharedState) {
+        JsonValue newSharedState = sharedState.copy();
+        int timeOutInMs = newSharedState.get(TIME_TO_LIVE_KEY).asInteger();
+        newSharedState.put(PUSH_MESSAGE_EXPIRATION, Time.getClock().instant().plusMillis(timeOutInMs).toEpochMilli());
+        return newSharedState;
+    }
+
+    private boolean isMessageExpired(JsonValue sharedState) {
+        return Time.getClock().instant().isAfter(
+                Instant.ofEpochMilli(sharedState.get(PUSH_MESSAGE_EXPIRATION).asLong()));
     }
 
     private Action validateNumberChallengeResponse(TreeContext context, JsonValue pushContent) {
@@ -158,6 +193,8 @@ public class PushResultVerifierNode implements Node {
     private Action finishNode(PushResultVerifierOutcome outcome, TreeContext context) {
         JsonValue newSharedState = context.sharedState.copy();
         newSharedState.remove(MESSAGE_ID_KEY);
+        newSharedState.remove(PUSH_MESSAGE_EXPIRATION);
+        newSharedState.remove(TIME_TO_LIVE_KEY);
         Action.ActionBuilder builder = goTo(outcome.name());
         builder.replaceSharedState(newSharedState);
         if (outcome == TRUE) {

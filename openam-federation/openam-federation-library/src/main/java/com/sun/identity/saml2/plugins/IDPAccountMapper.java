@@ -24,11 +24,12 @@
  *
  * $Id: IDPAccountMapper.java,v 1.5 2008/06/25 05:47:51 qcheng Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.saml2.plugins.SAMLPlugin;
 
 import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.common.SAML2Exception;
@@ -49,7 +50,7 @@ import com.sun.identity.saml2.protocol.ManageNameIDRequest;
  * @see com.sun.identity.saml2.plugins.SPAccountMapper
  */
 @SupportedAll
-public interface IDPAccountMapper {
+public interface IDPAccountMapper extends SAMLPlugin {
 
     /**
      * Returns the user's <code>NameID</code>information that contains account federation with the corresponding remote
@@ -63,8 +64,8 @@ public interface IDPAccountMapper {
      * @return The <code>NameID</code> corresponding to the authenticated user.
      * @throws SAML2Exception If there was any failure.
      */
-    public NameID getNameID(Object session, String hostEntityID, String remoteEntityID, String realm,
-            String nameIDFormat) throws SAML2Exception;
+    NameID getNameID(Object session, String hostEntityID, String remoteEntityID,
+            String realm, String nameIDFormat) throws SAML2Exception;
 
 
     /**
@@ -79,8 +80,7 @@ public interface IDPAccountMapper {
      * @return User's distinguished name or the universal ID.
      * @throws SAML2Exception If there was any failure.
      */
-    public String getIdentity(ManageNameIDRequest manageNameIDRequest, String hostEntityID, String realm)
-            throws SAML2Exception;
+    String getIdentity(ManageNameIDRequest manageNameIDRequest, String hostEntityID, String realm) throws SAML2Exception;
 
     /**
      * Returns the user's distinguished name or the universal ID for the corresponding <code>SAML NameID</code>.
@@ -93,8 +93,7 @@ public interface IDPAccountMapper {
      * @return User's distinguished name or the universal ID.
      * @throws SAML2Exception If there was any failure.
      */
-    public String getIdentity(NameID nameID, String hostEntityID, String remoteEntityID, String realm)
-            throws SAML2Exception;
+     String getIdentity(NameID nameID, String hostEntityID, String remoteEntityID, String realm) throws SAML2Exception;
 
     /**
      * Tells whether the provided NameID-Format should be persisted in the user data store or not.
@@ -106,6 +105,5 @@ public interface IDPAccountMapper {
      * @return <code>true</code> if the provided NameID-Format should be persisted in the user data store,
      * <code>false</code> otherwise.
      */
-    public boolean shouldPersistNameIDFormat(String realm, String hostEntityID, String remoteEntityID,
-            String nameIDFormat);
+    boolean shouldPersistNameIDFormat(String realm, String hostEntityID, String remoteEntityID, String nameIDFormat);
 }

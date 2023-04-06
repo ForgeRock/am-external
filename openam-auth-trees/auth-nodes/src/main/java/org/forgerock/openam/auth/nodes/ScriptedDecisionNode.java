@@ -11,28 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.Action.goTo;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.AUDIT_ENTRY_DETAIL;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.CALLBACKS_IDENTIFIER;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.EXISTING_SESSION;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HEADERS_IDENTIFIER;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HTTP_CLIENT_IDENTIFIER;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.ID_REPO_IDENTIFIER;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.LOGGER_VARIABLE_NAME;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.QUERY_PARAMETER_IDENTIFIER;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.REALM_IDENTIFIER;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.SECRETS_IDENTIFIER;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.SHARED_STATE_IDENTIFIER;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_IDENTIFIER;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.TRANSIENT_STATE_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.WILDCARD;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertHeadersToModifiableObjects;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertParametersToModifiableObjects;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getAuditEntryDetails;
@@ -47,7 +36,6 @@ import java.util.stream.Collectors;
 
 import javax.inject.Provider;
 import javax.script.Bindings;
-import javax.script.SimpleBindings;
 
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.json.JsonValue;
@@ -60,12 +48,14 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.script.ScriptedDecisionNodeBindings;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
 import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
 import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
 import org.forgerock.openam.utils.StringUtils;
@@ -76,7 +66,6 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.dpro.session.service.SessionService;
-import com.sun.identity.shared.debug.Debug;
 
 /**
  * A node that executes a script to make a decision.
@@ -90,54 +79,6 @@ public class ScriptedDecisionNode implements Node {
 
     private static final String OUTCOME_IDENTIFIER = "outcome";
     private static final String ACTION_IDENTIFIER = "action";
-    /* Whether the tree has been resumed from having been suspended. */
-    private static final String RESUMED_FROM_SUSPEND = "resumedFromSuspend";
-    private static final String WILDCARD = "*";
-
-    /**
-     * Node Config Declaration.
-     */
-    public interface Config {
-        /**
-         * The script configuration.
-         *
-         * @return The script configuration.
-         */
-        @Attribute(order = 100)
-        @ScriptContext(AUTHENTICATION_TREE_DECISION_NODE_NAME)
-        default Script script() {
-            return Script.EMPTY_SCRIPT;
-        }
-
-        /**
-         * The list of possible outcomes.
-         *
-         * @return THe possible outcomes.
-         */
-        @Attribute(order = 200)
-        List<String> outcomes();
-
-        /**
-         * List of required inputs.
-         *
-         * @return The list of state inputs required by the script.
-         */
-        @Attribute(order = 300)
-        default List<String> inputs() {
-            return singletonList(WILDCARD);
-        }
-
-        /**
-         * List of outputs produced by the script.
-         *
-         * @return A list of state outputs produced by the script.
-         */
-        @Attribute(order = 400)
-        default List<String> outputs() {
-            return singletonList(WILDCARD);
-        }
-    }
-
     private final Logger logger = LoggerFactory.getLogger(ScriptedDecisionNode.class);
     private final Config config;
     private final ScriptEvaluator scriptEvaluator;
@@ -151,20 +92,20 @@ public class ScriptedDecisionNode implements Node {
     /**
      * Guice constructor.
      *
-     * @param scriptEvaluatorFactory A script evaluator factory.
-     * @param config The node configuration.
-     * @param sessionServiceProvider provides Sessions.
-     * @param httpClientFactory provides http clients.
-     * @param realm The realm the node is in, and that the request is targeting.
+     * @param scriptEvaluatorFactory    A script evaluator factory.
+     * @param config                    The node configuration.
+     * @param sessionServiceProvider    provides Sessions.
+     * @param httpClientFactory         provides http clients.
+     * @param realm                     The realm the node is in, and that the request is targeting.
      * @param scriptIdentityRepoFactory factory to build access to the identity repo for this node's script
-     * @param secrets provides access to the secrets API for this node's script
+     * @param secretsFactory            provides access to the secrets API for this node's script
      */
     @Inject
     public ScriptedDecisionNode(ScriptEvaluatorFactory scriptEvaluatorFactory,
             @Assisted Config config, Provider<SessionService> sessionServiceProvider,
             ScriptHttpClientFactory httpClientFactory, @Assisted Realm realm,
             ScriptIdentityRepository.Factory scriptIdentityRepoFactory,
-            ScriptedSecrets secrets) {
+            ScriptedSecrets.Factory secretsFactory) {
         this.scriptEvaluator = scriptEvaluatorFactory.create(AUTHENTICATION_TREE_DECISION_NODE);
         this.config = config;
         this.sessionServiceProvider = sessionServiceProvider;
@@ -172,38 +113,41 @@ public class ScriptedDecisionNode implements Node {
         this.realm = realm;
         this.scriptIdentityRepo = scriptIdentityRepoFactory.create(realm);
         this.auditEntryDetail = null;
-        this.secrets = secrets;
+        this.secrets = secretsFactory.create(realm, singleton("scripted.node."));
     }
-
-
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("ScriptedDecisionNode started");
         try {
-            Bindings binding = new SimpleBindings();
             JsonValue filteredShared = filterInputs(context.sharedState);
             JsonValue filteredTransient = filterInputs(context.transientState);
-            binding.put(SHARED_STATE_IDENTIFIER, filteredShared.getObject());
-            binding.put(TRANSIENT_STATE_IDENTIFIER, filteredTransient.getObject());
-            binding.put(STATE_IDENTIFIER, context.getStateFor(this));
-            binding.put(CALLBACKS_IDENTIFIER, context.getAllCallbacks());
-            binding.put(ID_REPO_IDENTIFIER, scriptIdentityRepo);
-            binding.put(SECRETS_IDENTIFIER, secrets);
-            binding.put(HEADERS_IDENTIFIER, convertHeadersToModifiableObjects(context.request.headers));
-            binding.put(LOGGER_VARIABLE_NAME, Debug.getInstance("scripts." + AUTHENTICATION_TREE_DECISION_NODE.name()
-                    + "." + config.script().getId()));
-            binding.put(HTTP_CLIENT_IDENTIFIER, httpClient);
-            binding.put(REALM_IDENTIFIER, realm.asPath());
-            if (!StringUtils.isEmpty(context.request.ssoTokenId)) {
-                binding.put(EXISTING_SESSION, getSessionProperties(sessionServiceProvider.get(),
-                        context.request.ssoTokenId));
-            }
-            binding.put(QUERY_PARAMETER_IDENTIFIER, convertParametersToModifiableObjects(context.request.parameters));
-            binding.put(AUDIT_ENTRY_DETAIL, auditEntryDetail);
-            binding.put(RESUMED_FROM_SUSPEND, context.hasResumedFromSuspend());
+
             Script script = config.script();
-            scriptEvaluator.evaluateScript(script, binding);
+
+            ScriptBindings scriptedDecisionNodeBindings = ScriptedDecisionNodeBindings.builder()
+                    .withNodeState(context.getStateFor(this))
+                    .withCallbacks(context.getAllCallbacks())
+                    .withHeaders(convertHeadersToModifiableObjects(context.request.headers))
+                    .withRealm(realm.asPath())
+                    .withQueryParameters(convertParametersToModifiableObjects(context.request.parameters))
+                    .withHttpClient(httpClient)
+                    .withIdentityRepository(scriptIdentityRepo)
+                    .withSecrets(secrets)
+                    .withAuditEntryDetail(auditEntryDetail)
+                    .withResumedFromSuspend(context.hasResumedFromSuspend())
+                    .withExistingSession(
+                            StringUtils.isNotEmpty(context.request.ssoTokenId)
+                                    ? getSessionProperties(sessionServiceProvider.get(), context.request.ssoTokenId)
+                                    : null)
+                    .withSharedState(filteredShared.getObject())
+                    .withTransientState(filteredTransient.getObject())
+                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withScriptName(script.getName())
+                    .build();
+
+            Bindings binding = scriptedDecisionNodeBindings.convert(script.getEvaluatorVersion());
+            scriptEvaluator.evaluateScript(script, binding, realm);
             logger.debug("script {} \n binding {}", script, binding);
             if (!allOutputsArePresent(filteredShared, filteredTransient)) {
                 throw new NodeProcessException("Script did not provide all declared outputs");
@@ -266,7 +210,7 @@ public class ScriptedDecisionNode implements Node {
     /**
      * Return whether all declared attributes are present in state.
      *
-     * @param sharedState The shared state
+     * @param sharedState    The shared state
      * @param transientState The transient state
      * @return true iff all declared outputs are present in at least on of shared or transient state
      */
@@ -278,7 +222,7 @@ public class ScriptedDecisionNode implements Node {
     /**
      * Log any undeclared outputs.
      *
-     * @param sharedState The shared state
+     * @param sharedState    The shared state
      * @param transientState The transient state
      */
     private void checkForUnexpectedOutputs(JsonValue sharedState, JsonValue transientState) {
@@ -298,7 +242,7 @@ public class ScriptedDecisionNode implements Node {
     /**
      * Transfer declared output values from one JsonValue to another.
      *
-     * @param source The json containing the outputs to be transferred
+     * @param source      The json containing the outputs to be transferred
      * @param destination The json destination for the transferred outputs
      */
     private void transferOutputs(JsonValue source, JsonValue destination) {
@@ -322,6 +266,64 @@ public class ScriptedDecisionNode implements Node {
         }
     }
 
+    @Override
+    public InputState[] getInputs() {
+        return config.inputs().stream()
+                .map(input -> new InputState(input, true))
+                .toArray(InputState[]::new);
+    }
+
+    @Override
+    public OutputState[] getOutputs() {
+        return config.outputs().stream()
+                .map(OutputState::new)
+                .toArray(OutputState[]::new);
+    }
+
+    /**
+     * Node Config Declaration.
+     */
+    public interface Config {
+        /**
+         * The script configuration.
+         *
+         * @return The script configuration.
+         */
+        @Attribute(order = 100)
+        @ScriptContext(AUTHENTICATION_TREE_DECISION_NODE_NAME)
+        default Script script() {
+            return Script.EMPTY_SCRIPT;
+        }
+
+        /**
+         * The list of possible outcomes.
+         *
+         * @return THe possible outcomes.
+         */
+        @Attribute(order = 200)
+        List<String> outcomes();
+
+        /**
+         * List of required inputs.
+         *
+         * @return The list of state inputs required by the script.
+         */
+        @Attribute(order = 300)
+        default List<String> inputs() {
+            return singletonList(WILDCARD);
+        }
+
+        /**
+         * List of outputs produced by the script.
+         *
+         * @return A list of state outputs produced by the script.
+         */
+        @Attribute(order = 400)
+        default List<String> outputs() {
+            return singletonList(WILDCARD);
+        }
+    }
+
     /**
      * Provides the outcomes for the scripted decision node.
      */
@@ -338,19 +340,5 @@ public class ScriptedDecisionNode implements Node {
                 return emptyList();
             }
         }
-    }
-
-    @Override
-    public InputState[] getInputs() {
-        return config.inputs().stream()
-                .map(input -> new InputState(input, true))
-                .toArray(InputState[]::new);
-    }
-
-    @Override
-    public OutputState[] getOutputs() {
-        return config.outputs().stream()
-                .map(OutputState::new)
-                .toArray(OutputState[]::new);
     }
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
@@ -48,7 +48,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SharedStateConstants;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,7 +83,7 @@ public class CertificateUserExtractorNode extends AbstractDecisionNode {
     private static final String BUNDLE = "org/forgerock/openam/auth/nodes/x509/CertificateUserExtractorNode";
     private final Logger logger = LoggerFactory.getLogger(CertificateUserExtractorNode.class);
     private Config config;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
 
     /**
      * Configuration for the node.
@@ -123,12 +123,12 @@ public class CertificateUserExtractorNode extends AbstractDecisionNode {
      * The constructor.
      *
      * @param config node config.
-     * @param identityUtils A {@code IdentityUtils} instance.
+     * @param identityService An {@link LegacyIdentityService} instance.
      */
     @Inject
-    public CertificateUserExtractorNode(@Assisted Config config, IdentityUtils identityUtils) {
+    public CertificateUserExtractorNode(@Assisted Config config, LegacyIdentityService identityService) {
         this.config = config;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
     }
 
     @Override
@@ -155,7 +155,7 @@ public class CertificateUserExtractorNode extends AbstractDecisionNode {
         String realm = context.sharedState.get(REALM).asString();
         return Action
                 .goTo(EXTRACTED.name())
-                .withUniversalId(identityUtils.getUniversalId(userTokenId, realm, IdType.USER))
+                .withUniversalId(identityService.getUniversalId(userTokenId, realm, IdType.USER))
                 .build();
     }
 

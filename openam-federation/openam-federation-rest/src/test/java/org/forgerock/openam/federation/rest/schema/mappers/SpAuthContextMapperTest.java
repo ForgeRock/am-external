@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -54,6 +54,18 @@ public class SpAuthContextMapperTest {
     }
 
     @Test
+    public void shouldConvertEntryWithoutLevel() {
+        List<AuthContextItem> converted = mapper.map(
+                singletonList("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport||"), ROOT);
+        assertThat(converted).hasSize(1);
+        AuthContextItem entry = converted.get(0);
+        assertThat(entry.getLevel()).isEqualTo(0);
+        assertThat(entry.getContextReference())
+                .isEqualTo("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport");
+        assertThat(entry.getDefaultItem()).isFalse();
+    }
+
+    @Test
     public void shouldConvertEntryWithAllFieldsCompleted() {
         List<AuthContextItem> converted = mapper.map(
                 singletonList("urn:oasis:names:tc:SAML:2.0:ac:classes:Password|10|default"), ROOT);
@@ -80,5 +92,22 @@ public class SpAuthContextMapperTest {
 
         // Then
         assertThat(actual.get(0)).isEqualTo("urn:oasis:names:tc:SAML:2.0:ac:classes:Password|5|default");
+    }
+
+    @Test
+    public void shouldInverseMappedValueNonDefaultAndWithoutLevel() {
+        // Given
+        given(authContextItem.getContextReference())
+                .willReturn("urn:oasis:names:tc:SAML:2.0:ac:classes:Password");
+        given(authContextItem.getLevel()).willReturn(null);
+        given(authContextItem.getDefaultItem()).willReturn(false);
+        List<AuthContextItem> mappedValue = new ArrayList<>();
+        mappedValue.add(authContextItem);
+
+        // When
+        List<String> actual = mapper.inverse(mappedValue, ROOT);
+
+        // Then
+        assertThat(actual.get(0)).isEqualTo("urn:oasis:names:tc:SAML:2.0:ac:classes:Password|0|");
     }
 }

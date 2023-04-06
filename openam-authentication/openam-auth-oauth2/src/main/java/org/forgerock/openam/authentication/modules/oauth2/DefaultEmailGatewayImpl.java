@@ -11,28 +11,30 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oauth2;
 
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.KEY_SMTP_HOSTNAME;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.KEY_SMTP_PASSWORD;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.KEY_SMTP_PORT;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.KEY_SMTP_SSL_ENABLED;
+import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.KEY_SMTP_USERNAME;
+
 import java.util.Map;
+
+import javax.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iplanet.am.util.AMSendMail;
+import org.forgerock.am.mail.application.AMSendMail;
 
 public class DefaultEmailGatewayImpl implements EmailGateway {
 
-    private Logger debug = null;
-    
-    static final String KEY_EMAIL_GWY_IMPL = "org-forgerock-auth-oauth-email-gwy-impl";
-    static final String KEY_SMTP_HOSTNAME = "org-forgerock-auth-oauth-smtp-hostname";
-    static final String KEY_SMTP_PORT = "org-forgerock-auth-oauth-smtp-port";
-    static final String KEY_SMTP_USERNAME = "org-forgerock-auth-oauth-smtp-username";
-    static final String KEY_SMTP_PASSWORD = "org-forgerock-auth-oauth-smtp-password";
-    static final String KEY_SMTP_SSL_ENABLED = "org-forgerock-auth-oauth-smtp-ssl_enabled";
+    private final AMSendMail sendMail;
+    private final Logger debug;
     
     String smtpHostName = null;
     String smtpHostPort = null;
@@ -41,8 +43,10 @@ public class DefaultEmailGatewayImpl implements EmailGateway {
     String smtpSSLEnabled = null;
     boolean sslEnabled = true;
 
-    public DefaultEmailGatewayImpl() {
+    @Inject
+    public DefaultEmailGatewayImpl(AMSendMail sendMail) {
         debug = LoggerFactory.getLogger(DefaultEmailGatewayImpl.class);
+        this.sendMail = sendMail;
     }
 
    /**
@@ -69,8 +73,7 @@ public class DefaultEmailGatewayImpl implements EmailGateway {
 
         try {
             setOptions(options);
-            String tos[] = new String[] { to };
-            AMSendMail sendMail = new AMSendMail();
+            String[] tos = new String[] { to };
             
             if (smtpHostName == null || smtpHostPort == null ||
                     smtpUserName == null || smtpUserPassword == null ||
@@ -99,7 +102,7 @@ public class DefaultEmailGatewayImpl implements EmailGateway {
         smtpHostPort = options.get(KEY_SMTP_PORT);
         smtpUserName = options.get(KEY_SMTP_USERNAME);
         smtpUserPassword = options.get(KEY_SMTP_PASSWORD);
-        smtpSSLEnabled = options.get(KEY_SMTP_SSL_ENABLED);       
+        smtpSSLEnabled = options.get(KEY_SMTP_SSL_ENABLED);
         if (smtpSSLEnabled != null) {         
                 sslEnabled = smtpSSLEnabled.equalsIgnoreCase("true");
         }

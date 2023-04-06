@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2021 ForgeRock AS.
+ * Copyright 2015-2023 ForgeRock AS.
  */
 
 import "codemirror/mode/groovy/groovy";
@@ -61,7 +61,8 @@ export default AbstractView.extend({
         "click [data-show-fullscreen]": "editFullScreen",
         "click [data-exit-fullscreen]": "exitFullScreen",
         "change [data-field]": "checkChanges",
-        "keyup [data-field]": "checkChanges"
+        "keyup [data-field]": "checkChanges",
+        "change select[name=evaluatorVersion]": "toggleAdditionalFeatures"
     },
 
     render (args, callback) {
@@ -112,7 +113,8 @@ export default AbstractView.extend({
         const self = this;
 
         this.data.entity = _.pick(this.model.attributes,
-            "uuid", "name", "description", "language", "context", "script");
+            "uuid", "name", "description", "language", "context", "evaluatorVersion", "script",
+            "additionalScriptingFeaturesAllowed");
 
         if (this.data.contexts) {
             self.languageSchemaPromise.then((langSchema) => {
@@ -156,6 +158,7 @@ export default AbstractView.extend({
                 return context._id === self.data.entity.context;
             });
             this.data.contextName = context.name;
+            this.data.evaluatorVersions = context.evaluatorVersions[self.data.entity.language];
             this.data.languages = this.addLanguageNames(context.languages);
         } else {
             this.data.languages = [];
@@ -379,6 +382,7 @@ export default AbstractView.extend({
         if (!selectedContext.defaultScript || selectedContext.defaultScript === "[Empty]") {
             this.data.entity.script = "";
             this.data.entity.language = this.data.languages[0].id;
+            this.data.evaluatorVersions = selectedContext.evaluatorVersions[this.data.entity.language];
             promise.resolve();
         } else {
             defaultScript = new Script({ _id: selectedContext.defaultScript });
@@ -388,6 +392,7 @@ export default AbstractView.extend({
                 } else {
                     self.data.entity.language = model.attributes.language;
                 }
+                self.data.evaluatorVersions = selectedContext.evaluatorVersions[self.data.entity.language];
                 self.data.entity.script = model.attributes.script;
                 promise.resolve();
             });
@@ -407,15 +412,28 @@ export default AbstractView.extend({
         });
 
         this.scriptEditor.on("update", _.bind(this.checkChanges, this));
+        this.toggleAdditionalFeatures();
     },
 
     onChangeLanguage (e) {
         this.changeLanguage(e.target.value);
     },
 
-    changeLanguage (lang) {
-        this.data.entity.language = lang;
-        this.scriptEditor.setOption("mode", lang.toLowerCase());
+    changeLanguage (language) {
+        this.data.entity.language = language;
+        this.scriptEditor.setOption("mode", language.toLowerCase());
+
+        this.changeEvaluatorVersions(language);
+        this.toggleAdditionalFeatures();
+    },
+
+    changeEvaluatorVersions (language) {
+        const self = this;
+        const selectedContext = _.find(this.data.contexts, (context) => {
+            return context._id === self.data.entity.context;
+        });
+        this.data.evaluatorVersions = selectedContext.evaluatorVersions[language];
+        this.reRenderView();
     },
 
     showUploadButton () {
@@ -507,5 +525,42 @@ export default AbstractView.extend({
 
     toggleSaveButton (flag) {
         this.$el.find("[data-save]").prop("disabled", !flag);
+    },
+
+    toggleAdditionalFeatures () {
+        if (!this.data.entity.additionalScriptingFeaturesAllowed) {
+            return;
+        }
+
+        const additionalFeaturesAvailable = this.data.evaluatorVersions.length > 1;
+        this.$el.find("#additionalScriptingFeaturesWrapper").toggle(additionalFeaturesAvailable);
+        this.$el.find("#evaluatorVersion").selectize();
+        this.updateAdditionalScriptingFeaturesGuidance();
+    },
+
+    updateAdditionalScriptingFeaturesGuidance () {
+        const guidanceDiv = $("#additionalScriptingFeaturesGuidance")[0];
+
+        let newDivHeight = "0px";
+        const additionalScriptingFeaturesForLanguageVersion = this.getAdditionalFeatures();
+        if (additionalScriptingFeaturesForLanguageVersion) {
+            const featureList = $("#additionalFeaturesList");
+            featureList.empty();
+            additionalScriptingFeaturesForLanguageVersion.forEach((feature) => {
+                featureList.append(`<li>${feature}</li>`);
+            });
+            newDivHeight = `${guidanceDiv.scrollHeight}px`;
+        }
+
+        guidanceDiv.style.maxHeight = newDivHeight;
+    },
+
+    getAdditionalFeatures () {
+        const allAdditionalScriptingFeatures = t("console.scripts.edit.additionalScriptingFeaturesGuidance.features",
+            { returnObjects: true });
+        const additionalScriptingFeaturesForAllVersionsOfLanguage =
+            allAdditionalScriptingFeatures[this.data.entity.language];
+        return additionalScriptingFeaturesForAllVersionsOfLanguage
+            ? additionalScriptingFeaturesForAllVersionsOfLanguage[this.data.entity.evaluatorVersion] : undefined;
     }
 });

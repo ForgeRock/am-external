@@ -16,120 +16,74 @@
 
 package org.forgerock.openam.auth.nodes.oath;
 
-import static org.forgerock.json.JsonValue.json;
-import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.BGCOLOUR_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_BG_COLOR;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_GENERATE_RECOVERY_CODES;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_ISSUER;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.HIDDEN_CALLCABK_ID;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.IMG_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.ISSUER_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.SCAN_QR_CODE_MSG_KEY;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.ALGORITHM_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.COUNTER_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_CHECKSUM;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_MIN_SHARED_SECRET_LENGTH;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_TOTP_INTERVAL;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_TRUNCATION_OFFSET;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DIGITS_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.HOTP_URI_HOST_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_DEVICE_PROFILE_KEY;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_URI_SCHEME_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.PERIOD_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.SECRET_QR_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.TOTP_URI_HOST_QR_CODE_KEY;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.ResourceBundle;
+import static org.forgerock.openam.auth.nodes.oath.OathRegistrationHelper.NEXT_OPTION;
 
 import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
-import javax.security.auth.callback.TextOutputCallback;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
 
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Base32;
-import org.apache.commons.codec.binary.Hex;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.annotations.sm.Attribute;
+import com.google.common.collect.ImmutableList;
+import com.google.inject.assistedinject.Assisted;
+import com.sun.identity.idm.AMIdentity;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.auth.nodes.helpers.LocalizationHelper;
 import org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
-import org.forgerock.openam.core.rest.devices.services.SkipSetting;
 import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathService;
-import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
-import org.forgerock.util.annotations.VisibleForTesting;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.net.UrlEscapers;
-import com.google.inject.assistedinject.Assisted;
-import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.sm.RequiredValueValidator;
 
 /**
  * The OATH Registration node is a registration node that does not authenticate a user but
  * allows a user already authenticated earlier to register their mobile device.
  */
 @Node.Metadata(outcomeProvider = OathRegistrationNode.OutcomeProvider.class,
-        configClass = OathRegistrationNode.Config.class,
+        configClass = OathRegistrationConfig.class,
         tags = {"mfa", "multi-factor authentication"})
 public class OathRegistrationNode extends AbstractMultiFactorNode {
 
     private static final Logger logger = LoggerFactory.getLogger(OathRegistrationNode.class);
     private static final String BUNDLE = OathRegistrationNode.class.getName();
 
-    private static final int NEXT_OPTION = 0;
-    private static final String NEXT_LABEL = "Next";
-
-    private final Config config;
-    private final Realm realm;
-    private final OathDeviceProfileHelper deviceProfileHelper;
-    private final LocalizationHelper localizationHelper;
+    private final OathRegistrationConfig config;
+    private final OathRegistrationHelper oathRegistrationHelper;
 
     /**
      * The Oath registration node constructor.
      *
-     * @param config the node configuration.
-     * @param realm the realm.
-     * @param coreWrapper the {@code CoreWrapper} instance.
-     * @param deviceProfileHelper stores device profiles.
+     * @param config                  the node configuration.
+     * @param realm                   the realm.
+     * @param coreWrapper             the {@code CoreWrapper} instance.
      * @param multiFactorNodeDelegate shared utilities common to second factor implementations.
-     * @param identityUtils an instance of the IdentityUtils.
-     * @param localizationHelper the localization helper class.
+     * @param identityService         an instance of the IdentityService.
+     * @param oathRegistrationHelper  the oath registration helper class.
      */
     @Inject
-    public OathRegistrationNode(@Assisted Config config,
+    public OathRegistrationNode(
+            @Assisted OathRegistrationConfig config,
             @Assisted Realm realm,
             CoreWrapper coreWrapper,
-            OathDeviceProfileHelper deviceProfileHelper,
             MultiFactorNodeDelegate<AuthenticatorOathService> multiFactorNodeDelegate,
-            IdentityUtils identityUtils,
-            LocalizationHelper localizationHelper) {
-        super(realm, coreWrapper, multiFactorNodeDelegate, identityUtils);
+            LegacyIdentityService identityService,
+            OathRegistrationHelper oathRegistrationHelper) {
+        super(realm, coreWrapper, multiFactorNodeDelegate, identityService);
         this.config = config;
-        this.realm = realm;
-        this.deviceProfileHelper = deviceProfileHelper;
-        this.localizationHelper = localizationHelper;
+        this.oathRegistrationHelper = oathRegistrationHelper;
     }
 
     @Override
@@ -145,329 +99,78 @@ public class OathRegistrationNode extends AbstractMultiFactorNode {
         if (context.getCallback(ConfirmationCallback.class)
                 .filter(callback -> callback.getSelectedIndex() == NEXT_OPTION)
                 .isPresent()) {
-
-            AMIdentity userIdentity = getIdentity(context);
-
-            OathDeviceSettings oathDeviceSettings = deviceProfileHelper
-                    .getDeviceProfileFromSharedState(context, OATH_DEVICE_PROFILE_KEY);
-            if (oathDeviceSettings == null) {
-                logger.error("No device profile found on shared state");
-                return buildAction(FAILURE_OUTCOME_ID, context);
-            }
-
-            logger.debug("Saving oath device profile.");
-            List<String> recoveryCodes = deviceProfileHelper.saveDeviceSettings(oathDeviceSettings,
-                    json(object()), userIdentity, config.generateRecoveryCodes());
-            setUserToNotSkippable(userIdentity, realm.toString());
-
-            if (CollectionUtils.isNotEmpty(recoveryCodes)) {
-                logger.debug("Completed OATH registration. Sending recovery codes.");
-                return buildActionWithRecoveryCodes(context, oathDeviceSettings.getDeviceName(), recoveryCodes);
-            } else {
-                logger.debug("Completed OATH registration.");
+            if (config.postponeDeviceProfileStorage()) {
+                logger.debug("Postpone storing device data.");
                 return buildAction(SUCCESS_OUTCOME_ID, context);
+            } else {
+                OathDeviceSettings oathDeviceSettings = oathRegistrationHelper
+                        .getDeviceProfileFromSharedState(context);
+                if (oathDeviceSettings == null) {
+                    logger.error("No device profile found on shared state");
+                    return buildAction(FAILURE_OUTCOME_ID, context);
+                }
+
+                AMIdentity userIdentity = getIdentity(context);
+
+                logger.debug("Saving oath device profile.");
+                List<String> recoveryCodes = oathRegistrationHelper.saveDeviceSettings(oathDeviceSettings,
+                        userIdentity, config.generateRecoveryCodes());
+
+                if (CollectionUtils.isNotEmpty(recoveryCodes)) {
+                    logger.debug("Completed OATH registration. Sending recovery codes.");
+                    return buildActionWithRecoveryCodes(context, oathDeviceSettings.getDeviceName(), recoveryCodes);
+                } else {
+                    logger.debug("Completed OATH registration.");
+                    return buildAction(SUCCESS_OUTCOME_ID, context);
+                }
             }
         }
 
         return startRegistration(context);
     }
 
-    @Override
-    protected Action.ActionBuilder cleanupSharedState(TreeContext context, Action.ActionBuilder builder) {
-        return builder;
-    }
-
-    /**
-     * Starts the Oath Registration process.
-     *
-     * @param context The context of the tree authentication.
-     * @return The next action to perform.
-     */
     private Action startRegistration(TreeContext context) throws NodeProcessException {
-        OathDeviceSettings oathDeviceSettings = deviceProfileHelper.createDeviceSettings(
-                config.minSharedSecretLength(),
-                config.addChecksum(),
-                config.truncationOffset()
-        );
+        OathDeviceSettings oathDeviceSettings = oathRegistrationHelper.createDeviceSettings(config);
         try {
             AMIdentity userIdentity = getIdentity(context);
 
             List<Callback> callbacks = createScanQRCodeCallbacks(context, oathDeviceSettings, userIdentity);
 
-            JsonValue sharedState = context.sharedState.copy()
-                    .put(OATH_DEVICE_PROFILE_KEY, deviceProfileHelper.encodeDeviceSettings(oathDeviceSettings));
+            oathRegistrationHelper.updateSharedState(context.getStateFor(this),
+                    oathDeviceSettings, config.generateRecoveryCodes());
 
             return send(callbacks)
-                    .replaceSharedState(sharedState)
+                    .replaceSharedState(context.sharedState.copy())
                     .build();
         } catch (IOException e) {
             throw new NodeProcessException(e);
         }
     }
 
-    /**
-     * Creates a set of callbacks used to display the QRCode for scanning.
-     *
-     * @param context The context of the tree authentication.
-     * @param deviceProfile the Oath device's settings.
-     * @param identity the AM identity.
-     * @return List of callbacks used for scan the QRCode.
-     * @throws NodeProcessException if unable to create the callbacks.
-     */
     private List<Callback> createScanQRCodeCallbacks(TreeContext context, OathDeviceSettings deviceProfile,
-                                                     AMIdentity identity) throws NodeProcessException {
-        Map<String, String> params = buildURIParameters(deviceProfile);
+                                             AMIdentity identity) throws NodeProcessException {
+        Map<String, String> params = oathRegistrationHelper.buildURIParameters(deviceProfile, config);
 
-        String message = localizationHelper.getLocalizedMessage(context, OathRegistrationNode.class,
-                config.scanQRCodeMessage(), SCAN_QR_CODE_MSG_KEY);
-        Callback textOutputCallback = new TextOutputCallback(TextOutputCallback.INFORMATION, message);
-        Callback hiddenCallback = createHiddenCallback(identity, params);
-        Callback qrCodeCallback = createQRCodeCallback(identity, params);
+        Callback textOutputCallback = oathRegistrationHelper.createLocalizedTextCallback(context, this.getClass(),
+                config.scanQRCodeMessage());
+        Callback hiddenCallback = oathRegistrationHelper.createHiddenCallback(identity, params, config.algorithm(),
+                config.issuer(), config.accountName().toString());
+        Callback qrCodeCallback = oathRegistrationHelper.createQRCodeCallback(identity, params, config.algorithm(),
+                config.issuer(), config.accountName().toString());
+        Callback confirmationCallback = oathRegistrationHelper.createLocalizedConfirmationCallback(context,
+                this.getClass());
 
         return ImmutableList.of(
                 textOutputCallback,
                 qrCodeCallback,
                 hiddenCallback,
-                new ConfirmationCallback(ConfirmationCallback.YES, new String[]{NEXT_LABEL}, NEXT_OPTION)
+                confirmationCallback
         );
     }
 
-    /**
-     * Creates the QRCode callback.
-     *
-     * @param identity the AM identity.
-     * @param params the query parameters map.
-     * @return The QRCode callback.
-     */
-    @VisibleForTesting
-    Callback createQRCodeCallback(AMIdentity identity, Map<String, String> params) {
-        return createQRCodeCallback(
-                OATH_URI_SCHEME_QR_CODE_KEY,
-                config.algorithm() == OathAlgorithm.HOTP ? HOTP_URI_HOST_QR_CODE_KEY : TOTP_URI_HOST_QR_CODE_KEY,
-                UrlEscapers.urlFragmentEscaper().escape(config.issuer()),
-                getUserAttributeForAccountName(identity, config.accountName().toString()),
-                0,
-                params
-        );
-    }
-
-    /**
-     * Creates the Hidden callback.
-     *
-     * @param identity the AM identity.
-     * @param params the query parameters map.
-     * @return The HiddenValue callback.
-     */
-    @VisibleForTesting
-    Callback createHiddenCallback(AMIdentity identity, Map<String, String> params) {
-        return createHiddenValueCallback(
-                HIDDEN_CALLCABK_ID,
-                OATH_URI_SCHEME_QR_CODE_KEY,
-                config.algorithm() == OathAlgorithm.HOTP ? HOTP_URI_HOST_QR_CODE_KEY : TOTP_URI_HOST_QR_CODE_KEY,
-                UrlEscapers.urlFragmentEscaper().escape(config.issuer()),
-                getUserAttributeForAccountName(identity, config.accountName().toString()),
-                params
-        );
-    }
-
-    /**
-     * Build the URI parameters to create the QR Code.
-     *
-     * @param deviceProfile the Oath device's settings.
-     * @return the map of parameters.
-     * @throws NodeProcessException if unable to decode secret.
-     */
-    @VisibleForTesting
-    Map<String, String> buildURIParameters(OathDeviceSettings deviceProfile)
-            throws NodeProcessException {
-        Map<String, String> params = new LinkedHashMap<>();
-
-        try {
-            params.put(SECRET_QR_CODE_KEY, getBase32Secret(deviceProfile.getSharedSecret()));
-            params.put(ISSUER_QR_CODE_KEY, UrlEscapers.urlFragmentEscaper().escape(config.issuer()));
-
-            if (config.algorithm() == OathAlgorithm.HOTP) {
-                params.put(COUNTER_QR_CODE_KEY, String.valueOf(deviceProfile.getCounter()));
-            } else if (config.algorithm() == OathAlgorithm.TOTP) {
-                params.put(PERIOD_QR_CODE_KEY, String.valueOf(config.totpTimeInterval()));
-            } else {
-                throw new NodeProcessException("No OTP algorithm selected");
-            }
-
-            params.put(DIGITS_QR_CODE_KEY, String.valueOf(config.passwordLength()));
-
-            if (config.bgColor() != null && config.bgColor().startsWith("#")) {
-                params.put(BGCOLOUR_QR_CODE_KEY, config.bgColor().substring(1));
-            } else {
-                params.put(BGCOLOUR_QR_CODE_KEY, config.bgColor());
-            }
-
-            if (config.imgUrl() != null) {
-                params.put(IMG_QR_CODE_KEY, config.imgUrl());
-            }
-
-            if ((config.algorithm() == OathAlgorithm.TOTP)
-                    && (config.totpHashAlgorithm() != HashAlgorithm.HMAC_SHA1)) {
-                params.put(ALGORITHM_QR_CODE_KEY, config.totpHashAlgorithm().toString());
-            }
-        } catch (DecoderException e) {
-            throw new NodeProcessException("Could not decode secret key from hex to plain text", e);
-        }
-
-        return params;
-    }
-
-    @VisibleForTesting
-    String getBase32Secret(String secret) throws DecoderException {
-        byte[] secretPlainTextBytes = Hex.decodeHex(secret.toCharArray());
-        Base32 base32 = new Base32();
-        return new String(base32.encode(secretPlainTextBytes));
-    }
-
-    /**
-     * Set the current user should not skip MFA.
-     *
-     * @param amIdentity the identity of the user.
-     * @param realm the realm.
-     */
-    @VisibleForTesting
-    void setUserToNotSkippable(AMIdentity amIdentity, String realm) {
-        setUserSkip(amIdentity, realm, SkipSetting.NOT_SKIPPABLE);
-    }
-
-    /**
-     * The OATH Registration node configuration.
-     */
-    public interface Config {
-
-        /**
-         * Specifies the name of the issuer.
-         *
-         * @return issuer name as string.
-         */
-        @Attribute(order = 10, validators = {RequiredValueValidator.class})
-        default String issuer() {
-            return DEFAULT_ISSUER;
-        }
-
-        /**
-         * Specifies the attribute to be used as account name.
-         *
-         * @return account name as string.
-         */
-        @Attribute(order = 20)
-        default UserAttributeToAccountNameMapping accountName() {
-            return UserAttributeToAccountNameMapping.USERNAME;
-        }
-
-        /**
-         * Background color of entry in ForgeRock Authenticator app.
-         *
-         * @return the hexadecimal color value as string.
-         */
-        @Attribute(order = 30)
-        default String bgColor() {
-            return DEFAULT_BG_COLOR;
-        }
-
-        /**
-         * URL of a logo image resource associated with the Issuer.
-         *
-         * @return the URL of the logo image resource.
-         */
-        @Attribute(order = 40)
-        default String imgUrl() {
-            return "";
-        }
-
-        /**
-         * Specifies whether to generate recovery codes and store them in the device profile.
-         *
-         * @return true if the codes are to be generated.
-         */
-        @Attribute(order = 50)
-        default boolean generateRecoveryCodes() {
-            return DEFAULT_GENERATE_RECOVERY_CODES;
-        }
-
-        /**
-         * Specifies the One Time Password length.
-         *
-         * @return the length of the generated OTP in digits.
-         */
-        @Attribute(order = 60)
-        default NumberOfDigits passwordLength() {
-            return NumberOfDigits.SIX_DIGITS;
-        }
-
-        /**
-         * Specifies the Minimum Secret Key Length.
-         *
-         * @return the number of hexadecimal characters allowed for the Secret Key.
-         */
-        @Attribute(order = 70)
-        default int minSharedSecretLength() {
-            return DEFAULT_MIN_SHARED_SECRET_LENGTH;
-        }
-
-        /**
-         * Specifies the OATH Algorithm to Use.
-         *
-         * @return the algorithm the device uses to generate the OTP.
-         */
-        @Attribute(order = 80)
-        default OathAlgorithm algorithm() {
-            return OathAlgorithm.TOTP;
-        }
-
-        /**
-         * Specifies the TOTP time step interval.
-         *
-         * @return the TOTP time step in seconds that the OTP device uses to generate the OTP.
-         */
-        @Attribute(order = 90)
-        default int totpTimeInterval() {
-            return DEFAULT_TOTP_INTERVAL;
-        }
-
-        /**
-         * Specifies the TOTP hash algorithm.
-         *
-         * @return the TOTP hash algorithm to be used to generate the OTP.
-         */
-        @Attribute(order = 100)
-        default HashAlgorithm totpHashAlgorithm() {
-            return HashAlgorithm.HMAC_SHA1;
-        }
-
-        /**
-         * Specifies if should add Checksum Digit.
-         *
-         * @return true if it adds a checksum digit to the OTP.
-         */
-        @Attribute(order = 110)
-        default boolean addChecksum() {
-            return DEFAULT_CHECKSUM;
-        }
-
-        /**
-         * Specifies the Truncation Offset.
-         *
-         * @return the value of an offset to the generation of the OTP.
-         */
-        @Attribute(order = 120)
-        default int truncationOffset() {
-            return DEFAULT_TRUNCATION_OFFSET;
-        }
-
-        /**
-         * The message to displayed to user to scan the QR code.
-         * @return The mapping of locales to scan QR code messages.
-         */
-        @Attribute(order = 130)
-        default Map<Locale, String> scanQRCodeMessage() {
-            return Collections.emptyMap();
-        }
+    @Override
+    protected Action.ActionBuilder cleanupSharedState(TreeContext context, Action.ActionBuilder builder) {
+        return oathRegistrationHelper.cleanupSharedState(context, builder, config.postponeDeviceProfileStorage());
     }
 
     /**

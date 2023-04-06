@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
@@ -19,6 +19,7 @@ import java.util.logging.Level;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.forgerock.openam.saml2.plugins.IDPAdapter;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,6 @@ import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.plugins.DefaultIDPAdapter;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 import com.sun.identity.saml2.profile.ClientFaultException;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
 import com.sun.identity.saml2.profile.ServerFaultException;
@@ -126,17 +126,17 @@ public class UtilProxyIDPRequestValidator implements IDPRequestValidator {
     }
 
     /**
-     * Loads the {@link SAML2IdentityProviderAdapter} IDP adapter which will be called as part
+     * Loads the {@link IDPAdapter} IDP adapter which will be called as part
      * of IDP processing.
      *
      * @param realm Possibly null realm.
      * @param idpEntityID Non null idpEntityID.
      *
-     * @return The loaded {@link SAML2IdentityProviderAdapter} if it could be loaded otherwise
+     * @return The loaded {@link org.forgerock.openam.saml2.plugins.IDPAdapter} if it could be loaded otherwise
      * the default implementation {@link DefaultIDPAdapter}.
      */
-    public SAML2IdentityProviderAdapter getIDPAdapter(String realm, String idpEntityID) {
-        SAML2IdentityProviderAdapter r;
+    public IDPAdapter getIDPAdapter(String realm, String idpEntityID) {
+        IDPAdapter r;
         if (idpEntityID == null) {
             debug.error("No IDP Entity ID provided");
             r = new DefaultIDPAdapter();

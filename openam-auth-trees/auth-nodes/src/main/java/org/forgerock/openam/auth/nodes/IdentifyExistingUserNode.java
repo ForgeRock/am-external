@@ -42,7 +42,7 @@ import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.util.Strings;
 import org.slf4j.Logger;
@@ -65,7 +65,7 @@ public class IdentifyExistingUserNode extends AbstractDecisionNode {
 
     private final IdentifyExistingUserNode.Config config;
     private final Realm realm;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final IdmIntegrationService idmIntegrationService;
 
     /**
@@ -100,15 +100,15 @@ public class IdentifyExistingUserNode extends AbstractDecisionNode {
      *
      * @param config The node configuration.
      * @param realm The realm context.
-     * @param identityUtils An instance of IdentityUtils.
+     * @param identityService An instance of IdentityService.
      * @param idmIntegrationService The IDM integration service.
      */
     @Inject
     public IdentifyExistingUserNode(@Assisted IdentifyExistingUserNode.Config config, @Assisted Realm realm,
-            IdentityUtils identityUtils, IdmIntegrationService idmIntegrationService) {
+            LegacyIdentityService identityService, IdmIntegrationService idmIntegrationService) {
         this.config = config;
         this.realm = realm;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.idmIntegrationService = idmIntegrationService;
     }
 
@@ -153,7 +153,7 @@ public class IdentifyExistingUserNode extends AbstractDecisionNode {
 
             return goTo(true)
                     .replaceSharedState(copyState)
-                    .withUniversalId(context.universalId.or(() -> getUniversalId(globalState, identityUtils)))
+                    .withUniversalId(context.universalId.or(() -> getUniversalId(globalState, identityService)))
                      .build();
         }
         logger.debug("No {} identified", context.identityResource);

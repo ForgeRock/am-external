@@ -11,19 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.utils.CrestQuery;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdSearchControl;
 import com.sun.identity.idm.IdSearchResults;
@@ -39,7 +39,7 @@ public class IdentityProvider {
 
     /**
      * Constructor.
-     * @param coreWrapper Used to get the AMIdentityRepository.
+     * @param coreWrapper Used to get the {@link IdentityStore}.
      */
     @Inject
     public IdentityProvider(CoreWrapper coreWrapper) {
@@ -55,14 +55,12 @@ public class IdentityProvider {
      * @throws IdRepoException if there are repository related error conditions.
      * @throws SSOException if user's single sign on token is invalid.
      */
-    public AMIdentity getIdentity(String username, String realm) throws IdRepoException,
-            SSOException {
-        AMIdentityRepository idrepo = coreWrapper.getAMIdentityRepository(
-                coreWrapper.convertRealmPathToRealmDn(realm));
+    public AMIdentity getIdentity(String username, String realm) throws IdRepoException, SSOException {
+        IdentityStore identityStore = coreWrapper.getIdentityRepository(realm);
         IdSearchControl idSearchControl = new IdSearchControl();
         idSearchControl.setAllReturnAttributes(true);
 
-        IdSearchResults idSearchResults = idrepo.searchIdentities(IdType.USER,
+        IdSearchResults idSearchResults = identityStore.searchIdentities(IdType.USER,
                 new CrestQuery(username), idSearchControl);
         return (AMIdentity) idSearchResults.getSearchResults().iterator().next();
     }

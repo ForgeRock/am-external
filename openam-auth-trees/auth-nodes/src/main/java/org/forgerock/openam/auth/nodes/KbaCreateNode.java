@@ -80,6 +80,16 @@ public class KbaCreateNode extends SingleOutcomeNode {
         default Map<Locale, String> message() {
             return Collections.emptyMap();
         }
+
+        /**
+         * Toggle for allowing user defined KBA questions.
+         *
+         * @return whether user's can define their own KBA questions
+         */
+        @Attribute(order = 200, validators = {RequiredValueValidator.class})
+        default boolean allowUserDefinedQuestions() {
+            return true;
+        }
     }
 
     /**
@@ -138,7 +148,7 @@ public class KbaCreateNode extends SingleOutcomeNode {
         for (int i = 0; i < kbaConfig.getMinimumAnswersToDefine(); i++) {
             callbacks.add(new KbaCreateCallback(
                     getLocalisedMessage(context, localeSelector, this.getClass(), config.message(), "message.default"),
-                    questions));
+                    questions, config.allowUserDefinedQuestions()));
         }
         return callbacks;
     }

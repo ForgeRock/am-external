@@ -24,7 +24,7 @@
  *
  * $Id: HOTP.java,v 1.1 2009/03/24 23:52:12 pluo Exp $
  *
- * Portions Copyrighted 2013-2019 ForgeRock AS.
+ * Portions Copyrighted 2013-2022 ForgeRock AS.
  * Portions Copyrighted 2014-2015 Nomura Research Institute, Ltd.
  */
 
@@ -42,6 +42,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.forgerock.am.identity.persistence.IdentityStore;
+import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +51,6 @@ import org.slf4j.LoggerFactory;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdSearchControl;
 import com.sun.identity.idm.IdSearchOpModifier;
@@ -66,9 +67,10 @@ public class HOTPService {
     // TODO : the moving factor should be retrieved from user's profile
     private static int movingFactor = 0;
 
-    private final AMIdentityRepository amIdentityRepo;
+    private final IdentityStore identityStore;
     private final String gatewaySMSImplClass;
     private final long codeValidityDuration;
+    private final SMSGatewayLookup smsGatewayLookup;
     private String telephoneAttribute;
     private final String carrierAttribute;
     private String emailAttribute;
@@ -89,12 +91,12 @@ public class HOTPService {
     /**
      * Constructs an instance of the HOTPService.
      *
-     * @param amIdentityRepo An instance of the AMIdentityRepository.
+     * @param identityStore An instance of the {@link IdentityStore}.
      * @param userName The user's name.
      * @param hotpParams The authentication modules configuration settings.
      */
-    public HOTPService(AMIdentityRepository amIdentityRepo, String userName, HOTPParams hotpParams) {
-        this.amIdentityRepo = amIdentityRepo;
+    public HOTPService(IdentityStore identityStore, String userName, HOTPParams hotpParams) {
+        this.identityStore = identityStore;
         this.userName = userName;
         this.gatewaySMSImplClass = hotpParams.getGatewaySMSImplClass();
         this.codeValidityDuration = hotpParams.getCodeValidityDuration();
@@ -110,6 +112,7 @@ public class HOTPService {
         this.userSearchAttributes = hotpParams.getUserSearchAttributes();
         this.otpGenerator = new HOTPAlgorithm();
         secureRandom = new SecureRandom();
+        this.smsGatewayLookup = InjectorHolder.getInstance(SMSGatewayLookup.class);
     }
 
     /**
@@ -193,7 +196,7 @@ public class HOTPService {
             boolean delivered = false;
             if (phone != null || mail != null) {
                 String from = getMapAttr((Map<String, Set<String>>)currentConfig, fromAddressAttributeName);
-                SMSGateway gateway = Class.forName(gatewaySMSImplClass).asSubclass(SMSGateway.class).newInstance();
+                SMSGateway gateway = smsGatewayLookup.getSmsGateway(gatewaySMSImplClass);
                 if (codeDelivery.equals("SMS and E-mail")) {
                     try {
                         if (phone != null) {
@@ -261,7 +264,7 @@ public class HOTPService {
 
         IdSearchResults searchResults;
         try {
-            searchResults = amIdentityRepo.searchIdentities(IdType.USER, userName, idsc);
+            searchResults = identityStore.searchIdentitiesByUsername(IdType.USER, userName, idsc);
             if (searchResults.getSearchResults().isEmpty() && !userSearchAttributes.isEmpty()) {
                 if (DEBUG.isDebugEnabled()) {
                     DEBUG.debug("HOTP.getIdentity: searching user identity " + "with alternative attributes "
@@ -270,7 +273,7 @@ public class HOTPService {
                 final Map<String, Set<String>> searchAVP = CollectionUtils.toAvPairMap(userSearchAttributes, userName);
                 idsc.setSearchModifiers(IdSearchOpModifier.OR, searchAVP);
                 // workaround as data store always adds 'user-naming-attribute' to searchfilter
-                searchResults = amIdentityRepo.searchIdentities(IdType.USER, "*", idsc);
+                searchResults = identityStore.searchIdentitiesByUsername(IdType.USER, "*", idsc);
             }
 
             if (searchResults != null) {

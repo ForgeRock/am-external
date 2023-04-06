@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2021 ForgeRock AS.
+ * Copyright 2014-2023 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.scripted;
 
@@ -24,39 +24,36 @@ import java.util.Set;
 
 import javax.script.Bindings;
 import javax.script.ScriptException;
-import javax.script.SimpleBindings;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
 
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.http.client.request.HttpClientRequest;
 import org.forgerock.http.client.request.HttpClientRequestFactory;
 import org.forgerock.openam.core.realms.RealmLookupException;
 import org.forgerock.openam.core.realms.Realms;
+import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
-import org.forgerock.openam.scripting.domain.ScriptingLanguage;
-import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
-import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.ScriptingLanguage;
+import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 import org.forgerock.openam.scripting.persistence.ScriptStore;
 import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Key;
-import com.google.inject.TypeLiteral;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import com.sun.identity.authentication.spi.AMLoginModule;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.util.ISAuthConstants;
-import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.shared.datastruct.CollectionHelper;
-import com.sun.identity.shared.debug.Debug;
 import com.sun.identity.sm.ChoiceValues;
 import com.sun.identity.sm.DNMapper;
 
@@ -71,14 +68,11 @@ public class Scripted extends AMLoginModule {
 
     private final static int STATE_RUN_SCRIPT = 2;
     public static final String STATE_VARIABLE_NAME = "authState";
-    private static final String SUCCESS_ATTR_NAME = "SUCCESS";
     public static final int SUCCESS_VALUE = -1;
-    private static final String FAILED_ATTR_NAME = "FAILED";
     public static final int FAILURE_VALUE = -2;
     public static final String USERNAME_VARIABLE_NAME = "username";
     public static final String REALM_VARIABLE_NAME = "realm";
     public static final String HTTP_CLIENT_VARIABLE_NAME = "httpClient";
-    public static final String LOGGER_VARIABLE_NAME = "logger";
     public static final String IDENTITY_REPOSITORY = "idRepository";
     // Incoming from client side:
     public static final String CLIENT_SCRIPT_OUTPUT_DATA_PARAMETER_NAME = "clientScriptOutputData";
@@ -96,7 +90,9 @@ public class Scripted extends AMLoginModule {
     private ScriptStore scriptStore;
     public Map moduleConfiguration;
 
-    /** Debug logger instance used by scripts to log error/debug messages. */
+    /**
+     * Debug logger instance used by scripts to log error/debug messages.
+     */
     private static final Logger DEBUG = LoggerFactory.getLogger(Scripted.class);
 
     final HttpClientRequestFactory httpClientRequestFactory = InjectorHolder.getInstance(HttpClientRequestFactory.class);
@@ -130,11 +126,11 @@ public class Scripted extends AMLoginModule {
     }
 
     private ScriptIdentityRepository getScriptIdentityRepository(Set<String> userSearchAttributes) {
-        return new ScriptIdentityRepository(getAmIdentityRepository(), userSearchAttributes);
+        return new ScriptIdentityRepository(getIdentityStore(), userSearchAttributes);
     }
 
-    private AMIdentityRepository getAmIdentityRepository() {
-        return getAMIdentityRepository(getRequestOrg());
+    private IdentityStore getIdentityStore() {
+        return getIdentityStore(getRequestOrg());
     }
 
     private ScriptStore initialiseScriptingService() {
@@ -154,45 +150,52 @@ public class Scripted extends AMLoginModule {
 
         switch (state) {
 
-            case ISAuthConstants.LOGIN_START:
+        case ISAuthConstants.LOGIN_START:
 
-                if (getClientSideScriptEnabled()) {
-                    substituteUIStrings();
-                    return STATE_RUN_SCRIPT;
-                } else {
-                    // No client-side script, so immediately evaluate the server-side script with a null input
-                    return evaluateServerSideScript(null, STATE_RUN_SCRIPT);
-                }
+            if (getClientSideScriptEnabled()) {
+                substituteUIStrings();
+                return STATE_RUN_SCRIPT;
+            } else {
+                // No client-side script, so immediately evaluate the server-side script with a null input
+                return evaluateServerSideScript(null, STATE_RUN_SCRIPT);
+            }
 
-            case STATE_RUN_SCRIPT:
-                String clientScriptOutputData = getClientScriptOutputData(callbacks);
-                return evaluateServerSideScript(clientScriptOutputData, state);
-            default:
-                throw new AuthLoginException("Invalid state");
+        case STATE_RUN_SCRIPT:
+            String clientScriptOutputData = getClientScriptOutputData(callbacks);
+            return evaluateServerSideScript(clientScriptOutputData, state);
+        default:
+            throw new AuthLoginException("Invalid state");
         }
 
     }
 
     private int evaluateServerSideScript(String clientScriptOutputData, int state) throws AuthLoginException {
         Script script = getServerSideScript();
-        Bindings scriptVariables = new SimpleBindings();
-        scriptVariables.put(REQUEST_DATA_VARIABLE_NAME, getScriptHttpRequestWrapper());
-        scriptVariables.put(CLIENT_SCRIPT_OUTPUT_DATA_VARIABLE_NAME, clientScriptOutputData);
-        scriptVariables.put(LOGGER_VARIABLE_NAME,
-                Debug.getInstance("scripts." + AUTHENTICATION_SERVER_SIDE.name() + "." + script.getId()));
-        scriptVariables.put(STATE_VARIABLE_NAME, state);
-        scriptVariables.put(SHARED_STATE, sharedState);
-        scriptVariables.put(USERNAME_VARIABLE_NAME, userName);
-        scriptVariables.put(REALM_VARIABLE_NAME, realm);
-        scriptVariables.put(SUCCESS_ATTR_NAME, SUCCESS_VALUE);
-        scriptVariables.put(FAILED_ATTR_NAME, FAILURE_VALUE);
-        scriptVariables.put(HTTP_CLIENT_VARIABLE_NAME, httpClient);
-        scriptVariables.put(IDENTITY_REPOSITORY, identityRepository);
+
+        ScriptBindings scriptBindings = ScriptedBindings.builder()
+                .withRequestData(getScriptHttpRequestWrapper())
+                .withClientScriptOutputData(clientScriptOutputData)
+                .withState(state)
+                .withSharedState(sharedState)
+                .withUsername(userName)
+                .withRealm(realm)
+                .withSuccessValue(SUCCESS_VALUE)
+                .withFailureValue(FAILURE_VALUE)
+                .withHttpClient(httpClient)
+                .withIdentityRepository(identityRepository)
+                .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                .withScriptName(script.getName())
+                .build();
+
+        Bindings scriptVariables = scriptBindings.convert(script.getEvaluatorVersion());
 
         try {
-            scriptEvaluator.evaluateScript(script, scriptVariables);
+            scriptEvaluator.evaluateScript(script, scriptVariables, Realms.of(realm));
         } catch (ScriptException e) {
             DEBUG.debug("Error running server side scripts", e);
+            throw new AuthLoginException("Error running script", e);
+        } catch (RealmLookupException e) {
+            DEBUG.debug("Realm not found when running script", e);
             throw new AuthLoginException("Error running script", e);
         }
 

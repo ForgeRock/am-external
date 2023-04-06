@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -27,6 +27,8 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_MESSAGE_EXPIRATION;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.TIME_TO_LIVE_KEY;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -35,6 +37,7 @@ import java.util.Optional;
 
 import org.forgerock.cuppa.Test;
 import org.forgerock.cuppa.junit.CuppaRunner;
+import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
@@ -48,6 +51,7 @@ import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandle
 
 import com.google.common.collect.ImmutableMap;
 import org.assertj.core.api.Assertions;
+import org.forgerock.openam.utils.Time;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -105,6 +109,28 @@ public class PushResultVerifierNodeTest {
                         assertThat(result.outcome).isEqualTo("FALSE");
                     });
                 });
+                when("the message is NOT expired", () -> {
+                    beforeEach(() -> {
+                        given(messageHandler.check(messageId)).willReturn(MessageState.UNKNOWN);
+                        treeContext = getContextWithPushTimeout(60000);
+                    });
+                    it("should return WAITING outcome", () -> {
+                        Action result = node.process(treeContext);
+
+                        assertThat(result.outcome).isEqualTo("WAITING");
+                    });
+                });
+                when("the message is expired", () -> {
+                    beforeEach(() -> {
+                        given(messageHandler.check(messageId)).willReturn(MessageState.UNKNOWN);
+                        treeContext = getContextWithPushTimeout(-1000);
+                    });
+                    it("should return EXPIRED outcome", () -> {
+                        Action result = node.process(treeContext);
+
+                        assertThat(result.outcome).isEqualTo("EXPIRED");
+                    });
+                });
                 when("the push message's message type is known", () -> {
                     beforeEach(() -> {
                         given(messageId.getMessageType()).willReturn(DefaultMessageTypes.AUTHENTICATE);
@@ -147,7 +173,27 @@ public class PushResultVerifierNodeTest {
     }
 
     private TreeContext getContext() {
-        return new TreeContext(json(object(field(MESSAGE_ID_KEY, "badger"), field(REALM, "weasel"))),
-                new Builder().build(), emptyList(), Optional.empty());
+        JsonValue sharedState = json(object(
+                field(MESSAGE_ID_KEY, "badger"), field(REALM, "weasel")
+        ));
+        return new TreeContext(sharedState, new Builder().build(), emptyList(), Optional.empty());
+    }
+
+    private TreeContext getContextWithPushTimeout(int timeout) {
+        JsonValue sharedState = json(object(
+                field(REALM, "weasel"),
+                field(MESSAGE_ID_KEY, "badger"),
+                field(TIME_TO_LIVE_KEY, 60000),
+                field(PUSH_MESSAGE_EXPIRATION, getEndTime(timeout))
+        ));
+        return new TreeContext(
+                sharedState,
+                new Builder().build(),
+                emptyList(),
+                Optional.empty());
+    }
+
+    private long getEndTime(int timeout) {
+        return Time.getClock().instant().plusMillis(timeout).toEpochMilli();
     }
 }

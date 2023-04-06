@@ -22,7 +22,7 @@ import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
-import static org.forgerock.openam.utils.file.FileUtils.createFileWithPermissions;
+import static org.forgerock.openam.utils.file.FileUtils.createFileIfMissing;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -87,7 +87,7 @@ public class AuthorizedKeyConfiguratorPlugin implements ConfiguratorPlugin {
     }
 
     private static void writePrivateKey(String directory, KeyPair keyPair) throws IOException {
-        Path fileWithPermissions = createFileWithPermissions(Path.of(directory, KEY_FILE), OWNER_READ, OWNER_WRITE);
+        Path fileWithPermissions = createFileIfMissing(Path.of(directory, KEY_FILE), OWNER_READ, OWNER_WRITE);
         File keyFile = fileWithPermissions.toFile();
         try (JcaPEMWriter pemWriter = new JcaPEMWriter(new OutputStreamWriter(new FileOutputStream(keyFile)))) {
             pemWriter.writeObject(keyPair.getPrivate());
@@ -109,7 +109,7 @@ public class AuthorizedKeyConfiguratorPlugin implements ConfiguratorPlugin {
     }
 
     private static void writePublicKeyFile(String directory, String keyLine, String file) throws IOException {
-        Path fileWithPermissions = createFileWithPermissions(Path.of(directory, file), OWNER_READ, OWNER_WRITE);
+        Path fileWithPermissions = createFileIfMissing(Path.of(directory, file), OWNER_READ, OWNER_WRITE);
         File authorizedKeys = fileWithPermissions.toFile();
         Files.writeString(authorizedKeys.toPath(), keyLine, US_ASCII, authorizedKeys.exists() ? APPEND : CREATE);
     }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 
 import "popoverclickaway";
@@ -26,6 +26,10 @@ import JSONEditorTheme from "org/forgerock/openam/ui/admin/utils/JSONEditorTheme
 import JSONSchema from "org/forgerock/openam/ui/common/models/JSONSchema";
 import JSONValues from "org/forgerock/openam/ui/common/models/JSONValues";
 import Selectize from "selectize";
+import {
+    convertPlaceholderSchemaToReadOnly,
+    flattenPlaceholder
+} from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
 
 function convertHelpBlocksToPopOvers (element) {
     const html = HelpPopoverPartial();
@@ -70,7 +74,7 @@ Selectize.define("enum_plugin", function (options) {
         this.deleteSelection = (() => {
             const original = this.deleteSelection;
             return (event) => {
-                if (notBackspace (event)) {
+                if (notBackspace(event)) {
                     return original.apply(this, arguments);
                 }
                 return false;
@@ -119,6 +123,7 @@ function applyJSONEditorToElement (element, options) {
     actualSchema = actualSchema.raw;
     actualValues = actualValues.raw;
 
+    actualSchema = convertPlaceholderSchemaToReadOnly(actualValues, actualSchema);
     const editor = new JSONEditor(element[0], {
         "disable_collapse": true,
         "disable_edit_json": true,
@@ -126,12 +131,13 @@ function applyJSONEditorToElement (element, options) {
         "hide_inheritance": hideInheritance,
         "iconlib": "fontawesome4",
         "schema": actualSchema,
-        "theme": "openam"
+        "theme": "openam",
+        values: actualValues
     });
 
     convertHelpBlocksToPopOvers(element);
     setPlaceholderOnPasswords(element);
-
+    actualValues = flattenPlaceholder({ ...actualValues });
     editor.setValue(actualValues);
 
     return editor;

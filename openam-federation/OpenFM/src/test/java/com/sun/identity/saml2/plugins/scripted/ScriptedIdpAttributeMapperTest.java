@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins.scripted;
@@ -19,13 +19,13 @@ package com.sun.identity.saml2.plugins.scripted;
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ATTRIBUTE_MAPPER_SCRIPT;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.HOSTED_ENTITYID;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER;
+import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.LOGGER;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REALM;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REMOTE_ENTITY;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SESSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.entry;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ATTRIBUTE_MAPPER;
-import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -40,11 +40,9 @@ import javax.script.Bindings;
 
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
-import org.forgerock.openam.oauth2.OAuth2Constants;
 import org.forgerock.openam.scripting.application.ScriptEvaluationHelper;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptContext;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.ScriptStore;
 import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
@@ -124,22 +122,20 @@ public class ScriptedIdpAttributeMapperTest {
 
         // Then
         verify(scriptEvaluationHelper, times(1)).evaluateScript(eq(scriptEvaluator), scriptCaptor.capture(),
-                bindingsCaptor.capture(), eq(List.class));
+                bindingsCaptor.capture(), eq(List.class), eq(realmObject));
         final Script script = scriptCaptor.getValue();
         assertThat(script.getScript()).isEqualTo(exampleScript);
         assertThat(script.getName()).isEqualTo(IDP_ATTRIBUTE_MAPPER_SCRIPT);
         assertThat(bindingsCaptor.getValue()).contains(entry(SESSION, session),
-                    entry(HOSTED_ENTITYID, hostedEntityId),
-                    entry(REMOTE_ENTITY, remoteEntityId),
-                    entry(REALM, realm),
-                    entry(OAuth2Constants.ScriptParams.LOGGER, Debug.getInstance("scripts."
-                        + SAML2_IDP_ATTRIBUTE_MAPPER.name()
-                            + "." + SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT.getId())))
+                        entry(HOSTED_ENTITYID, hostedEntityId),
+                        entry(REMOTE_ENTITY, remoteEntityId),
+                        entry(REALM, realm),
+                        entry(LOGGER, Debug.getInstance(String.format("%s (%s)", script.getName(), script.getId()))))
                 .containsKey(IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER);
     }
 
     private Script scriptConfiguration(String id)
-            throws Exception{
+            throws Exception {
 
         return Script.builder()
                 .setId(id)

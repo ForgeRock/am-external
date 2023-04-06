@@ -33,7 +33,7 @@ import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.RealmLookupException;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +53,7 @@ public class AccountLockoutNode extends SingleOutcomeNode {
     private final CoreWrapper coreWrapper;
     private final AMAccountLockout.Factory amAccountLockoutFactory;
     private static final String BUNDLE = AccountLockoutNode.class.getName();
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final Config config;
 
     /**
@@ -74,15 +74,15 @@ public class AccountLockoutNode extends SingleOutcomeNode {
      * Guice constructor.
      *
      * @param coreWrapper A core wrapper instance.
-     * @param identityUtils An instance of the IdentityUtils.
+     * @param identityService An instance of the IdentityService.
      * @param amAccountLockoutFactory factory for generating account lockout objects.
      * @param config The config for this instance.
      */
     @Inject
-    public AccountLockoutNode(CoreWrapper coreWrapper, IdentityUtils identityUtils,
+    public AccountLockoutNode(CoreWrapper coreWrapper, LegacyIdentityService identityService,
             AMAccountLockout.Factory amAccountLockoutFactory, @Assisted Config config) {
         this.coreWrapper = coreWrapper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.config = config;
         this.amAccountLockoutFactory = amAccountLockoutFactory;
     }
@@ -118,7 +118,8 @@ public class AccountLockoutNode extends SingleOutcomeNode {
         logger.debug("username to lockout {}", username);
         logger.debug("realm {}", realm);
 
-        Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, nodeState, identityUtils,  coreWrapper);
+        Optional<AMIdentity> userIdentity =
+                getAMIdentity(context.universalId, nodeState, identityService, coreWrapper);
         if (userIdentity.isEmpty()) {
             logger.debug("Could not find the identity with username {} in the realm {}", username, realm);
             throw new NodeProcessException(bundle.getString("identity.not.found"));

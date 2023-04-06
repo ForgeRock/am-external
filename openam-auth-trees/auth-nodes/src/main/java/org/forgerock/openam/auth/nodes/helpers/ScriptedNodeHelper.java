@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.helpers;
 
@@ -50,11 +50,6 @@ import com.iplanet.dpro.session.service.SessionService;
  */
 public final class ScriptedNodeHelper {
 
-    private static final Logger logger = LoggerFactory.getLogger(ScriptedNodeHelper.class);
-
-    private ScriptedNodeHelper() {
-    }
-
     /**
      * Shared state identifier for scripts bindings.
      *
@@ -63,7 +58,6 @@ public final class ScriptedNodeHelper {
      */
     @Deprecated
     public static final String SHARED_STATE_IDENTIFIER = "sharedState";
-
     /**
      * Transient state identifier for scripts bindings.
      *
@@ -72,61 +66,54 @@ public final class ScriptedNodeHelper {
      */
     @Deprecated
     public static final String TRANSIENT_STATE_IDENTIFIER = "transientState";
-
     /**
      * Node state identifier for scripts bindings.
      */
     public static final String STATE_IDENTIFIER = "nodeState";
-
     /**
      * HTTP client identifier for scripts bindings.
      */
     public static final String HTTP_CLIENT_IDENTIFIER = "httpClient";
-
-    /**
-     * Logger identifier for script bindings.
-     */
-    public static final String LOGGER_VARIABLE_NAME = "logger";
-
     /**
      * Realm identifier for script bindings.
      */
     public static final String REALM_IDENTIFIER = "realm";
-
     /**
      * Request parameter identifier for script bindings.
      */
     public static final String QUERY_PARAMETER_IDENTIFIER = "requestParameters";
-
     /**
      * ID Repository identifier for script bindings.
      */
     public static final String ID_REPO_IDENTIFIER = "idRepository";
-
     /**
      * Secrets identifier for script bindings.
      */
     public static final String SECRETS_IDENTIFIER = "secrets";
-
     /**
      * Audit entry detail identifier for script bindings.
      */
     public static final String AUDIT_ENTRY_DETAIL = "auditEntryDetail";
-
     /**
      * Request headers identifier for script bindings.
      */
     public static final String HEADERS_IDENTIFIER = "requestHeaders";
-
     /**
      * Existing session identifier for script bindings.
      */
     public static final String EXISTING_SESSION = "existingSession";
-
     /**
      * Callbacks identifier for script bindings.
      */
     public static final String CALLBACKS_IDENTIFIER = "callbacks";
+    /**
+     * Node state wildcard character.
+     */
+    public static final String WILDCARD = "*";
+    private static final Logger logger = LoggerFactory.getLogger(ScriptedNodeHelper.class);
+
+    private ScriptedNodeHelper() {
+    }
 
     /**
      * The request headers are unmodifiable, this prevents them being converted into javascript. This method
@@ -141,20 +128,19 @@ public final class ScriptedNodeHelper {
         return input.keySet().stream()
                 .map(key -> Map.entry(key, input.get(key)))
                 .collect(
-                Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> new ArrayList<>(entry.getValue()),
-                        (oldEntry, newEntry) -> newEntry,
-                        () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)
-                ));
+                        Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> new ArrayList<>(entry.getValue()),
+                            (oldEntry, newEntry) -> newEntry,
+                            () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)
+                        ));
     }
 
     /**
      * Get a HTTP client that can be used within a script.
      *
-     * @param script the script that will use the client, must not be null
+     * @param script            the script that will use the client, must not be null
      * @param httpClientFactory the HTTP client factory, must not be null
-     *
      * @return the HTTP client
      */
     public static ChfHttpClient getHttpClient(@NotNull Script script,
@@ -171,7 +157,7 @@ public final class ScriptedNodeHelper {
      * Get the session properties for the session identified by the SSO token.
      *
      * @param sessionService the SessionService, must not be null
-     * @param ssoTokenId the SSO Token session identifier
+     * @param ssoTokenId     the SSO Token session identifier
      * @return a Map of session properties
      */
     public static Map<String, String> getSessionProperties(@NotNull SessionService sessionService, String ssoTokenId) {

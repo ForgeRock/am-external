@@ -90,6 +90,22 @@
                     "type": "boolean"
                   }
                 }
+              },
+              "secretIdAndAlgorithms": {
+                "traverseObject": true,
+                "title": "Algorithms",
+                "type": "object",
+                "properties": {
+                  "signingAlgorithm": {
+                    "$ref": "definitions.json#/secretIdAndAlgorithms/properties/signingAlgorithm"
+                  },
+                  "digestAlgorithm": {
+                    "$ref": "definitions.json#/secretIdAndAlgorithms/properties/digestAlgorithm"
+                  },
+                  "encryptionAlgorithm": {
+                    "$ref": "definitions.json#/secretIdAndAlgorithms/properties/encryptionAlgorithm"
+                  }
+                }
               }
             }
           },

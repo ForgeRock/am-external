@@ -24,43 +24,21 @@
  *
  * $Id: SAML2IDPFinder.java,v 1.3 2008/12/03 00:34:10 hengming Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.forgerock.openam.annotations.SupportedAll;
-
-import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.protocol.AuthnRequest;
+import org.forgerock.openam.saml2.plugins.IDPFinder;
 
 /**
  * This interface <code>SAML2IDPFinder</code> is used to find a list of 
  * preferred Identity Authenticating providers to service the authentication
  * request.
+ *
+ * @deprecated since AM 7.3.0 Implement use-case specific {@link IDPFinder} implementations instead.
  */ 
 @SupportedAll
-public interface SAML2IDPFinder {
-
-    /**
-     * Returns a list of preferred IDP providerID's.
-     * @param authnRequest original authnrequest
-     * @param hostProviderID hosted providerID.
-     * @param realm Realm
-     * @param request HttpServletRequest
-     * @param response HttpServletResponse
-     * @return a list of IDP providerID's or null if not found.
-     * @exception SAML2Exception if error occurs. 
-     */
-    public List getPreferredIDP (
-          AuthnRequest authnRequest, 
-          String hostProviderID,
-          String realm, 
-          HttpServletRequest request,
-          HttpServletResponse response 
-    ) throws SAML2Exception;
+@Deprecated(forRemoval = true, since = "7.3.0")
+public interface SAML2IDPFinder extends IDPFinder {
 }

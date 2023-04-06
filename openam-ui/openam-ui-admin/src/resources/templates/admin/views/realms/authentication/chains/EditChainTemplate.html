@@ -11,7 +11,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2015-2019 ForgeRock AS. All Rights Reserved
+  Copyright 2015-2022 ForgeRock AS. All Rights Reserved
 }}
 {{> headers/_TitleWithSubAndIcon title=form.chainData._id type="console.authentication.editChains.chains" icon="link" }}
 
@@ -19,7 +19,8 @@
 
 <div class="tab-menu">
     <ul class="nav nav-tabs" role="tablist">
-        <li class="active"><a href="#chains" role="tab"  data-toggle="tab" aria-expanded="true"> {{t 'console.authentication.editChains.editChain'}}</a></li>
+        <li class="active"><a href="#chains" role="tab" data-toggle="tab" aria-expanded="true"> {{t
+                'console.authentication.editChains.editChain'}}</a></li>
         <li><a href="#settings" role="tab" data-toggle="tab" aria-expanded="true"> {{t 'common.form.settings'}}</a></li>
     </ul>
 </div>
@@ -90,15 +91,35 @@
                     <p class="panel-description">{{t 'console.authentication.editChains.redirectUrlsHelp'}}</p>
                     <div class="form-horizontal">
                         <div class="form-group">
-                            <label for="loginSuccessUrl" class="control-label col-sm-4">{{t 'console.authentication.editChains.successUrl'}}</label>
+                            <label for="loginSuccessUrl" class="control-label col-sm-4">{{t
+                                'console.authentication.editChains.successUrl'}}</label>
                             <div class="col-sm-6">
-                                <input id="loginSuccessUrl" type="text" class="form-control input-btn" placeholder="{{t 'console.authentication.editChains.addUrl'}}"  value="{{form.chainData.loginSuccessUrl.[0]}}">
+                                {{#isPlaceholder form.chainData.loginSuccessUrl.[0]}}
+                                <input id="loginSuccessUrl" type="text" class="form-control input-btn"
+                                    placeholder="{{t 'console.authentication.editChains.addUrl'}}"
+                                    value="{{form.chainData.loginSuccessUrl}}" readonly="true"
+                                    disabled="true">
+                                {{else}}
+                                <input id="loginSuccessUrl" type="text" class="form-control input-btn"
+                                    placeholder="{{t 'console.authentication.editChains.addUrl'}}"
+                                    value="{{form.chainData.loginSuccessUrl}}">
+                                {{/isPlaceholder}}
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="loginFailureUrl" class="control-label col-sm-4">{{t 'console.authentication.editChains.failUrl'}}</label>
+                            <label for="loginFailureUrl" class="control-label col-sm-4">{{t
+                                'console.authentication.editChains.failUrl'}}</label>
                             <div class="col-sm-6">
-                                <input id="loginFailureUrl" type="text" class="form-control input-btn" placeholder="{{t 'console.authentication.editChains.addUrl'}}" value="{{form.chainData.loginFailureUrl.[0]}}">
+                                {{#isPlaceholder form.chainData.loginFailureUrl.[0]}}
+                                <input id="loginFailureUrl" type="text" class="form-control input-btn"
+                                    placeholder="{{t 'console.authentication.editChains.addUrl'}}"
+                                    value="{{form.chainData.loginFailureUrl}}" readonly="true"
+                                    disabled="true">
+                                {{else}}
+                                <input id="loginFailureUrl" type="text" class="form-control input-btn"
+                                    placeholder="{{t 'console.authentication.editChains.addUrl'}}"
+                                    value="{{form.chainData.loginFailureUrl}}">
+                                {{/isPlaceholder}}
                             </div>
                         </div>
                     </div>

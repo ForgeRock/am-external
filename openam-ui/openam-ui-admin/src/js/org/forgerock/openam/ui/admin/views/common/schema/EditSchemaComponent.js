@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 
 import { t } from "i18next";
@@ -32,6 +32,7 @@ import ScriptsList from "org/forgerock/openam/ui/admin/views/configuration/globa
 import SubSchemaListComponent from "org/forgerock/openam/ui/admin/views/common/schema/SubSchemaListComponent";
 import TabComponent from "org/forgerock/openam/ui/common/components/TabComponent";
 import TabSearch from "org/forgerock/openam/ui/admin/views/common/TabSearch";
+import { revertPlaceholdersToOriginalValue } from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
 
 /**
  * @module org/forgerock/openam/ui/admin/views/common/schema/EditSchemaComponent
@@ -225,7 +226,9 @@ export default Backbone.View.extend({
         }
         this.updateValues();
         const valuesWithoutNullPasswords = this.data.values.removeNullPasswords(this.data.schema);
-        this.updateInstance(valuesWithoutNullPasswords.toJSON()).then(() => {
+        const values = revertPlaceholdersToOriginalValue(valuesWithoutNullPasswords, this.data.schema);
+
+        this.updateInstance(values.toJSON()).then(() => {
             Messages.addMessage({ message: t("config.messages.CommonMessages.changesSaved") });
         }, (response) => {
             Messages.addMessage({ response, type: Messages.TYPE_DANGER });

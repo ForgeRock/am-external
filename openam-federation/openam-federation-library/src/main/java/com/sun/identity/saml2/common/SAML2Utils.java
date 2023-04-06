@@ -22,12 +22,23 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2021 ForgeRock AS.
+ * Portions Copyrighted 2010-2023 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.common;
 
+import static com.sun.identity.saml2.common.SAML2Constants.DEFAULT_IDP_ACCOUNT_MAPPER_CLASS;
+import static com.sun.identity.saml2.common.SAML2Constants.FEDLET_ADAPTER_CLASS;
+import static com.sun.identity.saml2.common.SAML2Constants.IDP_ACCOUNT_MAPPER;
+import static com.sun.identity.saml2.common.SAML2Constants.IDP_ROLE;
+import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_SP_ADAPTER;
+import static com.sun.identity.saml2.common.SAML2Constants.SP_ACCOUNT_MAPPER;
+import static com.sun.identity.saml2.common.SAML2Constants.SP_ADAPTER_CLASS;
+import static com.sun.identity.saml2.common.SAML2Constants.SP_ADAPTER_SCRIPT;
+import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
 import static com.sun.identity.saml2.common.SAML2FailoverUtils.isFailoverEnabled;
+import static org.forgerock.openam.saml2.plugins.PluginRegistry.newKey;
+import static com.sun.identity.shared.Constants.EMPTY_SCRIPT_SELECTION;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.saml2.Saml2EntityRole.SP;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
@@ -86,6 +97,7 @@ import org.forgerock.openam.saml2.Saml2EntityRole;
 import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
+import org.forgerock.openam.saml2.plugins.IDPFinder;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
 import org.forgerock.openam.saml2.plugins.ValidRelayStateExtractor;
 import org.forgerock.openam.saml2.plugins.ValidRelayStateExtractor.SAMLEntityInfo;
@@ -96,12 +108,14 @@ import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.utils.UriUtils;
 import org.forgerock.util.Reject;
 import org.forgerock.util.annotations.VisibleForTesting;
+import org.forgerock.util.encode.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import com.google.inject.name.Names;
 import com.sun.identity.common.HttpURLConnectionManager;
 import com.sun.identity.common.SystemConfigurationException;
 import com.sun.identity.common.SystemConfigurationUtil;
@@ -147,19 +161,16 @@ import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.plugins.DefaultSPAuthnContextMapper;
-import com.sun.identity.saml2.plugins.FedletAdapter;
 import com.sun.identity.saml2.plugins.IDPAccountMapper;
-import com.sun.identity.saml2.plugins.SAML2IDPFinder;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
-import com.sun.identity.saml2.plugins.SAML2ServiceProviderAdapter;
+import org.forgerock.openam.saml2.plugins.PluginRegistry;
 import com.sun.identity.saml2.plugins.SPAccountMapper;
+import org.forgerock.openam.saml2.plugins.FedletAdapter;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 import com.sun.identity.saml2.plugins.SPAttributeMapper;
 import com.sun.identity.saml2.plugins.SPAuthnContextMapper;
 import com.sun.identity.saml2.profile.AuthnRequestInfo;
 import com.sun.identity.saml2.profile.AuthnRequestInfoCopy;
 import com.sun.identity.saml2.profile.CacheCleanUpScheduler;
-import com.sun.identity.saml2.profile.IDPCache;
-import com.sun.identity.saml2.profile.IDPSSOUtil;
 import com.sun.identity.saml2.profile.SPCache;
 import com.sun.identity.saml2.profile.ServerFaultException;
 import com.sun.identity.saml2.protocol.AuthnRequest;
@@ -364,14 +375,13 @@ public class SAML2Utils extends SAML2SDKUtils {
         // reqInfo can remain null and will do for IDP initiated SSO requests
 
         // invoke SP Adapter
-        SAML2ServiceProviderAdapter spAdapter =
-                SAML2Utils.getSPAdapterClass(hostEntityId, orgName);
-        if (spAdapter != null) {
+        SPAdapter adapter = SAML2Utils.getSPAdapter(hostEntityId, orgName);
+        if (adapter != null) {
             AuthnRequest authnRequest = null;
             if (reqInfo != null) {
                 authnRequest = reqInfo.getAuthnRequest();
             }
-            spAdapter.preSingleSignOnProcess(hostEntityId, orgName, httpRequest,
+            adapter.preSingleSignOnProcess(hostEntityId, orgName, httpRequest,
                     httpResponse, authnRequest, response, profileBinding);
         }
 
@@ -446,7 +456,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             }
             if (idpSSODescriptor != null) {
                 Set<X509Certificate> verificationCerts = KeyUtil.getVerificationCerts(idpSSODescriptor, idpEntityId,
-                        SAML2Constants.IDP_ROLE, orgName);
+                        IDP_ROLE, orgName);
                 if (CollectionUtils.isEmpty(verificationCerts) || !response.isSignatureValid(verificationCerts)) {
                     debug.error(method + "Response is not signed or signature is not valid.");
                     String[] data = { orgName, hostEntityId, idpEntityId };
@@ -550,7 +560,7 @@ public class SAML2Utils extends SAML2SDKUtils {
                 if (verificationCerts == null) {
                     idp = saml2MetaManager.getIDPSSODescriptor(
                             orgName, idpEntityId);
-                    verificationCerts = KeyUtil.getVerificationCerts(idp, idpEntityId, SAML2Constants.IDP_ROLE, orgName);
+                    verificationCerts = KeyUtil.getVerificationCerts(idp, idpEntityId, IDP_ROLE, orgName);
                 }
                 if (CollectionUtils.isEmpty(verificationCerts) || !assertion.isSignatureValid(verificationCerts)) {
                     debug.error(method +
@@ -663,7 +673,7 @@ public class SAML2Utils extends SAML2SDKUtils {
         // signing each individual <Assertion> element or by signing the <Response> element.
         if (profileBinding.equals(SAML2Constants.HTTP_POST) ) {
             boolean wantPostResponseSigned = SAML2Utils
-                    .wantPOSTResponseSigned(orgName, hostEntityId, SAML2Constants.SP_ROLE);
+                    .wantPOSTResponseSigned(orgName, hostEntityId, SP_ROLE);
 
             if (debug.isDebugEnabled()) {
                 debug.debug(method + "wantPostResponseSigned is :" + wantPostResponseSigned);
@@ -1174,7 +1184,7 @@ public class SAML2Utils extends SAML2SDKUtils {
                 infoKey = new NameIDInfoKey(nameID.getValue(), hostEntityID,
                         remoteEntityID);
             } else {
-                if (SAML2Constants.SP_ROLE.equals(hostEntityRole)) {
+                if (SP_ROLE.equals(hostEntityRole)) {
                     if (!affiDesc.getAffiliateMember().contains(hostEntityID)) {
                         throw new SAML2Exception(SAML2Utils.bundle.getString(
                                 "spNotAffiliationMember"));
@@ -1674,7 +1684,7 @@ public class SAML2Utils extends SAML2SDKUtils {
         }
         byte bytes[] = new byte[SAML2Constants.ID_LENGTH];
         random.nextBytes(bytes);
-        String id = SAML2ID_PREFIX + byteArrayToHexString(bytes);
+        String id = SAML2ID_PREFIX + Hex.encode(bytes);
 
         return embedServerID(id);
     }
@@ -2244,9 +2254,9 @@ public class SAML2Utils extends SAML2SDKUtils {
         }
         try {
             JAXBElement<BaseConfigType> config = null;
-            if (entityRole.equalsIgnoreCase(SAML2Constants.SP_ROLE)) {
+            if (entityRole.equalsIgnoreCase(SP_ROLE)) {
                 config = saml2MetaManager.getSPSSOConfig(realm, hostEntityId);
-            } else if (entityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
+            } else if (entityRole.equalsIgnoreCase(IDP_ROLE)) {
                 config = saml2MetaManager.getIDPSSOConfig(realm, hostEntityId);
             } else if (entityRole.equalsIgnoreCase(SAML2Constants.ATTR_AUTH_ROLE)) {
                 config = saml2MetaManager.getAttributeAuthorityConfig(realm, hostEntityId);
@@ -2284,8 +2294,8 @@ public class SAML2Utils extends SAML2SDKUtils {
     public static String getHostEntityRole(Map paramsMap)
             throws SAML2Exception {
         String roleName = getParameter(paramsMap, SAML2Constants.ROLE);
-        if (roleName.equalsIgnoreCase(SAML2Constants.SP_ROLE) ||
-                roleName.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
+        if (roleName.equalsIgnoreCase(SP_ROLE) ||
+                roleName.equalsIgnoreCase(IDP_ROLE)) {
             return roleName;
         }
 
@@ -2446,14 +2456,14 @@ public class SAML2Utils extends SAML2SDKUtils {
         }
 
         Set<X509Certificate> signingCerts;
-        if (hostEntityRole.equalsIgnoreCase(SAML2Constants.IDP_ROLE)) {
+        if (hostEntityRole.equalsIgnoreCase(IDP_ROLE)) {
             SPSSODescriptorType spSSODesc =
                     saml2MetaManager.getSPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SAML2Constants.SP_ROLE, realm);
+            signingCerts = KeyUtil.getVerificationCerts(spSSODesc, remoteEntity, SP_ROLE, realm);
         } else {
             IDPSSODescriptorType idpSSODesc =
                     saml2MetaManager.getIDPSSODescriptor(realm, remoteEntity);
-            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, SAML2Constants.IDP_ROLE, realm);
+            signingCerts = KeyUtil.getVerificationCerts(idpSSODesc, remoteEntity, IDP_ROLE, realm);
         }
 
         if (debug.isDebugEnabled()) {
@@ -2813,321 +2823,103 @@ public class SAML2Utils extends SAML2SDKUtils {
      * @return the <code>IDPAccountMapper</code>
      * @throws SAML2Exception if the operation is not successful
      */
-    public static IDPAccountMapper getIDPAccountMapper(
-            String realm, String idpEntityID)
-            throws SAML2Exception {
-        String classMethod = "SAML2Utils.getIDPAccountMapper: ";
-        String idpAccountMapperName = null;
-        IDPAccountMapper idpAccountMapper = null;
-        try {
-            idpAccountMapperName = getAttributeValueFromSSOConfig(
-                    realm, idpEntityID, SAML2Constants.IDP_ROLE,
-                    SAML2Constants.IDP_ACCOUNT_MAPPER);
-            if (idpAccountMapperName == null) {
-                idpAccountMapperName =
-                        SAML2Constants.DEFAULT_IDP_ACCOUNT_MAPPER_CLASS;
-                if (debug.isDebugEnabled()) {
-                    debug.debug(classMethod + "use " +
-                            SAML2Constants.DEFAULT_IDP_ACCOUNT_MAPPER_CLASS);
-                }
-            }
-            idpAccountMapper = (IDPAccountMapper)
-                    IDPCache.idpAccountMapperCache.get(
-                            idpAccountMapperName);
-            if (idpAccountMapper == null) {
-                idpAccountMapper = (IDPAccountMapper)
-                        Class.forName(idpAccountMapperName).newInstance();
-                IDPCache.idpAccountMapperCache.put(
-                        idpAccountMapperName, idpAccountMapper);
-            } else {
-                if (debug.isDebugEnabled()) {
-                    debug.debug(classMethod +
-                            "got the IDPAccountMapper from cache");
-                }
-            }
-        } catch (Exception ex) {
-            debug.error(classMethod +
-                    "Unable to get IDP Account Mapper.", ex);
-            throw new SAML2Exception(ex);
+    public static IDPAccountMapper getIDPAccountMapper(String realm, String idpEntityID) throws SAML2Exception {
+        String idpAccountMapperName = getAttributeValueFromSSOConfig(realm, idpEntityID, IDP_ROLE, IDP_ACCOUNT_MAPPER);
+        if (StringUtils.isNotBlank(idpAccountMapperName)) {
+            idpAccountMapperName = DEFAULT_IDP_ACCOUNT_MAPPER_CLASS;
         }
-
-        return idpAccountMapper;
+        debug.debug("SAML2Utils.getIDPAccountMapper: use {}", idpAccountMapperName);
+        return (IDPAccountMapper) PluginRegistry.get(newKey(realm, idpEntityID,
+                IDPAccountMapper.class , idpAccountMapperName));
     }
 
     /**
-     * Returns an <code>SP</code> adapter class
+     * Returns an <code>SPAdapter</code> adapter class
      *
      * @param spEntityID the entity id of the service provider
      * @param realm      the realm name
-     * @return the <code>SP</code> adapter class
+     * @return the <code>SPAdapter</code> adapter class
      * @throws SAML2Exception if the operation is not successful
      */
-    public static SAML2ServiceProviderAdapter getSPAdapterClass(
-            String spEntityID, String realm)
-            throws SAML2Exception {
-        String classMethod = "SAML2Utils.getSPAdapterClass: ";
-        if (debug.isDebugEnabled()) {
-            debug.debug(classMethod +
-                    "get SPAdapter for " + spEntityID + " under realm " + realm);
-        }
-        String spAdapterClassName = null;
-        SAML2ServiceProviderAdapter spAdapterClass = null;
-        try {
-            spAdapterClassName = getAttributeValueFromSSOConfig(
-                    realm, spEntityID, SAML2Constants.SP_ROLE,
-                    SAML2Constants.SP_ADAPTER_CLASS);
-            if (debug.isDebugEnabled()) {
-                debug.debug(classMethod +
-                        "get SPAdapter class " + spAdapterClassName);
+    public static SPAdapter getSPAdapter(String spEntityID, String realm) throws SAML2Exception {
+        debug.debug("SAML2Utils.getSPAdapter: get SPAdapter for " + spEntityID + " under realm " + realm);
+        if (isScriptConfigured(realm, spEntityID, SP_ADAPTER_SCRIPT)) {
+            debug.debug("SAML2Utils.getSPAdapter:  using Scripted SP Adapter");
+            return InjectorHolder.getInstance(com.google.inject.Key.get(SPAdapter.class,
+                    Names.named(SCRIPTED_SP_ADAPTER)));
+        } else {
+            SPAdapter spAdapterClass = null;
+            String spAdapterClassName = getAttributeValueFromSSOConfig(realm, spEntityID, SP_ROLE, SP_ADAPTER_CLASS);
+            debug.debug("SAML2Utils.getSPAdapter:  get SPAdapter class " + spAdapterClassName);
+            if (StringUtils.isNotBlank(spAdapterClassName)) {
+                spAdapterClass = (SPAdapter) PluginRegistry.get(newKey(realm, spEntityID, SPAdapter.class, spAdapterClassName));
             }
-            if ((spAdapterClassName != null) &&
-                    (spAdapterClassName.length() != 0)) {
-                spAdapterClass = (SAML2ServiceProviderAdapter)
-                        SPCache.spAdapterClassCache.get(realm + spEntityID +
-                                spAdapterClassName);
-                if (spAdapterClass == null) {
-                    spAdapterClass = (SAML2ServiceProviderAdapter)
-                            Class.forName(spAdapterClassName).newInstance();
-                    List env = getAllAttributeValueFromSSOConfig(
-                            realm, spEntityID, SAML2Constants.SP_ROLE,
-                            SAML2Constants.SP_ADAPTER_ENV);
-                    Map map = parseEnvList(env);
-                    map.put(SAML2ServiceProviderAdapter.HOSTED_ENTITY_ID,
-                            spEntityID);
-                    map.put(SAML2ServiceProviderAdapter.REALM, realm);
-                    spAdapterClass.initialize(map);
-                    SPCache.spAdapterClassCache.put(
-                            realm + spEntityID + spAdapterClassName,
-                            spAdapterClass);
-                    if (debug.isDebugEnabled()) {
-                        debug.debug(classMethod +
-                                "create new SPAdapter " + spAdapterClassName +
-                                " for " + spEntityID + " under realm " + realm);
-                    }
-                } else {
-                    if (debug.isDebugEnabled()) {
-                        debug.debug(classMethod +
-                                "got the SPAdapter " + spAdapterClassName +
-                                " from cache");
-                    }
-                }
-            }
-        } catch (InstantiationException ex) {
-            debug.error(classMethod +
-                    "Unable to get SP Adapter class instance.", ex);
-            throw new SAML2Exception(ex);
-        } catch (ClassNotFoundException ex) {
-            debug.error(classMethod +
-                    "SP Adapter class not found.", ex);
-            throw new SAML2Exception(ex);
-        } catch (IllegalAccessException ex) {
-            debug.error(classMethod +
-                    "Unable to get SP Adapter class.", ex);
-            throw new SAML2Exception(ex);
+            return spAdapterClass;
         }
+    }
 
-        return spAdapterClass;
+    private static boolean isScriptConfigured(String realm, String spEntityID, String scriptAttributeName) {
+        String script = getAttributeValueFromSSOConfig(realm, spEntityID, SP_ROLE, scriptAttributeName);
+        if (script == null || EMPTY_SCRIPT_SELECTION.equals(script)) {
+            return false;
+        }
+        return true;
     }
 
     /**
-     * Returns a <code>Fedlet</code> adapter class.
+     * Returns a <code>FedletAdapter</code> adapter class.
      *
      * @param spEntityID the entity id of the service provider
      * @param realm      the realm name
-     * @return the <code>Fedlet</code> adapter class
+     * @return the <code>FedletAdapter</code> adapter class
      * @throws SAML2Exception if the operation is not successful
      */
-    public static FedletAdapter getFedletAdapterClass(
-            String spEntityID, String realm)
-            throws SAML2Exception {
-        String classMethod = "SAML2Utils.getFedletAdapterClass: ";
-        if (debug.isDebugEnabled()) {
-            debug.debug(classMethod +
-                    "get FedletAdapter for " + spEntityID + " under realm " + realm);
+    public static FedletAdapter getFedletAdapter(String spEntityID, String realm) throws SAML2Exception {
+        debug.debug("SAML2Utils.getFedletAdapterClass: get FedletAdapter for {} under realm {}", spEntityID, realm);
+        FedletAdapter adapter = null;
+        String adapterClassName = getAttributeValueFromSSOConfig(realm, spEntityID, SP_ROLE, FEDLET_ADAPTER_CLASS);
+        debug.debug("SAML2Utils.getFedletAdapterClass: get FedletAdapter class {}", adapterClassName);
+        if (StringUtils.isNotBlank(adapterClassName)) {
+            return (FedletAdapter) PluginRegistry.get(newKey(realm, spEntityID, FedletAdapter.class, adapterClassName));
         }
-        String fedletAdapterClassName = null;
-        FedletAdapter fedletAdapterClass = null;
-        try {
-            fedletAdapterClassName = getAttributeValueFromSSOConfig(
-                    realm, spEntityID, SAML2Constants.SP_ROLE,
-                    SAML2Constants.FEDLET_ADAPTER_CLASS);
-            if (debug.isDebugEnabled()) {
-                debug.debug(classMethod +
-                        "get FedletAdapter class " + fedletAdapterClassName);
-            }
-            if ((fedletAdapterClassName != null) &&
-                    (fedletAdapterClassName.length() != 0)) {
-                fedletAdapterClass = (FedletAdapter)
-                        SPCache.fedletAdapterClassCache.get(realm + spEntityID +
-                                fedletAdapterClassName);
-                if (fedletAdapterClass == null) {
-                    fedletAdapterClass = (FedletAdapter)
-                            Class.forName(fedletAdapterClassName).newInstance();
-                    List env = getAllAttributeValueFromSSOConfig(
-                            realm, spEntityID, SAML2Constants.SP_ROLE,
-                            SAML2Constants.FEDLET_ADAPTER_ENV);
-                    Map map = parseEnvList(env);
-                    map.put(FedletAdapter.HOSTED_ENTITY_ID,
-                            spEntityID);
-                    fedletAdapterClass.initialize(map);
-                    SPCache.fedletAdapterClassCache.put(
-                            realm + spEntityID + fedletAdapterClassName,
-                            fedletAdapterClass);
-                    if (debug.isDebugEnabled()) {
-                        debug.debug(classMethod +
-                                "create new FedletAdapter " +
-                                fedletAdapterClassName +
-                                " for " + spEntityID + " under realm " + realm);
-                    }
-                } else {
-                    if (debug.isDebugEnabled()) {
-                        debug.debug(classMethod +
-                                "got the FedletAdapter " + fedletAdapterClassName +
-                                " from cache");
-                    }
-                }
-            }
-        } catch (InstantiationException ex) {
-            debug.error(classMethod +
-                    "Unable to get Fedlet Adapter class instance.", ex);
-            throw new SAML2Exception(ex);
-        } catch (ClassNotFoundException ex) {
-            debug.error(classMethod +
-                    "Fedlet Adapter class not found.", ex);
-            throw new SAML2Exception(ex);
-        } catch (IllegalAccessException ex) {
-            debug.error(classMethod +
-                    "Unable to get Fedlet Adapter class.", ex);
-            throw new SAML2Exception(ex);
-        }
-
-        return fedletAdapterClass;
-    }
-
-    /**
-     * Returns map based on A/V pair.
-     */
-    private static Map<String, String> parseEnvList(List<String> list) {
-        Map<String, String> map = new HashMap<>();
-        if ((list == null) || (list.isEmpty())) {
-            return map;
-        }
-
-        for (String val : list) {
-            if (debug.isDebugEnabled()) {
-                debug.debug("SAML2Utils.parseEnvList : processing " + val);
-            }
-            if ((val == null) || (val.length() == 0)) {
-                continue;
-            }
-            int pos = val.indexOf("=");
-            if (pos == -1) {
-                if (debug.isWarnEnabled()) {
-                    debug.warn("SAML2Utils.parseEnvList : invalid value : "
-                            + val + ". Value must be in key=value format.");
-                }
-            } else {
-                map.put(val.substring(0, pos), val.substring(pos + 1));
-            }
-        }
-        return map;
+        return adapter;
     }
 
     /**
      * Returns an <code>SPAccountMapper</code>
      *
-     * @param realm      the realm name
+     * @param realm the realm name
      * @param spEntityID the entity id of the service provider
      * @return the <code>SPAccountMapper</code>
      * @throws SAML2Exception if the operation is not successful
      */
-    public static SPAccountMapper getSPAccountMapper(
-            String realm, String spEntityID)
-            throws SAML2Exception {
-        String classMethod = "SAML2Utils.getSPAccountMapper: ";
-        String spAccountMapperName = null;
-        SPAccountMapper spAccountMapper = null;
-        try {
-            spAccountMapperName = getAttributeValueFromSSOConfig(
-                    realm, spEntityID, SAML2Constants.SP_ROLE,
-                    SAML2Constants.SP_ACCOUNT_MAPPER);
-            if (spAccountMapperName == null) {
-                spAccountMapperName =
-                        SAML2Constants.DEFAULT_SP_ACCOUNT_MAPPER_CLASS;
-                if (debug.isDebugEnabled()) {
-                    debug.debug(classMethod + "use " +
-                            SAML2Constants.DEFAULT_SP_ACCOUNT_MAPPER_CLASS);
-                }
-            }
-            spAccountMapper = (SPAccountMapper)
-                    SPCache.spAccountMapperCache.get(spAccountMapperName);
-            if (spAccountMapper == null) {
-                spAccountMapper = (SPAccountMapper)
-                        Class.forName(spAccountMapperName).newInstance();
-                SPCache.spAccountMapperCache.put(
-                        spAccountMapperName, spAccountMapper);
-            } else {
-                if (debug.isDebugEnabled()) {
-                    debug.debug(classMethod +
-                            "got the SPAccountMapper from cache");
-                }
-            }
-        } catch (Exception ex) {
-            debug.error(classMethod +
-                    "Unable to get SP Account Mapper.", ex);
-            throw new SAML2Exception(ex);
+    public static SPAccountMapper getSPAccountMapper(String realm, String spEntityID) throws SAML2Exception {
+        String spAccountMapperName = getAttributeValueFromSSOConfig(realm, spEntityID, SP_ROLE, SP_ACCOUNT_MAPPER);
+        if (spAccountMapperName == null) {
+            spAccountMapperName = SAML2Constants.DEFAULT_SP_ACCOUNT_MAPPER_CLASS;
         }
-
-        return spAccountMapper;
+        debug.debug("SAML2Utils.getSPAccountMapper:  uses " + spAccountMapperName);
+        return (SPAccountMapper) PluginRegistry.get(newKey(realm, spEntityID, SPAccountMapper.class, spAccountMapperName));
     }
 
     /**
-     * Returns an <code>SAML2IDPFinder</code> which is used to find a list
+     * Returns an <code>IDPFinder</code> which is used to find a list
      * of IDP's for ECP Request.
      *
      * @param realm      the realm name
      * @param spEntityID the entity id of the service provider
-     * @return the <code>SAML2IDPFinder</code>
+     * @return the <code>IDPFinder</code>
      * @throws SAML2Exception if the operation is not successful
      */
-    public static SAML2IDPFinder getECPIDPFinder(String realm,
-            String spEntityID) throws SAML2Exception {
-        String classMethod = "SAML2Utils.getECPIDPFinder: ";
-        String implClassName = null;
-        SAML2IDPFinder ecpRequestIDPListFinder = null;
-        try {
-            implClassName = getAttributeValueFromSSOConfig(
-                    realm, spEntityID, SAML2Constants.SP_ROLE,
-                    SAML2Constants.ECP_REQUEST_IDP_LIST_FINDER_IMPL);
-            if (debug.isDebugEnabled()) {
-                debug.debug(classMethod + "use " + implClassName);
-            }
-            if ((implClassName == null) ||
-                    (implClassName.trim().length() == 0)) {
-                return null;
-            }
-
-            ecpRequestIDPListFinder = (SAML2IDPFinder)
-                    SPCache.ecpRequestIDPListFinderCache.get(implClassName);
-            if (ecpRequestIDPListFinder == null) {
-                ecpRequestIDPListFinder = (SAML2IDPFinder)
-                        Class.forName(implClassName).newInstance();
-                SPCache.ecpRequestIDPListFinderCache.put(
-                        implClassName, ecpRequestIDPListFinder);
-            } else {
-                if (debug.isDebugEnabled()) {
-                    debug.debug(classMethod +
-                            "got the ECP Request IDP List Finder from cache");
-                }
-            }
-        } catch (Exception ex) {
-            if (debug.isWarnEnabled()) {
-                debug.warn(classMethod +
-                        "Unable to get ECP Request IDP List Finder.", ex);
-            }
+    public static IDPFinder getECPIDPFinder(String realm, String spEntityID) throws SAML2Exception {
+        String implClassName = getAttributeValueFromSSOConfig(
+                realm, spEntityID, SP_ROLE,
+                SAML2Constants.ECP_REQUEST_IDP_LIST_FINDER_IMPL);
+        debug.debug("uSAML2Utils.getECPIDPFinder: uses {}", implClassName);
+        if ((implClassName == null) || (implClassName.trim().length() == 0)) {
+            return null;
         }
-
-        return ecpRequestIDPListFinder;
+        return (IDPFinder) PluginRegistry.get(newKey(realm, spEntityID, IDPFinder.class, implClassName));
     }
 
     /**
@@ -3208,7 +3000,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             SPSSOConfigElement spConfig = null;
             Map attrs = null;
 
-            if (role.equalsIgnoreCase(SAML2Constants.SP_ROLE)) {
+            if (role.equalsIgnoreCase(SP_ROLE)) {
                 spConfig =
                         saml2MetaManager.getSPSSOConfig(realm, entityId);
                 if (spConfig == null) {
@@ -3507,7 +3299,7 @@ public class SAML2Utils extends SAML2SDKUtils {
         String classMethod = "SAML2Utils.getSPAttributeMapper: ";
         String spAttributeMapperName;
         try {
-            spAttributeMapperName = getAttributeValueFromSSOConfig(realm, spEntityID, SAML2Constants.SP_ROLE,
+            spAttributeMapperName = getAttributeValueFromSSOConfig(realm, spEntityID, SP_ROLE,
                     SAML2Constants.SP_ATTRIBUTE_MAPPER);
             if (spAttributeMapperName == null) {
                 spAttributeMapperName = SAML2Constants.DEFAULT_SP_ATTRIBUTE_MAPPER_CLASS;
@@ -3549,9 +3341,9 @@ public class SAML2Utils extends SAML2SDKUtils {
 
         try {
             JAXBElement<BaseConfigType> config = null;
-            if (role.equals(SAML2Constants.SP_ROLE)) {
+            if (role.equals(SP_ROLE)) {
                 config = saml2MetaManager.getSPSSOConfig(realm, hostEntityID);
-            } else if (role.equals(SAML2Constants.IDP_ROLE)) {
+            } else if (role.equals(IDP_ROLE)) {
                 config = saml2MetaManager.getIDPSSOConfig(realm, hostEntityID);
             }
 

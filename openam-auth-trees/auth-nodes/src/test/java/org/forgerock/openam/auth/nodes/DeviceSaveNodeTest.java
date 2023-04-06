@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -48,7 +48,7 @@ import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.JsonValueBuilder;
 
 import com.iplanet.sso.SSOException;
@@ -78,7 +78,7 @@ public class DeviceSaveNodeTest {
     DeviceProfilesDao deviceProfilesDao;
 
     @Mock
-    IdentityUtils identityUtils;
+    LegacyIdentityService identityService;
 
     @InjectMocks
     DeviceSaveNode node;

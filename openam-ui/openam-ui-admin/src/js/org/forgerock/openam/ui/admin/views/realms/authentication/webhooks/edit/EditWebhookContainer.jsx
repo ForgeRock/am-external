@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
 import PropTypes from "prop-types";
@@ -28,6 +28,7 @@ import EditWebhook from "./EditWebhook";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import withRouter from "org/forgerock/commons/ui/common/components/hoc/withRouter";
 import withRouterPropType from "org/forgerock/commons/ui/common/components/hoc/withRouterPropType";
+import { revertPlaceholdersToOriginalValue } from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
 
 class EditWebhookContainer extends Component {
     constructor () {
@@ -54,7 +55,10 @@ class EditWebhookContainer extends Component {
     handleUpdate = (formData) => {
         const realm = this.props.router.params[0];
         const id = this.props.router.params[1];
-        update(realm, formData, id).then(() => {
+
+        const values = revertPlaceholdersToOriginalValue(formData, this.props.schema);
+
+        update(realm, values, id).then(() => {
             Messages.addMessage({ message: t("config.messages.CommonMessages.changesSaved") });
         }, (response) => {
             Messages.addMessage({ response, type: Messages.TYPE_DANGER });

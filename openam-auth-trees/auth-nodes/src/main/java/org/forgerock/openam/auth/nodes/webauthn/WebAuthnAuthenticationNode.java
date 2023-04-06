@@ -38,6 +38,9 @@ import javax.inject.Inject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.am.identity.application.IdentityStoreFactory;
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -54,7 +57,6 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
-import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.forgerock.util.annotations.VisibleForTesting;
@@ -65,7 +67,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.IdUtils;
 
 /**
  * A web authentication, authentication node. Uses client side javascript to interact with the browser and negotiate
@@ -92,7 +93,8 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
     private final Realm realm;
     private final AuthenticationFlow authenticationFlow;
     private final AuthDataDecoder authDataDecoder;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
+    private final IdentityStoreFactory identityStoreFactory;
     private final CoreWrapper coreWrapper;
 
     private String registeredDeviceUuid;
@@ -189,7 +191,8 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
      * @param secureRandom           instance of the secure random generator
      * @param authDataDecoder        instance of the auth data decoder
      * @param recoveryCodeGenerator  instance of the recovery code generator.
-     * @param identityUtils          A {@code IdentityUtils} instance.
+     * @param identityService        an {@link LegacyIdentityService} instance.
+     * @param identityStoreFactory   an {@link IdentityStoreFactory} instance
      * @param coreWrapper            An instance of the {@code CoreWrapper}.
      */
     @Inject
@@ -198,16 +201,17 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
             ClientScriptUtilities clientScriptUtilities,
             UserWebAuthnDeviceProfileManager webAuthnProfileManager,
             SecureRandom secureRandom, AuthDataDecoder authDataDecoder,
-            RecoveryCodeGenerator recoveryCodeGenerator, IdentityUtils identityUtils,
-            CoreWrapper coreWrapper) {
+            RecoveryCodeGenerator recoveryCodeGenerator, LegacyIdentityService identityService,
+            IdentityStoreFactory identityStoreFactory, CoreWrapper coreWrapper) {
         super(clientScriptUtilities, webAuthnProfileManager, secureRandom, recoveryCodeGenerator);
 
         this.config = config;
         this.realm = realm;
         this.authenticationFlow = authenticationFlow;
         this.authDataDecoder = authDataDecoder;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.coreWrapper = coreWrapper;
+        this.identityStoreFactory = identityStoreFactory;
     }
 
     @Override
@@ -313,7 +317,7 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
                 NodeState nodeState = context.getStateFor(this);
                 return responseAction
                         .addNodeType(context, WEB_AUTHN_AUTH_TYPE)
-                        .withUniversalId(context.universalId.or(() -> getUniversalId(nodeState, identityUtils)))
+                        .withUniversalId(context.universalId.or(() -> getUniversalId(nodeState, identityService)))
                         .build();
             } else {
                 logger.debug("returning with failure outcome");
@@ -340,7 +344,8 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
             throws DevicePersistenceException {
         List<WebAuthnDeviceSettings> devices;
         logger.debug("getting user data and device data");
-        AMIdentity user = IdUtils.getIdentity(username, realm, coreWrapper.getUserAliasList(realm));
+        IdentityStore identityStore = identityStoreFactory.create(realm);
+        AMIdentity user = identityStore.getIdentity(username, coreWrapper.getUserAliasList(realm));
         if (user == null) {
             throw new DevicePersistenceException("getIdentity: Unable to find user " + username);
         } else {

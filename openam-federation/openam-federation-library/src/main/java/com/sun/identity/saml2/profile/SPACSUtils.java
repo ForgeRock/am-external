@@ -24,7 +24,7 @@
  *
  * $Id: SPACSUtils.java,v 1.48 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2010-2022 ForgeRock AS.
+ * Portions Copyrighted 2010-2023 ForgeRock AS.
  * Portions Copyrighted 2016 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.saml2.profile;
@@ -79,6 +79,7 @@ import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.liberty.ws.soapbinding.Message;
 import com.sun.identity.liberty.ws.soapbinding.SOAPBindingException;
 import com.sun.identity.liberty.ws.soapbinding.SOAPFaultException;
+import com.sun.identity.plugin.datastore.DataStoreProvider;
 import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.plugin.monitoring.FedMonAgent;
 import com.sun.identity.plugin.monitoring.FedMonSAML2Svc;
@@ -103,6 +104,7 @@ import com.sun.identity.saml2.common.NameIDInfoKey;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2FailoverUtils;
+import com.sun.identity.saml2.common.SAML2InvalidUserException;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.common.SOAPCommunicator;
@@ -120,8 +122,8 @@ import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.plugins.SAML2PluginsUtils;
-import com.sun.identity.saml2.plugins.SAML2ServiceProviderAdapter;
 import com.sun.identity.saml2.plugins.SPAccountMapper;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 import com.sun.identity.saml2.plugins.SPAdapterHttpServletResponseWrapper;
 import com.sun.identity.saml2.plugins.SPAttributeMapper;
 import com.sun.identity.saml2.protocol.Artifact;
@@ -990,7 +992,7 @@ public class SPACSUtils {
             // invoke SPAdapter for failure
             invokeSPAdapterForSSOFailure(hostEntityId, realm,
                     request, response, smap, respInfo,
-                    SAML2ServiceProviderAdapter.INVALID_RESPONSE, se);
+                    SPAdapter.INVALID_RESPONSE, se);
             throw se;
         }
 
@@ -1037,7 +1039,7 @@ public class SPACSUtils {
             // invoke SPAdapter for failure
             invokeSPAdapterForSSOFailure(hostEntityId, realm,
                     request, response, smap, respInfo,
-                    SAML2ServiceProviderAdapter.INVALID_RESPONSE, se);
+                    SPAdapter.INVALID_RESPONSE, se);
             throw se;
         }
         if (encId != null) {
@@ -1047,7 +1049,7 @@ public class SPACSUtils {
                 // invoke SPAdapter for failure
                 invokeSPAdapterForSSOFailure(hostEntityId, realm,
                         request, response, smap, respInfo,
-                        SAML2ServiceProviderAdapter.INVALID_RESPONSE, se);
+                        SPAdapter.INVALID_RESPONSE, se);
                 throw se;
             }
         }
@@ -1064,7 +1066,7 @@ public class SPACSUtils {
                     "metaDataError"));
             invokeSPAdapterForSSOFailure(hostEntityId, realm, request,
                     response, smap, respInfo,
-                    SAML2ServiceProviderAdapter.SSO_FAILED_META_DATA_ERROR, se);
+                    SPAdapter.SSO_FAILED_META_DATA_ERROR, se);
             throw se;
         }
         String nameIDFormat = nameId.getFormat();
@@ -1080,7 +1082,7 @@ public class SPACSUtils {
 
                 invokeSPAdapterForSSOFailure(hostEntityId, realm, request,
                         response, smap, respInfo,
-                        SAML2ServiceProviderAdapter.INVALID_RESPONSE, se);
+                        SPAdapter.INVALID_RESPONSE, se);
                 throw se;
             }
         }
@@ -1096,7 +1098,7 @@ public class SPACSUtils {
             SAML2Exception se2 = new SAML2Exception(se);
             invokeSPAdapterForSSOFailure(hostEntityId, realm,
                     request, response, smap, respInfo,
-                    SAML2ServiceProviderAdapter.SSO_FAILED_SESSION_ERROR, se2);
+                    SPAdapter.SSO_FAILED_SESSION_ERROR, se2);
             throw se2;
         }
         if (session != null) {
@@ -1106,7 +1108,7 @@ public class SPACSUtils {
                 // invoke SPAdapter for failure
                 SAML2Exception se2 = new SAML2Exception(se);
                 invokeSPAdapterForSSOFailure(hostEntityId, realm, request, response, smap, respInfo,
-                        SAML2ServiceProviderAdapter.SSO_FAILED_SESSION_ERROR, se2);
+                        SPAdapter.SSO_FAILED_SESSION_ERROR, se2);
                 throw se2;
             }
         }
@@ -1124,7 +1126,9 @@ public class SPACSUtils {
                 }
 
                 try {
-                    userName = SAML2Utils.getDataStoreProvider().getUserID(realm, SAML2Utils.getNameIDKeyMap(
+                    DataStoreProvider dataStoreProvider = SAML2Utils.getDataStoreProvider();
+                    validateNameId(nameId, dataStoreProvider);
+                    userName = dataStoreProvider.getUserID(realm, SAML2Utils.getNameIDKeyMap(
                             nameId, hostEntityId, remoteHostId, realm, SAML2Constants.SP_ROLE));
                 } catch (DataStoreProviderException dse) {
                     logger.error(classMethod + "DataStoreProviderException whilst retrieving NameID " +
@@ -1139,8 +1143,12 @@ public class SPACSUtils {
         } catch (SAML2Exception se) {
             // invoke SPAdapter for failure
             invokeSPAdapterForSSOFailure(hostEntityId, realm, request, response, smap, respInfo,
-                    SAML2ServiceProviderAdapter.SSO_FAILED_NO_USER_MAPPING, se);
+                    SPAdapter.SSO_FAILED_NO_USER_MAPPING, se);
             throw se;
+        }
+
+        if (userName != null) {
+            userName = SAML2Utils.getDataStoreProvider().convertUserIdToUniversalId(userName, realm);
         }
 
         if (userName == null && respInfo.isLocalLogin()) {
@@ -1175,7 +1183,7 @@ public class SPACSUtils {
                 // invoke SPAdapter for failure
                 invokeSPAdapterForSSOFailure(hostEntityId, realm,
                         request, response, smap, respInfo,
-                        SAML2ServiceProviderAdapter.SSO_FAILED_ATTRIBUTE_MAPPING,
+                        SPAdapter.SSO_FAILED_ATTRIBUTE_MAPPING,
                         se);
                 throw se;
             }
@@ -1235,17 +1243,17 @@ public class SPACSUtils {
         } catch (SessionException se) {
             // invoke SPAdapter for failure
             int failureCode =
-                    SAML2ServiceProviderAdapter.SSO_FAILED_SESSION_GENERATION;
+                    SPAdapter.SSO_FAILED_SESSION_GENERATION;
             int sessCode =  se.getErrCode();
             if (sessCode == SessionException.AUTH_USER_INACTIVE) {
                 failureCode =
-                        SAML2ServiceProviderAdapter.SSO_FAILED_AUTH_USER_INACTIVE;
+                        SPAdapter.SSO_FAILED_AUTH_USER_INACTIVE;
             } else if (sessCode == SessionException.AUTH_USER_LOCKED) {
                 failureCode =
-                        SAML2ServiceProviderAdapter.SSO_FAILED_AUTH_USER_LOCKED;
+                        SPAdapter.SSO_FAILED_AUTH_USER_LOCKED;
             } else if (sessCode == SessionException.AUTH_ACCOUNT_EXPIRED) {
                 failureCode =
-                        SAML2ServiceProviderAdapter.SSO_FAILED_AUTH_ACCOUNT_EXPIRED;
+                        SPAdapter.SSO_FAILED_AUTH_ACCOUNT_EXPIRED;
             }
             if (logger.isDebugEnabled()) {
                 logger.debug(
@@ -1268,7 +1276,7 @@ public class SPACSUtils {
             SAML2Exception se2 = new SAML2Exception(se);
             invokeSPAdapterForSSOFailure(hostEntityId, realm,
                     request, response, smap, respInfo,
-                    SAML2ServiceProviderAdapter.SSO_FAILED_SESSION_ERROR, se2);
+                    SPAdapter.SSO_FAILED_SESSION_ERROR, se2);
             throw se2;
         }
 
@@ -1311,7 +1319,7 @@ public class SPACSUtils {
             SAML2Exception se2 = new SAML2Exception(se);
             invokeSPAdapterForSSOFailure(hostEntityId, realm,
                     request, response, smap, respInfo,
-                    SAML2ServiceProviderAdapter.SSO_FAILED_SESSION_ERROR, se2);
+                    SPAdapter.SSO_FAILED_SESSION_ERROR, se2);
             throw se2;
         }
         String[] data1 = {userName, nameIDValueString};
@@ -1325,7 +1333,7 @@ public class SPACSUtils {
                 // invoke SPAdapter for failure
                 invokeSPAdapterForSSOFailure(hostEntityId, realm,
                         request, response, smap, respInfo,
-                        SAML2ServiceProviderAdapter.FEDERATION_FAILED_WRITING_ACCOUNT_INFO, se);
+                        SPAdapter.FEDERATION_FAILED_WRITING_ACCOUNT_INFO, se);
                 throw se;
             }
             String[] data = {userName, ""};
@@ -1344,10 +1352,9 @@ public class SPACSUtils {
                 info, IDPProxyUtil.isIDPProxyEnabled(requestID), isTransient);
 
         // invoke SP Adapter
-        SAML2ServiceProviderAdapter spAdapter =
-                SAML2Utils.getSPAdapterClass(hostEntityId, realm);
-        if (spAdapter != null) {
-            boolean redirected = spAdapter.postSingleSignOnSuccess(
+        SPAdapter adapter = SAML2Utils.getSPAdapter(hostEntityId, realm);
+        if (adapter != null) {
+            boolean redirected = adapter.postSingleSignOnSuccess(
                     hostEntityId, realm, request,
                     new SPAdapterHttpServletResponseWrapper(response), out, session, authnRequest,
                     respInfo.getResponse(), respInfo.getProfileBinding(), writeFedInfo);
@@ -1414,22 +1421,21 @@ public class SPACSUtils {
             String realm, HttpServletRequest request, HttpServletResponse response,
             Map smap, ResponseInfo respInfo, int errorCode,
             SAML2Exception se) {
-        SAML2ServiceProviderAdapter spAdapter = null;
+        SPAdapter adapter = null;
         try {
-            spAdapter = SAML2Utils.getSPAdapterClass(hostEntityId, realm);
+            adapter = SAML2Utils.getSPAdapter(hostEntityId, realm);
         } catch (SAML2Exception e) {
             if (logger.isDebugEnabled()) {
-                logger.debug(
-                        "SPACSUtils.invokeSPAdapterForSSOFailure", e);
+                logger.debug("SPACSUtils.invokeSPAdapterForSSOFailure", e);
             }
         }
-        if (spAdapter != null) {
+        if (adapter != null) {
             AuthnRequest authnRequest = null;
             if (smap != null) {
                 authnRequest = (AuthnRequest)
                         smap.get(SAML2Constants.AUTHN_REQUEST);
             }
-            boolean redirected = spAdapter.postSingleSignOnFailure(
+            boolean redirected = adapter.postSingleSignOnFailure(
                     hostEntityId, realm, request, response, authnRequest,
                     respInfo.getResponse(), respInfo.getProfileBinding(),
                     errorCode);
@@ -2049,7 +2055,9 @@ public class SPACSUtils {
         try {
             if (shouldPersistNameId) {
                 try {
-                    userId = SAML2Utils.getDataStoreProvider().getUserID(realm, SAML2Utils.getNameIDKeyMap(
+                    DataStoreProvider dataStoreProvider = SAML2Utils.getDataStoreProvider();
+                    validateNameId(nameId, dataStoreProvider);
+                    userId = dataStoreProvider.getUserID(realm, SAML2Utils.getNameIDKeyMap(
                             nameId, spEntityId, idpEntityId, realm, SAML2Constants.SP_ROLE));
                 } catch (DataStoreProviderException dse) {
                     throw new SAML2Exception(dse.getMessage());
@@ -2061,6 +2069,8 @@ public class SPACSUtils {
                 userId = acctMapper.getIdentity(authnAssertion, spEntityId, realm);
                 isNewAccountLink = true; //we'll use this later to inform us
             }
+        } catch (SAML2InvalidUserException e) {
+            throw e;
         } catch (SAML2Exception se) {
             return new Saml2SsoResult(null, nameId, decryptionKeys, shouldPersistNameId);
         }
@@ -2113,4 +2123,14 @@ public class SPACSUtils {
         AccountUtils.setAccountFederation(info, universalId);
     }
 
+    private static void validateNameId(NameID nameId, DataStoreProvider dataStoreProvider) throws SAML2Exception {
+        try {
+            if (dataStoreProvider.isUsernameUniversalId(nameId.getValue())) {
+                throw new SAML2Exception("Invalid user");
+            }
+        } catch (DataStoreProviderException e) {
+            logger.error("Invalid universalId username", e);
+            throw new SAML2Exception("Invalid user");
+        }
+    }
 }

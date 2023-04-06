@@ -24,33 +24,36 @@
  *
  * $Id: IdRepoDataStoreProvider.java,v 1.6 2008/08/06 17:29:26 exu Exp $
  *
- * Portions Copyrighted 2013-2020 ForgeRock AS.
+ * Portions Copyrighted 2013-2023 ForgeRock AS.
  */
 package com.sun.identity.plugin.datastore.impl;
 
 import java.security.AccessController;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 
 import javax.inject.Inject;
 
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.IdentityService;
+import org.forgerock.am.identity.application.IdentityStoreFactory;
+import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.am.identity.persistence.IdentityStore;
+import org.forgerock.i18n.LocalizedIllegalArgumentException;
+import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.opendj.ldap.Dn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdSearchControl;
 import com.sun.identity.idm.IdSearchOpModifier;
 import com.sun.identity.idm.IdSearchResults;
 import com.sun.identity.idm.IdType;
-import com.sun.identity.idm.IdUtils;
 import com.sun.identity.plugin.datastore.DataStoreProvider;
 import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.security.AdminTokenAction;
@@ -65,22 +68,25 @@ import com.sun.identity.sm.SMSEntry;
  * @see com.sun.identity.plugin.datastore.DataStoreProvider
  */
 public class IdRepoDataStoreProvider implements DataStoreProvider {
-    
-    private static ResourceBundle bundle = 
+
+    private static ResourceBundle bundle =
         Locale.getInstallResourceBundle("fmDataStoreProvider");
     private static Logger debug = LoggerFactory.getLogger(IdRepoDataStoreProvider.class);
     // Identity repository instance map
-    private static Map<String, AMIdentityRepository> idRepoMap = new HashMap<>();
-    private final IdentityUtils identityUtils;
-
+    private final LegacyIdentityService legacyIdentityService;
+    private final IdentityStoreFactory identityStoreFactory;
+    private final IdentityService identityService;
 
     /**
      * Default Constructor.
      */
     @Inject
-    public IdRepoDataStoreProvider(IdentityUtils identityUtils) {
+    public IdRepoDataStoreProvider(LegacyIdentityService legacyIdentityService, IdentityStoreFactory identityStoreFactory,
+            IdentityService identityService) {
+        this.identityService = identityService;
         debug.debug("IdRepoDataStoreProvider.constructor()");
-        this.identityUtils = identityUtils;
+        this.legacyIdentityService = legacyIdentityService;
+        this.identityStoreFactory = identityStoreFactory;
     }
 
     /**
@@ -111,7 +117,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
 
         try {
             SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
-            AMIdentity amId = IdUtils.getIdentity(adminToken, userID);
+            AMIdentity amId = new AMIdentity(adminToken, userID);
             return amId.getAttribute(attrName);
         } catch (SSOException ssoe) {
             debug.error("IdRepoDataStoreProvider.getAttribute(1): "
@@ -147,7 +153,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
 
         try {
             SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
-            AMIdentity amId = IdUtils.getIdentity(adminToken, userID);
+            AMIdentity amId = new AMIdentity(adminToken, userID);
             return amId.getAttributes(attrNames);
         } catch (SSOException ssoe) {
             debug.error("IdRepoDataStoreProvider.getAttribute(2): "
@@ -205,8 +211,8 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
 
         try {
             SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
-            AMIdentity amId = IdUtils.getIdentity(adminToken, userID);
-            return amId.getBinaryAttributes(attrNames);
+            AMIdentity amId = new AMIdentity(adminToken, userID);
+            return identityService.getBinaryAttributes(amId, attrNames);
         } catch (SSOException ssoe) {
             debug.error("IdRepoDataStoreProvider.getBinaryAttributes(): invalid admin SSOToken", ssoe);
             throw new DataStoreProviderException(ssoe);
@@ -236,7 +242,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
 
         try {
             SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
-            AMIdentity amId = IdUtils.getIdentity(adminToken, userID);
+            AMIdentity amId = new AMIdentity(adminToken, userID);
             amId.setAttributes(attrMap);
             amId.store();
         } catch (SSOException ssoe) {
@@ -276,8 +282,8 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
         Set amIdSet = null;
         try {
             IdSearchControl searchControl = getIdSearchControl(avPairs);
-            AMIdentityRepository idRepo = getAMIdentityRepository(orgDN);
-            IdSearchResults searchResults = idRepo.searchIdentities(IdType.USER, "*", searchControl);
+            IdentityStore idRepo = identityStoreFactory.create(orgDN);
+            IdSearchResults searchResults = idRepo.searchIdentitiesByUsername(IdType.USER, "*", searchControl);
             amIdSet = searchResults.getSearchResults();
         } catch (IdRepoException ame) {
             debug.error("IdRepoDataStoreProvider.getUserID(): IdRepoException",
@@ -298,7 +304,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
         }
         // single user found.
         final AMIdentity amId = (AMIdentity)amIdSet.iterator().next();
-        final String universalId = IdUtils.getUniversalId(amId);
+        final String universalId = amId.getUniversalId();
 
         if (debug.isDebugEnabled()) {
             debug.debug("IdRepoDataStoreProvider.getUserID()"
@@ -307,6 +313,15 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
         }
 
         return universalId;
+    }
+
+    @Override
+    public boolean isUsernameUniversalId(String username) throws DataStoreProviderException {
+        try {
+            return LDAPUtils.isDN(username) && AMIdentity.isUniversalIdOrSpecialUserDn(Dn.valueOf(username));
+        } catch (IdRepoException e) {
+            throw new DataStoreProviderException(e);
+        }
     }
 
     /**
@@ -325,7 +340,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
 
         try {
             SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
-            AMIdentity amId = IdUtils.getIdentity(adminToken, userID);
+            AMIdentity amId = new AMIdentity(adminToken, userID);
             // treat inactive as user does not exist
             return amId.isActive();
         } catch (IdRepoException ide) {
@@ -340,30 +355,16 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
 
     @Override
     public String convertUserIdToUniversalId(String userId, String realm) {
-        return identityUtils.getIdentityName(userId) != null
-                ? userId
-                : identityUtils.getUniversalId(userId, IdType.USER, realm);
-    }
-
-    /**
-     * Returns identity repository for a realm.
-     * @param realm Name of the realm.
-     * @return identity repository for a realm.
-     */
-    private synchronized AMIdentityRepository getAMIdentityRepository(
-        String realm) {
-        SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
-        AMIdentityRepository amIdentityRepository = idRepoMap.get(realm);
-        if (amIdentityRepository == null) {
-            amIdentityRepository = new AMIdentityRepository(realm, adminToken);
-            idRepoMap.put(realm, amIdentityRepository);
-            if (debug.isDebugEnabled()) {
-                debug.debug("IdRepoDataStoreProvider.getAMIdRepo : "
-                     + " create IdRepo for realm " + realm);
+        try {
+            if (LDAPUtils.isDN(userId) && legacyIdentityService.getIdentityName(userId) != null) {
+                return userId;
+            } else {
+                return legacyIdentityService.getUniversalId(userId, IdType.USER, realm);
             }
+        } catch (IdRepoException e) {
+            throw new IllegalArgumentException(e);
         }
-        return amIdentityRepository;
-    } 
+    }
 
     /**
      * Returns <code>IdSearchControl</code> object.

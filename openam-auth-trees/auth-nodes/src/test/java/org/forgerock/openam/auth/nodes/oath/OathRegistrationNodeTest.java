@@ -29,10 +29,13 @@ import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_G
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_ISSUER;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_CODE_DEVICE_NAME;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_CODE_KEY;
+import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.SCAN_QR_CODE_MSG_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_CHECKSUM;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_MIN_SHARED_SECRET_LENGTH;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_TOTP_INTERVAL;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_DEVICE_PROFILE_KEY;
+import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_ENABLE_RECOVERY_CODE_KEY;
+import static org.forgerock.openam.auth.nodes.oath.OathRegistrationHelper.NEXT_LABEL;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -46,6 +49,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.ConfirmationCallback;
+import javax.security.auth.callback.TextOutputCallback;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -53,10 +59,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.ConfirmationCallback;
-import javax.security.auth.callback.TextOutputCallback;
-
+import com.google.common.collect.ImmutableList;
+import com.sun.identity.authentication.callbacks.HiddenValueCallback;
+import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
+import com.sun.identity.idm.AMIdentity;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
@@ -64,24 +71,19 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.helpers.LocalizationHelper;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
+import org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationUtilities;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
-import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.sun.identity.authentication.callbacks.HiddenValueCallback;
-import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
-import com.sun.identity.idm.AMIdentity;
-
 public class OathRegistrationNodeTest {
 
     @Mock
-    OathRegistrationNode.Config config;
+    OathRegistrationConfig config;
     @Mock
     private Realm realm;
     @Mock
@@ -91,27 +93,29 @@ public class OathRegistrationNodeTest {
     @Mock
     AMIdentity userIdentity;
     @Mock
-    IdentityUtils identityUtils;
+    LegacyIdentityService identityService;
     @Mock
     private LocalizationHelper localizationHelper;
+    @Mock
+    private MultiFactorRegistrationUtilities multiFactorRegistrationUtilities;
 
+    OathRegistrationHelper oathRegistrationHelper;
     OathRegistrationNode node;
 
     static final String MESSAGE = "Scan the QR code image below with the ForgeRock Authenticator app to "
             + "register your device with your login";
 
-    static final Map<Locale, String> MAP_SCAN_MESSAGE = new HashMap<>() {{
-        put(Locale.CANADA, MESSAGE);
-    }};
-
-    static final Locale DEFAULT_LOCALE = Locale.CANADA;
+    static final Map<Locale, String> MAP_SCAN_MESSAGE = new HashMap<>() {
+        {
+            put(Locale.CANADA, MESSAGE);
+        }
+    };
 
     @BeforeMethod
     public void setup() {
         initMocks(this);
 
         when(deviceProfileHelper.isDeviceSettingsStored(any())).thenReturn(false);
-        when(coreWrapper.getIdentity(anyString(), (Realm) any())).thenReturn(userIdentity);
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
@@ -144,13 +148,13 @@ public class OathRegistrationNodeTest {
         given(deviceProfileHelper.encodeDeviceSettings(any()))
                 .willReturn("ekd1j5Rr2A8DDeg3ekwZVD06bVJCpAHoR9ab");
         doReturn(mock(ScriptTextOutputCallback.class))
-                .when(node).createQRCodeCallback(any(), any());
+                .when(oathRegistrationHelper).createQRCodeCallback(any(), any(), any(), anyString(), anyString());
         doReturn(mock(HiddenValueCallback.class))
-                .when(node).createHiddenCallback(any(), any());
+                .when(oathRegistrationHelper).createHiddenCallback(any(), any(), any(), anyString(), anyString());
         doReturn(userIdentity)
                 .when(node).getIdentity(any());
         doReturn("forgerock")
-                .when(node).getBase32Secret(anyString());
+                .when(oathRegistrationHelper).getBase32Secret(anyString());
 
         // When
         Action result = node.process(getContext(sharedState));
@@ -161,6 +165,7 @@ public class OathRegistrationNodeTest {
         assertThat(result.callbacks.get(1)).isInstanceOf(ScriptTextOutputCallback.class);
         assertThat(result.callbacks.get(2)).isInstanceOf(HiddenValueCallback.class);
         assertThat(result.sharedState.get(OATH_DEVICE_PROFILE_KEY).asString()).isNotEmpty();
+        assertThat(result.sharedState.get(OATH_ENABLE_RECOVERY_CODE_KEY).asBoolean()).isTrue();
         String message = ((TextOutputCallback) result.callbacks.get(0)).getMessage();
         assertThat(message).contains(MESSAGE);
     }
@@ -169,23 +174,25 @@ public class OathRegistrationNodeTest {
     public void processSuccessfulRegistrationReturnSuccessOutcomeAndRecoveryCodes()
             throws NodeProcessException {
         // Given
-        whenNodeConfigHasDefaultValues(true);
+        whenNodeConfigHasDefaultValues(true, false);
 
         given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
                 .willReturn(getDeviceSettings());
         given(deviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(true)))
                 .willReturn(Arrays.asList("z0WKEw0Wc8", "Ios4LnA2Qn"));
         doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
-        doNothing().when(node).setUserToNotSkippable(any(), anyString());
+        doNothing().when(oathRegistrationHelper).setUserToNotSkippable(any());
 
         // When
         Action result = node.process(
-                getContext(ImmutableList.of(mock(ConfirmationCallback.class)), getOathRegistrationSharedState())
+                getContext(ImmutableList.of(mock(ConfirmationCallback.class)),
+                getOathRegistrationSharedState(true))
         );
 
         // Then
         assertThat(result.outcome).isEqualTo(SUCCESS_OUTCOME_ID);
-        assertThat(result.sharedState).isNull();
+        assertThat(result.sharedState.get(OATH_DEVICE_PROFILE_KEY).asString()).isNull();
+        assertThat(result.sharedState.get(OATH_ENABLE_RECOVERY_CODE_KEY).asBoolean()).isNull();
         assertThat(result.transientState.get(RECOVERY_CODE_KEY).asList())
                 .containsExactlyInAnyOrder("z0WKEw0Wc8", "Ios4LnA2Qn");
         assertThat(result.transientState.get(RECOVERY_CODE_DEVICE_NAME).asString())
@@ -193,34 +200,85 @@ public class OathRegistrationNodeTest {
     }
 
     @Test
+    public void processSuccessfulRegistrationReturnSuccessOutcomeWithoutSaveDeviceProfile()
+            throws NodeProcessException {
+        // Given
+        whenNodeConfigHasDefaultValues(true, true);
+
+        given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
+                .willReturn(getDeviceSettings());
+        doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
+
+        // When
+        Action result = node.process(
+                getContext(ImmutableList.of(mock(ConfirmationCallback.class)), getOathRegistrationSharedState(true))
+        );
+
+        // Then
+        assertThat(result.outcome).isEqualTo(SUCCESS_OUTCOME_ID);
+        assertThat(result.sharedState).isNotNull();
+        assertThat(result.sharedState.get(OATH_DEVICE_PROFILE_KEY).asString()).isNotEmpty();
+        assertThat(result.sharedState.get(OATH_ENABLE_RECOVERY_CODE_KEY).asBoolean()).isTrue();
+        assertThat(result.transientState).isNull();
+    }
+
+    @Test
     public void processSuccessfulRegistrationWhenRecoveryCodesDisabledReturnSuccessOutcome()
             throws NodeProcessException {
         // Given
-        whenNodeConfigHasDefaultValues(false);
+        whenNodeConfigHasDefaultValues(false, false);
 
         given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
                 .willReturn(getDeviceSettings());
         given(deviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(true)))
                 .willReturn(Arrays.asList("z0WKEw0Wc8", "Ios4LnA2Qn"));
         doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
-        doNothing().when(node).setUserToNotSkippable(any(), anyString());
+        doNothing().when(oathRegistrationHelper).setUserToNotSkippable(any());
 
         // When
         Action result = node.process(
-                getContext(ImmutableList.of(mock(ConfirmationCallback.class)), getOathRegistrationSharedState())
+                getContext(ImmutableList.of(mock(ConfirmationCallback.class)),
+                getOathRegistrationSharedState(true))
         );
 
         // Then
         assertThat(result.outcome).isEqualTo(SUCCESS_OUTCOME_ID);
+        assertThat(result.sharedState.get(OATH_DEVICE_PROFILE_KEY).asString()).isNull();
+        assertThat(result.sharedState.get(OATH_ENABLE_RECOVERY_CODE_KEY).asBoolean()).isNull();
         assertThat(result.transientState).isNull();
     }
 
-    private JsonValue getOathRegistrationSharedState() {
+    @Test
+    public void processSuccessfulRegistrationWhenRecoveryCodesDisabledAndPostponeDeviceEnabled()
+            throws NodeProcessException {
+        // Given
+        whenNodeConfigHasDefaultValues(false, true);
+
+        given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
+                .willReturn(getDeviceSettings());
+        doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
+
+        // When
+        Action result = node.process(
+                getContext(ImmutableList.of(mock(ConfirmationCallback.class)),
+                getOathRegistrationSharedState(false))
+        );
+
+        // Then
+        assertThat(result.outcome).isEqualTo(SUCCESS_OUTCOME_ID);
+        assertThat(result.sharedState).isNotNull();
+        assertThat(result.sharedState.get(OATH_DEVICE_PROFILE_KEY).asString()).isNotEmpty();
+        assertThat(result.sharedState.get(OATH_ENABLE_RECOVERY_CODE_KEY).asBoolean()).isFalse();
+        assertThat(result.transientState).isNull();
+    }
+
+    private JsonValue getOathRegistrationSharedState(boolean recoveryCode) {
         return json(
                 object(
-                    field(USERNAME, "rod"),
-                    field(REALM, "root"),
-                    field(OATH_DEVICE_PROFILE_KEY, "ekd1j5Rr2A8DDeg3ekwZVD06bVJCpAHoR9ab=")
+                        field(USERNAME, "rod"),
+                        field(REALM, "root"),
+                        field(OATH_DEVICE_PROFILE_KEY, "ekd1j5Rr2A8DDeg3ekwZVD06bVJCpAHoR9ab="),
+                        field(OATH_ENABLE_RECOVERY_CODE_KEY, recoveryCode)
                 )
         );
     }
@@ -259,16 +317,19 @@ public class OathRegistrationNodeTest {
                 OathRegistrationNode.UserAttributeToAccountNameMapping.USERNAME,
                 DEFAULT_BG_COLOR,
                 "",
-                DEFAULT_GENERATE_RECOVERY_CODES);
+                DEFAULT_GENERATE_RECOVERY_CODES,
+                false);
     }
 
-    private void whenNodeConfigHasDefaultValues(boolean generateRecoveryCodes) {
+    private void whenNodeConfigHasDefaultValues(boolean generateRecoveryCodes,
+                                                boolean postponeDeviceProfileStorage) {
         whenNodeConfigHasDefaultValues(
                 DEFAULT_ISSUER,
                 OathRegistrationNode.UserAttributeToAccountNameMapping.USERNAME,
                 DEFAULT_BG_COLOR,
                 "",
-                generateRecoveryCodes
+                generateRecoveryCodes,
+                postponeDeviceProfileStorage
         );
     }
 
@@ -276,8 +337,9 @@ public class OathRegistrationNodeTest {
                                                 OathRegistrationNode.UserAttributeToAccountNameMapping accountName,
                                                 String bgColor,
                                                 String imgUrl,
-                                                boolean generateRecoveryCodes) {
-        config = mock(OathRegistrationNode.Config.class);
+                                                boolean generateRecoveryCodes,
+                                                boolean postponeDeviceProfileStorage) {
+        config = mock(OathRegistrationConfig.class);
         given(config.issuer()).willReturn(issuer);
         given(config.accountName()).willReturn(accountName);
         given(config.bgColor()).willReturn(bgColor);
@@ -290,19 +352,35 @@ public class OathRegistrationNodeTest {
         given(config.addChecksum()).willReturn(DEFAULT_CHECKSUM);
         given(config.totpHashAlgorithm()).willReturn(HashAlgorithm.HMAC_SHA1);
         given(config.scanQRCodeMessage()).willReturn(MAP_SCAN_MESSAGE);
+        given(config.postponeDeviceProfileStorage()).willReturn(postponeDeviceProfileStorage);
 
         localizationHelper = mock(LocalizationHelper.class);
-        given(localizationHelper.getLocalizedMessage(any(), any(), any(), anyString())).willReturn(MESSAGE);
+        given(localizationHelper.getLocalizedMessage(any(), any(), any(), eq(SCAN_QR_CODE_MSG_KEY)))
+                .willReturn(MESSAGE);
+        given(localizationHelper.getLocalizedMessageWithDefault(any(), any(), any(), anyString(), eq(NEXT_LABEL)))
+                .willReturn(NEXT_LABEL);
+
+        MultiFactorNodeDelegate multiFactorNodeDelegate = new MultiFactorNodeDelegate(
+                mock(AuthenticatorDeviceServiceFactory.class)
+        );
+
+        oathRegistrationHelper = spy(
+                new OathRegistrationHelper(
+                        realm,
+                        deviceProfileHelper,
+                        multiFactorNodeDelegate,
+                        localizationHelper,
+                        multiFactorRegistrationUtilities)
+        );
 
         node = spy(
                 new OathRegistrationNode(
                         config,
                         realm,
                         coreWrapper,
-                        deviceProfileHelper,
-                        new MultiFactorNodeDelegate(mock(AuthenticatorDeviceServiceFactory.class)),
-                        identityUtils,
-                        localizationHelper
+                        multiFactorNodeDelegate,
+                        identityService,
+                        oathRegistrationHelper
                 )
         );
     }

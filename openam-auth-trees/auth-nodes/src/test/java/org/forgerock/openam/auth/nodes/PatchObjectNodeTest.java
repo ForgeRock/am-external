@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -170,10 +170,12 @@ public class PatchObjectNodeTest {
         ));
 
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any())).thenReturn(userObject());
-        doNothing().when(idmIntegrationService).patchObject(any(), any(), any(), any(), any(), any());
+        doNothing().when(idmIntegrationService).patchObject(any(), any(), any(), any(), patchCaptor.capture(), any());
 
         String outcome = node.process(getContext(Collections.emptyList(), sharedState)).outcome;
         assertThat(outcome).isEqualTo(PatchObjectNode.PatchObjectOutcome.PATCHED.name());
+        assertThat(patchCaptor.getValue())
+            .containsExactlyInAnyOrderEntriesOf(sharedState.get(OBJECT_ATTRIBUTES).asMap());
     }
 
     @Test

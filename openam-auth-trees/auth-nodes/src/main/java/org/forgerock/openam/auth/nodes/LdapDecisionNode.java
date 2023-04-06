@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -22,9 +22,9 @@ import static javax.security.auth.callback.ConfirmationCallback.OK_CANCEL_OPTION
 import static javax.security.auth.callback.TextOutputCallback.ERROR;
 import static javax.security.auth.callback.TextOutputCallback.INFORMATION;
 import static javax.security.auth.callback.TextOutputCallback.WARNING;
-import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.HeartbeatTimeUnit.SECONDS;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMode.LDAP;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.LdapConnectionMode.LDAPS;
@@ -46,6 +46,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.TextOutputCallback;
 
 import org.apache.commons.lang.StringUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -58,7 +59,6 @@ import org.forgerock.openam.auth.node.api.SharedStateConstants;
 import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.openam.ldap.LDAPAuthUtils;
 import org.forgerock.openam.ldap.LDAPUtilException;
 import org.forgerock.openam.ldap.LDAPUtils;
@@ -101,7 +101,7 @@ public class LdapDecisionNode implements Node {
     private final Config config;
     /** the CoreWrapper object for the Node. */
     protected final CoreWrapper coreWrapper;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private ResourceBundle bundle;
     private LDAPAuthUtils ldapUtil;
     private Set<String> additionalPwdChangeSearchAttrs;
@@ -293,6 +293,17 @@ public class LdapDecisionNode implements Node {
         default Set<String> additionalPasswordChangeSearchAttributes() {
             return emptySet();
         }
+
+        /**
+         * Determines whether mixed case should be used for password change messages returned from this node.
+         * Previously all messages were returned uppercase.
+         *
+         * @return <code>true</code> to enable the use of mixed case messages.
+         */
+        @Attribute(order = 1900)
+        default boolean mixedCaseForPasswordChangeMessages() {
+            return false;
+        }
     }
 
     /**
@@ -300,15 +311,15 @@ public class LdapDecisionNode implements Node {
      *
      * @param config provides the settings for initialising an {@link LdapDecisionNode}.
      * @param coreWrapper A core wrapper instance.
-     * @param identityUtils A {@code IdentityUtils} instance.
+     * @param identityService An {@link LegacyIdentityService} instance.
      * @throws NodeProcessException if there is a problem during construction.
      */
     @Inject
     public LdapDecisionNode(@Assisted Config config, CoreWrapper coreWrapper,
-            IdentityUtils identityUtils) throws NodeProcessException {
+            LegacyIdentityService identityService) throws NodeProcessException {
         this.config = config;
         this.coreWrapper = coreWrapper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
     }
 
     @Override
@@ -322,8 +333,9 @@ public class LdapDecisionNode implements Node {
         }
         ActionBuilder action;
         JsonValue newState = context.sharedState.copy();
-        String userName = context.sharedState.get(USERNAME).asString();
+        String sharedStateSubmittedUsername = context.sharedState.get(USERNAME).asString();
         String realm = context.sharedState.get(REALM).asString();
+        String username = sharedStateSubmittedUsername;
         try {
             ldapUtil = initializeLDAP(context);
             String userPassword = context.getState(SharedStateConstants.PASSWORD).asString();
@@ -332,14 +344,14 @@ public class LdapDecisionNode implements Node {
                 ldapUtil.setDynamicProfileCreationEnabled(true);
                 ldapUtil.setUserAttributes(ImmutableSet.of(USER_STATUS_ATTRIBUTE));
                 String userStatus = STATUS_INACTIVE;
-                if (authenticateUser(ldapUtil, userName, userPassword)) {
+                if (authenticateUser(ldapUtil, sharedStateSubmittedUsername, userPassword)) {
                     userStatus = STATUS_ACTIVE;
                     if (ldapUtil.getUserAttributeValues().containsKey(USER_STATUS_ATTRIBUTE)) {
                         userStatus = ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE).iterator().next();
                     }
                 }
-                String username = getUserNameFromIdentity(ldapUtil.getUserId());
-                if (StringUtils.isNotEmpty(username)) {
+                username = getUserNameFromIdentity(ldapUtil.getUserId());
+                if (StringUtils.isNotEmpty(username) && isUsernameRepresentedByUniversalId()) {
                     newState.put(USERNAME, username);
                 }
                 if (!userStatus.equalsIgnoreCase(STATUS_ACTIVE)) {
@@ -348,7 +360,7 @@ public class LdapDecisionNode implements Node {
                 action = processLogin(ldapUtil.getState(), newState, context);
             } else {
                 logger.debug("processing password change");
-                action = processPasswordChange(context, userName, userPassword);
+                action = processPasswordChange(context, sharedStateSubmittedUsername, userPassword);
             }
         } catch (LDAPUtilException e) {
             logger.error(e.getMessage(), e);
@@ -370,8 +382,17 @@ public class LdapDecisionNode implements Node {
             }
         }
         return action
-                .withUniversalId(identityUtils.getUniversalId(userName, realm, USER))
+                .withUniversalId(identityService.getUniversalId(username, realm, USER))
                 .replaceSharedState(newState).build();
+    }
+
+    /**
+     * Allows for the username to be represented by the user's universal id.
+     *
+     * @return {@code true} if the username should be represented by the universal id value, otherwise {@code false}
+     */
+    protected boolean isUsernameRepresentedByUniversalId() {
+        return true;
     }
 
     /**
@@ -697,7 +718,8 @@ public class LdapDecisionNode implements Node {
     private List<Callback> passwordChangeCallbacks(int messageType, String message,
                                                    ConfirmationCallback confirmationCallback) {
         return ImmutableList.of(
-                new TextOutputCallback(messageType, message.toUpperCase()),
+                new TextOutputCallback(messageType, (
+                        config.mixedCaseForPasswordChangeMessages() ? message : message.toUpperCase())),
                 new PasswordCallback(bundle.getString("oldPasswordCallback"), false),
                 new PasswordCallback(bundle.getString("newPasswordCallback"), false),
                 new PasswordCallback(bundle.getString("confirmPasswordCallback"), false),

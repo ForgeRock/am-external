@@ -24,21 +24,11 @@
  *
  * $Id: FedletAdapter.java,v 1.2 2009/06/17 03:09:13 exu Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
-import java.util.List;
-import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.forgerock.openam.annotations.SupportedAll;
-
-import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.protocol.LogoutRequest;
-import com.sun.identity.saml2.protocol.LogoutResponse;
 
 /**
  * The <code>FedletAdapter</code> abstract class provides methods
@@ -49,113 +39,12 @@ import com.sun.identity.saml2.protocol.LogoutResponse;
  * <p>
  * A singleton instance of this <code>FedletAdapter</code>
  * class will be used per Service Provider during runtime, so make sure 
- * implementation of the methods are thread safe. 
+ * implementation of the methods are thread safe.
+ *
+ *  @deprecated since AM 7.3.0 Implement use-case specific {@link org.forgerock.openam.saml2.plugins.FedletAdapter}
+ *  implementations instead.
  */
 @SupportedAll
-public abstract class FedletAdapter {
-
-    /**
-     * Constants for hosted entity id parameter
-     */
-    public static final String HOSTED_ENTITY_ID = "HOSTED_ENTITY_ID";
-
-    /**
-     * Initializes the fedlet adapter, this method will only be executed
-     * once after creation of the adapter instance.
-     * @param initParams  initial set of parameters configured in the fedlet
-     *          for this adapter. One of the parameters named
-     *          <code>HOSTED_ENTITY_ID</code> refers to the ID of this
-     *          fedlet entity.
-     */
-    public abstract void initialize(Map initParams);
-
-    /**
-     * Invokes after Fedlet receives SLO request from IDP. It does the work
-     * of logout the user.
-     * @param request servlet request
-     * @param response servlet response
-     * @param hostedEntityID entity ID for the fedlet
-     * @param idpEntityID entity id for the IDP to which the request is
-     *          received from.
-     * @param siList List of SessionIndex whose session to be logged out
-     * @param nameIDValue nameID value whose session to be logged out
-     * @param binding Single Logout binding used,
-     *      one of following values:
-     *          <code>SAML2Constants.SOAP</code>,
-     *          <code>SAML2Constants.HTTP_POST</code>,
-     *          <code>SAML2Constants.HTTP_REDIRECT</code>
-     * @return <code>true</code> if user is logged out successfully; 
-     *          <code>false</code> otherwise.
-     * @exception SAML2Exception if user want to fail the process.
-     */
-    public boolean doFedletSLO (
-        HttpServletRequest request, 
-        HttpServletResponse response, 
-        LogoutRequest logoutReq,
-        String hostedEntityID, 
-        String idpEntityID,
-        List siList,
-        String nameIDValue,
-        String binding)
-    throws SAML2Exception {
-        return true;
-    }
-
-    /**
-     * Invokes after Fedlet receives SLO response from IDP and the SLO status
-     * is success.
-     * @param request servlet request
-     * @param response servlet response
-     * @param logoutReq SAML2 <code>LogoutRequest</code> object
-     * @param logoutRes SAML2 <code>LogoutResponse</code> object
-     * @param hostedEntityID entity ID for the fedlet
-     * @param idpEntityID entity id for the IDP to which the logout response
-     *          is received from.
-     * @param binding Single Logout binding used,
-     *      one of following values:
-     *          <code>SAML2Constants.SOAP</code>,
-     *          <code>SAML2Constants.HTTP_POST</code>,
-     *          <code>SAML2Constants.HTTP_REDIRECT</code>
-     * @exception SAML2Exception if user want to fail the process.
-     */
-    public void onFedletSLOSuccess(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        LogoutRequest logoutReq,
-        LogoutResponse logoutRes,
-        String hostedEntityID,
-        String idpEntityID,
-        String binding)
-    throws SAML2Exception {
-        return;
-    }
-
-    /**
-     * Invokes after Fedlet receives SLO response from IDP and the SLO status
-     * is not success.
-     * @param request servlet request
-     * @param response servlet response
-     * @param logoutReq SAML2 <code>LogoutRequest</code> object
-     * @param logoutRes SAML2 <code>LogoutResponse</code> object
-     * @param hostedEntityID entity ID for the fedlet
-     * @param idpEntityID entity id for the IDP to which the logout response
-     *          is received from.
-     * @param binding Single Logout binding used,
-     *      one of following values:
-     *          <code>SAML2Constants.SOAP</code>,
-     *          <code>SAML2Constants.HTTP_POST</code>,
-     *          <code>SAML2Constants.HTTP_REDIRECT</code>
-     * @exception SAML2Exception if user want to fail the process.
-     */
-    public void onFedletSLOFailure(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        LogoutRequest logoutReq,
-        LogoutResponse logoutRes,
-        String hostedEntityID,
-        String idpEntityID,
-        String binding)
-    throws SAML2Exception {
-        return;
-    }
-} 
+@Deprecated(forRemoval = true, since = "7.3.0")
+public abstract class FedletAdapter implements org.forgerock.openam.saml2.plugins.FedletAdapter {
+}

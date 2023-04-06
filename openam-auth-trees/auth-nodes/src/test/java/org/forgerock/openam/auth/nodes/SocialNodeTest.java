@@ -11,13 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
+import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.EMAIL_ADDRESS;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
@@ -34,6 +35,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.forgerock.http.Handler;
 import org.forgerock.json.JsonValue;
@@ -51,7 +53,7 @@ import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.RedirectCallback;
 
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.mockito.Mock;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -71,11 +73,12 @@ public class SocialNodeTest {
     @Mock
     private ProfileNormalizer profileNormalizer;
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
     @Mock
     private Realm realm;
     @Mock
     private Handler handler;
+    private UUID nodeId;
 
     @BeforeMethod
     public void before() throws URISyntaxException, AuthLoginException {
@@ -108,6 +111,7 @@ public class SocialNodeTest {
                 .thenReturn(singletonMap("attribute", singleton("value")));
         when(profileNormalizer.getNormalisedAttributes(any(), any(), any()))
                 .thenReturn(singletonMap("mail", singleton("mail@mail")));
+        nodeId = UUID.randomUUID();
 
     }
 
@@ -116,7 +120,7 @@ public class SocialNodeTest {
         //GIVEN
         TreeContext context = new TreeContext(JsonValue.json(object(1)),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityUtils);
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
         Action action = node.process(context);
@@ -137,7 +141,7 @@ public class SocialNodeTest {
         TreeContext context = getTreeContext(parameters);
         mockToProviderUser(Optional.of("user"));
 
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityUtils);
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
         Action action = node.process(context);
@@ -154,7 +158,7 @@ public class SocialNodeTest {
         TreeContext context = getTreeContext(parameters);
         mockToProviderUser(Optional.of("user"));
 
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityUtils);
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
         Action action = node.process(context);
@@ -175,7 +179,7 @@ public class SocialNodeTest {
         TreeContext context = getTreeContext(parameters);
         mockToProviderUser(Optional.of("user"));
 
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityUtils);
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
         node.process(context);
@@ -192,7 +196,7 @@ public class SocialNodeTest {
         TreeContext context = getTreeContext(parameters);
         mockToProviderUser(Optional.empty());
 
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityUtils);
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
         Action action = node.process(context);
@@ -209,7 +213,7 @@ public class SocialNodeTest {
         TreeContext context = getTreeContext(parameters);
         mockToProviderUser(Optional.empty());
 
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityUtils);
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
         Action action = node.process(context);
@@ -229,7 +233,7 @@ public class SocialNodeTest {
         TreeContext context = getTreeContext(parameters);
         mockToProviderUser(Optional.empty());
 
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityUtils);
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
         Action action = node.process(context);
@@ -247,7 +251,7 @@ public class SocialNodeTest {
         mockToProviderUser(Optional.empty());
 
         when(config.saveUserAttributesToSession()).thenReturn(true);
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityUtils);
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
         Action action = node.process(context);
@@ -269,7 +273,7 @@ public class SocialNodeTest {
         mockToProviderUser(Optional.empty());
 
         when(config.cfgMixUpMitigation()).thenReturn(true);
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityUtils);
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
         try {
@@ -292,7 +296,7 @@ public class SocialNodeTest {
         mockToProviderUser(Optional.empty());
 
         when(config.cfgMixUpMitigation()).thenReturn(true);
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityUtils);
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         try {
             node.process(context);
@@ -315,7 +319,7 @@ public class SocialNodeTest {
         mockToProviderUser(Optional.empty());
 
         when(config.cfgMixUpMitigation()).thenReturn(true);
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityUtils);
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
         node.process(context);
@@ -340,7 +344,9 @@ public class SocialNodeTest {
     }
 
     private TreeContext getTreeContext(Map<String, String[]> parameters) {
-        return new TreeContext(JsonValue.json(object(1)),
+        JsonValue sharedState = JsonValue.json(object(field(
+                "redirectRequestSentForNode-" + nodeId, true)));
+        return new TreeContext(sharedState,
                     new ExternalRequestContext.Builder()
                             .parameters(parameters)
                             .build(),

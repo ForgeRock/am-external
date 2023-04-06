@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -30,7 +30,7 @@ import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.SessionUpgradeVerifier;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -42,7 +42,7 @@ import com.sun.identity.sm.RequiredValueValidator;
         configClass = AnonymousUserNode.Config.class, tags = {"utilities"})
 public class AnonymousUserNode extends SingleOutcomeNode {
 
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final Config config;
 
     /**
@@ -62,12 +62,12 @@ public class AnonymousUserNode extends SingleOutcomeNode {
 
     /**
      * Constructor.
-     * @param identityUtils An instance of the IdentityUtils.
+     * @param identityService An instance of the IdentityService.
      * @param config the config
      */
     @Inject
-    public AnonymousUserNode(IdentityUtils identityUtils,  @Assisted AnonymousUserNode.Config config) {
-        this.identityUtils = identityUtils;
+    public AnonymousUserNode(LegacyIdentityService identityService,  @Assisted AnonymousUserNode.Config config) {
+        this.identityService = identityService;
         this.config = config;
     }
 
@@ -77,7 +77,7 @@ public class AnonymousUserNode extends SingleOutcomeNode {
         String realm = context.sharedState.get(REALM).asString();
         return goToNext()
                 .addNodeType(context, SessionUpgradeVerifier.ANONYMOUS_MODULE_TYPE)
-                .withUniversalId(identityUtils.getUniversalId(username, realm, USER))
+                .withUniversalId(identityService.getUniversalId(username, realm, USER))
                 .replaceSharedState(context.sharedState.put(USERNAME, username))
                 .build();
     }

@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -31,13 +31,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdSearchControl;
 import com.sun.identity.idm.IdSearchOpModifier;
@@ -70,7 +70,7 @@ public class DefaultAccountProvider implements AccountProvider {
     /**
      * {@inheritDoc}
      */
-    public AMIdentity searchUser(AMIdentityRepository idrepo, Map<String, Set<String>> attr) {
+    public AMIdentity searchUser(IdentityStore idrepo, Map<String, Set<String>> attr) {
         AMIdentity identity = null;
 
         if (attr == null || attr.isEmpty()) {
@@ -81,7 +81,7 @@ public class DefaultAccountProvider implements AccountProvider {
         IdSearchControl ctrl = getSearchControl(IdSearchOpModifier.OR, attr);
         IdSearchResults results;
         try {
-            results = idrepo.searchIdentities(IdType.USER, "*", ctrl);
+            results = idrepo.searchIdentitiesByUsername(IdType.USER, "*", ctrl);
             Iterator<AMIdentity> iter = results.getSearchResults().iterator();
             if (iter.hasNext()) {
                 identity = iter.next();
@@ -101,7 +101,7 @@ public class DefaultAccountProvider implements AccountProvider {
     /**
      * {@inheritDoc}
      */
-    public AMIdentity provisionUser(AMIdentityRepository idrepo, Map<String, Set<String>> attributes) 
+    public AMIdentity provisionUser(IdentityStore idrepo, Map<String, Set<String>> attributes)
       throws AuthLoginException {
 
         AMIdentity identity = null;

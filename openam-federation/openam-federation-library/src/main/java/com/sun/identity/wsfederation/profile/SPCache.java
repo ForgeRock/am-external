@@ -24,7 +24,7 @@
  *
  * $Id: SPCache.java,v 1.5 2009/12/14 23:42:48 mallas Exp $
  *
- * Portions Copyright 2015-2017 ForgeRock AS.
+ * Portions Copyright 2015-2022 ForgeRock AS.
  */
 
 package com.sun.identity.wsfederation.profile;
@@ -112,14 +112,6 @@ public class SPCache {
      * Value : Request Parameters Map , a Map
      */
     public static Hashtable reqParamHash = new Hashtable();
-
-
-    /**
-     * Cache saves the sp account mapper.
-     * Key : sp account mapper class name
-     * Value : sp account mapper object
-     */
-    public static Hashtable spAccountMapperCache = new Hashtable();
 
 
     /**

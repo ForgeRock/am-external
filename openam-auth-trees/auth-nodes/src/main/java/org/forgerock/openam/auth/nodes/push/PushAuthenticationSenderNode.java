@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -70,7 +70,7 @@ import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.core.rest.devices.push.UserPushDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
 import org.forgerock.openam.core.rest.devices.services.push.AuthenticatorPushService;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.services.push.DefaultMessageTypes;
 import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.MessageIdFactory;
@@ -132,7 +132,7 @@ public class PushAuthenticationSenderNode implements Node {
     private final MultiFactorNodeDelegate<AuthenticatorPushService> multiFactorNodeDelegate;
     private final LocaleSelector localeSelector;
     private final MessageIdFactory messageIdFactory;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
 
     /**
      * Constructor.
@@ -144,14 +144,14 @@ public class PushAuthenticationSenderNode implements Node {
      * @param multiFactorNodeDelegate Shared utilities common to second factor implementations.
      * @param localeSelector Shared utilities to allow for overriding localisations.
      * @param messageIdFactory Used to create new MessageKeys for push messages.
-     * @param identityUtils an instance of the IdentityUtils.
+     * @param identityService an instance of the IdentityService.
      */
     @Inject
     public PushAuthenticationSenderNode(@Assisted Config config,
             UserPushDeviceProfileManager userPushDeviceProfileManager, PushNotificationService pushNotificationService,
             CoreWrapper coreWrapper, SessionCookies sessionCookies,
             MultiFactorNodeDelegate <AuthenticatorPushService> multiFactorNodeDelegate,
-            LocaleSelector localeSelector, MessageIdFactory messageIdFactory, IdentityUtils identityUtils) {
+            LocaleSelector localeSelector, MessageIdFactory messageIdFactory, LegacyIdentityService identityService) {
         this.config = config;
         this.userPushDeviceProfileManager = userPushDeviceProfileManager;
         this.pushNotificationService = pushNotificationService;
@@ -160,7 +160,7 @@ public class PushAuthenticationSenderNode implements Node {
         this.multiFactorNodeDelegate = multiFactorNodeDelegate;
         this.localeSelector = localeSelector;
         this.messageIdFactory = messageIdFactory;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
     }
 
     @Override
@@ -199,8 +199,10 @@ public class PushAuthenticationSenderNode implements Node {
 
         return Action
                 .goTo(PushAuthenticationOutcomeProvider.PushAuthNOutcome.SENT.name())
-                .replaceSharedState(context.sharedState.copy().put(MESSAGE_ID_KEY, messageId.toString()))
-                .build();
+                .replaceSharedState(context.sharedState.copy()
+                        .put(MESSAGE_ID_KEY, messageId.toString())
+                        .put(TIME_TO_LIVE_KEY, config.messageTimeout())
+                ).build();
     }
 
     private MessageId sendMessage(TreeContext context, Config config, String realm, String username,
@@ -255,7 +257,8 @@ public class PushAuthenticationSenderNode implements Node {
                 .headers().alg(JwsAlgorithm.HS256).done().build();
 
         MessageId messageId = messageIdFactory.create(DefaultMessageTypes.AUTHENTICATE);
-        PushMessage message = new PushMessage(communicationId, jwt, pushMessage, messageId);
+        PushMessage message = new PushMessage(communicationId, jwt, pushMessage, messageId,
+                config.pushType().getValue());
 
         PushNotificationService pushNotificationService = getPushNotificationService(realm);
 
@@ -281,7 +284,7 @@ public class PushAuthenticationSenderNode implements Node {
 
     // The username in the shared state is not necessarily the actual username of the user (example: email address)
     private AMIdentity getIdentityFromIdentifier(TreeContext context) throws NodeProcessException {
-        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityUtils,
+        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityService,
                 coreWrapper);
         if (identity.isEmpty()) {
             throw new NodeProcessException("Failed to fetch identity.");
@@ -423,7 +426,7 @@ public class PushAuthenticationSenderNode implements Node {
         }
 
         /**
-         * Specifies whether to obtain context info from the device profile collector.
+         * Specifies whether to include context info into push message payload.
          *
          * @return true if the context info are to be collected.
          */

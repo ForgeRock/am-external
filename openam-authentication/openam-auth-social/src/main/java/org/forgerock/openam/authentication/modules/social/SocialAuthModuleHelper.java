@@ -11,12 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
 import static com.iplanet.am.util.SecureRandomManager.getSecureRandom;
-import static com.sun.identity.authentication.spi.AMLoginModule.getAMIdentityRepository;
+import static com.sun.identity.authentication.spi.AMLoginModule.getIdentityStore;
 import static com.sun.identity.shared.encode.CookieUtils.newCookie;
 import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.BUNDLE_NAME;
 import static org.forgerock.openam.utils.Time.getClock;
@@ -166,7 +166,7 @@ class SocialAuthModuleHelper {
      * @throws AuthLoginException
      */
     public String provisionUser(String realm, AccountProvider accountProvider, Map<String, Set<String>> attributes) throws AuthLoginException {
-        AMIdentity userIdentity = accountProvider.provisionUser(getAMIdentityRepository(realm), attributes);
+        AMIdentity userIdentity = accountProvider.provisionUser(getIdentityStore(realm), attributes);
         return userIdentity.getName().trim();
     }
 

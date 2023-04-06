@@ -24,6 +24,7 @@ import CreateMappingModal from "./CreateMappingModal";
 import EditMappingModal from "./EditMappingModal";
 import List from "components/list/List";
 import TitleWithPopover from "components/table/column/TitleWithPopover";
+import { revertPlaceholdersToOriginalValue } from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
 
 class ListMappings extends Component {
     constructor (props) {
@@ -68,8 +69,9 @@ class ListMappings extends Component {
         this.setState({ showEditModal: true });
     };
 
-    handleSave = (data, id) => {
-        this.props.onSave(data, id).then(() => {
+    handleSave = (data, id, schema) => {
+        const values = revertPlaceholdersToOriginalValue(data, schema);
+        this.props.onSave(values, id).then(() => {
             this.handleEditModalClose();
         }, noop);
     };

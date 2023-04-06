@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -26,7 +26,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,13 +56,13 @@ public class AgentDataStoreDecisionNode extends DataStoreDecisionNode {
     /**
      * Guice constructor.
      * @param coreWrapper A core wrapper instance.
-     * @param identityUtils A {@code IdentityUtils} instance.
+     * @param identityService A {@link LegacyIdentityService} instance.
      * @param adminTokenActionProvider A provider for an {@code SSOToken}.
      */
     @Inject
-    public AgentDataStoreDecisionNode(CoreWrapper coreWrapper, IdentityUtils identityUtils,
+    public AgentDataStoreDecisionNode(CoreWrapper coreWrapper, LegacyIdentityService identityService,
             Provider<PrivilegedAction<SSOToken>> adminTokenActionProvider) {
-        super(coreWrapper, identityUtils, adminTokenActionProvider);
+        super(coreWrapper, identityService, adminTokenActionProvider);
     }
 
     @Override

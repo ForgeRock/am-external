@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -45,7 +45,7 @@ import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.authentication.modules.oauth2.OAuthUtil;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.slf4j.Logger;
@@ -86,7 +86,7 @@ public class ProvisionIdmAccountNode extends SingleOutcomeNode {
     private final Config config;
     private final ClientTokenJwtGenerator clientTokenJwtGenerator;
     private final IdmIntegrationConfig idmConfigProvider;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
 
     /**
      * The interface Config.
@@ -110,18 +110,18 @@ public class ProvisionIdmAccountNode extends SingleOutcomeNode {
      * @param authModuleHelper Helper class for oauth2.
      * @param clientTokenJwtGenerator Helper class for creating signed JWT to pass to IDM for account provisioning.
      * @param idmConfigProvider IDM configuration provider
-     * @param identityUtils An instance of the IdentityUtils.
+     * @param identityService An instance of the IdentityService.
      */
     @Inject
     public ProvisionIdmAccountNode(@Assisted Config config, @Assisted Realm realm,
             SocialOAuth2Helper authModuleHelper, ClientTokenJwtGenerator clientTokenJwtGenerator,
-            IdmIntegrationConfig idmConfigProvider, IdentityUtils identityUtils) {
+            IdmIntegrationConfig idmConfigProvider, LegacyIdentityService identityService) {
         this.config = config;
         this.realm = realm;
         this.authModuleHelper = authModuleHelper;
         this.clientTokenJwtGenerator = clientTokenJwtGenerator;
         this.idmConfigProvider = idmConfigProvider;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
     }
 
     @Override
@@ -139,7 +139,7 @@ public class ProvisionIdmAccountNode extends SingleOutcomeNode {
         String realm = context.sharedState.get(REALM).asString();
         sharedState.remove(IDM_FLOW_INITIATED_KEY);
         return goToNext()
-                .withUniversalId(identityUtils.getUniversalId(username, realm, USER))
+                .withUniversalId(identityService.getUniversalId(username, realm, USER))
                 .replaceSharedState(sharedState)
                 .build();
     }

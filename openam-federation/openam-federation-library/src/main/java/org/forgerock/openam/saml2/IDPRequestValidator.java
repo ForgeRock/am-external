@@ -11,16 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2018 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
 import com.sun.identity.saml2.plugins.DefaultIDPAdapter;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 import com.sun.identity.saml2.profile.ClientFaultException;
 import com.sun.identity.saml2.profile.ServerFaultException;
 
 import javax.servlet.http.HttpServletRequest;
+
+import org.forgerock.openam.saml2.plugins.IDPAdapter;
 
 /**
  * Responsible for validating and providing a handful of parameters required for
@@ -55,16 +56,16 @@ public interface  IDPRequestValidator {
             throws ServerFaultException, ClientFaultException ;
 
     /**
-     * Loads the {@link SAML2IdentityProviderAdapter} IDP adapter which will be called as part
+     * Loads the {@link org.forgerock.openam.saml2.plugins.IDPAdapter} IDP adapter which will be called as part
      * of IDP processing.
      *
      * @param realm Possibly null realm.
      * @param idpEntityID Non null idpEntityID.
      *
-     * @return The loaded {@link SAML2IdentityProviderAdapter} if it could be loaded otherwise
+     * @return The loaded {@link org.forgerock.openam.saml2.plugins.IDPAdapter} if it could be loaded otherwise
      * the default implementation {@link DefaultIDPAdapter}.
      */
-    SAML2IdentityProviderAdapter getIDPAdapter(String realm, String idpEntityID);
+    IDPAdapter getIDPAdapter(String realm, String idpEntityID);
 
     /**
      * Gets the realm for the entity from the IDP Meta Alias.

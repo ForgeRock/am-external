@@ -36,7 +36,7 @@ import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
@@ -59,7 +59,7 @@ public class DeviceSaveNode extends SingleOutcomeNode implements DeviceProfile {
     private final Logger logger = LoggerFactory.getLogger(DeviceSaveNode.class);
     private final CoreWrapper coreWrapper;
 
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final Config config;
     private final Realm realm;
     private final DeviceProfilesDao deviceProfilesDao;
@@ -116,16 +116,16 @@ public class DeviceSaveNode extends SingleOutcomeNode implements DeviceProfile {
      * other classes from the plugin.
      *
      * @param coreWrapper       The CoreWrapper Instance.
-     * @param identityUtils     The IdentityUtils Instance.
+     * @param identityService   The IdentityService Instance.
      * @param config            The service config.
      * @param realm             The realm the node is in.
      * @param deviceProfilesDao The Device DAO to access device profile
      */
     @Inject
-    public DeviceSaveNode(CoreWrapper coreWrapper, IdentityUtils identityUtils, @Assisted Config config,
+    public DeviceSaveNode(CoreWrapper coreWrapper, LegacyIdentityService identityService, @Assisted Config config,
             @Assisted Realm realm, DeviceProfilesDao deviceProfilesDao) {
         this.coreWrapper = coreWrapper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.config = config;
         this.realm = realm;
         this.deviceProfilesDao = deviceProfilesDao;
@@ -136,7 +136,7 @@ public class DeviceSaveNode extends SingleOutcomeNode implements DeviceProfile {
         logger.debug("DeviceProfileSaveNode Started");
         try {
             AMIdentity identity = getUserIdentity(context.universalId, context.getStateFor(this), coreWrapper,
-                    identityUtils);
+                    identityService);
             save(context, identity);
         } catch (IdRepoException | SSOException e) {
             throw new NodeProcessException(e);

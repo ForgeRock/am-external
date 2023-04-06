@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2010-2021 ForgeRock AS.
+ * Copyright 2010-2022 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins;
@@ -23,10 +23,12 @@ import com.sun.identity.saml2.protocol.Response;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.forgerock.openam.saml2.plugins.IDPAdapter;
+
 /**
  * This class <code>DefaultIDPAdapter</code> implements a SAML2 Identity Provider Adapter.
  */
-public class DefaultIDPAdapter implements SAML2IdentityProviderAdapter {
+public class DefaultIDPAdapter implements IDPAdapter {
 
     /**
      * Default Constructor.

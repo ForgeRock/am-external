@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2020 ForgeRock AS.
+ * Copyright 2011-2023 ForgeRock AS.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -54,6 +54,7 @@ import javax.security.auth.callback.Callback;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.openam.session.Session;
 import org.forgerock.openam.shared.security.crypto.Fingerprints;
 import org.forgerock.openam.utils.ClientUtils;
@@ -77,7 +78,6 @@ import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.AuthenticationException;
 import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdSearchControl;
 import com.sun.identity.idm.IdSearchOpModifier;
@@ -439,10 +439,6 @@ public class Adaptive extends AMLoginModule {
 
     @Override
     public Principal getPrincipal() {
-        if (userUUID != null) {
-            userPrincipal = new org.forgerock.openam.authentication.modules.adaptive.AdaptivePrincipal(userUUID);
-            return userPrincipal;
-        }
         if (userName != null) {
             userPrincipal = new org.forgerock.openam.authentication.modules.adaptive.AdaptivePrincipal(userName);
             return userPrincipal;
@@ -951,7 +947,7 @@ public class Adaptive extends AMLoginModule {
 
     private AMIdentity getIdentity() {
         AMIdentity theID = null;
-        AMIdentityRepository amIdRepo = getAMIdentityRepository(getRequestOrg());
+        IdentityStore identityStore = getIdentityStore(getRequestOrg());
 
         IdSearchControl idsc = new IdSearchControl();
         idsc.setRecursive(true);
@@ -960,7 +956,7 @@ public class Adaptive extends AMLoginModule {
         Set<AMIdentity> results = Collections.EMPTY_SET;
         try {
             idsc.setMaxResults(0);
-            IdSearchResults searchResults = amIdRepo.searchIdentities(IdType.USER, userName, idsc);
+            IdSearchResults searchResults = identityStore.searchIdentitiesByUsername(IdType.USER, userName, idsc);
 
             if (searchResults.getSearchResults().isEmpty() && !userSearchAttributes.isEmpty()) {
                 if (debug.isDebugEnabled()) {
@@ -970,7 +966,7 @@ public class Adaptive extends AMLoginModule {
                 final Map<String, Set<String>> searchAVP = CollectionUtils.toAvPairMap(userSearchAttributes, userName);
                 idsc.setSearchModifiers(IdSearchOpModifier.OR, searchAVP);
                 //workaround as data store always adds 'user-naming-attribute' to searchfilter
-                searchResults = amIdRepo.searchIdentities(IdType.USER, "*", idsc);
+                searchResults = identityStore.searchIdentitiesByUsername(IdType.USER, "*", idsc);
             }
 
             if (searchResults != null) {

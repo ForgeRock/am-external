@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.membership;
@@ -42,7 +42,7 @@ import com.sun.identity.authentication.spi.AMLoginModule;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.InvalidPasswordException;
 import com.sun.identity.authentication.util.ISAuthConstants;
-import com.sun.identity.idm.AMIdentityRepository;
+import org.forgerock.am.identity.persistence.IdentityStore;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdSearchControl;
 import com.sun.identity.idm.IdSearchResults;
@@ -404,9 +404,8 @@ public class Membership extends AMLoginModule {
             storeUsernamePasswd(userName, password);
             initAuthConfig();
                  
-            AMIdentityRepository idrepo = getAMIdentityRepository(
-                getRequestOrg());
-            boolean success = idrepo.authenticate(idCallbacks);
+            IdentityStore identityStore = getIdentityStore(getRequestOrg());
+            boolean success = identityStore.authenticate(idCallbacks);
             
             if (success) {
                 validatedUserID = userName;
@@ -749,10 +748,8 @@ public class Membership extends AMLoginModule {
     
     
     /** check if user exists */
-    private boolean userExists(String userID)
-        throws IdRepoException, SSOException {
-        AMIdentityRepository amIdRepo = getAMIdentityRepository(
-            getRequestOrg());
+    private boolean userExists(String userID) throws IdRepoException, SSOException {
+        IdentityStore identityStore = getIdentityStore(getRequestOrg());
 
         IdSearchControl idsc = new IdSearchControl();
         idsc.setRecursive(true);
@@ -763,8 +760,7 @@ public class Membership extends AMLoginModule {
         
         try {
             idsc.setMaxResults(0);
-            IdSearchResults searchResults =
-            amIdRepo.searchIdentities(IdType.USER, userID, idsc);
+            IdSearchResults searchResults = identityStore.searchIdentitiesByUsername(IdType.USER, userID, idsc);
             if (searchResults != null) {
                 results = searchResults.getSearchResults();
             }

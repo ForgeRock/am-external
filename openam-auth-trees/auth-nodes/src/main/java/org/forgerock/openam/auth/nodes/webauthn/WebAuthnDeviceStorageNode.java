@@ -39,7 +39,7 @@ import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceJsonUtils;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.CodeException;
 import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.forgerock.util.i18n.PreferredLocales;
@@ -67,7 +67,7 @@ public class WebAuthnDeviceStorageNode extends AbstractWebAuthnNode {
     private final WebAuthnDeviceStorageNode.Config config;
     private final Realm realm;
     private final WebAuthnDeviceJsonUtils webauthnDeviceJsonUtils;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final CoreWrapper coreWrapper;
 
     /**
@@ -107,7 +107,7 @@ public class WebAuthnDeviceStorageNode extends AbstractWebAuthnNode {
      * @param secureRandom            instance of the secure random generator
      * @param recoveryCodeGenerator   instance of the recovery code generator
      * @param webauthnDeviceJsonUtils instance of the utils to help convert device to json
-     * @param identityUtils           A {@code IdentityUtils} instance.
+     * @param identityService         an{@link LegacyIdentityService} instance.
      * @param coreWrapper             A core wrapper instance.
      */
     @Inject
@@ -116,12 +116,12 @@ public class WebAuthnDeviceStorageNode extends AbstractWebAuthnNode {
                                      UserWebAuthnDeviceProfileManager webAuthnProfileManager,
                                      SecureRandom secureRandom, RecoveryCodeGenerator recoveryCodeGenerator,
                                      WebAuthnDeviceJsonUtils webauthnDeviceJsonUtils,
-                                     IdentityUtils identityUtils, CoreWrapper coreWrapper) {
+                                     LegacyIdentityService identityService, CoreWrapper coreWrapper) {
         super(clientScriptUtilities, webAuthnProfileManager, secureRandom, recoveryCodeGenerator);
         this.config = config;
         this.realm = realm;
         this.webauthnDeviceJsonUtils = webauthnDeviceJsonUtils;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.coreWrapper = coreWrapper;
     }
 
@@ -134,7 +134,7 @@ public class WebAuthnDeviceStorageNode extends AbstractWebAuthnNode {
         logger.debug("storing device data in profile");
 
         try {
-            Optional<AMIdentity> user = getAMIdentity(context.universalId, context.getStateFor(this), identityUtils,
+            Optional<AMIdentity> user = getAMIdentity(context.universalId, context.getStateFor(this), identityService,
                     coreWrapper);
             if (user.isEmpty()) {
                 throw new DevicePersistenceException("Failed to get the "

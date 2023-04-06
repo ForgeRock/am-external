@@ -11,9 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
+
+import static org.forgerock.openam.session.SessionConstants.PERSISTENT_COOKIE_SESSION_PROPERTY;
 
 /**
  * Implementations of this interface are responsible for supplying functionality related to
@@ -28,4 +30,16 @@ public interface PersistentCookieNodeConfig {
      */
     String getPersistentCookieName();
 
+    /**
+     * Convenience method used to generate the name used for the persistent cookie session property.
+     * This should be used to generate a unique property name for each unique persistent cookie. The name must be
+     * unique for each cookie otherwise only one cookie name will be stored in the session properties (and therefore
+     * only the most recently stored cookie name will be cleared on logout - see OPENAM-19709).
+     *
+     * @param persistentCookieName the name of the persistent cookie that the property relates to.
+     * @return the generated property name used to store/access the persistent cookie name property.
+     */
+    default String generateSessionPropertyName(String persistentCookieName) {
+        return PERSISTENT_COOKIE_SESSION_PROPERTY + "_" + persistentCookieName;
+    }
 }

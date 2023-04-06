@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
@@ -58,7 +58,7 @@ import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -76,7 +76,7 @@ public class OathTokenVerifierNodeTest {
     @Mock
     private CoreWrapper coreWrapper;
     @Mock
-    IdentityUtils identityUtils;
+    LegacyIdentityService identityService;
 
     OathTokenVerifierNode node;
 
@@ -260,7 +260,7 @@ public class OathTokenVerifierNodeTest {
                         coreWrapper,
                         deviceProfileHelper,
                         new MultiFactorNodeDelegate(mock(AuthenticatorDeviceServiceFactory.class)),
-                        identityUtils
+                        identityService
                 )
         );
     }

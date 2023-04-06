@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import { t } from "i18next";
@@ -19,7 +19,8 @@ import React from "react";
 
 const StatusCell = (cell) => {
     if (!cell) { return; }
-    if (cell.toLowerCase() === "active") {
+    const statusCell = Array.isArray(cell) ? cell[0] : cell;
+    if (statusCell.toLowerCase() === "active") {
         return (
             <span className="text-success">
                 <i className="fa fa-check-circle" /> { t("common.form.active") }

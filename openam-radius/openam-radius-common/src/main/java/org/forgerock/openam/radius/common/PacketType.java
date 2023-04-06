@@ -12,6 +12,8 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
+ *
+ * Portions Copyrighted 2022 ForgeRock AS.
  */
 package org.forgerock.openam.radius.common;
 
@@ -112,7 +114,7 @@ public enum PacketType {
      * @return the PacketType representing the corresponding on-the-wire type code or UNKNOWN if the integer code is for
      * a packet type that is not yet supported.
      */
-    public static final PacketType getPacketType(int code) {
+    public static PacketType getPacketType(int code) {
         final PacketType pt = types.get(code);
 
         if (pt == null) {

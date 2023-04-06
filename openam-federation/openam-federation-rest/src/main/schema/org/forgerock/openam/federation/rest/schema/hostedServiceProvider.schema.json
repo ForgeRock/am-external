@@ -335,8 +335,15 @@
               "spAdapter": {
                 "attributeKey": "spAdapter",
                 "title": "Adapter",
-                "description": "Implementation class for the SAML2ServiceProviderAdapter which is used to add application specific processing logic during federation process",
+                "description": "Implementation class for the SPAdapter which is used to add application specific processing logic during federation process",
                 "type": "string"
+              },
+              "spAdapterScript": {
+                "attributeKey": "spAdapterScript",
+                "title": "Adapter Script",
+                "description": "Scripted plugin for SP Adapter. If a script is not selected, the specified SP Adapter Java Class will be used.",
+                "type": "string",
+                "default": "[Empty]"
               },
               "spAdapterEnv": {
                 "attributeKey": {

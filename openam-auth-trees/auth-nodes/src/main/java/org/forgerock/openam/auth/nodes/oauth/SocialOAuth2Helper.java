@@ -16,7 +16,7 @@
 package org.forgerock.openam.auth.nodes.oauth;
 
 import static com.iplanet.am.util.SecureRandomManager.getSecureRandom;
-import static com.sun.identity.authentication.spi.AMLoginModule.getAMIdentityRepository;
+import static com.sun.identity.authentication.spi.AMLoginModule.getIdentityStore;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -43,16 +43,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.http.client.utils.URIBuilder;
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.http.Handler;
 import org.forgerock.oauth.DataStore;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthClientConfiguration;
 import org.forgerock.oauth.OAuthException;
-import org.forgerock.oauth.clients.oauth2.OAuth2ClientConfiguration;
 import org.forgerock.oauth.clients.oidc.JwtRequestParameterOption;
 import org.forgerock.oauth.clients.oidc.OpenIDConnectClient;
 import org.forgerock.oauth.clients.oidc.OpenIDConnectClientConfiguration;
@@ -62,17 +61,17 @@ import org.forgerock.oauth.resolvers.service.OpenIdResolverServiceConfiguratorIm
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.oauth2.requesturis.RequestUriObjectService;
+import org.forgerock.openam.oauth2.requesturis.RequestUriObjectCreator;
 import org.forgerock.openam.secrets.Secrets;
 import org.forgerock.openam.services.baseurl.BaseURLProvider;
 import org.forgerock.openam.services.baseurl.BaseURLProviderFactory;
 import org.forgerock.openam.services.baseurl.InvalidBaseUrlException;
 import org.forgerock.openam.social.idp.ClientAuthenticationMethod;
-import org.forgerock.openam.social.idp.OAuth2ClientConfig;
 import org.forgerock.openam.social.idp.OAuthClientConfig;
+import org.forgerock.openam.social.idp.OAuthClientConfig.IssuerComparisonCheck;
 import org.forgerock.openam.social.idp.OpenIDConnectClientConfig;
-import org.forgerock.openam.social.idp.RealmBasedHttpClientHandlerFactory;
 import org.forgerock.openam.social.idp.SocialIdpConfigMapper;
+import org.forgerock.openam.social.idp.handler.SocialProviderHttpClientHandlerFactory;
 import org.forgerock.openidconnect.OpenIdResolverServiceFactory;
 import org.forgerock.util.Reject;
 import org.slf4j.Logger;
@@ -119,35 +118,31 @@ public class SocialOAuth2Helper {
 
     private final OpenIdResolverServiceFactory openIdResolverServiceFactory;
     private final BaseURLProviderFactory baseURLProviderFactory;
-    private final RequestUriObjectService requestUriObjectService;
+    private final RequestUriObjectCreator requestUriObjectService;
     private final Secrets secrets;
     private final SocialIdpConfigMapper socialIdpConfigMapper;
-    private final RealmBasedHttpClientHandlerFactory httpClientHandlerFactory;
-    private final Handler defaultHandler;
+    private final SocialProviderHttpClientHandlerFactory handlerFactory;
 
     /**
      * Constructor.
      * @param openIdResolverServiceFactory factory to get the resolver service for the OAuthClient.
      * @param baseURLProviderFactory An instance of the BaseURLProviderFactory.
-     * @param requestUriObjectService An instance of the RequestUriObjectService.
+     * @param requestUriObjectCreator An instance of the RequestUriObjectCreator.
      * @param secrets provides api for obtaining secrets.
      * @param socialIdpConfigMapper the config mapper instance.
-     * @param httpClientHandlerFactory the handler factory instance.
-     * @param defaultHandler the default handler to use for the client.
+     * @param handlerFactory the handler factory instance.
      */
     @Inject
     public SocialOAuth2Helper(OpenIdResolverServiceFactory openIdResolverServiceFactory,
-            BaseURLProviderFactory baseURLProviderFactory, RequestUriObjectService requestUriObjectService,
+            BaseURLProviderFactory baseURLProviderFactory, RequestUriObjectCreator requestUriObjectCreator,
             Secrets secrets, SocialIdpConfigMapper socialIdpConfigMapper,
-            @Named("KeyManagerBasedHandler") RealmBasedHttpClientHandlerFactory httpClientHandlerFactory,
-            @Named("CloseableHttpClientHandler") Handler defaultHandler) {
+            SocialProviderHttpClientHandlerFactory handlerFactory) {
         this.openIdResolverServiceFactory = openIdResolverServiceFactory;
         this.baseURLProviderFactory = baseURLProviderFactory;
-        this.requestUriObjectService = requestUriObjectService;
+        this.requestUriObjectService = requestUriObjectCreator;
         this.secrets = secrets;
         this.socialIdpConfigMapper = socialIdpConfigMapper;
-        this.httpClientHandlerFactory = httpClientHandlerFactory;
-        this.defaultHandler = defaultHandler;
+        this.handlerFactory = handlerFactory;
     }
 
     /**
@@ -171,7 +166,8 @@ public class SocialOAuth2Helper {
             //Other OAuthClient implementations don't have built in support for that.
             if (OpenIDConnectClient.class.isAssignableFrom(oauthClient)) {
                 instance = new OpenIDConnectClient(handler, (OpenIDConnectClientConfiguration) config, getClock(),
-                        getSecureRandom(), openIdResolverServiceFactory.create(realm, RP_ID_TOKEN_DECRYPTION),
+                        getSecureRandom(), openIdResolverServiceFactory.create(realm, RP_ID_TOKEN_DECRYPTION, handler,
+                        IssuerComparisonCheck.EXACT),
                         new OpenIdResolverServiceConfiguratorImpl());
             } else {
                 instance = oauthClient.getConstructor(Handler.class, config.getClass(), Clock.class, SecureRandom.class)
@@ -194,7 +190,7 @@ public class SocialOAuth2Helper {
     public OAuthClient newOAuthClient(Realm realm, OAuthClientConfig idpConfig) {
         try {
             OAuthClientConfiguration config = socialIdpConfigMapper.map(realm, idpConfig);
-            Handler handler = getClientHandler(realm, idpConfig);
+            Handler handler = handlerFactory.createClientHandler(realm, idpConfig);
             final Class<? extends OAuthClient> oauthClient =
                     (Class<? extends OAuthClient>) Class.forName(config.getClientClass().getName(), true,
                             getClass().getClassLoader());
@@ -202,12 +198,14 @@ public class SocialOAuth2Helper {
             //OpenIdConnectClient handles the JWKStore cache that needs to be provided during instantiation.
             //Other OAuthClient implementations don't have built in support for that.
             if (OpenIDConnectClient.class.isAssignableFrom(oauthClient)) {
-
-                if (userInfoSignedOrSignedAndEncrypted((OpenIDConnectClientConfig) idpConfig)) {
+                final OpenIDConnectClientConfig oidcConfig = (OpenIDConnectClientConfig) idpConfig;
+                final Handler resolverHandler = handlerFactory.createResolverHandler(realm, oidcConfig);
+                if (userInfoSignedOrSignedAndEncrypted(oidcConfig)) {
                     // Create the AMOpenIDConnectClient which is capable of decrypting the encrypted user info and
                     // verifying signed user info response.
                     instance = new AMOpenIDConnectClient(handler, (OpenIDConnectClientConfiguration) config, getClock(),
-                            getSecureRandom(), openIdResolverServiceFactory.create(realm, RP_ID_TOKEN_DECRYPTION),
+                            getSecureRandom(), openIdResolverServiceFactory.create(realm, RP_ID_TOKEN_DECRYPTION,
+                            resolverHandler, idpConfig.issuerComparisonCheckType()),
                             new OpenIdResolverServiceConfiguratorImpl(), (OpenIDConnectClientConfig) idpConfig,
                             secrets.getRealmSecrets(realm));
                 } else {
@@ -215,7 +213,8 @@ public class SocialOAuth2Helper {
                                     SecureRandom.class, OpenIdResolverService.class,
                                     OpenIdResolverServiceConfigurator.class)
                             .newInstance(handler, config, getClock(), getSecureRandom(),
-                                    openIdResolverServiceFactory.create(realm, RP_ID_TOKEN_DECRYPTION),
+                                    openIdResolverServiceFactory.create(realm, RP_ID_TOKEN_DECRYPTION, resolverHandler,
+                                            idpConfig.issuerComparisonCheckType()),
                                     new OpenIdResolverServiceConfiguratorImpl());
                 }
             } else {
@@ -253,8 +252,8 @@ public class SocialOAuth2Helper {
 
         String user = null;
         if ((userNames != null) && !userNames.isEmpty()) {
-            AMIdentity userIdentity = accountProvider.searchUser(
-                    AuthD.getAuth().getAMIdentityRepository(realm), userNames);
+            IdentityStore identityStore = AuthD.getAuth().getIdentityRepository(realm);
+            AMIdentity userIdentity = accountProvider.searchUser(identityStore, userNames);
             if (userIdentity != null) {
                 user = userIdentity.getName();
             }
@@ -289,8 +288,11 @@ public class SocialOAuth2Helper {
      */
     public String provisionUser(String realm, AccountProvider accountProvider, Map<String, Set<String>> attributes)
             throws AuthLoginException {
-        AMIdentity userIdentity = accountProvider.provisionUser(getAMIdentityRepository(realm), attributes);
-        return userIdentity.getName();
+        AMIdentity userIdentity = accountProvider.provisionUser(getIdentityStore(realm), attributes);
+        if (userIdentity != null) {
+            return userIdentity.getName();
+        }
+        return null;
     }
 
     /**
@@ -375,14 +377,6 @@ public class SocialOAuth2Helper {
         return new BigInteger(NONCE_NUM_BITS, getSecureRandom()).toString(Character.MAX_RADIX);
     }
 
-    private Handler getClientHandler(Realm realm, OAuthClientConfig config) {
-        if (OAuth2ClientConfiguration.class.isAssignableFrom(config.clientImplementation())
-                && MTLS_CLIENT_AUTHN_METHODS.contains(((OAuth2ClientConfig) config).clientAuthenticationMethod())) {
-            return httpClientHandlerFactory.create(realm);
-        }
-
-        return defaultHandler;
-    }
 
     private boolean userInfoSignedOrSignedAndEncrypted(OpenIDConnectClientConfig idpConfig) {
         return idpConfig.userInfoResponseType() == SIGNED_JWT

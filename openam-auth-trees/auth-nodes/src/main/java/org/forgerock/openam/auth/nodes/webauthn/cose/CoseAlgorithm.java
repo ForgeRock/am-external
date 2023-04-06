@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.cose;
 
@@ -43,7 +43,10 @@ public enum CoseAlgorithm {
     RS384("RS384", -258, "SHA384withRSA", KeyType.RSA, "SHA-384"),
 
     /** the RS512 algorithm. */
-    RS512("RS512", -259, "SHA512withRSA", KeyType.RSA, "SHA-512");
+    RS512("RS512", -259, "SHA512withRSA", KeyType.RSA, "SHA-512"),
+
+    /** the EdDSA algorithm. */
+    EDDSA("EDDSA", -8, "EdDSA", KeyType.OKP, "SHA-512");
 
     private String name;
     private int coseNumber;

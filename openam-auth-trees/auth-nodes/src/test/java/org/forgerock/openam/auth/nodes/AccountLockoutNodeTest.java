@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -32,7 +32,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookupException;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.mockito.BDDMockito;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -51,7 +51,7 @@ public class AccountLockoutNodeTest {
     CoreWrapper coreWrapper;
 
     @Mock
-    IdentityUtils identityUtils;
+    LegacyIdentityService identityService;
 
     @Mock
     AMAccountLockout.Factory amAccountLockoutFactory;
@@ -72,13 +72,12 @@ public class AccountLockoutNodeTest {
         given(coreWrapper.getIdentity(anyString())).willReturn(userIdentity);
         given(coreWrapper.realmOf(anyString())).willReturn(realm);
         given(amAccountLockoutFactory.create(any())).willReturn(amAccountLockout);
-        when(coreWrapper.getIdentity(anyString(), anyString())).thenReturn(userIdentity);
     }
 
     @Test
     public void testNodeCallsAMToLockAccount() throws Exception {
         // Given
-        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityUtils, amAccountLockoutFactory, config);
+        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityService, amAccountLockoutFactory, config);
         BDDMockito.willDoNothing().given(userIdentity).setActiveStatus(false);
 
         // When
@@ -91,7 +90,7 @@ public class AccountLockoutNodeTest {
     @Test
     public void testNodeCallsAMToUnLockAccount() throws Exception {
         // Given
-        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityUtils, amAccountLockoutFactory,
+        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityService, amAccountLockoutFactory,
                 new AccountLockoutNode.Config() {
             @Override
             public AccountLockoutNode.LockStatus lockAction() {
@@ -109,7 +108,7 @@ public class AccountLockoutNodeTest {
     @Test(expectedExceptions = NodeProcessException.class)
     public void testNullUsernameWillThrowNodeProcessException() throws Exception {
         // Given
-        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityUtils, amAccountLockoutFactory, config);
+        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityService, amAccountLockoutFactory, config);
 
         // When username is null
         node.process(newTreeContext(json(object(field(REALM, "/")))));
@@ -120,7 +119,8 @@ public class AccountLockoutNodeTest {
     @Test(expectedExceptions = NodeProcessException.class)
     public void testNullRealmWillThrowNodeProcessException() throws Exception {
         // Given
-        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityUtils,  amAccountLockoutFactory, config);
+        AccountLockoutNode node =
+                new AccountLockoutNode(coreWrapper, identityService,  amAccountLockoutFactory, config);
 
         // When realm is null
         node.process(newTreeContext(json(object(field(USERNAME, "username")))));
@@ -132,7 +132,7 @@ public class AccountLockoutNodeTest {
     @Test(expectedExceptions = NodeProcessException.class)
     public void testRealmLookupExceptionIsHandled() throws Exception {
         // Given
-        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityUtils, amAccountLockoutFactory, config);
+        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityService, amAccountLockoutFactory, config);
         given(coreWrapper.realmOf(anyString())).willThrow(new RealmLookupException(new Exception()));
 
         // When

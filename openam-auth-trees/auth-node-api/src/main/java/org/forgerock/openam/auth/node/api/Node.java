@@ -60,28 +60,38 @@ public interface Node {
     @interface Metadata {
         /**
          * A provider for the possible outcomes of the node.
+         *
+         * @return the outcome provider.
          */
         Class<? extends OutcomeProvider> outcomeProvider();
 
         /**
          * An interface describing the configuration of the node. The interface should contain methods annotated with
          * {@code Attribute}.
+         *
+         * @return The config class.
          */
         Class<?> configClass();
 
         /**
          * A validator for the entire service configuration.
+         *
+         * @return The config validator class.
          */
         Class<?> configValidator() default Void.class;
 
         /**
          * A list of tags, which can be categories, keywords or synonyms.
+         *
+         * @return The list of tags.
          */
         String[] tags() default {};
 
         /**
          * Prepended to a node's name to differentiate it from other nodes with the same name. This was introduced to
          * allow integration of Marketplace nodes into the core AM product with backwards compatibility.
+         *
+         * @return The state namespace.
          */
         Namespace namespace() default Namespace.NONE;
     }

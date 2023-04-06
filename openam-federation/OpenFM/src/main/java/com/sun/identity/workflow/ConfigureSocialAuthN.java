@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2021 ForgeRock AS.
+ * Copyright 2014-2022 ForgeRock AS.
  * Portions Copyrighted 2015 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.workflow;
@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
+import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.jose.utils.Utils;
 import org.forgerock.openam.sm.ConfigurationAttributes;
 import org.forgerock.openam.sm.ConfigurationAttributesFactory;
@@ -52,6 +53,7 @@ import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.config.AMAuthConfigUtils;
 import com.sun.identity.authentication.config.AMAuthenticationInstance;
 import com.sun.identity.authentication.config.AMAuthenticationManager;
+import com.sun.identity.authentication.config.AMAuthenticationManagerFactory;
 import com.sun.identity.authentication.config.AMAuthenticationSchema;
 import com.sun.identity.authentication.config.AMConfigurationException;
 import com.sun.identity.authentication.config.AuthConfigurationEntry;
@@ -118,14 +120,16 @@ public class ConfigureSocialAuthN extends Task {
         String authModuleName = authNamePrefix + "SocialAuthentication";
         String authChainName = authNamePrefix + "SocialAuthenticationService";
 
-        if (authModuleExists(realm, authModuleName)) {
+        AMAuthenticationManagerFactory amAuthenticationManagerFactory = InjectorHolder.getInstance(AMAuthenticationManagerFactory.class);
+
+        if (authModuleExists(realm, authModuleName, amAuthenticationManagerFactory)) {
             throw new WorkflowException("auth-module-exists", new Object[]{authModuleName});
         }
         if (authChainExists(realm, authChainName)) {
             throw new WorkflowException("auth-chain-exists", new Object[]{authChainName});
         }
 
-        createAuthModule(realm, authModuleName, type, attrs);
+        createAuthModule(realm, authModuleName, type, attrs, amAuthenticationManagerFactory);
         createSocialAuthenticationChain(realm, authModuleName, authChainName);
         createOrModifySocialService(realm, authChainName, providerDisplayName, imageUrl);
 
@@ -183,9 +187,10 @@ public class ConfigureSocialAuthN extends Task {
         }
     }
 
-    private boolean authModuleExists(String realm, String authModuleName) throws WorkflowException {
+    private boolean authModuleExists(String realm, String authModuleName,
+            AMAuthenticationManagerFactory amAuthenticationManagerFactory) throws WorkflowException {
         try {
-            AMAuthenticationManager mgr = new AMAuthenticationManager(getAdminToken(), realm);
+            AMAuthenticationManager mgr = amAuthenticationManagerFactory.create(getAdminToken(), realm);
             for (AMAuthenticationInstance instance : mgr.getAuthenticationInstances()) {
                 if (authModuleName.equals(instance.getName())) {
                     return true;
@@ -296,11 +301,11 @@ public class ConfigureSocialAuthN extends Task {
         return getWebContent(url, locale);
     }
 
-    private void createAuthModule(String realm, String authModuleName, String type, Map<String, Set<String>> attrs)
-            throws WorkflowException {
+    private void createAuthModule(String realm, String authModuleName, String type, Map<String, Set<String>> attrs,
+            AMAuthenticationManagerFactory amAuthenticationManagerFactory) throws WorkflowException {
 
         try {
-            AMAuthenticationManager mgr = new AMAuthenticationManager(getAdminToken(), realm);
+            AMAuthenticationManager mgr = amAuthenticationManagerFactory.create(getAdminToken(), realm);
             AMAuthenticationSchema authenticationSchema = mgr.getAuthenticationSchema(type);
             ConfigurationAttributes moduleAttrs = authenticationSchema.getAttributeValuesWithoutValidators();
 

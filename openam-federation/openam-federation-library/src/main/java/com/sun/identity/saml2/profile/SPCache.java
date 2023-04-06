@@ -24,7 +24,7 @@
  *
  * $Id: SPCache.java,v 1.17 2009/06/09 20:28:32 exu Exp $
  *
- * Portions Copyrighted 2015-2021 ForgeRock AS.
+ * Portions Copyrighted 2015-2022 ForgeRock AS.
  */
 
 
@@ -165,36 +165,6 @@ public class SPCache {
     final public static PeriodicCleanUpMap reqParamHash = new PeriodicCleanUpMap(
         SPCache.interval * 1000, SPCache.interval * 1000);
 
-
-    /**
-     * Cache saves the sp account mapper.
-     * Key : sp account mapper class name
-     * Value : sp account mapper object
-     */
-    final public static Hashtable spAccountMapperCache = new Hashtable();
-    
-    /**
-     * Cache saves the sp adapter class instance.
-     * Key : realm + spEntityID + adapterClassName
-     * Value : sp adapter class instance 
-     * (<code>SAML2ServiceProviderAdapter</code>)
-     */
-    final public static Hashtable spAdapterClassCache = new Hashtable();
-
-    /**
-     * Cache saves the fedlet adapter class instance.
-     * Key : realm + spEntityID + adapterClassName
-     * Value : fedlet adapter class instance 
-     * (<code>FedletAdapter</code>)
-     */
-    public static Hashtable fedletAdapterClassCache = new Hashtable();
-
-    /**
-     * Cache saves the ecp request IDP list finder.
-     * Key : ecp request IDP list finder class name
-     * Value : ecp request IDP list finder object
-     */
-    final public static Hashtable ecpRequestIDPListFinderCache = new Hashtable();
 
     /**
      * Cache saves the assertion id.

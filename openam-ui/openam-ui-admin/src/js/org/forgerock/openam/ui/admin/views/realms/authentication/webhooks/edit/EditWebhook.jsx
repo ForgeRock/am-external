@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { Form, Button, Panel } from "react-bootstrap";
@@ -34,12 +34,21 @@ class EditWebhook extends Component {
     }
 
     componentDidUpdate () {
-        if (!this.jsonSchemaView && this.props.data && this.props.schema) {
-            this.jsonSchemaView = new FlatJSONSchemaView({
-                schema: new JSONSchema(this.props.schema),
-                values: new JSONValues(this.props.data)
-            });
-            this.jsonForm.appendChild(this.jsonSchemaView.render().el);
+        if (this.props.data && this.props.schema) {
+            if (this.jsonSchemaView) {
+                this.jsonForm.removeChild(this.jsonSchemaView.render().el);
+                this.jsonSchemaView = new FlatJSONSchemaView({
+                    schema: new JSONSchema(this.props.schema),
+                    values: new JSONValues(this.props.data)
+                });
+                this.jsonForm.appendChild(this.jsonSchemaView.render().el);
+            } else {
+                this.jsonSchemaView = new FlatJSONSchemaView({
+                    schema: new JSONSchema(this.props.schema),
+                    values: new JSONValues(this.props.data)
+                });
+                this.jsonForm.appendChild(this.jsonSchemaView.render().el);
+            }
         }
     }
 

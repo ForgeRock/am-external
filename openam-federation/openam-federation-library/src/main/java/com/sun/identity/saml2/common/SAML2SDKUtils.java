@@ -24,7 +24,7 @@
  *
  * $Id: SAML2SDKUtils.java,v 1.12 2008/08/31 05:49:48 bina Exp $
  *
- * Portions copyright 2014-2019 ForgeRock AS.
+ * Portions copyright 2014-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -40,6 +40,7 @@ import javax.xml.bind.JAXBElement;
 import javax.xml.soap.SOAPException;
 
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.util.encode.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -434,7 +435,7 @@ public class SAML2SDKUtils {
             }
         }
 
-        byte[] bytes = hexStringToByteArray(norm);
+        byte[] bytes = Hex.decode(norm);
 
         return bytes;
     }
@@ -511,39 +512,27 @@ public class SAML2SDKUtils {
     }
 
     /**
+     * @deprecated This method is deprecated, use {@link org.forgerock.util.encode.Hex#encode(byte[])}} instead.
      * Converts byte array to <code>Hex</code> String.
      *
      * @param byteArray Byte Array to be converted.
      * @return result of the conversion.
      */
+    @Deprecated(since = "7.3.0")
     public static String byteArrayToHexString(byte[] byteArray) {
-        int readBytes = byteArray.length;
-        StringBuffer hexData = new StringBuffer();
-        int onebyte;
-        for (int i=0; i < readBytes; i++) {
-            onebyte = ((0x000000ff & byteArray[i]) | 0xffffff00);
-            hexData.append(Integer.toHexString(onebyte).substring(6));
-        }
-        return hexData.toString();
+        return Hex.encode(byteArray);
     }
 
     /**
+     * @deprecated This method is deprecated, use {@link org.forgerock.util.encode.Hex#decode(String)} instead.
      * Converts <code>Hex</code> String to Byte Array.
      *
      * @param hexString <code>Hex</code> String to be converted.
      * @return result of the conversion.
      */
+    @Deprecated(since = "7.3.0")
     public static byte[] hexStringToByteArray(String hexString) {
-        int read = hexString.length();
-        byte[] byteArray = new byte[read/2];
-        for (int i=0, j=0; i < read; i++, j++) {
-            String part = hexString.substring(i,i+2);
-            byteArray[j] =
-                    new Short(Integer.toString(Integer.parseInt(part,16))).
-                            byteValue();
-            i++;
-        }
-        return byteArray;
+        return Hex.decode(hexString);
     }
 
     /**
@@ -556,7 +545,7 @@ public class SAML2SDKUtils {
         }
         byte bytes[] = new byte[SAML2Constants.ID_LENGTH];
         random.nextBytes(bytes);
-        return (SAML2ID_PREFIX + byteArrayToHexString(bytes));
+        return (SAML2ID_PREFIX + Hex.encode(bytes));
     }
 
     /**

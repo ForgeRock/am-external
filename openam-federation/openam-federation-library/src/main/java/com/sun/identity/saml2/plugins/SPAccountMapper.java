@@ -24,11 +24,12 @@
  *
  * $Id: SPAccountMapper.java,v 1.5 2008/08/19 19:11:15 veiming Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.saml2.plugins.SAMLPlugin;
 
 import com.sun.identity.saml2.assertion.Assertion;
 import com.sun.identity.saml2.common.SAML2Exception;
@@ -46,7 +47,7 @@ import com.sun.identity.saml2.protocol.ManageNameIDRequest;
  *
  */ 
 @SupportedAll
-public interface SPAccountMapper {
+public interface SPAccountMapper extends SAMLPlugin {
 
     /**
      * Returns the user's distinguished name or the universal ID for the corresponding <code>SAML Assertion</code>. This

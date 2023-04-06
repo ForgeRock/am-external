@@ -11,13 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2017 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oauth2;
 
 import java.util.Map;
 
+import org.forgerock.openam.annotations.SupportedAll;
+
+@SupportedAll
 public interface EmailGateway {
     /**
      * Sends an email  message to the mail with the code
@@ -27,7 +30,7 @@ public interface EmailGateway {
      * @param to The address that the E-mail message is sent
      * @param subject The E-mail subject
      * @param message The content contained in the E-mail message
-     * @param options The SMS gateway options defined in the HOTP authentication
+     * @param options The mail gateway options defined in the HOTP authentication
      * module
      */
     public void sendEmail(String from, String to, String subject,

@@ -11,16 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
 
 import static org.forgerock.util.Reject.checkNotNull;
 
+import org.forgerock.openam.saml2.plugins.IDPAdapter;
+
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 
 /**
  * Checked exception for errors that occur during federated single sign-on (SSO).
@@ -32,7 +33,7 @@ import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 public abstract class FederatedSSOException extends Exception {
     private final String messageCode;
     private final String detail;
-    private final SAML2IdentityProviderAdapter idpAdapter;
+    private final IDPAdapter idpAdapter;
 
     /**
      * Constructs the FederatedSSOException with the given parameters.
@@ -41,7 +42,7 @@ public abstract class FederatedSSOException extends Exception {
      * @param messageCode the message code of the error that occurred.
      * @param detail the detail of the exception.
      */
-    public FederatedSSOException(final SAML2IdentityProviderAdapter idpAdapter, final String messageCode,
+    public FederatedSSOException(final IDPAdapter idpAdapter, final String messageCode,
                                  final String detail) {
         super();
         this.messageCode = checkNotNull(messageCode, "Message code is null");
@@ -77,7 +78,7 @@ public abstract class FederatedSSOException extends Exception {
      *
      * @return the idp adapter. May be null.
      */
-    public SAML2IdentityProviderAdapter getIdpAdapter() {
+    public IDPAdapter getIdpAdapter() {
         return idpAdapter;
     }
 

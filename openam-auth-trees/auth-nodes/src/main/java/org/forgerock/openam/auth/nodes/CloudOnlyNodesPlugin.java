@@ -26,6 +26,7 @@ import org.forgerock.openam.plugins.StartupType;
 import com.google.common.collect.ImmutableMap;
 import com.iplanet.am.util.SystemProperties;
 import com.sun.identity.shared.Constants;
+import org.forgerock.openam.plugins.VersionComparison;
 
 /**
  * Core nodes installed by default with no engine dependencies.
@@ -39,7 +40,7 @@ public class CloudOnlyNodesPlugin extends AbstractNodeAmPlugin {
     @Override
     public String getPluginVersion() {
         if (isEnabled()) {
-            return "1.0.0";
+            return "1.0.1";
         } else {
             return "CLOUD_ONLY";
         }
@@ -62,6 +63,10 @@ public class CloudOnlyNodesPlugin extends AbstractNodeAmPlugin {
     @Override
     public void upgrade(String fromVersion) throws PluginException {
         if (isEnabled()) {
+            if (VersionComparison.compareVersionStrings("1.0.0", fromVersion) >= 0
+                    && VersionComparison.compareVersionStrings("1.0.1", fromVersion) <= 0) {
+                pluginTools.upgradeAuthNode(IdentityStoreDecisionNode.class);
+            }
             super.upgrade(fromVersion);
         }
     }

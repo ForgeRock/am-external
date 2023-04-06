@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 import { Button, Clearfix, Modal } from "react-bootstrap";
@@ -40,8 +40,8 @@ class EditMappingModal extends Component {
         this.form.submit();
     };
 
-    handleOnSubmit = ({ formData }) => {
-        this.props.onSave(formData, formData._id);
+    handleOnSubmit = ({ formData, schema }) => {
+        this.props.onSave(formData, formData._id, schema);
     };
 
     setFormRef = (element) => {

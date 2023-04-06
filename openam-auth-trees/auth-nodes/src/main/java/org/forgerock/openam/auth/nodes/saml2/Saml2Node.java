@@ -74,8 +74,8 @@ import org.forgerock.openam.auth.nodes.oauth.AbstractSocialAuthLoginNode;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.headers.CookieUtilsWrapper;
-import org.forgerock.openam.identity.idm.IdentityException;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.IdentityException;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.Options;
 import org.slf4j.Logger;
@@ -117,7 +117,7 @@ public class Saml2Node extends AbstractDecisionNode {
     private final Saml2SsoResponseUtils responseUtils;
     private final CookieUtilsWrapper cookieUtilsWrapper;
     private final SAML2MetaManager metaManager;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final String idpEntityId;
     private final String metaAlias;
     private final Realm realm;
@@ -252,19 +252,19 @@ public class Saml2Node extends AbstractDecisionNode {
      * @param responseUtils The SAML2 SSO response utils implementation.
      * @param cookieUtilsWrapper The cookie utils implementation.
      * @param metaManager The SAML2 meta manager.
-     * @param identityUtils The identity utils implementation.
+     * @param identityService The identity service.
      */
     @Inject
     public Saml2Node(@Assisted Config config, @Assisted Realm realm, Saml2SsoInitiator ssoInitiator,
             Saml2SsoResponseUtils responseUtils, CookieUtilsWrapper cookieUtilsWrapper, SAML2MetaManager metaManager,
-            IdentityUtils identityUtils) {
+            LegacyIdentityService identityService) {
         this.config = config;
         this.realm = realm;
         this.ssoInitiator = ssoInitiator;
         this.responseUtils = responseUtils;
         this.cookieUtilsWrapper = cookieUtilsWrapper;
         this.metaManager = metaManager;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
 
         idpEntityId = config.idpEntityId();
         metaAlias = config.metaAlias();
@@ -290,7 +290,7 @@ public class Saml2Node extends AbstractDecisionNode {
             String username = context.sharedState.get(USERNAME).asString();
             return Action
                     .send(initiateSamlLoginAtIdp(request, response, nameIdFormat))
-                    .withUniversalId(identityUtils.getUniversalId(username, realm.asPath(), IdType.USER))
+                    .withUniversalId(identityService.getUniversalId(username, realm.asPath(), IdType.USER))
                     .build();
         } catch (SAML2Exception e) {
             throw new NodeProcessException(e);
@@ -368,7 +368,7 @@ public class Saml2Node extends AbstractDecisionNode {
 
     private boolean doesUserExist(String universalId) throws NodeProcessException {
         try {
-            return isNotBlank(universalId) && identityUtils.doesIdentityExist(universalId);
+            return isNotBlank(universalId) && identityService.doesIdentityExist(universalId);
         } catch (IdentityException e) {
             throw new NodeProcessException("Error occurred verifying identities existence", e);
         }
@@ -377,7 +377,7 @@ public class Saml2Node extends AbstractDecisionNode {
     private JsonValue updateSharedState(Saml2SsoResult ssoResult, Assertion assertion, JsonValue sharedState,
             String relayState) throws NodeProcessException {
         Map<String, Set<String>> attributes = new HashMap<>();
-        String username = identityUtils.getIdentityName(ssoResult.getUniversalId());
+        String username = identityService.getIdentityName(ssoResult.getUniversalId());
         try {
             if (username != null) {
                 sharedState.put(USERNAME, username);

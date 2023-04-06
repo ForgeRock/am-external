@@ -24,7 +24,7 @@
  *
  * $Id: IDPECPSessionMapper.java,v 1.3 2008/12/03 00:34:10 hengming Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.saml2.plugins.SAMLPlugin;
 
 import com.sun.identity.saml2.common.SAML2Exception;
 
@@ -40,7 +41,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  * session from HTTP servlet request on IDP with ECP profile.
  */ 
 @SupportedAll
-public interface IDPECPSessionMapper {
+public interface IDPECPSessionMapper extends SAMLPlugin {
 
     /**
      * Returns user valid session.
@@ -50,6 +51,5 @@ public interface IDPECPSessionMapper {
      * @return a vaild user session or null if not found
      * @exception SAML2Exception if error occurs. 
      */
-    public Object getSession(HttpServletRequest request,
-        HttpServletResponse response) throws SAML2Exception;
+    Object getSession(HttpServletRequest request, HttpServletResponse response) throws SAML2Exception;
 }

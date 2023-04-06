@@ -29,7 +29,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +53,7 @@ public class AccountActiveDecisionNode extends AbstractDecisionNode {
 
     private final Logger logger = LoggerFactory.getLogger(AccountActiveDecisionNode.class);
     private final CoreWrapper coreWrapper;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final AMAccountLockout.Factory amAccountLockoutFactory;
     private final Realm realm;
 
@@ -62,14 +62,14 @@ public class AccountActiveDecisionNode extends AbstractDecisionNode {
      *
      * @param realm                   the realm context
      * @param coreWrapper             a core wrapper instance
-     * @param identityUtils           an instance of the IdentityUtils
+     * @param identityService         an {@link LegacyIdentityService} instance
      * @param amAccountLockoutFactory factory for generating account lockout objects
      */
     @Inject
-    public AccountActiveDecisionNode(@Assisted Realm realm, CoreWrapper coreWrapper, IdentityUtils identityUtils,
-            AMAccountLockout.Factory amAccountLockoutFactory) {
+    public AccountActiveDecisionNode(@Assisted Realm realm, CoreWrapper coreWrapper,
+            LegacyIdentityService identityService, AMAccountLockout.Factory amAccountLockoutFactory) {
         this.coreWrapper = coreWrapper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.amAccountLockoutFactory = amAccountLockoutFactory;
         this.realm = realm;
     }
@@ -78,7 +78,7 @@ public class AccountActiveDecisionNode extends AbstractDecisionNode {
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("AccountActiveDecisionNode started");
         Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
-                identityUtils, coreWrapper);
+                identityService, coreWrapper);
         if (userIdentity.isEmpty()) {
             throw new NodeProcessException("Failed to get the identity object");
         }

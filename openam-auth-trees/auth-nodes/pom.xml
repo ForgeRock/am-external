@@ -12,15 +12,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS. All Rights Reserved
+ * Copyright 2017-2022 ForgeRock AS. All Rights Reserved
  * 
 -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>openam-auth-trees</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>7.2.0</version>
+        <version>7.3.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -35,6 +34,10 @@
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
+            <artifactId>identity-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
             <artifactId>service-config-api</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -44,15 +47,15 @@
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-social-idp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
             <artifactId>openam-guice-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.forgerock.am</groupId>
-            <artifactId>openam-oauth2</artifactId>
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>

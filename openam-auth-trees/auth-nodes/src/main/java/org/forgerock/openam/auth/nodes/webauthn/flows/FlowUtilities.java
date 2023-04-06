@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
@@ -24,9 +24,10 @@ import javax.inject.Inject;
 
 import org.forgerock.json.jose.jwk.EcJWK;
 import org.forgerock.json.jose.jwk.JWK;
+import org.forgerock.json.jose.jwk.OkpJWK;
 import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.openam.oauth2.OAuth2ClientOriginSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,16 +38,16 @@ public class FlowUtilities {
 
     private final Logger logger = LoggerFactory.getLogger(AuthenticationFlow.class);
 
-    private final IdentityUtils identityUtils;
+    private final OAuth2ClientOriginSearcher oAuth2ClientOriginSearcher;
 
     /**
      * Dependency Injection constructor.
      *
-     * @param identityUtils the utility class for searching for oauth agents with.
+     * @param oAuth2ClientOriginSearcher the service for searching for oauth agents with.
      */
     @Inject
-    public FlowUtilities(IdentityUtils identityUtils) {
-        this.identityUtils = identityUtils;
+    public FlowUtilities(OAuth2ClientOriginSearcher oAuth2ClientOriginSearcher) {
+        this.oAuth2ClientOriginSearcher = oAuth2ClientOriginSearcher;
     }
 
     /**
@@ -84,7 +85,7 @@ public class FlowUtilities {
     private boolean isOriginFromOAuthClient(Realm realm, String deviceOriginStr) {
         try {
             URL origin = new URL(deviceOriginStr);
-            return !identityUtils.getOAuthClientsForOrigin(realm, origin).isEmpty();
+            return oAuth2ClientOriginSearcher.anyOAuth2ClientsMatchOrigin(realm, origin);
         } catch (MalformedURLException e) {
             logger.error("Invalid error for origin verification from OAuth Client, origin {}",
                     deviceOriginStr, e);
@@ -120,6 +121,8 @@ public class FlowUtilities {
             return EcJWK.parse(keyData.toJsonValue()).toECPublicKey();
         case RSA:
             return RsaJWK.parse(keyData.toJsonValue()).toRSAPublicKey();
+        case OKP:
+            return OkpJWK.parse(keyData.toJsonValue()).toPublicKey();
         default:
             break;
         }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -43,7 +43,7 @@ import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.JsonValueBuilder;
 
 import com.iplanet.sso.SSOException;
@@ -60,7 +60,7 @@ public class DeviceLocationMatchNodeTest {
     CoreWrapper coreWrapper;
 
     @Mock
-    IdentityUtils identityUtils;
+    LegacyIdentityService identityService;
 
     @Mock
     AMIdentity amIdentity;
@@ -254,9 +254,7 @@ public class DeviceLocationMatchNodeTest {
         assertThat(result.outcome).isEqualTo("unknownDevice");
     }
 
-    @Test(expectedExceptions = NodeProcessException.class,
-            expectedExceptionsMessageRegExp = "Device Profile Collector Node to collect "
-                    + "device attribute is required: location")
+    @Test
     public void testProcessLocationNotInContext()
             throws NodeProcessException {
 
@@ -268,9 +266,34 @@ public class DeviceLocationMatchNodeTest {
         JsonValue transientState = json(object());
 
         // When
-        node.process(getContext(sharedState, transientState, emptyList()));
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
 
+        //Then
+        assertThat(result.outcome).isEqualTo("unknownDevice");
     }
+
+    @Test
+    public void testProcessIdentifierNotInContext()
+            throws NodeProcessException {
+
+        JsonValue newLocation = JsonValueBuilder.jsonValue().build();
+        newLocation.put("longitude", 49.164532);
+        newLocation.put("latitude", -123.177201);
+
+        JsonValue collectedAttributes = JsonValueBuilder.jsonValue().build();
+        collectedAttributes.put("location", newLocation);
+
+        JsonValue sharedState = json(object(field(DEVICE_PROFILE_CONTEXT_NAME, collectedAttributes)));
+
+        JsonValue transientState = json(object());
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        //Then
+        assertThat(result.outcome).isEqualTo("unknownDevice");
+    }
+
 
     @Test(expectedExceptions = NodeProcessException.class,
             expectedExceptionsMessageRegExp = "org.forgerock.openam.auth.node.api.NodeProcessException: "
@@ -296,6 +319,97 @@ public class DeviceLocationMatchNodeTest {
         node.process(getContext(sharedState, transientState, emptyList(), Optional.empty()));
 
     }
+
+    @Test
+    public void testProcessMissingLongitude()
+            throws NodeProcessException {
+
+        //Winnipeg
+        JsonValue newLocation = JsonValueBuilder.jsonValue().build();
+        newLocation.put("latitude", -97.130854);
+
+        JsonValue collectedAttributes = JsonValueBuilder.jsonValue().build();
+        collectedAttributes.put("identifier", "testIdentifier");
+        collectedAttributes.put("location", newLocation);
+
+        JsonValue sharedState = json(object(field(DEVICE_PROFILE_CONTEXT_NAME, collectedAttributes)));
+        JsonValue transientState = json(object());
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        //Then
+        assertThat(result.outcome).isEqualTo("unknownDevice");
+    }
+
+    @Test
+    public void testProcessMissingLatitude()
+            throws NodeProcessException {
+
+        //Winnipeg
+        JsonValue newLocation = JsonValueBuilder.jsonValue().build();
+        newLocation.put("longitude", 49.164532);
+
+        JsonValue collectedAttributes = JsonValueBuilder.jsonValue().build();
+        collectedAttributes.put("identifier", "testIdentifier");
+        collectedAttributes.put("location", newLocation);
+
+        JsonValue sharedState = json(object(field(DEVICE_PROFILE_CONTEXT_NAME, collectedAttributes)));
+        JsonValue transientState = json(object());
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        //Then
+        assertThat(result.outcome).isEqualTo("unknownDevice");
+    }
+
+    @Test
+    public void testProcessLongitudeIsNull()
+            throws NodeProcessException {
+
+        JsonValue newLocation = JsonValueBuilder.jsonValue().build();
+        newLocation.put("longitude", null);
+        newLocation.put("latitude", -97.130854);
+
+        JsonValue collectedAttributes = JsonValueBuilder.jsonValue().build();
+        collectedAttributes.put("identifier", "testIdentifier");
+        collectedAttributes.put("location", newLocation);
+
+        JsonValue sharedState = json(object(field(DEVICE_PROFILE_CONTEXT_NAME, collectedAttributes)));
+        JsonValue transientState = json(object());
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        //Then
+        assertThat(result.outcome).isEqualTo("unknownDevice");
+    }
+
+    @Test
+    public void testProcessLatitudeIsNull()
+            throws NodeProcessException {
+
+        JsonValue newLocation = JsonValueBuilder.jsonValue().build();
+        newLocation.put("longitude", -19);
+        newLocation.put("latitude", null);
+
+        JsonValue collectedAttributes = JsonValueBuilder.jsonValue().build();
+        collectedAttributes.put("identifier", "testIdentifier");
+        collectedAttributes.put("location", newLocation);
+
+        JsonValue sharedState = json(object(field(DEVICE_PROFILE_CONTEXT_NAME, collectedAttributes)));
+        JsonValue transientState = json(object());
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        //Then
+        assertThat(result.outcome).isEqualTo("unknownDevice");
+    }
+
+
+
 
     @Test
     public void testProcessStoreAttributeInvalidJson()

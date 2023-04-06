@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -21,11 +21,15 @@ import java.util.stream.Collectors;
 import org.forgerock.openam.federation.rest.schema.hosted.service.AuthContextItem;
 import org.forgerock.openam.objectenricher.EnricherContext;
 import org.forgerock.openam.objectenricher.mapper.ValueMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Mapper to go from string representation to a service provider's {@link AuthContextItem} instance.
  */
 public class SpAuthContextMapper extends ValueMapper<List<String>, List<AuthContextItem>> {
+
+    private static final Logger logger = LoggerFactory.getLogger(SpAuthContextMapper.class);
 
     @Override
     public List<AuthContextItem> map(List<String> values, EnricherContext context) {
@@ -39,8 +43,14 @@ public class SpAuthContextMapper extends ValueMapper<List<String>, List<AuthCont
         if (components.length < 2) {
             throw new IllegalArgumentException("Unable to parse authentication context data");
         }
-
-        return new AuthContextItem(components[0], Integer.valueOf(components[1]), "default".equals(components[2]));
+        Integer authnLevel = 0;
+        try {
+            authnLevel = Integer.valueOf(components[1]);
+        } catch (NumberFormatException e) {
+            logger.warn("Provided Authentication Context level is invalid, defaulting to 0. Error: {}",
+                    e.getMessage());
+        }
+        return new AuthContextItem(components[0], authnLevel, "default".equals(components[2]));
     }
 
     @Override
@@ -54,7 +64,7 @@ public class SpAuthContextMapper extends ValueMapper<List<String>, List<AuthCont
         StringBuilder sb = new StringBuilder()
                 .append(authContextItem.getContextReference())
                 .append("|")
-                .append(authContextItem.getLevel())
+                .append(authContextItem.getLevel() != null ? authContextItem.getLevel() : 0)
                 .append("|");
         if (authContextItem.getDefaultItem() != null) {
             sb.append(authContextItem.getDefaultItem() ? "default" : "");

@@ -24,17 +24,24 @@
  *
  * $Id: IDPSSOUtil.java,v 1.56 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2021 ForgeRock AS.
+ * Portions Copyrighted 2010-2023 ForgeRock AS.
  * Portions Copyrighted 2013 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.profile;
 
 import static com.sun.identity.saml2.common.SAML2Constants.DEFAULT_IDP_ADAPTER;
+import static com.sun.identity.saml2.common.SAML2Constants.DEFAULT_IDP_ATTRIBUTE_MAPPER_CLASS;
+import static com.sun.identity.saml2.common.SAML2Constants.DEFAULT_IDP_AUTHNCONTEXT_MAPPER_CLASS;
+import static com.sun.identity.saml2.common.SAML2Constants.DEFAULT_IDP_ECP_SESSION_MAPPER_CLASS;
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ADAPTER_CLASS;
+import static com.sun.identity.saml2.common.SAML2Constants.IDP_ATTRIBUTE_MAPPER;
+import static com.sun.identity.saml2.common.SAML2Constants.IDP_AUTHNCONTEXT_MAPPER_CLASS;
+import static com.sun.identity.saml2.common.SAML2Constants.IDP_ECP_SESSION_MAPPER_CLASS;
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_IDP_ADAPTER;
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_IDP_ATTRIBUTE_MAPPER;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
 import static com.sun.identity.saml2.common.SAML2Utils.getBooleanAttributeValueFromSSOConfig;
+import static org.forgerock.openam.saml2.plugins.PluginRegistry.newKey;
 import static com.sun.identity.shared.Constants.EMPTY_SCRIPT_SELECTION;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.saml2.Saml2EntityRole.IDP;
@@ -73,6 +80,7 @@ import org.forgerock.openam.saml2.Saml2EntityRole;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
 import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
+import org.forgerock.openam.saml2.plugins.IDPAdapter;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
 import org.forgerock.openam.shared.concurrency.LockFactory;
 import org.forgerock.openam.utils.ClientUtils;
@@ -139,7 +147,7 @@ import com.sun.identity.saml2.plugins.IDPAttributeMapper;
 import com.sun.identity.saml2.plugins.IDPAuthnContextInfo;
 import com.sun.identity.saml2.plugins.IDPAuthnContextMapper;
 import com.sun.identity.saml2.plugins.IDPECPSessionMapper;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
+import org.forgerock.openam.saml2.plugins.PluginRegistry;
 import com.sun.identity.saml2.protocol.Artifact;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.NameIDPolicy;
@@ -393,7 +401,7 @@ public class IDPSSOUtil {
         try {
             logger.debug(classMethod + " Invoking the "
                     + "IDP Adapter");
-            SAML2IdentityProviderAdapter idpAdapter =
+            IDPAdapter idpAdapter =
                     IDPSSOUtil.getIDPAdapterClass(realm, idpEntityID);
             if (idpAdapter != null) {
                 // If the preSendResponse returns true we end here
@@ -513,7 +521,7 @@ public class IDPSSOUtil {
             }
             try {
                 logger.debug("IDPSSOUtil.sendResponseToACS: Invoking the IDP Adapter");
-                SAML2IdentityProviderAdapter idpAdapter = IDPSSOUtil.getIDPAdapterClass(realm, idpEntityID);
+                IDPAdapter idpAdapter = IDPSSOUtil.getIDPAdapterClass(realm, idpEntityID);
                 if (idpAdapter != null) {
                     idpAdapter.preSignResponse(authnReq, res, idpEntityID, realm, request, session, relayState);
                 }
@@ -850,7 +858,7 @@ public class IDPSSOUtil {
         Issuer issuer = AssertionFactory.getInstance().createIssuer();
         issuer.setValue(idpEntityID);
         res.setIssuer(issuer);
-        res.setDestination(XMLUtils.escapeSpecialCharacters(acsURL));
+        res.setDestination(acsURL);
         return res;
     }
 
@@ -1270,44 +1278,14 @@ public class IDPSSOUtil {
      * @return the <code>IDPAttributeMapper</code>
      * @throws SAML2Exception if the operation is not successful
      */
-    static IDPAttributeMapper getIDPAttributeMapper(
-            String realm, String idpEntityID)
-            throws SAML2Exception {
-        String classMethod = "IDPSSOUtil.getIDPAttributeMapper: ";
-        String idpAttributeMapperName = null;
-        IDPAttributeMapper idpAttributeMapper = null;
-        try {
-            idpAttributeMapperName = getAttributeValueFromIDPSSOConfig(
-                    realm, idpEntityID, SAML2Constants.IDP_ATTRIBUTE_MAPPER);
-            if (idpAttributeMapperName == null) {
-                idpAttributeMapperName =
-                        SAML2Constants.DEFAULT_IDP_ATTRIBUTE_MAPPER_CLASS;
-                if (logger.isDebugEnabled()) {
-                    logger.debug(classMethod + "use " +
-                            SAML2Constants.DEFAULT_IDP_ATTRIBUTE_MAPPER_CLASS);
-                }
-            }
-            idpAttributeMapper = (IDPAttributeMapper)
-                    IDPCache.idpAttributeMapperCache.get(
-                            idpAttributeMapperName);
-            if (idpAttributeMapper == null) {
-                idpAttributeMapper = (IDPAttributeMapper)
-                        Class.forName(idpAttributeMapperName).newInstance();
-                IDPCache.idpAttributeMapperCache.put(
-                        idpAttributeMapperName, idpAttributeMapper);
-            } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(classMethod +
-                            "got the IDPAttributeMapper from cache");
-                }
-            }
-        } catch (Exception ex) {
-            logger.error(classMethod +
-                    "Unable to get IDP Attribute Mapper.", ex);
-            throw new SAML2Exception(ex);
+    static IDPAttributeMapper getIDPAttributeMapper(String realm, String idpEntityID) throws SAML2Exception {
+        String idpAttributeMapperName = getAttributeValueFromIDPSSOConfig(realm, idpEntityID, IDP_ATTRIBUTE_MAPPER);
+        if (idpAttributeMapperName == null) {
+            idpAttributeMapperName = DEFAULT_IDP_ATTRIBUTE_MAPPER_CLASS;
         }
-
-        return idpAttributeMapper;
+        logger.debug("IDPSSOUtil.getIDPAttributeMapper: use {}", idpAttributeMapperName);
+        return (IDPAttributeMapper) PluginRegistry.get(newKey(realm, idpEntityID,
+                IDPAttributeMapper.class, idpAttributeMapperName));
     }
 
 
@@ -1319,45 +1297,16 @@ public class IDPSSOUtil {
      * @return the <code>IDPAuthnContextMapper</code>
      * @throws SAML2Exception if the operation is not successful
      */
-    public static IDPAuthnContextMapper getIDPAuthnContextMapper(
-            String realm, String idpEntityID)
-            throws SAML2Exception {
-        String classMethod = "IDPSSOUtil.getIDPAuthnContextMapper: ";
-        String idpAuthnContextMapperName = null;
-        IDPAuthnContextMapper idpAuthnContextMapper = null;
-        try {
-            idpAuthnContextMapperName = getAttributeValueFromIDPSSOConfig(
-                    realm, idpEntityID,
-                    SAML2Constants.IDP_AUTHNCONTEXT_MAPPER_CLASS);
-            if (idpAuthnContextMapperName == null) {
-                idpAuthnContextMapperName =
-                        SAML2Constants.DEFAULT_IDP_AUTHNCONTEXT_MAPPER_CLASS;
-                if (logger.isDebugEnabled()) {
-                    logger.debug(classMethod + "use " +
-                            SAML2Constants.DEFAULT_IDP_AUTHNCONTEXT_MAPPER_CLASS);
-                }
-            }
-            idpAuthnContextMapper = (IDPAuthnContextMapper)
-                    IDPCache.idpAuthnContextMapperCache.get(
-                            idpAuthnContextMapperName);
-            if (idpAuthnContextMapper == null) {
-                idpAuthnContextMapper = (IDPAuthnContextMapper)
-                        Class.forName(idpAuthnContextMapperName).newInstance();
-                IDPCache.idpAuthnContextMapperCache.put(
-                        idpAuthnContextMapperName, idpAuthnContextMapper);
-            } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(classMethod +
-                            "got the IDPAuthnContextMapper from cache");
-                }
-            }
-        } catch (Exception ex) {
-            logger.error(classMethod +
-                    "Unable to get IDP AuthnContext Mapper.", ex);
-            throw new SAML2Exception(ex);
+    public static IDPAuthnContextMapper getIDPAuthnContextMapper(String realm,
+            String idpEntityID) throws SAML2Exception {
+        String idpAuthnContextMapperName
+                = getAttributeValueFromIDPSSOConfig(realm, idpEntityID, IDP_AUTHNCONTEXT_MAPPER_CLASS);
+        if (idpAuthnContextMapperName == null) {
+            idpAuthnContextMapperName = DEFAULT_IDP_AUTHNCONTEXT_MAPPER_CLASS;
         }
-
-        return idpAuthnContextMapper;
+        logger.debug("IDPSSOUtil.getIDPAuthnContextMapper: uses {}", idpAuthnContextMapperName);
+        return (IDPAuthnContextMapper) PluginRegistry.get(newKey(realm, idpEntityID,
+                IDPAuthnContextMapper.class, idpAuthnContextMapperName));
     }
 
     /**
@@ -1368,45 +1317,16 @@ public class IDPSSOUtil {
      * @return the <code>IDPECPSessionMapper</code>
      * @throws SAML2Exception if the operation is not successful
      */
-    public static IDPECPSessionMapper getIDPECPSessionMapper(String realm,
-                                                      String idpEntityID) throws SAML2Exception {
+    public static IDPECPSessionMapper getIDPECPSessionMapper(String realm, String idpEntityID) throws SAML2Exception {
 
-        String idpECPSessionMapperName = null;
-        IDPECPSessionMapper idpECPSessionMapper = null;
-        try {
-            idpECPSessionMapperName = getAttributeValueFromIDPSSOConfig(realm,
-                    idpEntityID, SAML2Constants.IDP_ECP_SESSION_MAPPER_CLASS);
-            if (idpECPSessionMapperName == null) {
-                idpECPSessionMapperName =
-                        SAML2Constants.DEFAULT_IDP_ECP_SESSION_MAPPER_CLASS;
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                            "IDPSSOUtil.getIDPECPSessionMapper: use " +
-                                    SAML2Constants.DEFAULT_IDP_ECP_SESSION_MAPPER_CLASS);
-                }
-            }
-            idpECPSessionMapper = (IDPECPSessionMapper)
-                    IDPCache.idpECPSessionMapperCache.get(
-                            idpECPSessionMapperName);
-            if (idpECPSessionMapper == null) {
-                idpECPSessionMapper = (IDPECPSessionMapper)
-                        Class.forName(idpECPSessionMapperName).newInstance();
-                IDPCache.idpECPSessionMapperCache.put(
-                        idpECPSessionMapperName, idpECPSessionMapper);
-            } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                            "IDPSSOUtil.getIDPECPSessionMapper: " +
-                                    "got the IDPECPSessionMapper from cache");
-                }
-            }
-        } catch (Exception ex) {
-            logger.error("IDPSSOUtil.getIDPECPSessionMapper: " +
-                    "Unable to get IDPECPSessionMapper.", ex);
-            throw new SAML2Exception(ex);
+        String idpECPSessionMapperName
+                = getAttributeValueFromIDPSSOConfig(realm, idpEntityID, IDP_ECP_SESSION_MAPPER_CLASS);
+        if (idpECPSessionMapperName == null) {
+            idpECPSessionMapperName = DEFAULT_IDP_ECP_SESSION_MAPPER_CLASS;
         }
-
-        return idpECPSessionMapper;
+        logger.debug("IDPSSOUtil.getIDPECPSessionMapper: use {}", idpECPSessionMapperName);
+        return (IDPECPSessionMapper) PluginRegistry.get(newKey(realm, idpEntityID,
+                IDPECPSessionMapper.class, idpECPSessionMapperName));
     }
 
     /**
@@ -1629,7 +1549,7 @@ public class IDPSSOUtil {
         SubjectConfirmationData scd = AssertionFactory.getInstance().
                 createSubjectConfirmationData();
 
-        scd.setRecipient(XMLUtils.escapeSpecialCharacters(acsURL));
+        scd.setRecipient(acsURL);
 
         if (inResponseTo != null) {
             scd.setInResponseTo(inResponseTo);
@@ -2842,17 +2762,17 @@ public class IDPSSOUtil {
     }
 
     /**
-     * Returns a <code>SAML2IdentityProviderAdapter</code>.
+     * Returns a <code>IDPAdapter</code>.
      *
      * @param realm       the realm name
      * @param idpEntityID the entity id of the identity provider
      * @return the <code>SAML2IdenityProviderAdapter</code>
      * @throws SAML2Exception if the operation is not successful
      */
-    public static SAML2IdentityProviderAdapter getIDPAdapterClass(String realm, String idpEntityID)
+    public static IDPAdapter getIDPAdapterClass(String realm, String idpEntityID)
             throws SAML2Exception {
         if (isScriptConfigured(realm, idpEntityID, SAML2Constants.IDP_ADAPTER_SCRIPT)) {
-            return InjectorHolder.getInstance(com.google.inject.Key.get(SAML2IdentityProviderAdapter.class,
+            return InjectorHolder.getInstance(com.google.inject.Key.get(IDPAdapter.class,
                     Names.named(SCRIPTED_IDP_ADAPTER)));
         } else {
             return getIDPAdapterJavaClass(realm, idpEntityID);
@@ -2860,48 +2780,20 @@ public class IDPSSOUtil {
     }
 
     /**
-     * Returns a <code>SAML2IdentityProviderAdapter</code>.
+     * Returns a <code>IDPAdapter</code>.
      *
-     * @param realm       the realm name
+     * @param realm the realm name
      * @param idpEntityID the entity id of the identity provider
-     * @return the <code>SAML2IdentityProviderAdapter</code>
+     * @return the <code>IDPAdapter</code>
      * @throws SAML2Exception if the operation is not successful
      */
-    private static SAML2IdentityProviderAdapter getIDPAdapterJavaClass(String realm, String idpEntityID)
-            throws SAML2Exception {
-        String classMethod = "IDPSSOUtil.getIDPAdapterClass: ";
-        SAML2IdentityProviderAdapter idpAdapter = null;
-        try {
-            String idpAdapterName = getAttributeValueFromIDPSSOConfig(realm, idpEntityID, IDP_ADAPTER_CLASS);
-            if (idpAdapterName == null || idpAdapterName.trim().isEmpty()) {
-                idpAdapterName = DEFAULT_IDP_ADAPTER;
-                if (logger.isDebugEnabled()) {
-                    logger.debug("{} uses {}", classMethod, DEFAULT_IDP_ADAPTER);
-                }
-            }
-
-            // Attempt to retrieve the adapter from the cache
-            idpAdapter = (SAML2IdentityProviderAdapter) IDPCache.idpAdapterCache.get(realm + "$" + idpEntityID + "$"
-                    + idpAdapterName);
-
-            if (idpAdapter == null) {
-                // NB: multiple threads may cause several adapter objects to be created
-                idpAdapter = (SAML2IdentityProviderAdapter) Class.forName(idpAdapterName).newInstance();
-                idpAdapter.initialize(idpEntityID, realm);
-
-                // Add the adapter to the cache after initialization
-                IDPCache.idpAdapterCache.put(realm + "$" + idpEntityID + "$" + idpAdapterName, idpAdapter);
-            } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("{} got the IDPAdapter from cache", classMethod);
-                }
-            }
-        } catch (Exception ex) {
-            logger.error(classMethod + " unable to get IDP Adapter.", ex);
-            throw new SAML2Exception(ex);
+    private static IDPAdapter getIDPAdapterJavaClass(String realm, String idpEntityID) throws SAML2Exception {
+        String idpAdapterName = getAttributeValueFromIDPSSOConfig(realm, idpEntityID, IDP_ADAPTER_CLASS);
+        if (StringUtils.isBlank(idpAdapterName)) {
+            idpAdapterName = DEFAULT_IDP_ADAPTER;
         }
-
-        return idpAdapter;
+        logger.debug("IDPSSOUtil.getIDPAdapterClass: uses {}", idpAdapterName);
+          return (IDPAdapter) PluginRegistry.get(newKey(realm, idpEntityID, IDPAdapter.class, idpAdapterName));
     }
 
     /**
@@ -3185,6 +3077,7 @@ public class IDPSSOUtil {
      * @param sessionIndex The session index to remove.
      */
     public static void removeIdPSessionFromCachesAndFailoverStore(String sessionIndex) {
+        logger.debug("Removing IDPSession from SAML2 token repository, sessionIndex: {}", sessionIndex);
         IDPCache.idpSessionsByIndices.remove(sessionIndex);
         if ((agent != null) && agent.isRunning() && (saml2Svc != null)){
             saml2Svc.setIdpSessionCount((long)IDPCache.idpSessionsByIndices.size());

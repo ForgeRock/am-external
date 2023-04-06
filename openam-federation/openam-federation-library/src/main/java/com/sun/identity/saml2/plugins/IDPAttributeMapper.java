@@ -24,11 +24,12 @@
  *
  * $Id: IDPAttributeMapper.java,v 1.3 2008/06/25 05:47:51 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.saml2.plugins.SAMLPlugin;
 
 import com.sun.identity.saml2.common.SAML2Exception;
 
@@ -43,7 +44,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
  * @see com.sun.identity.saml2.plugins.SPAttributeMapper
  */
 @SupportedAll
-public interface IDPAttributeMapper {
+public interface IDPAttributeMapper extends SAMLPlugin {
 
     /**
      * Returns list of SAML <code>Attribute</code> objects for an 
@@ -55,7 +56,7 @@ public interface IDPAttributeMapper {
      * @return list of <code>Attributes</code>s of an authenticated user. 
      * @exception SAML2Exception if any failure.
      */
-    public java.util.List getAttributes(
+    java.util.List getAttributes(
         Object session,
         java.lang.String hostEntityID,
         java.lang.String remoteEntityID, 

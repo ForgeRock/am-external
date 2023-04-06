@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -21,7 +21,6 @@ import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.session.SessionConstants.PERSISTENT_COOKIE_SESSION_PROPERTY;
 
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -29,6 +28,7 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -45,7 +45,6 @@ import org.forgerock.openam.auth.nodes.jwt.PersistentJwtProvider;
 import org.forgerock.openam.auth.nodes.treehook.UpdatePersistentCookieTreeHook;
 import org.forgerock.openam.auth.nodes.validators.HmacSigningKeyValidator;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.openam.sm.annotations.adapters.Password;
 import org.forgerock.openam.sm.annotations.adapters.TimeUnit;
 import org.forgerock.util.time.Duration;
@@ -73,7 +72,7 @@ public class PersistentCookieDecisionNode extends AbstractDecisionNode implement
     private final UUID nodeId;
     private final Config config;
     private final CoreWrapper coreWrapper;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
 
     /**
      * Configuration for the node.
@@ -146,15 +145,15 @@ public class PersistentCookieDecisionNode extends AbstractDecisionNode implement
      *
      * @param config        the config.
      * @param coreWrapper   the core wrapper.
-     * @param identityUtils an instance of the IdentityUtils.
+     * @param identityService an instance of the IdentityService.
      * @param nodeId        the id of this node instance.
      */
     @Inject
     public PersistentCookieDecisionNode(@Assisted Config config, CoreWrapper coreWrapper,
-            IdentityUtils identityUtils, @Assisted UUID nodeId) {
+            LegacyIdentityService identityService, @Assisted UUID nodeId) {
         this.config = config;
         this.coreWrapper = coreWrapper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.persistentJwtProvider = InjectorHolder.getInstance(PersistentJwtProvider.class);
         this.nodeId = nodeId;
         this.persistentJwtClaimsHandler = new PersistentJwtClaimsHandler();
@@ -182,8 +181,9 @@ public class PersistentCookieDecisionNode extends AbstractDecisionNode implement
                 String realm = context.sharedState.get(REALM).asString();
                 actionBuilder = actionBuilder
                         .replaceSharedState(context.sharedState.copy().put(USERNAME, userName))
-                        .withUniversalId(identityUtils.getUniversalId(userName, realm, USER))
-                        .putSessionProperty(PERSISTENT_COOKIE_SESSION_PROPERTY, config.persistentCookieName())
+                        .withUniversalId(identityService.getUniversalId(userName, realm, USER))
+                        .putSessionProperty(generateSessionPropertyName(config.persistentCookieName()),
+                                config.persistentCookieName())
                         .addSessionHook(UpdatePersistentCookieTreeHook.class, nodeId, getClass().getSimpleName());
             } catch (InvalidPersistentJwtException e) {
                 logger.error(e.getLocalizedMessage());

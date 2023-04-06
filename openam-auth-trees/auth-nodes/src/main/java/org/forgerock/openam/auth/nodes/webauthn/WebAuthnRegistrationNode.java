@@ -60,7 +60,7 @@ import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceJsonUtils;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.sm.validation.SecretIdValidator;
 import org.forgerock.openam.utils.CodeException;
 import org.forgerock.openam.utils.CollectionUtils;
@@ -95,7 +95,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
     private final Realm realm;
     private RegisterFlow registerFlow;
     private final WebAuthnDeviceJsonUtils webAuthnDeviceJsonUtils;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final CoreWrapper coreWrapper;
 
     private String registeredDeviceUuid;
@@ -310,7 +310,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
      * @param secureRandom            instance of the secure random generator
      * @param recoveryCodeGenerator   instance of the recovery code generator
      * @param webAuthnDeviceJsonUtils Helper to convert device to json
-     * @param identityUtils           A {@code IdentityUtils} instance.
+     * @param identityService         an {@link LegacyIdentityService} instance.
      * @param coreWrapper             The {@code CoreWrapper} instance.
      */
     @Inject
@@ -319,14 +319,14 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
                                     UserWebAuthnDeviceProfileManager webAuthnProfileManager,
                                     SecureRandom secureRandom, RecoveryCodeGenerator recoveryCodeGenerator,
                                     WebAuthnDeviceJsonUtils webAuthnDeviceJsonUtils,
-                                    IdentityUtils identityUtils, CoreWrapper coreWrapper) {
+                                    LegacyIdentityService identityService, CoreWrapper coreWrapper) {
         super(clientScriptUtilities, webAuthnProfileManager, secureRandom, recoveryCodeGenerator);
 
         this.config = config;
         this.realm = realm;
         this.registerFlow = registerFlow;
         this.webAuthnDeviceJsonUtils = webAuthnDeviceJsonUtils;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.coreWrapper = coreWrapper;
     }
 
@@ -404,7 +404,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
 
         } else {
             logger.debug("sending callbacks to user for completion");
-            Optional<AMIdentity> user = getAMIdentity(context.universalId, nodeState, identityUtils, coreWrapper);
+            Optional<AMIdentity> user = getAMIdentity(context.universalId, nodeState, identityService, coreWrapper);
             if (user.isEmpty()) {
                 logger.warn("getIdentity: Unable to find user {}", username);
                 return Action.goTo(FAILURE_OUTCOME_ID).build();
@@ -464,7 +464,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
                 throw new DevicePersistenceException("Unable to store device in shared state", e);
             }
         } else {
-            Optional<AMIdentity> user = getAMIdentity(context.universalId, context.getStateFor(this), identityUtils,
+            Optional<AMIdentity> user = getAMIdentity(context.universalId, context.getStateFor(this), identityService,
                     coreWrapper);
             if (user.isEmpty()) {
                 logger.debug("getIdentity: Unable to find user {}", username);

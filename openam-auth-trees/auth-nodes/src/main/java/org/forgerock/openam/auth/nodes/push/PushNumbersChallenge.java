@@ -11,18 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2022-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.security.SecureRandom;
 import java.util.Arrays;
-
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Provides a set of numbers as challenge for Push notification.
@@ -32,8 +31,6 @@ public class PushNumbersChallenge {
     private static final int SIZE = 3;
     private static final int START = 10;
     private static final int END = 100;
-
-    private static final Logger logger = LoggerFactory.getLogger(PushNumbersChallenge.class);
 
     private int[] choices;
     private int answer;
@@ -74,22 +71,23 @@ public class PushNumbersChallenge {
         return this.answer;
     }
 
+    /**
+     * Creates an array with 3 unique random numbers between 10 (inclusive) to 100 (exclusive).
+     * @return int array with 3 unique numbers.
+     */
     private int[] uniqueRandomElements() {
-        int[] array = new int[0];
-        try {
-            array = new SecureRandom()
-                    .ints(SIZE, START, END)
-                    .boxed()
-                    .mapToInt(i -> i)
-                    .toArray();
-        } catch (Exception e) {
-            logger.error("Error generating unique random numbers for challenge.", e);
+        int[] array = new int[SIZE];
+        List<Integer> numbers = IntStream.range(START, END).boxed().collect(Collectors.toList());
+        Collections.shuffle(numbers);
+        int pos = (new Random()).nextInt(numbers.size() - SIZE);
+        for (int i = 0; i < SIZE; i++) {
+            array[i] = numbers.get(i + pos);
         }
         return array;
     }
 
     private int pickRandomAnswer(int[] ints) {
-        return ints[(new SecureRandom()).nextInt(ints.length)];
+        return ints[(new Random()).nextInt(ints.length)];
     }
 
     private String intArrayToString(int[] ints) {

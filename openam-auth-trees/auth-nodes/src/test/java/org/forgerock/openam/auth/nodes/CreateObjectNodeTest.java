@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 
+import org.forgerock.json.JsonPatch;
 import org.forgerock.json.JsonPointer;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
@@ -64,6 +65,9 @@ public class CreateObjectNodeTest {
 
     @Captor
     private ArgumentCaptor<JsonValue> termsCaptor;
+
+    @Captor
+    private ArgumentCaptor<JsonValue> newObjectCaptor;
 
     private CreateObjectNode node;
     private TreeContext context;
@@ -97,9 +101,16 @@ public class CreateObjectNodeTest {
 
     @Test
     public void shouldReturnCreatedIfUserObjectSuccessfullyCreated() throws Exception {
-        when(idmIntegrationService.createObject(any(), any(), any(), any()))
+        JsonValue expectedValue = json(object(
+            field("userName", "test"),
+            field("sn", "foo"),
+            field("givenName", "bar"),
+            field("mail", "test@gmail.com"),
+            field("preferences", object(field("updates", true)))));
+        when(idmIntegrationService.createObject(any(), any(), any(), newObjectCaptor.capture()))
                 .thenReturn(json(object(field(FIELD_CONTENT_ID, "1"))));
         assertThat(node.process(context).outcome).isEqualTo(CreateObjectNode.CreateObjectOutcome.CREATED.toString());
+        assertThat(JsonPatch.diff(newObjectCaptor.getValue(), expectedValue).asList()).isEmpty();
     }
 
     @Test

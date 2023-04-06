@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 import { bindActionCreators } from "redux";
 import PropTypes from "prop-types";
@@ -44,16 +44,18 @@ class EditEntityProviderContainer extends Component {
     async componentDidMount () {
         const [realm, location,, entityId] = this.props.router.params;
         try {
-            const [instance, schema, idpATMScriptsResponse, idpAdapterScripts] = await Promise.all([
+            const [instance, schema, idpATMScriptsResponse, idpAdapterScripts, spAdapterScripts] = await Promise.all([
                 getInstance(realm, location, entityId),
                 getSchema(realm, location),
                 getAllByScriptType(realm, "SAML2_IDP_ATTRIBUTE_MAPPER"),
-                getAllByScriptType(realm, "SAML2_IDP_ADAPTER")
+                getAllByScriptType(realm, "SAML2_IDP_ADAPTER"),
+                getAllByScriptType(realm, "SAML2_SP_ADAPTER")
             ]);
 
             /* eslint-disable react/no-did-mount-set-state */
             this.setState({ idpATMScripts: idpATMScriptsResponse.result });
             this.setState({ idpAdapterScripts: idpAdapterScripts.result });
+            this.setState({ spAdapterScripts: spAdapterScripts.result });
             this.props.setInstance(instance);
             this.props.setSchema(convertFormatToIsPassword(schema));
         } catch (error) {
@@ -97,17 +99,23 @@ class EditEntityProviderContainer extends Component {
         } else {
             const [, location, role] = this.props.router.params;
             const schema = this.props.schema.properties[role];
-            // TODO: Review role condition on SP implementation
-            if (role === "identityProvider" && location === "hosted") {
-                // IDP Attribute Mapper Script
-                const assertionProcessing = schema.properties.assertionProcessing;
-                const atmProperties = assertionProcessing.properties.attributeMapper.properties;
-                /* eslint-disable max-len */
-                atmProperties.attributeMapperScript = this.createScriptsSchema(atmProperties.attributeMapperScript, this.state.idpATMScripts);
-                // IDP Adapter Script
-                const idpAdapterProperties = schema.properties.advanced.properties.idpAdapter.properties;
-                /* eslint-disable max-len */
-                idpAdapterProperties.idpAdapterScript = this.createScriptsSchema(idpAdapterProperties.idpAdapterScript, this.state.idpAdapterScripts);
+            if (location === "hosted") {
+                if (role === "identityProvider") {
+                    // IDP Attribute Mapper Script
+                    const assertionProcessing = schema.properties.assertionProcessing;
+                    const atmProperties = assertionProcessing.properties.attributeMapper.properties;
+                    /* eslint-disable max-len */
+                    atmProperties.attributeMapperScript = this.createScriptsSchema(atmProperties.attributeMapperScript, this.state.idpATMScripts);
+                    // IDP Adapter Script
+                    const idpAdapterProperties = schema.properties.advanced.properties.idpAdapter.properties;
+                    /* eslint-disable max-len */
+                    idpAdapterProperties.idpAdapterScript = this.createScriptsSchema(idpAdapterProperties.idpAdapterScript, this.state.idpAdapterScripts);
+                } else if (role === "serviceProvider") {
+                    // SP Adapter Script
+                    const spAdapterProperties = schema.properties.assertionProcessing.properties.adapter.properties;
+                    /* eslint-disable max-len */
+                    spAdapterProperties.spAdapterScript = this.createScriptsSchema(spAdapterProperties.spAdapterScript, this.state.spAdapterScripts);
+                }
             }
             return schema
                 ? <EditEntityProvider schema={ schema } />

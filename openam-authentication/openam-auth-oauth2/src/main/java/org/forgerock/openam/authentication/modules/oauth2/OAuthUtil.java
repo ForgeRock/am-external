@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2021 ForgeRock AS. All rights reserved.
+ * Copyright 2011-2022 ForgeRock AS. All rights reserved.
  * Copyright 2011 Cybernetica AS.
  *
  * The contents of this file are subject to the terms
@@ -22,6 +22,7 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
+ * Portions Copyrighted 2022 Forgerock AS.
  */
 package org.forgerock.openam.authentication.modules.oauth2;
 
@@ -34,6 +35,7 @@ import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.PARA
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,7 +57,7 @@ import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.shared.encode.CookieUtils;
 
-public class OAuthUtil  {
+public class OAuthUtil {
 
     private static Logger debug = LoggerFactory.getLogger(OAuthUtil.class);
 
@@ -132,43 +134,34 @@ public class OAuthUtil  {
     }
     
     public static void sendEmail(String from, String emailAddress, String activCode,
-              Map<String, String> SMTPConfig, ResourceBundle bundle, String linkURL)
+              Map<String, String> smtpConfig, ResourceBundle bundle, String linkURL, EmailGateway gateway)
     throws NoEmailSentException {
+        if (from != null || emailAddress != null) {
+            String subject = bundle.getString(MESSAGE_SUBJECT);
+            String message = bundle.getString(MESSAGE_BODY);
+            message = message.replace("#ACTIVATION_CODE#", activCode);
+
+            String link = "";
+            link = linkURL + "?" + PARAM_ACTIVATION + "=" +
+                           URLEncoder.encode(activCode, StandardCharsets.UTF_8);
+
+            message = message.replace("#ACTIVATION_LINK#", link);
+            gateway.sendEmail(from, emailAddress, subject, message, smtpConfig);
+            debugMessage("OAuthUtil.sendEmail(): sent email to " +
+                        emailAddress);
+        } else {
+              debugMessage("OAuthUtil.sendEmail(): unable to send email");
+        }
+    }
+
+    public static EmailGateway getEmailGateway(Map<String, String> smtpConfig, EmailGatewayLookup emailGatewayLookup)
+            throws AuthLoginException {
+        String gatewayEmailImplClass = smtpConfig.get(KEY_EMAIL_GWY_IMPL);
         try {
-            String gatewayEmailImplClass = SMTPConfig.get(KEY_EMAIL_GWY_IMPL);
-            if (from != null || emailAddress != null) {
-                // String from = bundle.getString(MESSAGE_FROM);
-                String subject = bundle.getString(MESSAGE_SUBJECT);
-                String message = bundle.getString(MESSAGE_BODY);
-                message = message.replace("#ACTIVATION_CODE#", activCode);
-                
-                String link = "";
-                try {
-                     link = linkURL + "?" + PARAM_ACTIVATION + "=" +
-                     URLEncoder.encode(activCode, "UTF-8");
-                } catch (UnsupportedEncodingException ex) {
-                   debugError("OAuthUtil.sendEmail(): Error while encoding", ex);
-                }
-
-                message = message.replace("#ACTIVATION_LINK#", link);
-                EmailGateway gateway =  Class.forName(gatewayEmailImplClass).
-                        asSubclass(EmailGateway.class).newInstance();
-                gateway.sendEmail(from, emailAddress, subject, message, SMTPConfig);
-                debugMessage("OAuthUtil.sendEmail(): sent email to " +
-                            emailAddress);
-            } else {
-                  debugMessage("OAuthUtil.sendEmail(): unable to send email");
-
-            }
-        } catch (ClassNotFoundException cnfe) {
-            debugError("OAuthUtil.sendEmail(): " + "class not found " +
-                        "EmailGateway class", cnfe);
-        } catch (InstantiationException ie) {
-            debugError("OAuthUtil.sendEmail(): " + "can not instantiate " +
-                        "EmailGateway class", ie);
-        } catch (IllegalAccessException iae) {
-            debugError("OAuthUtil.sendEmail(): " + "can not access " +
-                        "EmailGateway class", iae);
+            return emailGatewayLookup.getEmailGateway(gatewayEmailImplClass);
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+            debugError("Unable to instantiate email gateway", e);
+            throw new AuthLoginException("Aborting authentication: unable to instantiate email gateway");
         }
     }
     
@@ -243,8 +236,7 @@ public class OAuthUtil  {
 
         String user = null;
         if ((userNames != null) && !userNames.isEmpty()) {
-            AMIdentity userIdentity = accountProvider.searchUser(
-                    AMLoginModule.getAMIdentityRepository(realm), userNames);
+            AMIdentity userIdentity = accountProvider.searchUser(AMLoginModule.getIdentityStore(realm), userNames);
             if (userIdentity != null) {
                 user = userIdentity.getName();
             }

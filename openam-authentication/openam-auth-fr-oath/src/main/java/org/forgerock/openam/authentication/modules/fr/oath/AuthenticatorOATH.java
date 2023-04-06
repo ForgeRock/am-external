@@ -34,6 +34,8 @@ import javax.security.auth.callback.NameCallback;
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.codec.DecoderException;
+import org.forgerock.am.identity.application.IdentityStoreFactory;
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.core.rest.authn.mobile.TwoFactorAMLoginModule;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
@@ -65,7 +67,6 @@ import com.sun.identity.authentication.spi.InvalidPasswordException;
 import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
-import com.sun.identity.idm.IdUtils;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.sm.DNMapper;
 import com.sun.identity.sm.SMSException;
@@ -157,6 +158,9 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
 
     private final RecoveryCodeGenerator recoveryCodeGenerator = InjectorHolder.getInstance(RecoveryCodeGenerator.class);
 
+    private static final IdentityStoreFactory identityStoreFactory =
+            InjectorHolder.getInstance(IdentityStoreFactory.class);
+
     private OathDeviceSettings newDevice = null;
 
     // support for search with alias name
@@ -221,7 +225,8 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
         try {
 
             String realm = DNMapper.orgNameToRealmName(getRequestOrg());
-            id = IdUtils.getIdentity(userName, realm, userSearchAttributes);
+            IdentityStore identityStore = identityStoreFactory.create(realm);
+            id = identityStore.getIdentity(userName, userSearchAttributes);
             realmService = oathServiceFactory.create(id.getRealm());
 
             try {

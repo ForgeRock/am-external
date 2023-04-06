@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.encoding;
 
@@ -23,7 +23,9 @@ import java.util.List;
 
 import org.forgerock.json.jose.jwk.EcJWK;
 import org.forgerock.json.jose.jwk.JWK;
+import org.forgerock.json.jose.jwk.OkpJWK;
 import org.forgerock.json.jose.jwk.RsaJWK;
+import org.forgerock.json.jose.jws.SupportedEllipticCurve;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseCurve;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationFlags;
@@ -101,32 +103,54 @@ public final class AuthDataDecoder {
 
         int keyType = ((Number) attObjMap.get(new UnsignedInteger(1))).getValue().intValue();
         int alg =  ((Number) attObjMap.get(new UnsignedInteger(3))).getValue().intValue();
-        CoseAlgorithm algorithmName = CoseAlgorithm.fromCoseNumber(alg);
+        CoseAlgorithm algorithm = CoseAlgorithm.fromCoseNumber(alg);
 
-        if (algorithmName == null) {
+        if (algorithm == null) {
             throw new DecodingException("Unable to find appropriate algorithm");
         }
 
-        String algorithm = algorithmName.getExactAlgorithmName();
+        String algorithmName = algorithm.getExactAlgorithmName();
 
         JWK publicKey;
 
         switch (keyType) {
-        case 2:
-            publicKey = decodeAsEC(attObjMap);
+        case 1: // defined https://www.rfc-editor.org/rfc/rfc8152#section-13 - table 21
+            publicKey = decodeAsOKPPublicKey(attObjMap, algorithm);
             break;
-        case 3:
-            publicKey = decodeAsRSA(attObjMap);
+        case 2: // defined https://www.rfc-editor.org/rfc/rfc8152#section-13 - table 21
+            publicKey = decodeAsECPublicKey(attObjMap);
+            break;
+        case 3: // defined https://www.rfc-editor.org/rfc/rfc8230#section-4 - table 3
+            publicKey = decodeAsRSAPublicKey(attObjMap);
             break;
         default:
             throw new DecodingException("No appropriate key type.");
         }
 
-        return new AttestedCredentialData(aaguid, credentialIdLength, credentialId, publicKey, algorithm);
+        return new AttestedCredentialData(aaguid, credentialIdLength, credentialId, publicKey, algorithmName);
     }
 
-    private JWK decodeAsEC(Map attributes) throws DecodingException {
+    private JWK decodeAsOKPPublicKey(Map attributes, CoseAlgorithm algorithm) throws DecodingException {
+        int curveNumber = ((Number) attributes.get(new NegativeInteger(-1))).getValue().intValue();
+        byte[] x = ((ByteString) attributes.get(new NegativeInteger(-2))).getBytes();
+        CoseCurve coseCurve = CoseCurve.fromCoseNumber(curveNumber);
 
+        // 5.8.5 - "Keys with algorithm EdDSA (-8) MUST specify Ed25519 (6) as the crv parameter."
+        if (coseCurve == null || (CoseAlgorithm.EDDSA.equals(algorithm) && !CoseCurve.ED25519.equals(coseCurve))) {
+            throw new DecodingException("No appropriate curve");
+        }
+
+        try {
+            return OkpJWK.builder()
+                    .curve(SupportedEllipticCurve.forName(coseCurve.getName()))
+                    .x(Base64url.encode(x))
+                    .build();
+        } catch (IllegalArgumentException e) {
+            throw new DecodingException("No appropriate curve");
+        }
+    }
+
+    private JWK decodeAsECPublicKey(Map attributes) throws DecodingException {
         int curve = ((Number) attributes.get(new NegativeInteger(-1))).getValue().intValue();
         byte[] xpos = ((ByteString) attributes.get(new NegativeInteger(-2))).getBytes();
         byte[] ypos = ((ByteString) attributes.get(new NegativeInteger(-3))).getBytes();
@@ -140,7 +164,7 @@ public final class AuthDataDecoder {
                 Base64url.encode(ypos)).build();
     }
 
-    private JWK decodeAsRSA(Map attributes) {
+    private JWK decodeAsRSAPublicKey(Map attributes) {
         byte[] modulus = ((ByteString) attributes.get(new NegativeInteger(-1))).getBytes();
         byte[] exponent = ((ByteString) attributes.get(new NegativeInteger(-2))).getBytes();
 

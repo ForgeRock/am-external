@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
@@ -89,6 +89,25 @@ public class OathDeviceProfileHelper extends MultiFactorDeviceProfileHelper<Oath
             return recoveryCodes;
         } catch (NullPointerException e) {
             throw new NodeProcessException("Blank value for necessary data from device response", e);
+        } catch (DevicePersistenceException e) {
+            throw new NodeProcessException("Unable to store device profile", e);
+        }
+    }
+
+    /**
+     * Save the device's settings on the user's profile.
+     *
+     * @param deviceSettings the device's settings.
+     * @param identity the user identity.
+     * @param recoveryCodes list of recovery codes.
+     * @throws NodeProcessException if unable to store device profile or generate the recovery codes.
+     */
+    public void saveDeviceSettings(OathDeviceSettings deviceSettings,
+                                   AMIdentity identity,
+                                   List<String> recoveryCodes) throws NodeProcessException {
+        try {
+            deviceSettings.setRecoveryCodes(recoveryCodes);
+            deviceProfileManager.saveDeviceProfile(identity.getName(), realm.toString(), deviceSettings);
         } catch (DevicePersistenceException e) {
             throw new NodeProcessException("Unable to store device profile", e);
         }

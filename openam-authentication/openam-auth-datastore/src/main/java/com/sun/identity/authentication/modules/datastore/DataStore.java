@@ -24,7 +24,7 @@
  *
  * $Id: DataStore.java,v 1.4 2008/06/25 05:41:56 qcheng Exp $
  *
- * Portions Copyrighted 2011-2019 ForgeRock AS.
+ * Portions Copyrighted 2011-2022 ForgeRock AS.
  */
 package com.sun.identity.authentication.modules.datastore;
 
@@ -48,8 +48,8 @@ import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.InvalidPasswordException;
 import com.sun.identity.authentication.spi.UserNamePasswordValidationException;
 import com.sun.identity.authentication.util.ISAuthConstants;
-import com.sun.identity.idm.AMIdentityRepository;
-import com.sun.identity.idm.IdRepoErrorCode;
+import org.forgerock.am.identity.persistence.IdentityStore;
+import org.forgerock.am.identity.application.IdRepoErrorCode;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.sm.ServiceConfig;
@@ -139,9 +139,8 @@ public class DataStore extends AMLoginModule {
                 validateUserName(userName, CollectionHelper.getMapAttr(
                         currentConfig, INVALID_CHARS));
 
-                AMIdentityRepository idrepo = getAMIdentityRepository(
-                    getRequestOrg());
-                boolean success = idrepo.authenticate(idCallbacks);
+                IdentityStore identityStore = getIdentityStore(getRequestOrg());
+                boolean success = identityStore.authenticate(idCallbacks);
                 if (success) {
                     retVal=ISAuthConstants.LOGIN_SUCCEED;
                     validatedUserID = userName;

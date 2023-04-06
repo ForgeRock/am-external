@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.service.datastore;
@@ -22,7 +22,7 @@ import com.iplanet.am.util.SystemProperties;
 import org.forgerock.openam.ldap.LDAPURL;
 import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.openam.services.datastore.DataStoreId;
-import org.forgerock.openam.sm.ConnectionConfig;
+import org.forgerock.openam.ldap.ConnectionConfig;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.Reject;
 

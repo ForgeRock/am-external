@@ -24,7 +24,7 @@
  *
  * $Id: ECPIDPFinder.java,v 1.2 2008/06/25 05:47:51 qcheng Exp $
  *
- * Portions Copyrighted 2018 ForgeRock AS.
+ * Portions Copyrighted 2018-2022 ForgeRock AS.
  *
  */
 
@@ -35,6 +35,8 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.forgerock.openam.saml2.plugins.IDPFinder;
 
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
@@ -48,7 +50,7 @@ import com.sun.identity.saml2.protocol.AuthnRequest;
  * preferred Identity Providers to be placed in the child element "IDPList" of
  * ECP Request element.
  */ 
-public class ECPIDPFinder implements SAML2IDPFinder {
+public class ECPIDPFinder implements IDPFinder {
 
     /**
      * Returns a list of preferred IDP providerID's.

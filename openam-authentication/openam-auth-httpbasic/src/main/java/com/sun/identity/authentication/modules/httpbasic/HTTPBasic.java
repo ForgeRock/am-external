@@ -24,7 +24,7 @@
  *
  * $Id: HTTPBasic.java,v 1.5 2009/06/19 17:54:14 ericow Exp $
  *
- * Portions Copyrighted 2011-2020 ForgeRock AS.
+ * Portions Copyrighted 2011-2023 ForgeRock AS.
  */
 package com.sun.identity.authentication.modules.httpbasic;
 
@@ -42,6 +42,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 
+import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.config.AMAuthenticationInstance;
 import com.sun.identity.authentication.config.AMAuthenticationManager;
+import com.sun.identity.authentication.config.AMAuthenticationManagerFactory;
 import com.sun.identity.authentication.service.AuthD;
 import com.sun.identity.authentication.spi.AMLoginModule;
 import com.sun.identity.authentication.spi.AuthLoginException;
@@ -63,11 +65,12 @@ import com.sun.identity.shared.encode.Base64;
  * HTTP Basic login module.
  */
 public class HTTPBasic extends AMLoginModule {
-    
+
     private static final String amAuthHTTPBasic = "amAuthHTTPBasic";
     private static Logger debug = LoggerFactory.getLogger(HTTPBasic.class);
     private static String MODCONFIG =
     "iplanet-am-auth-http-basic-module-configured";
+    private final AMAuthenticationManagerFactory amAuthenticationManagerFactory;
     private Principal userPrincipal = null;
     private ResourceBundle bundle = null;
     private String validatedUserID;
@@ -79,6 +82,7 @@ public class HTTPBasic extends AMLoginModule {
     private AMLoginModule amLoginModule = null;
     
     public HTTPBasic() {
+        amAuthenticationManagerFactory = InjectorHolder.getInstance(AMAuthenticationManagerFactory.class);
     }
     
     public void init(Subject subject, Map sharedState, Map options) {
@@ -92,8 +96,7 @@ public class HTTPBasic extends AMLoginModule {
         try {
             SSOToken adminToken = (SSOToken)AccessController.doPrivileged(
                 AdminTokenAction.getInstance());
-            AMAuthenticationManager amAM = new
-                AMAuthenticationManager(adminToken, getRequestOrg());
+            AMAuthenticationManager amAM = amAuthenticationManagerFactory.create(adminToken, getRequestOrg());
             AMAuthenticationInstance amInstance =
                 amAM.getAuthenticationInstance(instanceName);
             currentConfig = amInstance.getAttributeValues();
@@ -157,7 +160,7 @@ public class HTTPBasic extends AMLoginModule {
             return null;
         }
     }
-    
+
     public void destroyModuleState() {
         validatedUserID = null;
         userPrincipal = null;
@@ -169,6 +172,11 @@ public class HTTPBasic extends AMLoginModule {
         userPassword = null;
         currentConfig = null;
         options = null;
+    }
+
+    @Override
+    public boolean isReturningPrincipalAsDn() {
+        return amLoginModule.isReturningPrincipalAsDn();
     }
     
     private int authenticate(String auth)

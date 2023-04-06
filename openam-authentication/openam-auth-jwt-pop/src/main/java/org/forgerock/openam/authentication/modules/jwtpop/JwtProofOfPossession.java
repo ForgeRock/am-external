@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.jwtpop;
@@ -36,6 +36,7 @@ import javax.security.auth.login.LoginException;
 import javax.xml.bind.DatatypeConverter;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jwe.EncryptionMethod;
@@ -58,7 +59,6 @@ import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.HttpCallback;
 import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdSearchControl;
 import com.sun.identity.idm.IdSearchResults;
@@ -277,13 +277,13 @@ public class JwtProofOfPossession extends AMLoginModule {
     @SuppressWarnings("unchecked")
     protected JWKSet getSubjectJwkSet() {
         if (this.subjectJwkSet == null) {
-            final AMIdentityRepository identityRepository = getAMIdentityRepository(getRequestOrg());
+            final IdentityStore identityStore = getIdentityStore(getRequestOrg());
             final IdSearchControl searchControl = new IdSearchControl();
             searchControl.setReturnAttributes(Collections.singleton(subjectJwkSetAttribute));
             searchControl.setMaxResults(1);
             searchControl.setAllReturnAttributes(false);
             try {
-                final IdSearchResults result = identityRepository.searchIdentities(IdType.USER, subject, searchControl);
+                final IdSearchResults result = identityStore.searchIdentitiesByUsername(IdType.USER, subject, searchControl);
                 if (result.getErrorCode() != IdSearchResults.SUCCESS) {
                     DEBUG.debug("JwtProofOfPossession.getSubjectJwkSet(): error result: {}", result.getErrorCode());
                     return new JWKSet();

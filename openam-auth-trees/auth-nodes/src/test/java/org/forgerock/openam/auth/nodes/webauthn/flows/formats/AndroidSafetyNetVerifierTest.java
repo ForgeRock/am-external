@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats;
 
@@ -55,7 +55,7 @@ import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.DecodingException
 import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.EncodingUtilities;
 import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorUtilities;
 import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.openam.oauth2.OAuth2ClientOriginSearcher;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -73,7 +73,7 @@ import co.nstant.in.cbor.CborException;
 public class AndroidSafetyNetVerifierTest {
 
     @Mock
-    IdentityUtils mockIdUtils;
+    OAuth2ClientOriginSearcher mockClientOriginHelper;
     @Mock
     TrustAnchorValidator.Factory factory;
     @Mock
@@ -86,7 +86,7 @@ public class AndroidSafetyNetVerifierTest {
     public void theSetUp() {
         initMocks(this);
         decoder = new AttestationDecoder(trustUtilities, factory, new AuthDataDecoder(),
-                new FlowUtilities(mockIdUtils), new NoneVerifier());
+                new FlowUtilities(mockClientOriginHelper), new NoneVerifier());
         logger = mock(Logger.class);
     }
 

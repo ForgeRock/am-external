@@ -24,13 +24,14 @@
  *
  * $Id: IDPAuthnContextMapper.java,v 1.6 2008/06/25 05:47:51 qcheng Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
 import java.util.List;
 
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.saml2.plugins.SAMLPlugin;
 
 import com.sun.identity.saml2.assertion.AuthnContext;
 import com.sun.identity.saml2.common.SAML2Exception;
@@ -46,7 +47,7 @@ import com.sun.identity.saml2.protocol.AuthnRequest;
  *
  */ 
 @SupportedAll
-public interface IDPAuthnContextMapper {
+public interface IDPAuthnContextMapper extends SAMLPlugin {
 
     /**
      * Returns an <code>IDPAuthnContextInfo</code> object.
@@ -61,10 +62,8 @@ public interface IDPAuthnContextMapper {
      * @return an <code>IDPAuthnContextInfo</code> object
      * @throws SAML2Exception if an error occurs.
      */
-    public IDPAuthnContextInfo getIDPAuthnContextInfo(
-            AuthnRequest authnRequest,
-            String idpEntityID,
-            String realm) throws SAML2Exception;
+    IDPAuthnContextInfo getIDPAuthnContextInfo(AuthnRequest authnRequest,
+            String idpEntityID, String realm) throws SAML2Exception;
 
    /** 
     * Returns an <code>IDPAuthnContextInfo</code> object.
@@ -81,7 +80,7 @@ public interface IDPAuthnContextMapper {
     * @return an <code>IDPAuthnContextInfo</code> object
     * @throws SAML2Exception if an error occurs.
     */
-    default public IDPAuthnContextInfo getIDPAuthnContextInfo(
+    default IDPAuthnContextInfo getIDPAuthnContextInfo(
         AuthnRequest authnRequest,
         String idpEntityID,
         String realm,
@@ -102,9 +101,8 @@ public interface IDPAuthnContextMapper {
     * @return true if the specified AuthnContextClassRef matches a list of
     *     requested AuthnContextClassRef
     */
-    public boolean isAuthnContextMatching(List requestedACClassRefs,
-        String acClassRef, String comparison, String realm,
-        String idpEntityID);
+    boolean isAuthnContextMatching(List requestedACClassRefs, String acClassRef,
+            String comparison, String realm, String idpEntityID);
 
     /**
      * Returns <code>AuthnContext</code> that matches the authenticated level.
@@ -116,7 +114,5 @@ public interface IDPAuthnContextMapper {
      *  level.
      * @throws SAML2Exception if an error occurs.
      */
-    public AuthnContext getAuthnContextFromAuthLevel(
-        String authLevel, String realm, String idpEntityID)
-        throws SAML2Exception;
+    AuthnContext getAuthnContextFromAuthLevel(String authLevel, String realm, String idpEntityID) throws SAML2Exception;
 }

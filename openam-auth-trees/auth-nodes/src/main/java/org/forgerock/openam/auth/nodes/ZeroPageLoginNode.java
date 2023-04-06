@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -36,7 +36,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
@@ -100,19 +100,19 @@ public class ZeroPageLoginNode implements Node {
     }
 
     private final Config config;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final Logger logger = LoggerFactory.getLogger(ZeroPageLoginNode.class);
 
     /**
      * Create the node.
      * @param config The service config.
-     * @param identityUtils The identity utils implementation.
+     * @param identityService The identity service.
      * @throws NodeProcessException If the configuration was not valid.
      */
     @Inject
-    public ZeroPageLoginNode(@Assisted Config config, IdentityUtils identityUtils) throws NodeProcessException {
+    public ZeroPageLoginNode(@Assisted Config config, LegacyIdentityService identityService) {
         this.config = config;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
     }
 
     @Override
@@ -138,7 +138,7 @@ public class ZeroPageLoginNode implements Node {
         String userName = context.sharedState.get(USERNAME).asString();
         String realm = context.sharedState.get(REALM).asString();
         return goTo(true)
-                .withUniversalId(identityUtils.getUniversalId(userName, realm, IdType.USER))
+                .withUniversalId(identityService.getUniversalId(userName, realm, IdType.USER))
                 .replaceSharedState(sharedState).replaceTransientState(transientState).build();
     }
 

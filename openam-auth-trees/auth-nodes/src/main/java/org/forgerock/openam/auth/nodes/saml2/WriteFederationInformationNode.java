@@ -29,7 +29,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 
 import com.google.inject.Inject;
 import com.sun.identity.saml2.common.AccountUtils;
@@ -45,7 +45,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
 public class WriteFederationInformationNode extends SingleOutcomeNode {
 
     private final Saml2SsoResponseUtils ssoResponseUtils;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
 
     /**
      * Node configuration.
@@ -57,12 +57,13 @@ public class WriteFederationInformationNode extends SingleOutcomeNode {
      * Guice injected constructor.
      *
      * @param ssoResponseUtils SAML2 response utilities.
-     * @param identityUtils An instance of IdentityUtils.
+     * @param identityService An instance of IdentityService.
      */
     @Inject
-    public WriteFederationInformationNode(Saml2SsoResponseUtils ssoResponseUtils, IdentityUtils identityUtils) {
+    public WriteFederationInformationNode(Saml2SsoResponseUtils ssoResponseUtils,
+            LegacyIdentityService identityService) {
         this.ssoResponseUtils = ssoResponseUtils;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
     }
 
     @Override
@@ -85,7 +86,7 @@ public class WriteFederationInformationNode extends SingleOutcomeNode {
         String infoAttributeValue = attributes.get(infoAttribute).get(0).asString();
         NodeState nodeState = context.getStateFor(this);
         try {
-            Optional<String> universalId = context.universalId.or(() -> getUniversalId(nodeState, identityUtils));
+            Optional<String> universalId = context.universalId.or(() -> getUniversalId(nodeState, identityService));
             ssoResponseUtils.linkAccounts(infoAttributeValue, universalId.orElse(null));
         } catch (SAML2Exception ex) {
             throw new NodeProcessException("Unable to link accounts", ex);

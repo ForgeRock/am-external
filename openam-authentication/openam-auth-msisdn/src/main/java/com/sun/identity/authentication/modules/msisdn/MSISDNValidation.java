@@ -24,7 +24,7 @@
  *
  * $Id: MSISDNValidation.java,v 1.3 2008/06/25 05:41:59 qcheng Exp $
  *
- * Portions Copyrighted 2011-2019 ForgeRock AS.
+ * Portions Copyrighted 2011-2023 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.msisdn;
@@ -233,5 +233,9 @@ public class MSISDNValidation {
         } catch (Exception e) {
             throw new AuthLoginException(e);
         }
+    }
+
+    public boolean isReturnUserDN() {
+        return Boolean.parseBoolean(returnUserDN);
     }
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.cose;
 
@@ -32,7 +32,11 @@ public enum CoseCurve {
     /**
      * the p521 curve.
      */
-    P521("P-521", 3, "prime521v1");
+    P521("P-521", 3, "prime521v1"),
+    /**
+     * the ed25519 curve.
+     */
+    ED25519("Ed25519", 6, "ed25519");
 
     private String name;
     private int coseNumber;

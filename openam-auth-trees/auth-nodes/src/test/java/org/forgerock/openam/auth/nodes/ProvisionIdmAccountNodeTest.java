@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -50,7 +50,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
@@ -80,7 +80,7 @@ public class ProvisionIdmAccountNodeTest {
     @Mock private ClientTokenJwtGenerator clientTokenJwtGenerator;
     @Mock private IdmIntegrationConfig configProvider;
     @Mock private IdmIntegrationConfig.GlobalConfig idmConfig;
-    @Mock private IdentityUtils identityUtils;
+    @Mock private LegacyIdentityService identityService;
 
     private JsonValue initialSharedState;
     private JsonValue transientSharedState;
@@ -115,7 +115,7 @@ public class ProvisionIdmAccountNodeTest {
             when("valid configuration is passed", () -> {
                 beforeEach(() -> {
                     node = new ProvisionIdmAccountNode(config,
-                            realm, authModuleHelper, clientTokenJwtGenerator, configProvider, identityUtils);
+                            realm, authModuleHelper, clientTokenJwtGenerator, configProvider, identityService);
                     initialSharedState = json(object(field("content", "initial")));
                     transientSharedState = json(object(field("content", "initial")));
 
@@ -133,7 +133,7 @@ public class ProvisionIdmAccountNodeTest {
             when("resuming from a callout to IDM", () -> {
                 beforeEach(() -> {
                     node = new ProvisionIdmAccountNode(config,
-                            realm, authModuleHelper, clientTokenJwtGenerator, configProvider, identityUtils);
+                            realm, authModuleHelper, clientTokenJwtGenerator, configProvider, identityService);
                     initialSharedState = json(object(field("userInfo", getUserInfo()),
                             field(REALM, realm.asPath()),
                             field(ProvisionIdmAccountNode.IDM_FLOW_INITIATED_KEY, true)));
@@ -151,7 +151,7 @@ public class ProvisionIdmAccountNodeTest {
                     given(config.accountProviderClass())
                             .willReturn("org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper");
                     node = new ProvisionIdmAccountNode(config,
-                            realm, authModuleHelper, clientTokenJwtGenerator, configProvider, identityUtils);
+                            realm, authModuleHelper, clientTokenJwtGenerator, configProvider, identityService);
                     initialSharedState = json(object(field("userInfo", getUserInfo()),
                             field(REALM, realm),
                             field(ProvisionIdmAccountNode.IDM_FLOW_INITIATED_KEY, Boolean.TRUE)));

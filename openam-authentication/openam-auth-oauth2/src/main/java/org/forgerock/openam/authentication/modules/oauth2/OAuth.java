@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2020 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -23,6 +23,8 @@
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
  * Portions Copyrighted 2015 Nomura Research Institute, Ltd.
+ *
+ * Portions Copyrighted 2022 Forgerock AS.
  */
 package org.forgerock.openam.authentication.modules.oauth2;
 
@@ -78,19 +80,19 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
+import org.forgerock.am.cts.CTSPersistentStore;
+import org.forgerock.am.cts.api.tokens.CoreTokenField;
+import org.forgerock.am.cts.api.tokens.Token;
 import org.forgerock.am.cts.api.tokens.TokenFactory;
+import org.forgerock.am.cts.api.tokens.TokenType;
+import org.forgerock.am.cts.exceptions.CoreTokenException;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.authentication.modules.common.mapping.AttributeMapper;
 import org.forgerock.openam.authentication.modules.oidc.JwtHandler;
 import org.forgerock.openam.authentication.modules.oidc.JwtHandlerConfig;
-import org.forgerock.am.cts.CTSPersistentStore;
-import org.forgerock.am.cts.api.tokens.Token;
-import org.forgerock.am.cts.exceptions.CoreTokenException;
 import org.forgerock.openam.oauth2.OAuth2Constants;
-import org.forgerock.am.cts.api.tokens.CoreTokenField;
-import org.forgerock.am.cts.api.tokens.TokenType;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.TimeUtils;
@@ -145,6 +147,7 @@ public class OAuth extends AMLoginModule {
     /* default idle time for invalid sessions */
     private static final long maxDefaultIdleTime =
             SystemProperties.getAsLong("com.iplanet.am.session.invalidsessionmaxtime", 3);
+    private EmailGatewayLookup emailGatewayLookup;
 
     public OAuth() {
         OAuthUtil.debugMessage("OAuth()");
@@ -152,11 +155,13 @@ public class OAuth extends AMLoginModule {
         tokenFactory = InjectorHolder.getInstance(TokenFactory.class);
     }
 
+
     public void init(Subject subject, Map sharedState, Map config) {
         this.sharedState = sharedState;
         this.config = new OAuthConf(config);
         this.jwtHandlerConfig = new JwtHandlerConfig(config);
         bundle = amCache.getResBundle(BUNDLE_NAME, getLoginLocale());
+        emailGatewayLookup = InjectorHolder.getInstance(EmailGatewayLookup.class);
     }
 
     
@@ -535,12 +540,13 @@ public class OAuth extends AMLoginModule {
                     + "the email id to send mail to could not be found in the profile response");
         }
         OAuthUtil.debugMessage("Mail found = " + mail);
+        EmailGateway gateway = OAuthUtil.getEmailGateway(this.config.getSMTPConfig(), emailGatewayLookup);
         try {
             OAuthUtil.sendEmail(config.getEmailFrom(), mail, activationCode,
-                    config.getSMTPConfig(), bundle, config.getProxyURL());
+                    config.getSMTPConfig(), bundle, config.getProxyURL(), gateway);
         } catch (NoEmailSentException ex) {
             OAuthUtil.debugError("No mail sent due to error", ex);
-            throw new AuthLoginException("Aborting authentication: error sending emai");
+            throw new AuthLoginException("Aborting authentication: error sending email");
         }
     }
 
@@ -678,9 +684,7 @@ public class OAuth extends AMLoginModule {
             }
             attributes.put("userPassword", CollectionUtils.asSet(userPassword));
             attributes.put("inetuserstatus", CollectionUtils.asSet("Active"));
-            AMIdentity userIdentity =
-                    accountProvider.provisionUser(getAMIdentityRepository(realm),
-                    attributes);
+            AMIdentity userIdentity = accountProvider.provisionUser(getIdentityStore(realm), attributes);
             if (userIdentity != null) {
                 return userIdentity.getName().trim();
             } else {

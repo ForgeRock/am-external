@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.adaptive;
@@ -35,7 +35,6 @@ import com.sun.identity.authentication.service.AuthUtils;
 import com.sun.identity.authentication.spi.AMPostAuthProcessInterface;
 import com.sun.identity.authentication.spi.AuthenticationException;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.IdUtils;
 import com.sun.identity.security.AdminTokenAction;
 import com.sun.identity.shared.Constants;
 import com.sun.identity.shared.encode.CookieUtils;
@@ -69,7 +68,7 @@ public class AdaptivePostAuthenticationPlugin implements AMPostAuthProcessInterf
 
                         // Now we save the attribs, since we can do it in one shot
                         try {
-                            AMIdentity id = IdUtils.getIdentity(
+                            AMIdentity id = new AMIdentity(
                                     AccessController.doPrivileged(AdminTokenAction.getInstance()),
                                     token.getProperty(Constants.UNIVERSAL_IDENTIFIER));
                             id.setAttributes(Collections.singletonMap(name, Collections.singleton(value)));

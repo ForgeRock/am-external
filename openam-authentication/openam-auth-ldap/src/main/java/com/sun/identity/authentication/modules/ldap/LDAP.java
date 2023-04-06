@@ -24,7 +24,7 @@
  *
  * $Id: LDAP.java,v 1.17 2010/01/25 22:09:16 qcheng Exp $
  *
- * Portions Copyrighted 2010-2021 ForgeRock AS.
+ * Portions Copyrighted 2010-2023 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.ldap;
@@ -275,6 +275,7 @@ public class LDAP extends AMLoginModule {
                         + "\nheartBeatInterval-> " + heartBeatInterval
                         + "\nheartBeatTimeUnit-> " + heartBeatTimeUnit
                         + "\noperationTimeout-> " + operationTimeout
+                        + "\nreturnUserAsDN-> " + returnUserDN
                         + "\nPattern : " + regEx);
             }
             return true;
@@ -282,6 +283,11 @@ public class LDAP extends AMLoginModule {
             debug.error("Init Exception", ex);
             throw new AuthLoginException(AM_AUTH, "LDAPex", null, ex);
         }
+    }
+
+    @Override
+    public boolean isReturningPrincipalAsDn() {
+        return Boolean.parseBoolean(CollectionHelper.getMapAttr(currentConfig, ISAuthConstants.LDAP_RETURNUSERDN, "true"));
     }
 
     public int process(Callback[] callbacks, int state)
@@ -479,7 +485,6 @@ public class LDAP extends AMLoginModule {
         userCreationAttrs = null;
         userAttrMap = null;
         sharedState = null;
-        currentConfig = null;
     }
 
     private void processLoginScreen(ModuleState newState) throws AuthLoginException {

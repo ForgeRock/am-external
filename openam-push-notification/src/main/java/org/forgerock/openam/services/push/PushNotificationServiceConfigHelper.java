@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 package org.forgerock.openam.services.push;
 
@@ -25,7 +25,7 @@ public class PushNotificationServiceConfigHelper {
     /**
      * Produce a new PushNotificationServiceConfigHelper for the provided ServiceConfig.
      *
-     * //@param serviceConfig The realm-specific service config to read.
+     * @param serviceConfig The realm-specific service config to read.
      */
     public PushNotificationServiceConfigHelper(PushNotificationServiceConfig.Realm serviceConfig) {
         this.serviceConfig = serviceConfig;

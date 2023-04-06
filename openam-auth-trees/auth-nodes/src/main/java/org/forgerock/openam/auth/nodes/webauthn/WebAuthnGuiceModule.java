@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -22,7 +22,9 @@ import java.security.cert.CertificateFactory;
 
 import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
 
+import com.google.auto.service.AutoService;
 import com.google.inject.AbstractModule;
+import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Named;
@@ -30,6 +32,7 @@ import com.google.inject.name.Named;
 /**
  * Guice module for webauthn injections.
  */
+@AutoService(Module.class)
 public class WebAuthnGuiceModule extends AbstractModule {
 
     @Override

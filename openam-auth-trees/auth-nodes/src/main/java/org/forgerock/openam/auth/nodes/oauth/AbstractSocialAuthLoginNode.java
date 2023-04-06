@@ -30,34 +30,38 @@ import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.ATTRIBUTE
 import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.USER_INFO_SHARED_STATE_KEY;
 import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.USER_NAMES_SHARED_STATE_KEY;
 
+import com.google.inject.assistedinject.Assisted;
 import com.google.common.collect.ImmutableList;
 import com.iplanet.am.util.SystemProperties;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.RedirectCallback;
 import com.sun.identity.shared.Constants;
 import java.net.URI;
-import java.util.Map;
 import java.util.HashMap;
-import java.util.Optional;
-import java.util.Set;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.UUID;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
-import java.util.ResourceBundle;
 import javax.security.auth.callback.Callback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.oauth.DataStore;
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthException;
 import org.forgerock.oauth.UserInfo;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.InputState;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.Node;
-import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,13 +78,20 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
     private static final String MIX_UP_MITIGATION_PARAM_CLIENT_ID = "client_id";
     private static final String MIX_UP_MITIGATION_PARAM_ISSUER = "iss";
     private static final String MAIL_KEY_MAPPING = "mail";
+    private static final String REDIRECT_STATE_KEY_PREFIX = "redirectRequestSentForNode-";
 
     private final AbstractSocialAuthLoginNode.Config config;
+    private final UUID nodeId;
     private final ProfileNormalizer profileNormalizer;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final Logger logger = LoggerFactory.getLogger(AbstractSocialAuthLoginNode.class);
     private final OAuthClient client;
     private final SocialOAuth2Helper authModuleHelper;
+    /*
+     * Key used to track knowledge of whether the redirect request to the Social Provider has already been sent.
+     * i.e. whether the next request is a first (send redirect) or second (perform post social authn processing) visit.
+     */
+    private final String redirectRequestSentForNodeKey;
 
     /**
      * The interface Config.
@@ -157,26 +168,38 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
      * @param authModuleHelper a social oauth2 helper.
      * @param client The oauth client to use. That's the client responsible to deal with the oauth workflow.
      * @param profileNormalizer User profile normaliser
-     * @param identityUtils The identity utils implementation.
+     * @param identityService The identity service.
+     * @param nodeId The UUID of the current authentication tree node.
      */
     public AbstractSocialAuthLoginNode(AbstractSocialAuthLoginNode.Config config, SocialOAuth2Helper authModuleHelper,
-            OAuthClient client, ProfileNormalizer profileNormalizer, IdentityUtils identityUtils) {
+            OAuthClient client, ProfileNormalizer profileNormalizer, LegacyIdentityService identityService,
+            @Assisted UUID nodeId) {
         this.config = config;
         this.authModuleHelper = authModuleHelper;
         this.client = client;
         this.profileNormalizer = profileNormalizer;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
+        this.nodeId = nodeId;
+        this.redirectRequestSentForNodeKey = REDIRECT_STATE_KEY_PREFIX + this.nodeId;
     }
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("Social auth node started");
 
-        if (context.request.parameters.containsKey("code")) {
+        NodeState nodeState = context.getStateFor(this);
+        JsonValue redirectRequestSent = nodeState.get(redirectRequestSentForNodeKey);
+        boolean hasRedirectRequestBeenSent = redirectRequestSent != null && redirectRequestSent.asBoolean();
+
+        // Determine if this is the first (before redirect to Social Provider) or second visit (after Social Provider
+        // login). The parameters in the request will not help determine that so check stored tree state.
+        if (context.request.parameters.containsKey("code") && hasRedirectRequestBeenSent) {
             logger.debug("the request parameters contains a code");
+            nodeState.remove(redirectRequestSentForNodeKey);
             return processOAuthTokenState(context);
         }
 
+        nodeState.putShared(redirectRequestSentForNodeKey, true);
         DataStore dataStore = SharedStateAdaptor.toDatastore(json(context.sharedState));
         Callback callback = prepareRedirectCallback(dataStore);
         return send(callback)
@@ -281,7 +304,7 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
 
             String realm = context.sharedState.get(REALM).asString();
             action = goTo(SocialAuthOutcome.ACCOUNT_EXISTS.name())
-                    .withUniversalId(identityUtils.getUniversalId(user.get(), realm, USER))
+                    .withUniversalId(identityService.getUniversalId(user.get(), realm, USER))
                     .replaceSharedState(context.sharedState.add(USERNAME, user.get()));
         } else {
             logger.debug("The user doesn't have an account");
@@ -357,6 +380,14 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
         } catch (OAuthException e) {
             throw new NodeProcessException("Unable to get UserInfo details from provider", e);
         }
+    }
+
+    @Override
+    public InputState[] getInputs() {
+        return new InputState[] {
+            new InputState(REALM),
+            new InputState(redirectRequestSentForNodeKey)
+        };
     }
 
     /**

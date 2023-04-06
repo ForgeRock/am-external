@@ -25,7 +25,7 @@ import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.oauth2.OAuth2ScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION;
+import static org.forgerock.openam.social.idp.SocialIdPScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE;
 import static org.forgerock.openam.auth.nodes.SocialProviderHandlerNode.ALIAS_LIST;
@@ -34,6 +34,7 @@ import static org.forgerock.openam.integration.idm.IdmIntegrationService.IDPS;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.SELECTED_IDP;
 import static org.forgerock.util.promise.Promises.newResultPromise;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
@@ -47,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.inject.Provider;
 import javax.script.ScriptException;
@@ -67,19 +69,17 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.authentication.callbacks.IdPCallback;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.http.CloseableHttpClientHandler;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
-import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.social.idp.AppleClientConfig;
-import org.forgerock.openam.social.idp.RealmBasedHttpClientHandlerFactory;
-import org.forgerock.openam.social.idp.SocialIdpConfigMapper;
 import org.forgerock.openam.social.idp.OAuth2ClientConfig;
 import org.forgerock.openam.social.idp.OpenIDConnectClientConfig;
+import org.forgerock.openam.social.idp.RevocationOption;
 import org.forgerock.openam.social.idp.SocialIdentityProviders;
-import org.forgerock.util.Options;
+import org.forgerock.openam.social.idp.SocialIdpConfigMapper;
 import org.forgerock.util.promise.Promises;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -90,7 +90,6 @@ import org.testng.annotations.Test;
 
 import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.authentication.spi.RedirectCallback;
-import com.sun.identity.common.ShutdownManager;
 
 public class SocialProviderHandlerNodeTest {
     private static final String PROVIDER_REDIRECT = "http://provider/redirect";
@@ -105,7 +104,7 @@ public class SocialProviderHandlerNodeTest {
     private SocialIdentityProviders providerConfigStore;
 
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
 
     @Mock
     private Realm realm;
@@ -136,9 +135,6 @@ public class SocialProviderHandlerNodeTest {
 
     @Mock
     private SocialIdpConfigMapper socialIdpConfigMapper;
-
-    @Mock
-    RealmBasedHttpClientHandlerFactory httpClientHandlerFactory;
 
     @Mock
     Handler defaultHandler;
@@ -202,10 +198,8 @@ public class SocialProviderHandlerNodeTest {
         when(sessionService.getSession(any())).thenReturn(null);
         when(sessionServiceProvider.get()).thenReturn(sessionService);
         when(nativeJavaObject.unwrap()).thenReturn(json(object()));
-        when(scriptEvaluator.evaluateScript(any(), any())).thenReturn(nativeJavaObject);
-        when(httpClientHandlerFactory.create(any()))
-                .thenReturn(new CloseableHttpClientHandler(ShutdownManager.getInstance(), Options.defaultOptions()));
-        node = new SocialProviderHandlerNode(config, authModuleHelper, providerConfigStore, identityUtils, realm,
+        when(scriptEvaluator.evaluateScript(any(), any(), eq(realm))).thenReturn(nativeJavaObject);
+        node = new SocialProviderHandlerNode(config, authModuleHelper, providerConfigStore, identityService, realm,
                 __ -> scriptEvaluator, sessionServiceProvider, idmIntegrationService);
     }
 
@@ -282,7 +276,7 @@ public class SocialProviderHandlerNodeTest {
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void shouldThrowExceptionIfScriptExecutionFailed() throws Exception {
-        when(scriptEvaluator.evaluateScript(any(), any())).thenThrow(new ScriptException("Failed"));
+        when(scriptEvaluator.evaluateScript(any(), any(), eq(realm))).thenThrow(new ScriptException("Failed"));
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
         TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
                 json(object(field(SELECTED_IDP, PROVIDER_NAME))),
@@ -307,7 +301,7 @@ public class SocialProviderHandlerNodeTest {
                 field("attribute1", "value1")
         ));
         when(nativeJavaObject.unwrap()).thenReturn(objectData);
-        when(scriptEvaluator.evaluateScript(any(), any())).thenReturn(nativeJavaObject);
+        when(scriptEvaluator.evaluateScript(any(), any(), eq(realm))).thenReturn(nativeJavaObject);
         Script script = Script.builder().setId("1")
                 .setLanguage(ScriptingLanguage.JAVASCRIPT).setName("test")
                 .setScript("return {'attribute1':'value1'};")
@@ -338,7 +332,7 @@ public class SocialProviderHandlerNodeTest {
                 field("userName", "newValue")
         ));
         when(nativeJavaObject.unwrap()).thenReturn(objectData);
-        when(scriptEvaluator.evaluateScript(any(), any())).thenReturn(nativeJavaObject);
+        when(scriptEvaluator.evaluateScript(any(), any(), eq(realm))).thenReturn(nativeJavaObject);
         Script script = Script.builder().setId("1")
                 .setLanguage(ScriptingLanguage.JAVASCRIPT).setName("test")
                 .setScript("return {'attribute1':'value1', 'userName':'newValue'};")
@@ -690,6 +684,11 @@ public class SocialProviderHandlerNodeTest {
         }
 
         @Override
+        public Set<RevocationOption> revocationCheckOptions() {
+            return Set.of();
+        }
+
+        @Override
         public String clientId() {
             return "test";
         }
@@ -775,6 +774,11 @@ public class SocialProviderHandlerNodeTest {
         @Override
         public String claims() {
             return "";
+        }
+
+        @Override
+        public Set<RevocationOption> revocationCheckOptions() {
+            return Set.of(RevocationOption.DISABLE_REVOCATION_CHECKING);
         }
     }
 

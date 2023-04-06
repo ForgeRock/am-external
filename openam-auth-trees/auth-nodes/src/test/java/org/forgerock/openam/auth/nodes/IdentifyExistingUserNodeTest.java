@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -44,7 +44,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 
 import org.mockito.Mock;
@@ -64,7 +64,7 @@ public class IdentifyExistingUserNodeTest {
     private IdmIntegrationService idmIntegrationService;
 
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
 
     private IdentifyExistingUserNode identifyExistingUserNode;
 
@@ -148,7 +148,7 @@ public class IdentifyExistingUserNodeTest {
     @BeforeMethod
     public void setUp() throws Exception {
         initMocks(this);
-        identifyExistingUserNode = new IdentifyExistingUserNode(config, realm, identityUtils, idmIntegrationService);
+        identifyExistingUserNode = new IdentifyExistingUserNode(config, realm, identityService, idmIntegrationService);
 
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
         when(config.identifier()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);

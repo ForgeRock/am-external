@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -39,17 +39,17 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 
 import com.google.inject.Provider;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdType;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -62,10 +62,10 @@ public class DataStoreDecisionNodeTest {
     CoreWrapper coreWrapper;
 
     @Mock
-    AMIdentityRepository identityRepository;
+    IdentityStore identityStore;
 
     @Mock
-    IdentityUtils identityUtils;
+    LegacyIdentityService identityService;
 
     @Mock
     Provider<PrivilegedAction<SSOToken>> adminTokenActionProvider;
@@ -84,9 +84,9 @@ public class DataStoreDecisionNodeTest {
         node = null;
         initMocks(this);
         given(coreWrapper.convertRealmPathToRealmDn(any())).willReturn("org=name");
-        given(coreWrapper.getAMIdentityRepository(any())).willReturn(identityRepository);
+        given(coreWrapper.getIdentityRepository(any())).willReturn(identityStore);
         given(amIdentity.isActive()).willReturn(true);
-        given(identityUtils.getAmIdentity(any(SSOToken.class), any(String.class), eq(IdType.USER), any()))
+        given(identityService.getAmIdentity(any(SSOToken.class), any(String.class), eq(IdType.USER), any()))
                 .willReturn(amIdentity);
         given(adminTokenActionProvider.get()).willReturn(() -> adminToken);
     }
@@ -94,7 +94,7 @@ public class DataStoreDecisionNodeTest {
     @Test
     public void testProcessPassesUsernameAndPasswordToIdentityRepository() throws Exception {
         // Given
-        given(identityRepository.authenticate(any(Callback[].class))).willReturn(true);
+        given(identityStore.authenticate(any(Callback[].class))).willReturn(true);
         JsonValue sharedState = json(object(field(USERNAME, "bob")));
         JsonValue transientState = json(object(field(PASSWORD, "secret")));
 
@@ -103,7 +103,7 @@ public class DataStoreDecisionNodeTest {
 
         // Then
         ArgumentCaptor<Callback[]> callbacksCaptor = ArgumentCaptor.forClass(Callback[].class);
-        verify(identityRepository).authenticate(eq(IdType.USER), callbacksCaptor.capture());
+        verify(identityStore).authenticate(eq(IdType.USER), callbacksCaptor.capture());
         Callback[] callbacks = callbacksCaptor.getValue();
         assertThat(callbacks.length).isEqualTo(2);
         assertThat(callbacks[0]).isInstanceOf(NameCallback.class);
@@ -115,7 +115,7 @@ public class DataStoreDecisionNodeTest {
     @Test
     public void testProcessWithNoCallbacksReturnsTrueIfAuthenticationIsSuccessful() throws Exception {
         // Given
-        given(identityRepository.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(true);
+        given(identityStore.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(true);
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object(field(PASSWORD, "secret")));
 
@@ -133,7 +133,7 @@ public class DataStoreDecisionNodeTest {
     @Test
     public void testProcessWithNoCallbacksReturnsFalseIfAuthenticationIsNotSuccessful() throws Exception {
         // Given
-        given(identityRepository.authenticate(any(Callback[].class))).willReturn(false);
+        given(identityStore.authenticate(any(Callback[].class))).willReturn(false);
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object(field(PASSWORD, "secret")));
 

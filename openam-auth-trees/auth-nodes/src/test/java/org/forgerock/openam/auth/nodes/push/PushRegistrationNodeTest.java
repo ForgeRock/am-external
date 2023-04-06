@@ -66,13 +66,15 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.helpers.LocalizationHelper;
+import org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode.UserAttributeToAccountNameMapping;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
+import org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationUtilities;
 import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.services.push.DefaultMessageTypes;
 import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.MessageIdFactory;
@@ -94,7 +96,7 @@ import com.sun.identity.idm.AMIdentity;
 public class PushRegistrationNodeTest {
 
     @Mock
-    PushRegistrationNode.Config config;
+    PushRegistrationConfig config;
     @Mock
     private Realm realm;
     @Mock
@@ -114,20 +116,23 @@ public class PushRegistrationNodeTest {
     @Mock
     AMIdentity userIdentity;
     @Mock
-    IdentityUtils identityUtils;
+    LegacyIdentityService identityService;
     @Mock
     private LocalizationHelper localizationHelper;
+    @Mock
+    private MultiFactorRegistrationUtilities multiFactorRegistrationUtilities;
 
+    PushRegistrationHelper pushRegistrationHelper;
     PushRegistrationNode node;
 
     static final String MESSAGE = "Scan the QR code image below with the ForgeRock Authenticator app to "
             + "register your device with your login";
 
-    static final Map<Locale, String> MAP_SCAN_MESSAGE = new HashMap<>() {{
-        put(Locale.CANADA, MESSAGE);
-    }};
-
-    static final Locale DEFAULT_LOCALE = Locale.CANADA;
+    static final Map<Locale, String> MAP_SCAN_MESSAGE = new HashMap<>() {
+        {
+            put(Locale.CANADA, MESSAGE);
+        }
+    };
 
     @BeforeMethod
     public void setup() {
@@ -135,7 +140,6 @@ public class PushRegistrationNodeTest {
 
         when(realm.asPath()).thenReturn("/");
         when(deviceProfileHelper.isDeviceSettingsStored(any())).thenReturn(false);
-        when(coreWrapper.getIdentity(anyString(), (Realm) any())).thenReturn(userIdentity);
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
@@ -178,15 +182,17 @@ public class PushRegistrationNodeTest {
         given(deviceProfileHelper.encodeDeviceSettings(any()))
                 .willReturn("ekd1j5Rr2A8DDeg3ekwZVD06bVJCpAHoR9ab");
         doReturn(Collections.emptyMap())
-                .when(node).buildURIParameters(any(), anyString(), anyString(), any());
+                .when(pushRegistrationHelper).buildURIParameters(any(), anyString(), anyString(), any(), any());
         doReturn(mock(ScriptTextOutputCallback.class))
-                .when(node).createQRCodeCallback(any(), any());
+                .when(pushRegistrationHelper).createQRCodeCallback(any(), any(), anyString(), anyString());
         doReturn(mock(HiddenValueCallback.class))
-                .when(node).createHiddenCallback(any(), any());
+                .when(pushRegistrationHelper).createHiddenCallback(any(), any(), anyString(), anyString());
+        doReturn(mock(PollingWaitCallback.class))
+                .when(pushRegistrationHelper).createPollingWaitCallback();
         doReturn(userIdentity)
                 .when(node).getIdentity(any());
         doNothing()
-                .when(node).updateMessageDispatcher(any(), any(), any());
+                .when(pushRegistrationHelper).updateMessageDispatcher(any(), any(), any());
 
         // When
         Action result = node.process(getContext(sharedState));
@@ -217,7 +223,7 @@ public class PushRegistrationNodeTest {
         given(messageId.getMessageType()).willReturn(DefaultMessageTypes.REGISTER);
         given(pushNotificationService.getMessageHandlers(any())).willReturn(
                 ImmutableMap.of(DefaultMessageTypes.REGISTER, messageHandler));
-        doReturn(null).when(node).getMessageState(any());
+        doReturn(null).when(pushRegistrationHelper).getMessageState(any());
         doReturn(userIdentity)
                 .when(node).getIdentity(any());
 
@@ -245,9 +251,9 @@ public class PushRegistrationNodeTest {
         given(deviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(true)))
                 .willReturn(Arrays.asList("z0WKEw0Wc8", "Ios4LnA2Qn"));
         doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
-        doReturn(MessageState.SUCCESS).when(node).getMessageState(any());
-        doReturn(json(object())).when(node).deleteMessage(any());
-        doNothing().when(node).setUserToNotSkippable(any(), anyString());
+        doReturn(MessageState.SUCCESS).when(pushRegistrationHelper).getMessageState(any());
+        doReturn(json(object())).when(pushRegistrationHelper).deleteMessage(any());
+        doNothing().when(pushRegistrationHelper).setUserToNotSkippable(any());
 
         // When
         Action result = node.process(
@@ -276,9 +282,9 @@ public class PushRegistrationNodeTest {
         given(deviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(false)))
                 .willReturn(Collections.emptyList());
         doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
-        doReturn(MessageState.SUCCESS).when(node).getMessageState(any());
-        doReturn(json(object())).when(node).deleteMessage(any());
-        doNothing().when(node).setUserToNotSkippable(any(), anyString());
+        doReturn(MessageState.SUCCESS).when(pushRegistrationHelper).getMessageState(any());
+        doReturn(json(object())).when(pushRegistrationHelper).deleteMessage(any());
+        doNothing().when(pushRegistrationHelper).setUserToNotSkippable(any());
 
         // When
         Action result = node.process(
@@ -302,8 +308,8 @@ public class PushRegistrationNodeTest {
         given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
                 .willReturn(getDeviceSettings());
         doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
-        doReturn(MessageState.DENIED).when(node).getMessageState(any());
-        doReturn(json(object())).when(node).deleteMessage(any());
+        doReturn(MessageState.DENIED).when(pushRegistrationHelper).getMessageState(any());
+        doReturn(json(object())).when(pushRegistrationHelper).deleteMessage(any());
 
         // When
         Action result = node.process(
@@ -329,17 +335,17 @@ public class PushRegistrationNodeTest {
         given(deviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(true)))
                 .willReturn(Collections.emptyList());
         doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
-        doReturn(MessageState.UNKNOWN).when(node).getMessageState(any());
-        doReturn(json(object())).when(node).deleteMessage(any());
-        doReturn(mock(MessageId.class)).when(node).getMessageId(any());
+        doReturn(MessageState.UNKNOWN).when(pushRegistrationHelper).getMessageState(any());
+        doReturn(json(object())).when(pushRegistrationHelper).deleteMessage(any());
+        doReturn(mock(MessageId.class)).when(pushRegistrationHelper).getMessageId(any());
         doReturn(Collections.emptyMap())
-                .when(node).buildURIParameters(any(), anyString(), anyString(), any());
-        doReturn(Collections.emptyMap())
-                .when(node).buildURIParameters(any(), anyString(), anyString(), any());
+                .when(pushRegistrationHelper).buildURIParameters(any(), anyString(), anyString(), any(), any());
         doReturn(mock(ScriptTextOutputCallback.class))
-                .when(node).createQRCodeCallback(any(), any());
+                .when(pushRegistrationHelper).createQRCodeCallback(any(), any(), anyString(), anyString());
         doReturn(mock(HiddenValueCallback.class))
-                .when(node).createHiddenCallback(any(), any());
+                .when(pushRegistrationHelper).createHiddenCallback(any(), any(), anyString(), anyString());
+        doReturn(mock(PollingWaitCallback.class))
+                .when(pushRegistrationHelper).createPollingWaitCallback();
 
         // When
         Action result = node.process(
@@ -396,7 +402,7 @@ public class PushRegistrationNodeTest {
 
     private void whenNodeConfigHasDefaultValues() {
         whenNodeConfigHasDefaultValues(DEFAULT_ISSUER,
-                PushRegistrationNode.UserAttributeToAccountNameMapping.USERNAME,
+                UserAttributeToAccountNameMapping.USERNAME,
                 DEFAULT_TIMEOUT,
                 DEFAULT_BG_COLOR,
                 "",
@@ -406,7 +412,7 @@ public class PushRegistrationNodeTest {
     private void whenNodeConfigHasDefaultValues(boolean generateRecoveryCodes) {
         whenNodeConfigHasDefaultValues(
                 DEFAULT_ISSUER,
-                PushRegistrationNode.UserAttributeToAccountNameMapping.USERNAME,
+                UserAttributeToAccountNameMapping.USERNAME,
                 DEFAULT_TIMEOUT,
                 DEFAULT_BG_COLOR,
                 "",
@@ -415,12 +421,12 @@ public class PushRegistrationNodeTest {
     }
 
     private void whenNodeConfigHasDefaultValues(String issuer,
-                                                PushRegistrationNode.UserAttributeToAccountNameMapping accountName,
+                                                UserAttributeToAccountNameMapping accountName,
                                                 int timeout,
                                                 String bgColor,
                                                 String imgUrl,
                                                 boolean generateRecoveryCodes) {
-        config = mock(PushRegistrationNode.Config.class);
+        config = mock(PushRegistrationConfig.class);
         given(config.issuer()).willReturn(issuer);
         given(config.accountName()).willReturn(accountName);
         given(config.timeout()).willReturn(timeout);
@@ -432,20 +438,33 @@ public class PushRegistrationNodeTest {
         localizationHelper = mock(LocalizationHelper.class);
         given(localizationHelper.getLocalizedMessage(any(), any(), any(), anyString())).willReturn(MESSAGE);
 
+        MultiFactorNodeDelegate multiFactorNodeDelegate = new MultiFactorNodeDelegate(
+                mock(AuthenticatorDeviceServiceFactory.class)
+        );
+
+        pushRegistrationHelper = spy(
+               new PushRegistrationHelper(
+                       realm,
+                       pushNotificationService,
+                       sessionCookies,
+                       messageIdFactory,
+                       deviceProfileHelper,
+                       multiFactorNodeDelegate,
+                       localizationHelper,
+                       multiFactorRegistrationUtilities)
+        );
+
         node = spy(
                 new PushRegistrationNode(
                         config,
                         realm,
                         coreWrapper,
-                        pushNotificationService,
-                        sessionCookies,
-                        messageIdFactory,
-                        deviceProfileHelper,
-                        new MultiFactorNodeDelegate(mock(AuthenticatorDeviceServiceFactory.class)),
-                        identityUtils,
-                        localizationHelper
+                        multiFactorNodeDelegate,
+                        identityService,
+                        pushRegistrationHelper
                 )
         );
+
     }
 
 }

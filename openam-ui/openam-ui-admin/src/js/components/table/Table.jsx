@@ -22,6 +22,11 @@ import React from "react";
 
 import RowSelection from "components/table/selection/RowSelection";
 
+import {
+    PLACEHOLDER_TYPES,
+    isPlaceholder
+} from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
+
 const Table = ({ keyField, onRowClick, onSelectedChange, options = {}, selectedItems, tableRef, ...restProps }) => {
     const handleSelect = (row, isSelected) => {
         const selected = isSelected
@@ -42,6 +47,33 @@ const Table = ({ keyField, onRowClick, onSelectedChange, options = {}, selectedI
         onSizePerPageChange: options.onSizePerPageList,
         onPageChange: options.onPageChange
     };
+
+    for (let i = 0; i < restProps.data.length; i++) {
+        const current = restProps.data[i];
+        const keys = Object.keys(current);
+        for (let j = 0; j < keys.length; j++) {
+            const current = restProps.data[i][keys[j]];
+            PLACEHOLDER_TYPES.forEach((type) => {
+                if (current && current[type]) {
+                    try {
+                        restProps.data[i][keys[j]] = current[type];
+                    } catch (error) {
+                        // just ignore
+                    }
+                }
+            });
+            if ((!keys[j].startsWith("_")) && (restProps.data[i][keys[j]])) {
+                try {
+                    if (isPlaceholder(restProps.data[i][keys[j]])) {
+                        restProps.data[i][keys[j]] = [restProps.data[i][keys[j]]];
+                    }
+                } catch (error) {
+                    // just ignore
+                }
+            }
+        }
+    }
+
     return (
         <BootstrapTable
             columns={ restProps.columns }

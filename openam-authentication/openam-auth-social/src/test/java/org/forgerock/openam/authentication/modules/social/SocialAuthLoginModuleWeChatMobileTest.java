@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -48,6 +48,8 @@ import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.UserInfo;
 import org.forgerock.openam.authentication.modules.common.AMLoginModuleBinder;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
+import org.forgerock.openam.authentication.modules.oauth2.EmailGateway;
+import org.forgerock.openam.authentication.modules.oauth2.EmailGatewayLookup;
 import org.forgerock.openam.authentication.modules.oidc.JwtHandlerConfig;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
@@ -116,6 +118,10 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     private IdmIntegrationConfig.GlobalConfig idmConfig;
     @Mock
     private Realm realm;
+    @Mock
+    private EmailGatewayLookup gatewayLookup;
+    @Mock
+    private EmailGateway emailGateway;
 
     @BeforeMethod
     public void setup() throws Exception {
@@ -138,6 +144,8 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         lenient().when(idmConfig.provisioningSigningAlgorithm()).thenReturn("HS256");
         lenient().when(idmConfig.provisioningEncryptionAlgorithm()).thenReturn("RSAES_PKCS1_V1_5");
         lenient().when(idmConfig.provisioningEncryptionMethod()).thenReturn("A128CBC_HS256");
+
+        lenient().when(gatewayLookup.getEmailGateway(anyString())).thenReturn(emailGateway);
 
         module = new SocialAuthLoginModuleWeChatMobile(debug, authModuleHelper, configFunction, clientTokenJwtGenerator,
                 idmConfigProvider);
@@ -176,7 +184,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.of("user"));
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         module.process(null, ISAuthConstants.LOGIN_START);
@@ -194,7 +202,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.of("user"));
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         module.process(null, ISAuthConstants.LOGIN_START);
@@ -209,7 +217,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(request.getHeader(AUTHORIZATION_HEADER)).willReturn(null);
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
                 .willReturn(Optional.empty());
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         module.process(null, ISAuthConstants.LOGIN_START);
@@ -223,7 +231,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(request.getParameter(OPENID)).willReturn(null);
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
                 .willReturn(Optional.empty());
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         module.process(null, ISAuthConstants.LOGIN_START);
@@ -238,7 +246,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.of("user"));
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, ISAuthConstants.LOGIN_START);
@@ -257,7 +265,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(config.getSaveAttributesToSessionFlag()).willReturn(true);
         given(profileNormalizer.getNormalisedAttributes(userInfo, null))
                 .willReturn(ImmutableMap.of("name", CollectionUtils.asSet("user")));
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         module.process(null, ISAuthConstants.LOGIN_START);
@@ -272,7 +280,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.empty());
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
         given(config.getCfgCreateAccount()).willReturn(true);
         given(config.isCfgRegistrationServiceEnabled() ).willReturn(true);
 
@@ -292,7 +300,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.empty());
         given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn("user");
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
         given(config.getCfgCreateAccount()).willReturn(true);
 
         //when
@@ -309,7 +317,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.empty());
         given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn("user");
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
         given(config.getCfgCreateAccount()).willReturn(true);
         lenient().when(config.getMapToAnonymousUser()).thenReturn(true);
         lenient().when(config.getAnonymousUserName()).thenReturn("user");
@@ -327,7 +335,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
                 any(), anyMap())).willReturn(Optional.of("user"));
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, RESUME_FROM_REGISTRATION_REDIRECT_STATE);
@@ -342,7 +350,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
                 any(), anyMap())).willReturn(Optional.empty());
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         module.process(null, RESUME_FROM_REGISTRATION_REDIRECT_STATE);

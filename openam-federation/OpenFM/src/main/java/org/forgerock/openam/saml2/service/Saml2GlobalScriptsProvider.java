@@ -11,13 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.saml2.service;
 
 import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ADAPTER_SCRIPT;
 import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT;
+import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_SP_ADAPTER_SCRIPT;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +53,15 @@ public class Saml2GlobalScriptsProvider implements GlobalScriptsProvider {
                 .setContext(SAML2_IDP_ADAPTER_SCRIPT.getContext())
                 .setLanguage(ScriptingLanguage.JAVASCRIPT)
                 .setScript(loadScript("scripts/saml2-idp-adapter.js"))
+                .build());
+
+        scripts.add(Script.defaultScriptBuilder()
+                .setId(SAML2_SP_ADAPTER_SCRIPT.getId())
+                .setName("SAML2 SP Adapter Script")
+                .setDescription("Default global script for SAML2 SP Adapter")
+                .setContext(SAML2_SP_ADAPTER_SCRIPT.getContext())
+                .setLanguage(ScriptingLanguage.JAVASCRIPT)
+                .setScript(loadScript("scripts/saml2-sp-adapter.js"))
                 .build());
 
         return scripts;

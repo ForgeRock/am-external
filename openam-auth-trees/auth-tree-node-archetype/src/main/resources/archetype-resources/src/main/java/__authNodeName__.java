@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 
@@ -30,7 +30,6 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
-import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.slf4j.Logger;
@@ -92,16 +91,15 @@ public class ${authNodeName} extends AbstractDecisionNode {
      *
      * @param config The service config.
      * @param realm The realm the node is in.
-     * @throws NodeProcessException If the configuration was not valid.
      */
     @Inject
-    public ${authNodeName}(@Assisted Config config, @Assisted Realm realm) throws NodeProcessException {
+    public ${authNodeName}(@Assisted Config config, @Assisted Realm realm) {
         this.config = config;
         this.realm = realm;
     }
 
     @Override
-    public Action process(TreeContext context) throws NodeProcessException {
+    public Action process(TreeContext context) {
         boolean hasUsername = context.request.headers.containsKey(config.usernameHeader());
         boolean hasPassword = context.request.headers.containsKey(config.passwordHeader());
 

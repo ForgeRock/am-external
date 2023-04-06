@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -28,6 +28,7 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.InputState;
@@ -35,7 +36,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.idrepo.ldap.IdentityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,6 @@ import com.google.inject.Provider;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.InvalidPasswordException;
-import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdType;
 
@@ -65,7 +65,7 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
     }
 
     private final CoreWrapper coreWrapper;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final Provider<PrivilegedAction<SSOToken>> adminTokenActionProvider;
     private final Logger logger = LoggerFactory.getLogger(DataStoreDecisionNode.class);
     private static final String BUNDLE = DataStoreDecisionNode.class.getName();
@@ -73,14 +73,14 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
     /**
      * Guice constructor.
      * @param coreWrapper A core wrapper instance.
-     * @param identityUtils A {@code IdentityUtils} instance.
+     * @param identityService A {@link LegacyIdentityService} instance.
      * @param adminTokenActionProvider A provider for an {@code SSOToken}.
      */
     @Inject
-    public DataStoreDecisionNode(CoreWrapper coreWrapper, IdentityUtils identityUtils,
+    public DataStoreDecisionNode(CoreWrapper coreWrapper, LegacyIdentityService identityService,
              Provider<PrivilegedAction<SSOToken>> adminTokenActionProvider) {
         this.coreWrapper = coreWrapper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.adminTokenActionProvider = adminTokenActionProvider;
     }
 
@@ -88,9 +88,8 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("DataStoreDecisionNode started");
         final String realm = context.sharedState.get(REALM).asString();
-        AMIdentityRepository idrepo = coreWrapper.getAMIdentityRepository(
-                coreWrapper.convertRealmPathToRealmDn(realm));
-        logger.debug("AMIdentityRepository claimed");
+        IdentityStore identityStore = coreWrapper.getIdentityRepository(realm);
+        logger.debug("IdentityRepository claimed");
 
         NameCallback nameCallback = new NameCallback("notused");
         final String username = context.sharedState.get(USERNAME).asString();
@@ -102,7 +101,7 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
         Action.ActionBuilder action = goTo(true);
         try {
             logger.debug("authenticating {} ", nameCallback.getName());
-            boolean isAuthenticationFailed = !idrepo.authenticate(getIdentityType(), callbacks);
+            boolean isAuthenticationFailed = !identityStore.authenticate(getIdentityType(), callbacks);
             if (isAuthenticationFailed) {
                 action = goTo(false);
             }
@@ -116,7 +115,7 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
             logError(e, "Exception in data store decision node");
         }
         return action
-                .withUniversalId(identityUtils.getUniversalId(username, realm, USER))
+                .withUniversalId(identityService.getUniversalId(username, realm, getIdentityType()))
                 .replaceSharedState(context.sharedState.copy())
                 .replaceTransientState(context.transientState.copy()).build();
     }

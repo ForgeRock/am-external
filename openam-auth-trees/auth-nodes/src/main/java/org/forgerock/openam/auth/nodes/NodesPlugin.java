@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -21,10 +21,13 @@ import java.util.Map;
 
 import org.forgerock.openam.auth.node.api.AbstractNodeAmPlugin;
 import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.nodes.mfa.CombinedMultiFactorRegistrationNode;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationOptionsNode;
 import org.forgerock.openam.auth.nodes.mfa.OptOutMultiFactorAuthenticationNode;
+import org.forgerock.openam.auth.nodes.oath.OathDeviceStorageNode;
 import org.forgerock.openam.auth.nodes.oath.OathRegistrationNode;
 import org.forgerock.openam.auth.nodes.oath.OathTokenVerifierNode;
+import org.forgerock.openam.auth.nodes.oidc.OidcNode;
 import org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode;
 import org.forgerock.openam.auth.nodes.push.PushRegistrationNode;
 import org.forgerock.openam.auth.nodes.push.PushResultVerifierNode;
@@ -49,7 +52,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public String getPluginVersion() {
-        return "9.0.0";
+        return "11.0.1";
     }
 
     @Override
@@ -91,7 +94,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
             pluginTools.upgradeAuthNode(PushRegistrationNode.class);
         }
         if (VersionComparison.compareVersionStrings("7.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.4.1", fromVersion) <= 0) {
+                && VersionComparison.compareVersionStrings("9.0.0", fromVersion) <= 0) {
             pluginTools.upgradeAuthNode(OathRegistrationNode.class);
         }
         if (VersionComparison.compareVersionStrings("2.0.0", fromVersion) >= 0
@@ -110,7 +113,18 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 && VersionComparison.compareVersionStrings("9.0.0", fromVersion) <= 0) {
             pluginTools.upgradeAuthNode(Saml2Node.class);
         }
-
+        if (VersionComparison.compareVersionStrings("5.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("10.0.1", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(KbaCreateNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("2.0.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("10.1.1", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(LdapDecisionNode.class);
+        }
+        if (VersionComparison.compareVersionStrings("10.1.0", fromVersion) >= 0
+                && VersionComparison.compareVersionStrings("11.0.1", fromVersion) <= 0) {
+            pluginTools.upgradeAuthNode(CombinedMultiFactorRegistrationNode.class);
+        }
         super.upgrade(fromVersion);
     }
 
@@ -237,6 +251,15 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 .put("8.5.0", asList(
                         PushWaitNode.class)
                 )
+                .put("10.0.0", asList(
+                        OathDeviceStorageNode.class)
+                )
+                .put("10.1.0", asList(
+                        CombinedMultiFactorRegistrationNode.class)
+                )
+                .put("11.0.0", asList(
+                        OidcNode.class
+                ))
                 .build();
     }
 }

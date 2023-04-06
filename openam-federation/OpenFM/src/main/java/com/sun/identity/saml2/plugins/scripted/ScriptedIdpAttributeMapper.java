@@ -11,26 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins.scripted;
 
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.HOSTED_ENTITYID;
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER;
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.LOGGER;
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REALM;
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REMOTE_ENTITY;
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SESSION;
 import static java.util.Collections.emptyList;
-import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ATTRIBUTE_MAPPER;
 
 import java.util.List;
 
 import javax.script.Bindings;
 import javax.script.ScriptException;
-import javax.script.SimpleBindings;
 
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.core.realms.RealmLookupException;
@@ -38,7 +30,7 @@ import org.forgerock.openam.scripting.application.ScriptEvaluationHelper;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptContext;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
 
 import com.google.inject.Inject;
@@ -47,8 +39,8 @@ import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.plugins.IDPAttributeMapper;
 import com.sun.identity.saml2.plugins.ValidationHelper;
+import com.sun.identity.saml2.plugins.scripted.bindings.SamlBindings.IdpBindings;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
-import com.sun.identity.shared.debug.Debug;
 
 /**
  * Scripted implementation of the IDPAttributeMapper
@@ -80,19 +72,24 @@ public class ScriptedIdpAttributeMapper implements IDPAttributeMapper {
         validationHelper.validateHostedEntity(hostedEntityId);
         validationHelper.validateSession(session);
 
-        Bindings scriptVariables = new SimpleBindings();
-        scriptVariables.put(LOGGER, Debug.getInstance("scripts."
-                + SAML2_IDP_ATTRIBUTE_MAPPER.name() + "." + SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT.getId()));
-        scriptVariables.put(SESSION, session);
-        scriptVariables.put(HOSTED_ENTITYID, hostedEntityId);
-        scriptVariables.put(REMOTE_ENTITY, remoteEntityId);
-        scriptVariables.put(REALM, realm);
-        scriptVariables.put(IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER, new IdpAttributeMapperScriptHelper());
         try {
             Script script = getScript(realm, hostedEntityId);
-            return scriptEvaluationHelper.evaluateScript(scriptEvaluator, script, scriptVariables, List.class)
-                    .orElse(emptyList());
-        } catch (ScriptException | org.forgerock.openam.scripting.domain.ScriptException e) {
+
+            ScriptBindings scriptBindings = IdpBindings.attributeMapper()
+                    .withHostedEntityId(hostedEntityId)
+                    .withIdpAttributeMapperScriptHelper(new IdpAttributeMapperScriptHelper())
+                    .withRealm(realm)
+                    .withRemoteEntityId(remoteEntityId)
+                    .withSession(session)
+                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withScriptName(script.getName())
+                    .build();
+
+            Bindings scriptVariables = scriptBindings.convert(script.getEvaluatorVersion());
+
+            return scriptEvaluationHelper.evaluateScript(scriptEvaluator, script, scriptVariables, List.class,
+                    realmLookup.lookup(realm)).orElse(emptyList());
+        } catch (ScriptException | org.forgerock.openam.scripting.domain.ScriptException | RealmLookupException e) {
             throw new SAML2Exception(e);
         }
     }

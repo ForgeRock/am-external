@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2018 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 package org.forgerock.openam.services.push;
 
@@ -24,11 +24,14 @@ public class PushMessage {
 
     /** Key for locating the message ID inside an OpenAM Push message. */
     public static final String MESSAGE_ID = "messageId";
+    /** Default Push to Accept notification type. */
+    public static final String DEFAULT_PUSH_TYPE = "default";
 
     private final String recipient;
     private final String body;
     private final String subject;
     private final MessageId messageId;
+    private final String pushType;
 
     /**
      * Create a new PushMessage.
@@ -39,15 +42,30 @@ public class PushMessage {
      * @param messageId The message key.
      */
     public PushMessage(String recipient, String body, String subject, MessageId messageId) {
+        this(recipient, body, subject, messageId, DEFAULT_PUSH_TYPE);
+    }
+
+    /**
+     * Create a new PushMessage specifying the type.
+     *
+     * @param recipient To whom the message will be addressed. May not be null.
+     * @param body The data to contain within the message. May not be null.
+     * @param subject The subject to contain within the message. May not be null.
+     * @param messageId The message key.
+     * @param pushType The push notification type.
+     */
+    public PushMessage(String recipient, String body, String subject, MessageId messageId, String pushType) {
         Reject.ifNull(recipient);
         Reject.ifNull(body);
         Reject.ifNull(subject);
         Reject.ifNull(messageId);
+        Reject.ifNull(pushType);
 
         this.recipient = recipient;
         this.body = body;
         this.subject = subject;
         this.messageId = messageId;
+        this.pushType = pushType;
     }
 
     /**
@@ -81,5 +99,14 @@ public class PushMessage {
      */
     public MessageId getMessageId() {
         return messageId;
+    }
+
+    /**
+     * Retrieve the type of this message.
+     *
+     * @return The type of notification sent to the client.
+     */
+    public String getPushType() {
+        return pushType;
     }
 }

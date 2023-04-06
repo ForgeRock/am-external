@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -61,7 +61,7 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.core.realms.Realm;
 
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -85,7 +85,7 @@ public class ProvisionDynamicAccountNodeTest {
     private ProvisionDynamicAccountNode.Config config;
 
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
 
     @Mock
     private IdmIntegrationService idmIntegrationService;
@@ -111,7 +111,7 @@ public class ProvisionDynamicAccountNodeTest {
 
             when("there is no userinfo in the session", () -> {
                 beforeEach(() -> {
-                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityUtils,
+                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
                             idmIntegrationService);
                     sharedState = json(object(field("state", "initial")));
                     transientState = json(object(field("state", "initial")));
@@ -124,7 +124,7 @@ public class ProvisionDynamicAccountNodeTest {
 
             when("no password has been provided", () -> {
                 beforeEach(() -> {
-                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityUtils,
+                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
                             idmIntegrationService);
                     sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm.asPath())));
                     transientState = json(object(field("state", "initial")));
@@ -151,7 +151,7 @@ public class ProvisionDynamicAccountNodeTest {
 
             when("a password has already been provided", () -> {
                 beforeEach(() -> {
-                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityUtils,
+                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
                             idmIntegrationService);
                     sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm.asPath())));
                     transientState = json(object(field(PASSWORD, password)));
@@ -170,7 +170,7 @@ public class ProvisionDynamicAccountNodeTest {
             when("in a subrealm", () -> {
                 beforeEach(() -> {
                     given(realm.asPath()).willReturn("/subrealm1/subrealm2");
-                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityUtils,
+                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
                             idmIntegrationService);
                     sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm.asPath())));
                     transientState = json(object(field(PASSWORD, password)));
@@ -188,7 +188,7 @@ public class ProvisionDynamicAccountNodeTest {
                 beforeEach(() -> {
                     given(config.accountProviderClass())
                             .willReturn("org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper");
-                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityUtils,
+                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
                             idmIntegrationService);
                     sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm)));
                     transientState = json(object(field(PASSWORD, password)));

@@ -28,7 +28,7 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,13 +54,13 @@ public final class AuthNodeUserIdentityHelper {
      *
      * @param universalId An optional universal id.
      * @param nodeState The state data for the node calling this method.
-     * @param identityUtils The IdentityUtils instance.
+     * @param identityService The IdentityService instance.
      * @param coreWrapper The CoreWrapper instance.
      * @return The AMIdentity object.
      */
     public static Optional<AMIdentity> getAMIdentity(Optional<String> universalId, NodeState nodeState,
-            IdentityUtils identityUtils, CoreWrapper coreWrapper) {
-        universalId = universalId.or(() -> getUniversalId(nodeState, identityUtils));
+            LegacyIdentityService identityService, CoreWrapper coreWrapper) {
+        universalId = universalId.or(() -> getUniversalId(nodeState, identityService));
         Optional<AMIdentity> identity = Optional.empty();
         if (universalId.isPresent()) {
             identity = universalId.map(coreWrapper::getIdentity);
@@ -78,10 +78,10 @@ public final class AuthNodeUserIdentityHelper {
      *  {@link org.forgerock.openam.auth.node.api.SharedStateConstants#REALM} to be present in the state.
      *
      * @param nodeState The state data for the node calling this method.
-     * @param identityUtils An instance of the IdentityUtils.
+     * @param identityService An instance of the IdentityService.
      * @return An optional of the universalId if it can be found, else an empty optional.
      */
-    public static Optional<String> getUniversalId(NodeState nodeState, IdentityUtils identityUtils) {
+    public static Optional<String> getUniversalId(NodeState nodeState, LegacyIdentityService identityService) {
         JsonValue username = nodeState.get(USERNAME);
         if (username == null || username.isNull() || isEmpty(username.asString())) {
             logger.warn("Could not find the username in the tree context");
@@ -92,6 +92,6 @@ public final class AuthNodeUserIdentityHelper {
             logger.warn("Could not find the realm in the tree context");
             return Optional.empty();
         }
-        return identityUtils.getUniversalId(username.asString(), realm.asString(), USER);
+        return identityService.getUniversalId(username.asString(), realm.asString(), USER);
     }
 }

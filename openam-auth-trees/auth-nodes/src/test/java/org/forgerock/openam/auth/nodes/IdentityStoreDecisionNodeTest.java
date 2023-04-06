@@ -42,7 +42,7 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.ldap.LDAPAuthUtils;
 import org.forgerock.openam.ldap.LDAPUtilException;
 import org.forgerock.openam.ldap.ModuleState;
@@ -54,6 +54,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.common.IdRepoUtilityService;
 
 import java.util.List;
 
@@ -69,7 +70,7 @@ public class IdentityStoreDecisionNodeTest {
     @Mock
     private CoreWrapper coreWrapper;
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
     @Mock
     private AMIdentity amIdentity;
     @Mock
@@ -86,6 +87,8 @@ public class IdentityStoreDecisionNodeTest {
     private PasswordCallback confirmPasswordCalback;
     @Mock
     private ConfirmationCallback confirmationCallback;
+    @Mock
+    private IdRepoUtilityService idRepoUtilityService;
 
     private JsonValue sharedState;
     private JsonValue secureState;
@@ -93,7 +96,7 @@ public class IdentityStoreDecisionNodeTest {
     @BeforeMethod
     public void setUp() throws NodeProcessException, LDAPUtilException {
         openMocks(this);
-        given(serviceConfig.getConfig(configManagerFactory)).willReturn(ldapConfig);
+        given(serviceConfig.getConfig(configManagerFactory, idRepoUtilityService)).willReturn(ldapConfig);
         given(ldapConfig.searchScope()).willReturn(LdapDecisionNode.SearchScope.OBJECT);
         given(ldapConfig.heartbeatTimeUnit()).willReturn(LdapDecisionNode.HeartbeatTimeUnit.SECONDS);
 
@@ -115,7 +118,8 @@ public class IdentityStoreDecisionNodeTest {
     public void processSuccessfulLogin() throws NodeProcessException {
 
         given(ldapAuthUtils.getState()).willReturn(ModuleState.SUCCESS);
-        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityUtils)
+        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
+                idRepoUtilityService)
                 .process(newTreeContext(sharedState, secureState));
         Assert.assertEquals("Outcome was not correct",
                 String.valueOf(LdapDecisionNode.LdapOutcome.TRUE),
@@ -126,7 +130,8 @@ public class IdentityStoreDecisionNodeTest {
     public void incorrectUsernameResultsInLoginFailed() throws NodeProcessException {
 
         given(ldapAuthUtils.getState()).willReturn(ModuleState.USER_NOT_FOUND);
-        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityUtils)
+        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
+                idRepoUtilityService)
                 .process(newTreeContext(sharedState, secureState));
         Assert.assertEquals("Outcome was not correct",
                 String.valueOf(LdapDecisionNode.LdapOutcome.FALSE),
@@ -141,7 +146,8 @@ public class IdentityStoreDecisionNodeTest {
         doThrow(credInvalid).when(ldapAuthUtils).authenticateUser(anyString(), anyString());
 
         given(ldapAuthUtils.getState()).willReturn(ModuleState.WRONG_PASSWORD_ENTERED);
-        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityUtils)
+        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
+                idRepoUtilityService)
                 .process(newTreeContext(sharedState, secureState));
 
         assertThat(action.outcome)
@@ -153,7 +159,8 @@ public class IdentityStoreDecisionNodeTest {
     public void passwordIsDueToExpireResultsInPasswordChangeFlow() throws NodeProcessException {
 
         given(ldapAuthUtils.getState()).willReturn(ModuleState.PASSWORD_EXPIRING);
-        new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityUtils)
+        new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
+                idRepoUtilityService)
                 .process(newTreeContext(sharedState, secureState));
 
         assertThat(sharedState.get("LdapFlowState").toString())
@@ -165,7 +172,8 @@ public class IdentityStoreDecisionNodeTest {
     public void forceChangeOnAddResultsInPasswordChangeFlow() throws NodeProcessException {
 
         given(ldapAuthUtils.getState()).willReturn(ModuleState.CHANGE_AFTER_RESET);
-        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityUtils)
+        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
+                idRepoUtilityService)
                 .process(newTreeContext(sharedState, secureState));
 
         assertThat(action.sharedState.get("lastModuleState").toString())
@@ -178,7 +186,8 @@ public class IdentityStoreDecisionNodeTest {
     public void accountLockoutResultsInLockedOutcome() throws NodeProcessException {
 
         given(ldapAuthUtils.getState()).willReturn(ModuleState.ACCOUNT_LOCKED);
-        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityUtils)
+        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
+                idRepoUtilityService)
                 .process(newTreeContext(sharedState, secureState));
 
         assertThat(String.valueOf(LdapDecisionNode.LdapOutcome.LOCKED))
@@ -190,7 +199,8 @@ public class IdentityStoreDecisionNodeTest {
     public void passwordExpiredWithGracePeriodResultsInChangePasswordCallbacks() throws NodeProcessException {
 
         given(ldapAuthUtils.getState()).willReturn(ModuleState.GRACE_LOGINS);
-        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityUtils)
+        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
+                idRepoUtilityService)
                 .process(newTreeContext(sharedState, secureState));
 
         assertThat(action.callbacks)
@@ -208,7 +218,8 @@ public class IdentityStoreDecisionNodeTest {
     public void passwordResetResultsInPasswordChangeFlow() throws NodeProcessException {
 
         given(ldapAuthUtils.getState()).willReturn(ModuleState.PASSWORD_RESET_STATE);
-        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityUtils)
+        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
+                idRepoUtilityService)
                 .process(newTreeContext(sharedState, secureState));
 
         assertThat(action.sharedState.get("lastModuleState").toString())
@@ -229,11 +240,43 @@ public class IdentityStoreDecisionNodeTest {
         given(confirmPasswordCalback.getPassword()).willReturn("newPassword".toCharArray());
 
         // when
-        new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityUtils)
+        new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
+                idRepoUtilityService)
             .process(newTreeContext(sharedState, secureState).copyWithCallbacks(
                 List.of(oldPasswordCalback, newPasswordCalback, confirmPasswordCalback, confirmationCallback)));
 
         //then
         // exception thrown
     }
+
+    @Test
+    public void shouldUseUniversalIdForUsername() throws NodeProcessException {
+        // Given
+        given(ldapAuthUtils.getState()).willReturn(ModuleState.SUCCESS);
+        given(ldapAuthUtils.getUserId()).willReturn(TEST_UNIVERSAL_ID);
+        given(serviceConfig.useUniversalIdForUsername()).willReturn(true);
+
+        // When
+        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
+                idRepoUtilityService).process(newTreeContext(sharedState, secureState));
+
+        // Then
+        assertThat(action.sharedState.get(USERNAME).asString()).isEqualTo(TEST_UNIVERSAL_ID);
+    }
+
+    @Test
+    public void shouldNotUseUniversalIdForUsername() throws NodeProcessException {
+        // Given
+        given(ldapAuthUtils.getState()).willReturn(ModuleState.SUCCESS);
+        given(ldapAuthUtils.getUserId()).willReturn(TEST_UNIVERSAL_ID);
+        given(serviceConfig.useUniversalIdForUsername()).willReturn(false);
+
+        // When
+        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
+                idRepoUtilityService).process(newTreeContext(sharedState, secureState));
+
+        // Then
+        assertThat(action.sharedState.get(USERNAME).asString()).isEqualTo(TEST_USERNAME);
+    }
+
 }

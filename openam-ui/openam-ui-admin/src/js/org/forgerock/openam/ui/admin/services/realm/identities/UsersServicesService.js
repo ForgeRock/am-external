@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 
 /**
@@ -26,7 +26,8 @@ const obj = new AbstractDelegate(`${Constants.host}${Constants.context}/json`);
 
 export function getSchema (realm, type, userId) {
     return obj.serviceCall({
-        url: fetchUrl(`/users/${userId}/services/${type}?_action=schema`, { realm }),
+        url: fetchUrl(`/users/${encodeURIComponent(userId)}/services/${encodeURIComponent(type)}?_action=schema`,
+            { realm }),
         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
         type: "POST"
     });
@@ -34,14 +35,14 @@ export function getSchema (realm, type, userId) {
 
 export function get (realm, type, userId) {
     return obj.serviceCall({
-        url: fetchUrl(`/users/${userId}/services/${type}`, { realm }),
+        url: fetchUrl(`/users/${encodeURIComponent(userId)}/services/${encodeURIComponent(type)}`, { realm }),
         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" }
     });
 }
 
 export function update (realm, type, userId, data) {
     return obj.serviceCall({
-        url: fetchUrl(`/users/${userId}/services/${type}`, { realm }),
+        url: fetchUrl(`/users/${encodeURIComponent(userId)}/services/${encodeURIComponent(type)}`, { realm }),
         type: "PUT",
         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
         data: data.toJSON()
@@ -50,7 +51,7 @@ export function update (realm, type, userId, data) {
 
 export function remove (realm, userId, types) {
     return obj.serviceCall({
-        url: fetchUrl(`/users/${userId}/services?_action=unassignServices`, { realm }),
+        url: fetchUrl(`/users/${encodeURIComponent(userId)}/services?_action=unassignServices`, { realm }),
         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
         type: "POST",
         data: JSON.stringify({ serviceNames: types })
@@ -59,7 +60,7 @@ export function remove (realm, userId, types) {
 
 export function getAllTypes (realm, userId) {
     return obj.serviceCall({
-        url: fetchUrl(`/users/${userId}/services?_action=getAllTypes`, { realm }),
+        url: fetchUrl(`/users/${encodeURIComponent(userId)}/services?_action=getAllTypes`, { realm }),
         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
         type: "POST"
     });
@@ -67,7 +68,7 @@ export function getAllTypes (realm, userId) {
 
 export function getAllInstances (realm, userId) {
     return obj.serviceCall({
-        url: fetchUrl(`/users/${userId}/services?_action=nextdescendents`, { realm }),
+        url: fetchUrl(`/users/${encodeURIComponent(userId)}/services?_action=nextdescendents`, { realm }),
         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
         type: "POST",
         errorsHandlers: { "internalServerError": { status: 500 } }
@@ -76,7 +77,7 @@ export function getAllInstances (realm, userId) {
 
 export function getCreatables (realm, userId) {
     return obj.serviceCall({
-        url: fetchUrl(`/users/${userId}/services?_action=getCreatableTypes`, { realm }),
+        url: fetchUrl(`/users/${encodeURIComponent(userId)}/services?_action=getCreatableTypes`, { realm }),
         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" },
         type: "POST",
         errorsHandlers: { "internalServerError": { status: 500 } }

@@ -21,34 +21,21 @@ import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_CODE_KEY;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
-import javax.security.auth.callback.Callback;
-
+import com.sun.identity.idm.AMIdentity;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
-import org.forgerock.openam.authentication.callbacks.helpers.QRCallbackBuilder;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
-import org.forgerock.openam.identity.idm.IdentityUtils;
-import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.net.UrlEscapers;
-import com.iplanet.sso.SSOException;
-import com.sun.identity.authentication.callbacks.HiddenValueCallback;
-import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.IdRepoException;
 
 /**
  * Abstract class for multi-factor authentication nodes, shares common features and components
@@ -75,7 +62,7 @@ public abstract class AbstractMultiFactorNode implements Node {
     private final Realm realm;
     private final CoreWrapper coreWrapper;
     private final MultiFactorNodeDelegate<?> multiFactorNodeDelegate;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
 
     /**
      * The constructor.
@@ -83,16 +70,16 @@ public abstract class AbstractMultiFactorNode implements Node {
      * @param realm the realm.
      * @param coreWrapper the {@code CoreWrapper} instance.
      * @param multiFactorNodeDelegate shared utilities common to second factor implementations.
-     * @param identityUtils an instance of the IdentityUtils.
+     * @param identityService an instance of the IdentityService.
      */
     public AbstractMultiFactorNode(Realm realm,
             CoreWrapper coreWrapper,
             MultiFactorNodeDelegate<?> multiFactorNodeDelegate,
-            IdentityUtils identityUtils) {
+            LegacyIdentityService identityService) {
         this.realm = realm;
         this.coreWrapper = coreWrapper;
         this.multiFactorNodeDelegate = multiFactorNodeDelegate;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
     }
 
     /**
@@ -115,8 +102,8 @@ public abstract class AbstractMultiFactorNode implements Node {
      * @param recoveryCodes the list of recovery codes.
      * @return the next action to perform.
      */
-    protected Action buildActionWithRecoveryCodes(TreeContext context, String deviceName,
-            List<String> recoveryCodes) {
+    public Action buildActionWithRecoveryCodes(TreeContext context, String deviceName,
+                                               List<String> recoveryCodes) {
         Action.ActionBuilder builder = Action.goTo(SUCCESS_OUTCOME_ID);
         JsonValue transientState = context.transientState.copy();
         transientState
@@ -124,87 +111,6 @@ public abstract class AbstractMultiFactorNode implements Node {
                 .put(RECOVERY_CODE_DEVICE_NAME, deviceName);
 
         return cleanupSharedState(context, builder).replaceTransientState(transientState).build();
-    }
-
-    /**
-     * Creates the QRCode callback.
-     *
-     * @param scheme the URI scheme.
-     * @param host the URI host name.
-     * @param path the URI path.
-     * @param port the port.
-     * @param callbackIndex the callback index.
-     * @param params the query parameters.
-     * @return the QR Code callback.
-     */
-    protected Callback createQRCodeCallback(String scheme, String host, String path,
-            String port, int callbackIndex, Map<String, String> params) {
-
-        QRCallbackBuilder builder = new QRCallbackBuilder().withUriScheme(scheme)
-                .withUriHost(host)
-                .withUriPath(path)
-                .withUriPort(port)
-                .withCallbackIndex(callbackIndex);
-
-        for (Map.Entry<String, String> entries : params.entrySet()) {
-            builder.addUriQueryComponent(entries.getKey(), entries.getValue());
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * Creates a HiddenValueCallback to store the registration URI, for easy consumptions in mobile SDKs.
-     *
-     * @param id the HiddenValueCallback Id
-     * @param scheme the URI scheme.
-     * @param host the URI host name.
-     * @param path the URI path.
-     * @param port the port.
-     * @param queryParams the query parameters.
-     * @return the QR Code callback.
-     */
-    protected Callback createHiddenValueCallback(String id, String scheme, String host, String path,
-            String port, Map<String, String> queryParams) {
-        String uri = createUri(scheme, host, path, port, queryParams);
-
-        return new HiddenValueCallback(id, uri);
-    }
-
-    /**
-     * Creates the URI.
-     *
-     * @param scheme the URI scheme.
-     * @param host the URI host name.
-     * @param path the URI path.
-     * @param port the port.
-     * @param queryParams the query parameters.
-     * @return the QR Code callback.
-     */
-    protected String createUri(String scheme, String host, String path,
-            String port, Map<String, String> queryParams) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(scheme)
-                .append("://").append(host)
-                .append("/").append(path)
-                .append(":").append(port)
-                .append("?").append(getQueryString(queryParams));
-
-        return sb.toString();
-    }
-
-    private String getQueryString(Map<String, String> queryContents) {
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (Map.Entry<String, String> entries : queryContents.entrySet()) {
-            if (first) {
-                first = false;
-            } else {
-                sb.append("&");
-            }
-            sb.append(entries.getKey()).append("=").append(entries.getValue());
-        }
-        return sb.toString();
     }
 
     /**
@@ -217,17 +123,6 @@ public abstract class AbstractMultiFactorNode implements Node {
     protected abstract Action.ActionBuilder cleanupSharedState(TreeContext context, Action.ActionBuilder builder);
 
     /**
-     * Creates a PollingWaitCallback g.
-     *
-     * @return the polling wait callback.
-     */
-    protected PollingWaitCallback getPollingWaitCallback() {
-        return PollingWaitCallback.makeCallback()
-                .withWaitTime(String.valueOf(REGISTER_DEVICE_POLL_INTERVAL))
-                .build();
-    }
-
-    /**
      * Retrieve the user identity using the username from the context.
      *
      * @param context the context of the tree authentication.
@@ -236,7 +131,7 @@ public abstract class AbstractMultiFactorNode implements Node {
      */
     public AMIdentity getIdentity(TreeContext context) throws NodeProcessException {
         Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
-                identityUtils, coreWrapper);
+                identityService, coreWrapper);
         if (userIdentity.isEmpty()) {
             throw new NodeProcessException("Failed to get the identity object");
         }
@@ -257,35 +152,6 @@ public abstract class AbstractMultiFactorNode implements Node {
         } catch (NodeProcessException e) {
             logger.debug("Unable to set user attribute as skippable.", e);
         }
-    }
-
-    /**
-     * Get the user attribute to be used as Account Name.
-     *
-     * @param identity the AM identity object.
-     * @param userAttribute the user attribute from node configuration.
-     * @return the user attribute value URL encoded.
-     */
-    protected String getUserAttributeForAccountName(AMIdentity identity, String userAttribute) {
-        String accountName = identity.getName();
-
-        if (StringUtils.isBlank(userAttribute)) {
-            // default to username
-            userAttribute = UserAttributeToAccountNameMapping.USERNAME.toString();
-        }
-        logger.debug("Using user attribute of '{}'", userAttribute);
-        try {
-            Set<String> attributeValue = identity.getAttribute(userAttribute);
-            if (CollectionUtils.isNotEmpty(attributeValue)) {
-                accountName = attributeValue.iterator().next();
-            }
-        } catch (IdRepoException | SSOException e) {
-            logger.debug("Unable to get user attribute of '{}', returning username for Account Name",
-                    userAttribute, e);
-        }
-
-
-        return UrlEscapers.urlFragmentEscaper().escape(accountName);
     }
 
     /**

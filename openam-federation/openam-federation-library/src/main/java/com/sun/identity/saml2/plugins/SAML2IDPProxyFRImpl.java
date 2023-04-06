@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2010-2021 ForgeRock AS.
+ * Copyright 2010-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.xml.bind.JAXBIntrospector;
 
+import org.forgerock.openam.saml2.plugins.IDPFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -61,7 +62,7 @@ import com.sun.identity.saml2.protocol.RequestedAuthnContext;
  * Authenticating provider to proxy the authentication request. It might use an external
  * JSP page to interact with the user agent
  */
-public class SAML2IDPProxyFRImpl implements SAML2IDPFinder {
+public class SAML2IDPProxyFRImpl implements IDPFinder {
 
     private static final Logger logger = LoggerFactory.getLogger(SAML2IDPProxyFRImpl.class);
 

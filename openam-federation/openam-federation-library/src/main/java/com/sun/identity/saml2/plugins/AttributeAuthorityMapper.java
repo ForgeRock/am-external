@@ -24,7 +24,7 @@
  *
  * $Id: AttributeAuthorityMapper.java,v 1.3 2008/12/03 00:34:10 hengming Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.saml2.plugins.SAMLPlugin;
 
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.protocol.AttributeQuery;
@@ -47,7 +48,7 @@ import com.sun.identity.saml2.protocol.AttributeQuery;
  * pass information to the AttributeQueryUtil.
  */ 
 @SupportedAll
-public interface AttributeAuthorityMapper {
+public interface AttributeAuthorityMapper extends SAMLPlugin {
 
     /**
      * Checks if the attribute query requester is valid.
@@ -60,7 +61,7 @@ public interface AttributeAuthorityMapper {
      *
      * @exception SAML2Exception if the request is not valid. 
      */
-    public void authenticateRequester(HttpServletRequest request,
+    void authenticateRequester(HttpServletRequest request,
         HttpServletResponse response, AttributeQuery attrQuery,
         String attrAuthorityEntityID, String realm) throws SAML2Exception;
 
@@ -75,7 +76,7 @@ public interface AttributeAuthorityMapper {
      *
      * @exception SAML2Exception if the attribute query is not valid. 
      */
-    public void validateAttributeQuery(HttpServletRequest request,
+    void validateAttributeQuery(HttpServletRequest request,
         HttpServletResponse response, AttributeQuery attrQuery,
         String attrAuthorityEntityID, String realm) throws SAML2Exception;
 
@@ -91,7 +92,7 @@ public interface AttributeAuthorityMapper {
      *
      * @exception SAML2Exception if error occurs. 
      */
-    public Object getIdentity(HttpServletRequest request,
+    Object getIdentity(HttpServletRequest request,
         HttpServletResponse response, AttributeQuery attrQuery,
         String attrAuthorityEntityID, String realm) throws SAML2Exception;
 
@@ -107,7 +108,7 @@ public interface AttributeAuthorityMapper {
      *
      * @exception SAML2Exception if error occurs. 
      */
-    public List getAttributes(Object identity, AttributeQuery attrQuery,
-        String attrAuthorityEntityID, String realm) throws SAML2Exception;
+    List getAttributes(Object identity, AttributeQuery attrQuery,
+            String attrAuthorityEntityID, String realm) throws SAML2Exception;
 
 }

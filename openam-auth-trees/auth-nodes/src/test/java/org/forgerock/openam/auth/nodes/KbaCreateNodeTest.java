@@ -134,9 +134,9 @@ public class KbaCreateNodeTest {
         // Given
         JsonValue sharedState = json(object(field("initial", "initial")));
         List<Callback> callbacks = new ArrayList<>();
-        callbacks.add(new KbaCreateCallback("first", singletonList("Question One"))
+        callbacks.add(new KbaCreateCallback("first", singletonList("Question One"), true)
                 .setSelectedQuestion("Question One").setSelectedAnswer("uno"));
-        callbacks.add(new KbaCreateCallback("second", singletonList("Question Two"))
+        callbacks.add(new KbaCreateCallback("second", singletonList("Question Two"), true)
                 .setSelectedQuestion("Custom Question").setSelectedAnswer("dos"));
 
         // When
@@ -155,9 +155,9 @@ public class KbaCreateNodeTest {
         // Given
         JsonValue sharedState = json(object(field("initial", "initial")));
         List<Callback> callbacks = new ArrayList<>();
-        callbacks.add(new KbaCreateCallback("first", singletonList("Question One"))
+        callbacks.add(new KbaCreateCallback("first", singletonList("Question One"), true)
                 .setSelectedQuestion("質問?").setSelectedAnswer("uno"));
-        callbacks.add(new KbaCreateCallback("second", singletonList("Question Two"))
+        callbacks.add(new KbaCreateCallback("second", singletonList("Question Two"), true)
                 .setSelectedQuestion("あなたの好きな色は何ですか?").setSelectedAnswer("dos"));
 
         // When
@@ -178,9 +178,9 @@ public class KbaCreateNodeTest {
         // Given
         JsonValue sharedState = json(object(field("initial", "initial")));
         List<Callback> callbacks = new ArrayList<>();
-        callbacks.add(new KbaCreateCallback("first", singletonList("Question One"))
+        callbacks.add(new KbaCreateCallback("first", singletonList("Question One"), true)
                 .setSelectedQuestion("あ!なたの好  きな色は何&ですか??").setSelectedAnswer("uno"));
-        callbacks.add(new KbaCreateCallback("second", singletonList("Question Two"))
+        callbacks.add(new KbaCreateCallback("second", singletonList("Question Two"), true)
                 .setSelectedQuestion("あなたの好きな色は何ですか?").setSelectedAnswer("dos"));
 
         // When
@@ -196,7 +196,7 @@ public class KbaCreateNodeTest {
         // Given
         JsonValue sharedState = json(object(field("initial", "initial")));
         List<Callback> callbacks = new ArrayList<>();
-        callbacks.add(new KbaCreateCallback("first", singletonList("Question One"))
+        callbacks.add(new KbaCreateCallback("first", singletonList("Question One"), true)
                 .setSelectedQuestion(null).setSelectedAnswer(null));
 
         // When

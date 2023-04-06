@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -58,6 +58,8 @@ import org.forgerock.oauth.OAuthException;
 import org.forgerock.oauth.UserInfo;
 import org.forgerock.oauth.clients.oidc.OpenIDConnectUserInfo;
 import org.forgerock.openam.authentication.modules.common.AuthLoginModule;
+import org.forgerock.openam.authentication.modules.oauth2.EmailGateway;
+import org.forgerock.openam.authentication.modules.oauth2.EmailGatewayLookup;
 import org.forgerock.openam.authentication.modules.oauth2.NoEmailSentException;
 import org.forgerock.openam.authentication.modules.oauth2.OAuth;
 import org.forgerock.openam.authentication.modules.oauth2.OAuthUtil;
@@ -118,6 +120,7 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
     private ResourceBundle bundle = null;
     private JwtClaimsSet jwtClaimsSet;
     private String activationCode;
+    private EmailGatewayLookup emailGatewayLookup;
 
     /**
      * Constructor of AbstractSocialAuthLoginModule for invocation by subclass constructors.
@@ -148,13 +151,15 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
                 authModuleHelper.newOAuthClient(config.getOAuthClientConfiguration()),
                 authModuleHelper.newDataStore(config.getOAuthClientConfiguration().getProvider(), sharedState),
                 new JwtHandlerConfig(options), new ProfileNormalizer(config),
-                amCache.getResBundle(BUNDLE_NAME, getLoginLocale()));
+                amCache.getResBundle(BUNDLE_NAME, getLoginLocale()),
+                InjectorHolder.getInstance(EmailGatewayLookup.class));
     }
 
     @VisibleForTesting
     void init(Subject subject, AbstractSmsSocialAuthConfiguration config,
             OAuthClient client, SharedStateDataStore dataStore,
-            JwtHandlerConfig jwtHandlerConfig, ProfileNormalizer profileNormalizer, ResourceBundle bundle) {
+            JwtHandlerConfig jwtHandlerConfig, ProfileNormalizer profileNormalizer, ResourceBundle bundle,
+            EmailGatewayLookup emailGatewayLookup) {
         Reject.ifNull(config, client, dataStore, jwtHandlerConfig, profileNormalizer);
 
         this.config = config;
@@ -162,6 +167,7 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
         this.dataStore = dataStore;
         this.profileNormalizer = profileNormalizer;
         this.bundle = bundle;
+        this.emailGatewayLookup = emailGatewayLookup;
     }
 
     @Override
@@ -417,9 +423,10 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
                     + "the email id to sent mail could not be found in the profile response");
         }
         OAuthUtil.debugMessage("Mail found = {}, sending email.", mail);
+        EmailGateway gateway = OAuthUtil.getEmailGateway(this.config.getSMTPConfig(), emailGatewayLookup);
         try {
             OAuthUtil.sendEmail(config.getCfgEmailFrom(), mail, activationCode,
-                    config.getSMTPConfig(), bundle, config.getCfgProxyUrl());
+                    config.getSMTPConfig(), bundle, config.getCfgProxyUrl(), gateway);
         } catch (NoEmailSentException ex) {
             OAuthUtil.debugError("No mail sent due to error", ex);
             throw new AuthLoginException("Aborting authentication, because "

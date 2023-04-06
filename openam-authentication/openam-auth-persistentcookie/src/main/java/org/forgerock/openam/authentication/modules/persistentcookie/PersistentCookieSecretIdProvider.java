@@ -11,12 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.persistentcookie;
 
 import java.util.HashSet;
 import java.util.Set;
+
+import javax.inject.Inject;
 
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.secrets.SecretIdProvider;
@@ -28,6 +30,7 @@ import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.config.AMAuthenticationManager;
+import com.sun.identity.authentication.config.AMAuthenticationManagerFactory;
 import com.sun.identity.authentication.config.AMConfigurationException;
 
 /**
@@ -44,6 +47,12 @@ public class PersistentCookieSecretIdProvider implements SecretIdProvider {
                         Labels.DEFAULT_PCOOKIE_SIGNING,
                         Labels.DEFAULT_PCOOKIE_ENCRYPTION)
                 .build();
+    private final AMAuthenticationManagerFactory amAuthenticationManagerFactory;
+
+    @Inject
+    public PersistentCookieSecretIdProvider(AMAuthenticationManagerFactory amAuthenticationManagerFactory) {
+        this.amAuthenticationManagerFactory = amAuthenticationManagerFactory;
+    }
 
     @Override
     public Multimap<String, String> getGlobalSingletonSecretIds() {
@@ -59,7 +68,7 @@ public class PersistentCookieSecretIdProvider implements SecretIdProvider {
     public Multimap<String, String> getRealmMultiInstanceSecretIds(SSOToken authorizationToken, Realm realm) {
         Set<String> secretIds = new HashSet<>();
             try {
-                AMAuthenticationManager authManager = new AMAuthenticationManager(authorizationToken, realm.asPath());
+                AMAuthenticationManager authManager = amAuthenticationManagerFactory.create(authorizationToken, realm);
                 Set<String> instanceNames = authManager.getModuleInstanceNames(PERSISTENT_COOKIE);
                 for (String instanceName : instanceNames) {
                     secretIds.add(String.format(Labels.CUSTOM_PCOOKIE_SIGNING, instanceName));

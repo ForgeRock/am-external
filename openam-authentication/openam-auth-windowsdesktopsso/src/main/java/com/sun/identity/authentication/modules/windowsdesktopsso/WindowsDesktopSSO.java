@@ -24,12 +24,13 @@
  *
  * $Id: WindowsDesktopSSO.java,v 1.7 2009/07/28 19:40:45 beomsuk Exp $
  *
- * Portions Copyrighted 2011-2020 ForgeRock AS.
+ * Portions Copyrighted 2011-2022 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.windowsdesktopsso;
 
 import static org.forgerock.openam.utils.StringUtils.isEmpty;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.security.Principal;
@@ -49,6 +50,9 @@ import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
 import javax.servlet.http.HttpServletRequest;
 
+import org.forgerock.am.identity.application.IdentityStoreFactory;
+import org.forgerock.am.identity.persistence.IdentityStore;
+import org.forgerock.guice.core.InjectorHolder;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSException;
@@ -64,7 +68,6 @@ import com.sun.identity.authentication.spi.HttpCallback;
 import com.sun.identity.authentication.util.DerValue;
 import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdSearchControl;
 import com.sun.identity.idm.IdSearchOpModifier;
@@ -109,11 +112,14 @@ public class WindowsDesktopSSO extends AMLoginModule {
     private Set<String> trustedKerberosRealms = Collections.EMPTY_SET;
     
     private static final String REALM_SEPARATOR = "@";
+    private final IdentityStoreFactory identityStoreFactory = InjectorHolder.getInstance(IdentityStoreFactory.class);
+    private WindowsDesktopSSOConfigFactory windowsDesktopSSOConfigFactory;
 
     /**
      * Constructor
      */
     public WindowsDesktopSSO() {
+        windowsDesktopSSOConfigFactory = InjectorHolder.getInstance(WindowsDesktopSSOConfigFactory.class);
     }
 
     /**
@@ -614,7 +620,7 @@ public class WindowsDesktopSSO extends AMLoginModule {
                 wtc = (WindowsDesktopSSOConfig) config;
                 wtc.setRefreshConfig("true");
             } else {
-                wtc = new WindowsDesktopSSOConfig(config);
+                wtc = windowsDesktopSSOConfigFactory.create(config);
             }
             wtc.setPrincipalName(servicePrincipalName);
             wtc.setKeyTab(keyTabFile);
@@ -694,9 +700,9 @@ public class WindowsDesktopSSO extends AMLoginModule {
         searchControl.setAllReturnAttributes(false);
 
         try {
-            AMIdentityRepository amirepo = new AMIdentityRepository(getSSOSession(), organization);
-
-            IdSearchResults searchResults = amirepo.searchIdentities(IdType.USER, "*", searchControl);
+            IdentityStore identityStore = identityStoreFactory.create(organization, getSSOSession());
+            IdSearchResults searchResults = identityStore.searchIdentitiesByUsername(IdType.USER, "*",
+                    searchControl);
             if (searchResults.getErrorCode() == IdSearchResults.SUCCESS && searchResults != null) {
                 Set<AMIdentity> results = searchResults.getSearchResults();
                 if (!results.isEmpty()) {

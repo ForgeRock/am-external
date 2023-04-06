@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -137,7 +137,7 @@ public final class NodeState {
     public Set<String> keys() {
         return Stream.of(transientState.keys(), secureState.keys(), sharedState.keys())
                 .flatMap(Collection::stream)
-                .filter(key -> !stateFilter.contains(key))
+                .filter(key -> stateFilter.isEmpty() || stateFilter.contains(key))
                 .collect(toSet());
     }
 

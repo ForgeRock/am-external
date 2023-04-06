@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2021 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -26,6 +26,7 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.DeviceProfile.DEVICE_PROFILE_CONTEXT_NAME;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -41,6 +42,7 @@ import javax.script.Bindings;
 import javax.script.ScriptException;
 import javax.security.auth.callback.Callback;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
@@ -51,10 +53,10 @@ import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
-import org.forgerock.openam.scripting.domain.ScriptingLanguage;
+import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -94,8 +96,8 @@ public class DeviceMatchNodeTest {
     @BeforeMethod
     public void setup() throws IdRepoException, SSOException {
         initMocks(this);
-        node = new DeviceMatchNode(deviceProfilesDao, __ -> scriptEvaluator, coreWrapper, mock(IdentityUtils.class),
-                config, realm);
+        node = new DeviceMatchNode(deviceProfilesDao, __ -> scriptEvaluator, coreWrapper,
+                mock(LegacyIdentityService.class), config, realm);
 
         given(realm.asPath()).willReturn("/");
         given(coreWrapper.getIdentity(anyString())).willReturn(amIdentity);
@@ -334,6 +336,7 @@ public class DeviceMatchNodeTest {
         given(script.getName()).willReturn("mock-script-name");
         given(script.getScript()).willReturn("mock-script-body");
         given(script.getLanguage()).willReturn(ScriptingLanguage.JAVASCRIPT);
+        given(script.getEvaluatorVersion()).willReturn(EvaluatorVersion.defaultVersion());
         given(config.script()).willReturn(script);
 
 
@@ -355,13 +358,13 @@ public class DeviceMatchNodeTest {
 
         JsonValue transientState = json(object());
 
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(realm)))
                 .will(answerWithOutcome("true"));
         Action action = node.process(getContext(sharedState, transientState, emptyList()));
 
         ArgumentCaptor<Script> scriptCaptor = ArgumentCaptor.forClass(Script.class);
         ArgumentCaptor<Bindings> bindingCaptor = ArgumentCaptor.forClass(Bindings.class);
-        verify(scriptEvaluator).evaluateScript(scriptCaptor.capture(), bindingCaptor.capture());
+        verify(scriptEvaluator).evaluateScript(scriptCaptor.capture(), bindingCaptor.capture(), eq(realm));
 
         assertThat(scriptCaptor.getValue().getName()).isEqualTo("mock-script-name");
         assertThat(scriptCaptor.getValue().getScript()).isEqualTo("mock-script-body");

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.saml2.service;
@@ -20,6 +20,7 @@ import org.forgerock.openam.scripting.domain.ScriptContext;
 import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScript;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ADAPTER;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ATTRIBUTE_MAPPER;
+import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_SP_ADAPTER;
 
 /**
  * Default global script configurations for SAML2 scripts.
@@ -29,7 +30,9 @@ public enum Saml2GlobalScript implements GlobalScript {
     SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT("SAML2 IDP Attribute Mapper Script",
             "c4f22465-2368-4e27-8013-e6399974fd48", SAML2_IDP_ATTRIBUTE_MAPPER),
     SAML2_IDP_ADAPTER_SCRIPT("SAML2 IDP Adapter Script",
-            "248b8a56-df81-4b1b-b4ba-45d994f6504c", SAML2_IDP_ADAPTER);
+            "248b8a56-df81-4b1b-b4ba-45d994f6504c", SAML2_IDP_ADAPTER),
+    SAML2_SP_ADAPTER_SCRIPT("SAML2 SP Adapter Script",
+             "69f06e63-128c-4e2f-af52-079a8a6f448b", SAML2_SP_ADAPTER);
 
     private final String displayName;
     private final String id;

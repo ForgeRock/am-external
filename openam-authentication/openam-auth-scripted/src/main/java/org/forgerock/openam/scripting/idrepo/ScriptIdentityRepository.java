@@ -11,52 +11,36 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2020 ForgeRock AS.
+ * Copyright 2014-2022 ForgeRock AS.
  */
 package org.forgerock.openam.scripting.idrepo;
 
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.scripting.api.ScriptedIdentity;
-import org.forgerock.openam.utils.CollectionUtils;
-import org.forgerock.openam.utils.StringUtils;
-import org.forgerock.util.Reject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.forgerock.openam.scripting.api.identity.ScriptedIdentity;
+import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepository;
 
 import com.google.inject.assistedinject.Assisted;
-import com.iplanet.sso.SSOException;
-import com.sun.identity.authentication.service.AuthD;
-import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.AMIdentityRepository;
-import com.sun.identity.idm.IdRepoException;
-import com.sun.identity.idm.IdSearchControl;
-import com.sun.identity.idm.IdSearchOpModifier;
-import com.sun.identity.idm.IdSearchResults;
-import com.sun.identity.idm.IdType;
 
 /**
  * A repository to retrieve user information within a scripting module's script
+ *
+ * @deprecated Use {@link ScriptedIdentityRepository} instead.
  */
-public class ScriptIdentityRepository {
-    private static final Logger DEBUG = LoggerFactory.getLogger(ScriptIdentityRepository.class);
-    private AMIdentityRepository identityRepository;
-    private Set<String> userSearchAttributes = Collections.emptySet();
-
+@Deprecated
+public class ScriptIdentityRepository extends ScriptedIdentityRepository {
     /**
      * Constructor for <code>ScriptIdentityRepository</code> object
      *
-     * @param identityRepository The AmIdentityRepository object used to retrieve/persist user information
+     * @param identityStore The IdentityStore object used to retrieve/persist user information
      */
-    public ScriptIdentityRepository(AMIdentityRepository identityRepository) {
-        Reject.ifNull(identityRepository);
-        this.identityRepository = identityRepository;
+    public ScriptIdentityRepository(IdentityStore identityStore) {
+        super(identityStore);
     }
 
     /**
@@ -66,19 +50,17 @@ public class ScriptIdentityRepository {
      */
     @Inject
     public ScriptIdentityRepository(@Assisted Realm realm) {
-        this.identityRepository = AuthD.getAuth().getAMIdentityRepository(realm.asDN());
+        super(realm);
     }
 
     /**
      * Constructor for <code>ScriptIdentityRepository</code> object
      *
-     * @param identityRepository   The AmIdentityRepository object used to retrieve/persist user information
+     * @param identityStore The IdentityStore object used to retrieve/persist user information
      * @param userSearchAttributes The Alias Search Attribute values
      */
-    public ScriptIdentityRepository(AMIdentityRepository identityRepository, Set<String> userSearchAttributes) {
-        Reject.ifNull(identityRepository);
-        this.identityRepository = identityRepository;
-        this.userSearchAttributes = userSearchAttributes;
+    public ScriptIdentityRepository(IdentityStore identityStore, Set<String> userSearchAttributes) {
+        super(identityStore, userSearchAttributes);
     }
 
     /**
@@ -124,54 +106,6 @@ public class ScriptIdentityRepository {
             amIdentity.addAttribute(attributeName, attributeValue);
             amIdentity.store();
         }
-    }
-
-    /**
-     * Retrieves the attributes associated with a particular user
-     *
-     * @param userName The name of the user
-     * @return A ScriptedIdentity object containing the attributes for the specified user, or null if not found
-     */
-    private ScriptedIdentity getIdentity(String userName) {
-        ScriptedIdentity amIdentity = null;
-        IdSearchControl idsc = new IdSearchControl();
-        idsc.setAllReturnAttributes(true);
-        idsc.setMaxResults(0);
-        Set<AMIdentity> results = Collections.emptySet();
-
-        if (StringUtils.isEmpty(userName)) {
-            return null;
-        }
-        
-        try {
-            IdSearchResults searchResults = identityRepository.searchIdentities(IdType.USER, userName, idsc);
-            if (searchResults != null) {
-                results = searchResults.getSearchResults();
-            }
-            if (CollectionUtils.isEmpty(results) && CollectionUtils.isNotEmpty(userSearchAttributes)) {
-                DEBUG.debug("ScriptedModule.getIdentity: searching user identity with alternative attributes: {} ",
-                        userSearchAttributes);
-                final Map<String, Set<String>> searchAVP = CollectionUtils.toAvPairMap(userSearchAttributes, userName);
-                idsc.setSearchModifiers(IdSearchOpModifier.OR, searchAVP);
-                // workaround as data store always adds 'user-naming-attribute' to searchfilter
-                searchResults = identityRepository.searchIdentities(IdType.USER, "*", idsc);
-                if (searchResults != null) {
-                    results = searchResults.getSearchResults();
-                }
-            }
-            if (CollectionUtils.isEmpty(results)) {
-                DEBUG.error("ScriptedModule.getIdentity : User " + userName + " is not found");
-            } else if (results.size() > 1) {
-                DEBUG.error("ScriptedModule.getIdentity : More than one user found for the userName " + userName);
-            } else {
-                amIdentity = new ScriptedIdentity(results.iterator().next());
-            }
-        } catch (IdRepoException e) {
-            DEBUG.error("ScriptedModule.getIdentity : Error searching Identities with username : " + userName, e);
-        } catch (SSOException e) {
-            DEBUG.error("ScriptedModule.getIdentity : Module exception : ", e);
-        }
-        return amIdentity;
     }
 
     /**

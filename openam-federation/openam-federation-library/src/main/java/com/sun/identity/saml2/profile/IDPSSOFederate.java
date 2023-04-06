@@ -22,7 +22,7 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2021 ForgeRock AS.
+ * Portions Copyrighted 2010-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -39,6 +39,7 @@ import org.forgerock.openam.saml2.SAML2ActorFactory;
 import org.forgerock.openam.saml2.SAMLAuthenticator;
 import org.forgerock.openam.saml2.SAMLAuthenticatorLookup;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
+import org.forgerock.openam.saml2.plugins.IDPAdapter;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.annotations.VisibleForTesting;
 import org.slf4j.Logger;
@@ -49,7 +50,6 @@ import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 
 /**
@@ -104,7 +104,7 @@ public class IDPSSOFederate {
             // Invoke the IDP Adapter after the user has been authenticated
             try {
                 logger.debug("Invoking IDP adapter preSendFailureResponse hook");
-                final SAML2IdentityProviderAdapter idpAdapter = ex.getIdpAdapter();
+                final IDPAdapter idpAdapter = ex.getIdpAdapter();
                 if (idpAdapter != null) {
                     IDPSSOFederate federate = new IDPSSOFederate(false);
                     IDPRequestValidator validator = federate.saml2ActorFactory.getIDPRequestValidator(reqBinding, false);
@@ -218,7 +218,7 @@ public class IDPSSOFederate {
         String idpMetaAlias = validator.getMetaAlias(request);
         String realm = validator.getRealmByMetaAlias(idpMetaAlias);
         String idpEntityID = validator.getIDPEntity(idpMetaAlias, realm, isFromECP);
-        SAML2IdentityProviderAdapter idpAdapter = validator.getIDPAdapter(realm, idpEntityID);
+        IDPAdapter idpAdapter = validator.getIDPAdapter(realm, idpEntityID);
         String reqID = request.getParameter(REQ_ID);
         if (null != auditor) {
             if (StringUtils.isNotEmpty(reqID)) {

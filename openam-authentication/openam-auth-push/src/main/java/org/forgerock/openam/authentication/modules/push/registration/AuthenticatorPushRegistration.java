@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.push.registration;
 
@@ -68,6 +68,8 @@ import javax.security.auth.callback.TextOutputCallback;
 import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 
+import org.forgerock.am.identity.application.IdentityStoreFactory;
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.NotFoundException;
@@ -110,7 +112,6 @@ import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
-import com.sun.identity.idm.IdUtils;
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.sm.DNMapper;
@@ -176,6 +177,10 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
             InjectorHolder.getInstance(BaseURLProviderFactory.class);
     private Set<String> userSearchAttributes = Collections.emptySet();
 
+    // @Checkstyle:off ConstantName
+    private static final IdentityStoreFactory identityStoreFactory =
+            InjectorHolder.getInstance(IdentityStoreFactory.class);
+    // @Checkstyle:on ConstantName
 
     @Override
     public void init(final Subject subject, final Map sharedState, final Map options) {
@@ -250,7 +255,8 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
     private AMIdentity establishPreauthenticatedUser(final Map sharedState) {
         final String subjectName = (String) sharedState.get(getUserKey());
         final String realm = DNMapper.orgNameToRealmName(getRequestOrg());
-        return IdUtils.getIdentity(subjectName, realm, userSearchAttributes);
+        IdentityStore identityStore = identityStoreFactory.create(realm);
+        return identityStore.getIdentity(subjectName, userSearchAttributes);
     }
 
     @Override

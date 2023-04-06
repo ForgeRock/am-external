@@ -24,10 +24,12 @@
  *
  * $Id: AttributeQueryUtil.java,v 1.11 2009/07/24 22:51:48 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2021 ForgeRock AS.
+ * Portions Copyrighted 2010-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ATTRIBUTE_AUTHORITY_MAPPER;
+import static com.sun.identity.saml2.common.SAML2Constants.DEFAULT_ATTRIBUTE_AUTHORITY_MAPPER_CLASS;
 import static org.forgerock.openam.utils.Time.newDate;
 
 import java.security.Key;
@@ -36,7 +38,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +91,7 @@ import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.plugins.AttributeAuthorityMapper;
+import org.forgerock.openam.saml2.plugins.PluginRegistry;
 import com.sun.identity.saml2.plugins.SPAttributeMapper;
 import com.sun.identity.saml2.protocol.AttributeQuery;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
@@ -110,7 +112,6 @@ public class AttributeQueryUtil {
     private static final String DEFAULT_ATTRIBUTE_NAME_FORMAT =
             "urn:oasis:names:tc:SAML:2.0:attrname-format:unspecified";
     static KeyProvider keyProvider = KeyUtil.getKeyProviderInstance();
-    static Hashtable attrAuthorityMapperCache = new Hashtable(); 
     static DataStoreProvider dsProvider = null;
     static SAML2MetaManager metaManager = SAML2Utils.getSAML2MetaManager();
 
@@ -267,7 +268,7 @@ public class AttributeQueryUtil {
         String attrAuthorityEntityID, String realm,
         String attrQueryProfileAlias) throws SAML2Exception {
 
-        AttributeAuthorityMapper attrAuthorityMapper = 
+        AttributeAuthorityMapper attrAuthorityMapper =
             getAttributeAuthorityMapper(realm, attrAuthorityEntityID,
             attrQueryProfileAlias);
 
@@ -1205,53 +1206,23 @@ public class AttributeQueryUtil {
      * @return the <code>AttributeAuthorityMapper</code>
      * @exception SAML2Exception if the operation is not successful
      */
-    static AttributeAuthorityMapper getAttributeAuthorityMapper(String realm,
-        String attrAuthorityEntityID, String attrQueryProfileAlias)
-        throws SAML2Exception {
+    static AttributeAuthorityMapper getAttributeAuthorityMapper(String realm, String attrAuthorityEntityID,
+            String attrQueryProfileAlias) throws SAML2Exception {
 
-        String attrAuthorityMapperName = null;
-        AttributeAuthorityMapper attrAuthorityMapper = null;
-        try {
-            attrAuthorityMapperName = getAttributeValueFromAttrAuthorityConfig(
-                realm, attrAuthorityEntityID, attrQueryProfileAlias + "_" +
-                SAML2Constants.ATTRIBUTE_AUTHORITY_MAPPER);
+        String attrAuthorityMapperName;
+        attrAuthorityMapperName = getAttributeValueFromAttrAuthorityConfig(realm, attrAuthorityEntityID,
+                attrQueryProfileAlias + "_" + ATTRIBUTE_AUTHORITY_MAPPER);
 
-            if (attrAuthorityMapperName == null) {
-                attrAuthorityMapperName = 
-                    SAML2Constants.DEFAULT_ATTRIBUTE_AUTHORITY_MAPPER_CLASS;
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                        "AttributeQueryUtil.getAttributeAuthorityMapper: use "+
-                        attrAuthorityMapperName);
-                }
-            }
-            attrAuthorityMapper = (AttributeAuthorityMapper)
-                attrAuthorityMapperCache.get(attrAuthorityMapperName);
-            if (attrAuthorityMapper == null) {
-                attrAuthorityMapper = (AttributeAuthorityMapper)
-                    Class.forName(attrAuthorityMapperName).newInstance();
-                attrAuthorityMapperCache.put(attrAuthorityMapperName,
-                       attrAuthorityMapper);
-            } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                        "AttributeQueryUtil.getAttributeAuthorityMapper: " +
-                        "got the AttributeAuthorityMapper from cache");
-                }
-            }
-        } catch (Exception ex) {
-            logger.error(
-                "AttributeQueryUtil.getAttributeAuthorityMapper: " +
-                "Unable to get IDP Attribute Mapper.", ex);
-            throw new SAML2Exception(ex);
+        if (attrAuthorityMapperName == null) {
+            attrAuthorityMapperName = DEFAULT_ATTRIBUTE_AUTHORITY_MAPPER_CLASS;
         }
-
-        return attrAuthorityMapper;
+        logger.debug("AttributeQueryUtil.getAttributeAuthorityMapper: use "+ attrAuthorityMapperName);
+        return (AttributeAuthorityMapper) PluginRegistry.get(PluginRegistry.newKey(realm,
+                attrAuthorityEntityID, AttributeAuthorityMapper.class, attrAuthorityMapperName));
     }
 
-    private static String getAttributeValueFromAttrAuthorityConfig(
-        String realm, String attrAuthorityEntityID, String attrName)
-    {
+    private static String getAttributeValueFromAttrAuthorityConfig(String realm,
+            String attrAuthorityEntityID, String attrName) {
         try {
             AttributeAuthorityConfigElement config =
                 metaManager.getAttributeAuthorityConfig(realm,

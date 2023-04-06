@@ -47,7 +47,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.ldap.LDAPConstants;
 import org.forgerock.openam.ldap.LDAPURL;
 import org.forgerock.openam.sm.ConfigurationAttributes;
@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.IdConstants;
-import com.sun.identity.idm.common.IdRepoUtils;
+import com.sun.identity.idm.common.IdRepoUtilityService;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.sm.SMSException;
 import com.sun.identity.sm.ServiceConfig;
@@ -76,6 +76,8 @@ import com.sun.identity.sm.ServiceConfigManager;
 public class IdentityStoreDecisionNode extends LdapDecisionNode {
 
     private static final Logger logger = LoggerFactory.getLogger(IdentityStoreDecisionNode.class);
+    private final Config config;
+    private final IdRepoUtilityService idRepoUtilityService;
 
     /**
      * The interface Config.
@@ -86,14 +88,16 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
          * It returns LdapConfig class which implements LdapDecisionNode.Config interface.
          *
          * @param configManagerFactory the ServiceConfigManagerFactory.
+         * @param idRepoUtilityService the IdRepo utilities.
          * @return the LdapDecisionNode Config.
          * @throws NodeProcessException When Identity Store configuration cannot be read from the database.
          */
-        default LdapDecisionNode.Config getConfig(ServiceConfigManagerFactory configManagerFactory)
-                throws NodeProcessException {
+        default LdapDecisionNode.Config getConfig(ServiceConfigManagerFactory configManagerFactory,
+                IdRepoUtilityService idRepoUtilityService) throws NodeProcessException {
             try {
                 ServiceConfigManager configManager = configManagerFactory.create(IdConstants.REPO_SERVICE, "1.0");
-                return new LdapConfig(configManager, minimumPasswordLength());
+                return new LdapConfig(configManager, minimumPasswordLength(), mixedCaseForPasswordChangeMessages(),
+                        idRepoUtilityService);
             } catch (SMSException | SSOException e) {
                 throw new NodeProcessException("Failed to get IdRepo configuration", e);
             }
@@ -109,6 +113,28 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
         default int minimumPasswordLength() {
             return 8;
         }
+
+        /**
+         * Allows for the username to be represented by the user's universal id.
+         *
+         * @return {@code false} if the username should be represented by the username value,
+         * or {@code true} if the username should be represented by the universal id value
+         */
+        @Attribute(order = 300)
+        default boolean useUniversalIdForUsername() {
+            return false;
+        }
+
+        /**
+         * Determines whether mixed case should be used for password change messages returned from this node.
+         * Previously all messages were returned uppercase.
+         *
+         * @return <code>true</code> to enable the use of mixed case messages.
+         */
+        @Attribute(order = 400)
+        default boolean mixedCaseForPasswordChangeMessages() {
+            return false;
+        }
     }
 
     /**
@@ -117,13 +143,22 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
      * @param config provides the settings for initialising an {@link IdentityStoreDecisionNode}.
      * @param configManagerFactory A ServiceConfigManagerFactory instance.
      * @param coreWrapper A core wrapper instance.
-     * @param identityUtils An IdentityUtils instance.
+     * @param identityService An IdentityService instance.
+     * @param idRepoUtilityService the IdRepo utilities.
      * @throws NodeProcessException if there is a problem during construction.
      */
     @Inject
     public IdentityStoreDecisionNode(@Assisted Config config, ServiceConfigManagerFactory configManagerFactory,
-            CoreWrapper coreWrapper, IdentityUtils identityUtils) throws NodeProcessException {
-        super(config.getConfig(configManagerFactory), coreWrapper, identityUtils);
+            CoreWrapper coreWrapper, LegacyIdentityService identityService, IdRepoUtilityService idRepoUtilityService)
+            throws NodeProcessException {
+        super(config.getConfig(configManagerFactory, idRepoUtilityService), coreWrapper, identityService);
+        this.config = config;
+        this.idRepoUtilityService = idRepoUtilityService;
+    }
+
+    @Override
+    protected boolean isUsernameRepresentedByUniversalId() {
+        return config.useUniversalIdForUsername();
     }
 
     private static final class LdapConfig implements LdapDecisionNode.Config {
@@ -134,12 +169,18 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
 
         private final ServiceConfigManager configManager;
         private final int minimumPasswordLength;
+        private boolean mixedCaseForPasswordChangeMessages;
+        private final IdRepoUtilityService idRepoUtilityService;
         private ConfigurationAttributes attributes;
 
 
-        private LdapConfig(ServiceConfigManager configManager, int minimumPasswordLength) {
+        private LdapConfig(ServiceConfigManager configManager, int minimumPasswordLength,
+                           boolean mixedCaseForPasswordChangeMessages,
+                           IdRepoUtilityService idRepoUtilityService) {
             this.configManager = configManager;
             this.minimumPasswordLength = minimumPasswordLength;
+            this.mixedCaseForPasswordChangeMessages = mixedCaseForPasswordChangeMessages;
+            this.idRepoUtilityService = idRepoUtilityService;
         }
 
         @Override
@@ -175,7 +216,7 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
 
         @Override
         public Set<String> primaryServers() {
-            return IdRepoUtils.getPrioritizedLDAPUrls(
+            return idRepoUtilityService.getPrioritizedLDAPUrls(
                             attributes.get(LDAPConstants.LDAP_SERVER_LIST))
                     .stream()
                     .map(LDAPURL::toString)
@@ -260,6 +301,11 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
         @Override
         public int minimumPasswordLength() {
             return minimumPasswordLength;
+        }
+
+        @Override
+        public boolean mixedCaseForPasswordChangeMessages() {
+            return mixedCaseForPasswordChangeMessages;
         }
 
         @Override

@@ -24,7 +24,7 @@
  *
  * $Id: AssertionIDRequestMapper.java,v 1.3 2008/12/03 00:34:10 hengming Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -32,15 +32,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.saml2.plugins.SAMLPlugin;
 
 import com.sun.identity.saml2.common.SAML2Exception;
 
 /**
- * This interface <code>AssertonIDRequestMapper</code> is used by asseriton
+ * This interface <code>AssertonIDRequestMapper</code> is used by assertion
  * ID request service to process assertion ID request.
  */ 
 @SupportedAll
-public interface AssertionIDRequestMapper {
+public interface AssertionIDRequestMapper extends SAMLPlugin {
 
     /**
      * Checks if the assertion requester using URI binding is valid.
@@ -56,8 +57,7 @@ public interface AssertionIDRequestMapper {
      *
      * @exception SAML2Exception if the request is not valid. 
      */
-    public void authenticateRequesterURI(HttpServletRequest request,
-        HttpServletResponse response, String  samlAuthorityEntityID,
-        String role, String realm) throws SAML2Exception;
+    void authenticateRequesterURI(HttpServletRequest request, HttpServletResponse response,
+            String  samlAuthorityEntityID, String role, String realm) throws SAML2Exception;
 
 }

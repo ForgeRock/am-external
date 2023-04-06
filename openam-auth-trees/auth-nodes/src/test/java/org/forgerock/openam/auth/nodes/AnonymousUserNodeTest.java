@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -30,7 +30,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.mockito.Mock;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -44,7 +44,7 @@ public class AnonymousUserNodeTest {
     @Mock
     private AnonymousUserNode.Config config;
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
 
     @BeforeMethod
     public void before() {
@@ -57,7 +57,7 @@ public class AnonymousUserNodeTest {
         when(config.anonymousUserName()).thenReturn("anonymous");
         TreeContext context = new TreeContext(json(object(1)),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
-        AnonymousUserNode node = new AnonymousUserNode(identityUtils, config);
+        AnonymousUserNode node = new AnonymousUserNode(identityService, config);
 
         //WHEN
         Action process = node.process(context);
@@ -73,7 +73,7 @@ public class AnonymousUserNodeTest {
         when(config.anonymousUserName()).thenReturn("anonymous");
         TreeContext context = new TreeContext(json(object(field(USERNAME, "this_user_will_be_replaced"))),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
-        AnonymousUserNode node = new AnonymousUserNode(identityUtils, config);
+        AnonymousUserNode node = new AnonymousUserNode(identityService, config);
 
         //WHEN
         Action process = node.process(context);
@@ -89,7 +89,7 @@ public class AnonymousUserNodeTest {
         when(config.anonymousUserName()).thenReturn("");
         TreeContext context = new TreeContext(json(object(1)),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
-        AnonymousUserNode node = new AnonymousUserNode(identityUtils, config);
+        AnonymousUserNode node = new AnonymousUserNode(identityService, config);
 
         //WHEN
         node.process(context);

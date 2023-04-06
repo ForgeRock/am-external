@@ -26,7 +26,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.AMIdentity;
@@ -102,13 +102,13 @@ interface DeviceProfile {
      * @param universalId the un
      * @param nodeState The NodeState
      * @param coreWrapper An instace of the CoreWrapper
-     * @param identityUtils An instance of the IdentityUtils,
+     * @param identityService An instance of the IdentityService,
      * @return The identity represent the user.
      * @throws NodeProcessException When username not found from context or datasource or inactive
      */
     default AMIdentity getUserIdentity(Optional<String> universalId, NodeState nodeState, CoreWrapper coreWrapper,
-            IdentityUtils identityUtils) throws NodeProcessException, IdRepoException, SSOException {
-        Optional<AMIdentity> userIdentity = getAMIdentity(universalId, nodeState, identityUtils, coreWrapper);
+            LegacyIdentityService identityService) throws NodeProcessException, IdRepoException, SSOException {
+        Optional<AMIdentity> userIdentity = getAMIdentity(universalId, nodeState, identityService, coreWrapper);
         if (userIdentity.isEmpty() || !userIdentity.get().isExists() || !userIdentity.get().isActive()) {
             throw new NodeProcessException("User does not exist or inactive");
         }

@@ -11,13 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.saml2.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ADAPTER_SCRIPT;
 import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT;
+import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_SP_ADAPTER_SCRIPT;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,8 +45,8 @@ public class Saml2GlobalScriptsProviderTest {
         List<String> globalScriptIds = provider.get().stream().map(Script::getId).collect(Collectors.toList());
 
         // Then
-        assertThat(globalScriptIds.size()).isEqualTo(2);
+        assertThat(globalScriptIds.size()).isEqualTo(3);
         assertThat(globalScriptIds).containsExactlyInAnyOrder(SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT.getId(),
-                SAML2_IDP_ADAPTER_SCRIPT.getId());
+                SAML2_IDP_ADAPTER_SCRIPT.getId(), SAML2_SP_ADAPTER_SCRIPT.getId());
     }
 }

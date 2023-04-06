@@ -24,7 +24,7 @@
  *
  * $Id: DoManageNameID.java,v 1.26 2009/11/24 21:53:27 madan_ranganath Exp $
  *
- * Portions copyright 2013-2020 ForgeRock AS.
+ * Portions copyright 2013-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -100,8 +100,8 @@ import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.plugins.IDPAccountMapper;
-import com.sun.identity.saml2.plugins.SAML2ServiceProviderAdapter;
 import com.sun.identity.saml2.plugins.SPAccountMapper;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 import com.sun.identity.saml2.protocol.ManageNameIDRequest;
 import com.sun.identity.saml2.protocol.ManageNameIDResponse;
 import com.sun.identity.saml2.protocol.NewEncryptedID;
@@ -341,16 +341,16 @@ public class DoManageNameID {
         String userId,  ManageNameIDRequest idRequest, 
         ManageNameIDResponse idResponse, String binding) {
 
-        SAML2ServiceProviderAdapter spAdapter = null;
+        SPAdapter adapter = null;
         try {
-            spAdapter = SAML2Utils.getSPAdapterClass(hostEntityId, realm);
+            adapter = SAML2Utils.getSPAdapter(hostEntityId, realm);
         } catch (SAML2Exception e) {
             if (logger.isDebugEnabled()) {
                 logger.debug("DoManageNameID.postTerminationSuccess:", e);
             }
         }
-        if (spAdapter != null) {
-            spAdapter.postTerminateNameIDSuccess(hostEntityId, realm,
+        if (adapter != null) {
+            adapter.postTerminateNameIDSuccess(hostEntityId, realm,
                 request, response, userId, idRequest, idResponse, binding);
         }
     }

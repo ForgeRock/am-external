@@ -26,22 +26,25 @@
  *
  */
 /*
- * Portions Copyrighted 2011-2021 ForgeRock AS.
+ * Portions Copyrighted 2011-2022 ForgeRock AS.
  */
 package com.sun.identity.authentication.modules.hotp;
 
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.iplanet.am.util.AMSendMail;
+import org.forgerock.am.mail.application.AMSendMail;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 
 public class DefaultSMSGatewayImpl implements SMSGateway {
 
-    private Logger debug = null;
+    private final AMSendMail sendMail;
+    private final Logger debug;
     public static final String SMTPHOSTNAME = "sunAMAuthHOTPSMTPHostName";
     public static final String SMTPHOSTPORT = "sunAMAuthHOTPSMTPHostPort";
     public static final String SMTPUSERNAME = "sunAMAuthHOTPSMTPUserName";
@@ -52,12 +55,13 @@ public class DefaultSMSGatewayImpl implements SMSGateway {
     private String smtpHostPort = null;
     private String smtpUserName = null;
     private String smtpUserPassword = null;
-    private String smtpSSLEnabled = null;
     private boolean sslEnabled = true;
     private boolean startTls = false;
 
-    public DefaultSMSGatewayImpl() {
+    @Inject
+    public DefaultSMSGatewayImpl(AMSendMail sendMail) {
         debug = LoggerFactory.getLogger("amAuthHOTP");
+        this.sendMail = sendMail;
     }
 
     /**
@@ -76,7 +80,7 @@ public class DefaultSMSGatewayImpl implements SMSGateway {
             } else {
                 msg = message + code;
             }
-            String tos[] = new String[1];
+            String[] tos = new String[1];
             // If the phone does not contain provider info, append ATT to it
             // Note : need to figure out a way to add the provider information
             // For now assume : the user phone # entered is
@@ -85,7 +89,6 @@ public class DefaultSMSGatewayImpl implements SMSGateway {
                 to = to + "@txt.att.net";
             }
             tos[0] = to;
-            AMSendMail sendMail = new AMSendMail();
 
             if (smtpHostName == null || smtpHostPort == null) {
                 sendMail.postMail(tos, subject, msg, from);
@@ -120,7 +123,7 @@ public class DefaultSMSGatewayImpl implements SMSGateway {
         smtpUserName = CollectionHelper.getMapAttr(options, SMTPUSERNAME);
         smtpUserPassword = CollectionHelper.getMapAttr(options,
                 SMTPUSERPASSWORD);
-        smtpSSLEnabled = CollectionHelper.getMapAttr(options, SMTPSSLENABLED);
+        String smtpSSLEnabled = CollectionHelper.getMapAttr(options, SMTPSSLENABLED);
 
         if (smtpSSLEnabled != null) {
             if (smtpSSLEnabled.equals("Non SSL")) {

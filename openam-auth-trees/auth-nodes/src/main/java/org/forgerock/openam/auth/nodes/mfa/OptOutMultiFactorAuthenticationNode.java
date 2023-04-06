@@ -46,7 +46,7 @@ import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathSer
 import org.forgerock.openam.core.rest.devices.services.push.AuthenticatorPushService;
 import org.forgerock.openam.core.rest.devices.services.webauthn.AuthenticatorWebAuthnService;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.annotations.VisibleForTesting;
@@ -68,7 +68,7 @@ public class OptOutMultiFactorAuthenticationNode extends SingleOutcomeNode {
     private static final Logger logger = LoggerFactory.getLogger(OptOutMultiFactorAuthenticationNode.class);
 
     private final CoreWrapper coreWrapper;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
 
     private MultiFactorNodeDelegate<?> multiFactorNodeDelegate;
 
@@ -76,13 +76,13 @@ public class OptOutMultiFactorAuthenticationNode extends SingleOutcomeNode {
      * The node constructor.
      *
      * @param coreWrapper used to recover the users username.
-     * @param identityUtils an instance of the IdentityUtils.
+     * @param identityService an instance of the IdentityService.
      */
     @Inject
     public OptOutMultiFactorAuthenticationNode(CoreWrapper coreWrapper,
-            IdentityUtils identityUtils) {
+            LegacyIdentityService identityService) {
         this.coreWrapper = coreWrapper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
     }
 
     @Override
@@ -168,7 +168,7 @@ public class OptOutMultiFactorAuthenticationNode extends SingleOutcomeNode {
     @VisibleForTesting
     AMIdentity getIdentityFromIdentifier(TreeContext context) throws NodeProcessException {
         Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
-                identityUtils, coreWrapper);
+                identityService, coreWrapper);
         if (userIdentity.isEmpty()) {
             throw new NodeProcessException("Failed to get the identity object");
         }

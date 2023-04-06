@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -41,7 +41,7 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.authentication.modules.oauth2.OAuthUtil;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +65,7 @@ public class ProvisionDynamicAccountNode extends SingleOutcomeNode {
     static final String ACTIVE = "Active";
     private final ProvisionDynamicAccountNode.Config config;
     private final SocialOAuth2Helper authModuleHelper;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final IdmIntegrationService idmIntegrationService;
     private final Realm realm;
 
@@ -92,17 +92,17 @@ public class ProvisionDynamicAccountNode extends SingleOutcomeNode {
      * @param config provides the settings for initialising an {@link ProvisionDynamicAccountNode}.
      * @param realm The realm context for the authentication.
      * @param authModuleHelper Helper class for oauth2 authentication.
-     * @param identityUtils An instance of the IdentityUtils.
+     * @param identityService An instance of the IdentityService.
      * @param idmIntegrationService An instance of the IdmIntegrationService.
      */
     @Inject
     public ProvisionDynamicAccountNode(@Assisted ProvisionDynamicAccountNode.Config config, @Assisted Realm realm,
-            SocialOAuth2Helper authModuleHelper, IdentityUtils identityUtils,
+            SocialOAuth2Helper authModuleHelper, LegacyIdentityService identityService,
             IdmIntegrationService idmIntegrationService) {
         this.config = config;
         this.realm = realm;
         this.authModuleHelper = authModuleHelper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.idmIntegrationService = idmIntegrationService;
     }
 
@@ -114,7 +114,7 @@ public class ProvisionDynamicAccountNode extends SingleOutcomeNode {
         String username = provisionAccount(context, userAttributes);
         String realm = context.sharedState.get(REALM).asString();
         return goToNext()
-                .withUniversalId(identityUtils.getUniversalId(username, realm, USER))
+                .withUniversalId(identityService.getUniversalId(username, realm, USER))
                 .replaceSharedState(context.sharedState.put(USERNAME, username))
                 .build();
     }

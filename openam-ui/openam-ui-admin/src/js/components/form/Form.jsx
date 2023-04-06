@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 import { mapValues, merge, omit, upperFirst } from "lodash";
@@ -27,6 +27,12 @@ import FormFieldTemplate from "components/form/templates/FormFieldTemplate";
 import removePasswordsFromRequired from "./schema/removePasswordsFromRequired";
 import uiSchema from "./uiSchema";
 import widgets from "components/form/widgets";
+import {
+    convertPlaceholderSchemaToReadOnly,
+    flattenPlaceholder,
+    containsPlaceholder,
+    revertPlaceholdersToOriginalValue
+} from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
 
 /**
  * Form component for JSON Schema. Wraps the react-jsonschema-form library.
@@ -98,7 +104,7 @@ class Form extends Component {
 
     render () {
         const { editValidationMode, schema, formData, ...props } = this.props;
-        const restProps = omit(props, "uiSchema");
+        const restProps = omit(props, ["uiSchema", "onChange"]);
 
         // JSON Schema Transforms
         let schemaProp = convertToDraft4PlusRequired(schema);
@@ -114,7 +120,30 @@ class Form extends Component {
           * Remove this tranform when the API returns `undefined` by default.
           * @see OPENAM-16592
           */
-        const formDataNullRemoved = mapValues(formData, (value) => { return value === null ? undefined : value; });
+        let formDataNullRemoved = mapValues(formData, (value) => { return value === null ? undefined : value; });
+        schemaProp = convertPlaceholderSchemaToReadOnly(formDataNullRemoved, schemaProp);
+        formDataNullRemoved = flattenPlaceholder({ ...formDataNullRemoved });
+        let placeholderFound = false;
+        const keys = Object.keys(formDataNullRemoved);
+        for (let i = 0; i < keys.length; i++) {
+            if (containsPlaceholder(formDataNullRemoved[keys[i]])) {
+                placeholderFound = true;
+                break;
+            }
+        }
+
+        // This has to be handled instead of on submit as on some forms
+        // (tree node properties), they get submitted by a parent component and
+        // thus the forms handleSubmit never gets called
+        const onChangeWrapper = (jsonForm) => {
+            if (placeholderFound) {
+                const form = { ...jsonForm };
+                form.formData = revertPlaceholdersToOriginalValue(form.formData, schemaProp);
+                props.onChange(form);
+            } else {
+                props.onChange(jsonForm);
+            }
+        };
 
         return (
             <ReactJSONSchemaForm
@@ -127,10 +156,14 @@ class Form extends Component {
                 FieldTemplate={ this.fieldTemplate }
                 formData={ formDataNullRemoved }
                 noHtml5Validate
+                onChange={ props.onChange && onChangeWrapper } // eslint-disable-line
                 schema={ schemaProp }
                 showErrorList={ false }
                 transformErrors={ this.transformErrors }
-                uiSchema={ merge(uiSchema(schema, editValidationMode), this.props.uiSchema) }
+                uiSchema={
+                    placeholderFound
+                        ? uiSchema(schemaProp, editValidationMode)
+                        : merge(uiSchema(schema, editValidationMode), this.props.uiSchema) }
                 widgets={ widgets }
                 { ...restProps }
             >

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.common.mapping;
@@ -19,11 +19,11 @@ package org.forgerock.openam.authentication.modules.common.mapping;
 import java.util.Map;
 import java.util.Set;
 
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.openam.annotations.SupportedAll;
 
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.AMIdentityRepository;
 
 /**
  * Implementations of this interface provide the means to search for and create users given a map of attributes.
@@ -39,7 +39,7 @@ public interface AccountProvider {
      * @param attr The set of attributes, which should be treated as 'or' statements.
      * @return The first matching user found.
      */
-    AMIdentity searchUser(AMIdentityRepository idrepo, Map<String, Set<String>> attr);
+    AMIdentity searchUser(IdentityStore idrepo, Map<String, Set<String>> attr);
 
     /**
      * Provisions a user with the specified attributes.
@@ -48,6 +48,6 @@ public interface AccountProvider {
      * @return The created user identity.
      * @throws AuthLoginException Thrown if user creation fails.
      */
-    AMIdentity provisionUser(AMIdentityRepository idrepo, Map<String, Set<String>> attributes) throws AuthLoginException;
+    AMIdentity provisionUser(IdentityStore idrepo, Map<String, Set<String>> attributes) throws AuthLoginException;
     
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.saml2.service;
@@ -19,13 +19,16 @@ package org.forgerock.openam.saml2.service;
 import static java.text.MessageFormat.format;
 import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ADAPTER_SCRIPT;
 import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT;
+import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_SP_ADAPTER_SCRIPT;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ADAPTER;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ATTRIBUTE_MAPPER;
+import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_SP_ADAPTER;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import javax.xml.bind.JAXBElement;
 
@@ -43,6 +46,8 @@ import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
+import com.sun.identity.saml2.plugins.scripted.IdpAdapterScriptHelper;
+import com.sun.identity.saml2.plugins.scripted.SpAdapterScriptHelper;
 
 /**
  * Responsible for providing the SAML2 script contexts.
@@ -50,6 +55,44 @@ import com.sun.identity.saml2.meta.SAML2MetaUtils;
 public class Saml2ScriptContextProvider implements ScriptContextDetailsProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(Saml2ScriptContextProvider.class);
+
+    private static final String[] ADAPTER_WHITE_LIST = {
+            "com.iplanet.am.sdk.AMHashMap",
+            "com.iplanet.sso.providers.dpro.SessionSsoToken",
+            "com.sun.identity.common.CaseInsensitiveHashMap",
+            "com.sun.identity.saml2.assertion.*",
+            "com.sun.identity.saml2.assertion.impl.*",
+            "com.sun.identity.saml2.common.SAML2Exception",
+            "com.sun.identity.saml2.plugins.scripted.ScriptEntitlementInfo",
+            "com.sun.identity.saml2.protocol.*",
+            "com.sun.identity.saml2.protocol.impl.*",
+            "com.sun.identity.shared.debug.Debug",
+            "java.io.PrintWriter",
+            "java.lang.Boolean", "java.lang.Byte", "java.lang.Character", "java.lang.Character$Subset",
+            "java.lang.Character$UnicodeBlock", "java.util.Collections$EmptyMap", "java.lang.Double", "java.lang.Float",
+            "java.lang.Integer", "java.lang.Long", "java.lang.Math", "java.lang.Number", "java.lang.Object",
+            "java.lang.Short", "java.lang.StrictMath", "java.lang.String", "java.lang.Void",
+            "java.util.AbstractMap$SimpleImmutableEntry", "java.util.ArrayList", "java.util.ArrayList$Itr",
+            "java.util.Collections$1", "java.util.Collections$EmptyList",
+            "java.util.Collections$SingletonList",
+            "java.util.Collections$UnmodifiableRandomAccessList",
+            "java.util.Collections$UnmodifiableCollection$1",
+            "java.util.HashMap", "java.util.HashMap$Entry",
+            "java.util.HashMap$KeyIterator", "java.util.HashMap$KeySet", "java.util.HashMap$Node",
+            "java.util.HashSet", "java.util.LinkedHashMap", "java.util.LinkedHashMap$Entry",
+            "java.util.LinkedHashMap$LinkedEntryIterator", "java.util.LinkedHashMap$LinkedEntrySet",
+            "java.util.LinkedHashSet", "java.util.LinkedList", "java.util.TreeMap", "java.util.TreeSet",
+            "java.net.URI", "javax.security.auth.Subject", "javax.servlet.http.HttpServletRequestWrapper",
+            "javax.servlet.http.HttpServletResponseWrapper",
+            "groovy.json.internal.LazyMap", "groovy.json.JsonSlurper",
+            "org.codehaus.groovy.runtime.GStringImpl", "org.codehaus.groovy.runtime.ScriptBytecodeAdapter",
+            "org.forgerock.http.Client", "org.forgerock.http.client.*",
+            "org.forgerock.json.JsonValue",
+            "org.forgerock.openam.scripting.api.http.GroovyHttpClient",
+            "org.forgerock.openam.scripting.api.http.JavaScriptHttpClient",
+            "org.forgerock.util.promise.PromiseImpl",
+            "org.mozilla.javascript.JavaScriptException",
+            "sun.security.ec.ECPrivateKeyImpl"};
 
     @Override
     public List<ScriptContextDetails> get() {
@@ -80,45 +123,27 @@ public class Saml2ScriptContextProvider implements ScriptContextDetailsProvider 
                         "org.forgerock.http.Client", "org.forgerock.http.client.*",
                         "org.forgerock.openam.scripting.api.http.GroovyHttpClient",
                         "org.forgerock.openam.scripting.api.http.JavaScriptHttpClient",
+                        "org.forgerock.openam.shared.security.crypto.CertificateService",
                         "org.forgerock.util.promise.PromiseImpl", "org.forgerock.json.JsonValue",
                         "com.sun.identity.saml2.common.SAML2Exception",
                         "java.util.Collections$UnmodifiableRandomAccessList",
-                        "java.util.Collections$UnmodifiableCollection$1").build());
+                        "java.util.Collections$UnmodifiableCollection$1",
+                        "org.mozilla.javascript.JavaScriptException", "javax.servlet.http.Cookie",
+                        "javax.xml.parsers.DocumentBuilder", "javax.xml.parsers.DocumentBuilderFactory",
+                        "org.w3c.dom.Document", "org.w3c.dom.Element", "org.xml.sax.InputSource"
+                ).build());
 
         scriptContexts.add(ScriptContextDetails.builder()
                 .withContextReference(SAML2_IDP_ADAPTER)
                 .withI18NKey("script-type-13")
                 .withDefaultScript(SAML2_IDP_ADAPTER_SCRIPT.getId())
-                .overrideDefaultWhiteList(
-                        "java.lang.Boolean", "java.lang.Byte", "java.lang.Character",
-                        "java.lang.Character$Subset", "java.lang.Character$UnicodeBlock",
-                        "java.util.Collections$EmptyMap", "java.lang.Double", "java.lang.Float", "java.lang.Integer",
-                        "java.lang.Long", "java.lang.Math", "java.lang.Number", "java.lang.Object", "java.lang.Short",
-                        "java.lang.StrictMath", "java.lang.String", "java.lang.Void",
-                        "java.util.AbstractMap$SimpleImmutableEntry", "java.util.ArrayList", "java.util.ArrayList$Itr",
-                        "java.util.Collections$1", "java.util.Collections$EmptyList",
-                        "java.util.Collections$SingletonList", "java.util.HashMap", "java.util.HashMap$Entry",
-                        "java.util.HashMap$KeyIterator", "java.util.HashMap$KeySet", "java.util.HashMap$Node",
-                        "java.util.HashSet", "java.util.LinkedHashMap", "java.util.LinkedHashMap$Entry",
-                        "java.util.LinkedHashMap$LinkedEntryIterator", "java.util.LinkedHashMap$LinkedEntrySet",
-                        "java.util.LinkedHashSet", "java.util.LinkedList", "java.util.TreeMap", "java.util.TreeSet",
-                        "java.net.URI", "javax.security.auth.Subject", "javax.servlet.http.HttpServletRequestWrapper",
-                        "javax.servlet.http.HttpServletResponseWrapper", "com.iplanet.am.sdk.AMHashMap",
-                        "com.iplanet.sso.providers.dpro.SessionSsoToken",
-                        "com.sun.identity.common.CaseInsensitiveHashMap",
-                        "com.sun.identity.saml2.common.SAML2Exception",
-                        "com.sun.identity.saml2.plugins.scripted.IdpAdapterScriptHelper",
-                        "com.sun.identity.saml2.plugins.scripted.ScriptEntitlementInfo",
-                        "com.sun.identity.saml2.protocol.impl.AuthnRequestImpl",
-                        "com.sun.identity.saml2.protocol.impl.ResponseImpl", "com.sun.identity.shared.debug.Debug",
-                        "groovy.json.JsonSlurper", "groovy.json.internal.LazyMap",
-                        "org.codehaus.groovy.runtime.GStringImpl", "org.codehaus.groovy.runtime.ScriptBytecodeAdapter",
-                        "org.forgerock.http.Client", "org.forgerock.http.client.*",
-                        "org.forgerock.openam.scripting.api.http.GroovyHttpClient",
-                        "org.forgerock.openam.scripting.api.http.JavaScriptHttpClient",
-                        "org.forgerock.util.promise.PromiseImpl", "org.forgerock.json.JsonValue",
-                        "java.util.Collections$UnmodifiableRandomAccessList",
-                        "java.util.Collections$UnmodifiableCollection$1").build());
+                .overrideDefaultWhiteList(generateWhiteList(ADAPTER_WHITE_LIST, IdpAdapterScriptHelper.class)).build());
+
+        scriptContexts.add(ScriptContextDetails.builder()
+                .withContextReference(SAML2_SP_ADAPTER)
+                .withI18NKey("script-type-17")
+                .withDefaultScript(SAML2_SP_ADAPTER_SCRIPT.getId())
+                .overrideDefaultWhiteList(generateWhiteList(ADAPTER_WHITE_LIST, SpAdapterScriptHelper.class)).build());
 
         return scriptContexts;
     }
@@ -149,6 +174,12 @@ public class Saml2ScriptContextProvider implements ScriptContextDetailsProvider 
     private boolean entityAttributeContainsScriptId(Script script, Map<String,
             List<String>> entityAttributes, Saml2ScriptContext scriptContext) {
         return CollectionUtils.isNotEmpty(entityAttributes.get(scriptContext.getAttribute()))
-                &&  entityAttributes.get(scriptContext.getAttribute()).contains(script.getId());
+                && entityAttributes.get(scriptContext.getAttribute()).contains(script.getId());
+    }
+
+    private String[] generateWhiteList(String[] defaultWhiteList, Class... additionalClasses) {
+        return Stream.concat(Arrays.stream(defaultWhiteList),
+                        Arrays.stream(additionalClasses).map(Class::getCanonicalName))
+                .toArray(String[]::new);
     }
 }

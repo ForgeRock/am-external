@@ -39,7 +39,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.modules.hotp.SMSGateway;
+import com.sun.identity.authentication.modules.hotp.SMSGatewayLookup;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
@@ -62,8 +63,9 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
 
     private final Logger logger = LoggerFactory.getLogger(OneTimePasswordSmsSenderNode.class);
     private final CoreWrapper coreWrapper;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final LocaleSelector localeSelector;
+    private final SMSGatewayLookup smsGatewayLookup;
 
     /**
      * Configuration for the node.
@@ -113,16 +115,18 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
      *
      * @param config Node configuration.
      * @param coreWrapper A wrapper for core utility methods.
-     * @param identityUtils An instance IdentityUtils.
+     * @param identityService An instance IdentityService.
      * @param localeSelector An instance of LocaleSelector.
+     * @param smsGatewayLookup lookup for {@link SMSGateway}.
      */
     @Inject
-    public OneTimePasswordSmsSenderNode(@Assisted Config config, CoreWrapper coreWrapper, IdentityUtils identityUtils,
-            LocaleSelector localeSelector) {
+    public OneTimePasswordSmsSenderNode(@Assisted Config config, CoreWrapper coreWrapper,
+            LegacyIdentityService identityService, LocaleSelector localeSelector, SMSGatewayLookup smsGatewayLookup) {
         this.config = config;
         this.coreWrapper = coreWrapper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.localeSelector = localeSelector;
+        this.smsGatewayLookup = smsGatewayLookup;
     }
 
     @Override
@@ -131,7 +135,7 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
         String phone;
         ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
 
-        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityUtils,
+        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityService,
                 coreWrapper);
         if (identity.isEmpty()) {
             logger.warn("identity not found");
@@ -150,13 +154,7 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
             throw new NodeProcessException(bundle.getString("phone.not.found"), e);
         }
 
-        SMSGateway gateway;
-        try {
-            gateway = Class.forName(config.smsGatewayImplementationClass()).asSubclass(SMSGateway.class).newInstance();
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
-            logger.warn("SMSGateway error", e);
-            throw new NodeProcessException(bundle.getString("gateway.failure"), e);
-        }
+        SMSGateway gateway = getSmsGateway(bundle);
 
         JsonValue oneTimePassword = context.getState(ONE_TIME_PASSWORD);
         if (oneTimePassword == null) {
@@ -178,6 +176,15 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
             throw new NodeProcessException(bundle.getString("sms.send.failure"), e);
         }
         return goToNext().build();
+    }
+
+    private SMSGateway getSmsGateway(ResourceBundle bundle) throws NodeProcessException {
+        try {
+            return smsGatewayLookup.getSmsGateway(config.smsGatewayImplementationClass());
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+            logger.warn("SMSGateway error", e);
+            throw new NodeProcessException(bundle.getString("gateway.failure"), e);
+        }
     }
 
     private String getTelephoneNumberWithCarrier(AMIdentity identity, String phone) throws IdRepoException,

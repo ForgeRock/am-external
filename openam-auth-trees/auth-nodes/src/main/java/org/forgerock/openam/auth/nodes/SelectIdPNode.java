@@ -260,8 +260,8 @@ public class SelectIdPNode implements Node {
                     SelectIdPNodeOutcomeProvider.class.getClassLoader());
             return nodeAttributes.get("includeLocalAuthentication").defaultTo(true).asBoolean()
                     ? asList(
-                    new Outcome(SOCIAL_AUTHENTICATION, bundle.getString(SOCIAL_OUTCOME)),
-                    new Outcome(LOCAL_AUTHENTICATION, bundle.getString(LOCAL_OUTCOME)))
+                        new Outcome(SOCIAL_AUTHENTICATION, bundle.getString(SOCIAL_OUTCOME)),
+                        new Outcome(LOCAL_AUTHENTICATION, bundle.getString(LOCAL_OUTCOME)))
                     : singletonList(new Outcome(SOCIAL_AUTHENTICATION, bundle.getString(SOCIAL_OUTCOME)));
         }
     }

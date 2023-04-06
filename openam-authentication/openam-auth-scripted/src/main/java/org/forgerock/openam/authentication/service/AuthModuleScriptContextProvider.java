@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.service;
@@ -27,6 +27,7 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptContextDetails;
 import org.forgerock.openam.scripting.persistence.config.defaults.ScriptContextDetailsProvider;
+import org.mozilla.javascript.JavaScriptException;
 
 import com.google.inject.Inject;
 import com.iplanet.dpro.session.service.DsameAdminTokenProvider;
@@ -79,15 +80,18 @@ public class AuthModuleScriptContextProvider implements ScriptContextDetailsProv
                         "org.forgerock.openam.core.rest.devices.deviceprint.DeviceIdDao",
                         "org.forgerock.openam.scripting.api.http.GroovyHttpClient",
                         "org.forgerock.openam.scripting.api.http.JavaScriptHttpClient",
-                        "org.forgerock.openam.scripting.api.ScriptedIdentity",
+                        "org.forgerock.openam.scripting.api.identity.ScriptedIdentity",
                         "org.forgerock.openam.scripting.api.ScriptedSession",
                         "org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository",
+                        "org.forgerock.openam.shared.security.crypto.CertificateService",
                         "org.forgerock.util.promise.NeverThrowsException", "org.forgerock.util.promise.Promise",
                         "org.forgerock.util.promise.PromiseImpl",
-                        "org.forgerock.openam.scripting.api.PrefixedScriptPropertyResolver", "java.util.List",
-                        "java.util.Map", "java.util.Collections$UnmodifiableRandomAccessList",
-                        "java.util.Collections$UnmodifiableCollection$1")
-                .build());
+                        "org.forgerock.openam.scripting.api.PrefixedScriptPropertyResolver",
+                        "java.util.List", "java.util.Map", "java.util.Collections$UnmodifiableRandomAccessList",
+                        "java.util.Collections$UnmodifiableCollection$1",
+                        "org.mozilla.javascript.JavaScriptException",
+                        "sun.security.ec.ECPrivateKeyImpl"
+                ).build());
 
         scriptContexts.add(ScriptContextDetails.builder()
                 .withContextReference(AUTHENTICATION_CLIENT_SIDE)

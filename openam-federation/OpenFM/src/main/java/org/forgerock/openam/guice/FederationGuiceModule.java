@@ -11,25 +11,29 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2021 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 package org.forgerock.openam.guice;
 
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_IDP_ADAPTER;
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_IDP_ATTRIBUTE_MAPPER;
+import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_SP_ADAPTER;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.forgerock.openam.audit.context.AMExecutorServiceFactory;
+import com.sun.identity.plugin.session.impl.FMSessionNotification;
 import org.forgerock.openam.federation.config.Saml2DataStoreListener;
+import org.forgerock.openam.saml2.plugins.IDPAdapter;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
 import org.forgerock.openam.saml2.plugins.SecretsSaml2CredentialResolver;
 import org.forgerock.openam.saml2.service.Saml2ScriptContextProvider;
 import org.forgerock.openam.scripting.persistence.config.defaults.ScriptContextDetailsProvider;
 import org.forgerock.openam.services.datastore.DataStoreServiceChangeNotifier;
+import org.forgerock.util.thread.ExecutorServiceFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Key;
@@ -37,9 +41,9 @@ import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.sun.identity.saml2.plugins.IDPAttributeMapper;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 import com.sun.identity.saml2.plugins.scripted.ScriptedIdpAdapter;
 import com.sun.identity.saml2.plugins.scripted.ScriptedIdpAttributeMapper;
+import com.sun.identity.saml2.plugins.scripted.ScriptedSpAdapter;
 
 /**
  * Responsible for declaring the bindings required for the federation code base.
@@ -60,14 +64,15 @@ public class FederationGuiceModule extends AbstractModule {
                 .addBinding().to(Saml2DataStoreListener.class);
         bind(Key.get(IDPAttributeMapper.class,
                 Names.named(SCRIPTED_IDP_ATTRIBUTE_MAPPER))).to(ScriptedIdpAttributeMapper.class);
-        bind(Key.get(SAML2IdentityProviderAdapter.class,
-                Names.named(SCRIPTED_IDP_ADAPTER))).to(ScriptedIdpAdapter.class);
+        bind(Key.get(IDPAdapter.class, Names.named(SCRIPTED_IDP_ADAPTER))).to(ScriptedIdpAdapter.class);
+        bind(Key.get(SPAdapter.class, Names.named(SCRIPTED_SP_ADAPTER))).to(ScriptedSpAdapter.class);
+        bind(FMSessionNotification.class).in(Singleton.class);
     }
 
     @Provides
     @Singleton
     @Named(FEDERATION_SESSION_MANAGEMENT)
-    public ScheduledExecutorService getFederationScheduledService(AMExecutorServiceFactory esf) {
-        return esf.createCancellableScheduledService(1, FEDERATION_SESSION_MANAGEMENT);
+    public ScheduledExecutorService getFederationScheduledService(ExecutorServiceFactory executorServiceFactory) {
+        return executorServiceFactory.createCancellableScheduledService(1, FEDERATION_SESSION_MANAGEMENT);
     }
 }

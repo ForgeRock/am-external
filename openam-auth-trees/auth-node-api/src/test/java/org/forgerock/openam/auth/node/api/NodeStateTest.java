@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -193,7 +193,23 @@ public class NodeStateTest {
                             state(of("KEY_2", "VALUE_C", "KEY_3", "VALUE_D")),
                             state(of("KEY_3", "VALUE_E", "KEY_4", "VALUE_F")));
 
-                    assertThat(nodeState.keys()).contains("KEY_1", "KEY_2", "KEY_3", "KEY_4");
+                    assertThat(nodeState.keys()).containsExactlyInAnyOrder("KEY_1", "KEY_2", "KEY_3", "KEY_4");
+                });
+                it("returns filtered distinct keys", () -> {
+                    NodeState nodeState = new NodeState(List.of("KEY_1", "KEY_2"),
+                            state(of("KEY_1", "VALUE_A", "KEY_2", "VALUE_B")),
+                            state(of("KEY_2", "VALUE_C", "KEY_3", "VALUE_D")),
+                            state(of("KEY_3", "VALUE_E", "KEY_4", "VALUE_F")));
+
+                    assertThat(nodeState.keys()).containsExactlyInAnyOrder("KEY_1", "KEY_2");
+                });
+                it("returns all distinct keys when filter wilcard", () -> {
+                    NodeState nodeState = new NodeState(List.of("*"),
+                            state(of("KEY_1", "VALUE_A", "KEY_2", "VALUE_B")),
+                            state(of("KEY_2", "VALUE_C", "KEY_3", "VALUE_D")),
+                            state(of("KEY_3", "VALUE_E", "KEY_4", "VALUE_F")));
+
+                    assertThat(nodeState.keys()).containsExactlyInAnyOrder("KEY_1", "KEY_2", "KEY_3", "KEY_4");
                 });
             });
             describe("#putShared", () -> {

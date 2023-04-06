@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.radius.server.config;
@@ -157,8 +157,10 @@ public interface RadiusServerServiceConfig
      * Choice values for Listener enabled.
      */
     enum YesNoChoice {
+        /** No Choice. */
         @I18nKey("choiceNO")
         NO("NO"),
+        /** Yes Choice. */
         @I18nKey("choiceYES")
         YES("YES");
         private final String name;

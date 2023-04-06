@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
@@ -52,6 +52,8 @@ public final class MultiFactorConstants {
     public static final String URI_PATH_QR_CODE_KEY = "forgerock";
     /** The id of the HiddenCallback containing the URI. */
     public static final String HIDDEN_CALLCABK_ID = "mfaDeviceRegistration";
+    /** The key for authenticator policies of the QR code. */
+    public static final String POLICIES_QR_CODE_KEY = "policies";
 
     /**
      * RECOVERY CODE KEYS.

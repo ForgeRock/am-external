@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -149,7 +149,7 @@ ObjectUtil.isEqualSet = function (set1, set2) {
     };
 
     return _.reduce(set1, _.curry(traverseSet)(set2), true) &&
-            _.reduce(set2, _.curry(traverseSet)(set1), true);
+        _.reduce(set2, _.curry(traverseSet)(set1), true);
 };
 
 /**
@@ -242,8 +242,8 @@ ObjectUtil.generatePatchSet = function (newObject, oldObject) {
             }
         })
         .flatten()
-    // Filter out duplicates which might result from adding whole containers
-    // Have to stringify the patch operations to do object comparisons with uniq
+        // Filter out duplicates which might result from adding whole containers
+        // Have to stringify the patch operations to do object comparisons with uniq
         .uniqBy(JSON.stringify)
         .value();
     const removedValues = _.chain(previousPointerMap)
@@ -255,12 +255,35 @@ ObjectUtil.generatePatchSet = function (newObject, oldObject) {
             const finalPathToRemove = ObjectUtil.walkDefinedPath(newObjectClosure, p[0]);
             return { "operation": "remove", "field": finalPathToRemove };
         })
-    // Filter out duplicates which might result from deleting whole containers
-    // Have to stringify the patch operations to do object comparisons with uniq
+        // Filter out duplicates which might result from deleting whole containers
+        // Have to stringify the patch operations to do object comparisons with uniq
         .uniqBy(JSON.stringify)
         .value();
 
     return newValues.concat(removedValues);
 };
+
+const COMPLEX_OBJECT_LIST = [Boolean, Number, String, RegExp, Date];
+
+/**
+ * Determines whether given param is a pure object
+ * will return false for RegExp, Number, Function, Number objects and Arrays etc.
+ * @param {*} value object to determine
+ * @returns boolean true if the type is an object
+ */
+ObjectUtil.isPureObject = (value) => {
+    if (!value) return false;
+
+    const isComplexObject = (val) => COMPLEX_OBJECT_LIST.some((type) => val instanceof type);
+
+    if (typeof value === "function"
+        || isComplexObject(value)
+        || Array.isArray(value)) {
+        return false;
+    }
+
+    return _.isObject(value);
+};
+
 
 export default ObjectUtil;

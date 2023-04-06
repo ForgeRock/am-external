@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  * Portions Copyrighted 2020 IC Consult.
  */
 
@@ -52,7 +52,7 @@ import org.forgerock.openam.auth.node.api.SharedStateConstants;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.util.Pair;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
@@ -96,7 +96,7 @@ public class KerberosNode extends AbstractDecisionNode {
     private static final Logger logger = LoggerFactory.getLogger(KerberosNode.class);
     private final Config config;
     private final Realm realm;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final CoreWrapper coreWrapper;
 
     /**
@@ -172,15 +172,15 @@ public class KerberosNode extends AbstractDecisionNode {
      *
      * @param config The service config.
      * @param realm  The realm the node is in.
-     * @param identityUtils A {@code IdentityUtils} instance.
+     * @param identityService An {@link LegacyIdentityService} instance.
      * @param coreWrapper The {@code CoreWrapper} instance.
      */
     @Inject
     public KerberosNode(@Assisted Config config, @Assisted Realm realm,
-            IdentityUtils identityUtils, CoreWrapper coreWrapper) {
+            LegacyIdentityService identityService, CoreWrapper coreWrapper) {
         this.config = config;
         this.realm = realm;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.coreWrapper = coreWrapper;
     }
 
@@ -324,7 +324,7 @@ public class KerberosNode extends AbstractDecisionNode {
                 String userValue = getUserName(userPrincipalName);
                 Optional<String> universalId = Optional.empty();
                 if (config.lookupUserInRealm()) {
-                    universalId = identityUtils.getUniversalId(userValue, realm.asPath(), USER);
+                    universalId = identityService.getUniversalId(userValue, realm.asPath(), USER);
                     AMIdentity identity = universalId.map(coreWrapper::getIdentity).orElse(null);
                     if (identity == null || !identity.isExists() || !identity.isActive()) {
                         throw new NodeProcessException(

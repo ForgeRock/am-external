@@ -39,6 +39,7 @@ import java.util.UUID;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
 
+import org.forgerock.am.identity.application.IdentityStoreFactory;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.openam.auth.node.api.Action;
@@ -54,7 +55,7 @@ import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.UserDeviceSettingsDao;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -92,7 +93,10 @@ public class WebAuthnAuthenticationNodeTest {
     AuthDataDecoder authDataDecoder = new AuthDataDecoder();
 
     @Mock
-    IdentityUtils identityUtils;
+    LegacyIdentityService identityService;
+
+    @Mock
+    IdentityStoreFactory identityStoreFactory;
 
     @Mock
     CoreWrapper coreWrapper;
@@ -112,7 +116,7 @@ public class WebAuthnAuthenticationNodeTest {
     public void setup() throws IdRepoException, SSOException, DevicePersistenceException {
         node = null;
         initMocks(this);
-        given(identityUtils.getUniversalId(anyString(), anyString(), any()))
+        given(identityService.getUniversalId(anyString(), anyString(), any()))
                 .willReturn(Optional.of(UUID.randomUUID().toString()));
         given(realm.asPath()).willReturn("/");
         given(coreWrapper.getIdentity(anyString())).willReturn(amIdentity);
@@ -132,7 +136,7 @@ public class WebAuthnAuthenticationNodeTest {
 
         node = new WebAuthnAuthenticationNode(config, realm, authenticationFlow, clientScriptUtilities,
                 webAuthnDeviceProfileManager, secureRandom, authDataDecoder,
-                new RecoveryCodeGenerator(secureRandom), identityUtils, coreWrapper);
+                new RecoveryCodeGenerator(secureRandom), identityService, identityStoreFactory, coreWrapper);
 
         node = Mockito.spy(node);
         doReturn(Collections.singletonList(generateDevice())).when(node).getDeviceSettingsFromUsername(any(), any());

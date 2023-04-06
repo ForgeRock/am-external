@@ -62,7 +62,7 @@ import org.forgerock.openam.core.rest.devices.UserDeviceSettingsDao;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceJsonUtils;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
@@ -102,7 +102,7 @@ public class WebAuthnRegistrationNodeTest {
     WebAuthnDeviceJsonUtils webAuthnDeviceJsonUtils;
 
     @Mock
-    IdentityUtils identityUtils;
+    LegacyIdentityService identityService;
 
     @Mock
     CoreWrapper coreWrapper;
@@ -122,7 +122,7 @@ public class WebAuthnRegistrationNodeTest {
     public void setup() throws IdRepoException, SSOException, DevicePersistenceException {
         node = null;
         initMocks(this);
-        given(identityUtils.getUniversalId(anyString(), anyString(), any()))
+        given(identityService.getUniversalId(anyString(), anyString(), any()))
                 .willReturn(Optional.of(UUID.randomUUID().toString()));
         given(realm.asPath()).willReturn("/");
         given(coreWrapper.getIdentity(anyString())).willReturn(amIdentity);
@@ -149,7 +149,7 @@ public class WebAuthnRegistrationNodeTest {
 
         node = new WebAuthnRegistrationNode(config, realm, registerFlow, clientScriptUtilities,
                 webAuthnDeviceProfileManager, secureRandom, recoveryCodeGenerator,
-                webAuthnDeviceJsonUtils, identityUtils, coreWrapper);
+                webAuthnDeviceJsonUtils, identityService, coreWrapper);
     }
 
     @Test

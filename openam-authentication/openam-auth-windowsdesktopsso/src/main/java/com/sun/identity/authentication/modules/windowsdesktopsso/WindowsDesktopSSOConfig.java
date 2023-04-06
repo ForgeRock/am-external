@@ -24,17 +24,23 @@
  *
  * $Id: WindowsDesktopSSOConfig.java,v 1.3 2009/04/07 22:55:13 beomsuk Exp $
  *
- * Portions Copyrighted 2017-2020 ForgeRock AS.
+ * Portions Copyrighted 2017-2022 ForgeRock AS.
  */
 
 
 package com.sun.identity.authentication.modules.windowsdesktopsso;
 
 import java.util.HashMap;
+
+import javax.inject.Inject;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 
+import org.forgerock.am.identity.application.LegacyIdentityServiceStore;
+
+import com.google.inject.assistedinject.Assisted;
 import com.iplanet.am.util.SystemProperties;
+import com.sun.identity.authentication.config.AMAuthenticationManagerFactory;
 import com.sun.identity.authentication.config.AMConfiguration;
 import com.sun.identity.shared.Constants;
 
@@ -58,8 +64,11 @@ public class WindowsDesktopSSOConfig extends AMConfiguration {
      *
      * @param config
      */
-    public WindowsDesktopSSOConfig(Configuration config) {
-        super(config);
+    @Inject
+    private WindowsDesktopSSOConfig(@Assisted Configuration config,
+            AMAuthenticationManagerFactory amAuthenticationManagerFactory,
+            LegacyIdentityServiceStore legacyIdentityServiceStore) {
+        super(config, amAuthenticationManagerFactory, legacyIdentityServiceStore);
         this.config = config;
     }
 
@@ -140,5 +149,6 @@ public class WindowsDesktopSSOConfig extends AMConfiguration {
     public void refresh() {
         config.refresh();
     }
+
 }
 

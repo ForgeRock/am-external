@@ -24,7 +24,7 @@
  *
  * $Id: Application.java,v 1.9 2009/07/23 18:54:17 qcheng Exp $
  *
- * Portions Copyrighted 2011-2019 ForgeRock AS.
+ * Portions Copyrighted 2011-2022 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.application;
@@ -51,9 +51,9 @@ import org.slf4j.LoggerFactory;
 import com.sun.identity.authentication.spi.AMLoginModule;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.util.ISAuthConstants;
-import com.sun.identity.idm.AMIdentityRepository;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdType;
+import org.forgerock.am.identity.persistence.IdentityStore;
 
 /**
  * Application login module. This is used to authenticate agents and users of ssoadm.
@@ -181,8 +181,8 @@ public class Application extends AMLoginModule {
         passwordCallback.setPassword(userPassword.toCharArray());
         callbacks[1] = passwordCallback;
         try {
-            AMIdentityRepository idrepo = getAMIdentityRepository(getRequestOrg());
-            retval = idrepo.authenticate(IdType.AGENT, callbacks);
+            IdentityStore identityStore = getIdentityStore(getRequestOrg());
+            retval = identityStore.authenticate(IdType.AGENT, callbacks);
         } catch (IdRepoException idrepoExp) {
             debug.debug("Application.authenticateToDatastore: IdRepo Exception", idrepoExp);
         }

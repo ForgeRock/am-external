@@ -24,7 +24,7 @@
  *
  * $Id: SAML2IDPProxyImpl.java,v 1.5 2009/03/12 20:33:40 huacui Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2022 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins;
@@ -37,6 +37,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.forgerock.openam.saml2.plugins.IDPFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,7 @@ import com.sun.identity.saml2.protocol.AuthnRequest;
  * This class <code>SAML2IDPProxyImpl</code> is used to find a preferred Identity
  * Authenticating provider to proxy the authentication request.
  */
-public class SAML2IDPProxyImpl implements SAML2IDPFinder {
+public class SAML2IDPProxyImpl implements IDPFinder {
     private static final Logger logger = LoggerFactory.getLogger(SAML2IDPProxyImpl.class);
 
     /**

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -110,7 +110,7 @@ public class PushDeviceProfileHelper extends MultiFactorDeviceProfileHelper<Push
      *
      * @return the challenge as a Base64 encoded String.
      */
-    String createChallenge() {
+    public String createChallenge() {
         return ((UserPushDeviceProfileManager) deviceProfileManager).createRandomBytes();
     }
 }

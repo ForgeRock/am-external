@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 
 
@@ -36,7 +36,7 @@ import org.forgerock.openam.auth.nodes.validators.DecimalValidator;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
@@ -60,7 +60,7 @@ public class DeviceLocationMatchNode extends AbstractDecisionNode implements Dev
     private final Logger logger = LoggerFactory.getLogger(DeviceLocationMatchNode.class);
 
     private final CoreWrapper coreWrapper;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final Config config;
     private final Realm realm;
     private final DeviceProfilesDao deviceProfilesDao;
@@ -89,17 +89,17 @@ public class DeviceLocationMatchNode extends AbstractDecisionNode implements Dev
      *
      * @param deviceProfilesDao A DeviceProfilesDao Instance
      * @param coreWrapper       A CoreWrapper Instance
-     * @param identityUtils     An IdentityUtils Instance
+     * @param identityService   An IdentityService Instance
      * @param config            The Node Config
      * @param realm             The Realm
      */
     @Inject
     public DeviceLocationMatchNode(DeviceProfilesDao deviceProfilesDao,
-            CoreWrapper coreWrapper, IdentityUtils identityUtils, @Assisted Config config,
+            CoreWrapper coreWrapper, LegacyIdentityService identityService, @Assisted Config config,
             @Assisted Realm realm) {
         this.deviceProfilesDao = deviceProfilesDao;
         this.coreWrapper = coreWrapper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.config = config;
         this.realm = realm;
     }
@@ -109,15 +109,17 @@ public class DeviceLocationMatchNode extends AbstractDecisionNode implements Dev
 
         logger.debug("DeviceLocationMatchNode Started");
 
+        if (!checkRequiredAttributes(context)) {
+            return Action.goTo(UNKNOWN_DEVICE_OUTCOME_ID).build();
+        }
+
         JsonValue location = getAttribute(context, LOCATION_ATTRIBUTE_NAME);
         String identifier = getAttribute(context, IDENTIFIER_ATTRIBUTE_NAME).asString();
-        Double latitude = null;
-        Double longitude = null;
 
         try {
 
             AMIdentity identity = getUserIdentity(context.universalId, context.getStateFor(this), coreWrapper,
-                    identityUtils);
+                    identityService);
             List<JsonValue> devices = deviceProfilesDao
                     .getDeviceProfiles(identity.getName(), realm.asPath());
             Optional<JsonValue> result = devices.stream()
@@ -138,8 +140,8 @@ public class DeviceLocationMatchNode extends AbstractDecisionNode implements Dev
                 JsonValue storedLocation = device.get(LOCATION_ATTRIBUTE_NAME);
                 device.put(LAST_SELECTED_DATE, Time.currentTimeMillis());
                 deviceProfilesDao.saveDeviceProfiles(identity.getName(), realm.asPath(), devices);
-                latitude = storedLocation.get(LATITUDE).asDouble();
-                longitude = storedLocation.get(LONGITUDE).asDouble();
+                Double latitude = storedLocation.get(LATITUDE).asDouble();
+                Double longitude = storedLocation.get(LONGITUDE).asDouble();
                 if (GeoCoordinate.distance(location.get(LATITUDE).asDouble(),
                         location.get(LONGITUDE).asDouble(),
                         latitude,
@@ -158,6 +160,25 @@ public class DeviceLocationMatchNode extends AbstractDecisionNode implements Dev
 
         } catch (Exception e) {
             throw new NodeProcessException(e);
+        }
+    }
+
+    /**
+     * To ensure required attributes are collected.
+     *
+     * @param context The tree context
+     * @return true if all required attributes are collected, otherwise false.
+     */
+    private boolean checkRequiredAttributes(TreeContext context)  {
+        try {
+            //Check if device identifier is provided.
+            getAttribute(context, IDENTIFIER_ATTRIBUTE_NAME);
+            //Check if device location is provided.
+            JsonValue location = getAttribute(context, LOCATION_ATTRIBUTE_NAME);
+            return location.isDefined(LONGITUDE) && location.get(LONGITUDE).isNotNull()
+                    && location.isDefined(LATITUDE) && location.get(LATITUDE).isNotNull();
+        } catch (NodeProcessException e) {
+            return false;
         }
     }
 

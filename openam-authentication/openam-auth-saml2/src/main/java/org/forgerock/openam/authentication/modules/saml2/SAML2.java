@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2021 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
@@ -220,6 +220,11 @@ public class SAML2 extends AMLoginModule {
         } catch (SAML2Exception e) {
             return processError(e, null, "SAML2 :: process() : Authentication Error");
         }
+    }
+
+    @Override
+    public boolean isReturningPrincipalAsDn() {
+        return true;
     }
 
     /**

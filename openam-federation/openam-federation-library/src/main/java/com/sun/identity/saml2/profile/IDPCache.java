@@ -24,7 +24,7 @@
  *
  * $Id: IDPCache.java,v 1.18 2009/05/14 17:23:45 exu Exp $
  *
- * Portions Copyrighted 2010-2021 ForgeRock AS.
+ * Portions Copyrighted 2010-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -118,47 +118,6 @@ public class IDPCache {
     public static PeriodicCleanUpMap mniRequestHash = new PeriodicCleanUpMap(
         SPCache.interval * 1000, SPCache.interval * 1000);
 
-    /**
-     * Cache saves the idp attribute mapper.
-     * Key : idp attribute mapper class name
-     * Value : idp attribute mapper object
-     */
-    public static Hashtable idpAttributeMapperCache = new Hashtable(); 
-
-    /**
-     * Cache saves the idp account mapper.
-     * Key : idp account mapper class name
-     * Value : idp account mapper object
-     */
-    public static Hashtable idpAccountMapperCache = new Hashtable();
-
-    /**
-     * Cache saves the idp authn context mapper.
-     * Key : idp authn context mapper class name
-     * Value : idp authn context mapper object
-     */
-    public static Hashtable idpAuthnContextMapperCache = new Hashtable(); 
-
-    /**
-     * Cache saves the idp ecp session mapper.
-     * Key : idp ecp session mapper class name
-     * Value : idp ecp session mapper object
-     */
-    public static Hashtable idpECPSessionMapperCache = new Hashtable(); 
-
-     /**
-     * Cache saves the IDP Proxy Finder.
-     * Key : IDP Proxy Finder class name
-     * Value : IDP Proxy Finder mapper object
-     */
-    public static Hashtable idpProxyFinderCache = new Hashtable();
-
-    /**
-     * Cache saves the IDP Adapter.
-     * Key : IDP Adapter class name
-     * Value : IDP Adapter mapper object
-     */
-    public static Hashtable idpAdapterCache = new Hashtable();
 
     /**
      * Cache saves information needed after coming back from COT cookie setting.

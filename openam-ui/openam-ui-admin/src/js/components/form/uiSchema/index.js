@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 import object from "./object";
@@ -20,11 +20,17 @@ import string from "./string";
 import array from "./array";
 
 const uiSchema = (schema, isEditValidationMode) => {
-    switch (schema.type) {
-        case "object": return object(schema, isEditValidationMode);
-        case "boolean": return boolean(schema);
-        case "string": return string(schema, isEditValidationMode);
-        case "array": return array(schema);
+    // If schema has originalValue property then the value is a placeholder and
+    // we should render a readonly text input field containing the placeholder key
+    if (schema.originalValue) {
+        return { "ui:field": "string" };
+    } else {
+        switch (schema.type) {
+            case "object": return object(schema, isEditValidationMode);
+            case "boolean": return boolean(schema);
+            case "string": return string(schema, isEditValidationMode);
+            case "array": return array(schema);
+        }
     }
 };
 

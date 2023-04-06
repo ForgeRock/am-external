@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -19,7 +19,7 @@ package org.forgerock.openam.auth.nodes.push;
 /**
  * Shared constants use by the push authentication nodes.
  */
-final class PushNodeConstants {
+public final class PushNodeConstants {
 
     private PushNodeConstants() {
         // do nothing
@@ -75,12 +75,19 @@ final class PushNodeConstants {
     /**
      * SHARED STATE KEYS.
      */
-    static final String MESSAGE_ID_KEY = "pushMessageId";
-    static final String PUSH_CHALLENGE_KEY = "pushChallengeKey";
-    static final String PUSH_DEVICE_PROFILE_KEY = "pushDeviceProfile";
-    static final String PUSH_REGISTRATION_TIMEOUT = "pushRegistrationTimeout";
-    static final String PUSH_NUMBER_CHALLENGE_KEY = "pushNumberChallengeKey";
-    static final String DEVICE_PROFILE_KEY = "forgeRock.device.profile";
+
+    /** The key for the messageId. */
+    public static final String MESSAGE_ID_KEY = "pushMessageId";
+    /** The key for the push challenge. */
+    public static final String PUSH_CHALLENGE_KEY = "pushChallengeKey";
+    /** The key for the push device profile. */
+    public static final String PUSH_DEVICE_PROFILE_KEY = "pushDeviceProfile";
+    /** The key for the registration timeout. */
+    public static final String PUSH_REGISTRATION_TIMEOUT = "pushRegistrationTimeout";
+    /** The key for the number challenge. */
+    public static final String PUSH_NUMBER_CHALLENGE_KEY = "pushNumberChallengeKey";
+    /** The key for the message expiration. */
+    public static final String PUSH_MESSAGE_EXPIRATION = "pushMessageExpiration";
 
     /**
      * The name of the JSON field which holds the push response's content inside the authentication shared state.

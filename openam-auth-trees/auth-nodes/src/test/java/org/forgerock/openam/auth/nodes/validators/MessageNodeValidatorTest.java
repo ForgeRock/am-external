@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.validators;
@@ -29,6 +29,7 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmTestHelper;
 import org.forgerock.openam.sm.ServiceConfigException;
 import org.forgerock.openam.sm.ServiceErrorException;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,6 +43,7 @@ import junitparams.naming.TestCaseName;
 public class MessageNodeValidatorTest {
 
     private static Realm realm;
+    private static RealmTestHelper realmHelper;
     private MessageNodeValidator validator;
     private List<String> configPath;
 
@@ -51,6 +53,24 @@ public class MessageNodeValidatorTest {
             Set.of("[fr]=Oui", "[de]=Ya"));
     private static final Map.Entry<String, Set<String>> DEFAULT_NO = Map.entry("messageNo",
             Set.of("[fr]=Non"));
+
+    @BeforeClass
+    public static void setupClass() {
+        realmHelper = new RealmTestHelper();
+        realmHelper.setupRealmClass();
+        realm = realmHelper.mockRealm("realm");
+    }
+
+    @Before
+    public void setup() {
+        validator = new MessageNodeValidator();
+        configPath = singletonList(UUID.randomUUID().toString());
+    }
+
+    @AfterClass
+    public static void tearDownClass() {
+        realmHelper.tearDownRealmClass();
+    }
 
     private static Object[] validData() {
         return new Object[][]{
@@ -115,19 +135,6 @@ public class MessageNodeValidatorTest {
         assertThatExceptionOfType(ServiceConfigException.class)
                 .isThrownBy(() -> validator.validate(realm, configPath, attributes))
                 .withMessage(errorMessage);
-    }
-
-    @BeforeClass
-    public static void setupClass() {
-        RealmTestHelper realmHelper = new RealmTestHelper();
-        realmHelper.setupRealmClass();
-        realm = realmHelper.mockRealm("realm");
-    }
-
-    @Before
-    public void setup() {
-        validator = new MessageNodeValidator();
-        configPath = singletonList(UUID.randomUUID().toString());
     }
 
 }

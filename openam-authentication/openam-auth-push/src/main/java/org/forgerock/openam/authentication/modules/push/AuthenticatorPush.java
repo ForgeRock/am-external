@@ -50,6 +50,9 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 
+import org.forgerock.am.cts.exceptions.CoreTokenException;
+import org.forgerock.am.identity.application.IdentityStoreFactory;
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.jose.builders.JwtClaimsSetBuilder;
 import org.forgerock.json.jose.builders.SignedJwtBuilderImpl;
@@ -63,7 +66,6 @@ import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
 import org.forgerock.openam.core.rest.devices.services.push.AuthenticatorPushService;
-import org.forgerock.am.cts.exceptions.CoreTokenException;
 import org.forgerock.openam.services.push.DefaultMessageTypes;
 import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.MessageState;
@@ -91,7 +93,6 @@ import com.sun.identity.authentication.spi.InvalidPasswordException;
 import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
-import com.sun.identity.idm.IdUtils;
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.encode.Base64;
@@ -128,6 +129,11 @@ public class AuthenticatorPush extends AbstractPushModule {
     private final AuthenticatorDeviceServiceFactory<AuthenticatorPushService> pushServiceFactory =
             InjectorHolder.getInstance(Key.get(
                     new TypeLiteral<AuthenticatorDeviceServiceFactory<AuthenticatorPushService>>() { }));
+
+    // @Checkstyle:off ConstantName
+    private static final IdentityStoreFactory identityStoreFactory =
+            InjectorHolder.getInstance(IdentityStoreFactory.class);
+    // @Checkstyle:on ConstantName
 
     @Override
     public void init(Subject subject, Map sharedState, Map options) {
@@ -325,7 +331,8 @@ public class AuthenticatorPush extends AbstractPushModule {
         if (username == null) {
             return USERNAME_STATE;
         } else {
-            AMIdentity id = IdUtils.getIdentity(username, realm, userSearchAttributes);
+            IdentityStore identityStore = identityStoreFactory.create(realm);
+            AMIdentity id = identityStore.getIdentity(username, userSearchAttributes);
             if (id == null) {
                 throw failedAsLoginException();
             }
@@ -379,8 +386,8 @@ public class AuthenticatorPush extends AbstractPushModule {
     }
 
     void setCurrentPrincipal() throws AuthLoginException {
-
-        AMIdentity id = IdUtils.getIdentity(username, realm, userSearchAttributes);
+        IdentityStore identityStore = identityStoreFactory.create(realm);
+        AMIdentity id = identityStore.getIdentity(username, userSearchAttributes);
 
         try {
             if (id != null && id.isExists() && id.isActive()) {

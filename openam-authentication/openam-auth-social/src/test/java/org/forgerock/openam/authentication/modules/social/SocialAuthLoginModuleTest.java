@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -70,6 +70,7 @@ import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.UserInfo;
 import org.forgerock.openam.authentication.modules.common.AMLoginModuleBinder;
 import org.forgerock.openam.authentication.modules.oauth2.EmailGateway;
+import org.forgerock.openam.authentication.modules.oauth2.EmailGatewayLookup;
 import org.forgerock.openam.authentication.modules.oauth2.NoEmailSentException;
 import org.forgerock.openam.authentication.modules.oidc.JwtHandlerConfig;
 import org.forgerock.openam.core.realms.Realm;
@@ -147,6 +148,10 @@ public class SocialAuthLoginModuleTest {
     private IdmIntegrationConfig.GlobalConfig idmConfig;
     @Mock
     private Realm realm;
+    @Mock
+    private EmailGatewayLookup gatewayLookup;
+    @Mock
+    private EmailGateway emailGateway;
 
     private ResourceBundle bundle = new ResourceBundle() {
         @Override
@@ -159,6 +164,8 @@ public class SocialAuthLoginModuleTest {
             return Collections.emptyEnumeration();
         }
     };
+
+
 
     @BeforeMethod
     public void setup() throws Exception {
@@ -188,6 +195,8 @@ public class SocialAuthLoginModuleTest {
         lenient().when(idmConfig.provisioningSigningAlgorithm()).thenReturn("HS256");
         lenient().when(idmConfig.provisioningEncryptionAlgorithm()).thenReturn("RSAES_PKCS1_V1_5");
         lenient().when(idmConfig.provisioningEncryptionMethod()).thenReturn("A128CBC_HS256");
+
+        lenient().when(gatewayLookup.getEmailGateway(anyString())).thenReturn(emailGateway);
 
 
         this.module = new SocialAuthLoginModule(debug, authModuleHelper, configFunction, clientTokenJwtGenerator,
@@ -234,7 +243,7 @@ public class SocialAuthLoginModuleTest {
 
         given(dataStore.getId()).willReturn(dataStoreId);
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, ISAuthConstants.LOGIN_START);
@@ -267,7 +276,7 @@ public class SocialAuthLoginModuleTest {
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.of(user));
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, GET_OAUTH_TOKEN_STATE);
@@ -294,7 +303,7 @@ public class SocialAuthLoginModuleTest {
         given(config.getCfgCreateAccount()).willReturn(true);
         given(config.isCfgRegistrationServiceEnabled()).willReturn(true);
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, GET_OAUTH_TOKEN_STATE);
@@ -327,7 +336,7 @@ public class SocialAuthLoginModuleTest {
         given(config.getCfgCreateAccount()).willReturn(true);
         given(config.getSaveAttributesToSessionFlag()).willReturn(true);
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, GET_OAUTH_TOKEN_STATE);
@@ -364,7 +373,7 @@ public class SocialAuthLoginModuleTest {
         given(config.getMapToAnonymousUser()).willReturn(true);
         given(config.getAnonymousUserName()).willReturn(user);
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, GET_OAUTH_TOKEN_STATE);
@@ -400,7 +409,7 @@ public class SocialAuthLoginModuleTest {
         given(config.getSaveAttributesToSessionFlag()).willReturn(true);
         given(config.getMapToAnonymousUser()).willReturn(false);
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, GET_OAUTH_TOKEN_STATE);
@@ -418,7 +427,7 @@ public class SocialAuthLoginModuleTest {
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
                 any(), anyMap())).willReturn(Optional.of("user"));
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, RESUME_FROM_REGISTRATION_REDIRECT_STATE);
@@ -433,7 +442,7 @@ public class SocialAuthLoginModuleTest {
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
                 any(), anyMap())).willReturn(Optional.empty());
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         module.process(null, RESUME_FROM_REGISTRATION_REDIRECT_STATE);
@@ -456,7 +465,7 @@ public class SocialAuthLoginModuleTest {
         given(config.getCfgCreateAccount()).willReturn(true);
         given(config.getCfgPromptForPassword()).willReturn(true);
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, GET_OAUTH_TOKEN_STATE);
@@ -489,7 +498,7 @@ public class SocialAuthLoginModuleTest {
         given(binder.getCallback(SET_PASSWORD_STATE))
                 .willReturn(new Callback[] {passwordCallback, passwordCallback, confirmationCallback});
 
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, SET_PASSWORD_STATE);
@@ -522,7 +531,7 @@ public class SocialAuthLoginModuleTest {
         given(config.getSMTPConfig()).willReturn(smtpConf);
         given(authModuleHelper.extractEmail(any(), anyString())).willReturn("info@forgerock.com");
         given(authModuleHelper.getRandomData()).willReturn("randomString");
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, SET_PASSWORD_STATE);
@@ -558,7 +567,7 @@ public class SocialAuthLoginModuleTest {
         given(binder.getCallback(CREATE_USER_STATE))
                 .willReturn(new Callback[] {nameCallback, nameCallback, confirmationCallback});
         given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
-        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle);
+        module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
         int nextState = module.process(null, CREATE_USER_STATE);

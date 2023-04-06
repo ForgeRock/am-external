@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
@@ -32,7 +32,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -44,12 +44,12 @@ public class WriteFederationInformationNodeTest {
     @Mock
     private Saml2SsoResponseUtils responseUtils;
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
 
     @BeforeMethod
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        node = new WriteFederationInformationNode(responseUtils, identityUtils);
+        node = new WriteFederationInformationNode(responseUtils, identityService);
     }
 
     @Test(expectedExceptions = NodeProcessException.class, expectedExceptionsMessageRegExp = "No user information.*")

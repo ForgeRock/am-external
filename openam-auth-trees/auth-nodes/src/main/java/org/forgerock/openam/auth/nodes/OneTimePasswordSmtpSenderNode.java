@@ -39,7 +39,7 @@ import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
@@ -50,6 +50,7 @@ import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.modules.hotp.SMSGateway;
+import com.sun.identity.authentication.modules.hotp.SMSGatewayLookup;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
@@ -66,9 +67,10 @@ public class OneTimePasswordSmtpSenderNode extends SingleOutcomeNode {
     private final Logger logger = LoggerFactory.getLogger(OneTimePasswordSmtpSenderNode.class);
     private final Config config;
     private final CoreWrapper coreWrapper;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final IdmIntegrationService idmIntegrationService;
     private final LocaleSelector localeSelector;
+    private final SMSGatewayLookup smsGatewayLookup;
 
     /**
      * Configuration for the one time password SMTP sender node.
@@ -105,18 +107,21 @@ public class OneTimePasswordSmtpSenderNode extends SingleOutcomeNode {
      * Creates an EmailNode with the provided Config.
      * @param config the configuration for this Node.
      * @param coreWrapper Instance of the CoreWrapper.
-     * @param identityUtils An instance of the IdentityUtils.
+     * @param identityService An instance of the IdentityService.
      * @param idmIntegrationService Allows collaboration with platform-enabled nodes.
      * @param localeSelector An instance of LocaleSelector.
+     * @param smsGatewayLookup lookup for {@link SMSGateway}.
      */
     @Inject
     public OneTimePasswordSmtpSenderNode(@Assisted Config config, CoreWrapper coreWrapper,
-            IdentityUtils identityUtils, IdmIntegrationService idmIntegrationService, LocaleSelector localeSelector) {
+            LegacyIdentityService identityService, IdmIntegrationService idmIntegrationService,
+            LocaleSelector localeSelector, SMSGatewayLookup smsGatewayLookup) {
         this.config = config;
         this.coreWrapper = coreWrapper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         this.idmIntegrationService = idmIntegrationService;
         this.localeSelector = localeSelector;
+        this.smsGatewayLookup = smsGatewayLookup;
     }
 
     @Override
@@ -128,7 +133,8 @@ public class OneTimePasswordSmtpSenderNode extends SingleOutcomeNode {
         String email = getEmailFromContext(context);
         if (email == null) {
             String username = context.sharedState.get(USERNAME).asString();
-            Optional<AMIdentity> identity = getAMIdentity(context.universalId, nodeState, identityUtils, coreWrapper);
+            Optional<AMIdentity> identity =
+                    getAMIdentity(context.universalId, nodeState, identityService, coreWrapper);
             if (identity.isEmpty()) {
                 logger.warn("Identity lookup failed");
                 throw new NodeProcessException(bundle.getString("identity.failure"));
@@ -166,14 +172,12 @@ public class OneTimePasswordSmtpSenderNode extends SingleOutcomeNode {
     }
 
     private SMSGateway getSmsGateway(ResourceBundle bundle) throws NodeProcessException {
-        SMSGateway gateway;
         try {
-            gateway = Class.forName(config.smsGatewayImplementationClass()).asSubclass(SMSGateway.class).newInstance();
+            return smsGatewayLookup.getSmsGateway(config.smsGatewayImplementationClass());
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             logger.warn("SMSGateway error", e);
             throw new NodeProcessException(bundle.getString("gateway.failure"), e);
         }
-        return gateway;
     }
 
     private String getToEmailAddress(AMIdentity identity, String username,

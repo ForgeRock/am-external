@@ -24,7 +24,7 @@
  *
  * $Id: SPSSOFederate.java,v 1.29 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2011-2020 ForgeRock AS.
+ * Portions Copyrighted 2011-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -56,6 +56,7 @@ import org.forgerock.openam.saml2.Saml2EntityRole;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
 import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
+import org.forgerock.openam.saml2.plugins.IDPFinder;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
@@ -89,8 +90,7 @@ import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import com.sun.identity.saml2.plugins.SAML2IDPFinder;
-import com.sun.identity.saml2.plugins.SAML2ServiceProviderAdapter;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 import com.sun.identity.saml2.plugins.SPAuthnContextMapper;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.Extensions;
@@ -569,8 +569,7 @@ public class SPSSOFederate {
             ecpRequest.setMustUnderstand(Boolean.TRUE);
             ecpRequest.setActor(SAML2Constants.SOAP_ACTOR_NEXT);
             ecpRequest.setIsPassive(authnRequest.isPassive());
-            SAML2IDPFinder ecpIDPFinder =
-                    SAML2Utils.getECPIDPFinder(realm, spEntityID);
+            IDPFinder ecpIDPFinder = SAML2Utils.getECPIDPFinder(realm, spEntityID);
             if (ecpIDPFinder != null) {
                 List idps = ecpIDPFinder.getPreferredIDP(authnRequest,
                         spEntityID, realm, request, response);
@@ -924,9 +923,9 @@ public class SPSSOFederate {
             authnReq.setScoping(scoping);
         }
         // invoke SP Adapter class if registered
-        SAML2ServiceProviderAdapter spAdapter = SAML2Utils.getSPAdapterClass(spEntityID, realmName);
-        if (spAdapter != null) {
-            spAdapter.preSingleSignOnRequest(spEntityID, idpEntityID, realmName, request, response, authnReq);
+        SPAdapter adapter = SAML2Utils.getSPAdapter(spEntityID, realmName);
+        if (adapter != null) {
+            adapter.preSingleSignOnRequest(spEntityID, idpEntityID, realmName, request, response, authnReq);
         }
 
         return authnReq;

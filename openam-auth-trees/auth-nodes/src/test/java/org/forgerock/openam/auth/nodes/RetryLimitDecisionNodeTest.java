@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -21,7 +21,7 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.core.CoreWrapper;
 
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -58,7 +58,7 @@ public class RetryLimitDecisionNodeTest {
     CoreWrapper coreWrapper;
 
     @Mock
-    IdentityUtils identityUtils;
+    LegacyIdentityService identityService;
 
     private RetryLimitDecisionNode node;
 
@@ -82,7 +82,7 @@ public class RetryLimitDecisionNodeTest {
                 when("Retry Limit is met", () -> {
                     it("Returns Reject Outcome", () -> {
                         nodeId = UUID.randomUUID();
-                        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityUtils);
+                        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
                         sharedState = json(object(field(nodeRetryLimitKey(nodeId), configRetryLimit)));
                         assertThat(node.process(newTreeContext(sharedState)).outcome).isEqualTo("Reject");
                     });
@@ -90,7 +90,7 @@ public class RetryLimitDecisionNodeTest {
                 when("Retry Limit is not met", () -> {
                     beforeEach(() -> {
                         nodeId = UUID.randomUUID();
-                        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityUtils);
+                        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
                         sharedState = json(object(field(nodeRetryLimitKey(nodeId), 0)));
                         configRetryLimit = 3;
                         given(serviceConfig.retryLimit()).willReturn(configRetryLimit);

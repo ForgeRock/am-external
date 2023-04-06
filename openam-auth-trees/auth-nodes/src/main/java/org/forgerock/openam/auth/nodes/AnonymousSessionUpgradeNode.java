@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -42,6 +42,7 @@ import com.iplanet.dpro.session.SessionID;
 import com.iplanet.dpro.session.service.SessionService;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.config.AMAuthenticationManager;
+import com.sun.identity.authentication.config.AMAuthenticationManagerFactory;
 import com.sun.identity.authentication.config.AMConfigurationException;
 
 /**
@@ -62,6 +63,7 @@ public class AnonymousSessionUpgradeNode extends SingleOutcomeNode {
     private final Provider<SessionService> sessionServiceProvider;
     private final SessionUpgradeVerifier sessionUpgradeVerifier;
     private final PrivilegedAction<SSOToken> adminTokenAction;
+    private final AMAuthenticationManagerFactory amAuthenticationManagerFactory;
     private final Logger logger = LoggerFactory.getLogger(AnonymousSessionUpgradeNode.class);
 
     /**
@@ -70,14 +72,17 @@ public class AnonymousSessionUpgradeNode extends SingleOutcomeNode {
      * @param sessionServiceProvider A provider of {@code SessionService}.
      * @param sessionUpgradeVerifier The SessionUpgradeVerifier instance.
      * @param adminTokenAction The admin token provider.
+     * @param amAuthenticationManagerFactory The authentication manager factory.
      */
     @Inject
     public AnonymousSessionUpgradeNode(@Assisted Realm realm, Provider<SessionService> sessionServiceProvider,
-            SessionUpgradeVerifier sessionUpgradeVerifier, PrivilegedAction<SSOToken> adminTokenAction) {
+            SessionUpgradeVerifier sessionUpgradeVerifier, PrivilegedAction<SSOToken> adminTokenAction,
+            AMAuthenticationManagerFactory amAuthenticationManagerFactory) {
         this.realm = realm;
         this.sessionServiceProvider = sessionServiceProvider;
         this.sessionUpgradeVerifier = sessionUpgradeVerifier;
         this.adminTokenAction = adminTokenAction;
+        this.amAuthenticationManagerFactory = amAuthenticationManagerFactory;
     }
 
     @Override
@@ -96,7 +101,7 @@ public class AnonymousSessionUpgradeNode extends SingleOutcomeNode {
 
         try {
             SSOToken adminToken = AccessController.doPrivileged(adminTokenAction);
-            AMAuthenticationManager authManager = new AMAuthenticationManager(adminToken, realm.asPath());
+            AMAuthenticationManager authManager = amAuthenticationManagerFactory.create(adminToken, realm);
 
             if (sessionUpgradeVerifier.isAnonymousViaChain(authManager, authModules)
                     || sessionUpgradeVerifier.isAnonymousViaTree(authNodes)) {

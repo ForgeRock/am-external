@@ -11,13 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
 
+import org.forgerock.openam.saml2.plugins.IDPAdapter;
+
 import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 
 /**
  * Indicates a client fault during federated SSO.
@@ -51,7 +52,7 @@ public class ClientFaultException extends FederatedSSOException {
      * @param idpAdapter the identity provider adapter. May be null.
      * @param messageCode the message code. May not be null.
      */
-    public ClientFaultException(final SAML2IdentityProviderAdapter idpAdapter, final String messageCode) {
+    public ClientFaultException(final IDPAdapter idpAdapter, final String messageCode) {
         super(idpAdapter, messageCode, null);
     }
 
@@ -62,7 +63,7 @@ public class ClientFaultException extends FederatedSSOException {
      * @param messageCode the message code. May not be null.
      * @param detail the detail message. May be null.
      */
-    public ClientFaultException(final SAML2IdentityProviderAdapter idpAdapter, final String messageCode,
+    public ClientFaultException(final IDPAdapter idpAdapter, final String messageCode,
                                 final String detail) {
         super(idpAdapter, messageCode, detail);
     }

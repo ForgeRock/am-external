@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2019 ForgeRock AS.
+ * Copyright 2014-2022 ForgeRock AS.
  * Portions Copyrighted 2015 Nomura Research Institute, Ltd.
  */
 
@@ -27,6 +27,8 @@ import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
 
+import org.forgerock.am.identity.application.IdentityStoreFactory;
+import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.authentication.modules.scripted.ScriptedPrinciple;
 import org.forgerock.openam.utils.JsonValueBuilder;
@@ -36,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import com.sun.identity.authentication.spi.AMLoginModule;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.IdUtils;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.sm.DNMapper;
 
@@ -56,6 +57,9 @@ public class DeviceIdSave extends AMLoginModule {
     static final int NAME_PROFILE_STATE = 3;
 
     private static final Logger DEBUG = LoggerFactory.getLogger(DeviceIdSave.class);
+
+    private static final IdentityStoreFactory identityStoreFactory =
+            InjectorHolder.getInstance(IdentityStoreFactory.class);
 
     private String userName;
     private PersistModuleProcessor processor;
@@ -82,7 +86,8 @@ public class DeviceIdSave extends AMLoginModule {
         } catch (final AuthLoginException ale) {
             DEBUG.warn("{} - unable to retrieve search attributes", methodName, ale);
         }
-        amIdentityPrincipal = IdUtils.getIdentity(userName, realm, userSearchAttributes);
+        IdentityStore identityStore = identityStoreFactory.create(realm);
+        amIdentityPrincipal = identityStore.getIdentity(userName, userSearchAttributes);
         String principalUserName = null;
         if (amIdentityPrincipal == null || amIdentityPrincipal.getName() == null) {
             DEBUG.error("{} - unable to find identity for user name: {}", methodName, userName);

@@ -36,7 +36,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -53,7 +53,7 @@ public class AccountActiveDecisionNodeTest {
     private AMIdentity mockUser;
 
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
 
     @Mock
     private AMAccountLockout.Factory amAccountLockoutFactory;
@@ -76,7 +76,7 @@ public class AccountActiveDecisionNodeTest {
         context = new TreeContext(retrieveSharedState(), json(object()),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.of("mockUserId"));
 
-        accountActiveDecisionNode = new AccountActiveDecisionNode(realm, coreWrapper, identityUtils,
+        accountActiveDecisionNode = new AccountActiveDecisionNode(realm, coreWrapper, identityService,
                 amAccountLockoutFactory);
     }
 

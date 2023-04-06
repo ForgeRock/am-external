@@ -12,6 +12,8 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
+ *
+ * Portions Copyrighted 2022 ForgeRock AS.
  */
 package org.forgerock.openam.radius.common;
 
@@ -276,7 +278,7 @@ public enum AttributeType {
      * @param typeCode the type code for this attribute type
      * @return returns the Attributetype instance for the given type code or null if not found or supported.
      */
-    public static final AttributeType getType(int typeCode) {
+    public static AttributeType getType(int typeCode) {
         return atts.get(typeCode);
     }
 

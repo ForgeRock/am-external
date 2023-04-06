@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
@@ -19,16 +19,13 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static java.util.Collections.unmodifiableSet;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.openam.oauth2.OAuth2ClientOriginSearcher;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -41,7 +38,7 @@ public class FlowUtilitiesTest {
     @Captor
     ArgumentCaptor<Map<String, Set<String>>> searchCaptor;
     @Mock
-    IdentityUtils identityUtils;
+    OAuth2ClientOriginSearcher oAuth2ClientOriginSearcher;
     @Mock
     Realm realm;
 
@@ -100,8 +97,7 @@ public class FlowUtilitiesTest {
     @Test(dataProvider = "origins")
     public void testConfiguredOriginsMatch(Set<String> configured, String device, boolean expected) throws Exception {
         // given
-        given(identityUtils.findActiveIdentity(any(), any(), any(), any())).willReturn(Optional.empty());
-        FlowUtilities flowUtils = new FlowUtilities(identityUtils);
+        FlowUtilities flowUtils = new FlowUtilities(oAuth2ClientOriginSearcher);
 
         // when
         boolean response = flowUtils.isOriginValid(realm, configured, device);

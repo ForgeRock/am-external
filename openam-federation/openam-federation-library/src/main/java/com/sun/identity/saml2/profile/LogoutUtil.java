@@ -24,7 +24,7 @@
  *
  * $Id: LogoutUtil.java,v 1.16 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2012-2020 ForgeRock AS.
+ * Portions Copyrighted 2012-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -84,7 +84,7 @@ import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import com.sun.identity.saml2.plugins.FedletAdapter;
+import org.forgerock.openam.saml2.plugins.FedletAdapter;
 import com.sun.identity.saml2.protocol.Extensions;
 import com.sun.identity.saml2.protocol.LogoutRequest;
 import com.sun.identity.saml2.protocol.LogoutResponse;
@@ -448,11 +448,9 @@ public class LogoutUtil {
 
         if (success == false) {
             if (SPCache.isFedlet) {
-                FedletAdapter fedletAdapter =
-                        SAML2Utils.getFedletAdapterClass(hostEntity, realm);
-                if (fedletAdapter != null) {
-                    fedletAdapter.onFedletSLOFailure(
-                            request, response, sloRequest, sloResponse,
+                FedletAdapter adapter = SAML2Utils.getFedletAdapter(hostEntity, realm);
+                if (adapter != null) {
+                    adapter.onFedletSLOFailure(request, response, sloRequest, sloResponse,
                             hostEntity, remoteEntityID, SAML2Constants.SOAP);
                 }
             }
@@ -461,11 +459,9 @@ public class LogoutUtil {
             // invoke SPAdapter for postSLOSuccess : SP inited SOAP 
             if ((hostRole != null) && hostRole.equals(SAML2Constants.SP_ROLE)) {
                 if (SPCache.isFedlet) {
-                    FedletAdapter fedletAdapter =
-                            SAML2Utils.getFedletAdapterClass(hostEntity, realm);
-                    if (fedletAdapter != null) {
-                        fedletAdapter.onFedletSLOSuccess(
-                                request, response, sloRequest, sloResponse,
+                    FedletAdapter adapter = SAML2Utils.getFedletAdapter(hostEntity, realm);
+                    if (adapter != null) {
+                        adapter.onFedletSLOSuccess(request, response, sloRequest, sloResponse,
                                 hostEntity, remoteEntityID, SAML2Constants.SOAP);
                     }
                 } else {

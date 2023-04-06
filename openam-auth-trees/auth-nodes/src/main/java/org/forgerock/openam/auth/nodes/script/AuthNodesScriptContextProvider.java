@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.script;
@@ -44,7 +44,13 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
         "java.util.Collections$*", "java.util.HashSet", "java.util.HashMap",
         "java.util.HashMap$KeyIterator", "java.util.LinkedHashMap", "java.util.LinkedHashSet",
         "java.util.LinkedList", "java.util.TreeMap", "java.util.TreeSet",
-        "javax.security.auth.callback.NameCallback", "javax.security.auth.callback.PasswordCallback",
+        "java.security.KeyPair", "java.security.KeyPairGenerator", "java.security.KeyPairGenerator$*",
+        "java.security.PrivateKey", "java.security.PublicKey",
+        "java.security.spec.X509EncodedKeySpec", "java.security.spec.MGF1ParameterSpec",
+        "javax.crypto.spec.OAEPParameterSpec", "javax.crypto.spec.PSource",
+        "javax.crypto.spec.PSource$*",
+        "javax.security.auth.callback.NameCallback",
+        "javax.security.auth.callback.PasswordCallback",
         "javax.security.auth.callback.ChoiceCallback",
         "javax.security.auth.callback.ConfirmationCallback",
         "javax.security.auth.callback.LanguageCallback",
@@ -60,6 +66,7 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
         "org.codehaus.groovy.runtime.ScriptBytecodeAdapter", "org.forgerock.http.client.*",
         "org.forgerock.http.Client", "org.forgerock.http.Handler", "org.forgerock.http.Context",
         "org.forgerock.http.context.RootContext", "org.forgerock.http.protocol.Cookie",
+        "org.forgerock.http.header.*", "org.forgerock.http.header.authorization.*",
         "org.forgerock.http.protocol.Entity", "org.forgerock.http.protocol.Form",
         "org.forgerock.http.protocol.Header", "org.forgerock.http.protocol.Headers",
         "org.forgerock.http.protocol.Message", "org.forgerock.http.protocol.Request",
@@ -69,20 +76,27 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
         "org.forgerock.util.promise.NeverThrowsException", "org.forgerock.util.promise.Promise",
         "org.forgerock.util.promise.PromiseImpl", "org.forgerock.openam.auth.node.api.Action",
         "org.forgerock.openam.auth.node.api.Action$ActionBuilder",
+        "org.forgerock.openam.authentication.callbacks.IdPCallback",
         "org.forgerock.openam.authentication.callbacks.PollingWaitCallback",
+        "org.forgerock.openam.authentication.callbacks.ValidatedPasswordCallback",
+        "org.forgerock.openam.authentication.callbacks.ValidatedUsernameCallback",
         "org.forgerock.openam.core.rest.authn.callbackhandlers.*",
         "org.forgerock.openam.scripting.api.http.GroovyHttpClient",
         "org.forgerock.openam.scripting.api.http.JavaScriptHttpClient",
-        "org.forgerock.openam.scripting.api.ScriptedIdentity",
+        "org.forgerock.openam.scripting.api.identity.ScriptedIdentity",
         "org.forgerock.openam.scripting.api.ScriptedSession", "groovy.json.JsonSlurper",
         "org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao",
         "org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository",
         "org.forgerock.openam.scripting.api.secrets.ScriptedSecrets",
         "org.forgerock.openam.scripting.api.secrets.Secret",
+        "org.forgerock.openam.shared.security.crypto.CertificateService",
         "org.forgerock.openam.auth.node.api.NodeState",
-        "org.forgerock.openam.scripting.api.PrefixedScriptPropertyResolver", "java.util.List",
-        "java.util.Map", "org.mozilla.javascript.ConsString",
-        "java.util.Collections$UnmodifiableRandomAccessList", "java.util.Collections$UnmodifiableCollection$1"
+        "org.forgerock.openam.scripting.api.PrefixedScriptPropertyResolver",
+        "java.util.List", "java.util.Map", "org.mozilla.javascript.ConsString",
+        "java.util.Collections$UnmodifiableRandomAccessList",
+        "java.util.Collections$UnmodifiableCollection$1",
+        "org.mozilla.javascript.JavaScriptException",
+        "sun.security.ec.ECPrivateKeyImpl"
     };
 
     @Inject

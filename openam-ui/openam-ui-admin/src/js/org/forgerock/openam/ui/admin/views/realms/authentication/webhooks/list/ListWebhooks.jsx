@@ -35,6 +35,7 @@ const ListWebhooks = (props) => {
         sort: true,
         text: t("console.authentication.webhooks.list.grid.0")
     }];
+
     return (
         <div>
             <PageHeader title={ t("console.authentication.webhooks.list.title") } />

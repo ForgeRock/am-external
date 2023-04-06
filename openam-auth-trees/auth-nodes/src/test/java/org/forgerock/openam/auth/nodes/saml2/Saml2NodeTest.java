@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
@@ -60,7 +60,7 @@ import org.forgerock.openam.auth.nodes.saml2.Saml2Node.RequestBinding;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.headers.CookieUtilsWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.util.Options;
 
 import com.google.common.collect.ImmutableList;
@@ -93,7 +93,7 @@ public class Saml2NodeTest {
     @Mock
     private SAML2MetaManager metaManager;
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
     @Mock
     private HttpServletRequest servletRequest;
     @Mock
@@ -104,7 +104,7 @@ public class Saml2NodeTest {
         MockitoAnnotations.initMocks(this);
         given(config.idpEntityId()).willReturn("idp-entity-id");
         given(metaManager.getEntityByMetaAlias(any())).willReturn("sp-entity-id");
-        node = new Saml2Node(config, realm, ssoInitiator, responseUtils, cookieUtils, metaManager, identityUtils);
+        node = new Saml2Node(config, realm, ssoInitiator, responseUtils, cookieUtils, metaManager, identityService);
         IDPSSODescriptorType idpDescriptor = new IDPSSODescriptorType();
         given(metaManager.getIDPSSODescriptor(any(), any())).willReturn(idpDescriptor);
         SPSSODescriptorType spDescriptor = new SPSSODescriptorType();
@@ -253,7 +253,7 @@ public class Saml2NodeTest {
     public void shouldReportNoAccountExistsWhenTheUniversalIDCanNotBeResolved() throws Exception {
         // Given
         setupSuccessfulFederation(ssoResult("universalId", true));
-        given(identityUtils.doesIdentityExist("universalId")).willReturn(false);
+        given(identityService.doesIdentityExist("universalId")).willReturn(false);
 
         // When
         Action action = node.process(getContext(singletonMap(RESPONSE_KEY, new String[]{"storage-key"})));
@@ -308,8 +308,8 @@ public class Saml2NodeTest {
         Saml2ResponseData responseData = new Saml2ResponseData();
         responseData.setSessionIndex("session-index");
         given(responseUtils.readSaml2ResponseData("storage-key")).willReturn(responseData);
-        given(identityUtils.getIdentityName(ssoResult.getUniversalId())).willReturn("userId");
-        given(identityUtils.doesIdentityExist("universalId")).willReturn(true);
+        given(identityService.getIdentityName(ssoResult.getUniversalId())).willReturn("userId");
+        given(identityService.doesIdentityExist("universalId")).willReturn(true);
 
         given(responseUtils.getSsoResultWithoutLocalLogin(any(), any(), any(), any(), any(), eq("storage-key")))
                 .willReturn(ssoResult);

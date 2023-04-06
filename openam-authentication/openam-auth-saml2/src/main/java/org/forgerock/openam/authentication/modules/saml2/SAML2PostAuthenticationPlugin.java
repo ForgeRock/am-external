@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2021 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.saml2;
 
@@ -54,7 +54,7 @@ import com.sun.identity.saml2.jaxb.metadata.EndpointType;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import com.sun.identity.saml2.plugins.SAML2ServiceProviderAdapter;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 import com.sun.identity.saml2.plugins.SPAdapterHttpServletResponseWrapper;
 import com.sun.identity.saml2.profile.CacheObject;
 import com.sun.identity.saml2.profile.IDPProxyUtil;
@@ -129,9 +129,9 @@ public class SAML2PostAuthenticationPlugin implements AMPostAuthProcessInterface
         AuthnRequest authnRequest = responseData.getAuthnRequest();
         boolean writeFedInfo = Boolean.parseBoolean((String) SPCache.fedAccountHash.get(cacheKey));
 
-        final SAML2ServiceProviderAdapter spAdapter = SAML2Utils.getSPAdapterClass(spEntityId, realm);
-        if (spAdapter != null) {
-            final boolean redirected = spAdapter.postSingleSignOnSuccess(spEntityId, realm, request,
+        final SPAdapter adapter = SAML2Utils.getSPAdapter(spEntityId, realm);
+        if (adapter != null) {
+            final boolean redirected = adapter.postSingleSignOnSuccess(spEntityId, realm, request,
                     new SPAdapterHttpServletResponseWrapper(response), null, session, authnRequest,
                     responseInfo.getResponse(), responseInfo.getProfileBinding(), writeFedInfo);
             final String[] value = new String[] { String.valueOf(redirected) };

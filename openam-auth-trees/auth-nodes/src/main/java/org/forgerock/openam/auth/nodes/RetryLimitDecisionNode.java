@@ -48,7 +48,7 @@ import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.validators.GreaterThanZeroValidator;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +96,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
     private final UUID nodeId;
     private final Logger logger = LoggerFactory.getLogger(RetryLimitDecisionNode.class);
     private final CoreWrapper coreWrapper;
-    private final IdentityUtils identityUtils;
+    private final LegacyIdentityService identityService;
     private final RetryStateHandler retryStateHandler;
     private int currentRetryCount;
 
@@ -105,15 +105,15 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
      * @param config The service config.
      * @param nodeId The UUID of this RetryLimitDecisionNode.
      * @param coreWrapper the core wrapper
-     * @param identityUtils the identity utils
+     * @param identityService the identity service
      */
     @Inject
     public RetryLimitDecisionNode(@Assisted Config config, @Assisted UUID nodeId, CoreWrapper coreWrapper,
-                                  IdentityUtils identityUtils) {
+                                  LegacyIdentityService identityService) {
         this.config = config;
         this.nodeId = nodeId;
         this.coreWrapper = coreWrapper;
-        this.identityUtils = identityUtils;
+        this.identityService = identityService;
         if (config.incrementUserAttributeOnFailure()) {
             this.retryStateHandler = new UserStoreRetryHandler();
         } else {
@@ -166,7 +166,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
     }
 
     private AMIdentity getIdentityFromContext(TreeContext context) throws NodeProcessException {
-        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityUtils,
+        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityService,
                 coreWrapper);
         if (identity.isEmpty()) {
             logger.warn("identity not found");
@@ -245,7 +245,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
         public void clearAttribute(TreeContext context) throws NodeProcessException {
             try {
                 Optional<AMIdentity> amIdentity = getAMIdentity(context.universalId,
-                        context.getStateFor(RetryLimitDecisionNode.this), identityUtils, coreWrapper);
+                        context.getStateFor(RetryLimitDecisionNode.this), identityService, coreWrapper);
                 if (amIdentity.isPresent()) {
                     AMIdentity identity = amIdentity.get();
                     Set<String> retryLimitNodeCounts = identity.getAttribute(RETRY_COUNT_ATTRIBUTE);

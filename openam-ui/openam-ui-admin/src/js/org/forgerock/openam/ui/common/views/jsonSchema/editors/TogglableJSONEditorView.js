@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2021 ForgeRock AS.
+ * Copyright 2016-2022 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -21,6 +21,7 @@ import JSONEditorView from "org/forgerock/openam/ui/common/views/jsonSchema/edit
 import JSONSchema from "org/forgerock/openam/ui/common/models/JSONSchema";
 import JSONValues from "org/forgerock/openam/ui/common/models/JSONValues";
 import TogglableJSONEditorTemplate from "templates/common/jsonSchema/editors/TogglableJSONEditorTemplate";
+import containsPlaceholder from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
 
 const TogglableJSONEditorView = Backbone.View.extend({
     className: "jsoneditor-block",
@@ -72,6 +73,19 @@ const TogglableJSONEditorView = Backbone.View.extend({
         if (!this.options.enablePropertyValue || this.options.isEmpty) {
             this.$el.find("[data-toggleable-json-editor]").hide();
         }
+
+        if (this.jsonEditor.getValue) {
+            const values = this.jsonEditor.getValue();
+            for (const key in values) { // eslint-disable-line
+                const current = values[key];
+                if (containsPlaceholder(current)) {
+                    const editorKey = `root.${key}`;
+                    this.jsonEditor.editors[editorKey].input.setAttribute("readonly", true);
+                    this.jsonEditor.editors[editorKey].input.setAttribute("disabled", true);
+                }
+            }
+        }
+
         this.jsonEditor.render();
 
         return this;

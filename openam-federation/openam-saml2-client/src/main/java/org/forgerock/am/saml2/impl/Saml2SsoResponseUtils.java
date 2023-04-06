@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.am.saml2.impl;
 
@@ -26,7 +26,6 @@ import javax.inject.Inject;
 import org.forgerock.am.saml2.profile.Saml2SsoResult;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
-import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.openam.utils.StringUtils;
 
 import com.sun.identity.saml2.assertion.Assertion;
@@ -51,18 +50,15 @@ import com.sun.identity.saml2.profile.SPACSUtils;
 public class Saml2SsoResponseUtils {
 
     private final SAML2MetaManager metaManager;
-    private final IdentityUtils identityUtils;
 
     /**
      * Constructor.
      *
      * @param metaManager The SAML2 metadata manager.
-     * @param identityUtils The identity utilities.
      */
     @Inject
-    public Saml2SsoResponseUtils(SAML2MetaManager metaManager, IdentityUtils identityUtils) {
+    public Saml2SsoResponseUtils(SAML2MetaManager metaManager) {
         this.metaManager = metaManager;
-        this.identityUtils = identityUtils;
     }
 
     /**

@@ -11,12 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.saml2.service;
 
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ADAPTER_SCRIPT;
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ATTRIBUTE_MAPPER_SCRIPT;
+import static com.sun.identity.saml2.common.SAML2Constants.SP_ADAPTER_SCRIPT;
 
 import org.forgerock.openam.scripting.domain.ScriptContext;
 
@@ -33,7 +34,11 @@ public enum Saml2ScriptContext implements ScriptContext {
     /**
      * The default SAML2 IDP adapter script context.
      */
-    SAML2_IDP_ADAPTER(IDP_ADAPTER_SCRIPT);
+    SAML2_IDP_ADAPTER(IDP_ADAPTER_SCRIPT),
+    /**
+     * The default SAML2 SP adapter script context.
+     */
+    SAML2_SP_ADAPTER(SP_ADAPTER_SCRIPT);
 
     private final String attribute;
 

@@ -24,7 +24,7 @@
  *
  * $Id: MSISDN.java,v 1.3 2008/06/25 05:41:58 qcheng Exp $
  *
- * Portions Copyrighted 2013-2019 ForgeRock AS.
+ * Portions Copyrighted 2013-2023 ForgeRock AS.
  */
 package com.sun.identity.authentication.modules.msisdn;
 
@@ -86,6 +86,7 @@ public class MSISDN extends AMLoginModule {
     private String useSSL;        
     private boolean validGateway=false;
     private boolean searchAllHeaders=false;
+    private boolean isReturningPrincipalAsDn;
 
     private static final String amAuthMSISDN = "amAuthMSISDN";
     private static final String TRUSTED_GATEWAY_LIST =
@@ -196,6 +197,7 @@ public class MSISDN extends AMLoginModule {
             MSISDNValidation msisdnValidation = 
                             new MSISDNValidation(options,debug,bundle,locale);
             userTokenId = msisdnValidation.getUserId(msisdnNumber);
+            isReturningPrincipalAsDn = msisdnValidation.isReturnUserDN();
             storeUsernamePasswd(userTokenId, null);
         } else {
             debug.error("Gateway is invalid OR msisdn number is null"); 
@@ -215,6 +217,11 @@ public class MSISDN extends AMLoginModule {
         }
 
         return userPrincipal;
+    }
+
+    @Override
+    public boolean isReturningPrincipalAsDn() {
+        return isReturningPrincipalAsDn;
     }
     
     /**

@@ -11,18 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
 -->
 # auth-tree-node-archetype
 
-A [Maven Archetype](http://maven.apache.org/archetype/maven-archetype-plugin/usage.html) that can be used to create a maven project for the generation of a [ForgeRock](https://www.forgerock.com/) [Authentication Tree Node](https://backstage.forgerock.com/docs/am/6.5/authentication-guide/#about-authentication-modules-and-chains).
-
-## Version
-Code in this branch creates an Auth Tree Node for AM 6.5.
+A [Maven Archetype](http://maven.apache.org/archetype/maven-archetype-plugin/usage.html) that can be used to create a maven project for the generation of a [ForgeRock](https://www.forgerock.com/) [Authentication Tree Node](https://backstage.forgerock.com/docs/am/7.2/authentication-guide/about-authentication-modules-and-chains.html).
 
 ## Usage
-
-Clone the AM repo and and build the archetype project so the archetype definition is published to your local .m2 repository;
+Clone the AM repo and build the archetype project so the archetype definition is published to your local .m2 repository;
 
 ```
 $ git clone ssh://git@stash.forgerock.org:7999/openam/openam.git
@@ -41,7 +37,7 @@ mvn archetype:generate \
 -DauthNodeName=<name of your auth node class> \
 -DarchetypeGroupId=org.forgerock.am \
 -DarchetypeArtifactId=auth-tree-node-archetype \
--DarchetypeVersion=6.5.0 \ß
+-DarchetypeVersion=<auth-tree-node-archetype pom version eg. 7.3.0> \ß
 -DinteractiveMode=false
 ```
 

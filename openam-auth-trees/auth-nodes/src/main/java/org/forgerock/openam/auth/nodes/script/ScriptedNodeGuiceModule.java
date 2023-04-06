@@ -11,18 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
 import org.forgerock.openam.scripting.persistence.config.defaults.ScriptContextDetailsProvider;
 
+import com.google.auto.service.AutoService;
 import com.google.inject.AbstractModule;
+import com.google.inject.Module;
 import com.google.inject.multibindings.Multibinder;
 
 /**
  * Guice Module for configuring bindings for the scripted decision node.
  */
+@AutoService(Module.class)
 public class ScriptedNodeGuiceModule extends AbstractModule {
     @Override
     protected void configure() {

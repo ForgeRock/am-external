@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
@@ -23,6 +23,7 @@ import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_HOT
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_MAXIMUM_ALLOWED_CLOCK_DRIFT;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_TOTP_INTERVAL;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_TOTP_TIME_STEPS;
+import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_DEVICE_PROFILE_KEY;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,7 +52,7 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathService;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +93,7 @@ public class OathTokenVerifierNode extends AbstractMultiFactorNode {
      * @param coreWrapper the {@code CoreWrapper} instance.
      * @param deviceProfileHelper stores device profiles.
      * @param multiFactorNodeDelegate shared utilities common to second factor implementations.
-     * @param identityUtils an instance of the IdentityUtils.
+     * @param identityService an instance of the IdentityService.
      */
     @Inject
     public OathTokenVerifierNode(@Assisted Config config,
@@ -100,8 +101,8 @@ public class OathTokenVerifierNode extends AbstractMultiFactorNode {
             CoreWrapper coreWrapper,
             OathDeviceProfileHelper deviceProfileHelper,
             MultiFactorNodeDelegate<AuthenticatorOathService> multiFactorNodeDelegate,
-            IdentityUtils identityUtils) {
-        super(realm, coreWrapper, multiFactorNodeDelegate, identityUtils);
+            LegacyIdentityService identityService) {
+        super(realm, coreWrapper, multiFactorNodeDelegate, identityService);
         this.config = config;
         this.deviceProfileHelper = deviceProfileHelper;
     }
@@ -117,7 +118,10 @@ public class OathTokenVerifierNode extends AbstractMultiFactorNode {
             throw new NodeProcessException("Expected username to be set.");
         }
 
-        OathDeviceSettings oathDeviceSettings = deviceProfileHelper.getDeviceSettings(realm, username);
+        // If postponing the device storage, retrieve device profile from sharedState
+        OathDeviceSettings oathDeviceSettings = context.getStateFor(this).isDefined(OATH_DEVICE_PROFILE_KEY)
+                ? deviceProfileHelper.getDeviceProfileFromSharedState(context, OATH_DEVICE_PROFILE_KEY)
+                : deviceProfileHelper.getDeviceSettings(realm, username);
         if (oathDeviceSettings == null) {
             logger.debug("User '{}' not registered for OATH.", username);
             return Action.goTo(NOT_REGISTERED_OUTCOME_ID)

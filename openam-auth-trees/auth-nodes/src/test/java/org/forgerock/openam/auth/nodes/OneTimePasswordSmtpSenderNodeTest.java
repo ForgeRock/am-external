@@ -11,10 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -24,35 +25,38 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.TEST_UNIVERSAL_ID;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.newTreeContext;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.modules.hotp.SMSGateway;
+import com.sun.identity.authentication.modules.hotp.SMSGatewayLookup;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
 
+@RunWith(MockitoJUnitRunner.class)
 public class OneTimePasswordSmtpSenderNodeTest {
 
     private static final String TEST_REALM = "testRealm";
@@ -60,11 +64,10 @@ public class OneTimePasswordSmtpSenderNodeTest {
     private static final String TO_EMAIL_ADDRESS = "joe.bloggs@forgerock.com";
     private static final String TEST_ONE_TIME_PASSWORD = "978413";
 
-
     @Mock
     private CoreWrapper coreWrapper;
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
     @Mock
     private LocaleSelector localeSelector;
     @Mock
@@ -75,28 +78,30 @@ public class OneTimePasswordSmtpSenderNodeTest {
     private OneTimePasswordSmtpSenderNode.Config serviceConfig;
     private JsonValue sharedState;
     private JsonValue secureState;
+    private Map<String, SMSGateway> smsGatewayMap;
+    private SMSGatewayLookup smsGatewayLookup;
 
-    @BeforeMethod
+    @Before
     public void setUp() throws Exception {
         reset(MockSMSGateway.smsGateway);
-        initMocks(this);
         initConfig();
-        given(coreWrapper.convertRealmPathToRealmDn(anyString())).willReturn(TEST_REALM);
         given(coreWrapper.getIdentity(eq(TEST_UNIVERSAL_ID))).willReturn(amIdentity);
         given(amIdentity.getAttribute(serviceConfig.emailAttribute()))
                 .willReturn(Collections.singleton(TO_EMAIL_ADDRESS));
         sharedState = json(object(field(USERNAME, TEST_USERNAME),
                 field(REALM, TEST_REALM)));
         secureState = json(object(field(ONE_TIME_PASSWORD, TEST_ONE_TIME_PASSWORD)));
+        smsGatewayMap = new HashMap<>();
+        smsGatewayLookup = new SMSGatewayLookup(smsGatewayMap);
     }
 
 
     @Test
     public void shouldSendEmailWhenConfigurationAndSharedStateEmailAddressAreValid()
-            throws NodeProcessException, AuthLoginException, IdRepoException, SSOException {
+            throws NodeProcessException, AuthLoginException {
         //when
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService,
-                localeSelector).process(newTreeContext(sharedState, secureState));
+        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityService, idmIntegrationService,
+                localeSelector, smsGatewayLookup).process(newTreeContext(sharedState, secureState));
 
         then(MockSMSGateway.smsGateway).should().sendEmail(eq(serviceConfig.fromEmailAddress()), eq(TO_EMAIL_ADDRESS),
                 any(), any(), any(), any());
@@ -104,63 +109,78 @@ public class OneTimePasswordSmtpSenderNodeTest {
 
     @Test
     public void shouldNotGetAMIdentityIfEmailIsInSharedState()
-            throws NodeProcessException, AuthLoginException, IdRepoException, SSOException {
+            throws NodeProcessException {
 
         JsonValue state = sharedState.copy().add(EMAIL_ADDRESS, TO_EMAIL_ADDRESS);
 
         //when
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService,
-                localeSelector).process(newTreeContext(state, secureState));
+        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityService, idmIntegrationService,
+                localeSelector, smsGatewayLookup).process(newTreeContext(state, secureState));
 
         then(coreWrapper).shouldHaveNoInteractions();
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void throwsNodeProcessExceptionWhenEmailSendFails() throws AuthLoginException, NodeProcessException {
+    @Test
+    public void throwsNodeProcessExceptionWhenEmailSendFails() throws AuthLoginException {
         willThrow(AuthLoginException.class).given(MockSMSGateway.smsGateway)
                 .sendEmail(any(), any(), any(), any(), any(), any());
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService,
-                localeSelector).process(newTreeContext(sharedState, secureState));
+        assertThatThrownBy(() -> new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityService,
+                idmIntegrationService, localeSelector, smsGatewayLookup)
+                .process(newTreeContext(sharedState, secureState)))
+                .isInstanceOf(NodeProcessException.class);
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void throwsNodeProcessExceptionWhenIdentityProviderFails()
-            throws AuthLoginException, NodeProcessException, IdRepoException, SSOException {
+    @Test
+    public void throwsNodeProcessExceptionWhenIdentityProviderFails() {
         given(coreWrapper.getIdentity(anyString())).willReturn(null);
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService,
-                localeSelector).process(newTreeContext(sharedState, secureState));
+        assertThatThrownBy(() -> new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityService,
+                idmIntegrationService, localeSelector, smsGatewayLookup)
+                .process(newTreeContext(sharedState, secureState)))
+                .isInstanceOf(NodeProcessException.class);
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void throwsNodeProcessExceptionWhenIdentityProviderGetsEmailFails()
-            throws AuthLoginException, NodeProcessException, IdRepoException, SSOException {
+    @Test
+    public void throwsNodeProcessExceptionWhenIdentityProviderGetsEmailFails() throws IdRepoException, SSOException {
         given(amIdentity.getAttribute(serviceConfig.emailAttribute())).willThrow(IdRepoException.class);
 
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService,
-                localeSelector).process(newTreeContext(sharedState, secureState));
+        assertThatThrownBy(() -> new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityService,
+                idmIntegrationService, localeSelector, smsGatewayLookup)
+                .process(newTreeContext(sharedState, secureState)))
+                .isInstanceOf(NodeProcessException.class);
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void throwsNodeProcessExceptionWhenEmailNotFound()
-            throws AuthLoginException, NodeProcessException, IdRepoException, SSOException {
+    @Test
+    public void throwsNodeProcessExceptionWhenEmailNotFound() throws IdRepoException, SSOException {
         given(amIdentity.getAttribute(serviceConfig.emailAttribute())).willReturn(null);
 
-        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityUtils, idmIntegrationService,
-                localeSelector).process(newTreeContext(sharedState, secureState));
+        assertThatThrownBy(() -> new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper,
+                identityService, idmIntegrationService, localeSelector, smsGatewayLookup)
+                .process(newTreeContext(sharedState, secureState)))
+                .isInstanceOf(NodeProcessException.class);
     }
+
+    @Test
+    public void shouldFindSMSGatewayInMap()
+            throws NodeProcessException, AuthLoginException {
+        given(serviceConfig.smsGatewayImplementationClass()).willReturn(StubGuiceSMSGateway.class.getName());
+        StubGuiceSMSGateway stubGuiceSMSGateway = new StubGuiceSMSGateway(mock(SMSGateway.class));
+        smsGatewayMap.put(StubGuiceSMSGateway.class.getName(), stubGuiceSMSGateway);
+        //when
+        new OneTimePasswordSmtpSenderNode(serviceConfig, coreWrapper, identityService, idmIntegrationService,
+                localeSelector, smsGatewayLookup).process(newTreeContext(sharedState, secureState));
+
+        then(stubGuiceSMSGateway.smsGateway).should().sendEmail(eq(serviceConfig.fromEmailAddress()),
+                eq(TO_EMAIL_ADDRESS), any(), any(), any(), any());
+    }
+
 
     private void initConfig() {
         given(serviceConfig.emailAttribute()).willReturn("testEmailAttribute");
         given(serviceConfig.fromEmailAddress()).willReturn("my.email@forgerock.com");
-        given(serviceConfig.hostName()).willReturn("localhost");
-        given(serviceConfig.hostPort()).willReturn(8080);
-        given(serviceConfig.username()).willReturn("mcarter");
-        given(serviceConfig.password()).willReturn(Optional.of("password".toCharArray()));
-        given(serviceConfig.sslOption()).willReturn(SmtpBaseConfig.SslOption.SSL);
         given(serviceConfig.smsGatewayImplementationClass()).willReturn(MockSMSGateway.class.getName());
     }
 
-    static class MockSMSGateway implements SMSGateway {
+    public static class MockSMSGateway implements SMSGateway {
 
         static SMSGateway smsGateway = mock(SMSGateway.class);
 
@@ -173,6 +193,27 @@ public class OneTimePasswordSmtpSenderNodeTest {
         @Override
         public void sendEmail(String from, String to, String subject, String message, String code,
                               Map options) throws AuthLoginException {
+            smsGateway.sendEmail(from, to, subject, message, code, options);
+        }
+    }
+
+    public static class StubGuiceSMSGateway implements SMSGateway {
+
+        final SMSGateway smsGateway;
+
+        StubGuiceSMSGateway(SMSGateway gateway) {
+            this.smsGateway = gateway;
+        }
+
+        @Override
+        public void sendSMSMessage(String from, String to, String subject, String message, String code, Map options)
+                throws AuthLoginException {
+            smsGateway.sendSMSMessage(from, to, subject, message, code, options);
+        }
+
+        @Override
+        public void sendEmail(String from, String to, String subject, String message, String code, Map options)
+                throws AuthLoginException {
             smsGateway.sendEmail(from, to, subject, message, code, options);
         }
     }

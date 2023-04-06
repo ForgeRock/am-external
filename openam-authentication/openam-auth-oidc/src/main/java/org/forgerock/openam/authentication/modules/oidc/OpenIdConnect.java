@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2020 ForgeRock AS.
+ * Copyright 2014-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
@@ -34,7 +34,6 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 
-import com.sun.identity.idm.CompoundIdentity;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.authentication.modules.common.mapping.AttributeMapper;
@@ -46,6 +45,7 @@ import com.sun.identity.authentication.spi.AMLoginModule;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.CompoundIdentity;
 
 /**
  * Because the OpenIdResolver instances, responsible for validating ID Tokens for a given issuer, require pulling
@@ -74,7 +74,6 @@ public class OpenIdConnect extends AMLoginModule {
     private JwtHandler jwtHandler;
 
     private Map<String, Object> sharedState;
-
 
     @Override
     public void init(Subject subject, Map sharedState, Map options) {
@@ -126,11 +125,13 @@ public class OpenIdConnect extends AMLoginModule {
             logger.error("None of the attributes specified in the mappings could be found in the Id Token.");
             throw new AuthLoginException(RESOURCE_BUNDLE_NAME, BUNDLE_KEY_NO_ATTRIBUTES_MAPPED, null);
         }
-        String compoundUid = lookupAttrs.get("uid").iterator().next();
-        if (CompoundIdentity.isCompoundIdentity(compoundUid)) {
-            lookupAttrs.replace("uid", Collections.singleton(CompoundIdentity.fromCompoundIdentity(compoundUid).getIdentity()));
+        if (lookupAttrs.containsKey("uid")) {
+            String compoundUid = lookupAttrs.get("uid").iterator().next();
+            if (CompoundIdentity.isCompoundIdentity(compoundUid)) {
+                lookupAttrs.replace("uid", Collections.singleton(CompoundIdentity.fromCompoundIdentity(compoundUid).getIdentity()));
+            }
         }
-        final AMIdentity id = accountProvider.searchUser(getAMIdentityRepository(getRequestOrg()), lookupAttrs);
+        final AMIdentity id = accountProvider.searchUser(getIdentityStore(getRequestOrg()), lookupAttrs);
         if (id == null) {
             logger.debug("Unable to determine principal from account mapper for {}", jwtClaimsSet.getSubject());
             if (config.isSubClaimUsedIfNoMatch()) {

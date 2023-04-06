@@ -24,10 +24,13 @@
  *
  * $Id: AssertionIDRequestUtil.java,v 1.8 2009/06/12 22:21:40 mallas Exp $
  *
- * Portions Copyrighted 2013-2020 ForgeRock AS.
+ * Portions Copyrighted 2013-2022 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
+import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_ID_REQUEST_MAPPER;
+import static com.sun.identity.saml2.common.SAML2Constants.DEFAULT_ASSERTION_ID_REQUEST_MAPPER_CLASS;
+import static org.forgerock.openam.saml2.plugins.PluginRegistry.newKey;
 import static org.forgerock.openam.utils.Time.newDate;
 
 import java.io.BufferedInputStream;
@@ -38,7 +41,6 @@ import java.net.URL;
 import java.security.Key;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -83,6 +85,7 @@ import com.sun.identity.saml2.key.KeyUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.plugins.AssertionIDRequestMapper;
+import org.forgerock.openam.saml2.plugins.PluginRegistry;
 import com.sun.identity.saml2.protocol.AssertionIDRequest;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.Response;
@@ -100,7 +103,6 @@ public class AssertionIDRequestUtil {
     private static final Logger logger = LoggerFactory.getLogger(AssertionIDRequestUtil.class);
     static KeyProvider keyProvider = KeyUtil.getKeyProviderInstance();
     static SAML2MetaManager metaManager = SAML2Utils.getSAML2MetaManager();
-    static Hashtable assertionIDRequestMapperCache = new Hashtable();
     static final String MIME_TYPE_ASSERTION = "application/samlassertion+xml";
 
     private AssertionIDRequestUtil() {
@@ -292,8 +294,7 @@ public class AssertionIDRequestUtil {
 
         AssertionIDRequestMapper aidReqMapper = null;
         try {
-            aidReqMapper = getAssertionIDRequestMapper(realm,
-                    samlAuthorityEntityID, role);
+            aidReqMapper = getAssertionIDRequestMapper(realm, samlAuthorityEntityID, role);
         } catch (SAML2Exception ex) {
             SAMLUtils.sendError(request, response,
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
@@ -728,47 +729,18 @@ public class AssertionIDRequestUtil {
 
     }
 
-    private static AssertionIDRequestMapper getAssertionIDRequestMapper(
-            String realm, String samlAuthorityEntityID, String role)
-            throws SAML2Exception {
+    private static AssertionIDRequestMapper getAssertionIDRequestMapper(String realm,
+            String samlAuthorityEntityID, String role) throws SAML2Exception {
 
-        String aidReqMapperName = null;
-        AssertionIDRequestMapper aidReqMapper = null;
-        try {
-            aidReqMapperName = SAML2Utils.getAttributeValueFromSSOConfig(realm,
-                    samlAuthorityEntityID, role,
-                    SAML2Constants.ASSERTION_ID_REQUEST_MAPPER);
+        String aidReqMapperName;
+        aidReqMapperName = SAML2Utils.getAttributeValueFromSSOConfig(realm, samlAuthorityEntityID,
+                role, ASSERTION_ID_REQUEST_MAPPER);
 
-            if (aidReqMapperName == null) {
-                aidReqMapperName =
-                        SAML2Constants.DEFAULT_ASSERTION_ID_REQUEST_MAPPER_CLASS;
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                            "AssertionIDRequestUtil.getAssertionIDRequestMapper:" +
-                                    " use "+ aidReqMapperName);
-                }
-            }
-            aidReqMapper = (AssertionIDRequestMapper)
-                    assertionIDRequestMapperCache.get(aidReqMapperName);
-            if (aidReqMapper == null) {
-                aidReqMapper = (AssertionIDRequestMapper)
-                        Class.forName(aidReqMapperName).newInstance();
-                assertionIDRequestMapperCache.put(aidReqMapperName,
-                        aidReqMapper);
-            } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                            "AssertionIDRequestUtil.getAssertionIDRequestMapper:" +
-                                    " got the AssertionIDRequestMapper from cache");
-                }
-            }
-        } catch (Exception ex) {
-            logger.error(
-                    "AssertionIDRequestUtil.getAssertionIDRequestMapper:", ex);
-            throw new SAML2Exception(ex);
+        if (aidReqMapperName == null) {
+            aidReqMapperName = DEFAULT_ASSERTION_ID_REQUEST_MAPPER_CLASS;
         }
-
-        return aidReqMapper;
+        logger.debug("AssertionIDRequestUtil.getAssertionIDRequestMapper: use {}", aidReqMapperName);
+        return (AssertionIDRequestMapper) PluginRegistry.get(newKey(realm, samlAuthorityEntityID,
+                AssertionIDRequestMapper.class, aidReqMapperName));
     }
-
 }

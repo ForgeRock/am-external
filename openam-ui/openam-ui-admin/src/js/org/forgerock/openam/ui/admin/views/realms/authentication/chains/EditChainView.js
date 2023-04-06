@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 
 import "jquery-sortable";
@@ -19,6 +19,7 @@ import "jquery-sortable";
 import { t } from "i18next";
 import _ from "lodash";
 import $ from "jquery";
+import Handlebars from "handlebars-template-loader/runtime";
 
 import { show as showDeleteDialog } from "components/dialogs/Delete";
 import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
@@ -31,6 +32,16 @@ import LinkView from "org/forgerock/openam/ui/admin/views/realms/authentication/
 import Messages from "org/forgerock/commons/ui/common/components/Messages";
 import PostProcessView from "org/forgerock/openam/ui/admin/views/realms/authentication/chains/PostProcessView";
 import Router from "org/forgerock/commons/ui/common/main/Router";
+import {
+    isPlaceholder
+} from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
+
+Handlebars.registerHelper("isPlaceholder", function (str, options) {
+    if (isPlaceholder(str)) {
+        return options.fn(this);
+    }
+    return options.inverse(this);
+});
 
 const createLinkView = function (index, view) {
     const linkView = new LinkView();
@@ -48,14 +59,14 @@ const createLinkView = function (index, view) {
         // Each linkview instance requires allCriteria and allModules to render. These values are never changed
         // Because multiple instances require this same data, I grab it only in this parent view, then pass it
         // on to to all the child linkview instances.
-        typeDescription : "",
-        allModules : view.data.allModules,
-        linkConfig : view.data.form.chainData.authChainConfiguration[index],
-        allCriteria : {
-            REQUIRED : t("console.authentication.editChains.criteria.0.title"),
-            OPTIONAL : t("console.authentication.editChains.criteria.1.title"),
-            REQUISITE : t("console.authentication.editChains.criteria.2.title"),
-            SUFFICIENT : t("console.authentication.editChains.criteria.3.title")
+        typeDescription: "",
+        allModules: view.data.allModules,
+        linkConfig: view.data.form.chainData.authChainConfiguration[index],
+        allCriteria: {
+            REQUIRED: t("console.authentication.editChains.criteria.0.title"),
+            OPTIONAL: t("console.authentication.editChains.criteria.1.title"),
+            REQUISITE: t("console.authentication.editChains.criteria.2.title"),
+            SUFFICIENT: t("console.authentication.editChains.criteria.3.title")
         }
     };
 
@@ -100,12 +111,14 @@ const initSortable = function (self) {
 
 export default AbstractView.extend({
     template: EditChainTemplate,
+
     events: {
-        "click [data-save-chain]"    : "saveChain",
-        "click [data-save-settings]" : "saveSettings",
+        "click [data-save-chain]": "saveChain",
+        "click [data-save-settings]": "saveSettings",
         "click [data-add-new-module]": "addNewModule",
-        "click [data-delete]"        : "onDeleteClick"
+        "click [data-delete]": "onDeleteClick"
     },
+
     partials: {
         "alerts/_Alert": AlertPartial
     },
@@ -151,21 +164,30 @@ export default AbstractView.extend({
         const self = this;
 
         AuthenticationService.authentication.chains.get(args[0], args[1]).then((data) => {
+            // EditChainsTemplate expects form values to be an array,
+            // placeholders are not in that format so make them an array
+            const chainData = data.chainData;
+            Object.keys(chainData).forEach((key) => {
+                if (isPlaceholder(chainData[key])) {
+                    chainData[key] = [chainData[key]];
+                }
+            });
+
             self.data = {
-                realmPath : args[0],
-                allModules : data.modulesData,
-                form : { chainData: data.chainData },
+                realmPath: args[0],
+                allModules: data.modulesData,
+                form: { chainData },
                 headerActions: [
-                    { actionPartial: "form/_Button", data:"delete", title:"common.form.delete", icon:"fa-times" }
+                    { actionPartial: "form/_Button", data: "delete", title: "common.form.delete", icon: "fa-times" }
                 ]
             };
 
             self.parentRender(() => {
                 if (self.data.form.chainData.adminAuthModule || self.data.form.chainData.orgConfig) {
                     const popoverOpt = {
-                        trigger : "hover",
-                        container : "body",
-                        placement : "top"
+                        trigger: "hover",
+                        container: "body",
+                        placement: "top"
                     };
 
                     if (self.data.form.chainData.adminAuthModule && self.data.form.chainData.orgConfig) {
@@ -207,8 +229,8 @@ export default AbstractView.extend({
         const self = this;
         const chainData = this.data.form.chainData;
 
-        chainData.loginSuccessUrl[0] = this.$el.find("#loginSuccessUrl").val();
-        chainData.loginFailureUrl[0] = this.$el.find("#loginFailureUrl").val();
+        chainData.loginSuccessUrl = this.$el.find("#loginSuccessUrl").val();
+        chainData.loginFailureUrl = this.$el.find("#loginFailureUrl").val();
 
         PostProcessView.addClassNameDialog().then(() => {
             const savedData = {

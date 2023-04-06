@@ -24,11 +24,14 @@
  *
  * $Id: IDPProxyUtil.java,v 1.18 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2022 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
 
+import static com.sun.identity.saml2.common.SAML2Constants.DEFAULT_IDP_PROXY_FINDER;
+import static com.sun.identity.saml2.common.SAML2Constants.PROXY_IDP_FINDER_CLASS;
+import static org.forgerock.openam.saml2.plugins.PluginRegistry.newKey;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.saml2.Saml2EntityRole.SP;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
@@ -54,6 +57,7 @@ import javax.xml.soap.SOAPMessage;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
+import org.forgerock.openam.saml2.plugins.IDPFinder;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
@@ -86,8 +90,8 @@ import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import com.sun.identity.saml2.plugins.SAML2IDPFinder;
-import com.sun.identity.saml2.plugins.SAML2ServiceProviderAdapter;
+import org.forgerock.openam.saml2.plugins.PluginRegistry;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.IDPEntry;
 import com.sun.identity.saml2.protocol.IDPList;
@@ -141,22 +145,13 @@ public class IDPProxyUtil {
      * @exception SAML2Exception for any SAML2 failure.
      * @return String Provider id of the preferred IDP to be proxied.
      */
-    public static String getPreferredIDP(
-        AuthnRequest authnRequest,
-        String hostedEntityId,
-        String realm,
-        HttpServletRequest request,
-        HttpServletResponse response)
-        throws SAML2Exception
-    {
-        SAML2IDPFinder proxyFinder = getIDPProxyFinder(realm, hostedEntityId);
-        List idpProviderIDs = proxyFinder.getPreferredIDP(
-            authnRequest, hostedEntityId, realm,
-            request, response);
+    public static String getPreferredIDP(AuthnRequest authnRequest, String hostedEntityId, String realm,
+        HttpServletRequest request, HttpServletResponse response) throws SAML2Exception {
+        IDPFinder proxyFinder = getIDPProxyFinder(realm, hostedEntityId);
+        List idpProviderIDs = proxyFinder.getPreferredIDP(authnRequest, hostedEntityId, realm, request, response);
         if ((idpProviderIDs == null) || idpProviderIDs.isEmpty()) {
             return null;
         }
-
         return (String)idpProviderIDs.get(0);
     }
 
@@ -207,9 +202,9 @@ public class IDPProxyUtil {
 
         AuthnRequest newAuthnRequest = getNewAuthnRequest(hostedEntityId, destination, realm, authnRequest);
         // invoke SP Adapter class if registered
-        SAML2ServiceProviderAdapter spAdapter = SAML2Utils.getSPAdapterClass(hostedEntityId, realm);
-        if (spAdapter != null) {
-            spAdapter.preSingleSignOnRequest(hostedEntityId, preferredIDP, realm, request, response, newAuthnRequest);
+        SPAdapter adapter = SAML2Utils.getSPAdapter(hostedEntityId, realm);
+        if (adapter != null) {
+            adapter.preSingleSignOnRequest(hostedEntityId, preferredIDP, realm, request, response, newAuthnRequest);
         }
         if (logger.isDebugEnabled()) {
             logger.debug(classMethod + "New Authentication request:" + newAuthnRequest.toXMLString());
@@ -1233,44 +1228,14 @@ public class IDPProxyUtil {
      * @return the <code>IDPProxyFinder</code>
      * @exception SAML2Exception if the operation is not successful
      */
-    static SAML2IDPFinder getIDPProxyFinder(
-                                 String realm, String idpEntityID)
-        throws SAML2Exception {
-        String classMethod = "IDPProxyUtil.getIDPProxyFinder: ";
-        String idpProxyFinderName = null;
-        SAML2IDPFinder idpProxyFinder = null;
-        try {
-            idpProxyFinderName = IDPSSOUtil.getAttributeValueFromIDPSSOConfig(
-                realm, idpEntityID, SAML2Constants.PROXY_IDP_FINDER_CLASS);
-            if (idpProxyFinderName == null || idpProxyFinderName.isEmpty()) {
-                idpProxyFinderName =
-                    SAML2Constants.DEFAULT_IDP_PROXY_FINDER;
-                if (logger.isDebugEnabled()) {
-                    logger.debug(classMethod + "use " +
-                    SAML2Constants.DEFAULT_IDP_PROXY_FINDER);
-                }
-            }
-            idpProxyFinder = (SAML2IDPFinder)
-                IDPCache.idpProxyFinderCache.get(
-                                           idpProxyFinderName);
-            if (idpProxyFinder == null) {
-                idpProxyFinder = (SAML2IDPFinder)
-                    Class.forName(idpProxyFinderName).newInstance();
-                IDPCache.idpProxyFinderCache.put(
-                    idpProxyFinderName, idpProxyFinder);
-            } else {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(classMethod +
-                        "got the IDPProxyFinder from cache");
-                }
-            }
-        } catch (Exception ex) {
-            logger.error(classMethod +
-                "Unable to get IDP Proxy Finder.", ex);
-            throw new SAML2Exception(ex);
+    static IDPFinder getIDPProxyFinder(String realm, String idpEntityID) throws SAML2Exception {
+        String idpProxyFinderName;
+        idpProxyFinderName = IDPSSOUtil.getAttributeValueFromIDPSSOConfig(realm, idpEntityID, PROXY_IDP_FINDER_CLASS);
+        if (idpProxyFinderName == null || idpProxyFinderName.isEmpty()) {
+            idpProxyFinderName = DEFAULT_IDP_PROXY_FINDER;
         }
-
-        return idpProxyFinder;
+        logger.debug("IDPProxyUtil.getIDPProxyFinder: uses {}", idpProxyFinderName);
+        return (IDPFinder) PluginRegistry.get(newKey(realm, idpEntityID, IDPFinder.class, idpProxyFinderName));
     }
 
     private static SPSSOConfigElement getSPSSOConfigByAuthnRequest(

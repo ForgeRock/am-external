@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2022 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -36,7 +36,7 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -49,7 +49,7 @@ public class ZeroPageLoginNodeTest {
     @Mock
     private ZeroPageLoginNode.Config config;
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -58,7 +58,7 @@ public class ZeroPageLoginNodeTest {
         when(config.passwordHeader()).thenReturn("pass");
         when(config.allowWithoutReferer()).thenReturn(true);
         when(config.referrerWhiteList()).thenReturn(new HashSet<>());
-        node = new ZeroPageLoginNode(config, identityUtils);
+        node = new ZeroPageLoginNode(config, identityService);
     }
 
     @Test

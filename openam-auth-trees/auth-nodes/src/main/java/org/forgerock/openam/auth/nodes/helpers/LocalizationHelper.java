@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
 /**
@@ -117,6 +118,43 @@ public class LocalizationHelper {
         }
 
         return null;
+    }
+
+    /**
+     * Resolve the localized message value based on the available localizations and preferences.
+     * If no localizations exist and no key is found in any of the bundles, then return a default value.
+     * <p>
+     * This method will use the following order of precedence for the resolution of the locale
+     * to use for a given message:
+     * <ol>
+     *     <li>Ordered list of Locales provided by the {@link TreeContext#request}</li>
+     *     <li>Locales defined in the Realm Authentication Settings</li>
+     *     <li>Locales defined at the Server level</li>
+     *     <li>Default localisation key</li>
+     * </ol>
+     * and from the following sources, in order:
+     * <ol>
+     *     <li>The list of supplied localizations</li>
+     *     <li>The resource bundle file</li>
+     *     <li>The default message value</li>
+     * </ol>
+     *
+     * @param context the context of the tree authentication.
+     * @param bundleClass the bundle class.
+     * @param localizations mapping of localisations to localised text.
+     * @param defaultMessageKey default message key in the event we do not locate an appropriate locale.
+     * @param defaultMessageValue default message value, in the event that no match is found for the key.
+     * @return a String containing the localized text or default message value.
+     */
+    public String getLocalizedMessageWithDefault(TreeContext context, Class<?> bundleClass,
+            Map<Locale, String> localizations, String defaultMessageKey, String defaultMessageValue) {
+        try {
+            return getLocalizedMessage(context, bundleClass, localizations, defaultMessageKey);
+        } catch (MissingResourceException e) {
+            logger.debug("No localized value found for key {}. Using default text, {}. {}",
+                    defaultMessageKey, defaultMessageValue, e.getMessage());
+            return defaultMessageValue;
+        }
     }
 
     private void addRealmConfiguredLocaleIfPresent(List<Locale> systemLocales) {

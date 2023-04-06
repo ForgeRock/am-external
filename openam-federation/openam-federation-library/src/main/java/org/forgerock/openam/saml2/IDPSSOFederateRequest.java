@@ -11,14 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2015-2022 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
 import com.sun.identity.saml2.assertion.AuthnContext;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
+import org.forgerock.openam.saml2.plugins.IDPAdapter;
 
 /**
  * Represents the data necessary for a request to be handled by the IdP SSO Federate's authenticate
@@ -30,7 +30,7 @@ public class IDPSSOFederateRequest {
 
     private final String reqID;
     private final String realm;
-    private final SAML2IdentityProviderAdapter idpAdapter;
+    private final IDPAdapter idpAdapter;
 
     private final String idpMetaAlias;
     private final String idpEntityID;
@@ -54,7 +54,7 @@ public class IDPSSOFederateRequest {
      * @param idpMetaAlias The meta alias to use.
      * @param idpEntityID  The IdP's entity ID.
      */
-    public IDPSSOFederateRequest(String reqID, String realm, SAML2IdentityProviderAdapter idpAdapter,
+    public IDPSSOFederateRequest(String reqID, String realm, IDPAdapter idpAdapter,
                                  String idpMetaAlias, String idpEntityID) {
         this.reqID = reqID;
         this.realm = realm;
@@ -197,7 +197,7 @@ public class IDPSSOFederateRequest {
      *
      * @return The IdPAdaptor used for this request.
      */
-    public SAML2IdentityProviderAdapter getIdpAdapter() {
+    public IDPAdapter getIdpAdapter() {
         return idpAdapter;
     }
 

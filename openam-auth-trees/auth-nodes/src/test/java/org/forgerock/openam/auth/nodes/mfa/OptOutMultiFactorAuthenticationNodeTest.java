@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
@@ -46,7 +46,7 @@ import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.rest.devices.DeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
-import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -60,7 +60,7 @@ public class OptOutMultiFactorAuthenticationNodeTest {
     @Mock
     private CoreWrapper coreWrapper;
     @Mock
-    private IdentityUtils identityUtils;
+    private LegacyIdentityService identityService;
 
     OptOutMultiFactorAuthenticationNode node;
 
@@ -144,7 +144,7 @@ public class OptOutMultiFactorAuthenticationNodeTest {
 
     private void whenNodeConfigHasDefaultValues() {
         config = mock(OptOutMultiFactorAuthenticationNode.Config.class);
-        node = spy(new OptOutMultiFactorAuthenticationNode(coreWrapper, identityUtils));
+        node = spy(new OptOutMultiFactorAuthenticationNode(coreWrapper, identityService));
     }
 
 }

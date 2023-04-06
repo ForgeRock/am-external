@@ -24,7 +24,7 @@
  *
  * $Id: SPSingleLogout.java,v 1.29 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2013-2021 ForgeRock AS.
+ * Portions Copyrighted 2013-2022 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.profile;
@@ -79,8 +79,8 @@ import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import com.sun.identity.saml2.plugins.FedletAdapter;
-import com.sun.identity.saml2.plugins.SAML2ServiceProviderAdapter;
+import org.forgerock.openam.saml2.plugins.FedletAdapter;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 import com.sun.identity.saml2.protocol.LogoutRequest;
 import com.sun.identity.saml2.protocol.LogoutResponse;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
@@ -703,15 +703,13 @@ public class SPSingleLogout {
             }
         } else {
             // obtain fedlet adapter
-            FedletAdapter fedletAdapter =
-                    SAML2Utils.getFedletAdapterClass(spEntityID, realm);
-            if (fedletAdapter != null) {
+            FedletAdapter adapter = SAML2Utils.getFedletAdapter(spEntityID, realm);
+            if (adapter != null) {
                 if (isSuccess(logoutRes)) {
-                    fedletAdapter.onFedletSLOSuccess(
-                            request, response, logoutReq, logoutRes,
+                    adapter.onFedletSLOSuccess(request, response, logoutReq, logoutRes,
                             spEntityID, idpEntityID, binding);
                 } else {
-                    fedletAdapter.onFedletSLOFailure(
+                    adapter.onFedletSLOFailure(
                             request, response, logoutReq, logoutRes,
                             spEntityID, idpEntityID, binding);
                     throw new SAML2Exception(SAML2Utils.BUNDLE_NAME, "sloFailed", null);
@@ -727,16 +725,15 @@ public class SPSingleLogout {
             String userID, LogoutRequest logoutRequest,
             LogoutResponse logoutResponse, String binding) throws SAML2Exception {
 
-        SAML2ServiceProviderAdapter spAdapter = null;
+        SPAdapter adapter = null;
         try {
-            spAdapter = SAML2Utils.getSPAdapterClass(hostedEntityID, realm);
+            adapter = SAML2Utils.getSPAdapter(hostedEntityID, realm);
         } catch (SAML2Exception e) {
             if (logger.isDebugEnabled()) {
-                logger.debug(
-                        "SPACSUtils.invokeSPAdapterForPreSLOProcess", e);
+                logger.debug("SPACSUtils.invokeSPAdapterForPreSLOProcess", e);
             }
         }
-        if (spAdapter != null) {
+        if (adapter != null) {
             if (userID == null) {
                 try {
                     Object session = sessionProvider.getSession(request);
@@ -750,7 +747,7 @@ public class SPSingleLogout {
                     }
                 }
             }
-            spAdapter.preSingleLogoutProcess(hostedEntityID, realm, request,
+            adapter.preSingleLogoutProcess(hostedEntityID, realm, request,
                     response, userID, logoutRequest, logoutResponse, binding);
         }
         return userID;
@@ -761,17 +758,16 @@ public class SPSingleLogout {
             String userID, LogoutRequest logoutRequest,
             LogoutResponse logoutResponse, String binding) {
 
-        SAML2ServiceProviderAdapter spAdapter = null;
+        SPAdapter adapter = null;
         try {
-            spAdapter = SAML2Utils.getSPAdapterClass(hostedEntityID, realm);
+            adapter = SAML2Utils.getSPAdapter(hostedEntityID, realm);
         } catch (SAML2Exception e) {
             if (logger.isDebugEnabled()) {
-                logger.debug(
-                        "SPACSUtils.invokeSPAdapterForPostSLOProcess", e);
+                logger.debug("SPACSUtils.invokeSPAdapterForPostSLOProcess", e);
             }
         }
-        if (spAdapter != null) {
-            spAdapter.postSingleLogoutSuccess(hostedEntityID, realm, request,
+        if (adapter != null) {
+            adapter.postSingleLogoutSuccess(hostedEntityID, realm, request,
                     response, userID, logoutRequest, logoutResponse, binding);
         }
     }
@@ -1073,14 +1069,12 @@ public class SPSingleLogout {
                     }
 
                     // obtain fedlet adapter
-                    FedletAdapter fedletAdapter =
-                            SAML2Utils.getFedletAdapterClass(spEntityID, realm);
+                    FedletAdapter adapter = SAML2Utils.getFedletAdapter(spEntityID, realm);
                     boolean result = true;
-                    if (fedletAdapter != null) {
+                    if (adapter != null) {
                         // call adapter to do real logout
-                        result = fedletAdapter.doFedletSLO(request, response,
-                                logoutReq, spEntityID, idpEntity, siList,
-                                nameID.getValue(), binding);
+                        result = adapter.doFedletSLO(request, response, logoutReq, spEntityID, idpEntity,
+                                siList, nameID.getValue(), binding);
                     }
                     if (result) {
                         status = SUCCESS_STATUS;
