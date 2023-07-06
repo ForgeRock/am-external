@@ -43,7 +43,7 @@
         <repository>
             <id>forgerock-build-dependencies</id>
             <name>ForgeRock Private Release Repository for AM 7.3.0</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.3.0-dependencies</url>
+            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.3.0-dependencies</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
