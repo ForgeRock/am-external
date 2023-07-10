@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2022 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -39,6 +39,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 
 import org.forgerock.openam.core.realms.RealmLookup;
+import org.forgerock.openam.sm.ConnectionConfig;
 import org.forgerock.openam.services.datastore.DataStoreException;
 import org.forgerock.openam.services.datastore.DataStoreId;
 import org.forgerock.openam.services.datastore.DataStoreService;
@@ -173,7 +174,7 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
         if (dataStoreId.equals(DataStoreId.DEFAULT)) {
             connectionFactory = defaultConnectionFactoryProvider.get();
         } else {
-            DataStoreConfig config = getConfig(dataStoreId);
+            DataStoreConfig config = (DataStoreConfig) getConfig(dataStoreId);
             connectionFactory = connectionFactoryProvider.createLdapConnectionFactory(config);
         }
 
@@ -207,7 +208,15 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
         }
     }
 
-    private DataStoreConfig getConfig(DataStoreId dataStoreId) {
+    /**
+     * {@inheritDoc}
+     *
+     * @param dataStoreId Non-null ID representing the DataStore to read configuration for.
+     * @return A non-null {@link ConnectionConfig}
+     * @throws DataStoreException If there was an error whilst trying to read the configuration of if the
+     * requested {@code dataStoreId} did not represent a valid configuration.
+     */
+    public ConnectionConfig getConfig(DataStoreId dataStoreId) {
         try {
             ServiceConfigManager configManager = getServiceConfigManager();
             ServiceConfig globalConfig = configManager.getGlobalConfig("default");
@@ -349,6 +358,14 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
         @Override
         public void close() {
             logger.warn("Ignoring attempted call to close a managed connection factory");
+        }
+
+        @Override
+        public String toString() {
+            if (wrappedFactory != null) {
+                return wrappedFactory.toString();
+            }
+            return null;
         }
 
     }

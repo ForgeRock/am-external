@@ -24,7 +24,7 @@
  *
  * $Id: Federation.java,v 1.3 2009/01/28 05:35:10 ww203982 Exp $
  *
- * Portions Copyrighted 2014-2019 ForgeRock AS.
+ * Portions Copyrighted 2014-2022 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.federation;
@@ -170,7 +170,12 @@ public class Federation extends AMLoginModule {
         return ISAuthConstants.LOGIN_SUCCEED;
         
     }
-    
+
+    @Override
+    public boolean isReturningPrincipalAsDn() {
+        return true;
+    }
+
     /**
      * Returns principal of the authenticated user.
      * @return Principal of the authenticated user.

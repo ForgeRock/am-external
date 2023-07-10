@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.jwt;
@@ -37,5 +37,15 @@ public class InvalidPersistentJwtException extends Exception {
      */
     InvalidPersistentJwtException(Exception e) {
         super(e);
+    }
+
+    /**
+     * Constructs a InvalidPersistentJwtException with a given message and exception.
+     *
+     * @param message the localized message.
+     * @param cause the underlying cause.
+     */
+    InvalidPersistentJwtException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -81,7 +81,7 @@ public class DefaultAccountProvider implements AccountProvider {
         IdSearchControl ctrl = getSearchControl(IdSearchOpModifier.OR, attr);
         IdSearchResults results;
         try {
-            results = idrepo.searchIdentities(IdType.USER, "*", ctrl);
+            results = idrepo.searchIdentitiesByUsername(IdType.USER, "*", ctrl);
             Iterator<AMIdentity> iter = results.getSearchResults().iterator();
             if (iter.hasNext()) {
                 identity = iter.next();

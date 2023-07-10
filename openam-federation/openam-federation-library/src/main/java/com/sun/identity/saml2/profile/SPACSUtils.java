@@ -79,6 +79,7 @@ import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.liberty.ws.soapbinding.Message;
 import com.sun.identity.liberty.ws.soapbinding.SOAPBindingException;
 import com.sun.identity.liberty.ws.soapbinding.SOAPFaultException;
+import com.sun.identity.plugin.datastore.DataStoreProvider;
 import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.plugin.monitoring.FedMonAgent;
 import com.sun.identity.plugin.monitoring.FedMonSAML2Svc;
@@ -103,6 +104,7 @@ import com.sun.identity.saml2.common.NameIDInfoKey;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2FailoverUtils;
+import com.sun.identity.saml2.common.SAML2InvalidUserException;
 import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.common.SOAPCommunicator;
@@ -1124,7 +1126,9 @@ public class SPACSUtils {
                 }
 
                 try {
-                    userName = SAML2Utils.getDataStoreProvider().getUserID(realm, SAML2Utils.getNameIDKeyMap(
+                    DataStoreProvider dataStoreProvider = SAML2Utils.getDataStoreProvider();
+                    validateNameId(nameId, dataStoreProvider);
+                    userName = dataStoreProvider.getUserID(realm, SAML2Utils.getNameIDKeyMap(
                             nameId, hostEntityId, remoteHostId, realm, SAML2Constants.SP_ROLE));
                 } catch (DataStoreProviderException dse) {
                     logger.error(classMethod + "DataStoreProviderException whilst retrieving NameID " +
@@ -1141,6 +1145,10 @@ public class SPACSUtils {
             invokeSPAdapterForSSOFailure(hostEntityId, realm, request, response, smap, respInfo,
                     SAML2ServiceProviderAdapter.SSO_FAILED_NO_USER_MAPPING, se);
             throw se;
+        }
+
+        if (userName != null) {
+            userName = SAML2Utils.getDataStoreProvider().convertUserIdToUniversalId(userName, realm);
         }
 
         if (userName == null && respInfo.isLocalLogin()) {
@@ -2049,7 +2057,9 @@ public class SPACSUtils {
         try {
             if (shouldPersistNameId) {
                 try {
-                    userId = SAML2Utils.getDataStoreProvider().getUserID(realm, SAML2Utils.getNameIDKeyMap(
+                    DataStoreProvider dataStoreProvider = SAML2Utils.getDataStoreProvider();
+                    validateNameId(nameId, dataStoreProvider);
+                    userId = dataStoreProvider.getUserID(realm, SAML2Utils.getNameIDKeyMap(
                             nameId, spEntityId, idpEntityId, realm, SAML2Constants.SP_ROLE));
                 } catch (DataStoreProviderException dse) {
                     throw new SAML2Exception(dse.getMessage());
@@ -2061,6 +2071,8 @@ public class SPACSUtils {
                 userId = acctMapper.getIdentity(authnAssertion, spEntityId, realm);
                 isNewAccountLink = true; //we'll use this later to inform us
             }
+        } catch (SAML2InvalidUserException e) {
+            throw e;
         } catch (SAML2Exception se) {
             return new Saml2SsoResult(null, nameId, decryptionKeys, shouldPersistNameId);
         }
@@ -2113,4 +2125,14 @@ public class SPACSUtils {
         AccountUtils.setAccountFederation(info, universalId);
     }
 
+    private static void validateNameId(NameID nameId, DataStoreProvider dataStoreProvider) throws SAML2Exception {
+        try {
+            if (dataStoreProvider.isUsernameUniversalId(nameId.getValue())) {
+                throw new SAML2Exception("Invalid user");
+            }
+        } catch (DataStoreProviderException e) {
+            logger.error("Invalid universalId username", e);
+            throw new SAML2Exception("Invalid user");
+        }
+    }
 }

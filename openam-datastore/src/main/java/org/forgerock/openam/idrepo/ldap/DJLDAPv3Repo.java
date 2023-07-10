@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2022 ForgeRock AS.
+ * Copyright 2013-2023 ForgeRock AS.
  * Portions Copyright 2016 Nomura Research Institute, Ltd.
  * Portions Copyrighted 2016 Agile Digital Engineering.
  */
@@ -479,7 +479,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 .withLDAPURLs(LDAPUtils.getLdapUrls(ldapServers, isSecure))
                 .withBindDN(username)
                 .withBindPassword(password)
-                .withMinimumConnectionPool(maxPoolSize)
+                .withMinimumConnectionPool(minPoolSize)
                 .withMaximumConnectionPool(maxPoolSize)
                 .withUseSsl(isSecure)
                 .withUseStartTLS(useStartTLS)
@@ -577,7 +577,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 DEBUG.debug("An error occurred while trying to authenticate a user: " + ere);
             }
             if (resultCode.equals(ResultCode.INVALID_CREDENTIALS)) {
-                throw new InvalidPasswordException(AM_AUTH, "InvalidUP", null, userName, null);
+                throw new InvalidPasswordException(AM_AUTH, "InvalidUP", null, userName, false, null);
             } else if (resultCode.equals(ResultCode.UNWILLING_TO_PERFORM)
                     || resultCode.equals(ResultCode.CONSTRAINT_VIOLATION)) {
                 throw new AuthLoginException(AM_AUTH, "FAuth", null);
@@ -1624,7 +1624,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         List<Filter> filters = new ArrayList<>();
 
         if (crestQuery.hasQueryId()) {
-            filters.add(Filter.valueOf(searchAttr + "=" + partiallyEscapeAssertionValue(crestQuery.getQueryId())));
+            filters.add(Filter.valueOf(searchAttr + "=" + partiallyEscapeAssertionValue(crestQuery.getQueryId(), crestQuery.isAllowWildCards())));
         } else if (!crestQuery.getQueryFilter().equals(QueryFilter.alwaysTrue())) {
             filters.add(crestQuery.getQueryFilter().accept(new LdapFromJsonQueryFilterVisitor(getSearchAttribute(type)),
                                                            null));
@@ -1633,7 +1633,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         filters.add(getObjectClassFilter(type));
 
         Filter filter = Filter.and(filters);
-        Filter tempFilter = constructFilter(filterOp, avPairs);
+        Filter tempFilter = constructFilter(filterOp, avPairs, crestQuery.isAllowWildCardsForAvPairs());
         if (tempFilter != null) {
             filter = Filter.and(tempFilter, filter);
         }
@@ -2962,14 +2962,14 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         return dn;
     }
 
-    protected Filter constructFilter(int operation, Map<String, Set<String>> attributes) {
+    protected Filter constructFilter(int operation, Map<String, Set<String>> attributes, boolean allowWildcards) {
         if (attributes == null || attributes.isEmpty()) {
             return null;
         }
         Set<Filter> filters = new LinkedHashSet<>(attributes.size());
         for (Map.Entry<String, Set<String>> entry : attributes.entrySet()) {
             for (String value : entry.getValue()) {
-                filters.add(Filter.valueOf(entry.getKey() + "=" + partiallyEscapeAssertionValue(value)));
+                filters.add(Filter.valueOf(entry.getKey() + "=" + partiallyEscapeAssertionValue(value, allowWildcards)));
             }
         }
         Filter filter;

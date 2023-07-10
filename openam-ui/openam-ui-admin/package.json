@@ -137,6 +137,8 @@
         "**/moment": "2.29.4",
         "**/**/underscore": "1.12.1",
         "**/**/path-parse": "1.0.7",
-        "eonasdan-bootstrap-datetimepicker/moment-timezone": "0.5.37"
+        "eonasdan-bootstrap-datetimepicker/moment-timezone": "0.5.37",
+        "lodash-es": "4.17.21",
+        "minimatch": "3.0.5"
     }
 }

@@ -24,7 +24,7 @@
  *
  * $Id: IDPSessionListener.java,v 1.10 2009/09/23 22:28:31 bigfatrat Exp $
  *
- * Portions Copyrighted 2014-2019 ForgeRock AS.
+ * Portions Copyrighted 2014-2023 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
-import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
+import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +48,6 @@ import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
-import com.sun.identity.saml2.common.SAML2FailoverUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.entityconfig.IDPSSOConfigElement;
 import com.sun.identity.saml2.jaxb.entityconfig.SPSSOConfigElement;
@@ -58,7 +57,6 @@ import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-
 
 /**
  * The class <code>IDPSessionListener</code> implements
@@ -115,26 +113,19 @@ public class IDPSessionListener
         }
         try {
             SessionProvider sessionProvider = SessionManager.getProvider();
-            
-            String[] values = sessionProvider.getProperty(
-               session, SAML2Constants.IDP_SESSION_INDEX);
-            if (values == null || values.length == 0) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                        classMethod +
-                        "No sessionIndex stored in session.");
-                }
+
+            String sessionIndex = getSessionProperty(sessionProvider, session, SAML2Constants.IDP_SESSION_INDEX);
+            Boolean doNotRemoveSaml2IDPSession = Boolean.parseBoolean(
+                    getSessionProperty(sessionProvider, session, SAML2Constants.DO_NOT_REMOVE_SAML2_IDPSESSION));
+            if (StringUtils.isBlank(sessionIndex)) {
+                logger.debug("{} No sessionIndex stored in session.", classMethod);
+                return;
+            } else if (doNotRemoveSaml2IDPSession) {
+                logger.debug("{} sessionIndex {}, is marked not to be removed. In use in upgraded session",
+                        classMethod, sessionIndex);
                 return;
             }
-            String sessionIndex = values[0];
-            if (sessionIndex == null || sessionIndex.length() == 0) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(
-                        classMethod +
-                        "No sessionIndex stored in session.");
-               }
-               return;
-            }
+            logger.debug("{} Invalidating IDPSession with sessionIndex: {}", classMethod, sessionIndex);
 
             IDPSession idpSession = IDPSSOUtil.retrieveCachedIdPSession(sessionIndex);
             if (idpSession != null) {
@@ -305,5 +296,15 @@ public class IDPSessionListener
 
         LogoutUtil.doLogout(metaAlias, spEntityID, slosList, null, binding, null, sessionIndex, nameID, null, null,
                 paramsMap, spConfig);
+    }
+
+    private String getSessionProperty(SessionProvider sessionProvider, Object session, String propertyName)
+            throws SessionException {
+        String[] values = sessionProvider.getProperty(session, propertyName);
+        if (values == null || values.length == 0) {
+            logger.debug("IDPSessionListener.getSessionProperty: No value stored in session for {}", propertyName);
+            return null;
+        }
+        return values[0];
     }
 }

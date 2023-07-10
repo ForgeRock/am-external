@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.membership;
@@ -764,7 +764,7 @@ public class Membership extends AMLoginModule {
         try {
             idsc.setMaxResults(0);
             IdSearchResults searchResults =
-            amIdRepo.searchIdentities(IdType.USER, userID, idsc);
+            amIdRepo.searchIdentitiesByUsername(IdType.USER, userID, idsc);
             if (searchResults != null) {
                 results = searchResults.getSearchResults();
             }

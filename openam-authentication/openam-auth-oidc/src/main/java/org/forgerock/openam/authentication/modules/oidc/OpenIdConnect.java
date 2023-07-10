@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2020 ForgeRock AS.
+ * Copyright 2014-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
@@ -126,9 +126,11 @@ public class OpenIdConnect extends AMLoginModule {
             logger.error("None of the attributes specified in the mappings could be found in the Id Token.");
             throw new AuthLoginException(RESOURCE_BUNDLE_NAME, BUNDLE_KEY_NO_ATTRIBUTES_MAPPED, null);
         }
-        String compoundUid = lookupAttrs.get("uid").iterator().next();
-        if (CompoundIdentity.isCompoundIdentity(compoundUid)) {
-            lookupAttrs.replace("uid", Collections.singleton(CompoundIdentity.fromCompoundIdentity(compoundUid).getIdentity()));
+        if (lookupAttrs.containsKey("uid")) {
+            String compoundUid = lookupAttrs.get("uid").iterator().next();
+            if (CompoundIdentity.isCompoundIdentity(compoundUid)) {
+                lookupAttrs.replace("uid", Collections.singleton(CompoundIdentity.fromCompoundIdentity(compoundUid).getIdentity()));
+            }
         }
         final AMIdentity id = accountProvider.searchUser(getAMIdentityRepository(getRequestOrg()), lookupAttrs);
         if (id == null) {

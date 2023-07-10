@@ -99,7 +99,9 @@ public class OathRegistrationNode extends AbstractMultiFactorNode {
     private static final String BUNDLE = OathRegistrationNode.class.getName();
 
     private static final int NEXT_OPTION = 0;
-    private static final String NEXT_LABEL = "Next";
+    @VisibleForTesting
+    static final String NEXT_LABEL = "Next";
+    private static final String NEXT_LABEL_KEY_NAME = "nextButtonLabel";
 
     private final Config config;
     private final Realm realm;
@@ -224,11 +226,14 @@ public class OathRegistrationNode extends AbstractMultiFactorNode {
         Callback hiddenCallback = createHiddenCallback(identity, params);
         Callback qrCodeCallback = createQRCodeCallback(identity, params);
 
+        String nextLabelText = localizationHelper.getLocalizedMessageWithDefault(context, OathRegistrationNode.class,
+                null, NEXT_LABEL_KEY_NAME, NEXT_LABEL);
+
         return ImmutableList.of(
                 textOutputCallback,
                 qrCodeCallback,
                 hiddenCallback,
-                new ConfirmationCallback(ConfirmationCallback.YES, new String[]{NEXT_LABEL}, NEXT_OPTION)
+                new ConfirmationCallback(ConfirmationCallback.YES, new String[]{nextLabelText}, NEXT_OPTION)
         );
     }
 

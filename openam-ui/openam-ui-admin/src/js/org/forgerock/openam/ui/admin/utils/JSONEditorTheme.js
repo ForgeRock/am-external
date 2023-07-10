@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2023 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -88,6 +88,9 @@ JSONEditorTheme.getTheme = function (gridColWidth1, gridColWidth2) {
             const input = this._super(type);
             if (type !== "checkbox") {
                 input.className += "form-control";
+            }
+            if (type === "password") {
+                input.setAttribute("spellcheck", "false");
             }
             if (placeholder) {
                 input.setAttribute("placeholder", placeholder);

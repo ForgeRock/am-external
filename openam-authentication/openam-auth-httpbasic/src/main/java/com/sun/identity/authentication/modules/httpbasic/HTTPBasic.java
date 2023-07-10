@@ -24,7 +24,7 @@
  *
  * $Id: HTTPBasic.java,v 1.5 2009/06/19 17:54:14 ericow Exp $
  *
- * Portions Copyrighted 2011-2020 ForgeRock AS.
+ * Portions Copyrighted 2011-2022 ForgeRock AS.
  */
 package com.sun.identity.authentication.modules.httpbasic;
 
@@ -157,7 +157,7 @@ public class HTTPBasic extends AMLoginModule {
             return null;
         }
     }
-    
+
     public void destroyModuleState() {
         validatedUserID = null;
         userPrincipal = null;
@@ -169,6 +169,11 @@ public class HTTPBasic extends AMLoginModule {
         userPassword = null;
         currentConfig = null;
         options = null;
+    }
+
+    @Override
+    public boolean isReturningPrincipalAsDn() {
+        return amLoginModule.isReturningPrincipalAsDn();
     }
     
     private int authenticate(String auth)

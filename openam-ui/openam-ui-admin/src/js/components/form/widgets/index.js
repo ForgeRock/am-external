@@ -11,15 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 import EnumWidget from "./enum/EnumWidget";
+import PasswordWidget from "./string/PasswordWidget";
 import PrefixWidget from "./string/PrefixWidget";
 import ToggleSwitchWidget from "./boolean/ToggleSwitchWidget";
 
 const index = {
     EnumWidget,
+    PasswordWidget,
     PrefixWidget,
     ToggleSwitchWidget
 };

@@ -24,7 +24,7 @@
  *
  * $Id: IdRepoDataStoreProvider.java,v 1.6 2008/08/06 17:29:26 exu Exp $
  *
- * Portions Copyrighted 2013-2020 ForgeRock AS.
+ * Portions Copyrighted 2013-2023 ForgeRock AS.
  */
 package com.sun.identity.plugin.datastore.impl;
 
@@ -37,6 +37,7 @@ import java.util.Set;
 import javax.inject.Inject;
 
 import org.forgerock.openam.identity.idm.IdentityUtils;
+import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -277,7 +278,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
         try {
             IdSearchControl searchControl = getIdSearchControl(avPairs);
             AMIdentityRepository idRepo = getAMIdentityRepository(orgDN);
-            IdSearchResults searchResults = idRepo.searchIdentities(IdType.USER, "*", searchControl);
+            IdSearchResults searchResults = idRepo.searchIdentitiesByUsername(IdType.USER, "*", searchControl);
             amIdSet = searchResults.getSearchResults();
         } catch (IdRepoException ame) {
             debug.error("IdRepoDataStoreProvider.getUserID(): IdRepoException",
@@ -307,6 +308,15 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
         }
 
         return universalId;
+    }
+
+    @Override
+    public boolean isUsernameUniversalId(String username) throws DataStoreProviderException {
+        try {
+            return AMIdentity.isUsernameUniversalId(username);
+        } catch (IdRepoException e) {
+            throw new DataStoreProviderException(e);
+        }
     }
 
     /**
@@ -340,9 +350,15 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
 
     @Override
     public String convertUserIdToUniversalId(String userId, String realm) {
-        return identityUtils.getIdentityName(userId) != null
-                ? userId
-                : identityUtils.getUniversalId(userId, IdType.USER, realm);
+        try {
+            if (LDAPUtils.isDN(userId) && identityUtils.getIdentityName(userId) != null) {
+                return userId;
+            } else {
+                return identityUtils.getUniversalId(userId, IdType.USER, realm);
+            }
+        } catch (IdRepoException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     /**

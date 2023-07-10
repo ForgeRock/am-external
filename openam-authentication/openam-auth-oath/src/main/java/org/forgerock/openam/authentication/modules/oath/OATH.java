@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2012-2019 ForgeRock AS.
+ * Copyright 2012-2022 ForgeRock AS.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -507,7 +507,7 @@ public class OATH extends AMLoginModule {
 
                 if(lastLoginTimeStep == currentTimeStep){
                     debug.error("OATH.checkOTP(): Login failed attempting to use the same OTP in same Time Step: " + currentTimeStep);
-                    throw new InvalidPasswordException(amAuthOATH, "authFailed", null, userName, null);
+                    throw new InvalidPasswordException(amAuthOATH, "authFailed", null, userName, false, null);
                 }
 
                 boolean sameWindow = false;
@@ -660,7 +660,7 @@ public class OATH extends AMLoginModule {
         Set<AMIdentity> results = Collections.EMPTY_SET;
         try {
             idsc.setMaxResults(0);
-            IdSearchResults searchResults = amIdRepo.searchIdentities(IdType.USER, uName, idsc);
+            IdSearchResults searchResults = amIdRepo.searchIdentitiesByUsername(IdType.USER, uName, idsc);
 
             if (searchResults.getSearchResults().isEmpty() && !userSearchAttributes.isEmpty()) {
                 debug.debug("OATH.getIdentity: searching user identity with alternative attributes {} ",
@@ -668,7 +668,7 @@ public class OATH extends AMLoginModule {
                 final Map<String, Set<String>> searchAVP = CollectionUtils.toAvPairMap(userSearchAttributes, userName);
                 idsc.setSearchModifiers(IdSearchOpModifier.OR, searchAVP);
                 //workaround as data store always adds 'user-naming-attribute' to searchfilter
-                searchResults = amIdRepo.searchIdentities(IdType.USER, "*", idsc);
+                searchResults = amIdRepo.searchIdentitiesByUsername(IdType.USER, "*", idsc);
             }
 
             if (searchResults != null) {
@@ -744,7 +744,7 @@ public class OATH extends AMLoginModule {
             observedClockDrift = timeStep - (timeInSeconds / totpTimeStep);
             if (Math.abs(observedClockDrift) > totpMaxClockDrift) {
                 setFailureID(userName);
-                throw new InvalidPasswordException(amAuthOATH, "outOfSync", null, userName, null);
+                throw new InvalidPasswordException(amAuthOATH, "outOfSync", null, userName, false, null);
             }
             // convert drift step back to seconds
             Set<String> clockDriftValue = Collections.singleton(Long.toString((int) observedClockDrift * totpTimeStep));

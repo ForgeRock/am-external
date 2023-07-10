@@ -11,7 +11,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2016-2022 ForgeRock AS. All Rights Reserved
+  Copyright 2016-2023 ForgeRock AS. All Rights Reserved
 }}
 {{#each columns}}
 {{#if this.selectOptions}}
@@ -25,7 +25,9 @@
 {{else}}
 <td class="form-group">
     {{#if this.usePlaceholder}}
-        <input class="form-control" data-save-row type="password" value="{{this.data}}" placeholder="{{t 'common.form.passwordPlaceholder'}}" data-row-{{@index}} data-validator="{{this.required}}">
+        <input class="form-control" data-save-row type="password" spellcheck="false"
+               value="{{this.data}}" placeholder="{{t 'common.form.passwordPlaceholder'}}"
+               data-row-{{@index}} data-validator="{{this.required}}">
     {{else}}
         <input class="form-control" data-save-row type="text" value="{{this.data}}" placeholder="{{t 'common.form.addValue'}}" data-row-{{@index}} data-validator="{{this.required}}">
     {{/if}}

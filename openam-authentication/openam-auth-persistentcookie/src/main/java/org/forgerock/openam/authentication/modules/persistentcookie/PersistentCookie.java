@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2017 ForgeRock AS.
+ * Copyright 2013-2022 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
@@ -31,5 +31,11 @@ public class PersistentCookie extends AbstractLoginModuleBinder {
      */
     public PersistentCookie() {
         super(new PersistentCookieAuthModule());
+    }
+
+    @Override
+    public boolean isReturningPrincipalAsDn() {
+        // set returnUserAsDn so that we trust the signed and encrypted username that is in the pcookie
+        return true;
     }
 }

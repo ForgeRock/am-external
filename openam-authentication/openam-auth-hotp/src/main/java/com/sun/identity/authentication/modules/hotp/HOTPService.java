@@ -24,7 +24,7 @@
  *
  * $Id: HOTP.java,v 1.1 2009/03/24 23:52:12 pluo Exp $
  *
- * Portions Copyrighted 2013-2019 ForgeRock AS.
+ * Portions Copyrighted 2013-2022 ForgeRock AS.
  * Portions Copyrighted 2014-2015 Nomura Research Institute, Ltd.
  */
 
@@ -261,7 +261,7 @@ public class HOTPService {
 
         IdSearchResults searchResults;
         try {
-            searchResults = amIdentityRepo.searchIdentities(IdType.USER, userName, idsc);
+            searchResults = amIdentityRepo.searchIdentitiesByUsername(IdType.USER, userName, idsc);
             if (searchResults.getSearchResults().isEmpty() && !userSearchAttributes.isEmpty()) {
                 if (DEBUG.isDebugEnabled()) {
                     DEBUG.debug("HOTP.getIdentity: searching user identity " + "with alternative attributes "
@@ -270,7 +270,7 @@ public class HOTPService {
                 final Map<String, Set<String>> searchAVP = CollectionUtils.toAvPairMap(userSearchAttributes, userName);
                 idsc.setSearchModifiers(IdSearchOpModifier.OR, searchAVP);
                 // workaround as data store always adds 'user-naming-attribute' to searchfilter
-                searchResults = amIdentityRepo.searchIdentities(IdType.USER, "*", idsc);
+                searchResults = amIdentityRepo.searchIdentitiesByUsername(IdType.USER, "*", idsc);
             }
 
             if (searchResults != null) {

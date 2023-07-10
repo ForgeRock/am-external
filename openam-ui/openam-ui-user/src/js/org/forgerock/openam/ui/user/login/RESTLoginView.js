@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2021 ForgeRock AS.
+ * Copyright 2011-2023 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -45,6 +45,7 @@ import ServiceInvoker from "org/forgerock/commons/ui/common/main/ServiceInvoker"
 import SessionValidator from "org/forgerock/openam/ui/common/sessions/SessionValidator";
 import URIUtils from "org/forgerock/commons/ui/common/util/URIUtils";
 import defaultAppIcon from "../../../../../../../resources/images/default-app.svg";
+import { sanitize } from "org/forgerock/openam/ui/common/util/Sanitizer";
 
 function hasSsoRedirectOrPost (goto) {
     let decodedGoto;
@@ -513,6 +514,16 @@ const LoginView = AbstractView.extend({
         this.reqs = reqs;
         this.data.reqs = requirements;
 
+        // Sanitize the content of the header and description if they exist to
+        // remove potentially malicious tags and attributes
+        if (this.data.reqs.header) {
+            this.data.reqs.header = sanitize(this.data.reqs.header);
+        }
+
+        if (this.data.reqs.description) {
+            this.data.reqs.description = sanitize(this.data.reqs.description);
+        }
+
         // Is there an attempt at autologin happening?
         // if yes then don't render the form until it fails one time
         if (urlParams.IDToken1 && Configuration.globalData.auth.autoLoginAttempts === 1) {
@@ -604,6 +615,10 @@ function getFailedPolicies (callback) {
 
     return output.value.map(JSON.parse);
 }
+
+Handlebars.registerHelper("isPassword", (value) => {
+    return value === "password";
+});
 
 Handlebars.registerHelper("callbackRender", function () {
     const self = this;

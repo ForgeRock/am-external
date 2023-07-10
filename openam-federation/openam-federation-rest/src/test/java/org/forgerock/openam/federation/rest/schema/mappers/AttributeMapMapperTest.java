@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.forgerock.openam.federation.rest.schema.shared.AttributeMap;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
@@ -31,19 +32,30 @@ import org.testng.annotations.Test;
  */
 public final class AttributeMapMapperTest {
 
-    @Test
-    public void whenStringContainsAttributesNamesSamlAndLocalAttributesArePopulated() {
+    @DataProvider
+    private Object[][] attributesNamesAndValues() {
+        return new Object[][]{
+                {"abc=def", "abc", "def"},
+                {"abc =def", "abc ", "def"},
+                {"abc = def ", "abc ", " def "},
+                {"abc=\" def \"", "abc", "\" def \""},
+        };
+    }
+
+    @Test(dataProvider = "attributesNamesAndValues")
+    public void whenStringContainsAttributesNamesSamlAndLocalAttributesArePopulated(String serializeString,
+            String attributeKey, String attributeValue) {
         // When
         AttributeMapMapper mapper = new AttributeMapMapper();
-        List<String> values = Collections.singletonList("abc=def");
+        List<String> values = Collections.singletonList(serializeString);
 
         // Given
         List<AttributeMap> attributeMaps = mapper.map(values, ROOT);
 
         // Then
         assertThat(attributeMaps).hasSize(1);
-        assertThat(attributeMaps.get(0).getSamlAttribute()).isEqualTo("abc");
-        assertThat(attributeMaps.get(0).getLocalAttribute()).isEqualTo("def");
+        assertThat(attributeMaps.get(0).getSamlAttribute()).isEqualTo(attributeKey);
+        assertThat(attributeMaps.get(0).getLocalAttribute()).isEqualTo(attributeValue);
     }
 
     @Test

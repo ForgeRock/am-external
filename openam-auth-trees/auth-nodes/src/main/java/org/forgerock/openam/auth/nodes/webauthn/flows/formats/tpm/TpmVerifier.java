@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2021 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm;
@@ -161,12 +161,11 @@ public class TpmVerifier extends TrustableAttestationVerifier {
             return VerificationResponse.failure();
         }
 
-        return verifyX5c(attestationObject, attestationObject.attestationStatement.getCertInfo(),
-                attestationObject.attestationStatement.getCaCert());
+        return verifyX5c(attestationObject, attestationObject.attestationStatement.getCertInfo());
     }
 
     @VisibleForTesting
-    VerificationResponse verifyX5c(AttestationObject attestationObject, byte[] certInfo, byte[] caCert) {
+    VerificationResponse verifyX5c(AttestationObject attestationObject, byte[] certInfo) {
         //must match basic cert requirements https://w3c.github.io/webauthn/#sctn-tpm-cert-requirements
         X509Certificate cert = attestationObject.attestationStatement.getAttestnCerts().get(0);
 

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -93,5 +93,8 @@ public final class SharedStateConstants {
 
     /** The final session that is issued after authentication will be restricted according to this restriction. */
     public static final String TOKEN_RESTRICTION = "tokenRestriction";
+
+    /** The type of the identity being processed in the tree. */
+    public static final String IDENTITY_TYPE = "identityType";
 
 }

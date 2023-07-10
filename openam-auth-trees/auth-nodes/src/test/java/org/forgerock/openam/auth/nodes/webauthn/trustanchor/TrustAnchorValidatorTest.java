@@ -11,14 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.trustanchor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertPathValidator;
@@ -38,9 +37,15 @@ import org.testng.annotations.Test;
 /**
  * The files referenced by this test are:
  *
- * rootCa.crt - a root certificate
+ * Set A:
+ * rootCA.crt - a root CA certificate
  * forgerock.test.crt - a cert that chains off rootCa.crt. It has an expiry time of 1 million days.
  * invalidRootCA.crt - a (different) root certificate
+ *
+ * Set B:
+ * root.crt - a root CA certificate
+ * intermediate.crt - an intermediate CA certificate that chains off root.crt
+ * attestation.crt - a leaf attestation certificate that chains off intermediate.crt
  */
 public class TrustAnchorValidatorTest {
 
@@ -81,6 +86,38 @@ public class TrustAnchorValidatorTest {
 
         //then
         assertThat(result).isEqualTo(AttestationType.CA);
+    }
+
+    @Test
+    public void attestationCAWhenTrustedAnchorFoundAndIntermediateCAProvided() throws Exception {
+        //given
+        TrustAnchorValidator trustAnchorvalidator = new TrustAnchorValidator(
+                realCertFactory,
+                realCertPathValidator,
+                Collections.singleton(getRootCA(realCertFactory)), false);
+        List<X509Certificate> certs = List.of(getAttestationCert(realCertFactory), getIntermediateCA(realCertFactory));
+
+        //when
+        AttestationType result = trustAnchorvalidator.getAttestationType(certs);
+
+        //then
+        assertThat(result).isEqualTo(AttestationType.CA);
+    }
+
+    @Test
+    public void attestationCAWhenTrustedAnchorFoundButChainMissingIntermediateCACert() throws Exception {
+        //given
+        TrustAnchorValidator trustAnchorvalidator = new TrustAnchorValidator(
+                realCertFactory,
+                realCertPathValidator,
+                Collections.singleton(getRootCA(realCertFactory)), false);
+        List<X509Certificate> certs = List.of(getAttestationCert(realCertFactory));
+
+        //when
+        AttestationType result = trustAnchorvalidator.getAttestationType(certs);
+
+        //then
+        assertThat(result).isEqualTo(AttestationType.BASIC);
     }
 
     @Test
@@ -125,10 +162,29 @@ public class TrustAnchorValidatorTest {
         assertThat(result).isEqualTo(AttestationType.BASIC);
     }
 
-    private X509Certificate getCert(CertificateFactory cf) throws IOException, CertificateException {
+    private X509Certificate getCert(CertificateFactory cf) throws CertificateException {
         InputStream in = this.getClass().getClassLoader()
                 .getResourceAsStream("WebAuthnRegistrationNode/forgerock.test.crt");
         return (X509Certificate) cf.generateCertificate(in);
+    }
+
+    private X509Certificate getAttestationCert(CertificateFactory cf) throws CertificateException {
+        InputStream in = this.getClass().getClassLoader()
+                .getResourceAsStream("WebAuthnRegistrationNode/certificatechain/attestation.crt");
+        return (X509Certificate) cf.generateCertificate(in);
+    }
+
+    private X509Certificate getIntermediateCA(CertificateFactory cf) throws CertificateException {
+        InputStream in = this.getClass().getClassLoader()
+                .getResourceAsStream("WebAuthnRegistrationNode/certificatechain/intermediate.crt");
+        return (X509Certificate) cf.generateCertificate(in);
+    }
+
+    private TrustAnchor getRootCA(CertificateFactory cf) throws CertificateException {
+        InputStream in = this.getClass().getClassLoader()
+                .getResourceAsStream("WebAuthnRegistrationNode/certificatechain/root.crt");
+        X509Certificate cert = (X509Certificate) cf.generateCertificate(in);
+        return new TrustAnchor(cert, null);
     }
 
     private TrustAnchor getCATrustAnchor(CertificateFactory cf) throws CertificateException {

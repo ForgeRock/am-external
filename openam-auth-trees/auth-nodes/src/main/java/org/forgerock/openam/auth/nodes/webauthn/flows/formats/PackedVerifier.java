@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats;
 
@@ -28,10 +28,12 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
 import java.util.Arrays;
+import java.util.List;
 
 import org.forgerock.json.jose.jwk.KeyType;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
+import org.forgerock.openam.auth.nodes.webauthn.flows.AttestationStatement;
 import org.forgerock.openam.auth.nodes.webauthn.flows.FlowUtilities;
 import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
 import org.forgerock.util.annotations.VisibleForTesting;
@@ -69,10 +71,15 @@ public class PackedVerifier extends TrustableAttestationVerifier {
      */
     @Override
     public VerificationResponse verify(AttestationObject attestationObject, byte[] clientDataHash) {
-        if (attestationObject.attestationStatement.getAttestnCerts() != null
-                && attestationObject.attestationStatement.getAttestnCerts().size() == 1) {
+        AttestationStatement attestationStatement = attestationObject.attestationStatement;
+        List<X509Certificate> attestnCerts = attestationStatement.getAttestnCerts();
+        if (attestnCerts != null) {
+            if (attestnCerts.isEmpty()) {
+                logger.error("webauthn authentication attestation certificates could not be found");
+                return VerificationResponse.failure();
+            }
             return performCertAttestation(attestationObject, clientDataHash);
-        } else if (attestationObject.attestationStatement.getEcdaaKeyId() != null) {
+        } else if (attestationStatement.getEcdaaKeyId() != null) {
             logger.error("webauthn authentication attestation attempted using ECDAA - an unsupported algorithm");
             return VerificationResponse.failure();
         }

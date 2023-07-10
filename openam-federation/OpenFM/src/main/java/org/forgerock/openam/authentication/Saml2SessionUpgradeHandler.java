@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2021 ForgeRock AS.
+ * Copyright 2015-2023 ForgeRock AS.
  */
 package org.forgerock.openam.authentication;
 
@@ -20,6 +20,7 @@ import java.util.logging.Logger;
 
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.plugin.session.SessionProvider;
+import com.sun.identity.plugin.session.impl.FMSessionNotification;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.authentication.service.SessionUpgradeHandler;
@@ -45,9 +46,11 @@ public class Saml2SessionUpgradeHandler implements SessionUpgradeHandler {
 
     private static final org.slf4j.Logger debug = LoggerFactory.getLogger(Saml2SessionUpgradeHandler.class);
     private final SSOTokenManager ssoTokenManager;
+    private final FMSessionNotification sessionNotification;
 
     public Saml2SessionUpgradeHandler() {
         ssoTokenManager = InjectorHolder.getInstance(SSOTokenManager.class);
+        sessionNotification = InjectorHolder.getInstance(FMSessionNotification.class);
     }
 
     @Override
@@ -55,6 +58,7 @@ public class Saml2SessionUpgradeHandler implements SessionUpgradeHandler {
         String sessionIndex = null;
         try {
             sessionIndex = oldSession.getProperty(SAML2Constants.IDP_SESSION_INDEX);
+            debug.debug("Session upgrade, sessionIndex from old session: {}", sessionIndex);
         } catch (SessionException ex) {
             Logger.getLogger(Saml2SessionUpgradeHandler.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -70,6 +74,20 @@ public class Saml2SessionUpgradeHandler implements SessionUpgradeHandler {
             } catch (SSOException ssoe) {
                 debug.warn("Unable to create an SSOToken for the session ID due to " + ssoe.toString());
                 return;
+            }
+
+            try {
+                // Any deletion of the old session should not result in deletion of the associated
+                // IDPSession. This step is also done here (early) to avoid IDPSessionListener seeing this
+                // too late (via psearch notification which may be after IDPSessionListener has run).
+                debug.debug("Session upgrade, marking old session (id {}) sessionIndex to not be removed",
+                        oldSessionID);
+                oldSSOToken.setProperty(SAML2Constants.DO_NOT_REMOVE_SAML2_IDPSESSION, Boolean.TRUE.toString());
+                // Update the cached session in FMSessionNotification directly to avoid a race condition where
+                // the session notification has not occurred before IDPSessionListener.sessionInvalidated is called.
+                sessionNotification.setDoNotRemoveSessionIndex(oldSessionID, Boolean.TRUE.toString());
+            } catch (SSOException ssoe) {
+                debug.error("Failed to set IDP Session Index for old session", ssoe);
             }
 
             IDPSession idpSession = IDPSSOUtil.retrieveCachedIdPSession(sessionIndex);
@@ -90,14 +108,6 @@ public class Saml2SessionUpgradeHandler implements SessionUpgradeHandler {
             final String partner = IDPCache.spSessionPartnerBySessionID.remove(oldSessionID);
             if (partner != null) {
                 IDPCache.spSessionPartnerBySessionID.put(newSessionID, partner);
-            }
-
-            try {
-                //We set the sessionIndex to a dummy value so that IDPSessionListener won't try to clear out the caches
-                //for the still valid sessionIndex.
-                oldSSOToken.setProperty(SAML2Constants.IDP_SESSION_INDEX, "dummy");
-            } catch (SSOException ssoe) {
-                debug.error("Failed to set IDP Session Index for old session", ssoe);
             }
         }
     }

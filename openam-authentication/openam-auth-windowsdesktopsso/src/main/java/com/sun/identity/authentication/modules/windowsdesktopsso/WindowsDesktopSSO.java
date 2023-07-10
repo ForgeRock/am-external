@@ -24,7 +24,7 @@
  *
  * $Id: WindowsDesktopSSO.java,v 1.7 2009/07/28 19:40:45 beomsuk Exp $
  *
- * Portions Copyrighted 2011-2020 ForgeRock AS.
+ * Portions Copyrighted 2011-2022 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.windowsdesktopsso;
@@ -696,7 +696,7 @@ public class WindowsDesktopSSO extends AMLoginModule {
         try {
             AMIdentityRepository amirepo = new AMIdentityRepository(getSSOSession(), organization);
 
-            IdSearchResults searchResults = amirepo.searchIdentities(IdType.USER, "*", searchControl);
+            IdSearchResults searchResults = amirepo.searchIdentitiesByUsername(IdType.USER, "*", searchControl);
             if (searchResults.getErrorCode() == IdSearchResults.SUCCESS && searchResults != null) {
                 Set<AMIdentity> results = searchResults.getSearchResults();
                 if (!results.isEmpty()) {

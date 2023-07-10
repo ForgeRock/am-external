@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2022 ForgeRock AS.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -37,7 +37,7 @@ public class AttributeMapMapper extends ValueMapper<List<String>, List<Attribute
     private static final Logger logger = LoggerFactory.getLogger(AttributeMap.class);
 
     private static final Pattern ATTRIBUTE_MAP_PATTERN = Pattern.compile("^((?<nameFormatUri>\\S*?)\\|)?"
-            + "(?<samlAttribute>\\S*?)=(?<localAttribute>\\S*?)(;(?<binary>binary))?$");
+            + "(?<samlAttribute>[\\S ]*?)=(?<localAttribute>[\\S ]*?)(;(?<binary>binary))?$");
 
     @Override
     public List<AttributeMap> map(List<String> values, EnricherContext context) {

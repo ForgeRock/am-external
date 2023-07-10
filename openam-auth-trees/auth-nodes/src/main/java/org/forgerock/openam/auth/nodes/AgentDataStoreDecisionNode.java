@@ -11,10 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
+
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.IDENTITY_TYPE;
 
 import java.security.PrivilegedAction;
 
@@ -68,6 +70,7 @@ public class AgentDataStoreDecisionNode extends DataStoreDecisionNode {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("AgentDataStoreDecisionNode started");
+        context.getStateFor(this).putShared(IDENTITY_TYPE, getIdentityType().getName());
         return super.process(context);
     }
 

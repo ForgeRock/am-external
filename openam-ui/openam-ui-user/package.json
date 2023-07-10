@@ -42,10 +42,11 @@
     "react-dom": "16.9.0",
     "redux": "4.0.5",
     "redux-actions": "2.6.5",
+    "sanitize-html": "2.7.3",
     "selectize": "0.12.6",
     "spin.js": "2.3.2",
+    "ua-parser-js": "0.7.33",
     "urijs": "1.19.11",
-    "ua-parser-js": "0.7.30",
     "whatwg-fetch": "3.0.0"
   },
   "devDependencies": {
@@ -116,6 +117,7 @@
     "**/moment": "2.29.4",
     "**/**/minimist": "1.2.6",
     "**/**/underscore": "1.12.1",
-    "**/**/path-parse": "1.0.7"
+    "**/**/path-parse": "1.0.7",
+    "minimatch": "3.0.5"
   }
 }

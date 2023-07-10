@@ -24,7 +24,7 @@
  *
  * $Id: DataStoreProvider.java,v 1.2 2008/06/25 05:47:27 qcheng Exp $
  *
- * Portions Copyrighted 2013-2019 ForgeRock AS.
+ * Portions Copyrighted 2013-2022 ForgeRock AS.
  */
 package com.sun.identity.plugin.datastore;
 
@@ -112,6 +112,15 @@ public interface DataStoreProvider {
      */
     public String getUserID(String orgDN, Map<String, Set<String>> avPairs)
         throws DataStoreProviderException;
+
+    /**
+     * Checks if the given username is of the universal ID format.
+     * @param username The user's ID (either just the username, or a universal ID)
+     * @return true if the username is a universal ID, otherwise false.
+     */
+    default boolean isUsernameUniversalId(String username) throws DataStoreProviderException {
+        return false;
+    }
 
     /**
      * Converts the provided user ID to universal ID if it wasn't in the universal ID format already.

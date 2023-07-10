@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2020 ForgeRock AS.
+ * Copyright 2011-2022 ForgeRock AS.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -439,10 +439,6 @@ public class Adaptive extends AMLoginModule {
 
     @Override
     public Principal getPrincipal() {
-        if (userUUID != null) {
-            userPrincipal = new org.forgerock.openam.authentication.modules.adaptive.AdaptivePrincipal(userUUID);
-            return userPrincipal;
-        }
         if (userName != null) {
             userPrincipal = new org.forgerock.openam.authentication.modules.adaptive.AdaptivePrincipal(userName);
             return userPrincipal;
@@ -960,7 +956,7 @@ public class Adaptive extends AMLoginModule {
         Set<AMIdentity> results = Collections.EMPTY_SET;
         try {
             idsc.setMaxResults(0);
-            IdSearchResults searchResults = amIdRepo.searchIdentities(IdType.USER, userName, idsc);
+            IdSearchResults searchResults = amIdRepo.searchIdentitiesByUsername(IdType.USER, userName, idsc);
 
             if (searchResults.getSearchResults().isEmpty() && !userSearchAttributes.isEmpty()) {
                 if (debug.isDebugEnabled()) {
@@ -970,7 +966,7 @@ public class Adaptive extends AMLoginModule {
                 final Map<String, Set<String>> searchAVP = CollectionUtils.toAvPairMap(userSearchAttributes, userName);
                 idsc.setSearchModifiers(IdSearchOpModifier.OR, searchAVP);
                 //workaround as data store always adds 'user-naming-attribute' to searchfilter
-                searchResults = amIdRepo.searchIdentities(IdType.USER, "*", idsc);
+                searchResults = amIdRepo.searchIdentitiesByUsername(IdType.USER, "*", idsc);
             }
 
             if (searchResults != null) {
