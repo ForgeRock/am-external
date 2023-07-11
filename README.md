@@ -17,6 +17,7 @@ Product Version   |  Branch Name
 AM 7.3.0          |  releases/7.3.0
 AM 7.2.1          |  releases/7.2.1
 AM 7.2.0          |  releases/7.2.0
+AM 7.1.4          |  releases/7.1.4
 AM 7.1.3          |  releases/7.1.3
 AM 7.1.2          |  releases/7.1.2
 AM 7.1.1          |  releases/7.1.1
