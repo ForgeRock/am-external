@@ -41,7 +41,7 @@
     <repositories>
         <repository>
             <id>forgerock-build-dependencies</id>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.1.0-dependencies</url>
+            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.1.0-dependencies</url>
         </repository>
     </repositories>
 
