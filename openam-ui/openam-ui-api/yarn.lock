@@ -615,7 +615,7 @@ supports-color@^2.0.0:
 
 swagger-ui-dist@3.26.2:
   version "3.26.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/swagger-ui-dist/-/swagger-ui-dist-3.26.2.tgz#22c700906c8911b1c9956da6c3fca371dba6219f"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/swagger-ui-dist/-/swagger-ui-dist-3.26.2.tgz#22c700906c8911b1c9956da6c3fca371dba6219f"
   integrity sha1-IscAkGyJEbHJlW2mw/yjcdumIZ8=
 
 swagger-ui-themes@3.0.0:
