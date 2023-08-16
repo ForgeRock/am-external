@@ -33,7 +33,7 @@
     <repositories>
         <repository>
             <id>forgerock-private-releases</id>
-            <url>https://maven.forgerock.org/repo/private-releases</url>
+            <url>https://maven.forgerock.org/artifactory/private-releases</url>
         </repository>
     </repositories>
 

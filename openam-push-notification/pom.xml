@@ -77,7 +77,7 @@
         <repository>
             <id>forgerock-build-dependencies</id>
             <name>ForgeRock Private Release Repository for AM 7.0.2</name>
-            <url>https://maven.forgerock.org/repo/forgerock-openam-7.0.2-dependencies</url>
+            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.0.2-dependencies</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
