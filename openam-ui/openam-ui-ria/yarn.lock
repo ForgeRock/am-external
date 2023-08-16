@@ -319,7 +319,7 @@
 
 abab@^2.0.3:
   version "2.0.5"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/abab/-/abab-2.0.5.tgz#c0b678fb32d60fc1219c784d6a826fe385aeb79a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/abab/-/abab-2.0.5.tgz#c0b678fb32d60fc1219c784d6a826fe385aeb79a"
   integrity sha1-wLZ4+zLWD8EhnHhNaoJv44Wut5o=
 
 abbrev@1:
@@ -344,7 +344,7 @@ acorn-dynamic-import@^3.0.0:
 
 acorn-globals@^6.0.0:
   version "6.0.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/acorn-globals/-/acorn-globals-6.0.0.tgz#46cdd39f0f8ff08a876619b55f5ac8a6dc770b45"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/acorn-globals/-/acorn-globals-6.0.0.tgz#46cdd39f0f8ff08a876619b55f5ac8a6dc770b45"
   integrity sha1-Rs3Tnw+P8IqHZhm1X1rIptx3C0U=
   dependencies:
     acorn "^7.1.1"
@@ -352,12 +352,12 @@ acorn-globals@^6.0.0:
 
 acorn-jsx@^5.0.0:
   version "5.3.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/acorn-jsx/-/acorn-jsx-5.3.1.tgz#fc8661e11b7ac1539c47dbfea2e72b3af34d267b"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/acorn-jsx/-/acorn-jsx-5.3.1.tgz#fc8661e11b7ac1539c47dbfea2e72b3af34d267b"
   integrity sha1-/IZh4Rt6wVOcR9v+oucrOvNNJns=
 
 acorn-walk@^7.1.1:
   version "7.2.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/acorn-walk/-/acorn-walk-7.2.0.tgz#0de889a601203909b0fbe07b8938dc21d2e967bc"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/acorn-walk/-/acorn-walk-7.2.0.tgz#0de889a601203909b0fbe07b8938dc21d2e967bc"
   integrity sha1-DeiJpgEgOQmw++B7iTjcIdLpZ7w=
 
 acorn@^5.0.0, acorn@^5.3.0:
@@ -367,12 +367,12 @@ acorn@^5.0.0, acorn@^5.3.0:
 
 acorn@^6.0.7:
   version "6.4.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/acorn/-/acorn-6.4.2.tgz#35866fd710528e92de10cf06016498e47e39e1e6"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/acorn/-/acorn-6.4.2.tgz#35866fd710528e92de10cf06016498e47e39e1e6"
   integrity sha1-NYZv1xBSjpLeEM8GAWSY5H454eY=
 
 acorn@^7.1.1:
   version "7.4.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/acorn/-/acorn-7.4.1.tgz#feaed255973d2e77555b83dbc08851a6c63520fa"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/acorn/-/acorn-7.4.1.tgz#feaed255973d2e77555b83dbc08851a6c63520fa"
   integrity sha1-/q7SVZc9LndVW4PbwIhRpsY1IPo=
 
 ajv-errors@^1.0.0:
@@ -387,7 +387,7 @@ ajv-keywords@^3.1.0:
 
 ajv@6.12.6, ajv@^6.1.0, ajv@^6.10.2, ajv@^6.12.3, ajv@^6.7.0, ajv@^6.9.1:
   version "6.12.6"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/ajv/-/ajv-6.12.6.tgz#baf5a62e802b07d977034586f8c3baf5adf26df4"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/ajv/-/ajv-6.12.6.tgz#baf5a62e802b07d977034586f8c3baf5adf26df4"
   integrity sha1-uvWmLoArB9l3A0WG+MO69a3ybfQ=
   dependencies:
     fast-deep-equal "^3.1.1"
@@ -472,7 +472,7 @@ argparse@^1.0.7:
 
 aria-query@^4.2.2:
   version "4.2.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/aria-query/-/aria-query-4.2.2.tgz#0d2ca6c9aceb56b8977e9fed6aed7e15bbd2f83b"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/aria-query/-/aria-query-4.2.2.tgz#0d2ca6c9aceb56b8977e9fed6aed7e15bbd2f83b"
   integrity sha1-DSymyazrVriXfp/tau1+FbvS+Ds=
   dependencies:
     "@babel/runtime" "^7.10.2"
@@ -523,7 +523,7 @@ array-includes@^3.0.3:
 
 array-includes@^3.1.1:
   version "3.1.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/array-includes/-/array-includes-3.1.2.tgz#a8db03e0b88c8c6aeddc49cb132f9bcab4ebf9c8"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/array-includes/-/array-includes-3.1.2.tgz#a8db03e0b88c8c6aeddc49cb132f9bcab4ebf9c8"
   integrity sha1-qNsD4LiMjGrt3EnLEy+byrTr+cg=
   dependencies:
     call-bind "^1.0.0"
@@ -551,7 +551,7 @@ array-unique@^0.3.2:
 
 array.prototype.flatmap@^1.2.3:
   version "1.2.4"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/array.prototype.flatmap/-/array.prototype.flatmap-1.2.4.tgz#94cfd47cc1556ec0747d97f7c7738c58122004c9"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/array.prototype.flatmap/-/array.prototype.flatmap-1.2.4.tgz#94cfd47cc1556ec0747d97f7c7738c58122004c9"
   integrity sha1-lM/UfMFVbsB0fZf3x3OMWBIgBMk=
   dependencies:
     call-bind "^1.0.0"
@@ -605,12 +605,12 @@ assign-symbols@^1.0.0:
 
 ast-types-flow@^0.0.7:
   version "0.0.7"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/ast-types-flow/-/ast-types-flow-0.0.7.tgz#f70b735c6bca1a5c9c22d982c3e39e7feba3bdad"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/ast-types-flow/-/ast-types-flow-0.0.7.tgz#f70b735c6bca1a5c9c22d982c3e39e7feba3bdad"
   integrity sha1-9wtzXGvKGlycItmCw+Oef+ujva0=
 
 astral-regex@^1.0.0:
   version "1.0.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/astral-regex/-/astral-regex-1.0.0.tgz#6c8c3fb827dd43ee3918f27b82782ab7658a6fd9"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/astral-regex/-/astral-regex-1.0.0.tgz#6c8c3fb827dd43ee3918f27b82782ab7658a6fd9"
   integrity sha1-bIw/uCfdQ+45GPJ7gngqt2WKb9k=
 
 async-each@^1.0.1:
@@ -660,12 +660,12 @@ aws4@^1.8.0:
 
 axe-core@^4.0.2:
   version "4.1.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/axe-core/-/axe-core-4.1.1.tgz#70a7855888e287f7add66002211a423937063eaf"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/axe-core/-/axe-core-4.1.1.tgz#70a7855888e287f7add66002211a423937063eaf"
   integrity sha1-cKeFWIjih/et1mACIRpCOTcGPq8=
 
 axobject-query@^2.2.0:
   version "2.2.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/axobject-query/-/axobject-query-2.2.0.tgz#943d47e10c0b704aa42275e20edf3722648989be"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/axobject-query/-/axobject-query-2.2.0.tgz#943d47e10c0b704aa42275e20edf3722648989be"
   integrity sha1-lD1H4QwLcEqkInXiDt83ImSJib4=
 
 babel-code-frame@^6.26.0:
@@ -1545,7 +1545,7 @@ brorand@^1.0.1:
 
 browser-process-hrtime@^1.0.0:
   version "1.0.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/browser-process-hrtime/-/browser-process-hrtime-1.0.0.tgz#3c9b4b7d782c8121e56f10106d84c0d0ffc94626"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/browser-process-hrtime/-/browser-process-hrtime-1.0.0.tgz#3c9b4b7d782c8121e56f10106d84c0d0ffc94626"
   integrity sha1-PJtLfXgsgSHlbxAQbYTA0P/JRiY=
 
 browser-stdout@1.3.1:
@@ -1695,7 +1695,7 @@ cache-base@^1.0.1:
 
 call-bind@^1.0.0:
   version "1.0.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/call-bind/-/call-bind-1.0.0.tgz#24127054bb3f9bdcb4b1fb82418186072f77b8ce"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/call-bind/-/call-bind-1.0.0.tgz#24127054bb3f9bdcb4b1fb82418186072f77b8ce"
   integrity sha1-JBJwVLs/m9y0sfuCQYGGBy93uM4=
   dependencies:
     function-bind "^1.1.1"
@@ -1703,7 +1703,7 @@ call-bind@^1.0.0:
 
 callsites@^3.0.0:
   version "3.1.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/callsites/-/callsites-3.1.0.tgz#b3630abd8943432f54b3f0519238e33cd7df2f73"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/callsites/-/callsites-3.1.0.tgz#b3630abd8943432f54b3f0519238e33cd7df2f73"
   integrity sha1-s2MKvYlDQy9Us/BRkjjjPNffL3M=
 
 camel-case@3.0.x:
@@ -1914,7 +1914,7 @@ code-point-at@^1.0.0:
 
 codemirror@5.58.3:
   version "5.58.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/codemirror/-/codemirror-5.58.3.tgz#3f0689854ecfbed5d4479a98b96148b2c3b79796"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/codemirror/-/codemirror-5.58.3.tgz#3f0689854ecfbed5d4479a98b96148b2c3b79796"
   integrity sha1-PwaJhU7PvtXUR5qYuWFIssO3l5Y=
 
 collection-visit@^1.0.0:
@@ -1978,7 +1978,7 @@ commander@~2.19.0:
 
 comment-parser@^0.5.4:
   version "0.5.5"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/comment-parser/-/comment-parser-0.5.5.tgz#c2584cae7c2f0afc773e96b2ee98f8c10cbd693d"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/comment-parser/-/comment-parser-0.5.5.tgz#c2584cae7c2f0afc773e96b2ee98f8c10cbd693d"
   integrity sha1-wlhMrnwvCvx3Ppay7pj4wQy9aT0=
 
 commondir@^1.0.1:
@@ -2118,7 +2118,7 @@ copy-webpack-plugin@4.5.2:
 
 core-js-pure@^3.0.0:
   version "3.8.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/core-js-pure/-/core-js-pure-3.8.0.tgz#4cdd2eca37d49cda206b66e26204818dba77884a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/core-js-pure/-/core-js-pure-3.8.0.tgz#4cdd2eca37d49cda206b66e26204818dba77884a"
   integrity sha1-TN0uyjfUnNoga2biYgSBjbp3iEo=
 
 core-js@^2.4.0, core-js@^2.5.0, core-js@^2.5.7:
@@ -2128,7 +2128,7 @@ core-js@^2.4.0, core-js@^2.5.0, core-js@^2.5.7:
 
 core-js@^2.6.5:
   version "2.6.12"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/core-js/-/core-js-2.6.12.tgz#d9333dfa7b065e347cc5682219d6f690859cc2ec"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/core-js/-/core-js-2.6.12.tgz#d9333dfa7b065e347cc5682219d6f690859cc2ec"
   integrity sha1-2TM9+nsGXjR8xWgiGdb2kIWcwuw=
 
 core-util-is@1.0.2, core-util-is@~1.0.0:
@@ -2268,17 +2268,17 @@ cssesc@^0.1.0:
 
 cssom@^0.4.4:
   version "0.4.4"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/cssom/-/cssom-0.4.4.tgz#5a66cf93d2d0b661d80bf6a44fb65f5c2e4e0a10"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/cssom/-/cssom-0.4.4.tgz#5a66cf93d2d0b661d80bf6a44fb65f5c2e4e0a10"
   integrity sha1-WmbPk9LQtmHYC/akT7ZfXC5OChA=
 
 cssom@~0.3.6:
   version "0.3.8"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/cssom/-/cssom-0.3.8.tgz#9f1276f5b2b463f2114d3f2c75250af8c1a36f4a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/cssom/-/cssom-0.3.8.tgz#9f1276f5b2b463f2114d3f2c75250af8c1a36f4a"
   integrity sha1-nxJ29bK0Y/IRTT8sdSUK+MGjb0o=
 
 cssstyle@^2.2.0:
   version "2.3.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/cssstyle/-/cssstyle-2.3.0.tgz#ff665a0ddbdc31864b09647f34163443d90b0852"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/cssstyle/-/cssstyle-2.3.0.tgz#ff665a0ddbdc31864b09647f34163443d90b0852"
   integrity sha1-/2ZaDdvcMYZLCWR/NBY0Q9kLCFI=
   dependencies:
     cssom "~0.3.6"
@@ -2310,7 +2310,7 @@ d@1, d@^1.0.1:
 
 damerau-levenshtein@^1.0.6:
   version "1.0.6"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/damerau-levenshtein/-/damerau-levenshtein-1.0.6.tgz#143c1641cb3d85c60c32329e26899adea8701791"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/damerau-levenshtein/-/damerau-levenshtein-1.0.6.tgz#143c1641cb3d85c60c32329e26899adea8701791"
   integrity sha1-FDwWQcs9hcYMMjKeJoma3qhwF5E=
 
 dashdash@^1.12.0:
@@ -2322,7 +2322,7 @@ dashdash@^1.12.0:
 
 data-urls@^2.0.0:
   version "2.0.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/data-urls/-/data-urls-2.0.0.tgz#156485a72963a970f5d5821aaf642bef2bf2db9b"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/data-urls/-/data-urls-2.0.0.tgz#156485a72963a970f5d5821aaf642bef2bf2db9b"
   integrity sha1-FWSFpyljqXD11YIar2Qr7yvy25s=
   dependencies:
     abab "^2.0.3"
@@ -2357,7 +2357,7 @@ debug@3.2.6, debug@^3.0.0, debug@^3.1.0, debug@^3.2.6:
 
 debug@^4.0.1:
   version "4.3.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/debug/-/debug-4.3.1.tgz#f0d229c505e0c6d8c49ac553d1b13dc183f6b2ee"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/debug/-/debug-4.3.1.tgz#f0d229c505e0c6d8c49ac553d1b13dc183f6b2ee"
   integrity sha1-8NIpxQXgxtjEmsVT0bE9wYP2su4=
   dependencies:
     ms "2.1.2"
@@ -2369,7 +2369,7 @@ decamelize@^1.1.1, decamelize@^1.1.2, decamelize@^1.2.0:
 
 decimal.js@^10.2.0:
   version "10.2.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/decimal.js/-/decimal.js-10.2.1.tgz#238ae7b0f0c793d3e3cea410108b35a2c01426a3"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/decimal.js/-/decimal.js-10.2.1.tgz#238ae7b0f0c793d3e3cea410108b35a2c01426a3"
   integrity sha1-I4rnsPDHk9PjzqQQEIs1osAUJqM=
 
 decode-uri-component@^0.2.0:
@@ -2557,7 +2557,7 @@ doctrine@^2.1.0:
 
 doctrine@^3.0.0:
   version "3.0.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/doctrine/-/doctrine-3.0.0.tgz#addebead72a6574db783639dc87a121773973961"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/doctrine/-/doctrine-3.0.0.tgz#addebead72a6574db783639dc87a121773973961"
   integrity sha1-rd6+rXKmV023g2OdyHoSF3OXOWE=
   dependencies:
     esutils "^2.0.2"
@@ -2601,7 +2601,7 @@ domelementtype@^2.0.1:
 
 domexception@^2.0.1:
   version "2.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/domexception/-/domexception-2.0.1.tgz#fb44aefba793e1574b0af6aed2801d057529f304"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/domexception/-/domexception-2.0.1.tgz#fb44aefba793e1574b0af6aed2801d057529f304"
   integrity sha1-+0Su+6eT4VdLCvau0oAdBXUp8wQ=
   dependencies:
     webidl-conversions "^5.0.0"
@@ -2700,12 +2700,12 @@ elliptic@^6.0.0:
 
 emoji-regex@^7.0.1:
   version "7.0.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/emoji-regex/-/emoji-regex-7.0.3.tgz#933a04052860c85e83c122479c4748a8e4c72156"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/emoji-regex/-/emoji-regex-7.0.3.tgz#933a04052860c85e83c122479c4748a8e4c72156"
   integrity sha1-kzoEBShgyF6DwSJHnEdIqOTHIVY=
 
 emoji-regex@^9.0.0:
   version "9.2.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/emoji-regex/-/emoji-regex-9.2.0.tgz#a26da8e832b16a9753309f25e35e3c0efb9a066a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/emoji-regex/-/emoji-regex-9.2.0.tgz#a26da8e832b16a9753309f25e35e3c0efb9a066a"
   integrity sha1-om2o6DKxapdTMJ8l4148DvuaBmo=
 
 emojis-list@^2.0.0:
@@ -2770,7 +2770,7 @@ error-ex@^1.2.0:
 
 es-abstract@^1.17.0-next.1, es-abstract@^1.17.5:
   version "1.17.7"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/es-abstract/-/es-abstract-1.17.7.tgz#a4de61b2f66989fc7421676c1cb9787573ace54c"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/es-abstract/-/es-abstract-1.17.7.tgz#a4de61b2f66989fc7421676c1cb9787573ace54c"
   integrity sha1-pN5hsvZpifx0IWdsHLl4dXOs5Uw=
   dependencies:
     es-to-primitive "^1.2.1"
@@ -2787,7 +2787,7 @@ es-abstract@^1.17.0-next.1, es-abstract@^1.17.5:
 
 es-abstract@^1.18.0-next.0, es-abstract@^1.18.0-next.1:
   version "1.18.0-next.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/es-abstract/-/es-abstract-1.18.0-next.1.tgz#6e3a0a4bda717e5023ab3b8e90bec36108d22c68"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/es-abstract/-/es-abstract-1.18.0-next.1.tgz#6e3a0a4bda717e5023ab3b8e90bec36108d22c68"
   integrity sha1-bjoKS9pxflAjqzuOkL7DYQjSLGg=
   dependencies:
     es-to-primitive "^1.2.1"
@@ -2830,7 +2830,7 @@ es-to-primitive@^1.2.0:
 
 es-to-primitive@^1.2.1:
   version "1.2.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/es-to-primitive/-/es-to-primitive-1.2.1.tgz#e55cd4c9cdc188bcefb03b366c736323fc5c898a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/es-to-primitive/-/es-to-primitive-1.2.1.tgz#e55cd4c9cdc188bcefb03b366c736323fc5c898a"
   integrity sha1-5VzUyc3BiLzvsDs2bHNjI/xciYo=
   dependencies:
     is-callable "^1.1.4"
@@ -2875,7 +2875,7 @@ escape-string-regexp@1.0.5, escape-string-regexp@^1.0.2, escape-string-regexp@^1
 
 escodegen@^1.14.1:
   version "1.14.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/escodegen/-/escodegen-1.14.3.tgz#4e7b81fba61581dc97582ed78cab7f0e8d63f503"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/escodegen/-/escodegen-1.14.3.tgz#4e7b81fba61581dc97582ed78cab7f0e8d63f503"
   integrity sha1-TnuB+6YVgdyXWC7XjKt/Do1j9QM=
   dependencies:
     esprima "^4.0.1"
@@ -2898,7 +2898,7 @@ eslint-loader@2.1.0:
 
 eslint-plugin-babel@5.3.1:
   version "5.3.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/eslint-plugin-babel/-/eslint-plugin-babel-5.3.1.tgz#75a2413ffbf17e7be57458301c60291f2cfbf560"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/eslint-plugin-babel/-/eslint-plugin-babel-5.3.1.tgz#75a2413ffbf17e7be57458301c60291f2cfbf560"
   integrity sha1-daJBP/vxfnvldFgwHGApHyz79WA=
   dependencies:
     eslint-rule-composer "^0.3.0"
@@ -2915,7 +2915,7 @@ eslint-plugin-filenames@1.3.2:
 
 eslint-plugin-jsdoc@4.8.4:
   version "4.8.4"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/eslint-plugin-jsdoc/-/eslint-plugin-jsdoc-4.8.4.tgz#31f413c8a31fe656881398d8920b381bfdfac618"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/eslint-plugin-jsdoc/-/eslint-plugin-jsdoc-4.8.4.tgz#31f413c8a31fe656881398d8920b381bfdfac618"
   integrity sha1-MfQTyKMf5laIE5jYkgs4G/36xhg=
   dependencies:
     comment-parser "^0.5.4"
@@ -2924,7 +2924,7 @@ eslint-plugin-jsdoc@4.8.4:
 
 eslint-plugin-jsx-a11y@6.4.1:
   version "6.4.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/eslint-plugin-jsx-a11y/-/eslint-plugin-jsx-a11y-6.4.1.tgz#a2d84caa49756942f42f1ffab9002436391718fd"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/eslint-plugin-jsx-a11y/-/eslint-plugin-jsx-a11y-6.4.1.tgz#a2d84caa49756942f42f1ffab9002436391718fd"
   integrity sha1-othMqkl1aUL0Lx/6uQAkNjkXGP0=
   dependencies:
     "@babel/runtime" "^7.11.2"
@@ -2941,12 +2941,12 @@ eslint-plugin-jsx-a11y@6.4.1:
 
 eslint-plugin-promise@4.2.1:
   version "4.2.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/eslint-plugin-promise/-/eslint-plugin-promise-4.2.1.tgz#845fd8b2260ad8f82564c1222fce44ad71d9418a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/eslint-plugin-promise/-/eslint-plugin-promise-4.2.1.tgz#845fd8b2260ad8f82564c1222fce44ad71d9418a"
   integrity sha1-hF/YsiYK2PglZMEiL85ErXHZQYo=
 
 eslint-plugin-react@7.21.5:
   version "7.21.5"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/eslint-plugin-react/-/eslint-plugin-react-7.21.5.tgz#50b21a412b9574bfe05b21db176e8b7b3b15bff3"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/eslint-plugin-react/-/eslint-plugin-react-7.21.5.tgz#50b21a412b9574bfe05b21db176e8b7b3b15bff3"
   integrity sha1-ULIaQSuVdL/gWyHbF26LezsVv/M=
   dependencies:
     array-includes "^3.1.1"
@@ -2963,7 +2963,7 @@ eslint-plugin-react@7.21.5:
 
 eslint-rule-composer@^0.3.0:
   version "0.3.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/eslint-rule-composer/-/eslint-rule-composer-0.3.0.tgz#79320c927b0c5c0d3d3d2b76c8b4a488f25bbaf9"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/eslint-rule-composer/-/eslint-rule-composer-0.3.0.tgz#79320c927b0c5c0d3d3d2b76c8b4a488f25bbaf9"
   integrity sha1-eTIMknsMXA09PSt2yLSkiPJbuvk=
 
 eslint-scope@3.7.1:
@@ -2984,7 +2984,7 @@ eslint-scope@^3.7.1:
 
 eslint-scope@^4.0.3:
   version "4.0.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/eslint-scope/-/eslint-scope-4.0.3.tgz#ca03833310f6889a3264781aa82e63eb9cfe7848"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/eslint-scope/-/eslint-scope-4.0.3.tgz#ca03833310f6889a3264781aa82e63eb9cfe7848"
   integrity sha1-ygODMxD2iJoyZHgaqC5j65z+eEg=
   dependencies:
     esrecurse "^4.1.0"
@@ -2992,7 +2992,7 @@ eslint-scope@^4.0.3:
 
 eslint-utils@^1.3.1:
   version "1.4.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/eslint-utils/-/eslint-utils-1.4.3.tgz#74fec7c54d0776b6f67e0251040b5806564e981f"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/eslint-utils/-/eslint-utils-1.4.3.tgz#74fec7c54d0776b6f67e0251040b5806564e981f"
   integrity sha1-dP7HxU0Hdrb2fgJRBAtYBlZOmB8=
   dependencies:
     eslint-visitor-keys "^1.1.0"
@@ -3004,12 +3004,12 @@ eslint-visitor-keys@^1.0.0:
 
 eslint-visitor-keys@^1.1.0:
   version "1.3.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/eslint-visitor-keys/-/eslint-visitor-keys-1.3.0.tgz#30ebd1ef7c2fdff01c3a4f151044af25fab0523e"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/eslint-visitor-keys/-/eslint-visitor-keys-1.3.0.tgz#30ebd1ef7c2fdff01c3a4f151044af25fab0523e"
   integrity sha1-MOvR73wv3/AcOk8VEESvJfqwUj4=
 
 eslint@5.16.0:
   version "5.16.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/eslint/-/eslint-5.16.0.tgz#a1e3ac1aae4a3fbd8296fcf8f7ab7314cbb6abea"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/eslint/-/eslint-5.16.0.tgz#a1e3ac1aae4a3fbd8296fcf8f7ab7314cbb6abea"
   integrity sha1-oeOsGq5KP72Clvz496tzFMu2q+o=
   dependencies:
     "@babel/code-frame" "^7.0.0"
@@ -3051,7 +3051,7 @@ eslint@5.16.0:
 
 espree@^5.0.1:
   version "5.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/espree/-/espree-5.0.1.tgz#5d6526fa4fc7f0788a5cf75b15f30323e2f81f7a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/espree/-/espree-5.0.1.tgz#5d6526fa4fc7f0788a5cf75b15f30323e2f81f7a"
   integrity sha1-XWUm+k/H8HiKXPdbFfMDI+L4H3o=
   dependencies:
     acorn "^6.0.7"
@@ -3070,7 +3070,7 @@ esprima@~1.0.4:
 
 esquery@^1.0.1:
   version "1.3.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/esquery/-/esquery-1.3.1.tgz#b78b5828aa8e214e29fb74c4d5b752e1c033da57"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/esquery/-/esquery-1.3.1.tgz#b78b5828aa8e214e29fb74c4d5b752e1c033da57"
   integrity sha1-t4tYKKqOIU4p+3TE1bdS4cAz2lc=
   dependencies:
     estraverse "^5.1.0"
@@ -3089,7 +3089,7 @@ estraverse@^4.1.0, estraverse@^4.1.1, estraverse@^4.2.0:
 
 estraverse@^5.1.0:
   version "5.2.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/estraverse/-/estraverse-5.2.0.tgz#307df42547e6cc7324d3cf03c155d5cdb8c53880"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/estraverse/-/estraverse-5.2.0.tgz#307df42547e6cc7324d3cf03c155d5cdb8c53880"
   integrity sha1-MH30JUfmzHMk088DwVXVzbjFOIA=
 
 esutils@^2.0.2:
@@ -3282,7 +3282,7 @@ faker@4.1.0:
 
 fast-deep-equal@^3.1.1:
   version "3.1.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz#3a7d56b559d6cbc3eb512325244e619a65c6c525"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz#3a7d56b559d6cbc3eb512325244e619a65c6c525"
   integrity sha1-On1WtVnWy8PrUSMlJE5hmmXGxSU=
 
 fast-json-stable-stringify@^2.0.0:
@@ -3323,7 +3323,7 @@ figures@^2.0.0:
 
 file-entry-cache@^5.0.1:
   version "5.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/file-entry-cache/-/file-entry-cache-5.0.1.tgz#ca0f6efa6dd3d561333fb14515065c2fafdf439c"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/file-entry-cache/-/file-entry-cache-5.0.1.tgz#ca0f6efa6dd3d561333fb14515065c2fafdf439c"
   integrity sha1-yg9u+m3T1WEzP7FFFQZcL6/fQ5w=
   dependencies:
     flat-cache "^2.0.1"
@@ -3411,7 +3411,7 @@ find-up@^3.0.0:
 
 flat-cache@^2.0.1:
   version "2.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/flat-cache/-/flat-cache-2.0.1.tgz#5d296d6f04bda44a4630a301413bdbc2ec085ec0"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/flat-cache/-/flat-cache-2.0.1.tgz#5d296d6f04bda44a4630a301413bdbc2ec085ec0"
   integrity sha1-XSltbwS9pEpGMKMBQTvbwuwIXsA=
   dependencies:
     flatted "^2.0.0"
@@ -3420,7 +3420,7 @@ flat-cache@^2.0.1:
 
 flatted@^2.0.0:
   version "2.0.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/flatted/-/flatted-2.0.2.tgz#4575b21e2bcee7434aa9be662f4b7b5f9c2b5138"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/flatted/-/flatted-2.0.2.tgz#4575b21e2bcee7434aa9be662f4b7b5f9c2b5138"
   integrity sha1-RXWyHivO50NKqb5mL0t7X5wrUTg=
 
 flush-write-stream@^1.0.0:
@@ -3558,7 +3558,7 @@ get-func-name@^2.0.0:
 
 get-intrinsic@^1.0.0, get-intrinsic@^1.0.1:
   version "1.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/get-intrinsic/-/get-intrinsic-1.0.1.tgz#94a9768fcbdd0595a1c9273aacf4c89d075631be"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/get-intrinsic/-/get-intrinsic-1.0.1.tgz#94a9768fcbdd0595a1c9273aacf4c89d075631be"
   integrity sha1-lKl2j8vdBZWhySc6rPTInQdWMb4=
   dependencies:
     function-bind "^1.1.1"
@@ -3728,7 +3728,7 @@ har-schema@^2.0.0:
 
 har-validator@~5.1.3:
   version "5.1.5"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/har-validator/-/har-validator-5.1.5.tgz#1f0803b9f8cb20c0fa13822df1ecddb36bde1efd"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/har-validator/-/har-validator-5.1.5.tgz#1f0803b9f8cb20c0fa13822df1ecddb36bde1efd"
   integrity sha1-HwgDufjLIMD6E4It8ezds2veHv0=
   dependencies:
     ajv "^6.12.3"
@@ -3753,7 +3753,7 @@ has-symbols@^1.0.0:
 
 has-symbols@^1.0.1:
   version "1.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/has-symbols/-/has-symbols-1.0.1.tgz#9f5214758a44196c406d9bd76cebf81ec2dd31e8"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/has-symbols/-/has-symbols-1.0.1.tgz#9f5214758a44196c406d9bd76cebf81ec2dd31e8"
   integrity sha1-n1IUdYpEGWxAbZvXbOv4HsLdMeg=
 
 has-unicode@^2.0.0:
@@ -3864,7 +3864,7 @@ hpack.js@^2.1.6:
 
 html-encoding-sniffer@^2.0.1:
   version "2.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/html-encoding-sniffer/-/html-encoding-sniffer-2.0.1.tgz#42a6dc4fd33f00281176e8b23759ca4e4fa185f3"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/html-encoding-sniffer/-/html-encoding-sniffer-2.0.1.tgz#42a6dc4fd33f00281176e8b23759ca4e4fa185f3"
   integrity sha1-QqbcT9M/ACgRduiyN1nKTk+hhfM=
   dependencies:
     whatwg-encoding "^1.0.5"
@@ -4050,7 +4050,7 @@ ignore@^3.3.5:
 
 ignore@^4.0.6:
   version "4.0.6"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/ignore/-/ignore-4.0.6.tgz#750e3db5862087b4737ebac8207ffd1ef27b25fc"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/ignore/-/ignore-4.0.6.tgz#750e3db5862087b4737ebac8207ffd1ef27b25fc"
   integrity sha1-dQ49tYYgh7RzfrrIIH/9HvJ7Jfw=
 
 image-size@~0.5.0:
@@ -4060,7 +4060,7 @@ image-size@~0.5.0:
 
 import-fresh@^3.0.0:
   version "3.2.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/import-fresh/-/import-fresh-3.2.2.tgz#fc129c160c5d68235507f4331a6baad186bdbc3e"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/import-fresh/-/import-fresh-3.2.2.tgz#fc129c160c5d68235507f4331a6baad186bdbc3e"
   integrity sha1-/BKcFgxdaCNVB/QzGmuq0Ya9vD4=
   dependencies:
     parent-module "^1.0.0"
@@ -4123,7 +4123,7 @@ inject-loader@4.0.1:
 
 inquirer@^6.0.0, inquirer@^6.2.2:
   version "6.5.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/inquirer/-/inquirer-6.5.2.tgz#ad50942375d036d327ff528c08bd5fab089928ca"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/inquirer/-/inquirer-6.5.2.tgz#ad50942375d036d327ff528c08bd5fab089928ca"
   integrity sha1-rVCUI3XQNtMn/1KMCL1fqwiZKMo=
   dependencies:
     ansi-escapes "^3.2.0"
@@ -4149,7 +4149,7 @@ internal-ip@1.2.0:
 
 internal-slot@^1.0.2:
   version "1.0.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/internal-slot/-/internal-slot-1.0.2.tgz#9c2e9fb3cd8e5e4256c6f45fe310067fcfa378a3"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/internal-slot/-/internal-slot-1.0.2.tgz#9c2e9fb3cd8e5e4256c6f45fe310067fcfa378a3"
   integrity sha1-nC6fs82OXkJWxvRf4xAGf8+jeKM=
   dependencies:
     es-abstract "^1.17.0-next.1"
@@ -4180,7 +4180,7 @@ invert-kv@^2.0.0:
 
 ip-regex@^2.1.0:
   version "2.1.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/ip-regex/-/ip-regex-2.1.0.tgz#fa78bf5d2e6913c911ce9f819ee5146bb6d844e9"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/ip-regex/-/ip-regex-2.1.0.tgz#fa78bf5d2e6913c911ce9f819ee5146bb6d844e9"
   integrity sha1-+ni/XS5pE8kRzp+BnuUUa7bYROk=
 
 ip@^1.1.0, ip@^1.1.5:
@@ -4236,12 +4236,12 @@ is-callable@^1.1.4:
 
 is-callable@^1.2.2:
   version "1.2.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/is-callable/-/is-callable-1.2.2.tgz#c7c6715cd22d4ddb48d3e19970223aceabb080d9"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/is-callable/-/is-callable-1.2.2.tgz#c7c6715cd22d4ddb48d3e19970223aceabb080d9"
   integrity sha1-x8ZxXNItTdtI0+GZcCI6zquwgNk=
 
 is-core-module@^2.1.0:
   version "2.1.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/is-core-module/-/is-core-module-2.1.0.tgz#a4cc031d9b1aca63eecbd18a650e13cb4eeab946"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/is-core-module/-/is-core-module-2.1.0.tgz#a4cc031d9b1aca63eecbd18a650e13cb4eeab946"
   integrity sha1-pMwDHZsaymPuy9GKZQ4Ty07quUY=
   dependencies:
     has "^1.0.3"
@@ -4335,7 +4335,7 @@ is-glob@^4.0.0:
 
 is-negative-zero@^2.0.0:
   version "2.0.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/is-negative-zero/-/is-negative-zero-2.0.0.tgz#9553b121b0fac28869da9ed459e20c7543788461"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/is-negative-zero/-/is-negative-zero-2.0.0.tgz#9553b121b0fac28869da9ed459e20c7543788461"
   integrity sha1-lVOxIbD6wohp2p7UWeIMdUN4hGE=
 
 is-number@^3.0.0:
@@ -4373,7 +4373,7 @@ is-plain-object@^2.0.3, is-plain-object@^2.0.4:
 
 is-potential-custom-element-name@^1.0.0:
   version "1.0.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/is-potential-custom-element-name/-/is-potential-custom-element-name-1.0.0.tgz#0c52e54bcca391bb2c494b21e8626d7336c6e397"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/is-potential-custom-element-name/-/is-potential-custom-element-name-1.0.0.tgz#0c52e54bcca391bb2c494b21e8626d7336c6e397"
   integrity sha1-DFLlS8yjkbssSUsh6GJtczbG45c=
 
 is-promise@^2.1.0:
@@ -4390,7 +4390,7 @@ is-regex@^1.0.4:
 
 is-regex@^1.1.1:
   version "1.1.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/is-regex/-/is-regex-1.1.1.tgz#c6f98aacc546f6cec5468a07b7b153ab564a57b9"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/is-regex/-/is-regex-1.1.1.tgz#c6f98aacc546f6cec5468a07b7b153ab564a57b9"
   integrity sha1-xvmKrMVG9s7FRooHt7FTq1ZKV7k=
   dependencies:
     has-symbols "^1.0.1"
@@ -4402,7 +4402,7 @@ is-stream@^1.1.0:
 
 is-string@^1.0.5:
   version "1.0.5"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/is-string/-/is-string-1.0.5.tgz#40493ed198ef3ff477b8c7f92f644ec82a5cd3a6"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/is-string/-/is-string-1.0.5.tgz#40493ed198ef3ff477b8c7f92f644ec82a5cd3a6"
   integrity sha1-QEk+0ZjvP/R3uMf5L2ROyCpc06Y=
 
 is-symbol@^1.0.2:
@@ -4478,7 +4478,7 @@ jquery-sortable@0.9.13:
 
 jquery@3.5.1, "jquery@^1.8.3 || ^2.0 || ^3.0", jquery@^2.1.2:
   version "3.5.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/jquery/-/jquery-3.5.1.tgz#d7b4d08e1bfdb86ad2f1a3d039ea17304717abb5"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/jquery/-/jquery-3.5.1.tgz#d7b4d08e1bfdb86ad2f1a3d039ea17304717abb5"
   integrity sha1-17TQjhv9uGrS8aPQOeoXMEcXq7U=
 
 js-tokens@^3.0.0, js-tokens@^3.0.2:
@@ -4493,7 +4493,7 @@ js-tokens@^3.0.0, js-tokens@^3.0.2:
 
 js-yaml@^3.13.0:
   version "3.14.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/js-yaml/-/js-yaml-3.14.0.tgz#a7a34170f26a21bb162424d8adacb4113a69e482"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/js-yaml/-/js-yaml-3.14.0.tgz#a7a34170f26a21bb162424d8adacb4113a69e482"
   integrity sha1-p6NBcPJqIbsWJCTYray0ETpp5II=
   dependencies:
     argparse "^1.0.7"
@@ -4531,12 +4531,12 @@ jsdoc@3.5.5:
 
 jsdoctypeparser@3.1.0:
   version "3.1.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/jsdoctypeparser/-/jsdoctypeparser-3.1.0.tgz#2f65f75165c4d9c632bb4fda13ed36b78321a43b"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/jsdoctypeparser/-/jsdoctypeparser-3.1.0.tgz#2f65f75165c4d9c632bb4fda13ed36b78321a43b"
   integrity sha1-L2X3UWXE2cYyu0/aE+02t4MhpDs=
 
 jsdom@16.4.0:
   version "16.4.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/jsdom/-/jsdom-16.4.0.tgz#36005bde2d136f73eee1a830c6d45e55408edddb"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/jsdom/-/jsdom-16.4.0.tgz#36005bde2d136f73eee1a830c6d45e55408edddb"
   integrity sha1-NgBb3i0Tb3Pu4agwxtReVUCO3ds=
   dependencies:
     abab "^2.0.3"
@@ -4630,7 +4630,7 @@ jsprim@^1.2.2:
 
 "jsx-ast-utils@^2.4.1 || ^3.0.0", jsx-ast-utils@^3.1.0:
   version "3.1.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/jsx-ast-utils/-/jsx-ast-utils-3.1.0.tgz#642f1d7b88aa6d7eb9d8f2210e166478444fa891"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/jsx-ast-utils/-/jsx-ast-utils-3.1.0.tgz#642f1d7b88aa6d7eb9d8f2210e166478444fa891"
   integrity sha1-ZC8de4iqbX652PIhDhZkeERPqJE=
   dependencies:
     array-includes "^3.1.1"
@@ -4684,12 +4684,12 @@ klaw@~2.0.0:
 
 language-subtag-registry@~0.3.2:
   version "0.3.21"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/language-subtag-registry/-/language-subtag-registry-0.3.21.tgz#04ac218bea46f04cb039084602c6da9e788dd45a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/language-subtag-registry/-/language-subtag-registry-0.3.21.tgz#04ac218bea46f04cb039084602c6da9e788dd45a"
   integrity sha1-BKwhi+pG8EywOQhGAsbanniN1Fo=
 
 language-tags@^1.0.5:
   version "1.0.5"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/language-tags/-/language-tags-1.0.5.tgz#d321dbc4da30ba8bf3024e040fa5c14661f9193a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/language-tags/-/language-tags-1.0.5.tgz#d321dbc4da30ba8bf3024e040fa5c14661f9193a"
   integrity sha1-0yHbxNowuovzAk4ED6XBRmH5GTo=
   dependencies:
     language-subtag-registry "~0.3.2"
@@ -4731,7 +4731,7 @@ less-plugin-clean-css@1.5.1:
 
 less@3.12.2:
   version "3.12.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/less/-/less-3.12.2.tgz#157e6dd32a68869df8859314ad38e70211af3ab4"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/less/-/less-3.12.2.tgz#157e6dd32a68869df8859314ad38e70211af3ab4"
   integrity sha1-FX5t0ypohp34hZMUrTjnAhGvOrQ=
   dependencies:
     tslib "^1.10.0"
@@ -4853,7 +4853,7 @@ lodash.upperfirst@4.3.1:
 
 lodash@4.17.21, lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.3, lodash@^4.17.4, lodash@^4.17.5, lodash@^4.2.0, lodash@^4.2.1, lodash@^4.3.0:
   version "4.17.21"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha1-Z5WRxWTDv/quhFTPCz3zcMPWkRw=
 
 log-symbols@^2.1.0:
@@ -4933,7 +4933,7 @@ make-dir@^1.0.0:
 
 make-dir@^2.1.0:
   version "2.1.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/make-dir/-/make-dir-2.1.0.tgz#5f0310e18b8be898cc07009295a30ae41e91e6f5"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/make-dir/-/make-dir-2.1.0.tgz#5f0310e18b8be898cc07009295a30ae41e91e6f5"
   integrity sha1-XwMQ4YuL6JjMBwCSlaMK5B6R5vU=
   dependencies:
     pify "^4.0.1"
@@ -5091,7 +5091,7 @@ mime-types@^2.1.12, mime-types@~2.1.17, mime-types@~2.1.19, mime-types@~2.1.24:
 
 mime@1.6.0, mime@^1.4.1:
   version "1.6.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/mime/-/mime-1.6.0.tgz#32cd9e5c64553bd58d19a568af452acff04981b1"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/mime/-/mime-1.6.0.tgz#32cd9e5c64553bd58d19a568af452acff04981b1"
   integrity sha1-Ms2eXGRVO9WNGaVor0Uqz/BJgbE=
 
 mime@^2.0.3, mime@^2.1.0:
@@ -5133,7 +5133,7 @@ minimist@0.0.8:
 
 minimist@0.2.1, minimist@~0.0.1:
   version "0.2.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/minimist/-/minimist-0.2.1.tgz#827ba4e7593464e7c221e8c5bed930904ee2c455"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/minimist/-/minimist-0.2.1.tgz#827ba4e7593464e7c221e8c5bed930904ee2c455"
   integrity sha1-gnuk51k0ZOfCIejFvtkwkE7ixFU=
 
 minimist@^1.1.3, minimist@^1.2.0:
@@ -5306,7 +5306,7 @@ nan@^2.12.1:
 
 nanoid@^2.1.0:
   version "2.1.11"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/nanoid/-/nanoid-2.1.11.tgz#ec24b8a758d591561531b4176a01e3ab4f0f0280"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/nanoid/-/nanoid-2.1.11.tgz#ec24b8a758d591561531b4176a01e3ab4f0f0280"
   integrity sha1-7CS4p1jVkVYVMbQXagHjq08PAoA=
 
 nanomatch@^1.2.9:
@@ -5328,7 +5328,7 @@ nanomatch@^1.2.9:
 
 native-request@^1.0.5:
   version "1.0.8"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/native-request/-/native-request-1.0.8.tgz#8f66bf606e0f7ea27c0e5995eb2f5d03e33ae6fb"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/native-request/-/native-request-1.0.8.tgz#8f66bf606e0f7ea27c0e5995eb2f5d03e33ae6fb"
   integrity sha1-j2a/YG4PfqJ8DlmV6y9dA+M65vs=
 
 natural-compare@^1.4.0:
@@ -5521,7 +5521,7 @@ number-is-nan@^1.0.0:
 
 nwsapi@^2.2.0:
   version "2.2.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/nwsapi/-/nwsapi-2.2.0.tgz#204879a9e3d068ff2a55139c2c772780681a38b7"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/nwsapi/-/nwsapi-2.2.0.tgz#204879a9e3d068ff2a55139c2c772780681a38b7"
   integrity sha1-IEh5qePQaP8qVROcLHcngGgaOLc=
 
 oauth-sign@~0.9.0:
@@ -5555,7 +5555,7 @@ object-inspect@^1.6.0:
 
 object-inspect@^1.8.0:
   version "1.8.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/object-inspect/-/object-inspect-1.8.0.tgz#df807e5ecf53a609cc6bfe93eac3cc7be5b3a9d0"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/object-inspect/-/object-inspect-1.8.0.tgz#df807e5ecf53a609cc6bfe93eac3cc7be5b3a9d0"
   integrity sha1-34B+Xs9TpgnMa/6T6sPMe+WzqdA=
 
 object-is@^1.0.1:
@@ -5587,7 +5587,7 @@ object.assign@^4.1.0:
 
 object.assign@^4.1.1:
   version "4.1.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/object.assign/-/object.assign-4.1.2.tgz#0ed54a342eceb37b38ff76eb831a0e788cb63940"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/object.assign/-/object.assign-4.1.2.tgz#0ed54a342eceb37b38ff76eb831a0e788cb63940"
   integrity sha1-DtVKNC7Os3s4/3brgxoOeIy2OUA=
   dependencies:
     call-bind "^1.0.0"
@@ -5597,7 +5597,7 @@ object.assign@^4.1.1:
 
 object.entries@^1.1.2:
   version "1.1.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/object.entries/-/object.entries-1.1.2.tgz#bc73f00acb6b6bb16c203434b10f9a7e797d3add"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/object.entries/-/object.entries-1.1.2.tgz#bc73f00acb6b6bb16c203434b10f9a7e797d3add"
   integrity sha1-vHPwCstra7FsIDQ0sQ+afnl9Ot0=
   dependencies:
     define-properties "^1.1.3"
@@ -5606,7 +5606,7 @@ object.entries@^1.1.2:
 
 object.fromentries@^2.0.2:
   version "2.0.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/object.fromentries/-/object.fromentries-2.0.2.tgz#4a09c9b9bb3843dd0f89acdb517a794d4f355ac9"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/object.fromentries/-/object.fromentries-2.0.2.tgz#4a09c9b9bb3843dd0f89acdb517a794d4f355ac9"
   integrity sha1-SgnJubs4Q90PiazbUXp5TU81Wsk=
   dependencies:
     define-properties "^1.1.3"
@@ -5631,7 +5631,7 @@ object.pick@^1.3.0:
 
 object.values@^1.1.1:
   version "1.1.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/object.values/-/object.values-1.1.1.tgz#68a99ecde356b7e9295a3c5e0ce31dc8c953de5e"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/object.values/-/object.values-1.1.1.tgz#68a99ecde356b7e9295a3c5e0ce31dc8c953de5e"
   integrity sha1-aKmezeNWt+kpWjxeDOMdyMlT3l4=
   dependencies:
     define-properties "^1.1.3"
@@ -5831,7 +5831,7 @@ param-case@2.1.x:
 
 parent-module@^1.0.0:
   version "1.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/parent-module/-/parent-module-1.0.1.tgz#691d2709e78c79fae3a156622452d00762caaaa2"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/parent-module/-/parent-module-1.0.1.tgz#691d2709e78c79fae3a156622452d00762caaaa2"
   integrity sha1-aR0nCeeMefrjoVZiJFLQB2LKqqI=
   dependencies:
     callsites "^3.0.0"
@@ -5857,7 +5857,7 @@ parse-json@^2.2.0:
 
 parse5@5.1.1:
   version "5.1.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/parse5/-/parse5-5.1.1.tgz#f68e4e5ba1852ac2cadc00f4555fff6c2abb6178"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/parse5/-/parse5-5.1.1.tgz#f68e4e5ba1852ac2cadc00f4555fff6c2abb6178"
   integrity sha1-9o5OW6GFKsLK3AD0VV//bCq7YXg=
 
 parseurl@~1.3.2, parseurl@~1.3.3:
@@ -5973,7 +5973,7 @@ pify@^3.0.0:
 
 pify@^4.0.1:
   version "4.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/pify/-/pify-4.0.1.tgz#4b2cd25c50d598735c50292224fd8c6df41e3231"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/pify/-/pify-4.0.1.tgz#4b2cd25c50d598735c50292224fd8c6df41e3231"
   integrity sha1-SyzSXFDVmHNcUCkiJP2MbfQeMjE=
 
 pinkie-promise@^2.0.0:
@@ -6333,7 +6333,7 @@ react-dnd@2.5.4:
 
 react-dom@16.9.0:
   version "16.9.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/react-dom/-/react-dom-16.9.0.tgz#5e65527a5e26f22ae3701131bcccaee9fb0d3962"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/react-dom/-/react-dom-16.9.0.tgz#5e65527a5e26f22ae3701131bcccaee9fb0d3962"
   integrity sha1-XmVSel4m8irjcBExvMyu6fsNOWI=
   dependencies:
     loose-envify "^1.1.0"
@@ -6362,12 +6362,12 @@ react-is@^16.3.2, react-is@^16.8.1:
 
 react-is@^16.8.4:
   version "16.13.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/react-is/-/react-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/react-is/-/react-is-16.13.1.tgz#789729a4dc36de2999dc156dd6c1d9c18cea56a4"
   integrity sha1-eJcppNw23imZ3BVt1sHZwYzqVqQ=
 
 react-jsonschema-form@1.8.1:
   version "1.8.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/react-jsonschema-form/-/react-jsonschema-form-1.8.1.tgz#9c962f29a55b3fe071d8edf2fc3430f05f1b7ed9"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/react-jsonschema-form/-/react-jsonschema-form-1.8.1.tgz#9c962f29a55b3fe071d8edf2fc3430f05f1b7ed9"
   integrity sha1-nJYvKaVbP+Bx2O3y/DQw8F8bftk=
   dependencies:
     "@babel/runtime-corejs2" "^7.4.5"
@@ -6488,7 +6488,7 @@ react-transition-group@^2.0.0, react-transition-group@^2.2.0:
 
 react@16.9.0:
   version "16.9.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/react/-/react-16.9.0.tgz#40ba2f9af13bc1a38d75dbf2f4359a5185c4f7aa"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/react/-/react-16.9.0.tgz#40ba2f9af13bc1a38d75dbf2f4359a5185c4f7aa"
   integrity sha1-QLovmvE7waONddvy9DWaUYXE96o=
   dependencies:
     loose-envify "^1.1.0"
@@ -6618,7 +6618,7 @@ regenerator-runtime@^0.13.2:
 
 regenerator-runtime@^0.13.4:
   version "0.13.7"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/regenerator-runtime/-/regenerator-runtime-0.13.7.tgz#cac2dacc8a1ea675feaabaeb8ae833898ae46f55"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/regenerator-runtime/-/regenerator-runtime-0.13.7.tgz#cac2dacc8a1ea675feaabaeb8ae833898ae46f55"
   integrity sha1-ysLazIoepnX+qrrriugziYrkb1U=
 
 regenerator-transform@^0.10.0:
@@ -6647,7 +6647,7 @@ regexp.prototype.flags@^1.2.0:
 
 regexp.prototype.flags@^1.3.0:
   version "1.3.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/regexp.prototype.flags/-/regexp.prototype.flags-1.3.0.tgz#7aba89b3c13a64509dabcf3ca8d9fbb9bdf5cb75"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/regexp.prototype.flags/-/regexp.prototype.flags-1.3.0.tgz#7aba89b3c13a64509dabcf3ca8d9fbb9bdf5cb75"
   integrity sha1-erqJs8E6ZFCdq888qNn7ub31y3U=
   dependencies:
     define-properties "^1.1.3"
@@ -6655,7 +6655,7 @@ regexp.prototype.flags@^1.3.0:
 
 regexpp@^2.0.1:
   version "2.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/regexpp/-/regexpp-2.0.1.tgz#8d19d31cf632482b589049f8281f93dbcba4d07f"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/regexpp/-/regexpp-2.0.1.tgz#8d19d31cf632482b589049f8281f93dbcba4d07f"
   integrity sha1-jRnTHPYySCtYkEn4KB+T28uk0H8=
 
 regexpu-core@^1.0.0:
@@ -6728,14 +6728,14 @@ repeating@^2.0.0:
 
 request-promise-core@1.1.4:
   version "1.1.4"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/request-promise-core/-/request-promise-core-1.1.4.tgz#3eedd4223208d419867b78ce815167d10593a22f"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/request-promise-core/-/request-promise-core-1.1.4.tgz#3eedd4223208d419867b78ce815167d10593a22f"
   integrity sha1-Pu3UIjII1BmGe3jOgVFn0QWToi8=
   dependencies:
     lodash "^4.17.19"
 
 request-promise-native@^1.0.8:
   version "1.0.9"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/request-promise-native/-/request-promise-native-1.0.9.tgz#e407120526a5efdc9a39b28a5679bf47b9d9dc28"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/request-promise-native/-/request-promise-native-1.0.9.tgz#e407120526a5efdc9a39b28a5679bf47b9d9dc28"
   integrity sha1-5AcSBSal79yaObKKVnm/R7nZ3Cg=
   dependencies:
     request-promise-core "1.1.4"
@@ -6744,7 +6744,7 @@ request-promise-native@^1.0.8:
 
 request@^2.88.2:
   version "2.88.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/request/-/request-2.88.2.tgz#d73c918731cb5a87da047e207234146f664d12b3"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/request/-/request-2.88.2.tgz#d73c918731cb5a87da047e207234146f664d12b3"
   integrity sha1-1zyRhzHLWofaBH4gcjQUb2ZNErM=
   dependencies:
     aws-sign2 "~0.7.0"
@@ -6809,7 +6809,7 @@ resolve-from@^3.0.0:
 
 resolve-from@^4.0.0:
   version "4.0.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/resolve-from/-/resolve-from-4.0.0.tgz#4abcd852ad32dd7baabfe9b40e00a36db5f392e6"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/resolve-from/-/resolve-from-4.0.0.tgz#4abcd852ad32dd7baabfe9b40e00a36db5f392e6"
   integrity sha1-SrzYUq0y3Xuqv+m0DgCjbbXzkuY=
 
 resolve-url@^0.2.1:
@@ -6826,7 +6826,7 @@ resolve@^1.10.0:
 
 resolve@^1.18.1:
   version "1.19.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/resolve/-/resolve-1.19.0.tgz#1af5bf630409734a067cae29318aac7fa29a267c"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/resolve/-/resolve-1.19.0.tgz#1af5bf630409734a067cae29318aac7fa29a267c"
   integrity sha1-GvW/YwQJc0oGfK4pMYqsf6KaJnw=
   dependencies:
     is-core-module "^2.1.0"
@@ -6854,7 +6854,7 @@ rimraf@2.6.2:
 
 rimraf@2.6.3:
   version "2.6.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/rimraf/-/rimraf-2.6.3.tgz#b2d104fe0d8fb27cf9e0a1cda8262dd3833c6cab"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/rimraf/-/rimraf-2.6.3.tgz#b2d104fe0d8fb27cf9e0a1cda8262dd3833c6cab"
   integrity sha1-stEE/g2Psnz54KHNqCYt04M8bKs=
   dependencies:
     glob "^7.1.3"
@@ -6929,14 +6929,14 @@ sax@^1.2.4:
 
 saxes@^5.0.0:
   version "5.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/saxes/-/saxes-5.0.1.tgz#eebab953fa3b7608dbe94e5dadb15c888fa6696d"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/saxes/-/saxes-5.0.1.tgz#eebab953fa3b7608dbe94e5dadb15c888fa6696d"
   integrity sha1-7rq5U/o7dgjb6U5drbFciI+maW0=
   dependencies:
     xmlchars "^2.2.0"
 
 scheduler@^0.15.0:
   version "0.15.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/scheduler/-/scheduler-0.15.0.tgz#6bfcf80ff850b280fed4aeecc6513bc0b4f17f8e"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/scheduler/-/scheduler-0.15.0.tgz#6bfcf80ff850b280fed4aeecc6513bc0b4f17f8e"
   integrity sha1-a/z4D/hQsoD+1K7sxlE7wLTxf44=
   dependencies:
     loose-envify "^1.1.0"
@@ -7083,14 +7083,14 @@ shebang-regex@^1.0.0:
 
 shortid@^2.2.14:
   version "2.2.16"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/shortid/-/shortid-2.2.16.tgz#b742b8f0cb96406fd391c76bfc18a67a57fe5608"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/shortid/-/shortid-2.2.16.tgz#b742b8f0cb96406fd391c76bfc18a67a57fe5608"
   integrity sha1-t0K48MuWQG/Tkcdr/Bimelf+Vgg=
   dependencies:
     nanoid "^2.1.0"
 
 side-channel@^1.0.2, side-channel@^1.0.3:
   version "1.0.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/side-channel/-/side-channel-1.0.3.tgz#cdc46b057550bbab63706210838df5d4c19519c3"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/side-channel/-/side-channel-1.0.3.tgz#cdc46b057550bbab63706210838df5d4c19519c3"
   integrity sha1-zcRrBXVQu6tjcGIQg4311MGVGcM=
   dependencies:
     es-abstract "^1.18.0-next.0"
@@ -7144,7 +7144,7 @@ slash@^1.0.0:
 
 slice-ansi@^2.1.0:
   version "2.1.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/slice-ansi/-/slice-ansi-2.1.0.tgz#cacd7693461a637a5788d92a7dd4fba068e81636"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/slice-ansi/-/slice-ansi-2.1.0.tgz#cacd7693461a637a5788d92a7dd4fba068e81636"
   integrity sha1-ys12k0YaY3pXiNkqfdT7oGjoFjY=
   dependencies:
     ansi-styles "^3.2.0"
@@ -7418,7 +7418,7 @@ string-width@^1.0.1:
 
 string-width@^3.0.0:
   version "3.1.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/string-width/-/string-width-3.1.0.tgz#22767be21b62af1081574306f69ac51b62203961"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/string-width/-/string-width-3.1.0.tgz#22767be21b62af1081574306f69ac51b62203961"
   integrity sha1-InZ74htirxCBV0MG9prFG2IgOWE=
   dependencies:
     emoji-regex "^7.0.1"
@@ -7427,7 +7427,7 @@ string-width@^3.0.0:
 
 string.prototype.matchall@^4.0.2:
   version "4.0.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/string.prototype.matchall/-/string.prototype.matchall-4.0.3.tgz#24243399bc31b0a49d19e2b74171a15653ec996a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/string.prototype.matchall/-/string.prototype.matchall-4.0.3.tgz#24243399bc31b0a49d19e2b74171a15653ec996a"
   integrity sha1-JCQzmbwxsKSdGeK3QXGhVlPsmWo=
   dependencies:
     call-bind "^1.0.0"
@@ -7440,7 +7440,7 @@ string.prototype.matchall@^4.0.2:
 
 string.prototype.trimend@^1.0.1:
   version "1.0.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/string.prototype.trimend/-/string.prototype.trimend-1.0.3.tgz#a22bd53cca5c7cf44d7c9d5c732118873d6cd18b"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/string.prototype.trimend/-/string.prototype.trimend-1.0.3.tgz#a22bd53cca5c7cf44d7c9d5c732118873d6cd18b"
   integrity sha1-oivVPMpcfPRNfJ1ccyEYhz1s0Ys=
   dependencies:
     call-bind "^1.0.0"
@@ -7464,7 +7464,7 @@ string.prototype.trimright@^2.1.0:
 
 string.prototype.trimstart@^1.0.1:
   version "1.0.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/string.prototype.trimstart/-/string.prototype.trimstart-1.0.3.tgz#9b4cb590e123bb36564401d59824298de50fd5aa"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/string.prototype.trimstart/-/string.prototype.trimstart-1.0.3.tgz#9b4cb590e123bb36564401d59824298de50fd5aa"
   integrity sha1-m0y1kOEjuzZWRAHVmCQpjeUP1ao=
   dependencies:
     call-bind "^1.0.0"
@@ -7526,7 +7526,7 @@ strip-indent@^1.0.1:
 
 strip-json-comments@^2.0.1, strip-json-comments@~2.0.1:
   version "2.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/strip-json-comments/-/strip-json-comments-2.0.1.tgz#3c531942e908c2697c0ec344858c286c7ca0a60a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/strip-json-comments/-/strip-json-comments-2.0.1.tgz#3c531942e908c2697c0ec344858c286c7ca0a60a"
   integrity sha1-PFMZQukIwml8DsNEhYwobHygpgo=
 
 style-loader@0.22.1:
@@ -7563,12 +7563,12 @@ symbol-observable@^1.0.3, symbol-observable@^1.2.0:
 
 symbol-tree@^3.2.4:
   version "3.2.4"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/symbol-tree/-/symbol-tree-3.2.4.tgz#430637d248ba77e078883951fb9aa0eed7c63fa2"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/symbol-tree/-/symbol-tree-3.2.4.tgz#430637d248ba77e078883951fb9aa0eed7c63fa2"
   integrity sha1-QwY30ki6d+B4iDlR+5qg7tfGP6I=
 
 table@^5.2.3:
   version "5.4.6"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/table/-/table-5.4.6.tgz#1292d19500ce3f86053b05f0e8e7e4a3bb21079e"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/table/-/table-5.4.6.tgz#1292d19500ce3f86053b05f0e8e7e4a3bb21079e"
   integrity sha1-EpLRlQDOP4YFOwXw6Ofko7shB54=
   dependencies:
     ajv "^6.10.2"
@@ -7601,7 +7601,7 @@ tar@^4:
 
 text-table@^0.2.0:
   version "0.2.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
 through2@^2.0.0:
@@ -7701,7 +7701,7 @@ tough-cookie@^2.3.3, tough-cookie@~2.5.0:
 
 tough-cookie@^3.0.1:
   version "3.0.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/tough-cookie/-/tough-cookie-3.0.1.tgz#9df4f57e739c26930a018184887f4adb7dca73b2"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/tough-cookie/-/tough-cookie-3.0.1.tgz#9df4f57e739c26930a018184887f4adb7dca73b2"
   integrity sha1-nfT1fnOcJpMKAYGEiH9K233Kc7I=
   dependencies:
     ip-regex "^2.1.0"
@@ -7710,7 +7710,7 @@ tough-cookie@^3.0.1:
 
 tr46@^2.0.2:
   version "2.0.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/tr46/-/tr46-2.0.2.tgz#03273586def1595ae08fedb38d7733cee91d2479"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/tr46/-/tr46-2.0.2.tgz#03273586def1595ae08fedb38d7733cee91d2479"
   integrity sha1-Ayc1ht7xWVrgj+2zjXczzukdJHk=
   dependencies:
     punycode "^2.1.1"
@@ -7732,7 +7732,7 @@ tryer@^1.0.0:
 
 tslib@^1.10.0:
   version "1.14.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/tslib/-/tslib-1.14.1.tgz#cf2d38bdc34a134bcaf1091c41f6619e2f672d00"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/tslib/-/tslib-1.14.1.tgz#cf2d38bdc34a134bcaf1091c41f6619e2f672d00"
   integrity sha1-zy04vcNKE0vK8QkcQfZhni9nLQA=
 
 tslib@^1.9.0:
@@ -7839,7 +7839,7 @@ uncontrollable@^4.1.0:
 
 underscore@1.12.1, underscore@>=1.5.0, underscore@>=1.7.0, underscore@>=1.8.3, underscore@^1.8.0, underscore@^1.8.3, underscore@~1.8.3:
   version "1.12.1"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/underscore/-/underscore-1.12.1.tgz#7bb8cc9b3d397e201cf8553336d262544ead829e"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/underscore/-/underscore-1.12.1.tgz#7bb8cc9b3d397e201cf8553336d262544ead829e"
   integrity sha1-e7jMmz05fiAc+FUzNtJiVE6tgp4=
 
 union-value@^1.0.0:
@@ -7898,7 +7898,7 @@ uri-js@^4.2.2:
 
 urijs@1.19.7, urijs@^1.19.6:
   version "1.19.7"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/urijs/-/urijs-1.19.7.tgz#4f594e59113928fea63c00ce688fb395b1168ab9"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/urijs/-/urijs-1.19.7.tgz#4f594e59113928fea63c00ce688fb395b1168ab9"
   integrity sha1-T1lOWRE5KP6mPADOaI+zlbEWirk=
 
 urix@^0.1.0:
@@ -8022,14 +8022,14 @@ vm-browserify@^1.0.1:
 
 w3c-hr-time@^1.0.2:
   version "1.0.2"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/w3c-hr-time/-/w3c-hr-time-1.0.2.tgz#0a89cdf5cc15822df9c360543676963e0cc308cd"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/w3c-hr-time/-/w3c-hr-time-1.0.2.tgz#0a89cdf5cc15822df9c360543676963e0cc308cd"
   integrity sha1-ConN9cwVgi35w2BUNnaWPgzDCM0=
   dependencies:
     browser-process-hrtime "^1.0.0"
 
 w3c-xmlserializer@^2.0.0:
   version "2.0.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/w3c-xmlserializer/-/w3c-xmlserializer-2.0.0.tgz#3e7104a05b75146cc60f564380b7f683acf1020a"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/w3c-xmlserializer/-/w3c-xmlserializer-2.0.0.tgz#3e7104a05b75146cc60f564380b7f683acf1020a"
   integrity sha1-PnEEoFt1FGzGD1ZDgLf2g6zxAgo=
   dependencies:
     xml-name-validator "^3.0.0"
@@ -8077,12 +8077,12 @@ webassemblyjs@1.4.3:
 
 webidl-conversions@^5.0.0:
   version "5.0.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/webidl-conversions/-/webidl-conversions-5.0.0.tgz#ae59c8a00b121543a2acc65c0434f57b0fc11aff"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/webidl-conversions/-/webidl-conversions-5.0.0.tgz#ae59c8a00b121543a2acc65c0434f57b0fc11aff"
   integrity sha1-rlnIoAsSFUOirMZcBDT1ew/BGv8=
 
 webidl-conversions@^6.1.0:
   version "6.1.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/webidl-conversions/-/webidl-conversions-6.1.0.tgz#9111b4d7ea80acd40f5270d666621afa78b69514"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/webidl-conversions/-/webidl-conversions-6.1.0.tgz#9111b4d7ea80acd40f5270d666621afa78b69514"
   integrity sha1-kRG01+qArNQPUnDWZmIa+ni2lRQ=
 
 webpack-bundle-analyzer@2.13.1:
@@ -8241,7 +8241,7 @@ websocket-extensions@>=0.1.1:
 
 whatwg-encoding@^1.0.5:
   version "1.0.5"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/whatwg-encoding/-/whatwg-encoding-1.0.5.tgz#5abacf777c32166a51d085d6b4f3e7d27113ddb0"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/whatwg-encoding/-/whatwg-encoding-1.0.5.tgz#5abacf777c32166a51d085d6b4f3e7d27113ddb0"
   integrity sha1-WrrPd3wyFmpR0IXWtPPn0nET3bA=
   dependencies:
     iconv-lite "0.4.24"
@@ -8253,12 +8253,12 @@ whatwg-fetch@3.0.0:
 
 whatwg-mimetype@^2.3.0:
   version "2.3.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/whatwg-mimetype/-/whatwg-mimetype-2.3.0.tgz#3d4b1e0312d2079879f826aff18dbeeca5960fbf"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/whatwg-mimetype/-/whatwg-mimetype-2.3.0.tgz#3d4b1e0312d2079879f826aff18dbeeca5960fbf"
   integrity sha1-PUseAxLSB5h5+Cav8Y2+7KWWD78=
 
 whatwg-url@^8.0.0:
   version "8.4.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/whatwg-url/-/whatwg-url-8.4.0.tgz#50fb9615b05469591d2b2bd6dfaed2942ed72837"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/whatwg-url/-/whatwg-url-8.4.0.tgz#50fb9615b05469591d2b2bd6dfaed2942ed72837"
   integrity sha1-UPuWFbBUaVkdKyvW367SlC7XKDc=
   dependencies:
     lodash.sortby "^4.7.0"
@@ -8316,7 +8316,7 @@ wrappy@1:
 
 write@1.0.3:
   version "1.0.3"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/write/-/write-1.0.3.tgz#0800e14523b923a387e415123c865616aae0f5c3"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/write/-/write-1.0.3.tgz#0800e14523b923a387e415123c865616aae0f5c3"
   integrity sha1-CADhRSO5I6OH5BUSPIZWFqrg9cM=
   dependencies:
     mkdirp "^0.5.1"
@@ -8331,7 +8331,7 @@ ws@^4.0.0:
 
 ws@^7.2.3:
   version "7.4.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/ws/-/ws-7.4.0.tgz#a5dd76a24197940d4a8bb9e0e152bb4503764da7"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/ws/-/ws-7.4.0.tgz#a5dd76a24197940d4a8bb9e0e152bb4503764da7"
   integrity sha1-pd12okGXlA1Ki7ng4VK7RQN2Tac=
 
 xdate@0.8.2:
@@ -8346,7 +8346,7 @@ xml-name-validator@^3.0.0:
 
 xmlchars@^2.2.0:
   version "2.2.0"
-  resolved "https://maven.forgerock.org/repo/api/npm/npm-virtual/xmlchars/-/xmlchars-2.2.0.tgz#060fe1bcb7f9c76fe2a17db86a9bc3ab894210cb"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/xmlchars/-/xmlchars-2.2.0.tgz#060fe1bcb7f9c76fe2a17db86a9bc3ab894210cb"
   integrity sha1-Bg/hvLf5x2/ioX24apvDq4lCEMs=
 
 xmlcreate@^1.0.1:

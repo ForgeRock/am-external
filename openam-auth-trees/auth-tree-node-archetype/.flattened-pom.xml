@@ -55,7 +55,7 @@
       </snapshots>
       <id>forgerock-build-dependencies</id>
       <name>ForgeRock Private Release Repository for AM 6.5.4</name>
-      <url>https://maven.forgerock.org/repo/forgerock-openam-6.5.4-dependencies</url>
+      <url>https://maven.forgerock.org/artifactory/forgerock-openam-6.5.4-dependencies</url>
     </repository>
     <repository>
       <snapshots>
@@ -63,7 +63,7 @@
       </snapshots>
       <id>forgerock-internal-releases</id>
       <name>ForgeRock Internal Releases Repository</name>
-      <url>https://maven.forgerock.org/repo/internal-releases</url>
+      <url>https://maven.forgerock.org/artifactory/internal-releases</url>
     </repository>
     <repository>
       <releases>
@@ -71,7 +71,7 @@
       </releases>
       <id>forgerock-internal-snapshots</id>
       <name>ForgeRock Internal Snapshots Repository</name>
-      <url>https://maven.forgerock.org/repo/internal-snapshots</url>
+      <url>https://maven.forgerock.org/artifactory/internal-snapshots</url>
     </repository>
     <repository>
       <snapshots>
@@ -79,7 +79,7 @@
       </snapshots>
       <id>forgerock-private-releases</id>
       <name>ForgeRock Private Releases Repository</name>
-      <url>https://maven.forgerock.org/repo/private-releases</url>
+      <url>https://maven.forgerock.org/artifactory/private-releases</url>
     </repository>
     <repository>
       <releases>
@@ -90,7 +90,7 @@
       </snapshots>
       <id>maven.forgerock.org</id>
       <name>maven.forgerock.org-openam-dependencies</name>
-      <url>https://maven.forgerock.org/repo/openam-dependencies</url>
+      <url>https://maven.forgerock.org/artifactory/openam-dependencies</url>
     </repository>
     <repository>
       <releases>
@@ -101,7 +101,7 @@
       </snapshots>
       <id>restlet-cache</id>
       <name>Restlet Cache Repository</name>
-      <url>https://maven.forgerock.org/repo/maven.restlet.org</url>
+      <url>https://maven.forgerock.org/artifactory/maven.restlet.org</url>
     </repository>
     <repository>
       <snapshots>
