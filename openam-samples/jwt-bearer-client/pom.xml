@@ -41,14 +41,14 @@
     <repositories>
         <repository>
             <id>forgerock-staging-repository</id>
-            <url>https://maven.forgerock.org/repo/releases</url>
+            <url>https://maven.forgerock.org/artifactory/releases</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
         </repository>
         <repository>
             <id>forgerock-private-releases</id>
-            <url>https://maven.forgerock.org/repo/private-releases</url>
+            <url>https://maven.forgerock.org/artifactory/private-releases</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
