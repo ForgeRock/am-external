@@ -63,8 +63,8 @@
                         <configuration>
                             <nodeVersion>v10.11.0</nodeVersion>
                             <yarnVersion>v1.10.1</yarnVersion>
-                            <nodeDownloadRoot>https://maven.forgerock.org/repo/forgerock-third-party-virtual/</nodeDownloadRoot>
-                            <yarnDownloadRoot>https://maven.forgerock.org/repo/yarn-cache-local/</yarnDownloadRoot>
+                            <nodeDownloadRoot>https://maven.forgerock.org/artifactory/forgerock-third-party-virtual/</nodeDownloadRoot>
+                            <yarnDownloadRoot>https://maven.forgerock.org/artifactory/yarn-cache-local/</yarnDownloadRoot>
                         </configuration>
                     </execution>
                     <execution>
