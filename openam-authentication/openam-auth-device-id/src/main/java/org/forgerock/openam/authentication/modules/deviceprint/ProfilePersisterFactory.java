@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2018 ForgeRock AS.
+ * Copyright 2014-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.deviceprint;
@@ -47,11 +47,10 @@ public class ProfilePersisterFactory {
      * @param max Max number of devices this user should have persisted.
      * @param username Username of the user.
      * @param realm Realm in which the user is operating.
-     * @param userSearchAttributes Search alias attributes
      * @return a new ProfilePersister.
      */
-    public ProfilePersister create(int max, String username, String realm, Set<String> userSearchAttributes) {
-        return new ProfilePersister(max, username, realm, devicesDao, userSearchAttributes);
+    public ProfilePersister create(int max, String username, String realm) {
+        return new ProfilePersister(max, username, realm, devicesDao);
     }
 
 }

@@ -22,13 +22,11 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_I
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeState;
-import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
+import org.forgerock.openam.scripting.domain.Binding;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
-import org.mozilla.javascript.Undefined;
 
 /**
  * Script bindings for the OidcNode script.
@@ -54,7 +52,7 @@ public final class OidcNodeBindings extends ScriptBindings {
         this.nodeState = builder.nodeState;
         this.headers = builder.headers;
         this.realm = builder.realm;
-        this.existingSession = Objects.requireNonNullElse(builder.existingSession, Undefined.instance);
+        this.existingSession = builder.existingSession;
     }
 
     /**
@@ -66,18 +64,30 @@ public final class OidcNodeBindings extends ScriptBindings {
         return new Builder();
     }
 
+    /**
+     * The signature of these bindings. Used to provide information about available bindings via REST without the
+     * stateful underlying objects.
+     *
+     * @return The signature of this ScriptBindings implementation.
+     */
+    public static ScriptBindings signature() {
+        return new Builder().signature();
+    }
+
     @Override
-    public EvaluatorVersionBindings getEvaluatorVersionBindings() {
-        return EvaluatorVersionBindings.builder()
-                .allVersionBindings(List.of(
-                        Binding.of(JWT_CLAIMS, jwtClaims, JsonValue.class),
-                        Binding.of(HEADERS_IDENTIFIER, headers, Map.class),
-                        Binding.of(REALM_IDENTIFIER, realm, String.class),
-                        Binding.of(STATE_IDENTIFIER, nodeState, NodeState.class),
-                        Binding.of(EXISTING_SESSION, existingSession, Map.class)
-                ))
-                .parentBindings(super.getEvaluatorVersionBindings())
-                .build();
+    public String getDisplayName() {
+        return "OIDC Node Bindings";
+    }
+
+    @Override
+    public List<Binding> additionalV1Bindings() {
+        return List.of(
+                Binding.of(JWT_CLAIMS, jwtClaims, JsonValue.class),
+                Binding.of(HEADERS_IDENTIFIER, headers, Map.class),
+                Binding.of(REALM_IDENTIFIER, realm, String.class),
+                Binding.of(STATE_IDENTIFIER, nodeState, NodeState.class),
+                Binding.ofMayBeUndefined(EXISTING_SESSION, existingSession, Map.class)
+        );
     }
 
     /**
@@ -131,6 +141,7 @@ public final class OidcNodeBindings extends ScriptBindings {
          */
         OidcNodeBindingsStep5 withRealm(String realm);
     }
+
     /**
      * Step 5 of the builder.
      */

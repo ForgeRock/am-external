@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes;
@@ -26,12 +26,17 @@ import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.json.jose.jwk.KeyType;
 import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmAlg;
+import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.exceptions.InvalidTpmtPublicException;
+import org.forgerock.util.Reject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class represents a method of, and the result of parsing RSA information contained within the pubArea.
  */
 public final class RsaTypeVerifier implements TypeVerifier {
 
+    private final Logger logger = LoggerFactory.getLogger(RsaTypeVerifier.class);
     private static final int DEFAULT_EXPONENT = 65537;
 
     private final TpmAlg symmetric;
@@ -47,22 +52,23 @@ public final class RsaTypeVerifier implements TypeVerifier {
     }
 
     @Override
-    public boolean verify(JWK jwk, byte[] unique) {
-        //key must be of type RSA
+    public boolean verify(JWK jwk, TpmtUniqueParameter unique) {
         if (jwk.getKeyType() != KeyType.RSA) {
+            logger.error("Key type must be RSA, but was {}", jwk.getKeyType());
             return false;
         }
 
         RsaJWK rsaJwk = (RsaJWK) jwk;
         RSAPublicKey rsaPublicKey = rsaJwk.toRSAPublicKey();
 
-        //exponent must match
         if (!rsaPublicKey.getPublicExponent().equals(BigInteger.valueOf(exponent))) {
+            logger.error("Exponent in public key {} does not match {}", rsaPublicKey.getPublicExponent(),
+                    rsaPublicKey.getPublicExponent());
             return false;
         }
 
-        //modulus must match the pub area
-        if (!rsaPublicKey.getModulus().equals(new BigInteger(1, unique))) {
+        if (!unique.verifyUniqueParameter(rsaPublicKey)) {
+            logger.error("Modulus in public key is not equal to that specified in the pubArea");
             return false;
         }
 
@@ -95,6 +101,26 @@ public final class RsaTypeVerifier implements TypeVerifier {
     @Override
     public TpmAlg getSymmetric() {
         return symmetric;
+    }
+
+    @Override
+    public TpmtUniqueParameter getUniqueParameter(DataInputStream pubArea)
+            throws InvalidTpmtPublicException, IOException {
+        Reject.ifNull(pubArea, "pubArea input stream cannot be null");
+
+        /**
+         * Defined under 11.2.4.5 TPM2B_PUBLIC_KEY_RSA in TPM spec:
+         * https://www.trustedcomputinggroup.org/wp-content/uploads/TPM-Rev-2.0-Part-2-Structures-01.38.pdf
+         */
+        int uniqueLength = pubArea.readShort();
+        byte[] unique = new byte[uniqueLength];
+        pubArea.read(unique, 0, uniqueLength);
+
+        if (pubArea.read() != -1) {
+            throw new InvalidTpmtPublicException("Bytes remaining in pubArea after parsing tpmtPublic!");
+        }
+
+        return new RsaUniqueParameter(unique);
     }
 
     /**

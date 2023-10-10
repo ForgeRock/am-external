@@ -26,7 +26,7 @@
 
     $Id: amAuthLDAP.xml,v 1.8 2010/01/25 22:09:17 qcheng Exp $
 
-    Portions Copyrighted 2011-2020 ForgeRock AS.
+    Portions Copyrighted 2011-2023 ForgeRock AS.
 -->
 
 <!DOCTYPE ServicesConfiguration
@@ -49,7 +49,7 @@
                     i18nKey="a101"
                     order="100"
                     resourceName="primaryLdapServer">
-                    <DefaultValues>
+                    <DefaultValues placeholder="{&quot;$list&quot;:&quot;&amp;{am.authentication.modules.ldap.servers|%}&quot;}">
                         <Value>@UM_DIRECTORY_SERVER@:@UM_DIRECTORY_PORT@</Value>
                     </DefaultValues>
                 </AttributeSchema>
@@ -76,7 +76,7 @@
                     i18nKey="a104"
                     order="400"
                     resourceName="userBindDN">
-                    <DefaultValues>
+                    <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.username|%}">
                         <Value>@UM_DS_DIRMGRDN@</Value>
                     </DefaultValues>
                 </AttributeSchema>
@@ -86,6 +86,7 @@
                     i18nKey="a105"
                     order="500"
                     resourceName="userBindPassword">
+                    <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.password|}"/>
                 </AttributeSchema>
                 <AttributeSchema name="iplanet-am-auth-ldap-user-naming-attribute"
                     type="single"
@@ -139,7 +140,7 @@
                         <ChoiceValue i18nKey="a1102">LDAPS</ChoiceValue>
                         <ChoiceValue i18nKey="a1103">StartTLS</ChoiceValue>
                     </ChoiceValues>
-                    <DefaultValues>
+                    <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.connection.mode|%}">
                         <Value>@LDAP_CONNECTION_MODE@</Value>
                     </DefaultValues>
                 </AttributeSchema>
@@ -276,7 +277,7 @@
                         i18nKey="a101"
                         order="100"
                         resourceName="primaryLdapServer">
-                        <DefaultValues>
+                        <DefaultValues placeholder="{&quot;$list&quot;:&quot;&amp;{am.authentication.modules.ldap.servers|%}&quot;}">
                             <Value>@UM_DIRECTORY_SERVER@:@UM_DIRECTORY_PORT@</Value>
                         </DefaultValues>
                     </AttributeSchema>
@@ -303,7 +304,7 @@
                         i18nKey="a104"
                         order="400"
                         resourceName="userBindDN">
-                        <DefaultValues>
+                        <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.username|%}">
                             <Value>@UM_DS_DIRMGRDN@</Value>
                         </DefaultValues>
                     </AttributeSchema>
@@ -313,6 +314,7 @@
                         i18nKey="a105"
                         order="500"
                         resourceName="userBindPassword">
+                        <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.password|}"/>
                     </AttributeSchema>
                     <AttributeSchema name="iplanet-am-auth-ldap-user-naming-attribute"
                         type="single"
@@ -366,7 +368,7 @@
                             <ChoiceValue i18nKey="a1102">LDAPS</ChoiceValue>
                             <ChoiceValue i18nKey="a1103">StartTLS</ChoiceValue>
                         </ChoiceValues>
-                        <DefaultValues>
+                        <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.connection.mode|%}">
                             <Value>@LDAP_CONNECTION_MODE@</Value>
                         </DefaultValues>
                     </AttributeSchema>
@@ -501,11 +503,11 @@
         </Schema>
         <Configuration>
             <OrganizationConfiguration name="/">
-                <AttributeValuePair>
+                <AttributeValuePair placeholder="&amp;{am.authentication.modules.ldap.password|%}">
                     <Attribute name="iplanet-am-auth-ldap-bind-passwd"/>
                     <Value>@UM_DS_DIRMGRPASSWD@</Value>
                 </AttributeValuePair>
-                <AttributeValuePair>
+                <AttributeValuePair placeholder="&amp;{am.authentication.modules.ldap.connection.mode|%}">
                     <Attribute name="openam-auth-ldap-connection-mode"/>
                     <Value>LDAPS</Value>
                 </AttributeValuePair>

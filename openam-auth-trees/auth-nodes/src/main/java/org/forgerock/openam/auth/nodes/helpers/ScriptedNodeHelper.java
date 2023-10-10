@@ -50,6 +50,8 @@ import com.iplanet.dpro.session.service.SessionService;
  */
 public final class ScriptedNodeHelper {
 
+    private static final Logger logger = LoggerFactory.getLogger(ScriptedNodeHelper.class);
+
     /**
      * Shared state identifier for scripts bindings.
      *
@@ -107,10 +109,23 @@ public final class ScriptedNodeHelper {
      */
     public static final String CALLBACKS_IDENTIFIER = "callbacks";
     /**
+     * Idm identifier for script bindings.
+     */
+    public static final String IDM_IDENTIFIER = "openidm";
+    /**
      * Node state wildcard character.
      */
     public static final String WILDCARD = "*";
-    private static final Logger logger = LoggerFactory.getLogger(ScriptedNodeHelper.class);
+
+    /**
+     * Action object identifier for script bindings.
+     */
+    public static final String ACTION = "action";
+
+    /**
+     * Callbacks builder object for script bindings.
+     */
+    public static final String CALLBACKS_BUILDER = "callbacksBuilder";
 
     private ScriptedNodeHelper() {
     }

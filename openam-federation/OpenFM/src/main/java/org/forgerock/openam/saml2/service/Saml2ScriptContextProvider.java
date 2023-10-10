@@ -48,6 +48,8 @@ import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.plugins.scripted.IdpAdapterScriptHelper;
 import com.sun.identity.saml2.plugins.scripted.SpAdapterScriptHelper;
+import com.sun.identity.saml2.plugins.scripted.bindings.SamlBindings;
+import com.sun.identity.saml2.plugins.scripted.bindings.SamlIdpAttributeMapperBindings;
 
 /**
  * Responsible for providing the SAML2 script contexts.
@@ -90,6 +92,7 @@ public class Saml2ScriptContextProvider implements ScriptContextDetailsProvider 
             "org.forgerock.json.JsonValue",
             "org.forgerock.openam.scripting.api.http.GroovyHttpClient",
             "org.forgerock.openam.scripting.api.http.JavaScriptHttpClient",
+            "org.forgerock.openam.scripting.api.PrefixedScriptPropertyResolver",
             "org.forgerock.util.promise.PromiseImpl",
             "org.mozilla.javascript.JavaScriptException",
             "sun.security.ec.ECPrivateKeyImpl"};
@@ -102,6 +105,7 @@ public class Saml2ScriptContextProvider implements ScriptContextDetailsProvider 
                 .withContextReference(SAML2_IDP_ATTRIBUTE_MAPPER)
                 .withI18NKey("script-type-12")
                 .withDefaultScript(SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT.getId())
+                .withBindings(SamlIdpAttributeMapperBindings.signature())
                 .overrideDefaultWhiteList(
                         "com.iplanet.am.sdk.AMHashMap", "com.sun.identity.saml2.assertion.impl.AttributeImpl",
                         "java.lang.Boolean", "java.lang.Byte", "java.lang.Character", "java.lang.Character$Subset",
@@ -137,12 +141,14 @@ public class Saml2ScriptContextProvider implements ScriptContextDetailsProvider 
                 .withContextReference(SAML2_IDP_ADAPTER)
                 .withI18NKey("script-type-13")
                 .withDefaultScript(SAML2_IDP_ADAPTER_SCRIPT.getId())
+                .withBindings(SamlBindings.IdpBindings.signature())
                 .overrideDefaultWhiteList(generateWhiteList(ADAPTER_WHITE_LIST, IdpAdapterScriptHelper.class)).build());
 
         scriptContexts.add(ScriptContextDetails.builder()
                 .withContextReference(SAML2_SP_ADAPTER)
                 .withI18NKey("script-type-17")
                 .withDefaultScript(SAML2_SP_ADAPTER_SCRIPT.getId())
+                .withBindings(SamlBindings.SpBindings.signature())
                 .overrideDefaultWhiteList(generateWhiteList(ADAPTER_WHITE_LIST, SpAdapterScriptHelper.class)).build());
 
         return scriptContexts;

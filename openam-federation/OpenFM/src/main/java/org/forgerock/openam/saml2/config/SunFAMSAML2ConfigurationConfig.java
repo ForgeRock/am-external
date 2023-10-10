@@ -11,12 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.saml2.config;
 
-import static com.sun.identity.setup.ServicesDefaultValues.tagSwap;
 import static org.forgerock.openam.annotations.sm.Config.Scope.GLOBAL;
 import static org.forgerock.openam.annotations.sm.Config.Scope.SERVICE;
 
@@ -25,6 +24,7 @@ import org.forgerock.am.config.ServiceComponentConfig;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.annotations.sm.Config;
 import org.forgerock.openam.annotations.sm.I18nKey;
+import org.forgerock.openam.sm.annotations.TagSwappableDefault;
 import org.forgerock.openam.sm.annotations.adapters.NumberRange;
 
 /**
@@ -73,9 +73,8 @@ public interface SunFAMSAML2ConfigurationConfig extends ServiceComponentConfig,
                 name = "IDPDiscoveryCookieDomain",
                 resourceName = "idpDiscoveryCookieDomain",
                 i18nKey = "a103")
-        default String idpDiscoveryCookieDomain() {
-            return tagSwap("@COOKIE_DOMAIN@");
-        }
+        @TagSwappableDefault("@COOKIE_DOMAIN@")
+        String idpDiscoveryCookieDomain();
 
         @Attribute(order = 500,
                 name = "IDPDiscoveryCookieType",

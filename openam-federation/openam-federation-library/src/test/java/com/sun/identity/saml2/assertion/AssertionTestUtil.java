@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion;
 
@@ -32,7 +32,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.protocol.ArtifactResponse;
-import com.sun.identity.saml2.protocol.Extensions;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.saml2.protocol.Response;
 import com.sun.identity.saml2.protocol.Status;
@@ -316,34 +315,6 @@ public class AssertionTestUtil {
                 + "</saml:AudienceRestriction>    </saml:Conditions>    <saml:AuthnStatement AuthnInstant=\"2014-07-17T01:01:48Z\" SessionNotOnOrAfter=\"2024-07-17T09:01:48Z\" SessionIndex=\"_be9967abd904ddcae3c0eb4189adbe3f71e327cf93\">      <saml:AuthnContext>        <saml:AuthnContextClassRef>urn:oasis:names:tc:SAML:2.0:ac:classes:Password</saml:AuthnContextClassRef>"
                 + "</saml:AuthnContext>    </saml:AuthnStatement>    <saml:AttributeStatement>      <saml:Attribute Name=\"uid\" NameFormat=\"urn:oasis:names:tc:SAML:2.0:attrname-format:basic\">        <saml:AttributeValue xsi:type=\"xs:string\">test</saml:AttributeValue>      </saml:Attribute>      <saml:Attribute Name=\"mail\" NameFormat=\"urn:oasis:names:tc:SAML:2.0:attrname-format:basic\">        <saml:AttributeValue xsi:type=\"xs:string\">test@example.com</saml:AttributeValue>      </saml:Attribute>      <saml:Attribute Name=\"eduPersonAffiliation\" NameFormat=\"urn:oasis:names:tc:SAML:2.0:attrname-format:basic\">        <saml:AttributeValue xsi:type=\"xs:string\">users</saml:AttributeValue>        <saml:AttributeValue xsi:type=\"xs:string\">examplerole1</saml:AttributeValue>      </saml:Attribute>    </saml:AttributeStatement>  </saml:Assertion></samlp:Response>";
         Response response = protocolFactory.createResponse(responseXML);
-        String responseString = mapper.writeValueAsString(response);
-        Response response2 = mapper.readValue(responseString, Response.class);
-
-        assertThat(response2.toXMLString(true, true))
-                .isXmlEqualTo(response2.toXMLString(true, true));
-
-    }
-
-    @Test
-    public void protocolResponseStatusShouldSerialize() throws Exception {
-
-        // Response
-        Assertion assertion = createTestAssertion("assertion-1", defaultIssuer);
-        ProtocolFactory protocolFactory = ProtocolFactory.getInstance();
-        Response response = protocolFactory.createResponse();
-        response.setID("response-1");
-        response.setVersion("2.0");
-        response.setIssueInstant(new Date());
-        Status status = protocolFactory.createStatus();
-        StatusCode statuscode = protocolFactory.createStatusCode();
-        statuscode.setValue("statuscode");
-        status.setStatusCode(statuscode);
-        response.setStatus(status);
-        response.setAssertion(Arrays.asList(assertion));
-        response.setInResponseTo("me");
-        Extensions extensions = ProtocolFactory.getInstance().createExtensions();
-        extensions.setAny(Arrays.asList("123", "234"));
-        response.setExtensions(extensions);
         String responseString = mapper.writeValueAsString(response);
         Response response2 = mapper.readValue(responseString, Response.class);
 

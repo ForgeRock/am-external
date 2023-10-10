@@ -615,7 +615,7 @@ public class SAML2Utils extends SAML2SDKUtils {
                     }
                 }
                 if (foundAssertion) {
-                    debug.error("Bearer Assertion is one time use only!");
+                    debug.error("Bearer Assertion is one-time use only!");
                     throw new SAML2Exception(bundle.getString("usedBearAssertion"));
                 }
                 checkAudience(assertion.getConditions(),
@@ -2825,7 +2825,7 @@ public class SAML2Utils extends SAML2SDKUtils {
      */
     public static IDPAccountMapper getIDPAccountMapper(String realm, String idpEntityID) throws SAML2Exception {
         String idpAccountMapperName = getAttributeValueFromSSOConfig(realm, idpEntityID, IDP_ROLE, IDP_ACCOUNT_MAPPER);
-        if (StringUtils.isNotBlank(idpAccountMapperName)) {
+        if (StringUtils.isBlank(idpAccountMapperName)) {
             idpAccountMapperName = DEFAULT_IDP_ACCOUNT_MAPPER_CLASS;
         }
         debug.debug("SAML2Utils.getIDPAccountMapper: use {}", idpAccountMapperName);

@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2020 ForgeRock AS.
+ * Copyright 2011-2023 ForgeRock AS.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -34,6 +34,8 @@ import static org.forgerock.openam.shared.security.whitelist.RedirectUrlValidato
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
 
 import java.io.PrintWriter;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
 
@@ -70,7 +72,7 @@ public class OAuthProxy  {
     public static void continueAuthentication(HttpServletRequest req, HttpServletResponse res, PrintWriter out) {
         OAuthUtil.debugMessage("toPostForm: started");
 
-        String action = OAuthUtil.findCookie(req, COOKIE_ORIG_URL);
+        String action = URLDecoder.decode(OAuthUtil.findCookie(req, COOKIE_ORIG_URL), StandardCharsets.UTF_8);
         
         if (OAuthUtil.isEmpty(action)) {
             OAuthUtil.debugError("OAuthProxy.toPostForm: Original Url Cookie is empty");

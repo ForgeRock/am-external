@@ -11,21 +11,32 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
 
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.cert.CertPath;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.slf4j.Logger;
 
 /**
  * Utility methods for the X509 Certificate Nodes.
  */
-final class CertificateUtils {
+public final class CertificateUtils {
+
+    private static final String X_509 = "X.509";
 
     private CertificateUtils() {
     }
@@ -48,4 +59,39 @@ final class CertificateUtils {
         }
         return theCert;
     }
+
+    /**
+     * Extract the certificates contained within the {@code x5c} field of a {@link JWK}.
+     * <p>
+     * Certificates are a binary format and as such the JWK specification encodes them as Base64 encoded
+     * strings. These need to be extracted from the JWK and processed.
+     * </p>
+     * <p>
+     * <b>Note:</b>For the specific JWK we are using for this test code, we know it is a Base64 encoded file
+     * which requires the header and footer to be included.
+     * </p>
+     *
+     * @param jwk Non null {@link JWK}.
+     * @return Non null {@link CertPath}.
+     * @throws CertificateException Throws when failed to extract the x5c field.
+     */
+    public static CertPath getCertPathFromJwkX5c(JWK jwk) throws CertificateException {
+        List<Certificate> certificates = jwk.getX509Chain().stream()
+                .map(rawCertificate -> "-----BEGIN CERTIFICATE-----\n" + rawCertificate + "\n-----END CERTIFICATE-----")
+                .map(parseCertificate())
+                .collect(Collectors.toList());
+        return CertificateFactory.getInstance(X_509).generateCertPath(certificates);
+    }
+
+    private static Function<String, Certificate> parseCertificate() {
+        return value -> {
+            try {
+                return (X509Certificate) CertificateFactory.getInstance(X_509)
+                        .generateCertificate(new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
+            } catch (CertificateException e) {
+                throw new IllegalStateException(e);
+            }
+        };
+    }
+
 }

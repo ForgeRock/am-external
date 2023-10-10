@@ -11,28 +11,27 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
 
 import static com.google.inject.name.Names.named;
 
-import java.util.Map;
-
 import javax.inject.Named;
+import javax.inject.Singleton;
 
+import org.forgerock.openam.secrets.config.SecretStoreConfigChangeListener;
 import org.forgerock.openam.services.datastore.DataStoreConsistencyController;
 import org.forgerock.openam.services.datastore.DataStoreLookup;
 import org.forgerock.openam.services.datastore.DataStoreService;
 import org.forgerock.opendj.ldap.ConnectionFactory;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Key;
-import com.google.inject.PrivateModule;
 import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
 import com.google.inject.multibindings.MapBinder;
-import com.google.inject.util.Types;
+import com.google.inject.multibindings.Multibinder;
+import com.iplanet.services.naming.ServiceListeners;
+import com.sun.identity.sm.DataStoreInitializer;
 import com.sun.identity.sm.SMSNotificationManager;
 
 /**
@@ -40,7 +39,7 @@ import com.sun.identity.sm.SMSNotificationManager;
  *
  * @since 6.0.0
  */
-public final class DataStoreGuiceModule extends AbstractModule {
+public class DataStoreGuiceModule extends AbstractModule {
     public static final String SERVICE_DATA_STORE_ID_ATTRIBUTE_NAMES = "service-datastore-id-attributes";
 
     @Override
@@ -48,13 +47,31 @@ public final class DataStoreGuiceModule extends AbstractModule {
         bind(ConnectionFactory.class).toProvider(DefaultConnectionFactoryProvider.class);
         bind(DataStoreLookup.class).to(SmsDataStoreLookup.class);
 
-        bind(DataStoreService.class).to(LdapDataStoreService.class);
+        bindDataStoreService();
         bind(DataStoreServiceRegister.class).to(LdapDataStoreService.class);
 
         bind(VolatileActionConsistencyController.class).to(ReentrantVolatileActionConsistencyController.class);
         bind(DataStoreConsistencyController.class).to(ReentrantVolatileActionConsistencyController.class);
 
         MapBinder.newMapBinder(binder(), String.class, String.class, named(SERVICE_DATA_STORE_ID_ATTRIBUTE_NAMES));
+
+        Multibinder.newSetBinder(binder(), SecretStoreConfigChangeListener.class).addBinding()
+                .to(LdapDataStoreService.class);
+    }
+
+    /**
+     * Protected method to allow overriding by {@code MockDataStoreServiceDataStoreGuiceModule} which is used by
+     * {@code MockAM}.
+     */
+    protected void bindDataStoreService() {
+        bind(DataStoreService.class).to(LdapDataStoreService.class);
+    }
+
+    @Provides
+    @Singleton
+    public DataStoreInitializer dataStoreInitializer(DefaultDataStoreInitializer dataStoreInitializer,
+            ServiceListeners serviceListeners) {
+        return new CachingDataStoreInitializer(dataStoreInitializer, serviceListeners);
     }
 
     @Provides

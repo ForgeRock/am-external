@@ -11,11 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2010-2021 ForgeRock AS.
+ * Copyright 2010-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.scripting.api.http;
 
+import static org.forgerock.openam.audit.context.AuditRequestContext.getAuditRequestContext;
 import static org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory.SCRIPTING_HTTP_CLIENT_NAME;
 
 import java.io.IOException;
@@ -29,10 +30,13 @@ import javax.inject.Named;
 
 import org.forgerock.http.Client;
 import org.forgerock.http.client.ChfHttpClient;
+import org.forgerock.http.client.request.HttpClientRequestFactory;
 import org.forgerock.http.client.response.HttpClientResponse;
 import org.forgerock.http.header.MalformedHeaderException;
+import org.forgerock.http.header.TransactionIdHeader;
 import org.forgerock.http.protocol.Request;
 import org.forgerock.http.protocol.Response;
+import org.forgerock.services.TransactionId;
 import org.forgerock.util.promise.NeverThrowsException;
 import org.forgerock.util.promise.Promise;
 import org.slf4j.Logger;
@@ -49,8 +53,8 @@ public class GroovyHttpClient extends ChfHttpClient {
     private static final Logger DEBUG = LoggerFactory.getLogger(GroovyHttpClient.class);
 
     @Inject
-    public GroovyHttpClient(@Named(SCRIPTING_HTTP_CLIENT_NAME) Client client) {
-        super(client);
+    public GroovyHttpClient(@Named(SCRIPTING_HTTP_CLIENT_NAME) Client client, HttpClientRequestFactory httpClientRequestFactory) {
+        super(client, httpClientRequestFactory);
     }
 
     /**
@@ -87,6 +91,8 @@ public class GroovyHttpClient extends ChfHttpClient {
      * @return A promise representing the pending HTTP response.
      */
     public Promise<Response, NeverThrowsException> send(final Request request) {
+        TransactionId subTransactionId = new TransactionId(getAuditRequestContext().createSubTransactionIdValue());
+        request.getHeaders().add(new TransactionIdHeader(subTransactionId));
         return client.send(request);
     }
 }

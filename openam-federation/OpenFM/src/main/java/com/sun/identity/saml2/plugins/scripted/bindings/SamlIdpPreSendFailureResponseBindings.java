@@ -20,12 +20,14 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.FAULT_DE
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REQUEST;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.RESPONSE;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
+import org.forgerock.openam.scripting.domain.Binding;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 
 final class SamlIdpPreSendFailureResponseBindings extends BaseSamlIdpBindings {
 
@@ -47,17 +49,31 @@ final class SamlIdpPreSendFailureResponseBindings extends BaseSamlIdpBindings {
         return new Builder();
     }
 
+    /**
+     * The signature of these bindings. Used to provide information about available bindings via REST without the
+     * stateful underlying objects.
+     *
+     * @return The signature of this ScriptBindings implementation.
+     */
+    public static ScriptBindings signature() {
+        return new Builder().signature();
+    }
+
     @Override
-    protected EvaluatorVersionBindings getEvaluatorVersionBindings() {
-        return EvaluatorVersionBindings.builder()
-                .allVersionBindings(List.of(
-                        Binding.of(REQUEST, request, HttpServletRequest.class),
-                        Binding.of(FAULT_CODE, faultCode, String.class),
-                        Binding.of(FAULT_DETAIL, faultDetail, String.class),
-                        Binding.of(RESPONSE, response, HttpServletResponse.class)
-                ))
-                .parentBindings(super.getCommonBindings())
-                .build();
+    public String getDisplayName() {
+        return "SAML IDP Pre-send Failure Response Bindings";
+    }
+
+    @Override
+    protected List<Binding> additionalV1Bindings() {
+        List<Binding> v1Bindings = new ArrayList<>(v1CommonBindings());
+        v1Bindings.addAll(List.of(
+                Binding.of(REQUEST, request, HttpServletRequest.class),
+                Binding.of(FAULT_CODE, faultCode, String.class),
+                Binding.of(FAULT_DETAIL, faultDetail, String.class),
+                Binding.of(RESPONSE, response, HttpServletResponse.class)
+        ));
+        return v1Bindings;
     }
 
     /**

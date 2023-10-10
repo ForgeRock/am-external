@@ -11,13 +11,9 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
-
-import static com.sun.identity.shared.Constants.LDAP_CONN_IDLE_TIME_IN_SECS;
-
-import java.util.concurrent.TimeUnit;
 
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -25,12 +21,8 @@ import javax.inject.Singleton;
 import org.forgerock.openam.services.datastore.DataStoreException;
 import org.forgerock.opendj.ldap.ConnectionFactory;
 
-import com.iplanet.am.util.SystemProperties;
-import com.iplanet.services.ldap.DefaultDataStoreConfigurationManager;
+import com.iplanet.services.ldap.DataStoreConfigurationManager;
 import com.iplanet.services.ldap.LDAPServiceException;
-import com.iplanet.services.ldap.LDAPUser;
-import com.iplanet.services.ldap.ServerGroup;
-import com.iplanet.services.ldap.ServerInstance;
 
 /**
  * Singleton service to allow the dependency injection of a Connection Factory Service
@@ -45,32 +37,9 @@ final class DefaultConnectionFactoryProvider implements Provider<ConnectionFacto
      */
     public ConnectionFactory get() {
         try {
-            DefaultDataStoreConfigurationManager defaultConfiguration = DefaultDataStoreConfigurationManager
-                    .getDataStoreConfigurationManager();
-
-            ServerGroup smsServerGroup = defaultConfiguration.getServerGroup("sms");
-
-            String serverGroupId;
-            ServerInstance serverInstance;
-
-            if (smsServerGroup != null) {
-                serverGroupId = "sms";
-                serverInstance = smsServerGroup.getServerInstance(LDAPUser.Type.AUTH_ADMIN);
-            } else {
-                serverGroupId = "default";
-                serverInstance = defaultConfiguration.getServerInstance(LDAPUser.Type.AUTH_ADMIN);
-            }
-
-            if (serverInstance == null) {
-                throw new DataStoreException("Could not find server instance.");
-            }
-
-            int idleTimeout = SystemProperties.getAsInt(LDAP_CONN_IDLE_TIME_IN_SECS, 0);
-            int poolMin = serverInstance.getMinConnections();
-            int poolMax = serverInstance.getMaxConnections();
-
-            return defaultConfiguration.getNewConnectionPool(serverGroupId, LDAPUser.Type.AUTH_ADMIN, poolMin, poolMax,
-                    idleTimeout, TimeUnit.SECONDS);
+            DataStoreConfigurationManager defaultConfiguration =
+                    DataStoreConfigurationManager.getInstance();
+            return defaultConfiguration.getNewSMSConnectionFactory();
         } catch (LDAPServiceException e) {
             throw new DataStoreException("Unable to create default connection factory", e);
         }

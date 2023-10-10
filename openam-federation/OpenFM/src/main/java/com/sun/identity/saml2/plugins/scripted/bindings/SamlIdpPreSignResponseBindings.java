@@ -19,9 +19,11 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.RELAY_ST
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SAML2_RESPONSE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SESSION;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
+import org.forgerock.openam.scripting.domain.Binding;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 
 import com.sun.identity.saml2.protocol.Response;
 
@@ -43,16 +45,30 @@ final class SamlIdpPreSignResponseBindings extends BaseSamlIdpBindings {
         return new Builder();
     }
 
+    /**
+     * The signature of these bindings. Used to provide information about available bindings via REST without the
+     * stateful underlying objects.
+     *
+     * @return The signature of this ScriptBindings implementation.
+     */
+    public static ScriptBindings signature() {
+        return new Builder().signature();
+    }
+
     @Override
-    protected EvaluatorVersionBindings getEvaluatorVersionBindings() {
-        return EvaluatorVersionBindings.builder()
-                .allVersionBindings(List.of(
-                        Binding.of(RELAY_STATE, relayState, String.class),
-                        Binding.of(SAML2_RESPONSE, saml2Response, Response.class),
-                        Binding.of(SESSION, session, Object.class)
-                ))
-                .parentBindings(super.getPreResponseBindings())
-                .build();
+    public String getDisplayName() {
+        return "SAML IDP Pre-sign Response Bindings";
+    }
+
+    @Override
+    protected List<Binding> additionalV1Bindings() {
+        List<Binding> v1Bindings = new ArrayList<>(v1PreResponseBindings());
+        v1Bindings.addAll(List.of(
+                Binding.of(RELAY_STATE, relayState, String.class),
+                Binding.of(SAML2_RESPONSE, saml2Response, Response.class),
+                Binding.of(SESSION, session, Object.class)
+        ));
+        return v1Bindings;
     }
 
     /**

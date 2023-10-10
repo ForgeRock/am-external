@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes;
@@ -25,6 +25,8 @@ import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.json.jose.jwk.KeyType;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmAlg;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmEccCurve;
+import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.exceptions.InvalidTpmtPublicException;
+import org.forgerock.util.Reject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +50,7 @@ public final class EccTypeVerifier implements TypeVerifier {
     }
 
     @Override
-    public boolean verify(JWK publicKey, byte[] unique) {
+    public boolean verify(JWK publicKey, TpmtUniqueParameter unique) {
 
         if (curveId.getSupportedEllipticCurve() == null) {
             logger.error("Attempted to use an unsupported curveId: {}", curveId);
@@ -73,7 +75,10 @@ public final class EccTypeVerifier implements TypeVerifier {
             return false;
         }
 
-        //todo: compare coordinates to unique
+        if (!unique.verifyUniqueParameter(ecJwk.toECPublicKey())) {
+            logger.error("Unique coordinates in public key are not equal to those specified in the pubArea");
+            return false;
+        }
 
         return true;
     }
@@ -104,6 +109,30 @@ public final class EccTypeVerifier implements TypeVerifier {
     @Override
     public TpmAlg getSymmetric() {
         return symmetric;
+    }
+
+    @Override
+    public TpmtUniqueParameter getUniqueParameter(DataInputStream pubArea)
+            throws InvalidTpmtPublicException, IOException {
+        Reject.ifNull(pubArea, "pubArea input stream cannot be null");
+
+        /**
+         * Defined under 11.2.5.2 TPMS_ECC_POINT in TPM spec:
+         * https://www.trustedcomputinggroup.org/wp-content/uploads/TPM-Rev-2.0-Part-2-Structures-01.38.pdf
+         */
+        byte[][] unique = new byte[2][];
+        for (int i = 0; i < 2; i++) {
+            int uniqueLength = pubArea.readShort();
+            byte[] uniqueSub = new byte[uniqueLength];
+            pubArea.read(uniqueSub, 0, uniqueLength);
+            unique[i] = uniqueSub;
+        }
+
+        if (pubArea.read() != -1) {
+            throw new InvalidTpmtPublicException("Bytes remaining in pubArea after parsing tpmtPublic!");
+        }
+
+        return new EccUniqueParameter(unique[0], unique[1]);
     }
 
     /**

@@ -37,7 +37,7 @@ mvn archetype:generate \
 -DauthNodeName=<name of your auth node class> \
 -DarchetypeGroupId=org.forgerock.am \
 -DarchetypeArtifactId=auth-tree-node-archetype \
--DarchetypeVersion=<auth-tree-node-archetype pom version eg. 7.3.0> \ß
+-DarchetypeVersion=<auth-tree-node-archetype pom version eg. 7.3.0> \
 -DinteractiveMode=false
 ```
 

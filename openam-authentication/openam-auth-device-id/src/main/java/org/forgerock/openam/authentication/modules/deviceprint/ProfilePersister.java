@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2019 ForgeRock AS.
+ * Copyright 2014-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.deviceprint;
@@ -50,7 +50,6 @@ class ProfilePersister {
     private final int maxProfilesAllowed;
     private final String username;
     private final String realm;
-    private final Set<String> userSearchAttributes;
 
     /**
      * Constructs a new ProfilePersister instance.
@@ -58,16 +57,13 @@ class ProfilePersister {
      * @param maxProfilesAllowed The maximum device print profiles a user is allowed.
      * @param username The username.
      * @param realm The realm.
-     * @param userSearchAttributes Search alias attributes
      * @param devicesDao An instance of the DeviceIdDao.
      */
-    ProfilePersister(int maxProfilesAllowed, String username, String realm, DeviceIdDao devicesDao,
-            Set<String> userSearchAttributes) {
+    ProfilePersister(int maxProfilesAllowed, String username, String realm, DeviceIdDao devicesDao) {
         this.maxProfilesAllowed = maxProfilesAllowed;
         this.username = username;
         this.realm = realm;
         this.devicesDao = devicesDao;
-        this.userSearchAttributes = userSearchAttributes;
     }
 
     /**
@@ -89,7 +85,7 @@ class ProfilePersister {
     void saveDevicePrint(String deviceName, Map<String, Object> devicePrint) throws AuthLoginException  {
 
         try {
-            List<JsonValue> profiles = devicesDao.getDeviceProfiles(username, realm, userSearchAttributes);
+            List<JsonValue> profiles = devicesDao.getDeviceProfiles(username, realm);
 
             while (profiles.size() >= maxProfilesAllowed) {
                 DEBUG.debug("Removing oldest user profile due to maximum profiles stored quantity");
@@ -107,7 +103,7 @@ class ProfilePersister {
 
             profiles.add(JsonValue.json(profile));
 
-            devicesDao.saveDeviceProfiles(username, realm, profiles, userSearchAttributes);
+            devicesDao.saveDeviceProfiles(username, realm, profiles);
         } catch (Exception e) {
             DEBUG.error("Cannot get User's Device Print Profiles attribute. " + e);
             throw new AuthLoginException(BUNDLE_NAME, "deviceprofilesavefail", null, e);

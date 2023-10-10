@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.accountactivecheck;
 
@@ -76,12 +76,14 @@ public class AccountActiveCheck extends AMLoginModule {
         try {
             if (!isAccountActive(userName)) {
                 setFailureID(userName);
-                throw new InvalidPasswordException(AM_AUTH, AMAuthErrorCode.AUTH_USER_INACTIVE, null, userName, null);
+                throw new InvalidPasswordException(AM_AUTH, AMAuthErrorCode.AUTH_USER_INACTIVE, null, userName, 
+                        false, null);
             }
 
             if (isAccountLocked(userName)) {
                 setFailureID(userName);
-                throw new InvalidPasswordException(AM_AUTH, AMAuthErrorCode.AUTH_USER_LOCKED, null, userName, null);
+                throw new InvalidPasswordException(AM_AUTH, AMAuthErrorCode.AUTH_USER_LOCKED, null, userName, 
+                        false, null);
             }
         } catch (AuthenticationException ex) {
             debug.debug("AuthenticationException: {}", ex.getMessage());

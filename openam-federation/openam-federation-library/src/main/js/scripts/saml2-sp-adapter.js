@@ -45,7 +45,7 @@
  *     The authentication request sent that is sent from the Service Provider.
  * session - SSOToken (4)
  *     The single sign-on session. The reference type of this is Object and would need to be casted to SSOToken.
- * ssoResponse - Response (5)
+ * res - Response (5)
  *     The SSO Response received from the Identity Provider.
  * profile - String
  *     The protocol profile that is used, this will be one of the following values from SAML2Constants (6):
@@ -122,7 +122,7 @@ function preSingleSignOnRequest() {
  *     request
  *     response
  *     authnRequest
- *     ssoResponse
+ *     res
  *     profile
  *     spAdapterScriptHelper
  *     logger
@@ -139,7 +139,7 @@ function preSingleSignOnProcess() {
  *     out
  *     session
  *     authnRequest
- *     ssoResponse
+ *     res
  *     profile
  *     isFederation
  *     spAdapterScriptHelper
@@ -158,7 +158,7 @@ function postSingleSignOnSuccess() {
  *     request
  *     response
  *     authnRequest
- *     ssoResponse
+ *     res
  *     profile
  *     failureCode
  *     spAdapterScriptHelper

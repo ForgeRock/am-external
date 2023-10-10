@@ -11,28 +11,27 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
 
 import static com.sun.identity.shared.Constants.LDAP_CONN_IDLE_TIME_IN_SECS;
-import static com.sun.identity.shared.Constants.LDAP_SM_HEARTBEAT_INTERVAL;
 import static org.forgerock.openam.ldap.LDAPUtils.CACHED_POOL_OPTIONS;
 import static org.forgerock.openam.ldap.LDAPUtils.newFailoverConnectionFactory;
-import static org.forgerock.openam.utils.SchemaAttributeUtils.stripAttributeNameFromValue;
 import static org.forgerock.opendj.ldap.LdapClients.LDAP_CLIENT_REQUEST_TIMEOUT;
 
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.forgerock.openam.ldap.LDAPURL;
 import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.openam.ldap.LDAPUtils.CachedPoolOptions;
+import org.forgerock.openam.secrets.Secrets;
 import org.forgerock.openam.sm.datalayer.api.DataLayerConstants;
 import org.forgerock.opendj.ldap.ConnectionFactory;
+import org.forgerock.opendj.ldap.LdapConnectionFactory;
 import org.forgerock.util.Options;
 import org.forgerock.util.time.Duration;
 
+import com.google.inject.Inject;
 import com.iplanet.am.util.SystemProperties;
 
 /**
@@ -42,24 +41,32 @@ import com.iplanet.am.util.SystemProperties;
  */
 class LdapConnectionFactoryProvider {
 
-    private static final int HEARTBEAT_INTERVAL_DEFAULT = 10;
+    private final Secrets secrets;
+
+    @Inject
+    private LdapConnectionFactoryProvider(Secrets secrets) {
+        this.secrets = secrets;
+    }
 
     ConnectionFactory createLdapConnectionFactory(DataStoreConfig config) {
         Options ldapOptions = populateLdapOptions(config);
-        Set <LDAPURL> ldapUrls = LDAPUtils.getLdapUrls(config.getLDAPURLs(), config.isUseSsl());
-        int heartBeatInterval = SystemProperties.getAsInt(LDAP_SM_HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL_DEFAULT);
-        return newFailoverConnectionFactory(ldapUrls, config.getBindDN(), config.getBindPassword(),
-                heartBeatInterval, TimeUnit.SECONDS.toString(), config.isStartTLSEnabled(), false, ldapOptions);
+        if (config.isMtlsEnabled()) {
+            return newFailoverConnectionFactory(config, ldapOptions, secrets);
+        }
+
+        return newFailoverConnectionFactory(config.getLDAPURLs(), config.getBindDN(), config.getBindPassword(),
+                config.getLdapHeartbeat(), TimeUnit.SECONDS.toString(), config.isStartTLSEnabled(), false,
+                ldapOptions);
     }
 
     private Options populateLdapOptions(DataStoreConfig config) {
         int idleTimeout = SystemProperties.getAsInt(LDAP_CONN_IDLE_TIME_IN_SECS, 0);
         int timeout = SystemProperties.getAsInt(DataLayerConstants.DATA_LAYER_TIMEOUT, 10);
-        Options options = Options.defaultOptions()
-                .set(LDAP_CLIENT_REQUEST_TIMEOUT, Duration.duration((long) timeout, TimeUnit.SECONDS))
+        return Options.defaultOptions()
+                .set(LDAP_CLIENT_REQUEST_TIMEOUT, Duration.duration(timeout, TimeUnit.SECONDS))
                 .set(CACHED_POOL_OPTIONS, new CachedPoolOptions(config.getMinConnections(),
                         config.getMaxConnections(), idleTimeout, TimeUnit.SECONDS))
-                .set(LDAPUtils.AFFINITY_ENABLED, config.isAffinityEnabled());
-        return options;
+                .set(LDAPUtils.AFFINITY_ENABLED, config.isAffinityEnabled())
+                .set(LdapConnectionFactory.SSL_USE_STARTTLS, config.isStartTLSEnabled());
     }
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2019-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -185,7 +185,7 @@ public class CreateObjectNode implements Node {
             inputs.add(new InputState(TERMS_ACCEPTED, false));
             return inputs.toArray(new InputState[]{});
         } catch (NodeProcessException e) {
-            logger.warn("Failed to retrieve object's schema");
+            logger.warn("Failed to retrieve object's schema", e);
             return new InputState[]{};
         }
     }

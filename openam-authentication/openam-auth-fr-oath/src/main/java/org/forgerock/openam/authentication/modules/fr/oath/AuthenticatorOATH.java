@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2012-2022 ForgeRock AS.
+ * Copyright 2012-2023 ForgeRock AS.
  * Portions Copyrighted 2014-2015 Nomura Research Institute, Ltd.
  */
 
@@ -20,11 +20,9 @@ package org.forgerock.openam.authentication.modules.fr.oath;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
 import java.security.MessageDigest;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.Subject;
@@ -163,9 +161,6 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
 
     private OathDeviceSettings newDevice = null;
 
-    // support for search with alias name
-    private Set<String> userSearchAttributes = Collections.emptySet();
-
     private OTPGenerator hotpGenerator;
 
     /**
@@ -217,16 +212,10 @@ public class AuthenticatorOATH extends TwoFactorAMLoginModule {
         }
 
         try {
-            userSearchAttributes = getUserAliasList();
-        } catch (final AuthLoginException ale) {
-            debug.warn("AuthenticatorOATH :: init() : Unable to retrieve search attributes", ale);
-        }
-
-        try {
 
             String realm = DNMapper.orgNameToRealmName(getRequestOrg());
             IdentityStore identityStore = identityStoreFactory.create(realm);
-            id = identityStore.getIdentity(userName, userSearchAttributes);
+            id = identityStore.getUserUsingAuthenticationUserAliases(userName);
             realmService = oathServiceFactory.create(id.getRealm());
 
             try {

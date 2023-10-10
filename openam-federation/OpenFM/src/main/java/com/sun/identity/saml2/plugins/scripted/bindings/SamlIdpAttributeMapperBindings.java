@@ -24,15 +24,15 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SESSION;
 
 import java.util.List;
 
-import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
+import org.forgerock.openam.scripting.domain.Binding;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 
 import com.sun.identity.saml2.plugins.scripted.IdpAttributeMapperScriptHelper;
 
 /**
- * Script bindings for the SamlIdp script.
+ * Script bindings for the SamlIdpAttributeMapper script.
  */
-class SamlIdpAttributeMapperBindings extends ScriptBindings {
+public class SamlIdpAttributeMapperBindings extends ScriptBindings {
 
     private final String hostedEntityId;
     private final IdpAttributeMapperScriptHelper idpAttributeMapperScriptHelper;
@@ -45,7 +45,7 @@ class SamlIdpAttributeMapperBindings extends ScriptBindings {
      *
      * @param builder The builder.
      */
-    protected SamlIdpAttributeMapperBindings(Builder builder) {
+    private SamlIdpAttributeMapperBindings(Builder builder) {
         super(builder);
         this.hostedEntityId = builder.hostedEntityId;
         this.idpAttributeMapperScriptHelper = builder.idpAttributeMapperScriptHelper;
@@ -59,22 +59,34 @@ class SamlIdpAttributeMapperBindings extends ScriptBindings {
      *
      * @return The builder.
      */
-    static SamlIdpAttributeMapperBindingsStep1 builder() {
+    public static SamlIdpAttributeMapperBindingsStep1 builder() {
         return new Builder();
     }
 
+    /**
+     * The signature of these bindings. Used to provide information about available bindings via REST without the
+     * stateful underlying objects.
+     *
+     * @return The signature of this ScriptBindings implementation.
+     */
+    public static ScriptBindings signature() {
+        return new Builder().signature();
+    }
+
     @Override
-    protected EvaluatorVersionBindings getEvaluatorVersionBindings() {
-        return EvaluatorVersionBindings.builder()
-                .allVersionBindings(List.of(
-                        Binding.of(HOSTED_ENTITYID, hostedEntityId, String.class),
-                        Binding.of(IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER, idpAttributeMapperScriptHelper, IdpAttributeMapperScriptHelper.class),
-                        Binding.of(REALM, realm, String.class),
-                        Binding.of(REMOTE_ENTITY, remoteEntityId, String.class),
-                        Binding.of(SESSION, session, Object.class)
-                ))
-                .parentBindings(super.getEvaluatorVersionBindings())
-                .build();
+    public String getDisplayName() {
+        return "SAML IDP Attribute Mapper Bindings";
+    }
+
+    @Override
+    protected List<Binding> additionalV1Bindings() {
+        return List.of(
+                Binding.of(HOSTED_ENTITYID, hostedEntityId, String.class),
+                Binding.of(IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER, idpAttributeMapperScriptHelper, IdpAttributeMapperScriptHelper.class),
+                Binding.of(REALM, realm, String.class),
+                Binding.of(REMOTE_ENTITY, remoteEntityId, String.class),
+                Binding.of(SESSION, session, Object.class)
+        );
     }
 
     /**
@@ -115,7 +127,7 @@ class SamlIdpAttributeMapperBindings extends ScriptBindings {
     /**
      * Builder object to construct a {@link SamlIdpAttributeMapperBindings}.
      */
-    public static class Builder extends ScriptBindings.Builder<Builder> implements
+    private static class Builder extends ScriptBindings.Builder<Builder> implements
             SamlIdpAttributeMapperBindingsStep1, SamlIdpAttributeMapperBindingsStep2,
             SamlIdpAttributeMapperBindingsStep3, SamlIdpAttributeMapperBindingsStep4,
             SamlIdpAttributeMapperBindingsStep5 {

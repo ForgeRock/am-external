@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -75,6 +75,10 @@ public final class Action {
      * The error message to present to the caller when the FAILURE node is reached.
      */
     public final String errorMessage;
+    /**
+     * The error message to present to the caller when the user is locked out.
+     */
+    public final String lockoutMessage;
     /**
      * Callbacks requested by the node when the outcome is null. May be null.
      */
@@ -146,14 +150,15 @@ public final class Action {
     }
 
     private Action(JsonValue sharedState, JsonValue transientState, String outcome,
-            Map<String, Object> returnProperties, String errorMessage, List<? extends Callback> callbacks,
-            Map<String, String> sessionProperties, List<JsonValue> sessionHooks, List<String> webhooks,
-            SuspensionHandler suspensionHandler, Optional<String> universalId) {
+            Map<String, Object> returnProperties, String errorMessage, String lockoutMessage,
+            List<? extends Callback> callbacks, Map<String, String> sessionProperties, List<JsonValue> sessionHooks,
+            List<String> webhooks, SuspensionHandler suspensionHandler, Optional<String> universalId) {
         this.sharedState = sharedState;
         this.transientState = transientState;
         this.outcome = outcome;
         this.returnProperties = returnProperties;
         this.errorMessage = errorMessage;
+        this.lockoutMessage = lockoutMessage;
         this.callbacks = Collections.unmodifiableList(callbacks);
         this.sessionProperties = Collections.unmodifiableMap(sessionProperties);
         this.sessionHooks = sessionHooks;
@@ -179,6 +184,7 @@ public final class Action {
         private JsonValue transientState;
         private Map<String, Object> returnProperties;
         private String errorMessage;
+        private String lockoutMessage;
         private String universalId;
         private final String outcome;
         private final List<? extends Callback> callbacks;
@@ -293,6 +299,19 @@ public final class Action {
          */
         public ActionBuilder withErrorMessage(String errorMessage) {
             this.errorMessage = errorMessage;
+            return this;
+        }
+
+        /**
+         * Sets the error message to present to the caller when the user is locked out.
+         *
+         * <p>It is up to the caller to apply localisation.</p>
+         *
+         * @param lockoutMessage The lockout message.
+         * @return the same instance of the ActionBuilder.
+         */
+        public ActionBuilder withLockoutMessage(String lockoutMessage) {
+            this.lockoutMessage = lockoutMessage;
             return this;
         }
 
@@ -450,7 +469,7 @@ public final class Action {
          */
         public Action build() {
             return new Action(this.sharedState, this.transientState, this.outcome, this.returnProperties,
-                    this.errorMessage, this.callbacks, sessionProperties, sessionHooks,
+                    this.errorMessage, this.lockoutMessage, this.callbacks, sessionProperties, sessionHooks,
                     webhooks, suspensionHandler, Optional.ofNullable(this.universalId));
         }
 

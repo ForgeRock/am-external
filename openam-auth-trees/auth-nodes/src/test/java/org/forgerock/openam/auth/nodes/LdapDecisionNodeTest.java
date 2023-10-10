@@ -43,7 +43,9 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.ldap.LDAPAuthUtils;
+import org.forgerock.openam.secrets.Secrets;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -68,6 +70,11 @@ public class LdapDecisionNodeTest {
     @Mock
     private LDAPAuthUtils ldapAuthUtils;
 
+    @Mock
+    private Realm realm;
+
+    @Mock
+    private Secrets secrets;
     private LdapDecisionNode node;
 
     @Before
@@ -76,7 +83,7 @@ public class LdapDecisionNodeTest {
         given(config.heartbeatTimeUnit()).willReturn(MINUTES);
         given(coreWrapper.getLDAPAuthUtils(anySet(), anySet(),
                 anyBoolean(), any(), anyString(), any())).willReturn(ldapAuthUtils);
-        node = new LdapDecisionNode(config, coreWrapper, identityService);
+        node = new LdapDecisionNode(config, realm, coreWrapper, identityService, secrets);
     }
 
     @Test

@@ -50,82 +50,78 @@ import com.google.common.collect.ImmutableMap;
  */
 public class NodesPlugin extends AbstractNodeAmPlugin {
 
+    /**
+     * The current version of the nodes plugin.
+     */
+    public static final String NODES_PLUGIN_VERSION = "14.0.0";
+
     @Override
     public String getPluginVersion() {
-        return "11.0.1";
+        return NODES_PLUGIN_VERSION;
     }
 
     @Override
     public void upgrade(String fromVersion) throws PluginException {
         if (fromVersion.equals("1.0.0")) {
             pluginTools.upgradeAuthNode(ZeroPageLoginNode.class);
-        } else if (VersionComparison.compareVersionStrings("3.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("6.0.0", fromVersion) < 0) {
+        } else if (inRangeLess("3.0.0", fromVersion, "6.0.0")) {
             pluginTools.upgradeAuthNode(WebAuthnAuthenticationNode.class);
-            pluginTools.upgradeAuthNode(WebAuthnRegistrationNode.class);
         }
-        if (VersionComparison.compareVersionStrings("1.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("5.0.0", fromVersion) < 0) {
+        if (inRangeLess("1.0.0", fromVersion, "5.0.0")) {
             pluginTools.upgradeAuthNode(ScriptedDecisionNode.class);
         }
-        if (VersionComparison.compareVersionStrings("2.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("7.0.1", fromVersion) < 0) {
+        if (inRangeLess("2.0.0", fromVersion, "7.0.1")) {
             pluginTools.upgradeAuthNode(OneTimePasswordSmsSenderNode.class);
             pluginTools.upgradeAuthNode(OneTimePasswordSmtpSenderNode.class);
         }
-        if (VersionComparison.compareVersionStrings("2.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.0.0", fromVersion) < 0) {
+        if (inRangeLess("2.0.0", fromVersion, "8.0.0")) {
             pluginTools.upgradeAuthNode(RetryLimitDecisionNode.class);
         }
-        if (VersionComparison.compareVersionStrings("5.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.0.0", fromVersion) <= 0) {
+        if (inRange("5.0.0", fromVersion, "8.0.0")) {
             pluginTools.upgradeAuthNode(SocialProviderHandlerNode.class);
         }
-        if (VersionComparison.compareVersionStrings("3.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.2.2", fromVersion) <= 0) {
+        if (inRange("3.0.0", fromVersion, "8.2.2")) {
             pluginTools.upgradeAuthNode(MessageNode.class);
         }
-        if (VersionComparison.compareVersionStrings("1.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.4.1", fromVersion) <= 0) {
+        if (inRange("1.0.0", fromVersion, "8.4.1")) {
             pluginTools.upgradeAuthNode(ChoiceCollectorNode.class);
         }
-        if (VersionComparison.compareVersionStrings("6.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.4.1", fromVersion) <= 0) {
+        if (inRange("6.0.0", fromVersion, "8.4.1")) {
             pluginTools.upgradeAuthNode(PushRegistrationNode.class);
         }
-        if (VersionComparison.compareVersionStrings("7.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("9.0.0", fromVersion) <= 0) {
+        if (inRange("7.0.0", fromVersion, "9.0.0")) {
             pluginTools.upgradeAuthNode(OathRegistrationNode.class);
         }
-        if (VersionComparison.compareVersionStrings("2.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.5.0", fromVersion) <= 0) {
-            pluginTools.upgradeAuthNode(PushAuthenticationSenderNode.class);
-        }
-        if (VersionComparison.compareVersionStrings("3.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.4.1", fromVersion) <= 0) {
+        if (inRange("3.0.0", fromVersion, "8.4.1")) {
             pluginTools.upgradeAuthNode(WebAuthnRegistrationNode.class);
         }
-        if (VersionComparison.compareVersionStrings("5.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("8.4.1", fromVersion) <= 0) {
+        if (inRange("5.0.0", fromVersion, "8.4.1")) {
             pluginTools.upgradeAuthNode(WebAuthnDeviceStorageNode.class);
         }
-        if (VersionComparison.compareVersionStrings("5.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("9.0.0", fromVersion) <= 0) {
+        if (inRange("5.0.0", fromVersion, "9.0.0")) {
             pluginTools.upgradeAuthNode(Saml2Node.class);
         }
-        if (VersionComparison.compareVersionStrings("5.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("10.0.1", fromVersion) <= 0) {
+        if (inRange("5.0.0", fromVersion, "10.0.1")) {
             pluginTools.upgradeAuthNode(KbaCreateNode.class);
         }
-        if (VersionComparison.compareVersionStrings("2.0.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("10.1.1", fromVersion) <= 0) {
+        if (inRange("2.0.0", fromVersion, "14.0.0")) {
             pluginTools.upgradeAuthNode(LdapDecisionNode.class);
+            pluginTools.upgradeAuthNode(PushAuthenticationSenderNode.class);
         }
-        if (VersionComparison.compareVersionStrings("10.1.0", fromVersion) >= 0
-                && VersionComparison.compareVersionStrings("11.0.1", fromVersion) <= 0) {
+        if (inRange("10.1.0", fromVersion, "11.0.1")) {
             pluginTools.upgradeAuthNode(CombinedMultiFactorRegistrationNode.class);
         }
         super.upgrade(fromVersion);
+    }
+
+    private boolean inRangeLess(String minVersion, String version, String maxVersion) {
+        return VersionComparison.compareVersionStrings(minVersion, version) >= 0
+                && VersionComparison.compareVersionStrings(maxVersion, version) < 0;
+    }
+
+    private boolean inRange(String minVersion, String version, String maxVersion) {
+        return VersionComparison.compareVersionStrings(minVersion, version) >= 0
+                && VersionComparison.compareVersionStrings(maxVersion, version) <= 0;
     }
 
     @Override
@@ -259,6 +255,16 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 )
                 .put("11.0.0", asList(
                         OidcNode.class
+                ))
+                .put("11.1.0", asList(
+                        DeviceBindingNode.class,
+                        DeviceSigningVerifierNode.class
+                ))
+                .put("12.0.0", asList(
+                        QueryParameterNode.class)
+                )
+                .put("13.0.0", asList(
+                        DeviceBindingStorageNode.class
                 ))
                 .build();
     }

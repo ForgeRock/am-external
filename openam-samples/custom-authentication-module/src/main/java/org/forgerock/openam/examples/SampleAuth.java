@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2011-2023 ForgeRock AS. All Rights Reserved
  */
 
 package org.forgerock.openam.examples;
@@ -142,7 +142,7 @@ public class SampleAuth extends AMLoginModule {
                 }
 
                 throw new InvalidPasswordException("password is wrong",
-                        USERNAME);
+                        USERNAME, isReturningPrincipalAsDn());
 
             case STATE_ERROR:
                 return STATE_ERROR;

@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2012-2022 ForgeRock AS.
+ * Copyright 2012-2023 ForgeRock AS.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -507,7 +507,7 @@ public class OATH extends AMLoginModule {
 
                 if(lastLoginTimeStep == currentTimeStep){
                     debug.error("OATH.checkOTP(): Login failed attempting to use the same OTP in same Time Step: " + currentTimeStep);
-                    throw new InvalidPasswordException(amAuthOATH, "authFailed", null, userName, null);
+                    throw new InvalidPasswordException(amAuthOATH, "authFailed", null, userName, false, null);
                 }
 
                 boolean sameWindow = false;
@@ -744,7 +744,7 @@ public class OATH extends AMLoginModule {
             observedClockDrift = timeStep - (timeInSeconds / totpTimeStep);
             if (Math.abs(observedClockDrift) > totpMaxClockDrift) {
                 setFailureID(userName);
-                throw new InvalidPasswordException(amAuthOATH, "outOfSync", null, userName, null);
+                throw new InvalidPasswordException(amAuthOATH, "outOfSync", null, userName, false, null);
             }
             // convert drift step back to seconds
             Set<String> clockDriftValue = Collections.singleton(Long.toString((int) observedClockDrift * totpTimeStep));

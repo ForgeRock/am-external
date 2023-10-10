@@ -16,12 +16,14 @@
 package org.forgerock.openam.auth.nodes;
 
 import static com.sun.identity.idm.IdType.USER;
+import static java.lang.String.format;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonMap;
 import static javax.security.auth.callback.ConfirmationCallback.OK_CANCEL_OPTION;
 import static javax.security.auth.callback.TextOutputCallback.ERROR;
 import static javax.security.auth.callback.TextOutputCallback.INFORMATION;
 import static javax.security.auth.callback.TextOutputCallback.WARNING;
+import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
@@ -33,11 +35,14 @@ import static org.forgerock.openam.ldap.LDAPConstants.STATUS_ACTIVE;
 import static org.forgerock.openam.ldap.LDAPConstants.STATUS_INACTIVE;
 import static org.forgerock.openam.ldap.ModuleState.CHANGE_AFTER_RESET;
 import static org.forgerock.openam.ldap.ModuleState.PASSWORD_UPDATED_SUCCESSFULLY;
+import static org.forgerock.openam.utils.CollectionUtils.getFirstItem;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.security.auth.callback.Callback;
@@ -59,14 +64,22 @@ import org.forgerock.openam.auth.node.api.SharedStateConstants;
 import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.ldap.LDAPAuthUtils;
 import org.forgerock.openam.ldap.LDAPUtilException;
 import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.openam.ldap.ModuleState;
+import org.forgerock.openam.secrets.Secrets;
+import org.forgerock.openam.shared.secrets.Labels;
+import org.forgerock.openam.sm.AnnotatedServiceRegistry;
+import org.forgerock.openam.sm.ServiceConfigException;
+import org.forgerock.openam.sm.ServiceConfigValidator;
+import org.forgerock.openam.sm.ServiceErrorException;
 import org.forgerock.openam.sm.annotations.adapters.Password;
-import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.openam.sm.validation.SecretIdValidator;
 import org.forgerock.opendj.ldap.Dn;
 import org.forgerock.opendj.ldap.ResultCode;
+import org.forgerock.util.Reject;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,8 +88,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.sso.SSOException;
 import com.sun.identity.shared.locale.Locale;
 import com.sun.identity.sm.RequiredValueValidator;
+import com.sun.identity.sm.SMSException;
 
 /**
  * A node that decides if the username and password exist in the LDAP database.
@@ -85,7 +100,7 @@ import com.sun.identity.sm.RequiredValueValidator;
  */
 @Node.Metadata(outcomeProvider = LdapDecisionNode.LdapOutcomeProvider.class,
         configClass = LdapDecisionNode.Config.class,
-        tags = {"basic authn", "basic authentication"})
+        tags = {"basic authn", "basic authentication"}, configValidator = LdapDecisionNode.ConfigValidator.class)
 public class LdapDecisionNode implements Node {
 
     private static final String TRUE_OUTCOME_ID = "TRUE";
@@ -102,6 +117,8 @@ public class LdapDecisionNode implements Node {
     /** the CoreWrapper object for the Node. */
     protected final CoreWrapper coreWrapper;
     private final LegacyIdentityService identityService;
+    private final Realm realm;
+    private final Secrets secrets;
     private ResourceBundle bundle;
     private LDAPAuthUtils ldapUtil;
     private Set<String> additionalPwdChangeSearchAttrs;
@@ -148,17 +165,17 @@ public class LdapDecisionNode implements Node {
          *
          * @return the string
          */
-        @Attribute(order = 400, validators = {RequiredValueValidator.class})
-        String adminDn();
+        @Attribute(order = 400)
+        Optional<String> adminDn();
 
         /**
          * Admin user password.
          *
          * @return the char [ ]
          */
-        @Attribute(order = 500, validators = {RequiredValueValidator.class})
+        @Attribute(order = 500)
         @Password
-        char[] adminPassword();
+        Optional<char[]> adminPassword();
 
         /**
          * Attribute used for retrieving user's profile.
@@ -203,6 +220,24 @@ public class LdapDecisionNode implements Node {
         default LdapConnectionMode ldapConnectionMode() {
             return LDAP;
         }
+
+        /**
+         * Indicates if mTLS is enabled.
+         *
+         * @return true if mTLS is enabled otherwise false.
+         */
+        @Attribute(order = 1033, validators = {RequiredValueValidator.class})
+        default boolean mtlsEnabled() {
+            return false;
+        }
+
+        /**
+         * Label used for mapping to the mTLS certificate in the secret store.
+         *
+         * @return the label
+         */
+        @Attribute(order = 1066, validators = {SecretIdValidator.class})
+        Optional<String> mtlsSecretLabel();
 
         /**
          * Controls whether the DN or the username is returned as the authentication principal.
@@ -307,19 +342,108 @@ public class LdapDecisionNode implements Node {
     }
 
     /**
+     * Validator that determines that the configuration is valid for mTLS and no mTLS connection modes.
+     * <p>
+     * <br>
+     *     When mTLS is enabled:
+     *     <ul>
+     *         <li>Connection mode must be LDAPS</li>
+     *         <li>Secret label must be provided</li>
+     *     </ul>
+     *     When mTLS is disabled:
+     *     <ul>
+     *         <li>Admin dn must be provided</li>
+     *         <li>Admin password must be provided</li>
+     *     </ul>
+     * </p>
+     */
+    static class ConfigValidator implements ServiceConfigValidator {
+
+        private static final Logger logger = LoggerFactory.getLogger(ConfigValidator.class);
+
+        public static final String ADMIN_DN_METHOD_NAME = "adminDn";
+        public static final String ADMIN_PASSWORD_METHOD_NAME = "adminPassword";
+        public static final String LDAP_CONNECTION_MODE_METHOD_NAME = "ldapConnectionMode";
+        public static final String MTLS_ENABLED_METHOD_NAME = "mtlsEnabled";
+        public static final String MTLS_SECRET_LABEL_METHOD_NAME = "mtlsSecretLabel";
+
+        private final AnnotatedServiceRegistry serviceRegistry;
+
+        @Inject
+        ConfigValidator(AnnotatedServiceRegistry serviceRegistry) {
+            this.serviceRegistry = serviceRegistry;
+        }
+
+        @Override
+        public void validate(final Realm realm, final List<String> configPath,
+                final Map<String, Set<String>> attributes) throws ServiceConfigException, ServiceErrorException {
+            Reject.ifNull(configPath, "The configuration path is required for validation.");
+            Reject.ifTrue(configPath.isEmpty(), "The configuration path is required for validation.");
+            Reject.ifNull(realm, "The realm is required for validation.");
+            Reject.ifNull(attributes, "Attributes are required for validation");
+            String nodeId = configPath.get(configPath.size() - 1);
+            Optional<LdapDecisionNode.Config> possibleExistingConfig;
+            try {
+                possibleExistingConfig = serviceRegistry.getRealmInstance(LdapDecisionNode.Config.class, realm, nodeId);
+            } catch (SSOException | SMSException e) {
+                logger.error("An error occurred validating LDAP decision node configuration", e);
+                throw new ServiceErrorException("Error validating LDAP decision node configuration");
+            }
+            String adminUsername = getConfigValue(ADMIN_DN_METHOD_NAME, config -> config.adminDn().orElse(null),
+                    possibleExistingConfig, attributes);
+            String adminPassword = getConfigValue(ADMIN_PASSWORD_METHOD_NAME,
+                config -> config.adminPassword().orElse(null), possibleExistingConfig, attributes);
+            String ldapConnectionMode = getConfigValue(LDAP_CONNECTION_MODE_METHOD_NAME, Config::ldapConnectionMode,
+                    possibleExistingConfig, attributes);
+            String mtlsEnabled = getConfigValue(MTLS_ENABLED_METHOD_NAME, Config::mtlsEnabled, possibleExistingConfig,
+                    attributes);
+            String mtlsSecretLabel = getConfigValue(MTLS_SECRET_LABEL_METHOD_NAME,
+                config -> config.mtlsSecretLabel().orElse(null), possibleExistingConfig, attributes);
+
+            if (Boolean.parseBoolean(mtlsEnabled)) {
+                if (!LDAPS.name().equals(ldapConnectionMode)) {
+                    throw new ServiceConfigException("When mTLS is enabled the LDAP Connection Mode must be LDAPS");
+                }
+                if (isBlank(mtlsSecretLabel)) {
+                    throw new ServiceConfigException("When mTLS is enabled the mTLS Secret Label must be specified");
+                }
+            } else {
+                if (isBlank(adminUsername)) {
+                    throw new ServiceConfigException("When mTLS is disabled the Bind User DN must be provided");
+                }
+                if (isBlank(adminPassword)) {
+                    throw new ServiceConfigException("When mTLS is disabled the Bind User Password must be provided");
+                }
+            }
+        }
+
+        private String getConfigValue(String attribute, Function<Config, ?> attributeMethod,
+                Optional<Config> existingConfig, Map<String, Set<String>> attributes) {
+            if (attributes.containsKey(attribute)) {
+                return getFirstItem(attributes.get(attribute));
+            }
+            Object value = existingConfig.map(attributeMethod).orElse(null);
+            return value == null ? null : String.valueOf(value);
+        }
+    }
+
+    /**
      * Constructs a new {@link LdapDecisionNode} with the provided {@link Config}.
      *
-     * @param config provides the settings for initialising an {@link LdapDecisionNode}.
-     * @param coreWrapper A core wrapper instance.
+     * @param config          provides the settings for initialising an {@link LdapDecisionNode}.
+     * @param realm           The current realm.
+     * @param coreWrapper     A core wrapper instance.
      * @param identityService An {@link LegacyIdentityService} instance.
-     * @throws NodeProcessException if there is a problem during construction.
+     * @param secrets         A Secrets instance.
      */
     @Inject
-    public LdapDecisionNode(@Assisted Config config, CoreWrapper coreWrapper,
-            LegacyIdentityService identityService) throws NodeProcessException {
+    public LdapDecisionNode(@Assisted Config config, @Assisted Realm realm, CoreWrapper coreWrapper,
+            LegacyIdentityService identityService, Secrets secrets) {
         this.config = config;
+        this.realm = realm;
         this.coreWrapper = coreWrapper;
         this.identityService = identityService;
+        this.secrets = secrets;
     }
 
     @Override
@@ -372,7 +496,7 @@ public class LdapDecisionNode implements Node {
                 logger.warn("Server error");
                 throw new NodeProcessException(bundle.getString("ServerError"));
             } else {
-                String userLockedStatus = CollectionUtils.getFirstItem(
+                String userLockedStatus = getFirstItem(
                         ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE));
                 if (StringUtils.isNotEmpty(userLockedStatus) && !userLockedStatus.equalsIgnoreCase(STATUS_ACTIVE)) {
                     action = goTo(LdapOutcome.LOCKED).withErrorMessage(bundle.getString("accountLocked"));
@@ -407,7 +531,7 @@ public class LdapDecisionNode implements Node {
      */
     private boolean authenticateUser(LDAPAuthUtils ldapUtil, String userName, String userPassword)
             throws LDAPUtilException {
-        if (StringUtils.isBlank(userName) || StringUtils.isBlank(userPassword)) {
+        if (isBlank(userName) || isBlank(userPassword)) {
             throw new LDAPUtilException("CredInvalid", ResultCode.INVALID_CREDENTIALS, null);
         }
         try {
@@ -431,15 +555,12 @@ public class LdapDecisionNode implements Node {
         ldapUtil.searchForUser(additionalPwdChangeSearchAttrs);
         if (userClickedSubmit(context)) {
             List<PasswordCallback> passwordCallbacks = context.getCallbacks(PasswordCallback.class);
-            String oldPassword = charToString(passwordCallbacks.get(OLD_PASSWORD_CALLBACK).getPassword(),
-                    passwordCallbacks.get(OLD_PASSWORD_CALLBACK));
-            String newPassword = charToString(passwordCallbacks.get(NEW_PASSWORD_CALLBACK).getPassword(),
-                    passwordCallbacks.get(NEW_PASSWORD_CALLBACK));
-            String confirmPassword = charToString(passwordCallbacks.get(CONFIRM_PASSWORD_CALLBACK).getPassword(),
-                    passwordCallbacks.get(CONFIRM_PASSWORD_CALLBACK));
+            char[] oldPassword = getPasswordFromCallback(passwordCallbacks.get(OLD_PASSWORD_CALLBACK));
+            char[] newPassword = getPasswordFromCallback(passwordCallbacks.get(NEW_PASSWORD_CALLBACK));
+            char[] confirmPassword = getPasswordFromCallback(passwordCallbacks.get(CONFIRM_PASSWORD_CALLBACK));
 
             ModuleState passwordChangeState;
-            if (newPassword.length() < config.minimumPasswordLength()) {
+            if (newPassword.length < config.minimumPasswordLength()) {
                 logger.debug("LDAP.process: new password less"
                             + " than the minimal length of {}", config.minimumPasswordLength());
                 passwordChangeState = ModuleState.PASSWORD_MIN_CHARACTERS;
@@ -520,8 +641,19 @@ public class LdapDecisionNode implements Node {
             }
             ldapUtil.setUserNamingAttribute(config.userProfileAttribute());
             ldapUtil.setUserSearchAttribute(config.searchFilterAttributes());
-            ldapUtil.setAuthPassword(config.adminPassword());
-            ldapUtil.setAuthDN(config.adminDn());
+            if (config.adminPassword().isPresent()) {
+                ldapUtil.setAuthPassword(config.adminPassword().get());
+            }
+            if (config.adminDn().isPresent()) {
+                ldapUtil.setAuthDN(config.adminDn().get());
+            }
+            ldapUtil.setMtlsEnabled(config.mtlsEnabled());
+            if (config.mtlsSecretLabel().isPresent()) {
+                ldapUtil.setMtlsSecretId(
+                        format(getMtlsSecretIdTemplate(), config.mtlsSecretLabel().get()));
+            }
+            ldapUtil.setRealm(realm);
+            ldapUtil.setSecrets(secrets);
             ldapUtil.setReturnUserDN(config.returnUserDn());
             ldapUtil.setUserAttributes(config.userCreationAttrs());
             ldapUtil.setTrustAll(config.trustAllServerCertificates());
@@ -537,7 +669,9 @@ public class LdapDecisionNode implements Node {
 
             logger.debug("bindDN-> " + config.returnUserDn()
                                    + "\nrequiredPasswordLength-> " + config.minimumPasswordLength()
-                                   + "\nbaseDN-> " + config.adminDn()
+                                   + "\nbaseDN-> " + config.adminDn().orElse("")
+                                   + "\nmtlsEnabled-> " + config.mtlsEnabled()
+                                   + "\nmtlsSecretLabel->" + config.mtlsSecretLabel().orElse("")
                                    + "\nuserNamingAttr-> " + config.userProfileAttribute()
                                    + "\nuserSearchAttr(s)-> " + config.searchFilterAttributes()
                                    + "\nuserCreationAttrs-> " + config.userCreationAttrs()
@@ -560,19 +694,23 @@ public class LdapDecisionNode implements Node {
         return ldapUtil;
     }
 
+    /**
+     * Get a mTLS secret label string ready to be formatted.
+     *
+     * @return the mTLS secretId string.
+     */
+    protected String getMtlsSecretIdTemplate() {
+        return Labels.LDAP_DECISION_NODE_MTLS_CERT;
+    }
+
     private boolean userClickedSubmit(TreeContext context) {
         return context.getCallback(ConfirmationCallback.class).get().getSelectedIndex() == 0;
     }
 
-    private String charToString(char[] temporaryPassword, Callback callback) {
-        if (temporaryPassword == null) {
-            // treat a NULL password as an empty password
-            temporaryPassword = new char[0];
-        }
-        char[] password = new char[temporaryPassword.length];
-        System.arraycopy(temporaryPassword, 0, password, 0, temporaryPassword.length);
-        ((PasswordCallback) callback).clearPassword();
-        return new String(password);
+    private char[] getPasswordFromCallback(PasswordCallback callback) {
+        char[] password = callback.getPassword() == null ? new char[0] : callback.getPassword();
+        callback.clearPassword();
+        return password;
     }
 
     private ActionBuilder processLogin(ModuleState loginState, JsonValue newState, TreeContext context) throws
@@ -620,7 +758,7 @@ public class LdapDecisionNode implements Node {
         default:
             logger.warn("Unknown login state");
             throw new NodeProcessException(
-                    String.format("Encountered an unknown state '%s' during authentication.", loginState));
+                    format("Encountered an unknown state '%s' during authentication.", loginState));
         }
         return loginResult.replaceSharedState(newState);
     }
@@ -674,7 +812,7 @@ public class LdapDecisionNode implements Node {
             break;
         default:
             logger.warn("unknown passwordState");
-            throw new NodeProcessException(String.format("Encountered an unknown state '%s' during password change.",
+            throw new NodeProcessException(format("Encountered an unknown state '%s' during password change.",
                     passwordState));
         }
         return passwordChangeResult;

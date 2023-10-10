@@ -26,15 +26,34 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sun.identity.shared.debug.Debug;
 
-import junit.framework.TestCase;
-
-public class OidcNodeBindingsTest extends TestCase {
+public class OidcNodeBindingsTest {
 
     @Test
-    public void testThatParentBindingsAreAccessible() {
+    public void testThatParentBindingsAreAccessibleAndExistingSessionNotPresentWhenNull() {
+        JsonValue json = json(field("a", "b"));
+        ScriptBindings scriptBindings = OidcNodeBindings.builder()
+                .withJwtClaims(json)
+                .withNodeState(null)
+                .withHeaders(Collections.emptyMap())
+                .withRealm("realm")
+                .withExistingSession(null)
+                .withLoggerReference("abcd")
+                .build();
+
+        Bindings convert = scriptBindings.convert(EvaluatorVersion.V1_0);
+
+        assertThat(convert).doesNotContainKey("existingSession");
+
+        assertThat(convert.get("jwtClaims")).isEqualTo(json);
+        assertThat(convert.get("logger")).isEqualTo(Debug.getInstance("abcd"));
+    }
+
+    @Test
+    public void testThatParentBindingsAreAccessibleAndExistingSessionPresentWhenNotNull() {
         JsonValue json = json(field("a", "b"));
         ScriptBindings scriptBindings = OidcNodeBindings.builder()
                 .withJwtClaims(json)
@@ -47,7 +66,6 @@ public class OidcNodeBindingsTest extends TestCase {
 
         Bindings convert = scriptBindings.convert(EvaluatorVersion.V1_0);
 
-        assertEquals(convert.get("jwtClaims"), json);
-        assertEquals(convert.get("logger"), Debug.getInstance("abcd"));
+        assertThat(convert).containsKey("existingSession");
     }
 }

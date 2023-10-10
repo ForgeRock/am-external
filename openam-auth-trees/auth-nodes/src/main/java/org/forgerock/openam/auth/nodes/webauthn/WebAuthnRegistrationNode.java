@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -37,8 +37,8 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import com.sun.identity.shared.validation.PositiveIntegerValidator;
 import org.apache.commons.codec.binary.Hex;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.http.util.Json;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -60,7 +60,6 @@ import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceJsonUtils;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.sm.validation.SecretIdValidator;
 import org.forgerock.openam.utils.CodeException;
 import org.forgerock.openam.utils.CollectionUtils;
@@ -70,8 +69,12 @@ import org.forgerock.util.i18n.PreferredLocales;
 
 import com.google.common.base.Strings;
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.IdConstants;
+import com.sun.identity.idm.IdRepoException;
+import com.sun.identity.shared.validation.PositiveIntegerValidator;
 import com.sun.identity.sm.DNMapper;
 import com.sun.identity.sm.RequiredValueValidator;
 
@@ -485,10 +488,11 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
                                        TreeContext context)
             throws NodeProcessException {
         JsonValue scriptContext = json(object());
+        String username = getAccountNameFromIdentity(user);
         scriptContext.put("_action", "webauthn_registration");
         scriptContext.put("challenge", Arrays.toString(challengeBytes));
         scriptContext.put("attestationPreference", config.attestationPreference().getValue());
-        scriptContext.put("userName", user.getName());
+        scriptContext.put("userName", username);
         scriptContext.put("userId", EncodingUtilities.base64UrlEncode(user.getName()));
         scriptContext.put("relyingPartyName", config.relyingPartyName());
         scriptContext.put("authenticatorSelection", getAuthenticatorSelection());
@@ -503,9 +507,9 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
 
         if (config.displayNameSharedState().isPresent()) {
             String displayName = context.sharedState.get(config.displayNameSharedState().get()).asString();
-            scriptContext.put("displayName", StringUtils.isNotEmpty(displayName) ? displayName : user.getName());
+            scriptContext.put("displayName", StringUtils.isNotEmpty(displayName) ? displayName : username);
         } else {
-            scriptContext.put("displayName", user.getName());
+            scriptContext.put("displayName", username);
         }
 
         StringBuilder sb = new StringBuilder();
@@ -577,6 +581,23 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         return jsonValue;
     }
 
+    private String getAccountNameFromIdentity(AMIdentity identity) {
+        String accountName = identity.getName();
+        try {
+            Set<String> usernameAttributeValue = identity.getAttribute(IdConstants.USERNAME);
+            if (usernameAttributeValue.isEmpty()) {
+                identity.getAttributes(); // Refresh the cache
+                usernameAttributeValue = identity.getAttribute(IdConstants.USERNAME);
+            }
+            if (CollectionUtils.isNotEmpty(usernameAttributeValue)) {
+                accountName = usernameAttributeValue.iterator().next();
+            }
+        } catch (IdRepoException | SSOException e) {
+            logger.warn("Unable to get username attribute for identity '{}', returning username for Account Name",
+                    identity.getName(), e);
+        }
+        return accountName;
+    }
 
     /**
      * Provides the authentication node's set of outcomes.

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 
 /*
@@ -23,7 +23,7 @@
  *      - preSendFailureResponse
  *
  * Please see the javadoc for the interface definition and more information about these methods.
- * https://backstage.forgerock.com/docs/am/7.2/apidocs/com/sun/identity/saml2/plugins/SAML2IdentityProviderAdapter.html
+ * https://backstage.forgerock.com/docs/am/7.3/_attachments/apidocs/com/sun/identity/saml2/plugins/SAML2IdentityProviderAdapter.html
  * Note that the initialize method is not supported in the scripts.
  *
  * Defined variables. Check the documentation on the respective functions for the variables available to it.
@@ -53,20 +53,20 @@
  * faultDetail - String
  *     the fault detail that will be returned in the SAML response
  * logger - Logger instance
- *     https://backstage.forgerock.com/docs/am/7/scripting-guide/scripting-api-global-logger.html#scripting-api-global-logger.
+ *     https://backstage.forgerock.com/docs/am/7.3/scripting-guide/scripting-api-global-logger.html.
  *     Corresponding log files will be prefixed with: scripts.<script name>
  *
  * Throws SAML2Exception (7):
  *     for any exceptions occurring in the adapter. The federation process will continue
  *
  * Class reference:
- * (1) idpAdapterScriptHelper - https://backstage.forgerock.com/docs/am/7.2/apidocs/com/sun/identity/saml2/plugins/scripted/IdpAdapterScriptHelper.html.
+ * (1) idpAdapterScriptHelper - https://backstage.forgerock.com/docs/am/7.3/_attachments/apidocs/com/sun/identity/saml2/plugins/scripted/IdpAdapterScriptHelper.html.
  * (2) HttpServletRequest - https://tomcat.apache.org/tomcat-7.0-doc/servletapi/javax/servlet/http/HttpServletRequest.html.
  * (3) HttpServletResponse - https://tomcat.apache.org/tomcat-7.0-doc/servletapi/javax/servlet/http/HttpServletResponse.html.
- * (4) AuthnRequest - https://backstage.forgerock.com/docs/am/7.2/apidocs/com/sun/identity/saml2/protocol/AuthnRequest.html.
- * (5) Response - https://backstage.forgerock.com/docs/am/7.2/apidocs/com/sun/identity/saml2/protocol/Response.html.
- * (6) SSOToken - https://backstage.forgerock.com/docs/am/7.2/apidocs/com/iplanet/sso/SSOToken.html.
- * (7) SAML2Exception - https://backstage.forgerock.com/docs/am/7.2/apidocs/com/sun/identity/saml2/common/SAML2Exception.html.
+ * (4) AuthnRequest - https://backstage.forgerock.com/docs/am/7.3/_attachments/apidocs/com/sun/identity/saml2/protocol/AuthnRequest.html.
+ * (5) Response - https://backstage.forgerock.com/docs/am/7.3/_attachments/apidocs/com/sun/identity/saml2/protocol/Response.html.
+ * (6) SSOToken - https://backstage.forgerock.com/docs/am/7.3/_attachments/apidocs/com/iplanet/sso/SSOToken.html.
+ * (7) SAML2Exception - https://backstage.forgerock.com/docs/am/7.3/_attachments/apidocs/com/sun/identity/saml2/common/SAML2Exception.html.
  */
 
 /*

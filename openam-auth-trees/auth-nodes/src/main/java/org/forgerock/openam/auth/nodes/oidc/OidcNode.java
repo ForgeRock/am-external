@@ -179,7 +179,8 @@ public class OidcNode extends AbstractDecisionNode {
                     .withExistingSession(StringUtils.isNotEmpty(context.request.ssoTokenId)
                             ? getSessionProperties(sessionServiceProvider.get(), context.request.ssoTokenId)
                             : null)
-                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME,
+                            script.getId(), script.getName()))
                     .withScriptName(script.getName())
                     .build();
 

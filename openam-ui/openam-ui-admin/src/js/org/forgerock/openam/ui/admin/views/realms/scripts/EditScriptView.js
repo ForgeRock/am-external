@@ -23,6 +23,7 @@ import { t } from "i18next";
 import _ from "lodash";
 import $ from "jquery";
 import CodeMirror from "codemirror/lib/codemirror";
+import Handlebars from "handlebars-template-loader/runtime";
 
 import { validate } from "org/forgerock/openam/ui/admin/services/realm/ScriptsService";
 import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
@@ -40,12 +41,18 @@ import Messages from "org/forgerock/commons/ui/common/components/Messages";
 import NewScriptTemplate from "templates/admin/views/realms/scripts/NewScriptTemplate";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import Script from "org/forgerock/openam/ui/admin/models/scripts/ScriptModel";
+import ScriptContext from "org/forgerock/openam/ui/admin/models/scripts/ScriptContextModel";
 import ScriptValidationTemplate from "templates/admin/views/realms/scripts/ScriptValidationTemplate";
+
+Handlebars.registerHelper("concat", (value1, value2) => {
+    return value1 + value2;
+});
 
 export default AbstractView.extend({
     initialize () {
         AbstractView.prototype.initialize.call(this);
         this.model = null;
+        this.contextModel = null;
     },
     partials: {
         "alerts/_Alert": AlertPartial
@@ -53,6 +60,7 @@ export default AbstractView.extend({
     events: {
         "click [data-upload-script]": "uploadScript",
         "change [name=upload]": "readUploadedFile",
+        "change [name=evaluatorVersion]": "onVersionChange",
         "click [data-validation-script]": "validateScript",
         "click [data-change-context]": "openDialog",
         "change input[name=language]": "onChangeLanguage",
@@ -61,8 +69,7 @@ export default AbstractView.extend({
         "click [data-show-fullscreen]": "editFullScreen",
         "click [data-exit-fullscreen]": "exitFullScreen",
         "change [data-field]": "checkChanges",
-        "keyup [data-field]": "checkChanges",
-        "change select[name=evaluatorVersion]": "toggleAdditionalFeatures"
+        "keyup [data-field]": "checkChanges"
     },
 
     render (args, callback) {
@@ -91,12 +98,18 @@ export default AbstractView.extend({
             ];
             this.template = EditScriptTemplate;
             this.model = new Script({ _id: uuid });
-            this.listenTo(this.model, "sync", this.renderAfterSyncModel);
+            const self = this;
+            this.listenTo(this.model, "sync", (model) => {
+                self.contextModel = new ScriptContext({ _id: model.attributes.context });
+                this.listenTo(this.contextModel, "sync", self.renderAfterSyncModel);
+                self.contextModel.fetch();
+            });
             this.model.fetch();
         } else {
             this.template = NewScriptTemplate;
             this.newEntity = true;
             this.model = new Script();
+            this.contextModel = new ScriptContext();
             this.renderAfterSyncModel();
         }
     },
@@ -113,8 +126,8 @@ export default AbstractView.extend({
         const self = this;
 
         this.data.entity = _.pick(this.model.attributes,
-            "uuid", "name", "description", "language", "context", "evaluatorVersion", "script",
-            "additionalScriptingFeaturesAllowed");
+            "uuid", "name", "description", "language", "context", "evaluatorVersion", "script");
+        this.data.context = _.pick(this.contextModel.attributes, "subContexts", "evaluatorVersions");
 
         if (this.data.contexts) {
             self.languageSchemaPromise.then((langSchema) => {
@@ -154,12 +167,11 @@ export default AbstractView.extend({
         let context;
 
         if (this.model.id) {
-            context = _.find(this.data.contexts, (context) => {
-                return context._id === self.data.entity.context;
-            });
+            context = this.getContext(self);
             this.data.contextName = context.name;
-            this.data.evaluatorVersions = context.evaluatorVersions[self.data.entity.language];
-            this.data.languages = this.addLanguageNames(context.languages);
+            this.data.evaluatorVersions = this.data.context.evaluatorVersions[this.data.entity.language];
+            this.data.languages = this.addLanguageNames(context.languages.filter((lang) =>
+                this.data.entity.evaluatorVersion === "1.0" || lang === "JAVASCRIPT"));
         } else {
             this.data.languages = [];
         }
@@ -174,10 +186,9 @@ export default AbstractView.extend({
                     undo: !this.newEntity,
                     undoCallback (changes) {
                         _.extend(self.data.entity, changes);
-                        const context = _.find(self.data.contexts, {
-                            "_id": self.data.entity.context
-                        });
+                        const context = self.getContext(self);
                         self.data.contextName = context.name;
+                        self.data.evaluatorVersions = self.data.context.evaluatorVersions[this.data.entity.language];
                         self.data.languages = self.addLanguageNames(context.languages);
                         self.reRenderView();
                     },
@@ -235,9 +246,14 @@ export default AbstractView.extend({
         if (this.newEntity) {
             if (previousContext !== app.context) {
                 self.toggleSaveButton(false);
-                this.changeContext().then(() => {
-                    self.toggleSaveButton(self.checkRequiredFields());
-                });
+
+                this.updateContextModel(app.context)
+                    .then(_.bind(self.changeContext, self))
+                    .then(_.bind(self.disableVersionButtons, self))
+                    .then(_.bind(self.ensureVersionValid, self))
+                    .then(() => {
+                        self.toggleSaveButton(self.checkRequiredFields());
+                    });
             }
         } else {
             app.script = this.scriptEditor.getValue();
@@ -245,7 +261,25 @@ export default AbstractView.extend({
     },
 
     checkRequiredFields () {
-        return this.data.entity.name && this.data.entity.context && this.data.entity.language;
+        return this.data.entity.name && this.data.entity.context && this.data.entity.language &&
+            this.data.entity.evaluatorVersion;
+    },
+
+    disableVersionButtons () {
+        const evs = this.data.evaluatorVersions;
+        $("#radio-legacy").prop("disabled", !evs.includes("1.0"));
+        $("label[for=radio-legacy]").toggleClass("disabled", !evs.includes("1.0"));
+        $("#radio-nextgen").prop("disabled", !evs.includes("2.0"));
+        $("label[for=radio-nextgen]").toggleClass("disabled", !evs.includes("2.0"));
+    },
+
+    ensureVersionValid () {
+        const evs = this.data.evaluatorVersions;
+        const ev = this.data.entity.evaluatorVersion;
+        if (!evs.includes(ev)) {
+            this.data.entity.evaluatorVersion = evs[0];
+            this.updateVersionButtons(evs[0] === "1.0" ? "radio-legacy" : "radio-nextgen");
+        }
     },
 
     submitForm (e) {
@@ -310,6 +344,16 @@ export default AbstractView.extend({
         reader.readAsText(file);
     },
 
+    onVersionChange (e) {
+        this.updateVersionButtons(e.target.id);
+    },
+
+    updateVersionButtons (activeButtonId) {
+        this.$el.find(".versionSelect").removeClass("active");
+        this.$el.find(`label[for=${activeButtonId}]`).addClass("active");
+        this.$el.find(`#${activeButtonId}`).prop("checked", true);
+    },
+
     openDialog () {
         const self = this;
 
@@ -358,7 +402,9 @@ export default AbstractView.extend({
                 if (self.data.entity.context !== newContext) {
                     self.data.entity.context = newContext;
                     self.data.contextName = newContextName;
-                    self.changeContext().then(_.bind(self.reRenderView, self));
+                    self.updateContextModel(newContext)
+                        .then(_.bind(self.changeContext, self))
+                        .then(_.bind(self.reRenderView, self));
                 }
                 dialog.close();
             }
@@ -369,11 +415,15 @@ export default AbstractView.extend({
         return options;
     },
 
-    changeContext () {
-        const self = this;
-        const selectedContext = _.find(this.data.contexts, (context) => {
+    getContext (self) {
+        return _.find(this.data.contexts, (context) => {
             return context._id === self.data.entity.context;
         });
+    },
+
+    changeContext () {
+        const self = this;
+        const selectedContext = this.getContext(self);
         let defaultScript;
         const promise = $.Deferred();
 
@@ -382,7 +432,7 @@ export default AbstractView.extend({
         if (!selectedContext.defaultScript || selectedContext.defaultScript === "[Empty]") {
             this.data.entity.script = "";
             this.data.entity.language = this.data.languages[0].id;
-            this.data.evaluatorVersions = selectedContext.evaluatorVersions[this.data.entity.language];
+            this.data.evaluatorVersions = this.data.context.evaluatorVersions[this.data.entity.language];
             promise.resolve();
         } else {
             defaultScript = new Script({ _id: selectedContext.defaultScript });
@@ -392,12 +442,26 @@ export default AbstractView.extend({
                 } else {
                     self.data.entity.language = model.attributes.language;
                 }
-                self.data.evaluatorVersions = selectedContext.evaluatorVersions[self.data.entity.language];
+                self.data.evaluatorVersions = this.data.context.evaluatorVersions[self.data.entity.language];
                 self.data.entity.script = model.attributes.script;
                 promise.resolve();
             });
             defaultScript.fetch();
         }
+
+        return promise;
+    },
+
+    updateContextModel (contextName) {
+        const promise = $.Deferred();
+
+        const self = this;
+        this.contextModel = new ScriptContext({ _id: contextName });
+        this.listenTo(this.contextModel, "sync", (model) => {
+            self.data.context = _.pick(model.attributes, "subContexts", "evaluatorVersions");
+            promise.resolve();
+        });
+        this.contextModel.fetch();
 
         return promise;
     },
@@ -412,7 +476,6 @@ export default AbstractView.extend({
         });
 
         this.scriptEditor.on("update", _.bind(this.checkChanges, this));
-        this.toggleAdditionalFeatures();
     },
 
     onChangeLanguage (e) {
@@ -422,18 +485,6 @@ export default AbstractView.extend({
     changeLanguage (language) {
         this.data.entity.language = language;
         this.scriptEditor.setOption("mode", language.toLowerCase());
-
-        this.changeEvaluatorVersions(language);
-        this.toggleAdditionalFeatures();
-    },
-
-    changeEvaluatorVersions (language) {
-        const self = this;
-        const selectedContext = _.find(this.data.contexts, (context) => {
-            return context._id === self.data.entity.context;
-        });
-        this.data.evaluatorVersions = selectedContext.evaluatorVersions[language];
-        this.reRenderView();
     },
 
     showUploadButton () {
@@ -525,42 +576,5 @@ export default AbstractView.extend({
 
     toggleSaveButton (flag) {
         this.$el.find("[data-save]").prop("disabled", !flag);
-    },
-
-    toggleAdditionalFeatures () {
-        if (!this.data.entity.additionalScriptingFeaturesAllowed) {
-            return;
-        }
-
-        const additionalFeaturesAvailable = this.data.evaluatorVersions.length > 1;
-        this.$el.find("#additionalScriptingFeaturesWrapper").toggle(additionalFeaturesAvailable);
-        this.$el.find("#evaluatorVersion").selectize();
-        this.updateAdditionalScriptingFeaturesGuidance();
-    },
-
-    updateAdditionalScriptingFeaturesGuidance () {
-        const guidanceDiv = $("#additionalScriptingFeaturesGuidance")[0];
-
-        let newDivHeight = "0px";
-        const additionalScriptingFeaturesForLanguageVersion = this.getAdditionalFeatures();
-        if (additionalScriptingFeaturesForLanguageVersion) {
-            const featureList = $("#additionalFeaturesList");
-            featureList.empty();
-            additionalScriptingFeaturesForLanguageVersion.forEach((feature) => {
-                featureList.append(`<li>${feature}</li>`);
-            });
-            newDivHeight = `${guidanceDiv.scrollHeight}px`;
-        }
-
-        guidanceDiv.style.maxHeight = newDivHeight;
-    },
-
-    getAdditionalFeatures () {
-        const allAdditionalScriptingFeatures = t("console.scripts.edit.additionalScriptingFeaturesGuidance.features",
-            { returnObjects: true });
-        const additionalScriptingFeaturesForAllVersionsOfLanguage =
-            allAdditionalScriptingFeatures[this.data.entity.language];
-        return additionalScriptingFeaturesForAllVersionsOfLanguage
-            ? additionalScriptingFeaturesForAllVersionsOfLanguage[this.data.entity.evaluatorVersion] : undefined;
     }
 });

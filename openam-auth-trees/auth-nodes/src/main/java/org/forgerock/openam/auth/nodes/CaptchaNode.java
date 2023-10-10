@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -142,6 +142,16 @@ public class CaptchaNode extends AbstractDecisionNode {
         default String scoreThreshold() {
             return "0.0";
         }
+
+        /**
+         * Boolean representing whether to disable form submission until CAPTCHA verification has succeeded.
+         *
+         * @return true if disabling form submission until verified, else false.
+         */
+        @Attribute(order = 800, validators = {RequiredValueValidator.class})
+        default boolean disableSubmission() {
+            return true;
+        }
     }
 
     private final Config config;
@@ -168,7 +178,7 @@ public class CaptchaNode extends AbstractDecisionNode {
         if (callback.isEmpty()) {
             logger.debug("no callback present, creating new ReCaptchaCallback");
             return send(new ReCaptchaCallback(config.siteKey(), config.apiUri(), config.divClass(),
-                    config.reCaptchaV3())).build();
+                    config.reCaptchaV3(), config.disableSubmission())).build();
         }
 
         if (callback.get().getResponse() == null || callback.get().getResponse().isEmpty()) {

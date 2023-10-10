@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -105,7 +105,13 @@ public class ChoiceCollectorNodeTest {
                 DEFAULT_CHOICE_INDEX, false);
         expectedCallback.setSelectedIndex(1);
         assertThat(action.outcome).isNull();
-        assertThat(action.callbacks.get(0)).isEqualToComparingFieldByField(expectedCallback);
+        assertThat(action.callbacks.get(0)).isInstanceOf(ChoiceCallback.class);
+        ChoiceCallback actualCallback = (ChoiceCallback) action.callbacks.get(0);
+        assertThat(actualCallback.getChoices()).isEqualTo(expectedCallback.getChoices());
+        assertThat(actualCallback.getDefaultChoice()).isEqualTo(expectedCallback.getDefaultChoice());
+        assertThat(actualCallback.getPrompt()).isEqualTo(expectedCallback.getPrompt());
+        assertThat(actualCallback.getSelectedIndexes()).isEqualTo(expectedCallback.getSelectedIndexes());
+        assertThat(actualCallback.allowMultipleSelections()).isEqualTo(expectedCallback.allowMultipleSelections());
     }
 
     @Test
@@ -117,7 +123,13 @@ public class ChoiceCollectorNodeTest {
         expectedCallback.setSelectedIndex(DEFAULT_CHOICE_INDEX);
 
         assertThat(action.outcome).isNull();
-        assertThat(action.callbacks.get(0)).isEqualToComparingFieldByField(expectedCallback);
+        assertThat(action.callbacks.get(0)).isInstanceOf(ChoiceCallback.class);
+        ChoiceCallback actualCallback = (ChoiceCallback) action.callbacks.get(0);
+        assertThat(actualCallback.getChoices()).isEqualTo(expectedCallback.getChoices());
+        assertThat(actualCallback.getDefaultChoice()).isEqualTo(expectedCallback.getDefaultChoice());
+        assertThat(actualCallback.getPrompt()).isEqualTo(expectedCallback.getPrompt());
+        assertThat(actualCallback.getSelectedIndexes()).isEqualTo(expectedCallback.getSelectedIndexes());
+        assertThat(actualCallback.allowMultipleSelections()).isEqualTo(expectedCallback.allowMultipleSelections());
     }
 
     @Test

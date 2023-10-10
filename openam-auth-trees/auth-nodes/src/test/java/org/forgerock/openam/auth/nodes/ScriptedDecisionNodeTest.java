@@ -36,6 +36,8 @@ import javax.script.Bindings;
 import javax.script.ScriptException;
 
 import org.forgerock.guice.core.GuiceTestCase;
+import org.forgerock.http.Client;
+import org.forgerock.http.handler.HttpClientHandler;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
@@ -44,7 +46,9 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmTestHelper;
+import org.forgerock.openam.integration.idm.IdmIntegrationServiceForScripts;
 import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
+import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepository;
 import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
@@ -85,7 +89,13 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     ScriptIdentityRepository.Factory scriptIdentityRepositoryFactory;
 
     @Mock
+    ScriptedIdentityRepository.Factory scriptedIdentityRepositoryFactory;
+
+    @Mock
     ScriptedSecrets secrets;
+
+    @Mock
+    IdmIntegrationServiceForScripts idmIntegrationServiceForScripts;
 
     @RealmTestHelper.RealmHelper
     static Realm mockRealm;
@@ -104,8 +114,9 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
 
         ScriptedSecrets.Factory secretsFactory = mock(ScriptedSecrets.Factory.class);
         given(secretsFactory.create(any(), any())).willReturn(secrets);
-        node = new ScriptedDecisionNode(__ -> scriptEvaluator, serviceConfig, null, httpClientFactory,
-                mockRealm, scriptIdentityRepositoryFactory, secretsFactory);
+        node = new ScriptedDecisionNode(__ -> scriptEvaluator, serviceConfig, null,
+                httpClientFactory, new Client(new HttpClientHandler()), mockRealm, scriptIdentityRepositoryFactory,
+                scriptedIdentityRepositoryFactory, secretsFactory, idmIntegrationServiceForScripts);
     }
 
     @Test
@@ -135,7 +146,8 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
         verify(scriptEvaluator).evaluateScript(any(Script.class), bindingCaptor.capture(), eq(mockRealm));
 
         assertThat(json(bindingCaptor.getValue().get("sharedState")).diff(sharedState).size() == 0).isTrue();
-        assertThat(json(bindingCaptor.getValue().get("transientState")).diff(transientState).size() == 1).isTrue();
+        assertThat(json(bindingCaptor.getValue().get("transientState")).diff(transientState).size() == 1)
+                .isTrue();
     }
 
     @Test

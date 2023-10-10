@@ -30,7 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.forgerock.http.Client;
-import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
+import org.forgerock.openam.scripting.domain.Binding;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 
 import com.sun.identity.saml2.common.SAML2Constants;
@@ -63,19 +63,15 @@ public abstract class BaseSamlSpBindings extends ScriptBindings {
         this.spAdapterScriptHelper = builder.spAdapterScriptHelper;
     }
 
-    @Override
-    protected EvaluatorVersionBindings getEvaluatorVersionBindings() {
-        return EvaluatorVersionBindings.builder()
-                .allVersionBindings(List.of(
-                        Binding.of(HOSTED_ENTITYID, hostedEntityId, String.class),
-                        Binding.of(SAML2Constants.ScriptParams.REALM, realm, String.class),
-                        Binding.of(HTTP_CLIENT, httpClient, Client.class),
-                        Binding.of(REQUEST, request, HttpServletRequest.class),
-                        Binding.of(RESPONSE, response, HttpServletResponse.class),
-                        Binding.of(SP_ADAPTER_SCRIPT_HELPER, spAdapterScriptHelper, SpAdapterScriptHelper.class)
-                ))
-                .parentBindings(super.getEvaluatorVersionBindings())
-                .build();
+    protected List<Binding> v1CommonBindings() {
+        return List.of(
+                Binding.of(HOSTED_ENTITYID, hostedEntityId, String.class),
+                Binding.of(SAML2Constants.ScriptParams.REALM, realm, String.class),
+                Binding.of(HTTP_CLIENT, httpClient, Client.class),
+                Binding.of(REQUEST, request, HttpServletRequest.class),
+                Binding.of(RESPONSE, response, HttpServletResponse.class),
+                Binding.of(SP_ADAPTER_SCRIPT_HELPER, spAdapterScriptHelper, SpAdapterScriptHelper.class)
+        );
     }
 
     /**

@@ -21,7 +21,7 @@
     <parent>
         <artifactId>openam-parent</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>7.3.0</version>
+        <version>7.4.0</version>
     </parent>
 
     <properties>
@@ -86,8 +86,8 @@
     <repositories>
         <repository>
             <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 7.3.0</name>
-            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.3.0-dependencies</url>
+            <name>ForgeRock Private Release Repository for AM 7.4.0</name>
+            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.4.0-dependencies</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>

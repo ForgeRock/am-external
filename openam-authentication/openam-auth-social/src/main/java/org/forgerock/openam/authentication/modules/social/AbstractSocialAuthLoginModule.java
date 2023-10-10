@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -348,7 +348,7 @@ abstract class AbstractSocialAuthLoginModule extends AuthLoginModule {
         HttpServletRequest request = getHttpServletRequest();
         HttpServletResponse response = getHttpServletResponse();
         authModuleHelper.getCookieDomainsForRequest(request).stream().forEach((String domain) -> {
-            authModuleHelper.addCookieToResponse(response, COOKIE_ORIG_URL, authModuleHelper.getOriginalUrl(request), "/", domain);
+            authModuleHelper.addCookieToResponse(response, COOKIE_ORIG_URL, URLEncoder.encode(authModuleHelper.getOriginalUrl(request), StandardCharsets.UTF_8), "/", domain);
             authModuleHelper.addCookieToResponse(response, NONCE_TOKEN_ID, getDataStore().getId(), "/", domain);
             authModuleHelper.addCookieToResponse(response, COOKIE_LOGOUT_URL, config.getCfgLogoutUrl(), "/", domain);
         });

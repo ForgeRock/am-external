@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.services.push;
@@ -108,9 +108,11 @@ public interface PushNotificationServiceConfig extends ServiceComponentConfig,
                 .put("eu-central-1", "eu-central-1")
                 .put("ap-southeast-1", "ap-southeast-1")
                 .put("ap-southeast-2", "ap-southeast-2")
+                .put("ap-southeast-3", "ap-southeast-3")
                 .put("ap-northeast-1", "ap-northeast-1")
                 .put("ap-northeast-2", "ap-northeast-2")
                 .put("sa-east-1", "sa-east-1")
+                .put("ca-central-1", "ca-central-1")
                 .put("n-north-1", "n-north-1")
                 .build();
         }

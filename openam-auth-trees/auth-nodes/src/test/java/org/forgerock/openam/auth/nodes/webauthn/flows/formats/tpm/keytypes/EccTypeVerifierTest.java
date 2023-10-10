@@ -11,18 +11,36 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECPoint;
 
+import org.forgerock.json.JsonValue;
+import org.forgerock.json.jose.jwk.EcJWK;
+import org.forgerock.json.jose.jwk.KeyType;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmAlg;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmEccCurve;
+import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.exceptions.InvalidTpmtPublicException;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
+/**
+ * Test for the {@link EccTypeVerifier} class.
+ */
 public class EccTypeVerifierTest {
 
     @Test
@@ -40,4 +58,162 @@ public class EccTypeVerifierTest {
         assertThat(result.getSymmetric()).isEqualTo(TpmAlg.TPM_ALG_NULL);
     }
 
+    @Test
+    public void testVerify() throws IOException {
+        //given
+        BigInteger x = new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B4F", 16);
+        BigInteger y = new BigInteger("1D255EDB5170A9201DB93DB45DEC75CF94E41113A130999790F4918586ACD89", 16);
+        EccUniqueParameter eccUniqueParameter = getEccUniqueParameter(x, y);
+        JsonValue jsonValue = json(object());
+        EcJWK jwk = mockEcJWK(jsonValue, x, y, KeyType.EC);
+
+        // when
+        EccTypeVerifier result = EccTypeVerifier.parseToType(new byte[]{0, 16, 0, 16, 0, 3, 0, 16});
+        when(jwk.getEllipticCurve()).thenReturn(result.getCurveId().getSupportedEllipticCurve());
+
+        try (MockedStatic<EcJWK> mockEcJWK = Mockito.mockStatic(EcJWK.class)) {
+            mockEcJWK.when(() -> EcJWK.parse(jsonValue)).thenReturn(jwk);
+
+            //then
+            assertThat(result.verify(jwk, eccUniqueParameter)).isTrue();
+        }
+    }
+
+    @Test
+    public void testVerifyFailsWhenSupportedEllipticCurveIsInvalid() throws IOException {
+        //given
+        BigInteger x = new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B4F", 16);
+        BigInteger y = new BigInteger("1D255EDB5170A9201DB93DB45DEC75CF94E41113A130999790F4918586ACD89", 16);
+        EccUniqueParameter eccUniqueParameter = getEccUniqueParameter(x, y);
+        JsonValue jsonValue = json(object());
+        EcJWK jwk = mockEcJWK(jsonValue, x, y, KeyType.EC);
+
+        // when
+        EccTypeVerifier result = EccTypeVerifier.parseToType(new byte[]{0, 16, 0, 16, 0, 3, 0, 16});
+        when(jwk.getEllipticCurve()).thenReturn(null);
+
+        try (MockedStatic<EcJWK> mockEcJWK = Mockito.mockStatic(EcJWK.class)) {
+            mockEcJWK.when(() -> EcJWK.parse(jsonValue)).thenReturn(jwk);
+
+            //then
+            assertThat(result.verify(jwk, eccUniqueParameter)).isFalse();
+        }
+    }
+
+    @Test
+    public void testVerifyFailsWhenKeyTypeIsInvalid() throws IOException {
+        //given
+        BigInteger x = new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B4F", 16);
+        BigInteger y = new BigInteger("1D255EDB5170A9201DB93DB45DEC75CF94E41113A130999790F4918586ACD89", 16);
+        EccUniqueParameter eccUniqueParameter = getEccUniqueParameter(x, y);
+        JsonValue jsonValue = json(object());
+        EcJWK jwk = mockEcJWK(jsonValue, x, y, KeyType.RSA);
+
+        // when
+        EccTypeVerifier result = EccTypeVerifier.parseToType(new byte[]{0, 16, 0, 16, 0, 3, 0, 16});
+        when(jwk.getEllipticCurve()).thenReturn(result.getCurveId().getSupportedEllipticCurve());
+
+        try (MockedStatic<EcJWK> mockEcJWK = Mockito.mockStatic(EcJWK.class)) {
+            mockEcJWK.when(() -> EcJWK.parse(jsonValue)).thenReturn(jwk);
+
+            //then
+            assertThat(result.verify(jwk, eccUniqueParameter)).isFalse();
+        }
+    }
+
+    @Test
+    public void testVerifyFailsWhenJWKEllipticCurveIsInvalid() throws IOException {
+        //given
+        BigInteger x = new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B4F", 16);
+        BigInteger y = new BigInteger("1D255EDB5170A9201DB93DB45DEC75CF94E41113A130999790F4918586ACD89", 16);
+        EccUniqueParameter eccUniqueParameter = getEccUniqueParameter(x, y);
+        JsonValue jsonValue = json(object());
+        EcJWK jwk = mockEcJWK(jsonValue, x, y, KeyType.EC);
+
+        // when
+        EccTypeVerifier result = EccTypeVerifier.parseToType(new byte[]{0, 16, 0, 16, 0, 3, 0, 16});
+        when(jwk.getEllipticCurve()).thenReturn(null);
+
+        try (MockedStatic<EcJWK> mockEcJWK = Mockito.mockStatic(EcJWK.class)) {
+            mockEcJWK.when(() -> EcJWK.parse(jsonValue)).thenReturn(jwk);
+
+            //then
+            assertThat(result.verify(jwk, eccUniqueParameter)).isFalse();
+        }
+    }
+
+    @Test
+    public void testVerifyFailsWhenUniqueParameterIsInvalid() throws IOException {
+        //given
+        BigInteger x = new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B4F", 16);
+        BigInteger y = new BigInteger("1D255EDB5170A9201DB93DB45DEC75CF94E41113A130999790F4918586ACD89", 16);
+        EccUniqueParameter eccUniqueParameter = getEccUniqueParameter(
+                new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B5F", 16), y);
+        JsonValue jsonValue = json(object());
+        EcJWK jwk = mockEcJWK(jsonValue, x, y, KeyType.EC);
+
+        // when
+        EccTypeVerifier result = EccTypeVerifier.parseToType(new byte[]{0, 16, 0, 16, 0, 3, 0, 16, 0});
+        when(jwk.getEllipticCurve()).thenReturn(result.getCurveId().getSupportedEllipticCurve());
+
+        try (MockedStatic<EcJWK> mockEcJWK = Mockito.mockStatic(EcJWK.class)) {
+            mockEcJWK.when(() -> EcJWK.parse(jsonValue)).thenReturn(jwk);
+
+            //then
+            assertThat(result.verify(jwk, eccUniqueParameter)).isFalse();
+        }
+    }
+
+    @Test
+    public void testGetUniqueParameter() throws IOException, InvalidTpmtPublicException {
+        //given
+        byte[] paramBytes = new byte[]{0, 16, 0, 16, 0, 1, 0, 16};
+        byte[] pubAreaBytes = new byte[]{0, 3, 1, 2, 3, 0, 3, 1, 2, 3};
+        EccUniqueParameter eccUniqueParameter = new EccUniqueParameter(new byte[]{1, 2, 3}, new byte[]{1, 2, 3});
+
+        DataInputStream pubArea = new DataInputStream(new ByteArrayInputStream(pubAreaBytes));
+
+        //when
+        EccTypeVerifier result = EccTypeVerifier.parseToType(paramBytes);
+        TpmtUniqueParameter uniqueParameter = result.getUniqueParameter(pubArea);
+
+        //then
+        assertThat(uniqueParameter).isInstanceOf(EccUniqueParameter.class);
+        assertThat((EccUniqueParameter) uniqueParameter).isEqualTo(eccUniqueParameter);
+    }
+
+    @Test (expectedExceptions = InvalidTpmtPublicException.class)
+    public void testGetUniqueParameterThrowsException() throws IOException, InvalidTpmtPublicException {
+        //given
+        byte[] paramBytes = new byte[]{0, 16, 0, 16, 0, 1, 0, 16};
+        byte[] pubAreaBytes = new byte[]{0, 3, 1, 2, 3, 0, 3, 1, 2, 3, 0};
+        DataInputStream pubArea = new DataInputStream(new ByteArrayInputStream(pubAreaBytes));
+
+        //when
+        EccTypeVerifier result = EccTypeVerifier.parseToType(paramBytes);
+        result.getUniqueParameter(pubArea);
+    }
+
+    private EccUniqueParameter getEccUniqueParameter(BigInteger x, BigInteger y) {
+        byte[][] unique = new byte[][]{
+                x.toByteArray(),
+                y.toByteArray()
+        };
+        return new EccUniqueParameter(unique[0], unique[1]);
+    }
+
+    private EcJWK mockEcJWK(JsonValue jsonValue, BigInteger x, BigInteger y, KeyType keyType) {
+        ECPoint ecPoint = mock(ECPoint.class);
+        ECPublicKey publicKey = mock(ECPublicKey.class);
+        when(ecPoint.getAffineX()).thenReturn(x);
+        when(ecPoint.getAffineY()).thenReturn(y);
+        when(publicKey.getW()).thenReturn(ecPoint);
+
+        EcJWK jwk = mock(EcJWK.class);
+        when(jwk.toJsonValue()).thenReturn(jsonValue);
+        when(jwk.getKeyType()).thenReturn(keyType);
+        when(jwk.toECPublicKey()).thenReturn(publicKey);
+
+        return jwk;
+    }
 }

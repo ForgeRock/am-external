@@ -91,6 +91,9 @@ public final class SharedStateConstants {
     /** Error message key. */
     public static final String ERROR_MESSAGE_KEY = "errorMessage";
 
+    /** Lockout message key. */
+    public static final String LOCKOUT_MESSAGE_KEY = "lockoutMessage";
+
     /** The final session that is issued after authentication will be restricted according to this restriction. */
     public static final String TOKEN_RESTRICTION = "tokenRestriction";
 

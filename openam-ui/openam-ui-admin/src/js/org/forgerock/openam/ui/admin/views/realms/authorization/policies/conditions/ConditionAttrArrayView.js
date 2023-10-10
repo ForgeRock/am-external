@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2021 ForgeRock AS.
+ * Copyright 2015-2023 ForgeRock AS.
  */
 
 import "selectize";
@@ -205,10 +205,20 @@ export default ConditionAttrBaseView.extend({
 
     getUniversalId (item, type) {
         const self = this;
-        PoliciesService.getUniversalId(item, type).then((subject) => {
-            self.data.itemData.subjectValues = _.union(self.data.itemData.subjectValues, subject.universalid);
-            self.data.hiddenData[type][subject.universalid[0]] = item;
-        });
+        PoliciesService.getUniversalId(item, type)
+            .then((subject) => {
+                self.data.itemData.subjectValues = _.union(self.data.itemData.subjectValues, subject.universalid);
+                PoliciesService.queryIdentitiesByUID(type, item)
+                    .then(({ result }) => {
+                        self.data.hiddenData[type][subject.universalid[0]] = result[0].username;
+                    })
+                    .catch((error) => {
+                        console.error("error", error);
+                    });
+            })
+            .catch((error) => {
+                console.error("error", error);
+            });
     },
 
     loadFromDataSource (item, callback) {

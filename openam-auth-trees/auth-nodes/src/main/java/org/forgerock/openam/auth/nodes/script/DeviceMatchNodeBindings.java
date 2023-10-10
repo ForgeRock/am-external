@@ -27,7 +27,7 @@ import javax.security.auth.callback.Callback;
 
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
+import org.forgerock.openam.scripting.domain.Binding;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 
 /**
@@ -60,21 +60,26 @@ public final class DeviceMatchNodeBindings extends ScriptBindings {
         return new Builder();
     }
 
-    @Override
-    protected EvaluatorVersionBindings getEvaluatorVersionBindings() {
-        List<Binding> v1Bindings = new java.util.ArrayList<>(getCommonBindings());
-        v1Bindings.add(Binding.of(SHARED_STATE_IDENTIFIER, sharedState, Map.class));
-        v1Bindings.add(Binding.of(TRANSIENT_STATE_IDENTIFIER, transientState, Map.class));
-
-        return EvaluatorVersionBindings.builder()
-                .v1Bindings(v1Bindings)
-                .v2Bindings(getCommonBindings())
-                .parentBindings(super.getEvaluatorVersionBindings())
-                .build();
+    /**
+     * The signature of these bindings. Used to provide information about available bindings via REST without the
+     * stateful underlying objects.
+     *
+     * @return The signature of this ScriptBindings implementation.
+     */
+    public static ScriptBindings signature() {
+        return new Builder().signature();
     }
 
-    private List<Binding> getCommonBindings() {
+    @Override
+    public String getDisplayName() {
+        return "Device Match Node Bindings";
+    }
+
+    @Override
+    protected List<Binding> additionalV1Bindings() {
         return List.of(
+                Binding.of(SHARED_STATE_IDENTIFIER, sharedState, Map.class),
+                Binding.of(TRANSIENT_STATE_IDENTIFIER, transientState, Map.class),
                 Binding.of(STATE_IDENTIFIER, nodeState, NodeState.class),
                 Binding.of(CALLBACKS_IDENTIFIER, callbacks, List.class),
                 Binding.of(DEVICE_PROFILES_DAO_IDENTIFIER, deviceProfilesDao, DeviceProfilesDao.class)

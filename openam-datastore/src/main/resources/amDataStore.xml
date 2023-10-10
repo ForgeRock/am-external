@@ -13,7 +13,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2018-2023 ForgeRock AS. All Rights Reserved
  * 
 -->
 
@@ -31,35 +31,47 @@
                 <SubSchema name="dataStoreContainer" resourceName="USE-PARENT">
                     <SubSchema name="config" inheritance="multiple" i18nKey="dataStoreInstance">
                         <!-- validators -->
-                        <AttributeSchema name="PositiveNumberValidator"
-                                         type="validator">
+                        <AttributeSchema name="PositiveNumberValidator" type="validator">
                             <DefaultValues>
                                 <Value>org.forgerock.openam.audit.validation.PositiveIntegerValidator</Value>
                             </DefaultValues>
                         </AttributeSchema>
-                        <AttributeSchema name="RequiredValueValidator"
-                                         type="validator">
+                        <AttributeSchema name="RequiredValueValidator" type="validator">
                             <DefaultValues>
                                 <Value>com.sun.identity.sm.RequiredValueValidator</Value>
                             </DefaultValues>
+                        </AttributeSchema>
+                        <AttributeSchema name="SecretIdValidator" type="validator">
+                            <DefaultValues>
+                                <Value>org.forgerock.openam.sm.validation.SecretIdValidator</Value>
+                            </DefaultValues>
+                        </AttributeSchema>
+                        <AttributeSchema name="dataStoreEnabled"
+                                         order="100"
+                                         type="single"
+                                         syntax="boolean"
+                                         i18nKey="dataStoreEnabled">
+                            <BooleanValues>
+                                <BooleanTrueValue i18nKey="i18nYes">true</BooleanTrueValue>
+                                <BooleanFalseValue i18nKey="i18nNo">false</BooleanFalseValue>
+                            </BooleanValues>
                         </AttributeSchema>
                         <AttributeSchema name="serverUrls"
                                          order="200"
                                          type="list"
                                          uitype="orderedlist"
                                          syntax="string"
+                                         validator="RequiredValueValidator"
                                          i18nKey="serverUrls"/>
                         <AttributeSchema name="bindDN"
                                          order="400"
                                          type="single"
-                                         validator="RequiredValueValidator"
                                          i18nKey="bindDN">
                         </AttributeSchema>
                         <AttributeSchema name="bindPassword"
                                          order="500"
                                          type="single"
                                          syntax="password"
-                                         validator="RequiredValueValidator"
                                          i18nKey="bindPassword"/>
                         <AttributeSchema name="minimumConnectionPool"
                                          order="600"
@@ -90,6 +102,23 @@
                                 <BooleanTrueValue i18nKey="i18nYes">true</BooleanTrueValue>
                                 <BooleanFalseValue i18nKey="i18nNo">false</BooleanFalseValue>
                             </BooleanValues>
+                        </AttributeSchema>
+                        <AttributeSchema name="mtlsEnabled"
+                                         order="850"
+                                         type="single"
+                                         syntax="boolean"
+                                         i18nKey="mtlsEnabled">
+                            <BooleanValues>
+                                <BooleanTrueValue i18nKey="i18nYes">true</BooleanTrueValue>
+                                <BooleanFalseValue i18nKey="i18nNo">false</BooleanFalseValue>
+                            </BooleanValues>
+                        </AttributeSchema>
+                        <AttributeSchema name="mtlsSecretLabel"
+                                         order="860"
+                                         type="single"
+                                         i18nKey="mtlsSecretLabel"
+                                         validator="SecretIdValidator">
+                            <IsOptional/>
                         </AttributeSchema>
                         <AttributeSchema name="useStartTLS"
                                          order="900"

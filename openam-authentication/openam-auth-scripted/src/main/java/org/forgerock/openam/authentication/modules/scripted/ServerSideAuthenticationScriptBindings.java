@@ -28,14 +28,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.forgerock.http.client.ChfHttpClient;
-import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
+import org.forgerock.openam.scripting.domain.Binding;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 
 /**
  * Script bindings for the Scripted Module script.
  */
-public final class ScriptedBindings extends ScriptBindings {
+public final class ServerSideAuthenticationScriptBindings extends ScriptBindings {
 
     private static final String SUCCESS_ATTR_NAME = "SUCCESS";
     private static final String FAILED_ATTR_NAME = "FAILED";
@@ -55,7 +55,7 @@ public final class ScriptedBindings extends ScriptBindings {
      *
      * @param builder The builder.
      */
-    private ScriptedBindings(Builder builder) {
+    private ServerSideAuthenticationScriptBindings(Builder builder) {
         super(builder);
         requestData = builder.requestData;
         clientScriptOutputData = builder.clientScriptOutputData;
@@ -78,23 +78,35 @@ public final class ScriptedBindings extends ScriptBindings {
         return new Builder();
     }
 
+    /**
+     * The signature of these bindings. Used to provide information about available bindings via REST without the
+     * stateful underlying objects.
+     *
+     * @return The signature of this ScriptBindings implementation.
+     */
+    public static ScriptBindings signature() {
+        return new Builder().signature();
+    }
+
     @Override
-    protected EvaluatorVersionBindings getEvaluatorVersionBindings() {
-        return EvaluatorVersionBindings.builder()
-                .allVersionBindings(List.of(
-                        Binding.of(REQUEST_DATA_VARIABLE_NAME, requestData, ScriptHttpRequestWrapper.class),
-                        Binding.of(CLIENT_SCRIPT_OUTPUT_DATA_VARIABLE_NAME, clientScriptOutputData, String.class),
-                        Binding.of(STATE_VARIABLE_NAME, state, Integer.class),
-                        Binding.of(SHARED_STATE, sharedState, Map.class),
-                        Binding.of(USERNAME_VARIABLE_NAME, username, String.class),
-                        Binding.of(REALM_VARIABLE_NAME, realm, String.class),
-                        Binding.of(SUCCESS_ATTR_NAME, successValue, Integer.class),
-                        Binding.of(FAILED_ATTR_NAME, failureValue, Integer.class),
-                        Binding.of(HTTP_CLIENT_VARIABLE_NAME, httpClient, ChfHttpClient.class),
-                        Binding.of(IDENTITY_REPOSITORY, identityRepository, ScriptIdentityRepository.class)
-                ))
-                .parentBindings(super.getEvaluatorVersionBindings())
-                .build();
+    public String getDisplayName() {
+        return "Server Side Authentication Script Bindings";
+    }
+
+    @Override
+    protected List<Binding> additionalV1Bindings() {
+        return List.of(
+                Binding.of(REQUEST_DATA_VARIABLE_NAME, requestData, ScriptHttpRequestWrapper.class),
+                Binding.of(CLIENT_SCRIPT_OUTPUT_DATA_VARIABLE_NAME, clientScriptOutputData, String.class),
+                Binding.of(STATE_VARIABLE_NAME, state, Integer.class),
+                Binding.of(SHARED_STATE, sharedState, Map.class),
+                Binding.of(USERNAME_VARIABLE_NAME, username, String.class),
+                Binding.of(REALM_VARIABLE_NAME, realm, String.class),
+                Binding.of(SUCCESS_ATTR_NAME, successValue, Integer.class),
+                Binding.of(FAILED_ATTR_NAME, failureValue, Integer.class),
+                Binding.of(HTTP_CLIENT_VARIABLE_NAME, httpClient, ChfHttpClient.class),
+                Binding.of(IDENTITY_REPOSITORY, identityRepository, ScriptIdentityRepository.class)
+        );
     }
 
     /**
@@ -168,7 +180,7 @@ public final class ScriptedBindings extends ScriptBindings {
     }
 
     /**
-     * Builder object to construct a {@link ScriptedBindings}.
+     * Builder object to construct a {@link ServerSideAuthenticationScriptBindings}.
      */
     private static final class Builder extends ScriptBindings.Builder<Builder> implements ScriptedBindingsStep1,
             ScriptedBindingsStep2, ScriptedBindingsStep3, ScriptedBindingsStep4, ScriptedBindingsStep5,
@@ -187,8 +199,8 @@ public final class ScriptedBindings extends ScriptBindings {
         private ScriptIdentityRepository identityRepository;
 
         @Override
-        public ScriptedBindings build() {
-            return new ScriptedBindings(this);
+        public ServerSideAuthenticationScriptBindings build() {
+            return new ServerSideAuthenticationScriptBindings(this);
         }
 
         /**

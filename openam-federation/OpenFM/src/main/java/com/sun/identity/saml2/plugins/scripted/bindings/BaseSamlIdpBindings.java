@@ -24,6 +24,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REQUEST;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REQ_ID;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.RESPONSE;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -31,7 +32,7 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
+import org.forgerock.openam.scripting.domain.Binding;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 
 import com.sun.identity.saml2.plugins.scripted.IdpAdapterScriptHelper;
@@ -70,35 +71,34 @@ abstract class BaseSamlIdpBindings extends ScriptBindings {
         this.session = builder.session;
     }
 
-    protected EvaluatorVersionBindings getCommonBindings() {
-        return EvaluatorVersionBindings.builder()
-                .allVersionBindings(List.of(
-                        Binding.of(HOSTED_ENTITYID, hostedEntityId, String.class),
-                        Binding.of(REALM, realm, String.class),
-                        Binding.of(IDP_ADAPTER_SCRIPT_HELPER, idpAdapterScriptHelper, IdpAdapterScriptHelper.class)
-                ))
-                .parentBindings(super.getEvaluatorVersionBindings())
-                .build();
+    protected List<Binding> v1CommonBindings() {
+        return List.of(
+                Binding.of(HOSTED_ENTITYID, hostedEntityId, String.class),
+                Binding.of(REALM, realm, String.class),
+                Binding.of(IDP_ADAPTER_SCRIPT_HELPER, idpAdapterScriptHelper, IdpAdapterScriptHelper.class)
+        );
     }
 
-    protected EvaluatorVersionBindings getPreResponseBindings() {
-        return EvaluatorVersionBindings.builder()
-                .allVersionBindings(List.of(
+    protected List<Binding> v1PreResponseBindings() {
+        List<Binding> preResponseBindings = new ArrayList<>(v1CommonBindings());
+        preResponseBindings.addAll(
+                List.of(
                         Binding.of(REQUEST, request, HttpServletRequest.class),
                         Binding.of(AUTHN_REQUEST, authnRequest, AuthnRequest.class)
-                ))
-                .parentBindings(getCommonBindings())
-                .build();
+                )
+        );
+        return preResponseBindings;
     }
 
-    protected EvaluatorVersionBindings getRequestBindings() {
-        return EvaluatorVersionBindings.builder()
-                .allVersionBindings(List.of(
+    protected List<Binding> v1RequestBindings() {
+        List<Binding> requestBindings = new ArrayList<>(v1PreResponseBindings());
+        requestBindings.addAll(
+                List.of(
                         Binding.of(RESPONSE, response, HttpServletResponse.class),
                         Binding.of(REQ_ID, requestId, String.class)
-                ))
-                .parentBindings(getPreResponseBindings())
-                .build();
+                )
+        );
+        return requestBindings;
     }
 
     /**

@@ -15,11 +15,13 @@
  */
 package org.forgerock.openam.auth.nodes.script;
 
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.AUDIT_ENTRY_DETAIL;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.ACTION;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.CALLBACKS_BUILDER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.CALLBACKS_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.EXISTING_SESSION;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HEADERS_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HTTP_CLIENT_IDENTIFIER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.IDM_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.ID_REPO_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.QUERY_PARAMETER_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.REALM_IDENTIFIER;
@@ -30,24 +32,29 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.TRANSIE
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import javax.security.auth.callback.Callback;
 
+import org.forgerock.http.Client;
 import org.forgerock.http.client.ChfHttpClient;
-import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.NodeStateScriptWrapper;
+import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.forgerock.openam.integration.idm.IdmIntegrationServiceScriptWrapper;
+import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepository;
+import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepositoryScriptWrapper;
 import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
-import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
+import org.forgerock.openam.scripting.domain.Binding;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
-import org.mozilla.javascript.Undefined;
 
 /**
  * Script bindings for the ScriptedDecisionNode script.
  */
 public final class ScriptedDecisionNodeBindings extends ScriptBindings {
 
+    private static final String JWT_ASSERTION = "jwtAssertion";
+    private static final String JWT_VALIDATOR = "jwtValidator";
     private static final String RESUMED_FROM_SUSPEND = "resumedFromSuspend";
 
     private final NodeState nodeState;
@@ -56,14 +63,17 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
     private final String realm;
     private final Map<String, List<String>> queryParameters;
     private final ChfHttpClient httpClient;
-    private final ScriptIdentityRepository identityRepository;
+    private final ScriptIdentityRepository scriptIdentityRepository;
+    private final ScriptedIdentityRepository scriptedIdentityRepository;
     private final ScriptedSecrets secrets;
-    private final JsonValue auditEntryDetail;
     private final boolean resumedFromSuspend;
     private final Object existingSession;
     private final Object sharedState;
     private final Object transientState;
 
+    private final IdmIntegrationServiceScriptWrapper idmIntegrationServiceScriptWrapper;
+
+    private final Client client;
 
     private ScriptedDecisionNodeBindings(Builder builder) {
         super(builder);
@@ -73,13 +83,15 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
         this.realm = builder.realm;
         this.queryParameters = builder.queryParameters;
         this.httpClient = builder.httpClient;
-        this.identityRepository = builder.identityRepository;
+        this.scriptIdentityRepository = builder.scriptIdentityRepository;
+        this.scriptedIdentityRepository = builder.scriptedIdentityRepository;
         this.secrets = builder.secrets;
-        this.auditEntryDetail = builder.auditEntryDetail;
         this.resumedFromSuspend = builder.resumedFromSuspend;
         this.sharedState = builder.sharedState;
         this.transientState = builder.transientState;
-        this.existingSession = Objects.requireNonNullElse(builder.existingSession, Undefined.instance);
+        this.existingSession = builder.existingSession;
+        this.client = builder.client;
+        this.idmIntegrationServiceScriptWrapper = builder.idmIntegrationServiceScriptWrapper;
     }
 
     /**
@@ -91,20 +103,23 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
         return new Builder();
     }
 
-    @Override
-    protected EvaluatorVersionBindings getEvaluatorVersionBindings() {
-        List<Binding> v1Bindings = new java.util.ArrayList<>(getCommonBindings());
-        v1Bindings.add(Binding.of(SHARED_STATE_IDENTIFIER, sharedState, Map.class));
-        v1Bindings.add(Binding.of(TRANSIENT_STATE_IDENTIFIER, transientState, Map.class));
-
-        return EvaluatorVersionBindings.builder()
-                .v1Bindings(v1Bindings)
-                .v2Bindings(getCommonBindings())
-                .parentBindings(super.getEvaluatorVersionBindings())
-                .build();
+    /**
+     * The signature of these bindings. Used to provide information about available bindings via REST without the
+     * stateful underlying objects.
+     *
+     * @return The signature of this ScriptBindings implementation.
+     */
+    public static ScriptBindings signature() {
+        return new Builder().signature();
     }
 
-    private List<Binding> getCommonBindings() {
+    @Override
+    public String getDisplayName() {
+        return "Scripted Decision Node Bindings";
+    }
+
+    @Override
+    protected List<Binding> additionalV1Bindings() {
         return List.of(
                 Binding.of(STATE_IDENTIFIER, nodeState, NodeState.class),
                 Binding.of(CALLBACKS_IDENTIFIER, callbacks, List.class),
@@ -112,11 +127,36 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
                 Binding.of(REALM_IDENTIFIER, realm, String.class),
                 Binding.of(QUERY_PARAMETER_IDENTIFIER, queryParameters, Map.class),
                 Binding.of(HTTP_CLIENT_IDENTIFIER, httpClient, ChfHttpClient.class),
-                Binding.of(ID_REPO_IDENTIFIER, identityRepository, ScriptIdentityRepository.class),
+                Binding.of(ID_REPO_IDENTIFIER, scriptIdentityRepository, ScriptIdentityRepository.class),
                 Binding.of(SECRETS_IDENTIFIER, secrets, ScriptedSecrets.class),
-                Binding.of(AUDIT_ENTRY_DETAIL, auditEntryDetail, JsonValue.class),
                 Binding.of(RESUMED_FROM_SUSPEND, resumedFromSuspend, Boolean.class),
-                Binding.of(EXISTING_SESSION, existingSession, Map.class)
+                Binding.ofMayBeUndefined(EXISTING_SESSION, existingSession, Map.class),
+                Binding.of(SHARED_STATE_IDENTIFIER, sharedState, Map.class),
+                Binding.of(TRANSIENT_STATE_IDENTIFIER, transientState, Map.class)
+        );
+    }
+
+    @Override
+    protected List<Binding> additionalV2Bindings() {
+        return List.of(
+                Binding.of(STATE_IDENTIFIER, new NodeStateScriptWrapper(nodeState), NodeStateScriptWrapper.class),
+                Binding.of(CALLBACKS_IDENTIFIER, new ScriptedCallbacksWrapper(callbacks),
+                        ScriptedCallbacksWrapper.class),
+                Binding.of(HEADERS_IDENTIFIER, headers, Map.class),
+                Binding.of(REALM_IDENTIFIER, realm, String.class),
+                Binding.of(QUERY_PARAMETER_IDENTIFIER, queryParameters, Map.class),
+                Binding.of(HTTP_CLIENT_IDENTIFIER, new HttpClientScriptWrapper(client), HttpClientScriptWrapper.class),
+                Binding.of(ID_REPO_IDENTIFIER, new ScriptedIdentityRepositoryScriptWrapper(scriptedIdentityRepository),
+                        ScriptedIdentityRepositoryScriptWrapper.class),
+                Binding.of(SECRETS_IDENTIFIER, secrets, ScriptedSecrets.class),
+                Binding.of(RESUMED_FROM_SUSPEND, resumedFromSuspend, Boolean.class),
+                Binding.ofMayBeUndefined(EXISTING_SESSION, existingSession, Map.class),
+                Binding.of(JWT_ASSERTION, new JwtAssertionScriptWrapper(), JwtAssertionScriptWrapper.class),
+                Binding.of(JWT_VALIDATOR, new JwtValidatorScriptWrapper(), JwtValidatorScriptWrapper.class),
+                Binding.of(IDM_IDENTIFIER, idmIntegrationServiceScriptWrapper,
+                        IdmIntegrationServiceScriptWrapper.class),
+                Binding.of(ACTION, new ActionWrapper(), ActionWrapper.class),
+                Binding.of(CALLBACKS_BUILDER, new ScriptedCallbacksBuilder(), ScriptedCallbacksBuilder.class)
         );
     }
 
@@ -203,12 +243,13 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
      */
     public interface ScriptedDecisionNodeBindingsStep7 {
         /**
-         * Sets the identity repository.
+         * Sets the script identity repository.
          *
-         * @param identityRepository the identity repository
+         * @param scriptIdentityRepository the script identity repository
          * @return the next step of the {@link Builder}
          */
-        ScriptedDecisionNodeBindingsStep8 withIdentityRepository(ScriptIdentityRepository identityRepository);
+        ScriptedDecisionNodeBindingsStep8 withScriptIdentityRepository(
+                ScriptIdentityRepository scriptIdentityRepository);
     }
 
     /**
@@ -216,12 +257,13 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
      */
     public interface ScriptedDecisionNodeBindingsStep8 {
         /**
-         * Sets the {@link ScriptedSecrets}.
+         * Sets the scripted identity repository.
          *
-         * @param secrets the {@link ScriptedSecrets}
+         * @param scriptedIdentityRepository the scripted identity repository
          * @return the next step of the {@link Builder}
          */
-        ScriptedDecisionNodeBindingsStep9 withSecrets(ScriptedSecrets secrets);
+        ScriptedDecisionNodeBindingsStep9 withScriptedIdentityRepository(
+                ScriptedIdentityRepository scriptedIdentityRepository);
     }
 
     /**
@@ -229,12 +271,12 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
      */
     public interface ScriptedDecisionNodeBindingsStep9 {
         /**
-         * Sets the audit entry detail.
+         * Sets the {@link ScriptedSecrets}.
          *
-         * @param auditEntryDetail the audit entry detail
+         * @param secrets the {@link ScriptedSecrets}
          * @return the next step of the {@link Builder}
          */
-        ScriptedDecisionNodeBindingsStep10 withAuditEntryDetail(JsonValue auditEntryDetail);
+        ScriptedDecisionNodeBindingsStep10 withSecrets(ScriptedSecrets secrets);
     }
 
     /**
@@ -286,7 +328,34 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
          * @param transientState the transient state
          * @return the next step of the {@link Builder}
          */
-        ScriptBindingsStep1 withTransientState(Object transientState);
+        ScriptedDecisionNodeBindingsStep14 withTransientState(Object transientState);
+    }
+
+    /**
+     * Step 14 of the builder.
+     */
+    public interface ScriptedDecisionNodeBindingsStep14 {
+        /**
+         * Sets the IdmIntegrationService.
+         *
+         * @param idmIntegrationServiceWrapper the idm integration service wrapper
+         * @return the next step of the {@link Builder}
+         */
+        ScriptedDecisionNodeBindingsStep15 withIdmIntegrationService(
+                IdmIntegrationServiceScriptWrapper idmIntegrationServiceWrapper);
+    }
+    /**
+     * Step 16 of the builder.
+     */
+    public interface ScriptedDecisionNodeBindingsStep15 {
+        /**
+         * Sets the client.
+         *
+         * @param client the {@link Client}
+         * @return the next step of the {@link Builder}
+         */
+        ScriptBindingsStep1 withClient(Client client);
+
     }
 
     /**
@@ -297,11 +366,12 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
             ScriptedDecisionNodeBindingsStep3, ScriptedDecisionNodeBindingsStep4, ScriptedDecisionNodeBindingsStep5,
             ScriptedDecisionNodeBindingsStep6, ScriptedDecisionNodeBindingsStep7, ScriptedDecisionNodeBindingsStep8,
             ScriptedDecisionNodeBindingsStep9, ScriptedDecisionNodeBindingsStep10, ScriptedDecisionNodeBindingsStep11,
-            ScriptedDecisionNodeBindingsStep12, ScriptedDecisionNodeBindingsStep13 {
+            ScriptedDecisionNodeBindingsStep12, ScriptedDecisionNodeBindingsStep13, ScriptedDecisionNodeBindingsStep14,
+            ScriptedDecisionNodeBindingsStep15 {
 
-        private ScriptIdentityRepository identityRepository;
+        private ScriptIdentityRepository scriptIdentityRepository;
+        private ScriptedIdentityRepository scriptedIdentityRepository;
         private ScriptedSecrets secrets;
-        private JsonValue auditEntryDetail;
         private boolean resumedFromSuspend;
         private NodeState nodeState;
         private List<? extends Callback> callbacks;
@@ -312,6 +382,8 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
         private Map<String, String> existingSession;
         private Object sharedState;
         private Object transientState;
+        private Client client;
+        private IdmIntegrationServiceScriptWrapper idmIntegrationServiceScriptWrapper;
 
         /**
          * Set the nodeState for the builder.
@@ -386,14 +458,28 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
         }
 
         /**
-         * Set the identityRepository for the builder.
+         * Set the scriptIdentityRepository for the builder.
          *
-         * @param identityRepository The {@link ScriptIdentityRepository}.
+         * @param scriptIdentityRepository The {@link ScriptIdentityRepository}.
          * @return The next step of the Builder.
          */
         @Override
-        public ScriptedDecisionNodeBindingsStep8 withIdentityRepository(ScriptIdentityRepository identityRepository) {
-            this.identityRepository = identityRepository;
+        public ScriptedDecisionNodeBindingsStep8 withScriptIdentityRepository(
+                ScriptIdentityRepository scriptIdentityRepository) {
+            this.scriptIdentityRepository = scriptIdentityRepository;
+            return this;
+        }
+
+        /**
+         * Set the scriptedIdentityRepository for the builder.
+         *
+         * @param scriptedIdentityRepository The {@link ScriptedIdentityRepository}.
+         * @return The next step of the Builder.
+         */
+        @Override
+        public ScriptedDecisionNodeBindingsStep9 withScriptedIdentityRepository(
+                ScriptedIdentityRepository scriptedIdentityRepository) {
+            this.scriptedIdentityRepository = scriptedIdentityRepository;
             return this;
         }
 
@@ -404,20 +490,8 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
          * @return The next step of the Builder.
          */
         @Override
-        public ScriptedDecisionNodeBindingsStep9 withSecrets(ScriptedSecrets secrets) {
+        public ScriptedDecisionNodeBindingsStep10 withSecrets(ScriptedSecrets secrets) {
             this.secrets = secrets;
-            return this;
-        }
-
-        /**
-         * Set the auditEntryDetail for the builder.
-         *
-         * @param auditEntryDetail The auditEntryDetail as {@link JsonValue}.
-         * @return The next step of the Builder.
-         */
-        @Override
-        public ScriptedDecisionNodeBindingsStep10 withAuditEntryDetail(JsonValue auditEntryDetail) {
-            this.auditEntryDetail = auditEntryDetail;
             return this;
         }
 
@@ -464,8 +538,34 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
          * @return The next step of the Builder.
          */
         @Override
-        public ScriptBindingsStep1 withTransientState(Object transientState) {
+        public ScriptedDecisionNodeBindingsStep14 withTransientState(Object transientState) {
             this.transientState = transientState;
+            return this;
+        }
+
+
+        /**
+         * Sets the client.
+         *
+         * @param client the new {@link Client}
+         * @return the next step of the Builder.
+         */
+        @Override
+        public ScriptBindingsStep1 withClient(Client client) {
+            this.client = client;
+            return this;
+        }
+
+        /**
+         * Sets the idmIntegrationServiceScriptWrapper.
+         *
+         * @param idmIntegrationServiceScriptWrapper the new {@link IdmIntegrationService}
+         * @return the next step of the Builder.
+         */
+        @Override
+        public ScriptedDecisionNodeBindingsStep15 withIdmIntegrationService(
+                IdmIntegrationServiceScriptWrapper idmIntegrationServiceScriptWrapper) {
+            this.idmIntegrationServiceScriptWrapper = idmIntegrationServiceScriptWrapper;
             return this;
         }
 
@@ -478,5 +578,7 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
         public ScriptedDecisionNodeBindings build() {
             return new ScriptedDecisionNodeBindings(this);
         }
+
+
     }
 }

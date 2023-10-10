@@ -11,15 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
 
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.forgerock.openam.test.bazel.ResourceFinder.findPathToResource;
 
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Date;
@@ -138,10 +138,9 @@ public class AuthnRequestImplTest {
         String xml = request.toXMLString(true, true);
 
         // Then
-        URL file = AuthnRequestImplTest.class.getResource("/saml2/example-authnrequest.xml");
-        assert file != null;
+        Path path = findPathToResource(this.getClass(), "/saml2/example-authnrequest.xml");
         // Skip copyright header:
-        String expected = Files.lines(Path.of(file.toURI())).skip(7).collect(joining("\n"));
+        String expected = Files.readAllLines(path).stream().skip(7).collect(joining("\n"));
         assertThat(xml).isEqualToIgnoringWhitespace(expected);
     }
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -41,5 +41,13 @@ public class InputState {
     public InputState(String name, boolean required) {
         this.name = name;
         this.required = required;
+    }
+
+    @Override
+    public String toString() {
+        return "InputState{"
+                + "name='" + name + '\''
+                + ", required=" + required
+                + '}';
     }
 }

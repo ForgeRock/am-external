@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2021 ForgeRock AS.
+ * Copyright 2014-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.deviceprint;
@@ -48,15 +48,13 @@ public class ProfilePersisterTest {
 
     private final String username = "username";
     private final String password = "password";
-    private final Set<String> userSearchAttributes = Collections.emptySet();
 
     @BeforeMethod
     public void setUp() {
 
         devicePrintDao = mock(DeviceIdDao.class);
 
-        profilePersister = new ProfilePersister(2, username, password, devicePrintDao,
-                userSearchAttributes);
+        profilePersister = new ProfilePersister(2, username, password, devicePrintDao);
     }
 
     @Test
@@ -75,15 +73,14 @@ public class ProfilePersisterTest {
         List<JsonValue> profiles = new ArrayList<>();
         profiles.add(profileOne);
         profiles.add(profileTwo);
-        given(devicePrintDao.getDeviceProfiles(username, password, userSearchAttributes)).willReturn(profiles);
+        given(devicePrintDao.getDeviceProfiles(username, password)).willReturn(profiles);
 
         //When
         profilePersister.saveDevicePrint(devicePrintProfile);
 
         //Then
         ArgumentCaptor<List> profilesCaptor = ArgumentCaptor.forClass(List.class);
-        verify(devicePrintDao).saveDeviceProfiles(eq(username), eq(password), profilesCaptor.capture(),
-                ArgumentMatchers.eq(userSearchAttributes) );
+        verify(devicePrintDao).saveDeviceProfiles(eq(username), eq(password), profilesCaptor.capture());
         List<JsonValue> savedProfiles = profilesCaptor.getValue();
         assertThat(savedProfiles).hasSize(2);
         assertThat(savedProfiles.get(0)).isEqualTo(profileTwo);

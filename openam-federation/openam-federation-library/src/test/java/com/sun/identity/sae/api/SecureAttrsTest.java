@@ -11,16 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 package com.sun.identity.sae.api;
 
+import static org.forgerock.openam.test.bazel.ResourceFinder.findPathToResource;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
 
@@ -38,10 +38,9 @@ public class SecureAttrsTest {
 
     @BeforeClass
     public void beforeClass() throws Exception {
-        Path keystorePath = Paths.get(SecureAttrsTest.class.getClassLoader().getResource("keystore.jks").toURI());
+        Path keystorePath = findPathToResource(this.getClass(), "keystore.jks");
 
-        String password = Files.lines(
-                Paths.get(SecureAttrsTest.class.getClassLoader().getResource("keystorepass").toURI()))
+        String password = Files.readAllLines(findPathToResource(this.getClass(), "keystorepass")).stream()
                 .findFirst().orElseThrow();
         SecureAttrs.dbg = true;
         Properties properties = new Properties();

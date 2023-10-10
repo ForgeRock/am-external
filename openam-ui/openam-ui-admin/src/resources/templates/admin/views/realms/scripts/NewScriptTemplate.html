@@ -11,7 +11,7 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2016-2019 ForgeRock AS. All Rights Reserved
+  Copyright 2016-2023 ForgeRock AS. All Rights Reserved
 }}
 {{> headers/_Title title="console.scripts.edit.title"}}
 
@@ -39,6 +39,23 @@
                     </option>
                     {{/each}}
                 </select>
+            </div>
+        </div>
+        <!-- VERSION -->
+        <div class="form-group" id="versionWrapper">
+            <label class="col-sm-2 control-label" for="version">{{t "console.scripts.edit.evaluatorVersion"}}</label>
+
+            <div class="col-sm-9">
+              <div class="switch-field no-spacing" id="version" role="group">
+                <input class="hidden" type="radio" id="radio-legacy" data-field="evaluatorVersion" name="evaluatorVersion" value="1.0" checked/>
+                <label for="radio-legacy" class="btn fr-btn-secondary versionSelect active">
+                  {{t "console.scripts.edit.version.1.0"}}
+                </label>
+                <input class="hidden" type="radio" id="radio-nextgen" data-field="evaluatorVersion" name="evaluatorVersion" value="2.0" disabled/>
+                <label for="radio-nextgen" class="btn fr-btn-secondary versionSelect disabled">
+                  {{t "console.scripts.edit.version.2.0"}}
+                </label>
+              </div>
             </div>
         </div>
     </div>

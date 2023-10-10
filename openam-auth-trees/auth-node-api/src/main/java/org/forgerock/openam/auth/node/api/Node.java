@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -94,6 +94,20 @@ public interface Node {
          * @return The state namespace.
          */
         Namespace namespace() default Namespace.NONE;
+
+        /**
+         * A class that will be serialised to JSON that a node can specify to return additional "metadata" to the
+         * client for presenting the node.
+         * <p>
+         * For example "provider" metadata attribute for a set of nodes written by the same external provider.
+         * </p>
+         * <p>
+         * Jackson is used to serialise the class instance to JSON.
+         * </p>
+         *
+         * @return The extensions.
+         */
+        Class<?> extensions() default Void.class;
     }
 
     /**

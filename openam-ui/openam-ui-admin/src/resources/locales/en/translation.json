@@ -753,17 +753,11 @@
                 "title": "New Script",
                 "language": "Language",
                 "evaluatorVersion": "Evaluator Version",
-                "additionalScriptingFeaturesGuidance": {
-                    "warning": "Warning: Changing evaluator version may break script functionality. Proceed with caution.",
-                    "featuresHeader": "Additional features include:",
-                    "features" : {
-                        "JAVASCRIPT": {
-                            "2.0": [
-                                "Ability to import Library scripts which are defined in this realm."
-                            ]
-                        }
-                    }
+                "version": {
+                    "1.0": "Legacy",
+                    "2.0": "Next Generation"
                 },
+                "scriptBindings": "Available Bindings",
                 "script": "Script",
                 "scriptType": "Script Type",
                 "validation": {

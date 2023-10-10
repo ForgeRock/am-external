@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2023 ForgeRock AS.
  */
 package org.forgerock.openam.federation.rest.hosted;
 
@@ -138,7 +138,7 @@ public final class HostedEntitiesCollectionProvider extends Saml2EntitiesCollect
         try {
             JsonValue jsonEntity = request.getContent();
             final String entityId = isNotBlank(jsonEntity.get(ENTITY_ID).asString())
-                    ? jsonEntity.get(ENTITY_ID).asString()
+                    ? jsonEntity.get(ENTITY_ID).asString().trim()
                     : UUID.randomUUID().toString();
             final SAML2MetaManager saml2MetaManager = getSAML2MetaManagerWithToken(getTokenFromContext(context));
             validateEntityJson(context, request, saml2MetaManager);

@@ -26,15 +26,13 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_I
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
-import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
+import org.forgerock.openam.scripting.domain.Binding;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
-import org.mozilla.javascript.Undefined;
 
 /**
  * Script bindings for the ConfigProviderNode script.
@@ -65,7 +63,7 @@ public final class ConfigProviderNodeBindings extends ScriptBindings {
         httpClient = builder.httpClient;
         realm = builder.realm;
         queryParameters = builder.queryParameters;
-        existingSession = Objects.requireNonNullElse(builder.existingSession, Undefined.instance);
+        existingSession = builder.existingSession;
     }
 
     /**
@@ -77,21 +75,33 @@ public final class ConfigProviderNodeBindings extends ScriptBindings {
         return new ConfigProviderNodeBindings.Builder();
     }
 
+    /**
+     * The signature of these bindings. Used to provide information about available bindings via REST without the
+     * stateful underlying objects.
+     *
+     * @return The signature of this ScriptBindings implementation.
+     */
+    public static ScriptBindings signature() {
+        return new Builder().signature();
+    }
+
     @Override
-    protected EvaluatorVersionBindings getEvaluatorVersionBindings() {
-        return EvaluatorVersionBindings.builder()
-                .allVersionBindings(List.of(
-                        Binding.of(STATE_IDENTIFIER, nodeState, NodeState.class),
-                        Binding.of(ID_REPO_IDENTIFIER, identityRepository, ScriptIdentityRepository.class),
-                        Binding.of(SECRETS_IDENTIFIER, secrets, ScriptedSecrets.class),
-                        Binding.of(HEADERS_IDENTIFIER, headers, Map.class),
-                        Binding.of(HTTP_CLIENT_IDENTIFIER, httpClient, ChfHttpClient.class),
-                        Binding.of(REALM_IDENTIFIER, realm, String.class),
-                        Binding.of(EXISTING_SESSION, existingSession, Map.class),
-                        Binding.of(QUERY_PARAMETER_IDENTIFIER, queryParameters, Map.class)
-                ))
-                .parentBindings(super.getEvaluatorVersionBindings())
-                .build();
+    public String getDisplayName() {
+        return "Config Provider Node Bindings";
+    }
+
+    @Override
+    protected List<Binding> additionalV1Bindings() {
+        return List.of(
+                Binding.of(STATE_IDENTIFIER, nodeState, NodeState.class),
+                Binding.of(ID_REPO_IDENTIFIER, identityRepository, ScriptIdentityRepository.class),
+                Binding.of(SECRETS_IDENTIFIER, secrets, ScriptedSecrets.class),
+                Binding.of(HEADERS_IDENTIFIER, headers, Map.class),
+                Binding.of(HTTP_CLIENT_IDENTIFIER, httpClient, ChfHttpClient.class),
+                Binding.of(REALM_IDENTIFIER, realm, String.class),
+                Binding.ofMayBeUndefined(EXISTING_SESSION, existingSession, Map.class),
+                Binding.of(QUERY_PARAMETER_IDENTIFIER, queryParameters, Map.class)
+        );
     }
 
     /**

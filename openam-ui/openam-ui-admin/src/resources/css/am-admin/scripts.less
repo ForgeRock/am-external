@@ -67,7 +67,19 @@
     display: none;
 }
 
-#additionalScriptingFeaturesGuidance {
-    .transition(all, 0.5s, ease-in-out);
-    overflow: hidden;
+.no-spacing {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.switch-field {
+    display: flex;
+}
+
+.switch-field label:first-of-type {
+    border-radius: 4px 0 0 4px;
+}
+
+.switch-field label:last-of-type {
+    border-radius: 0 4px 4px 0;
 }

@@ -24,7 +24,7 @@
  *
  * $Id: Debug.java,v 1.5 2008/06/25 05:47:47 qcheng Exp $
  *
- * Portions Copyrighted 2015-2016 ForgeRock AS.
+ * Portions Copyrighted 2015-2023 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.idpdiscovery;
@@ -219,6 +219,7 @@ public class Debug {
      * @param debugName name of the debug file to create or use
      * @deprecated  Use {@link #getInstance}
      */
+    @Deprecated
     public Debug(String debugName) {
         // Initialize the debug service the first time a Debug object is
         // created.
@@ -266,6 +267,7 @@ public class Debug {
      *
      * @deprecated Use {@link #messageEnabled}
      */
+    @Deprecated
     public boolean debugEnabled() {
         return (debugLevel > Debug.WARNING);
     }
@@ -610,6 +612,7 @@ public class Debug {
      *             automatically set the debug level based on the information in
      *             <code>DebugConfig.properties</code> file.
      */
+    @Deprecated
     public void setDebug() {
         // The following initService is temporary. setDebug() is anyways
         // deprecated and will be removed in future.

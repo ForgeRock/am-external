@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2022 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.push.registration;
 
@@ -55,7 +55,6 @@ import static org.forgerock.openam.services.push.PushNotificationConstants.MECHA
 
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -175,7 +174,6 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
     private RecoveryCodeGenerator recoveryCodeGenerator = InjectorHolder.getInstance(RecoveryCodeGenerator.class);
     private final BaseURLProviderFactory baseUrlProviderFactory =
             InjectorHolder.getInstance(BaseURLProviderFactory.class);
-    private Set<String> userSearchAttributes = Collections.emptySet();
 
     // @Checkstyle:off ConstantName
     private static final IdentityStoreFactory identityStoreFactory =
@@ -197,12 +195,6 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
             bgColour = bgColour.substring(1);
         }
 
-        try {
-            userSearchAttributes = getUserAliasList();
-        } catch (final AuthLoginException ale) {
-            DEBUG.warn("{} :: init() : Unable to retrieve search attributes",
-                    AM_AUTH_AUTHENTICATOR_PUSH_REGISTRATION, ale);
-        }
         try {
             lbCookieValue = sessionCookies.getLBCookie(getSessionId());
         } catch (SessionException e) {
@@ -256,7 +248,7 @@ public class AuthenticatorPushRegistration extends AbstractPushModule {
         final String subjectName = (String) sharedState.get(getUserKey());
         final String realm = DNMapper.orgNameToRealmName(getRequestOrg());
         IdentityStore identityStore = identityStoreFactory.create(realm);
-        return identityStore.getIdentity(subjectName, userSearchAttributes);
+        return identityStore.getUserUsingAuthenticationUserAliases(subjectName);
     }
 
     @Override

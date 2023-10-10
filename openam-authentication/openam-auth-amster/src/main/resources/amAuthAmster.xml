@@ -13,7 +13,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2016-2023 ForgeRock AS. All Rights Reserved
  * 
 -->
 
@@ -50,7 +50,7 @@
                                  i18nKey="field-authorized-keys"
                                  order="100"
                                  resourceName="authorizedKeys">
-                    <DefaultValues>
+                    <DefaultValues placeholder="&amp;{amster.secrets.keys.path|%}">
                         <Value>@BASE_DIR@/security/keys/amster/authorized_keys</Value>
                     </DefaultValues>
                 </AttributeSchema>
@@ -89,7 +89,7 @@
                                      i18nKey="field-authorized-keys"
                                      order="100"
                                      resourceName="authorizedKeys">
-                        <DefaultValues>
+                        <DefaultValues placeholder="&amp;{amster.secrets.keys.path|%}">
                             <Value>@BASE_DIR@/security/keys/amster/authorized_keys</Value>
                         </DefaultValues>
                     </AttributeSchema>
@@ -113,7 +113,7 @@
         </Schema>
         <Configuration>
             <OrganizationConfiguration name="/">
-                <AttributeValuePair>
+                <AttributeValuePair placeholder="&amp;{amster.secrets.keys.path|%}">
                     <Attribute name="forgerock-am-auth-amster-authorized-keys"/>
                     <Value>@BASE_DIR@/security/keys/amster/authorized_keys</Value>
                 </AttributeValuePair>

@@ -23,11 +23,11 @@ import static org.forgerock.openam.authentication.service.AuthModuleScriptContex
 import java.util.ArrayList;
 import java.util.List;
 
+import org.forgerock.openam.authentication.modules.scripted.ServerSideAuthenticationScriptBindings;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptContextDetails;
 import org.forgerock.openam.scripting.persistence.config.defaults.ScriptContextDetailsProvider;
-import org.mozilla.javascript.JavaScriptException;
 
 import com.google.inject.Inject;
 import com.iplanet.dpro.session.service.DsameAdminTokenProvider;
@@ -59,6 +59,7 @@ public class AuthModuleScriptContextProvider implements ScriptContextDetailsProv
                 .withContextReference(AUTHENTICATION_SERVER_SIDE)
                 .withI18NKey("script-type-02")
                 .withDefaultScript(AUTH_MODULE_SERVER_SIDE.getId())
+                .withBindings(ServerSideAuthenticationScriptBindings.signature())
                 .overrideDefaultWhiteList(
                         "com.sun.identity.shared.debug.Debug", "groovy.json.JsonSlurper", "java.lang.Boolean",
                         "java.lang.Byte", "java.lang.Character$Subset", "java.lang.Character$UnicodeBlock",

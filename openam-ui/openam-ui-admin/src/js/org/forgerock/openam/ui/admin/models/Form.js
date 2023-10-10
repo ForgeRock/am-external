@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2023 ForgeRock AS.
  */
 
 import "popoverclickaway";
@@ -20,8 +20,13 @@ import "selectize";
 import _ from "lodash";
 import $ from "jquery";
 import JSONEditor from "exports-loader?window.JSONEditor!json-editor";
-
 import JSONEditorTheme from "org/forgerock/openam/ui/admin/utils/JSONEditorTheme";
+import {
+    convertPlaceholderSchemaToReadOnly,
+    flattenPlaceholder,
+    containsPlaceholder,
+    revertPlaceholdersToOriginalValue
+} from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
 
 /**
  * @deprecated
@@ -31,8 +36,18 @@ const Form = function Form (element, schema, values) {
     console.warn("[Form] \"Form\" is deprecated. Use a FlatJSONSchemaView or GroupedJSONSchemaView instead.");
 
     this.element = element;
-    this.schema = schema;
-    this.values = values;
+    this.schema = convertPlaceholderSchemaToReadOnly(values, schema);
+    this.values = flattenPlaceholder({ ...values });
+
+    this.placeholderFound = false;
+    const keys = Object.keys(this.values);
+
+    for (let i = 0; i < keys.length; i++) {
+        if (containsPlaceholder(this.values[keys[i]])) {
+            this.placeholderFound = true;
+            break;
+        }
+    }
 
     // Attributes that are identifiable as passwords
     const passwordProperties = _.filter(schema.properties, { format: "password" });
@@ -93,7 +108,11 @@ function filterEmptyAttributes (object, attributes) {
 }
 
 Form.prototype.data = function () {
-    return filterEmptyAttributes(this.editor.getValue(), this.passwordAttributes);
+    const values = filterEmptyAttributes(this.editor.getValue(), this.passwordAttributes);
+    if (this.placeholderFound) {
+        return revertPlaceholdersToOriginalValue(values, this.schema);
+    }
+    return values;
 };
 
 Form.prototype.reset = function () {

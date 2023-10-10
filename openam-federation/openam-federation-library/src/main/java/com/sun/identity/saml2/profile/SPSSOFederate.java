@@ -24,13 +24,14 @@
  *
  * $Id: SPSSOFederate.java,v 1.29 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2011-2022 ForgeRock AS.
+ * Portions Copyrighted 2011-2023 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
 import static com.sun.identity.saml2.common.SAML2FailoverUtils.isFailoverEnabled;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
+import static org.forgerock.openam.utils.StringUtils.isEmpty;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
 import static org.forgerock.openam.utils.Time.newDate;
 
@@ -57,8 +58,8 @@ import org.forgerock.openam.saml2.audit.SAML2EventLogger;
 import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
 import org.forgerock.openam.saml2.plugins.IDPFinder;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
-import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +91,6 @@ import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
-import org.forgerock.openam.saml2.plugins.SPAdapter;
 import com.sun.identity.saml2.plugins.SPAuthnContextMapper;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.Extensions;
@@ -263,7 +263,7 @@ public class SPSSOFederate {
             List<EndpointType> ssoServiceList = idpsso.getSingleSignOnService();
             final EndpointType endPoint = getSingleSignOnServiceEndpoint(ssoServiceList, binding);
 
-            if (endPoint == null || StringUtils.isEmpty(endPoint.getLocation())) {
+            if (endPoint == null || isEmpty(endPoint.getLocation())) {
                 String[] data = { idpEntityID };
                 LogUtil.error(Level.INFO, LogUtil.SSO_NOT_FOUND, data, null);
                 throw new SAML2Exception(SAML2Utils.bundle.getString("ssoServiceNotfound"));
@@ -592,7 +592,7 @@ public class SPSSOFederate {
                             idpEntry.setName(description);
                             List<EndpointType> ssoServiceList = idpDesc.getSingleSignOnService();
                             EndpointType endPoint = getSingleSignOnServiceEndpoint(ssoServiceList, SAML2Constants.SOAP);
-                            if (endPoint == null || StringUtils.isEmpty(endPoint.getLocation())) {
+                            if (endPoint == null || isEmpty(endPoint.getLocation())) {
                                 throw new SAML2Exception(SAML2Utils.bundle.getString("ssoServiceNotfound"));
                             }
                             String ssoURL = endPoint.getLocation();
@@ -957,25 +957,25 @@ public class SPSSOFederate {
      * If the binding is specified it will attempt to return a match.
      * If either of the above is not found it will return null.
      *
-     * @param ssoServiceList list of sso services
-     * @param binding        binding of the sso service to get the url for
+     * @param idpSsoServiceList list of sso services
+     * @param preferredBinding  preferred binding of the sso service to get the url for, can be null.
      * @return a SingleSignOnServiceElement or null if no match found.
      */
     public static EndpointType getSingleSignOnServiceEndpoint(
-            List<EndpointType> ssoServiceList, String binding) {
-        EndpointType preferredEndpoint = null;
-        boolean noPreferredBinding = StringUtils.isEmpty(binding);
-        for (EndpointType endpoint : ssoServiceList) {
-            if (noPreferredBinding && (SAML2Constants.HTTP_REDIRECT.equals(endpoint.getBinding())
-                    || SAML2Constants.HTTP_POST.equals(endpoint.getBinding()))) {
-                preferredEndpoint = endpoint;
-                break;
-            } else if (binding.equals(endpoint.getBinding())) {
-                preferredEndpoint = endpoint;
-                break;
+            final List<EndpointType> idpSsoServiceList, final String preferredBinding) {
+        boolean noPreferredBinding = isEmpty(preferredBinding);
+        for (EndpointType endpointType : idpSsoServiceList) {
+            if (noPreferredBinding && (SAML2Constants.HTTP_REDIRECT.equals(endpointType.getBinding())
+                    || SAML2Constants.HTTP_POST.equals(endpointType.getBinding()))) {
+                return endpointType;
+            }
+            if (!noPreferredBinding && preferredBinding.equals(endpointType.getBinding())) {
+                return endpointType;
             }
         }
-        return preferredEndpoint;
+        logger.debug("SPSSOFederate: getSingleSignOnServiceEndpoint: no endpoint found in IDP SSO list: {} "
+                + " for preferred binding: {}", idpSsoServiceList, preferredBinding);
+        return null;
     }
 
     /**

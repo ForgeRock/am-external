@@ -24,7 +24,7 @@
  *
  * $Id: IDPAuthnContextMapper.java,v 1.6 2008/06/25 05:47:51 qcheng Exp $
  *
- * Portions Copyrighted 2019-2022 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -62,6 +62,7 @@ public interface IDPAuthnContextMapper extends SAMLPlugin {
      * @return an <code>IDPAuthnContextInfo</code> object
      * @throws SAML2Exception if an error occurs.
      */
+    @Deprecated
     IDPAuthnContextInfo getIDPAuthnContextInfo(AuthnRequest authnRequest,
             String idpEntityID, String realm) throws SAML2Exception;
 

@@ -11,9 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.oauth;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.forgerock.openam.oauth2.OAuth2Constants.ClientPurpose.RP_ID_TOKEN_DECRYPTION;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -58,13 +65,6 @@ import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.openam.oauth2.OAuth2Constants.ClientPurpose.RP_ID_TOKEN_DECRYPTION;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
-
 public class AMOpenIDConnectClientTest {
 
     @Mock
@@ -73,7 +73,6 @@ public class AMOpenIDConnectClientTest {
     @Mock
     private Clock clock;
 
-    @Mock
     private SecureRandom random;
 
     @Mock
@@ -123,6 +122,7 @@ public class AMOpenIDConnectClientTest {
     @BeforeSuite
     public void setUp() throws Exception {
         openMocks(this);
+        random = SecureRandom.getInstanceStrong();
         keyPair = createTestKeyPair();
         claims = new JsonValue(Map.of(NAME_CLAIM_KEY, NAME_CLAIM_VALUE, MAIL_CLAIM_KEY, MAIL_CLAIM_VALUE));
     }

@@ -1,0 +1,44 @@
+/*
+ * The contents of this file are subject to the terms of the Common Development and
+ * Distribution License (the License). You may not use this file except in compliance with the
+ * License.
+ *
+ * You can obtain a copy of the License at legal/CDDLv1.0.txt. See the License for the
+ * specific language governing permission and limitations under the License.
+ *
+ * When distributing Covered Software, include this CDDL Header Notice in each file and include
+ * the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
+ * Header, with the fields enclosed by brackets [] replaced by your own identifying
+ * information: "Portions copyright [year] [name of copyright owner]".
+ *
+ * Copyright 2023 ForgeRock AS.
+ */
+package org.forgerock.openam.auth.nodes.attestation;
+
+import static org.forgerock.openam.shared.secrets.Labels.DEFAULT_ATTESTATION_GOOGLE_PUBLIC_KEY;
+
+import org.forgerock.openam.secrets.SecretIdProvider;
+
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Multimap;
+
+/**
+ * Provides secret ids for instances of the AndroidKeyAttestationService.
+ */
+public class GooglePublicKeySecretIdProvider implements SecretIdProvider {
+
+    private static final String COMPONENT_NAME = "AndroidKeyAttestation";
+    private static final Multimap<String, String> SINGLETON_SECRET_IDS = ImmutableMultimap.<String, String>builder()
+            .putAll(COMPONENT_NAME, DEFAULT_ATTESTATION_GOOGLE_PUBLIC_KEY)
+            .build();
+
+    @Override
+    public Multimap<String, String> getGlobalSingletonSecretIds() {
+        return SINGLETON_SECRET_IDS;
+    }
+
+    @Override
+    public Multimap<String, String> getRealmSingletonSecretIds() {
+        return SINGLETON_SECRET_IDS;
+    }
+}

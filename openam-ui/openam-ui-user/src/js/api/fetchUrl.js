@@ -26,10 +26,23 @@ const throwIfPathHasNoLeadingSlash = (path) => {
         throw new Error(`[fetchUrl] Path must start with forward slash. "${path}"`);
     }
 };
+const throwIfRealmContainsInvalidCharacters = (realm) => {
+    const invalidCharacters = "[ @#$%&+?:;,=<>\"]";
+    const encodedPattern =
+        /(%20|%40|%23|%24|%25|%26|%2B|%3F|%3A|%3B|%2C|%3D|%5C|%3C|%3E|%2b|%3f|%3a|%3b|%2c|%3d|%5c|%3c|%3e|%22)/g;
+    if (realm.match(encodedPattern) !== null) {
+        throw new Error("[realm] parameter contains invalid encoded characters: ".concat(invalidCharacters));
+    }
+    const regExp = new RegExp(invalidCharacters, "g");
+    if (realm.match(regExp) !== null) {
+        throw new Error("[realm] parameter contains invalid characters: ".concat(invalidCharacters));
+    }
+};
 const normaliseRealmAliasResourcePath = (alias) => `/realms/${alias}`;
 const normaliseRealmResourcePath = (realm) => realm.replace(/\//g, "/realms/");
 const replaceBackslashWithSlash = (realm) => realm.replace(/\\/g, "/");
-const removePathTraversalCharacters = (realm) => realm.replace(/\/(\.|%2e|%2E){2}/g, "");
+const removeSpaceChars = (realm) => realm.replace(/\s+/g, "");
+const removePathTraversalCharacters = (realm) => realm.replace(/(^|\/)(\.|%2e|%2E){2}(?=\/|$)/g, "");
 const redesignateRootRealm = (realm, rootIdentifier) => {
     const isRootRealm = realm === "/";
     return isRootRealm ? rootIdentifier : `${rootIdentifier}${realm}`;
@@ -60,7 +73,9 @@ const fetchUrl = (path, { realm = store.getState().local.session.realm } = {}) =
     if (!realm) { return path; }
     // backslashes are treated as slashes by a browser so should be replaced with slashes before processing the realm
     realm = replaceBackslashWithSlash(realm);
+    realm = removeSpaceChars(realm);
     realm = removePathTraversalCharacters(realm);
+    throwIfRealmContainsInvalidCharacters(realm);
     if (hasLeadingSlash(realm)) {
         realm = redesignateRootRealm(realm, ROOT_REALM_IDENTIFIER);
         realm = normaliseRealmResourcePath(realm);

@@ -79,7 +79,7 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper;
 import org.forgerock.openam.auth.nodes.oauth.SharedStateAdaptor;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
-import org.forgerock.openam.auth.nodes.script.SocialProviderHandlerNodeBindings;
+import org.forgerock.openam.social.idp.SocialProviderHandlerNodeBindings;
 import org.forgerock.openam.authentication.callbacks.IdPCallback;
 import org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider;
 import org.forgerock.openam.core.realms.Realm;
@@ -447,7 +447,8 @@ public class SocialProviderHandlerNode implements Node {
                         : null)
                 .withSharedState(context.sharedState.getObject())
                 .withTransientState(context.transientState.getObject())
-                .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME,
+                        script.getId(), script.getName()))
                 .withScriptName(script.getName())
                 .build();
 

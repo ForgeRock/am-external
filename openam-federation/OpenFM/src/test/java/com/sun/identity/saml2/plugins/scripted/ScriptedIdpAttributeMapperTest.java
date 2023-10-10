@@ -130,7 +130,8 @@ public class ScriptedIdpAttributeMapperTest {
                         entry(HOSTED_ENTITYID, hostedEntityId),
                         entry(REMOTE_ENTITY, remoteEntityId),
                         entry(REALM, realm),
-                        entry(LOGGER, Debug.getInstance(String.format("%s (%s)", script.getName(), script.getId()))))
+                        entry(LOGGER, Debug.getInstance(String.format("scripts.%s.%s.(%s)",
+                                SAML2_IDP_ATTRIBUTE_MAPPER.name(), script.getId(), script.getName()))))
                 .containsKey(IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER);
     }
 

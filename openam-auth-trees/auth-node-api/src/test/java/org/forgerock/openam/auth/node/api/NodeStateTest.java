@@ -11,14 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Map.of;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.cuppa.Cuppa.describe;
 import static org.forgerock.cuppa.Cuppa.it;
 import static org.forgerock.cuppa.Cuppa.when;
@@ -92,6 +94,132 @@ public class NodeStateTest {
                                     state(of("KEY_1", "VALUE_C", "KEY_2", "VALUE_E")));
 
                             assertThat(nodeState.get("KEY_2")).stringIs("", equalTo("VALUE_D"));
+                        });
+                    });
+                });
+            });
+            describe("#getObject", () -> {
+                when("state is duplicated across state types", () -> {
+                    when("state is in both transient, secure and shared", () -> {
+                        when("value is a map", () -> {
+                            it("combines states with distinct inner keys", () -> {
+                                NodeState nodeState = new NodeState(emptyList(),
+                                        state(of("KEY_1", of("INNER_KEY_1", "VALUE_A"))),
+                                        state(of("KEY_1", of("INNER_KEY_2", "VALUE_B"), "KEY_2", "VALUE_D")),
+                                        state(of("KEY_1", of("INNER_KEY_3", "VALUE_C"), "KEY_2", "VALUE_E")));
+
+                                assertThat(nodeState.getObject("KEY_1").asMap())
+                                        .containsOnlyKeys("INNER_KEY_1", "INNER_KEY_2", "INNER_KEY_3");
+                            });
+                            it("combines states in order where keys clash (transient > secure > shared)", () -> {
+                                NodeState nodeState = new NodeState(emptyList(),
+                                        // transient
+                                        state(of("KEY_1", of(
+                                                "INNER_KEY_1", "VALUE_A"))),
+                                        // secure
+                                        state(of("KEY_1", of(
+                                                "INNER_KEY_1", "VALUE_B",
+                                                "INNER_KEY_2", "VALUE_D"))),
+                                        // shared
+                                        state(of("KEY_1", of(
+                                                "INNER_KEY_1", "VALUE_C",
+                                                "INNER_KEY_2", "VALUE_E",
+                                                "INNER_KEY_3", "VALUE_F"))));
+
+                                assertThat(nodeState.getObject("KEY_1").asMap())
+                                        .containsOnlyKeys("INNER_KEY_1", "INNER_KEY_2", "INNER_KEY_3")
+                                        .containsEntry("INNER_KEY_1", "VALUE_A")
+                                        .containsEntry("INNER_KEY_2", "VALUE_D")
+                                        .containsEntry("INNER_KEY_3", "VALUE_F");
+                            });
+                            it("handles states with different types", () -> {
+                                NodeState nodeState = new NodeState(emptyList(),
+                                        // transient
+                                        state(of("KEY_1", of(
+                                                "INNER_KEY_1", "VALUE_A"))),
+                                        // secure
+                                        state(of("KEY_1", List.of("VALUE_B", "VALUE_D"))),
+                                        // shared
+                                        state(of("KEY_1", of(
+                                                "INNER_KEY_1", "VALUE_C",
+                                                "INNER_KEY_2", "VALUE_E",
+                                                "INNER_KEY_3", "VALUE_F"))));
+
+                                assertThat(nodeState.getObject("KEY_1").asMap())
+                                        .containsOnlyKeys("INNER_KEY_1", "INNER_KEY_2", "INNER_KEY_3")
+                                        .containsEntry("INNER_KEY_1", "VALUE_A")
+                                        .containsEntry("INNER_KEY_2", "VALUE_E")
+                                        .containsEntry("INNER_KEY_3", "VALUE_F");
+                            });
+                            it("prevents modification", () -> {
+                                NodeState nodeState = new NodeState(emptyList(),
+                                        state(of("KEY_1", of("INNER_KEY_1", "VALUE_A"))),
+                                        state(of("KEY_1", of("INNER_KEY_2", "VALUE_B"), "KEY_2", "VALUE_D")),
+                                        state(of("KEY_1", of("INNER_KEY_3", "VALUE_C"), "KEY_2", "VALUE_E")));
+
+                                Map<String, Object> key1 = nodeState.getObject("KEY_1").asMap();
+                                assertThatThrownBy(() -> key1.put("INNER_KEY_1", "VALUE_Z"))
+                                        .isExactlyInstanceOf(UnsupportedOperationException.class);
+                                assertThat(nodeState.getObject("KEY_1").asMap())
+                                        .containsEntry("INNER_KEY_1", "VALUE_A");
+                            });
+                        });
+                        when("value is not a map", () -> {
+                            it("returns value from transient", () -> {
+                                NodeState nodeState = new NodeState(emptyList(),
+                                        state(of("KEY_1", "VALUE_A")),
+                                        state(of("KEY_1", "VALUE_B", "KEY_2", "VALUE_D")),
+                                        state(of("KEY_1", "VALUE_C", "KEY_2", "VALUE_E")));
+
+                                assertThat(nodeState.getObject("KEY_1")).stringIs("", equalTo("VALUE_A"));
+                            });
+                        });
+                    });
+                    when("state is in both secure and shared", () -> {
+                        when("value is a map", () -> {
+                            it("combines states with distinct inner keys", () -> {
+                                NodeState nodeState = new NodeState(emptyList(),
+                                        // transient
+                                        state(emptyMap()),
+                                        // secure
+                                        state(of("KEY_2", of(
+                                                "INNER_KEY_1", "VALUE_A"))),
+                                        // shared
+                                        state(of("KEY_2", of(
+                                                "INNER_KEY_1", "VALUE_B",
+                                                "INNER_KEY_2", "VALUE_C"))));
+
+                                assertThat(nodeState.getObject("KEY_2").asMap())
+                                        .containsOnlyKeys("INNER_KEY_1", "INNER_KEY_2")
+                                        .containsEntry("INNER_KEY_1", "VALUE_A")
+                                        .containsEntry("INNER_KEY_2", "VALUE_C");
+                            });
+                            it("handles states with null keys", () -> {
+                                NodeState nodeState = new NodeState(emptyList(),
+                                        // transient
+                                        state(emptyMap()),
+                                        // secure
+                                        state(of("KEY_2", of(
+                                                "INNER_KEY_1", "VALUE_A",
+                                                "INNER_KEY_2", "VALUE_B"))),
+                                        // shared
+                                        state(of("KEY_2", json(null))));
+
+                                assertThat(nodeState.getObject("KEY_2").asMap())
+                                        .containsOnlyKeys("INNER_KEY_1", "INNER_KEY_2")
+                                        .containsEntry("INNER_KEY_1", "VALUE_A")
+                                        .containsEntry("INNER_KEY_2", "VALUE_B");
+                            });
+                        });
+                        when("value is not a map", () -> {
+                            it("returns value from secure", () -> {
+                                NodeState nodeState = new NodeState(emptyList(),
+                                        state(of("KEY_1", "VALUE_A")),
+                                        state(of("KEY_1", "VALUE_B", "KEY_2", "VALUE_D")),
+                                        state(of("KEY_1", "VALUE_C", "KEY_2", "VALUE_E")));
+
+                                assertThat(nodeState.getObject("KEY_2")).stringIs("", equalTo("VALUE_D"));
+                            });
                         });
                     });
                 });

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -345,7 +345,7 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         List<WebAuthnDeviceSettings> devices;
         logger.debug("getting user data and device data");
         IdentityStore identityStore = identityStoreFactory.create(realm);
-        AMIdentity user = identityStore.getIdentity(username, coreWrapper.getUserAliasList(realm));
+        AMIdentity user = identityStore.getUserUsingAuthenticationUserAliases(username);
         if (user == null) {
             throw new DevicePersistenceException("getIdentity: Unable to find user " + username);
         } else {

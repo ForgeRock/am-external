@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -33,6 +33,8 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -180,6 +182,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         //given
         String path = "/";
         String dataStoreId = "data_store_id";
+        final String original_url_encoded = URLEncoder.encode(ORIGINAL_URL, StandardCharsets.UTF_8);
         given(dataStore.getId()).willReturn(dataStoreId);
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
@@ -190,8 +193,8 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         module.process(null, ISAuthConstants.LOGIN_START);
 
         //then
-        verify(authModuleHelper, times(1)).addCookieToResponse(response, COOKIE_ORIG_URL, ORIGINAL_URL, path, DOMAIN_1);
-        verify(authModuleHelper, times(1)).addCookieToResponse(response, COOKIE_ORIG_URL, ORIGINAL_URL, path, DOMAIN_2);
+        verify(authModuleHelper, times(1)).addCookieToResponse(response, COOKIE_ORIG_URL, original_url_encoded, path, DOMAIN_1);
+        verify(authModuleHelper, times(1)).addCookieToResponse(response, COOKIE_ORIG_URL, original_url_encoded, path, DOMAIN_2);
         verify(authModuleHelper, times(1)).addCookieToResponse(response, NONCE_TOKEN_ID, dataStoreId, path, DOMAIN_1);
         verify(authModuleHelper, times(1)).addCookieToResponse(response, NONCE_TOKEN_ID, dataStoreId, path, DOMAIN_2);
     }

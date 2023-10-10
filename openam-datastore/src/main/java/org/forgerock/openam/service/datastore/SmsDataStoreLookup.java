@@ -11,10 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
 
+import static com.sun.identity.shared.datastruct.CollectionHelper.getBooleanMapAttr;
 import static com.sun.identity.sm.SmsWrapperObject.isFbcWithoutEmbeddedEnabled;
 import static org.forgerock.openam.service.datastore.DataStoreGuiceModule.SERVICE_DATA_STORE_ID_ATTRIBUTE_NAMES;
 
@@ -22,16 +23,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.core.realms.RealmLookupException;
 import org.forgerock.openam.entitlement.utils.EntitlementUtils;
 import org.forgerock.openam.services.datastore.DataStoreException;
 import org.forgerock.openam.services.datastore.DataStoreId;
 import org.forgerock.openam.services.datastore.DataStoreLookup;
+import org.forgerock.openam.sm.ConfigurationAttributes;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
 import org.forgerock.openam.sm.config.ConfigAttribute;
 import org.forgerock.openam.sm.config.ConfigRetrievalException;
@@ -46,9 +48,13 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.iplanet.am.util.SystemProperties;
 import com.iplanet.sso.SSOException;
+import com.iplanet.sso.SSOToken;
 import com.sun.identity.idm.IdConstants;
+import com.sun.identity.security.AdminTokenAction;
 import com.sun.identity.shared.Constants;
+import com.sun.identity.sm.DataStoreInitializer;
 import com.sun.identity.sm.SMSException;
 import com.sun.identity.sm.ServiceConfig;
 import com.sun.identity.sm.ServiceConfigManager;
@@ -63,19 +69,23 @@ final class SmsDataStoreLookup implements DataStoreLookup {
     private static final Logger LOGGER = LoggerFactory.getLogger(SmsDataStoreLookup.class);
     static final String SERVICE_NAME = "amDataStoreService";
     static final String SERVICE_VERSION = "1.0";
-    private static final String SUB_CONFIG_NAME = "dataStoreContainer";
-    private static final DataStoreIds DEFAULT_IDS = new DataStoreIds(new DataStoreIdsBuilder());
+    static final String CONTAINER_CONFIG_NAME = "dataStoreContainer";
+    static final String DATA_STORE_ENABLED = "dataStoreEnabled";
+    private static final DataStoreIds CONFIG_IDS = new DataStoreIds(new DataStoreIdsBuilder());
     static final String POLICY_DATASTORE_ATTR_NAME = "policy-datastore-id";
     static final String APPLICATION_DATASTORE_ATTR_NAME = "application-datastore-id";
+    private static final String FLAG_DYNAMIC_DATASTORE_CREATION = "dynamic.datastore.creation.enabled";
 
     private final Map<String, Function<DataStoreIds, DataStoreId>> realmServiceToDataStoreId;
     private final Map<String, String> serviceDataStoreIdAttributes;
     private final ConsoleConfigHandler configHandler;
     private final ServiceConfigManagerFactory configManagerFactory;
+    private final DataStoreInitializer dataStoreInitializer;
 
     @Inject
     SmsDataStoreLookup(ConsoleConfigHandler configHandler, ServiceConfigManagerFactory configManagerFactory,
-            @Named(SERVICE_DATA_STORE_ID_ATTRIBUTE_NAMES) Map<String, String> serviceDataStoreIdAttributes) {
+            @Named(SERVICE_DATA_STORE_ID_ATTRIBUTE_NAMES) Map<String, String> serviceDataStoreIdAttributes,
+                       DataStoreInitializer dataStoreInitializer) {
         this.configHandler = configHandler;
         this.configManagerFactory = configManagerFactory;
         realmServiceToDataStoreId = ImmutableMap
@@ -89,6 +99,7 @@ final class SmsDataStoreLookup implements DataStoreLookup {
                 .put(Constants.SAML_2_CONFIG, DataStoreIds::getApplicationId)
                 .build();
         this.serviceDataStoreIdAttributes = serviceDataStoreIdAttributes;
+        this.dataStoreInitializer = dataStoreInitializer;
     }
 
     @Override
@@ -100,11 +111,27 @@ final class SmsDataStoreLookup implements DataStoreLookup {
         }
 
         if (!realmServiceToDataStoreId.containsKey(serviceName)) {
-            return DataStoreId.DEFAULT;
+            return DataStoreId.CONFIG;
         }
 
         return transformDataStoreIdsFor(realm,
-                dataStoreIds -> realmServiceToDataStoreId.get(serviceName).apply(dataStoreIds));
+                dataStoreIds -> realmServiceToDataStoreId.get(serviceName).apply(dataStoreIds), true);
+    }
+
+    @Override
+    public DataStoreId lookupRealmIdWithoutInitializing(String serviceName, Realm realm) {
+        Reject.ifNull(serviceName, realm);
+
+        if (serviceDataStoreIdAttributes.containsKey(serviceName)) {
+            return getServiceDataStoreId(serviceDataStoreIdAttributes.get(serviceName));
+        }
+
+        if (!realmServiceToDataStoreId.containsKey(serviceName)) {
+            return DataStoreId.CONFIG;
+        }
+
+        return transformDataStoreIdsFor(realm,
+                dataStoreIds -> realmServiceToDataStoreId.get(serviceName).apply(dataStoreIds), false);
     }
 
     @Override
@@ -112,7 +139,7 @@ final class SmsDataStoreLookup implements DataStoreLookup {
         Reject.ifNull(serviceName);
 
         if (!serviceDataStoreIdAttributes.containsKey(serviceName)) {
-            return DataStoreId.DEFAULT;
+            return DataStoreId.CONFIG;
         }
 
         return getServiceDataStoreId(serviceDataStoreIdAttributes.get(serviceName));
@@ -122,7 +149,14 @@ final class SmsDataStoreLookup implements DataStoreLookup {
     public Set<DataStoreId> lookupRealmIds(Realm realm) {
         Reject.ifNull(realm);
         return transformDataStoreIdsFor(realm,
-                dataStoreIds -> ImmutableSet.of(dataStoreIds.policyId, dataStoreIds.applicationId));
+                dataStoreIds -> ImmutableSet.of(dataStoreIds.policyId, dataStoreIds.applicationId), true);
+    }
+
+    @Override
+    public Set<DataStoreId> lookupRealmIdsWithoutInitializing(Realm realm) {
+        Reject.ifNull(realm);
+        return transformDataStoreIdsFor(realm,
+                dataStoreIds -> ImmutableSet.of(dataStoreIds.policyId, dataStoreIds.applicationId), false);
     }
 
     @Override
@@ -133,25 +167,51 @@ final class SmsDataStoreLookup implements DataStoreLookup {
     }
 
     @Override
-    public Set<DataStoreId> getAllIds() {
+    public Set<DataStoreId> getEnabledIds() {
         try {
             ServiceConfig globalConfig = getGlobalServiceConfig();
-            ServiceConfig containerConfig = globalConfig.getSubConfig(SUB_CONFIG_NAME);
+            ServiceConfig containerConfig = globalConfig.getSubConfig(CONTAINER_CONFIG_NAME);
 
-            Stream<DataStoreId> defaultDataStoreId = isFbcWithoutEmbeddedEnabled() ?
-                    Stream.empty() : Stream.of(DataStoreId.DEFAULT);
-
-            return Stream.concat(defaultDataStoreId,
-                    containerConfig.getSubConfigNames()
-                            .stream()
-                            .map(DataStoreId::of))
+            Set<DataStoreId> enabledIds = containerConfig.getSubConfigNames().stream()
+                    .map(DataStoreId::of)
+                    .filter(dataStoreId -> {
+                        ConfigurationAttributes attributes =
+                                getContainerSubConfig(containerConfig, dataStoreId).getAttributes();
+                        return hasDataStoreAttributeEnabled(attributes);
+                    })
                     .collect(Collectors.toSet());
+
+            if (!isFbcWithoutEmbeddedEnabled()) {
+                enabledIds.add(DataStoreId.CONFIG);
+            }
+            return enabledIds;
         } catch (SMSException | SSOException e) {
-            throw new DataStoreException("Unable to read SMS configuration for data store", e);
+            throw dataStoreException(e);
         }
     }
 
-    private <T> T transformDataStoreIdsFor(Realm realm, Function<DataStoreIds, T> mapper) {
+    private static ServiceConfig getContainerSubConfig(ServiceConfig containerConfig, DataStoreId dataStoreId) {
+        try {
+            return containerConfig.getSubConfig(dataStoreId.getOriginalId());
+        } catch (SMSException | SSOException e) {
+            throw dataStoreException(e);
+        }
+    }
+
+    private static boolean hasDataStoreAttributeEnabled(ConfigurationAttributes attributes) {
+        return getBooleanMapAttr(attributes, DATA_STORE_ENABLED, true);
+    }
+
+    private static DataStoreException dataStoreException(Exception e) {
+        return new DataStoreException("Unable to read SMS configuration for data store", e);
+    }
+
+    @Override
+    public boolean containsAllEnabled(Set<DataStoreId> dataStoreId) {
+        return getEnabledIds().containsAll(dataStoreId);
+    }
+
+    private <T> T transformDataStoreIdsFor(Realm realm, Function<DataStoreIds, T> mapper, boolean shouldInitialize) {
         try {
             DataStoreIds dataStoreIds = configHandler.getConfig(realm.asPath(), DataStoreIdsBuilder.class);
 
@@ -159,12 +219,21 @@ final class SmsDataStoreLookup implements DataStoreLookup {
                 throw new DataStoreException("Data store config has come back as null for " + realm);
             }
 
+            boolean dynamicDSCreationEnabled = SystemProperties.getAsBoolean(FLAG_DYNAMIC_DATASTORE_CREATION);
+            if (dynamicDSCreationEnabled && shouldInitialize) {
+                SSOToken token = AdminTokenAction.getInstance().run();
+                dataStoreInitializer.handlePolicyDataStoreCreation(token, realm, dataStoreIds.getPolicyId());
+                dataStoreInitializer.handleApplicationDataStoreCreation(token, realm, dataStoreIds.getApplicationId());
+            }
+
             return mapper.apply(dataStoreIds);
         } catch (ConfigRetrievalException e) {
             LOGGER.warn("Failed to retrieve data store config for realm " + realm, e);
             // service wont be available when we upgrade from a version prior to 6.5.0
             // so return default external data store ids to defend against upgrade failure
-            return mapper.apply(DEFAULT_IDS);
+            return mapper.apply(CONFIG_IDS);
+        } catch (SMSException | SSOException | RealmLookupException e) {
+            throw new DataStoreException("Error initializing datastore", e);
         }
     }
 
@@ -174,7 +243,7 @@ final class SmsDataStoreLookup implements DataStoreLookup {
                     .getAttributeValue(attributeName));
 
             if (dataStoreId == null) {
-                return DataStoreId.DEFAULT;
+                return DataStoreId.CONFIG;
             }
 
             return DataStoreId.of(dataStoreId);
@@ -182,7 +251,7 @@ final class SmsDataStoreLookup implements DataStoreLookup {
             LOGGER.warn("Failed to retrieve global data store config", e);
             // service wont be available when we upgrade from a version prior to 7.0.0
             // so return default external data store ids to defend against upgrade failure
-            return DataStoreId.DEFAULT;
+            return DataStoreId.CONFIG;
         }
     }
 
@@ -221,17 +290,17 @@ final class SmsDataStoreLookup implements DataStoreLookup {
     @ConfigSource(value = "amDataStoreService", includeAttributeDefaults = false)
     public static final class DataStoreIdsBuilder implements ConsoleConfigBuilder<DataStoreIds> {
 
-        private DataStoreId policyId = DataStoreId.DEFAULT;
-        private DataStoreId applicationId = DataStoreId.DEFAULT;
+        private DataStoreId policyId = DataStoreId.CONFIG;
+        private DataStoreId applicationId = DataStoreId.CONFIG;
 
         @ConfigAttribute(value = POLICY_DATASTORE_ATTR_NAME, required = false,
-                transformer = StringToDataStoreId.class, defaultValues = DataStoreId.DEFAULT_ID)
+                transformer = StringToDataStoreId.class, defaultValues = DataStoreId.CONFIG_ID)
         public void withPolicyDataStoreId(DataStoreId policyId) {
             this.policyId = policyId;
         }
 
         @ConfigAttribute(value = APPLICATION_DATASTORE_ATTR_NAME, required = false,
-                transformer = StringToDataStoreId.class, defaultValues = DataStoreId.DEFAULT_ID)
+                transformer = StringToDataStoreId.class, defaultValues = DataStoreId.CONFIG_ID)
         public void withApplicationDataStoreId(DataStoreId applicationId) {
             this.applicationId = applicationId;
         }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2019-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -57,6 +57,7 @@ public class CaptchaNodeTest {
     private static final String API_URI = "apiUri";
     private static final String DIV_CLASS = "divClass";
     private static final boolean RECAPTCHA_V3 = true;
+    private static final boolean DISABLE_SUBMISSIONS = true;
 
     @BeforeMethod
     public void setUp() throws Exception {
@@ -86,7 +87,8 @@ public class CaptchaNodeTest {
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void shouldThrowExceptionIfNoResponseProvided() throws Exception {
-        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3);
+        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
+                DISABLE_SUBMISSIONS);
         TreeContext context = new TreeContext(json(object()),
                 new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
         node.process(context);
@@ -94,7 +96,8 @@ public class CaptchaNodeTest {
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void shouldThrowExceptionIfResponseCannotBeVerified() throws Exception {
-        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3);
+        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
+                DISABLE_SUBMISSIONS);
         callback.setResponse("response");
         TreeContext context = new TreeContext(json(object()),
         new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
@@ -108,7 +111,8 @@ public class CaptchaNodeTest {
 
     @Test
     public void shouldGoToFailOutcomeIfResponseContainsFailure() throws Exception {
-        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3);
+        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
+                DISABLE_SUBMISSIONS);
         callback.setResponse("success");
         TreeContext context = new TreeContext(json(object()),
                 new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
@@ -125,7 +129,8 @@ public class CaptchaNodeTest {
 
     @Test
     public void shouldGoToTrueOutcomeIfResponseContainsSuccessAndMeetsScoreThreshold() throws Exception {
-        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3);
+        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
+                DISABLE_SUBMISSIONS);
         callback.setResponse("response");
         TreeContext context = new TreeContext(json(object()),
                 new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());
@@ -143,7 +148,8 @@ public class CaptchaNodeTest {
 
     @Test
     public void shouldGoToFalseOutcomeIfResponseDoesNotMeetThreshold() throws Exception {
-        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3);
+        ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
+                DISABLE_SUBMISSIONS);
         callback.setResponse("response");
         TreeContext context = new TreeContext(json(object()),
                 new ExternalRequestContext.Builder().build(), singletonList(callback), Optional.empty());

@@ -172,7 +172,7 @@ public class Scripted extends AMLoginModule {
     private int evaluateServerSideScript(String clientScriptOutputData, int state) throws AuthLoginException {
         Script script = getServerSideScript();
 
-        ScriptBindings scriptBindings = ScriptedBindings.builder()
+        ScriptBindings scriptBindings = ServerSideAuthenticationScriptBindings.builder()
                 .withRequestData(getScriptHttpRequestWrapper())
                 .withClientScriptOutputData(clientScriptOutputData)
                 .withState(state)
@@ -183,7 +183,8 @@ public class Scripted extends AMLoginModule {
                 .withFailureValue(FAILURE_VALUE)
                 .withHttpClient(httpClient)
                 .withIdentityRepository(identityRepository)
-                .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                .withLoggerReference(String.format("scripts.%s.%s.(%s)", AUTHENTICATION_SERVER_SIDE.name(),
+                        script.getId(), script.getName()))
                 .withScriptName(script.getName())
                 .build();
 

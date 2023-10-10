@@ -46,7 +46,6 @@ import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sun.identity.plugin.datastore.DataStoreProvider;
 import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.saml2.assertion.Assertion;
 import com.sun.identity.saml2.assertion.Attribute;
@@ -121,6 +120,7 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
         boolean isTransient = SAML2Constants.NAMEID_TRANSIENT_FORMAT.equals(format);
         if (isTransient) {
             userID = getTransientUser(realm, hostEntityID);
+            validateUserId(userID);
         }
 
         if (StringUtils.isNotEmpty(userID)) {
@@ -137,6 +137,7 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
                      logger.debug("DefaultLibrarySPAccountMapper.getIdentity: use NameID value as userID: "
                              + nameID.getValue());
                 }
+                validateUserId(nameID.getValue());
                 return nameID.getValue();
             } else {
                 return null;
@@ -262,16 +263,8 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
            autoFedMapAttribute = autoFedAttribute;
         }
 
-        DataStoreProvider dataStoreProvider = dsProvider;
         for (String s : autoFedAttributeValue) {
-            try {
-                if (dataStoreProvider.isUsernameUniversalId(s)) {
-                    throw new SAML2InvalidUserException("Invalid user");
-                }
-            } catch (DataStoreProviderException e) {
-                logger.error("Invalid universalId username", e);
-                throw new SAML2InvalidUserException("Invalid user");
-            }
+            validateUserId(s);
         }
 
         try {
@@ -304,6 +297,17 @@ public class DefaultLibrarySPAccountMapper extends DefaultAccountMapper implemen
         }
 
         return null;
+    }
+
+    private void validateUserId(String userId) throws SAML2InvalidUserException {
+        try {
+            if (dsProvider.isUsernameUniversalId(userId)) {
+                throw new SAML2InvalidUserException("Invalid user");
+            }
+        } catch (DataStoreProviderException e) {
+            logger.error("Invalid universalId username", e);
+            throw new SAML2InvalidUserException("Invalid user");
+        }
     }
 
     /**

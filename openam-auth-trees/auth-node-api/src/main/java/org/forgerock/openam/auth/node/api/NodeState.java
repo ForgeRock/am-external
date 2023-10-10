@@ -11,12 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -115,6 +117,29 @@ public final class NodeState {
             }
         } else {
             return null;
+        }
+    }
+
+    /**
+     * Get the value for the given key from the state. Combines state from transient, secure and shared when values are
+     * maps into an immutable object.
+     * @param key The key.
+     * @return The value or null if the key is not defined.
+     */
+    public JsonValue getObject(String key) {
+        JsonValue value = get(key);
+        if (value != null && value.isMap()) {
+            JsonValue sharedStateValue = json(sharedState.isDefined(key) && sharedState.get(key).isMap()
+                    ? sharedState.get(key) : object());
+            JsonValue secureStateValue = json(secureState.isDefined(key) && secureState.get(key).isMap()
+                    ? secureState.get(key) : object());
+            JsonValue transientStateValue = json(transientState.isDefined(key) && transientState.get(key).isMap()
+                    ? transientState.get(key) : object());
+
+            return json(Collections.unmodifiableMap(
+                    sharedStateValue.merge(secureStateValue).merge(transientStateValue).asMap()));
+        } else {
+            return value;
         }
     }
 

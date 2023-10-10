@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2022 ForgeRock AS.
+ * Copyright 2015-2023 ForgeRock AS.
  */
 package org.forgerock.am.saml2.impl;
 
@@ -185,12 +185,26 @@ public final class Saml2Proxy {
         String key = generateKey();
 
         //survival time is one hour
-
+        Assertion assertion = (Assertion) smap.get(SAML2Constants.POST_ASSERTION);
         Saml2ResponseData data = new Saml2ResponseData((String) smap.get(SAML2Constants.SESSION_INDEX),
                 (Subject) smap.get(SAML2Constants.SUBJECT),
-                (Assertion) smap.get(SAML2Constants.POST_ASSERTION),
+                assertion,
                 respInfo,
                 (AuthnRequest) smap.get(SAML2Constants.AUTHN_REQUEST));
+
+        if (respInfo.getProfileBinding().equals(SAML2Constants.HTTP_POST)) {
+            String assertionId = assertion.getID();
+            SPCache.assertionByIDCache.put(assertionId, SAML2Constants.ONETIME);
+            try {
+                SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(
+                        assertionId,
+                        SAML2Constants.ONETIME,
+                        ((Long) smap.get(SAML2Constants.NOTONORAFTER)).longValue() / 1000);
+            } catch (SAML2TokenRepositoryException se) {
+                DEBUG.error("There was a problem saving the assertionID to the SAML2 Token Repository for assertionID:"
+                        + assertionId, se);
+            }
+        }
 
         try {
             long sessionExpireTime = currentTimeMillis() / 1000 + SPCache.interval; //counted in seconds

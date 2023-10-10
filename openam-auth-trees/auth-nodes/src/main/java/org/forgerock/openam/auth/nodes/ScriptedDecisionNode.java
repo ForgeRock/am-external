@@ -15,28 +15,10 @@
  */
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singleton;
-import static java.util.Collections.singletonList;
-import static org.forgerock.json.JsonValue.json;
-import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.openam.auth.node.api.Action.goTo;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.WILDCARD;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertHeadersToModifiableObjects;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertParametersToModifiableObjects;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getAuditEntryDetails;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getHttpClient;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getSessionProperties;
-import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
-import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE_NAME;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import javax.inject.Provider;
-import javax.script.Bindings;
-
+import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
+import com.iplanet.dpro.session.service.SessionService;
+import org.forgerock.http.Client;
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.JsonValueException;
@@ -48,14 +30,21 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.integration.idm.IdmIntegrationServiceScriptWrapper;
+import org.forgerock.openam.auth.nodes.script.ActionWrapper;
+import org.forgerock.openam.auth.nodes.script.ScriptedCallbacksBuilder;
 import org.forgerock.openam.auth.nodes.script.ScriptedDecisionNodeBindings;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.integration.idm.IdmIntegrationServiceForScripts;
 import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
+import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepository;
 import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.ScriptFeature;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
 import org.forgerock.openam.utils.StringUtils;
@@ -63,9 +52,29 @@ import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
-import com.iplanet.dpro.session.service.SessionService;
+import javax.inject.Provider;
+import javax.script.Bindings;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.openam.auth.node.api.Action.goTo;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.ACTION;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.CALLBACKS_BUILDER;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.WILDCARD;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertHeadersToModifiableObjects;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertParametersToModifiableObjects;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getAuditEntryDetails;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getHttpClient;
+import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getSessionProperties;
+import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
+import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE_NAME;
 
 /**
  * A node that executes a script to make a decision.
@@ -78,52 +87,69 @@ import com.iplanet.dpro.session.service.SessionService;
 public class ScriptedDecisionNode implements Node {
 
     private static final String OUTCOME_IDENTIFIER = "outcome";
-    private static final String ACTION_IDENTIFIER = "action";
     private final Logger logger = LoggerFactory.getLogger(ScriptedDecisionNode.class);
     private final Config config;
     private final ScriptEvaluator scriptEvaluator;
     private final Provider<SessionService> sessionServiceProvider;
     private final ChfHttpClient httpClient;
+    private final Client client;
     private final Realm realm;
-    private final ScriptIdentityRepository scriptIdentityRepo;
+    private final ScriptIdentityRepository scriptIdentityRepository;
+    private final ScriptedIdentityRepository scriptedIdentityRepository;
     private final ScriptedSecrets secrets;
+    private final IdmIntegrationServiceForScripts idmIntegrationServiceForScripts;
     private JsonValue auditEntryDetail;
 
     /**
      * Guice constructor.
      *
-     * @param scriptEvaluatorFactory    A script evaluator factory.
-     * @param config                    The node configuration.
-     * @param sessionServiceProvider    provides Sessions.
-     * @param httpClientFactory         provides http clients.
-     * @param realm                     The realm the node is in, and that the request is targeting.
-     * @param scriptIdentityRepoFactory factory to build access to the identity repo for this node's script
-     * @param secretsFactory            provides access to the secrets API for this node's script
+     * @param scriptEvaluatorFactory            A script evaluator factory.
+     * @param config                            The node configuration.
+     * @param sessionServiceProvider            provides Sessions.
+     * @param httpClientFactory                 provides http clients.
+     * @param client                            the {@link Client} for http requests.
+     * @param realm                             The realm the node is in, and that the request is targeting.
+     * @param scriptIdentityRepositoryFactory   factory to build access to the identity repo for this node's script
+     * @param scriptedIdentityRepositoryFactory factory to build access to the identity repo for this node's script
+     * @param secretsFactory                    provides access to the secrets API for this node's script
+     * @param idmIntegrationServiceForScripts   The IDM integration service for scripts.
      */
     @Inject
     public ScriptedDecisionNode(ScriptEvaluatorFactory scriptEvaluatorFactory,
             @Assisted Config config, Provider<SessionService> sessionServiceProvider,
-            ScriptHttpClientFactory httpClientFactory, @Assisted Realm realm,
-            ScriptIdentityRepository.Factory scriptIdentityRepoFactory,
-            ScriptedSecrets.Factory secretsFactory) {
+            ScriptHttpClientFactory httpClientFactory, Client client, @Assisted Realm realm,
+            ScriptIdentityRepository.Factory scriptIdentityRepositoryFactory,
+            ScriptedIdentityRepository.Factory scriptedIdentityRepositoryFactory,
+            ScriptedSecrets.Factory secretsFactory, IdmIntegrationServiceForScripts idmIntegrationServiceForScripts) {
         this.scriptEvaluator = scriptEvaluatorFactory.create(AUTHENTICATION_TREE_DECISION_NODE);
         this.config = config;
         this.sessionServiceProvider = sessionServiceProvider;
         this.httpClient = getHttpClient(config.script(), httpClientFactory);
+        this.client = client;
         this.realm = realm;
-        this.scriptIdentityRepo = scriptIdentityRepoFactory.create(realm);
-        this.auditEntryDetail = null;
+        this.scriptIdentityRepository = scriptIdentityRepositoryFactory.create(realm);
+        this.scriptedIdentityRepository = scriptedIdentityRepositoryFactory.create(realm);
         this.secrets = secretsFactory.create(realm, singleton("scripted.node."));
+        this.idmIntegrationServiceForScripts = idmIntegrationServiceForScripts;
     }
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("ScriptedDecisionNode started");
         try {
-            JsonValue filteredShared = filterInputs(context.sharedState);
-            JsonValue filteredTransient = filterInputs(context.transientState);
+            var idmIntegrationServiceScriptWrapper = new IdmIntegrationServiceScriptWrapper(
+                    idmIntegrationServiceForScripts, realm, context.request.locales
+            );
 
             Script script = config.script();
+            EvaluatorVersion evaluatorVersion = script.getEvaluatorVersion();
+
+            JsonValue filteredShared = json(null);
+            JsonValue filteredTransient = json(null);
+            if (evaluatorVersion.hasFeature(ScriptFeature.DIRECT_STATE_ACCESS)) {
+                filteredShared = filterInputs(context.sharedState);
+                filteredTransient = filterInputs(context.transientState);
+            }
 
             ScriptBindings scriptedDecisionNodeBindings = ScriptedDecisionNodeBindings.builder()
                     .withNodeState(context.getStateFor(this))
@@ -132,9 +158,9 @@ public class ScriptedDecisionNode implements Node {
                     .withRealm(realm.asPath())
                     .withQueryParameters(convertParametersToModifiableObjects(context.request.parameters))
                     .withHttpClient(httpClient)
-                    .withIdentityRepository(scriptIdentityRepo)
+                    .withScriptIdentityRepository(scriptIdentityRepository)
+                    .withScriptedIdentityRepository(scriptedIdentityRepository)
                     .withSecrets(secrets)
-                    .withAuditEntryDetail(auditEntryDetail)
                     .withResumedFromSuspend(context.hasResumedFromSuspend())
                     .withExistingSession(
                             StringUtils.isNotEmpty(context.request.ssoTokenId)
@@ -142,32 +168,35 @@ public class ScriptedDecisionNode implements Node {
                                     : null)
                     .withSharedState(filteredShared.getObject())
                     .withTransientState(filteredTransient.getObject())
-                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withIdmIntegrationService(idmIntegrationServiceScriptWrapper)
+                    .withClient(client)
+                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", AUTHENTICATION_TREE_DECISION_NODE_NAME,
+                            script.getId(), script.getName()))
                     .withScriptName(script.getName())
                     .build();
 
-            Bindings binding = scriptedDecisionNodeBindings.convert(script.getEvaluatorVersion());
+            Bindings binding = scriptedDecisionNodeBindings.convert(evaluatorVersion);
             scriptEvaluator.evaluateScript(script, binding, realm);
             logger.debug("script {} \n binding {}", script, binding);
-            if (!allOutputsArePresent(filteredShared, filteredTransient)) {
-                throw new NodeProcessException("Script did not provide all declared outputs");
-            }
-            checkForUnexpectedOutputs(filteredShared, filteredTransient);
-            transferOutputs(filteredShared, context.sharedState);
-            transferOutputs(filteredTransient, context.transientState);
-            auditEntryDetail = getAuditEntryDetails(binding);
-            Object actionResult = binding.get(ACTION_IDENTIFIER);
-            if (actionResult != null) {
-                if (actionResult instanceof Action) {
-                    Action action = (Action) actionResult;
-                    if (!action.sendingCallbacks() && !config.outcomes().contains(action.outcome)) {
-                        logger.warn("invalid script outcome {} in action", action.outcome);
-                        throw new NodeProcessException("Invalid outcome from script, '" + action.outcome + "'");
-                    }
-                    return action;
-                } else {
-                    logger.warn("Found an action result from scripted node, but it was not an Action object");
+            if (evaluatorVersion.hasFeature(ScriptFeature.DIRECT_STATE_ACCESS)) {
+                if (!allOutputsArePresent(filteredShared, filteredTransient)) {
+                    throw new NodeProcessException("Script did not provide all declared outputs");
                 }
+                checkForUnexpectedOutputs(filteredShared, filteredTransient);
+                transferOutputs(filteredShared, context.sharedState);
+                transferOutputs(filteredTransient, context.transientState);
+            }
+            auditEntryDetail = getAuditEntryDetails(binding);
+            Object actionResult = binding.get(ACTION);
+            Object callbacksBuilder = binding.get(CALLBACKS_BUILDER);
+            Optional<Action> actionOptional = getAction(actionResult, evaluatorVersion, callbacksBuilder);
+            if (actionOptional.isPresent()) {
+                Action action = actionOptional.get();
+                if (!action.sendingCallbacks() && !config.outcomes().contains(action.outcome)) {
+                    logger.warn("invalid script outcome {} in action", action.outcome);
+                    throw new NodeProcessException("Invalid outcome from script, '" + action.outcome + "'");
+                }
+                return action;
             }
             Object rawResult = binding.get(OUTCOME_IDENTIFIER);
             if (rawResult == null || !(rawResult instanceof String)) {
@@ -185,6 +214,36 @@ public class ScriptedDecisionNode implements Node {
             logger.warn("error evaluating the script", e);
             throw new NodeProcessException(e);
         }
+    }
+
+    private Optional<Action> getAction(Object actionResult, EvaluatorVersion evalVersion, Object callbacksBuilder) {
+        Optional<Action> action = Optional.empty();
+        switch (evalVersion) {
+        case V1_0:
+            if (actionResult instanceof Action) {
+                action = Optional.of((Action) actionResult);
+            } else {
+                logger.warn("Found an action result from scripted node, but it was not an Action object");
+            }
+            break;
+
+        case V2_0:
+            if (actionResult instanceof ActionWrapper) {
+                ActionWrapper actionWrapper = ((ActionWrapper) actionResult);
+                if (callbacksBuilder instanceof ScriptedCallbacksBuilder) {
+                    actionWrapper.setCallbacks(((ScriptedCallbacksBuilder) callbacksBuilder).getCallbacks());
+                }
+                action = actionWrapper.isEmpty() ? Optional.empty() : Optional.of(actionWrapper.buildAction());
+            } else {
+                logger.warn("Found an action result from scripted node, but it was not an ActionWrapper object");
+            }
+            break;
+
+        default:
+            logger.error("Unexpected script evaluator version");
+            break;
+        }
+        return action;
     }
 
     /**

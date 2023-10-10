@@ -11,9 +11,12 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 /**
  * This package contains classes related to authentication node scripts.
  */
+@Supported
 package org.forgerock.openam.auth.nodes.script;
+
+import org.forgerock.openam.annotations.Supported;

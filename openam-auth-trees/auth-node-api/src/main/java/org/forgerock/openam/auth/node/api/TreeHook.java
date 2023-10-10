@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -35,6 +35,8 @@ public interface TreeHook {
     String NODE_ID_KEY = "nodeId";
     /** Node type key. */
     String NODE_TYPE_KEY = "nodeType";
+    /** Node config key. */
+    String NODE_CONFIG_KEY = "nodeConfig";
 
     /**
      * Main method that will contain the logic that needs to be executed when the session hook is called.

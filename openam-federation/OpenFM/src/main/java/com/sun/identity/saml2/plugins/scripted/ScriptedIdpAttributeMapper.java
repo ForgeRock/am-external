@@ -39,7 +39,7 @@ import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.plugins.IDPAttributeMapper;
 import com.sun.identity.saml2.plugins.ValidationHelper;
-import com.sun.identity.saml2.plugins.scripted.bindings.SamlBindings.IdpBindings;
+import com.sun.identity.saml2.plugins.scripted.bindings.SamlIdpAttributeMapperBindings;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
 
 /**
@@ -75,13 +75,14 @@ public class ScriptedIdpAttributeMapper implements IDPAttributeMapper {
         try {
             Script script = getScript(realm, hostedEntityId);
 
-            ScriptBindings scriptBindings = IdpBindings.attributeMapper()
+            ScriptBindings scriptBindings = SamlIdpAttributeMapperBindings.builder()
                     .withHostedEntityId(hostedEntityId)
                     .withIdpAttributeMapperScriptHelper(new IdpAttributeMapperScriptHelper())
                     .withRealm(realm)
                     .withRemoteEntityId(remoteEntityId)
                     .withSession(session)
-                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ATTRIBUTE_MAPPER.name(),
+                            script.getId(), script.getName()))
                     .withScriptName(script.getName())
                     .build();
 

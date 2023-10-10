@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -32,6 +32,8 @@ import static org.forgerock.openam.ldap.LDAPConstants.LDAP_TIME_LIMIT;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_USER_NAMING_ATTR;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_USER_SEARCH_ATTR;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_USER_SEARCH_FILTER;
+import static org.forgerock.openam.ldap.LDAPConstants.MTLS_ENABLED;
+import static org.forgerock.openam.ldap.LDAPConstants.MTLS_SECRET_LABEL;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -48,8 +50,11 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.ldap.LDAPConstants;
 import org.forgerock.openam.ldap.LDAPURL;
+import org.forgerock.openam.secrets.Secrets;
+import org.forgerock.openam.shared.secrets.Labels;
 import org.forgerock.openam.sm.ConfigurationAttributes;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
 import org.forgerock.openam.utils.StringUtils;
@@ -77,7 +82,6 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
 
     private static final Logger logger = LoggerFactory.getLogger(IdentityStoreDecisionNode.class);
     private final Config config;
-    private final IdRepoUtilityService idRepoUtilityService;
 
     /**
      * The interface Config.
@@ -140,20 +144,23 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
     /**
      * Constructs a new {@link IdentityStoreDecisionNode}.
      *
-     * @param config provides the settings for initialising an {@link IdentityStoreDecisionNode}.
+     * @param config               provides the settings for initialising an {@link IdentityStoreDecisionNode}.
+     * @param realm                The realm.
      * @param configManagerFactory A ServiceConfigManagerFactory instance.
-     * @param coreWrapper A core wrapper instance.
-     * @param identityService An IdentityService instance.
+     * @param coreWrapper          A core wrapper instance.
+     * @param identityService      An IdentityService instance.
      * @param idRepoUtilityService the IdRepo utilities.
+     * @param secrets              A Secrets instance.
      * @throws NodeProcessException if there is a problem during construction.
      */
     @Inject
-    public IdentityStoreDecisionNode(@Assisted Config config, ServiceConfigManagerFactory configManagerFactory,
-            CoreWrapper coreWrapper, LegacyIdentityService identityService, IdRepoUtilityService idRepoUtilityService)
+    public IdentityStoreDecisionNode(@Assisted Config config, @Assisted Realm realm,
+            ServiceConfigManagerFactory configManagerFactory, CoreWrapper coreWrapper,
+            LegacyIdentityService identityService, IdRepoUtilityService idRepoUtilityService, Secrets secrets)
             throws NodeProcessException {
-        super(config.getConfig(configManagerFactory, idRepoUtilityService), coreWrapper, identityService);
+        super(config.getConfig(configManagerFactory, idRepoUtilityService), realm, coreWrapper, identityService,
+                secrets);
         this.config = config;
-        this.idRepoUtilityService = idRepoUtilityService;
     }
 
     @Override
@@ -245,14 +252,14 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
         }
 
         @Override
-        public String adminDn() {
-            return CollectionHelper.getMapAttr(attributes, LDAP_SERVER_USER_NAME);
+        public Optional<String> adminDn() {
+            return Optional.ofNullable(CollectionHelper.getMapAttr(attributes, LDAP_SERVER_USER_NAME));
         }
 
         @Override
-        public char[] adminPassword() {
+        public Optional<char[]> adminPassword() {
             final String value = CollectionHelper.getMapAttr(attributes, LDAP_SERVER_PASSWORD);
-            return value != null ? value.toCharArray() : null;
+            return value != null ? Optional.of(value.toCharArray()) : Optional.empty();
         }
 
         @Override
@@ -291,6 +298,16 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
             } else {
                 return LdapDecisionNode.LdapConnectionMode.valueOf(connectionMode);
             }
+        }
+
+        @Override
+        public boolean mtlsEnabled() {
+            return CollectionHelper.getBooleanMapAttr(attributes, MTLS_ENABLED, false);
+        }
+
+        @Override
+        public Optional<String> mtlsSecretLabel() {
+            return Optional.ofNullable(CollectionHelper.getMapAttr(attributes, MTLS_SECRET_LABEL));
         }
 
         @Override
@@ -345,4 +362,8 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
         }
     }
 
+    @Override
+    protected String getMtlsSecretIdTemplate() {
+        return Labels.MTLS_IDENTITY_REPO;
+    }
 }

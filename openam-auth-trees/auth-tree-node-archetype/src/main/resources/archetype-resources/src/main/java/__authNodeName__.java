@@ -11,25 +11,33 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 
 package ${package};
 
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.inject.Inject;
 
+import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.slf4j.Logger;
@@ -54,6 +62,7 @@ public class ${authNodeName} extends AbstractDecisionNode {
     private final Logger logger = LoggerFactory.getLogger(${authNodeName}.class);
     private final Config config;
     private final Realm realm;
+    private String username = null;
 
     /**
      * Configuration for the node.
@@ -100,6 +109,10 @@ public class ${authNodeName} extends AbstractDecisionNode {
 
     @Override
     public Action process(TreeContext context) {
+        NodeState nodeState = context.getStateFor(this);
+        if (nodeState.isDefined("username") && nodeState.isDefined("password")) {
+            return goTo(true).build();
+        }
         boolean hasUsername = context.request.headers.containsKey(config.usernameHeader());
         boolean hasPassword = context.request.headers.containsKey(config.passwordHeader());
 
@@ -113,10 +126,10 @@ public class ${authNodeName} extends AbstractDecisionNode {
         try {
             if (userIdentity != null && userIdentity.isExists() && userIdentity.isActive()
                     && isMemberOfGroup(userIdentity, config.groupName())) {
-                return goTo(true)
-                        .replaceSharedState(context.sharedState.copy().put(USERNAME, username))
-                        .replaceTransientState(context.transientState.copy().put(PASSWORD, password))
-                        .build();
+                this.username = username;
+                nodeState.putShared(USERNAME, username);
+                nodeState.putTransient(PASSWORD, password);
+                return goTo(true).build();
             }
         } catch (IdRepoException | SSOException e) {
             logger.warn("Error locating user '{}' ", username, e);
@@ -126,12 +139,12 @@ public class ${authNodeName} extends AbstractDecisionNode {
 
     private boolean isMemberOfGroup(AMIdentity userIdentity, String groupName) {
         try {
-            Set<String> userGroups = userIdentity.getMemberships(IdType.GROUP);
-            for (String group : userGroups) {
-                if (groupName.equals(group)) {
+            Set<AMIdentity> userGroups = userIdentity.getMemberships(IdType.GROUP);
+            for (AMIdentity group : userGroups) {
+                if (groupName.equals(group.getName())) {
                     return true;
                 }
-                Matcher dnMatcher = DN_PATTERN.matcher(group);
+                Matcher dnMatcher = DN_PATTERN.matcher(group.getName());
                 if (dnMatcher.find() && dnMatcher.group(1).equals(groupName)) {
                     return true;
                 }
@@ -140,5 +153,35 @@ public class ${authNodeName} extends AbstractDecisionNode {
             logger.warn("Could not load groups for user {}", userIdentity);
         }
         return false;
+    }
+
+    /**
+     * Audit the username of the user that will be authenticated.
+     *
+     * @return The audit entry detail.
+     */
+    @Override
+    public JsonValue getAuditEntryDetail() {
+        if (username != null) {
+            return json(object(field("username", username)));
+        } else {
+            return json(object());
+        }
+    }
+
+    @Override
+    public InputState[] getInputs() {
+        return new InputState[] {
+                new InputState("username", false),
+                new InputState("password", false)
+        };
+    }
+
+    @Override
+    public OutputState[] getOutputs() {
+        return new OutputState[] {
+                new OutputState("username", Map.of("true", true, "false", false)),
+                new OutputState("password", Map.of("true", true, "false", false))
+        };
     }
 }

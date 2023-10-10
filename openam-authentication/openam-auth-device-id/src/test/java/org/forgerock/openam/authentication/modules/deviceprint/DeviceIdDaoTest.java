@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2018 ForgeRock AS.
+ * Copyright 2014-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.deviceprint;
@@ -120,7 +120,7 @@ public class DeviceIdDaoTest {
     public void shouldThrowDevicePersistenceExceptionIfNoUserNamerOverloadedMethod() throws Exception {
         // Test the overloaded method.
         //When
-        devicePrintDao.getDeviceProfiles(null, realm, Collections.emptySet());
+        devicePrintDao.getDeviceProfiles(null, realm);
 
         // Then - DevicePersistenceException exception;
 
@@ -138,7 +138,7 @@ public class DeviceIdDaoTest {
         }
 
         @Override
-        protected AMIdentity getIdentity(String userName, String realm, Set<String> userSearchAttributes) {
+        protected AMIdentity getIdentity(String userName, String realm) {
             return mockAMIdentity;
         }
 

@@ -11,23 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.service.datastore;
 
+import static com.sun.identity.shared.Constants.LDAP_SM_HEARTBEAT_INTERVAL;
+
 import java.util.Set;
 
-import com.iplanet.am.util.SystemProperties;
-import org.forgerock.openam.ldap.LDAPURL;
-import org.forgerock.openam.ldap.LDAPUtils;
-import org.forgerock.openam.services.datastore.DataStoreId;
 import org.forgerock.openam.ldap.ConnectionConfig;
+import org.forgerock.openam.ldap.LDAPURL;
+import org.forgerock.openam.services.datastore.DataStoreId;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.Reject;
 
-import static com.sun.identity.shared.Constants.LDAP_SM_HEARTBEAT_INTERVAL;
-import static org.forgerock.openam.utils.SchemaAttributeUtils.stripAttributeNameFromValue;
+import com.iplanet.am.util.SystemProperties;
 
 /**
  * A simple model object to represent a data store.
@@ -36,6 +35,7 @@ import static org.forgerock.openam.utils.SchemaAttributeUtils.stripAttributeName
  */
 public final class DataStoreConfig implements ConnectionConfig {
 
+    private static final int HEARTBEAT_INTERVAL_DEFAULT = 10;
     private final DataStoreId id;
     private final Set<LDAPURL> serverUrls;
     private final String bindDN;
@@ -45,6 +45,9 @@ public final class DataStoreConfig implements ConnectionConfig {
     private final boolean useSsl;
     private final boolean useStartTLS;
     private final boolean affinityEnabled;
+    private final boolean dataStoreEnabled;
+    private final boolean mtlsEnabled;
+    private final String mtlsSecretId;
 
     private DataStoreConfig(Builder builder) {
         this.id = builder.id;
@@ -56,6 +59,9 @@ public final class DataStoreConfig implements ConnectionConfig {
         this.useSsl = builder.useSsl;
         this.useStartTLS = builder.useStartTLS;
         this.affinityEnabled = builder.affinityEnabled;
+        this.dataStoreEnabled = builder.dataStoreEnabled;
+        this.mtlsEnabled = builder.mtlsEnabled;
+        this.mtlsSecretId = builder.mtlsSecretId;
     }
 
     DataStoreId getId() {
@@ -90,12 +96,26 @@ public final class DataStoreConfig implements ConnectionConfig {
         return useStartTLS;
     }
 
+    public boolean isDataStoreEnabled() {
+        return dataStoreEnabled;
+    }
+
     public boolean isAffinityEnabled() {
         return affinityEnabled;
     }
 
+    @Override
+    public boolean isMtlsEnabled() {
+        return mtlsEnabled;
+    }
+
+    @Override
+    public String getMtlsSecretId() {
+        return mtlsSecretId;
+    }
+
     public int getLdapHeartbeat() {
-        return SystemProperties.getAsInt(LDAP_SM_HEARTBEAT_INTERVAL, 10);
+        return SystemProperties.getAsInt(LDAP_SM_HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL_DEFAULT);
     }
 
     public static Builder builder(DataStoreId id) {
@@ -116,15 +136,12 @@ public final class DataStoreConfig implements ConnectionConfig {
         private boolean useStartTLS;
         private boolean affinityEnabled;
         private Set<LDAPURL> serverUrls;
+        private boolean dataStoreEnabled;
+        private boolean mtlsEnabled;
+        public String mtlsSecretId;
 
         Builder(DataStoreId id) {
             this.id = id;
-        }
-
-        Builder withServerUrls(Set<String> serverUrls) {
-            Reject.ifTrue(CollectionUtils.isEmpty(serverUrls));
-            this.serverUrls = LDAPUtils.convertToLDAPURLs(stripAttributeNameFromValue(serverUrls));
-            return this;
         }
 
         public Builder withLDAPURLs(Set<LDAPURL> ldapUrls) {
@@ -167,6 +184,21 @@ public final class DataStoreConfig implements ConnectionConfig {
 
         public Builder withAffinityEnabled(boolean affinityEnabled) {
             this.affinityEnabled = affinityEnabled;
+            return this;
+        }
+
+        public Builder withDataStoreEnabled(boolean dataStoreEnabled) {
+            this.dataStoreEnabled = dataStoreEnabled;
+            return this;
+        }
+
+        public Builder withMtlsEnabled(boolean mtlsEnabled) {
+            this.mtlsEnabled = mtlsEnabled;
+            return this;
+        }
+
+        public Builder withMtlsSecretId(String secretId) {
+            this.mtlsSecretId = secretId;
             return this;
         }
 

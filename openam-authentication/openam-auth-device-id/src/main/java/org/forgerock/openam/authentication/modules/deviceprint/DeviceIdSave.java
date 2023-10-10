@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2022 ForgeRock AS.
+ * Copyright 2014-2023 ForgeRock AS.
  * Portions Copyrighted 2015 Nomura Research Institute, Ltd.
  */
 
@@ -19,9 +19,7 @@ package org.forgerock.openam.authentication.modules.deviceprint;
 
 import java.io.IOException;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
@@ -36,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.sun.identity.authentication.spi.AMLoginModule;
-import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.sm.DNMapper;
@@ -63,7 +60,6 @@ public class DeviceIdSave extends AMLoginModule {
 
     private String userName;
     private PersistModuleProcessor processor;
-    private Set<String> userSearchAttributes = Collections.emptySet();
     private String realm;
     private AMIdentity amIdentityPrincipal;
 
@@ -81,13 +77,8 @@ public class DeviceIdSave extends AMLoginModule {
             return;
         }
         this.realm = DNMapper.orgNameToRealmName(getRequestOrg());
-        try {
-            userSearchAttributes = getUserAliasList();
-        } catch (final AuthLoginException ale) {
-            DEBUG.warn("{} - unable to retrieve search attributes", methodName, ale);
-        }
         IdentityStore identityStore = identityStoreFactory.create(realm);
-        amIdentityPrincipal = identityStore.getIdentity(userName, userSearchAttributes);
+        amIdentityPrincipal = identityStore.getUserUsingAuthenticationUserAliases(userName);
         String principalUserName = null;
         if (amIdentityPrincipal == null || amIdentityPrincipal.getName() == null) {
             DEBUG.error("{} - unable to find identity for user name: {}", methodName, userName);
@@ -101,7 +92,7 @@ public class DeviceIdSave extends AMLoginModule {
             boolean autoStoreProfiles = Boolean
                     .parseBoolean(CollectionHelper.getMapAttr(config, AUTO_STORE_PROFILES_KEY));
             ProfilePersister profilePersister = profilePersisterFactory
-                    .create(maxProfilesAllowed, principalUserName, realm, userSearchAttributes);
+                    .create(maxProfilesAllowed, principalUserName, realm);
             processor = new PersistModuleProcessor(devicePrintProfile, autoStoreProfiles, profilePersister);
             } catch (IOException e) {
                 DEBUG.error(methodName + " - Module exception : ", e);

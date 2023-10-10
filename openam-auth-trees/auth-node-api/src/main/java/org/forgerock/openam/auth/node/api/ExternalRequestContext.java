@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -37,14 +37,11 @@ import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimaps;
 
-import net.jcip.annotations.Immutable;
-
 /**
  * A representation of the external HTTP request in the current tree authentication context.
  *
  */
 @SupportedAll
-@Immutable
 public final class ExternalRequestContext {
 
     /**

@@ -11,21 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2020 ForgeRock AS.
+ * Copyright 2013-2023 ForgeRock AS.
  */
 package com.sun.identity.saml.xmlsig;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.forgerock.openam.shared.testsupport.CertificateFactory.aTestX509Certificate;
 
-import java.math.BigInteger;
 import java.security.AccessController;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.cert.X509Certificate;
-import java.util.Date;
 
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -36,16 +33,6 @@ import org.w3c.dom.NodeList;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.security.EncodeAction;
 import com.sun.identity.shared.xml.XMLUtils;
-
-import sun.security.x509.AlgorithmId;
-import sun.security.x509.CertificateAlgorithmId;
-import sun.security.x509.CertificateSerialNumber;
-import sun.security.x509.CertificateValidity;
-import sun.security.x509.CertificateVersion;
-import sun.security.x509.CertificateX509Key;
-import sun.security.x509.X500Name;
-import sun.security.x509.X509CertImpl;
-import sun.security.x509.X509CertInfo;
 
 public class AMSignatureProviderTest {
 
@@ -128,7 +115,7 @@ public class AMSignatureProviderTest {
         PublicKey publicKey = keyPair.getPublic();
         Document documentToSign = XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(XML_DOCUMENT_TO_SIGN));
         Element signature =  signatureProvider.signXmlUsingPrivateKey(documentToSign, privateKey,
-                createX509Certificate(privateKey, publicKey), ID_ATTRIBUTE_VALUE, null);
+                aTestX509Certificate(privateKey, publicKey), ID_ATTRIBUTE_VALUE, null);
         assertThat(signature).isNotNull();
         NodeList nodes = documentToSign.getElementsByTagName("ds:Signature");
         assertThat(nodes.getLength()).isGreaterThan(0);
@@ -151,31 +138,5 @@ public class AMSignatureProviderTest {
         Document signedDocument = XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(SIGNED_XML_DOCUMENT));
         assertThat(signatureProvider.verifyXMLSignature(signedDocument.getDocumentElement(),
                     SAML2Constants.ID, DEFAULT_PRIVATE_KEY_ALIAS)).isTrue();
-    }
-
-    private X509Certificate createX509Certificate(PrivateKey privateKey, PublicKey publicKey) throws Exception {
-        X509CertInfo info = new X509CertInfo();
-
-        Date from = new Date();
-        Date to = new Date(from.getTime() + 1000L * 24L * 60L * 60L);
-
-        CertificateValidity interval = new CertificateValidity(from, to);
-        BigInteger serialNumber = new BigInteger(64, new SecureRandom());
-        X500Name owner = new X500Name("cn=self signed");
-        AlgorithmId sigAlgId = new AlgorithmId(AlgorithmId.sha256WithRSAEncryption_oid);
-
-        info.set(X509CertInfo.VALIDITY, interval);
-        info.set(X509CertInfo.SERIAL_NUMBER, new CertificateSerialNumber(serialNumber));
-        info.set(X509CertInfo.SUBJECT, owner);
-        info.set(X509CertInfo.ISSUER, owner);
-        info.set(X509CertInfo.KEY, new CertificateX509Key(publicKey));
-        info.set(X509CertInfo.VERSION, new CertificateVersion(CertificateVersion.V3));
-        info.set(X509CertInfo.ALGORITHM_ID, new CertificateAlgorithmId(sigAlgId));
-
-        // Sign the cert to identify the algorithm that's used.
-        X509CertImpl certificate = new X509CertImpl(info);
-        certificate.sign(privateKey, "SHA256withRSA");
-
-        return certificate;
     }
 }

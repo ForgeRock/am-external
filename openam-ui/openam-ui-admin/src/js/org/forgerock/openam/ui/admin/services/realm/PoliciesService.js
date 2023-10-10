@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2020 ForgeRock AS.
+ * Copyright 2014-2023 ForgeRock AS.
  */
 
 import AbstractDelegate from "org/forgerock/commons/ui/common/main/AbstractDelegate";
@@ -62,6 +62,14 @@ PoliciesService.getAllUserAttributes = function () {
     return PoliciesService.serviceCall({
         url: fetchUrl("/subjectattributes?_queryFilter=true", { realm: getCurrentAdministeredRealm() }),
         headers: { "Accept-API-Version": "protocol=1.0,resource=1.0" }
+    });
+};
+
+PoliciesService.queryIdentitiesByUID = function (identityType, query) {
+    const queryFilter = encodeURIComponent(`_id co "${query}"`);
+    return PoliciesService.serviceCall({
+        url: fetchUrl(`/${identityType}?_queryFilter=${queryFilter}`, { realm: getCurrentAdministeredRealm() }),
+        headers: { "Accept-API-Version": "protocol=1.0,resource=4.1" }
     });
 };
 

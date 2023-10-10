@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2022 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.push;
 
@@ -38,7 +38,6 @@ import static org.forgerock.openam.utils.Time.getCalendarInstance;
 
 import java.security.Principal;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -123,9 +122,6 @@ public class AuthenticatorPush extends AbstractPushModule {
 
     private String pushMessage;
 
-    // support for search with alias name
-    private Set<String> userSearchAttributes = Collections.emptySet();
-
     private final AuthenticatorDeviceServiceFactory<AuthenticatorPushService> pushServiceFactory =
             InjectorHolder.getInstance(Key.get(
                     new TypeLiteral<AuthenticatorDeviceServiceFactory<AuthenticatorPushService>>() { }));
@@ -163,12 +159,6 @@ public class AuthenticatorPush extends AbstractPushModule {
         }
 
         pushMessage = CollectionHelper.getMapAttr(options, DEVICE_PUSH_MESSAGE);
-
-        try {
-            userSearchAttributes = getUserAliasList();
-        } catch (final AuthLoginException ale) {
-            DEBUG.warn("AuthenticatorPush :: init() : Unable to retrieve search attributes", ale);
-        }
     }
 
     @Override
@@ -332,7 +322,7 @@ public class AuthenticatorPush extends AbstractPushModule {
             return USERNAME_STATE;
         } else {
             IdentityStore identityStore = identityStoreFactory.create(realm);
-            AMIdentity id = identityStore.getIdentity(username, userSearchAttributes);
+            AMIdentity id = identityStore.getUserUsingAuthenticationUserAliases(username);
             if (id == null) {
                 throw failedAsLoginException();
             }
@@ -387,7 +377,7 @@ public class AuthenticatorPush extends AbstractPushModule {
 
     void setCurrentPrincipal() throws AuthLoginException {
         IdentityStore identityStore = identityStoreFactory.create(realm);
-        AMIdentity id = identityStore.getIdentity(username, userSearchAttributes);
+        AMIdentity id = identityStore.getUserUsingAuthenticationUserAliases(username);
 
         try {
             if (id != null && id.isExists() && id.isActive()) {

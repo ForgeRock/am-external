@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS. All Rights Reserved
+ * Copyright 2019-2023 ForgeRock AS. All Rights Reserved
 -->
 <script>
 var loginButton_0 = document.getElementById("loginButton_0"),
@@ -23,8 +23,13 @@ var loginButton_0 = document.getElementById("loginButton_0"),
     */
     standaloneMode = callback_index === 0 && loginButton_0 && loginButton_0.name === "callback_1",
     isV3 = {{reCaptchaV3}},
+    disableSubmission = {{disableSubmission}},
     src = "{{apiUri}}",
     script = document.createElement("script");
+
+if (disableSubmission) {
+    loginButton_0.disabled = true;
+}
 
 function onloadCallback() {
     ["g-recaptcha-response", "h-captcha-response"].forEach(elementName => {
@@ -74,6 +79,7 @@ document.getElementsByTagName("head")[0].appendChild(script);
 
 function handleCaptchaCallback(response) {
     document.getElementById("{{id}}").value = response;
+    loginButton_0.disabled = false;
     if (standaloneMode || isV3) {
        loginButton_0.click();
     }

@@ -85,6 +85,7 @@ import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.JsonObject;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.util.annotations.VisibleForTesting;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -123,6 +124,9 @@ public class PushAuthenticationSenderNode implements Node {
     private static final String HEADER_USERAGENT_ATTRIBUTE_NAME = "user-agent";
     /** Device Profile shared state key.*/
     private static final String DEVICE_PROFILE_KEY = "forgeRock.device.profile";
+
+    /** Used as a key to transmit exceptions after an error further along the tree. */
+    static final String PUSH_AUTH_FAILURE_REASON = "PushAuthFailureReason";
 
     private final Config config;
     private final UserPushDeviceProfileManager userPushDeviceProfileManager;
@@ -169,44 +173,47 @@ public class PushAuthenticationSenderNode implements Node {
         String username = context.sharedState.get(SharedStateConstants.USERNAME).asString();
 
         if (username == null) {
-            LOGGER.debug("No username specified for push notification sender");
-            throw new NodeProcessException("Expected username to be set.");
+            return handleFailure(context, FailureReason.MISSING_USERNAME, null);
         }
 
         if (context.sharedState.get(PushNodeConstants.MESSAGE_ID_KEY).isNotNull()) {
-            LOGGER.debug("Push notification sender has already been used (key already set in shared state)");
-            throw new NodeProcessException("Message ID is already set! Must finish one push authentication before "
-                    + "starting a new one.");
+            return handleFailure(context, FailureReason.SENDER_ALREADY_USED, null);
         }
 
-        AMIdentity amIdentity = getIdentityFromIdentifier(context);
-        PushDeviceSettings device = getPushDeviceSettings(realm, amIdentity.getName());
-        SkipSetting skippable = config.mandatory() ? SkipSetting.NOT_SKIPPABLE
-                : multiFactorNodeDelegate.shouldSkip(amIdentity, realm);
+        try {
+            AMIdentity amIdentity = getIdentityFromIdentifier(context);
+            PushDeviceSettings device = getPushDeviceSettings(realm, amIdentity.getName());
+            SkipSetting skippable = config.mandatory() ? SkipSetting.NOT_SKIPPABLE : shouldSkip(amIdentity, realm);
 
-        if (skippable == SkipSetting.SKIPPABLE) {
-            LOGGER.debug("Push authentication sender node is being skipped");
-            return Action.goTo(PushAuthenticationOutcomeProvider.PushAuthNOutcome.SKIPPED.name()).build();
-        } else if (skippable == SkipSetting.NOT_SET || (skippable == SkipSetting.NOT_SKIPPABLE && device == null)) {
-            //A state where a user has a device registered but whose SkipSetting is NOT_SET is not currently permissible
-            LOGGER.debug("User has not registered a push device");
-            return Action.goTo(PushAuthenticationOutcomeProvider.PushAuthNOutcome.NOT_REGISTERED.name())
-                    .replaceSharedState(context.sharedState.copy().put(MFA_METHOD, PUSH_METHOD))
-                    .build();
+            if (skippable == SkipSetting.SKIPPABLE) {
+                LOGGER.debug("Push authentication sender node is being skipped");
+                return Action.goTo(PushAuthenticationOutcomeProvider.PushAuthNOutcome.SKIPPED.name()).build();
+            } else if (skippable == SkipSetting.NOT_SET || (skippable == SkipSetting.NOT_SKIPPABLE && device == null)) {
+                // A state where a user has a device registered but whose SkipSetting is NOT_SET is not currently
+                // permissible
+                LOGGER.debug("User has not registered a push device");
+                return Action.goTo(PushAuthenticationOutcomeProvider.PushAuthNOutcome.NOT_REGISTERED.name())
+                        .replaceSharedState(context.sharedState.copy().put(MFA_METHOD, PUSH_METHOD))
+                        .build();
+            }
+
+            MessageId messageId = sendMessage(context, config, realm, username, device);
+
+            return Action.goTo(PushAuthenticationOutcomeProvider.PushAuthNOutcome.SENT.name())
+                    .replaceSharedState(context.sharedState.copy()
+                            .put(MESSAGE_ID_KEY, messageId.toString())
+                            .put(TIME_TO_LIVE_KEY, config.messageTimeout())
+                    ).build();
+        } catch (CoreTokenException e) {
+            return handleFailure(context, FailureReason.CTS_ERROR, e);
+        } catch (Exception e) {
+            return handleFailure(context, FailureReason.TRANSMISSION_FAILURE, e);
         }
-
-        MessageId messageId = sendMessage(context, config, realm, username, device);
-
-        return Action
-                .goTo(PushAuthenticationOutcomeProvider.PushAuthNOutcome.SENT.name())
-                .replaceSharedState(context.sharedState.copy()
-                        .put(MESSAGE_ID_KEY, messageId.toString())
-                        .put(TIME_TO_LIVE_KEY, config.messageTimeout())
-                ).build();
     }
 
     private MessageId sendMessage(TreeContext context, Config config, String realm, String username,
-                               PushDeviceSettings device) throws NodeProcessException {
+                               PushDeviceSettings device)
+            throws PushNotificationException, NotFoundException, CoreTokenException, NodeProcessException {
         Calendar calendarInstance = getCalendarInstance();
         String communicationId = device.getCommunicationId();
         String mechanismId = device.getDeviceMechanismUID();
@@ -262,34 +269,63 @@ public class PushAuthenticationSenderNode implements Node {
 
         PushNotificationService pushNotificationService = getPushNotificationService(realm);
 
-        try {
-            Set<Predicate> predicates = pushNotificationService.getMessagePredicatesFor(realm)
-                    .get(DefaultMessageTypes.AUTHENTICATE);
-            if (predicates != null) {
-                servicePredicates.addAll(predicates);
-            }
-
-            pushNotificationService.getMessageDispatcher(realm).expectInCluster(messageId, servicePredicates);
-            pushNotificationService.send(message, realm);
-            LOGGER.debug("Push authentication has been sent");
-            return message.getMessageId();
-        } catch (NotFoundException | PushNotificationException e) {
-            LOGGER.error("AuthenticatorPush :: sendMessage() : Failed to transmit message through PushService.");
-            throw new NodeProcessException(e);
-        } catch (CoreTokenException e) {
-            LOGGER.error("Unable to persist message token in core token service.", e);
-            throw new NodeProcessException(e);
+        Set<Predicate> predicates = pushNotificationService.getMessagePredicatesFor(realm)
+                .get(DefaultMessageTypes.AUTHENTICATE);
+        if (predicates != null) {
+            servicePredicates.addAll(predicates);
         }
+
+        pushNotificationService.getMessageDispatcher(realm).expectInCluster(messageId, servicePredicates);
+        pushNotificationService.send(message, realm);
+        LOGGER.debug("Push authentication has been sent");
+        return message.getMessageId();
     }
 
-    // The username in the shared state is not necessarily the actual username of the user (example: email address)
-    private AMIdentity getIdentityFromIdentifier(TreeContext context) throws NodeProcessException {
+    /**
+     * Returns the user identity.
+     * The username in the shared state is not necessarily the actual username of the user (example: email address).
+     *
+     * @param context the context of the tree authentication.
+     * @return the AM user identity object.
+     * @throws NodeProcessException if could not retrieve the user identity.
+     */
+    @VisibleForTesting
+    AMIdentity getIdentityFromIdentifier(TreeContext context) throws NodeProcessException {
         Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityService,
                 coreWrapper);
         if (identity.isEmpty()) {
             throw new NodeProcessException("Failed to fetch identity.");
         }
         return identity.get();
+    }
+
+    /**
+     * Determines if the current device should be skipped.
+     *
+     * @param amIdentity the identity of the user.
+     * @param realm the realm.
+     * @return the user's skippable attribute.
+     */
+    @VisibleForTesting
+    SkipSetting shouldSkip(AMIdentity amIdentity, String realm) throws NodeProcessException {
+        return multiFactorNodeDelegate.shouldSkip(amIdentity, realm);
+    }
+
+    /**
+     * Retrieves the first Push device of the user's profile.
+     *
+     * @param realm the realm.
+     * @param username the username.
+     * @return the device settings.
+     * @throws NodeProcessException if unable to retrieve the device profile manager.
+     */
+    @VisibleForTesting
+    PushDeviceSettings getPushDeviceSettings(String realm, String username) throws NodeProcessException {
+        try {
+            return CollectionUtils.getFirstItem(userPushDeviceProfileManager.getDeviceProfiles(username, realm));
+        } catch (DevicePersistenceException dpe) {
+            throw new NodeProcessException(dpe);
+        }
     }
 
     private PushNotificationService getPushNotificationService(String realm) throws NodeProcessException {
@@ -301,11 +337,16 @@ public class PushAuthenticationSenderNode implements Node {
         }
     }
 
-    private PushDeviceSettings getPushDeviceSettings(String realm, String username) throws NodeProcessException {
-        try {
-            return CollectionUtils.getFirstItem(userPushDeviceProfileManager.getDeviceProfiles(username, realm));
-        } catch (DevicePersistenceException dpe) {
-            throw new NodeProcessException(dpe);
+    private Action handleFailure(TreeContext context, FailureReason failureReason, Exception exception)
+            throws NodeProcessException {
+        LOGGER.debug(failureReason.logMessage, exception);
+        if (config.captureFailure()) {
+            return Action.goTo(PushAuthenticationOutcomeProvider.PushAuthNOutcome.FAILURE.name())
+                    .replaceSharedState(context.sharedState.copy()
+                                                .put(PUSH_AUTH_FAILURE_REASON, failureReason.name())
+                    ).build();
+        } else {
+            throw new NodeProcessException(failureReason.exceptionMessage, exception);
         }
     }
 
@@ -452,6 +493,17 @@ public class PushAuthenticationSenderNode implements Node {
         default PushType pushType() {
             return PushType.DEFAULT;
         }
+
+        /**
+         * If the node fail to send the Push Notification, the 'failure' outcome will be added and error detail will be
+         * provided in the shared state for analysis by later nodes.
+         *
+         * @return true if the failure to send Push notifications will be handled.
+         */
+        @Attribute(order = 700)
+        default boolean captureFailure() {
+            return false;
+        }
     }
 
     /**
@@ -473,7 +525,11 @@ public class PushAuthenticationSenderNode implements Node {
             /**
              * The user has configured 2FA to be skipped, and this has not been overridden by node config.
              */
-            SKIPPED("Skipped");
+            SKIPPED("Skipped"),
+            /**
+             * Failed to send the Push Notification.
+             */
+            FAILURE("Failure");
 
             String displayValue;
 
@@ -502,11 +558,36 @@ public class PushAuthenticationSenderNode implements Node {
                 if (!nodeAttributes.get("mandatory").required().asBoolean()) {
                     results.add(PushAuthNOutcome.SKIPPED.getOutcome());
                 }
+                if (nodeAttributes.get("captureFailure").required().asBoolean()) {
+                    results.add(PushAuthNOutcome.FAILURE.getOutcome());
+                }
             } else {
                 results.add(PushAuthNOutcome.SKIPPED.getOutcome());
             }
 
             return Collections.unmodifiableList(results);
+        }
+    }
+
+    @VisibleForTesting
+    enum FailureReason {
+        MISSING_USERNAME("No username specified for push notification sender", "Expected username to be set."),
+        SENDER_ALREADY_USED("Push notification sender has already been used (key already set in shared state)",
+                "Message ID is already set! Must finish one push authentication before starting a new one."),
+        CTS_ERROR("Unable to persist message token in core token service."),
+        TRANSMISSION_FAILURE("AuthenticatorPush :: sendMessage() : Failed to transmit message through PushService.");
+
+        private final String exceptionMessage;
+        private final String logMessage;
+
+        FailureReason(String logMessage, String exceptionMessage) {
+            this.logMessage = logMessage;
+            this.exceptionMessage = exceptionMessage;
+        }
+
+        FailureReason(String logMessage) {
+            this.logMessage = logMessage;
+            this.exceptionMessage = logMessage;
         }
     }
 }

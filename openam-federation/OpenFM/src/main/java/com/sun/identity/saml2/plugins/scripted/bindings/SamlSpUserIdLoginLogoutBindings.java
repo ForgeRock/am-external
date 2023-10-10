@@ -20,9 +20,11 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.LOGOUT_R
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.LOGOUT_RESPONSE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.USER_ID;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
+import org.forgerock.openam.scripting.domain.Binding;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 
 import com.sun.identity.saml2.protocol.LogoutRequest;
 import com.sun.identity.saml2.protocol.LogoutResponse;
@@ -59,17 +61,31 @@ final class SamlSpUserIdLoginLogoutBindings extends BaseSamlSpBindings {
         return new Builder();
     }
 
+    /**
+     * The signature of these bindings. Used to provide information about available bindings via REST without the
+     * stateful underlying objects.
+     *
+     * @return The signature of this ScriptBindings implementation.
+     */
+    public static ScriptBindings signature() {
+        return new Builder().signature();
+    }
+
     @Override
-    protected EvaluatorVersionBindings getEvaluatorVersionBindings() {
-        return EvaluatorVersionBindings.builder()
-                .allVersionBindings(List.of(
-                        Binding.of(USER_ID, userId, String.class),
-                        Binding.of(LOGOUT_REQUEST, logoutRequest, LogoutRequest.class),
-                        Binding.of(LOGOUT_RESPONSE, logoutResponse, LogoutResponse.class),
-                        Binding.of(BINDING, binding, String.class)
-                ))
-                .parentBindings(super.getEvaluatorVersionBindings())
-                .build();
+    public String getDisplayName() {
+        return "SAML SP User ID Login/Logout Bindings";
+    }
+
+    @Override
+    protected List<Binding> additionalV1Bindings() {
+        List<Binding> v1Bindings = new ArrayList<>(v1CommonBindings());
+        v1Bindings.addAll(List.of(
+                Binding.of(USER_ID, userId, String.class),
+                Binding.of(LOGOUT_REQUEST, logoutRequest, LogoutRequest.class),
+                Binding.of(LOGOUT_RESPONSE, logoutResponse, LogoutResponse.class),
+                Binding.of(BINDING, binding, String.class)
+        ));
+        return v1Bindings;
     }
 
     /**

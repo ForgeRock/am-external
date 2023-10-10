@@ -11,18 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore;
 
-import static com.sun.identity.shared.datastruct.CollectionHelper.getBooleanMapAttr;
 import static com.sun.identity.shared.datastruct.CollectionHelper.getMapAttr;
 import static com.sun.identity.sm.SMSUtils.serviceExists;
-import static java.lang.Integer.parseInt;
 import static java.util.Objects.requireNonNull;
 import static org.forgerock.openam.service.datastore.SmsDataStoreLookup.APPLICATION_DATASTORE_ATTR_NAME;
 import static org.forgerock.openam.service.datastore.SmsDataStoreLookup.POLICY_DATASTORE_ATTR_NAME;
-import static org.forgerock.openam.services.datastore.DataStoreId.DEFAULT_ID;
+import static org.forgerock.openam.services.datastore.DataStoreId.CONFIG_ID;
 import static org.forgerock.openam.services.datastore.DataStoreServiceChangeNotifier.Type;
 
 import java.security.AccessController;
@@ -40,6 +38,9 @@ import javax.inject.Singleton;
 
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.ldap.ConnectionConfig;
+import org.forgerock.openam.secrets.SecretStoreWithMappings;
+import org.forgerock.openam.secrets.config.PurposeMapping;
+import org.forgerock.openam.secrets.config.SecretStoreConfigChangeListener;
 import org.forgerock.openam.services.datastore.DataStoreException;
 import org.forgerock.openam.services.datastore.DataStoreId;
 import org.forgerock.openam.services.datastore.DataStoreService;
@@ -52,6 +53,7 @@ import org.forgerock.opendj.ldap.ConnectionFactory;
 import org.forgerock.opendj.ldap.LdapException;
 import org.forgerock.util.Reject;
 import org.forgerock.util.promise.Promise;
+import org.forgerock.util.query.QueryFilter;
 import org.forgerock.util.thread.listener.ShutdownManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +71,8 @@ import com.sun.identity.sm.ServiceListener;
  * @since 6.0.0
  */
 @Singleton
-final class LdapDataStoreService implements DataStoreService, ServiceListener, DataStoreServiceRegister {
+final class LdapDataStoreService implements DataStoreService, ServiceListener, DataStoreServiceRegister,
+                                                    SecretStoreConfigChangeListener {
 
     private static final Logger logger = LoggerFactory.getLogger(LdapDataStoreService.class);
 
@@ -77,17 +80,9 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
     private static final String SERVICE_VERSION = "1.0";
     private static final String SUB_CONFIG_NAME = "dataStoreContainer";
 
-    private static final String BIND_DN = "bindDN";
-    private static final String BIND_PASSWORD = "bindPassword";
     private static final String SERVER_PORT = "serverPort";
-    private static final String MINIMUM_CONNECTION_POOL = "minimumConnectionPool";
-    private static final String MAXIMUM_CONNECTION_POOL = "maximumConnectionPool";
     private static final String SERVER_HOSTNAME = "serverHostname";
     private static final String SERVER_URLS = "serverUrls";
-    private static final String USE_SSL = "useSsl";
-    private static final String USE_START_TLS = "useStartTls";
-    private static final String AFFINITY_ENABLED = "affinityEnabled";
-
 
     private final Provider<ConnectionFactory> defaultConnectionFactoryProvider;
     private final LdapConnectionFactoryProvider connectionFactoryProvider;
@@ -99,6 +94,8 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
     private final VolatileActionConsistencyController consistencyController;
     private final Runnable refreshDataLayer;
     private final PrivilegedAction<SSOToken> adminTokenAction;
+    private final DataStoreConfigFactory dataStoreConfigFactory;
+
     private boolean shuttingDown;
 
     @Inject
@@ -107,7 +104,8 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
             ServiceConfigManagerFactory configManagerFactory, ShutdownManager shutdownManager,
             Set<DataStoreServiceChangeNotifier> changeNotifiers,
             RealmLookup realmLookup, VolatileActionConsistencyController consistencyController,
-            @Named("refresh-data-layer") Runnable refreshDataLayer, PrivilegedAction<SSOToken> adminTokenAction) {
+            @Named("refresh-data-layer") Runnable refreshDataLayer, PrivilegedAction<SSOToken> adminTokenAction,
+            DataStoreConfigFactory dataStoreConfigFactory) {
         this.defaultConnectionFactoryProvider = defaultConnectionFactoryProvider;
         this.connectionFactoryProvider = connectionFactoryProvider;
         this.configManagerFactory = configManagerFactory;
@@ -117,6 +115,7 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
         this.consistencyController = consistencyController;
         this.refreshDataLayer = refreshDataLayer;
         this.adminTokenAction = adminTokenAction;
+        this.dataStoreConfigFactory = dataStoreConfigFactory;
 
         shutdownManager.addShutdownListener(this::shutDown);
     }
@@ -143,20 +142,22 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
         return DataStoreId.of(serviceComponent.substring(serviceComponent.lastIndexOf("/") + 1));
     }
 
-    private void removeFromCacheAndClose(DataStoreId dataStoreId) {
+    private void removeFromCacheAndClose(DataStoreId dataStoreId, boolean dataStoreEnabled) {
         ConnectionFactory factory = factoryCache.remove(dataStoreId);
         if (factory != null) {
             IOUtils.closeIfNotNull(factory);
         } else {
-            logger.error("Failed to identify and remove the connection " +
-                    "factory from the cache, clearing the entire cache");
-            factoryCache.entrySet().removeIf(e -> {
-                if (!e.getKey().equals(DataStoreId.DEFAULT)) {
-                    IOUtils.closeIfNotNull(e.getValue());
-                    return true;
-                }
-                return false;
-            });
+            if (dataStoreEnabled) {
+                logger.error("Failed to identify and remove the connection " +
+                        "factory from the cache, clearing the entire cache");
+                factoryCache.entrySet().removeIf(e -> {
+                    if (!e.getKey().equals(DataStoreId.CONFIG)) {
+                        IOUtils.closeIfNotNull(e.getValue());
+                        return true;
+                    }
+                    return false;
+                });
+            }
         }
     }
 
@@ -171,10 +172,15 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
             return connectionFactory;
         }
 
-        if (dataStoreId.equals(DataStoreId.DEFAULT)) {
+        if (dataStoreId.equals(DataStoreId.CONFIG)) {
             connectionFactory = defaultConnectionFactoryProvider.get();
         } else {
             DataStoreConfig config = (DataStoreConfig) getConfig(dataStoreId);
+            if (!config.isDataStoreEnabled()) {
+                logger.error(String.format("Unable to create connection factory for disabled data store with id: [%s] ",
+                        dataStoreId));
+                throw new DataStoreException("Unable to create connection factory for disabled data store");
+            }
             connectionFactory = connectionFactoryProvider.createLdapConnectionFactory(config);
         }
 
@@ -203,7 +209,7 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
         if (!ids.isEmpty()) {
             String id = ids.iterator().next();
             if (dataStoreId.equals(DataStoreId.of(id))) {
-                config.replaceAttributeValue(attributeName, id, DEFAULT_ID);
+                config.replaceAttributeValue(attributeName, id, CONFIG_ID);
             }
         }
     }
@@ -222,6 +228,7 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
             ServiceConfig globalConfig = configManager.getGlobalConfig("default");
 
             if (globalConfig == null) {
+                logger.error(String.format("Failed to get the config for [%s] as global config was null", dataStoreId));
                 throw new DataStoreException("Unable to retrieve the global config");
             }
 
@@ -229,6 +236,7 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
             ServiceConfig dataStoreSubConfig = containerConfig.getSubConfig(dataStoreId.getId());
 
             if (dataStoreSubConfig == null) {
+                logger.error(String.format("Failed to get the config for [%s]", dataStoreId));
                 throw new DataStoreException("Unable to retrieve the sub config for the data store");
             }
 
@@ -245,19 +253,9 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
                 String port = getMapAttr(attributes, SERVER_PORT);
                 serverUrls = Collections.singleton("[0]=" + hostname + ":" + port);
             }
+            attributes.put(SERVER_URLS, serverUrls);
 
-            String bindPassword = getMapAttr(attributes, BIND_PASSWORD);
-            return DataStoreConfig.builder(dataStoreId)
-                    .withServerUrls(serverUrls)
-                    .withBindDN(getMapAttr(attributes, BIND_DN))
-                    .withBindPassword(bindPassword != null ? bindPassword.toCharArray() : null)
-                    .withMinimumConnectionPool(parseInt(getMapAttr(attributes, MINIMUM_CONNECTION_POOL)))
-                    .withMaximumConnectionPool(parseInt(getMapAttr(attributes, MAXIMUM_CONNECTION_POOL)))
-                    .withUseSsl(getBooleanMapAttr(attributes, USE_SSL, false))
-                    .withUseStartTLS(getBooleanMapAttr(attributes, USE_START_TLS, false))
-                    .withAffinityEnabled(getBooleanMapAttr(attributes, AFFINITY_ENABLED, false))
-                    .build();
-
+            return dataStoreConfigFactory.create(dataStoreId, attributes);
         } catch (SMSException | SSOException e) {
             throw new DataStoreException("Unable to read SMS configuration for data store", e);
         }
@@ -288,26 +286,41 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
         consistencyController.safeExecuteVolatileAction(() -> notifyOfDataStoreChange(serviceComponent, type));
     }
 
-    private void notifyOfDataStoreChange(String serviceComponent, int type) {
-        DataStoreId dataStoreId = getDataStoreIdFromConfigServiceComponent(serviceComponent);
+    private void notifyOfDataStoreChange(DataStoreId dataStoreId, int type) {
+        if (type == REMOVED) {
+            changeNotifiers.forEach(n -> n.notifyGlobalChanges(dataStoreId, Type.DATA_STORE_REMOVED));
+            removeFromCacheAndClose(dataStoreId, false);
+            resetDataStoreToDefault(dataStoreId);
+            return;
+        }
+        ConnectionConfig config = getConfig(dataStoreId);
+        boolean dataStoreEnabled = config.isDataStoreEnabled();
 
-        switch (type) {
-            case ADDED:
+        if (type == MODIFIED) {
+            changeNotifiers.forEach(n -> n.notifyGlobalChanges(dataStoreId, Type.DATA_STORE_REMOVED));
+            removeFromCacheAndClose(dataStoreId, dataStoreEnabled);
+            if (dataStoreEnabled) {
                 changeNotifiers.forEach(n -> n.notifyGlobalChanges(dataStoreId, Type.DATA_STORE_ADDED));
-                break;
-            case REMOVED:
-                changeNotifiers.forEach(n -> n.notifyGlobalChanges(dataStoreId, Type.DATA_STORE_REMOVED));
-                removeFromCacheAndClose(dataStoreId);
-                resetDataStoreToDefault(dataStoreId);
-                break;
-            case MODIFIED:
-                changeNotifiers.forEach(n -> n.notifyGlobalChanges(dataStoreId, Type.DATA_STORE_REMOVED));
-                removeFromCacheAndClose(dataStoreId);
-                changeNotifiers.forEach(n -> n.notifyGlobalChanges(dataStoreId, Type.DATA_STORE_ADDED));
-                break;
+            }
+        }
+
+        if (!dataStoreEnabled) {
+            return;
+        }
+
+        if (type == ADDED) {
+            changeNotifiers.forEach(n -> n.notifyGlobalChanges(dataStoreId, Type.DATA_STORE_ADDED));
         }
 
         refreshDataLayer.run();
+    }
+
+    private void notifyOfDataStoreChange(String serviceComponent, int type) {
+        DataStoreId dataStoreId = getDataStoreIdFromConfigServiceComponent(serviceComponent);
+        logger.info(String.format("The data store config being modified is [%s] and modification type is [%d]",
+                serviceComponent, type));
+        notifyOfDataStoreChange(dataStoreId, type);
+
     }
 
     @Override
@@ -331,6 +344,97 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
     private synchronized void shutDown() {
         shuttingDown = true;
         factoryCache.forEach((key, factory) -> factory.close());
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * When a change is detected with the Secret Stores, locate all Data Store configurations that use one of the
+     * mappings within that Secret Store for mTLS and trigger a reload of the Data Stores. This ensures that have
+     * re-connected with the correct connection details.
+     *
+     * @see #secretStoreMappingHasChanged(PurposeMapping, String, int)
+     *
+     * @param secretStore the secret store that has changed.
+     * @param orgName the realm containing the secret store, if the secret store is global then this will be null.
+     * @param type the type of change, ADDED(1), REMOVED(2) or MODIFIED(4).
+     */
+    @Override
+    public void secretStoreHasChanged(SecretStoreWithMappings secretStore, String orgName, int type) {
+        if (orgName != null) {
+            // data store mtls can only be configured globally
+            return;
+        }
+        switch (type) {
+            case ServiceListener.ADDED :
+                break;
+            case ServiceListener.REMOVED :
+                if (secretStore == null) {
+                    secretStoreMappingHasChanged(null, null, type);
+                }
+                break;
+            case ServiceListener.MODIFIED :
+                if (secretStore != null) {
+                    try {
+                        secretStore.mappings().get(QueryFilter.alwaysTrue())
+                                .forEach(mapping -> secretStoreMappingHasChanged(mapping, null, type));
+                    } catch (SMSException | SSOException e) {
+                        logger.error("Unable to get secret mappings for {}", secretStore.id(), e);
+                    }
+                }
+                break;
+            default :
+                logger.warn("Unknown change type {}", type);
+                break;
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Given a change in the Secret Store mapping, locate all Data Stores that use the mapping for mTLS and trigger
+     * a reload of their connections. This is to ensure that each Data Store connection is using the up-to-date mTLS
+     * connection details.
+     *
+     * @param mapping the secret mapping that has changed.
+     * @param orgName the realm containing the secret store, if the secret store is global then this will be null.
+     * @param type the type of change, ADDED(1), REMOVED(2) or MODIFIED(4).
+     */
+    @Override
+    public void secretStoreMappingHasChanged(PurposeMapping mapping, String orgName, int type) {
+        if (orgName != null) {
+            // data store mtls can only be configured globally
+            return;
+        }
+        if (mapping == null && type != ServiceListener.REMOVED) {
+            logger.error("No mapping provided but type is not delete");
+            return;
+        }
+        Set<String> datastoreNames;
+        try {
+            ServiceConfig globalConfig = getServiceConfigManager().getGlobalConfig("default");
+            ServiceConfig containerConfig = globalConfig.getSubConfig("dataStoreContainer");
+            datastoreNames = containerConfig.getSubConfigNames();
+        } catch (SMSException | SSOException e) {
+            logger.error("Unable to get datastore service configuration", e);
+            return;
+        }
+        datastoreNames.forEach(datastoreName -> {
+            DataStoreId id = DataStoreId.of(datastoreName);
+            ConnectionConfig connectionConfig = getConfig(id);
+            if (connectionConfig.isMtlsEnabled() && connectionConfig.isDataStoreEnabled()) {
+                if (mapping != null) {
+                    if (mapping.secretId().equals(connectionConfig.getMtlsSecretId())) {
+                        logger.info("Refreshing connection for secret ID {} as secret mapping has changed",
+                                mapping.secretId());
+                        notifyOfDataStoreChange(id, MODIFIED);
+                    }
+                } else {
+                    logger.info("Refreshing connections as secret mapping has been deleted");
+                    notifyOfDataStoreChange(id, MODIFIED);
+                }
+            }
+        });
     }
 
     /**
