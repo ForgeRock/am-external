@@ -142,7 +142,8 @@ public class ScriptedDecisionNode implements Node {
                                     : null)
                     .withSharedState(filteredShared.getObject())
                     .withTransientState(filteredTransient.getObject())
-                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", AUTHENTICATION_TREE_DECISION_NODE_NAME,
+                            script.getId(), script.getName()))
                     .withScriptName(script.getName())
                     .build();
 

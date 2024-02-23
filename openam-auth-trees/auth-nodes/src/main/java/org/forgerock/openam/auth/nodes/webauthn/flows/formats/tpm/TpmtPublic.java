@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm;
 
@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.exceptions.InvalidTpmtPublicException;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes.EccTypeVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes.RsaTypeVerifier;
+import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes.TpmtUniqueParameter;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes.TypeVerifier;
 
 /**
@@ -31,18 +32,18 @@ import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes.TypeV
 final class TpmtPublic {
 
     // _LNG is short for "length", as in the number of bytes this item takes up
-    private static final int RSA_PARAMETER_LNG = 10;
-    private static final int ECC_PARAMETER_LNG = 8;
+    static final int RSA_PARAMETER_LNG = 10;
+    static final int ECC_PARAMETER_LNG = 8;
 
     final TpmAlg type;
     final TpmAlg nameAlg;
     final int objectAttrs;
     final byte[] authPolicy;
     final TypeVerifier typeVerifier;
-    final byte[] unique;
+    final TpmtUniqueParameter unique;
 
     private TpmtPublic(TpmAlg type, TpmAlg nameAlg, int objectAttrs, byte[] authPolicy, TypeVerifier typeVerifier,
-                       byte[] unique) {
+            TpmtUniqueParameter unique) {
         this.type = type;
         this.nameAlg = nameAlg;
         this.objectAttrs = objectAttrs;
@@ -74,13 +75,7 @@ final class TpmtPublic {
                 throw new InvalidTpmtPublicException("Type alg was not one of RSA or ECC");
             }
 
-            int uniqueLength = pubArea.readShort();
-            byte[] unique = new byte[uniqueLength];
-            pubArea.read(unique, 0, uniqueLength);
-
-            if (pubArea.read() != -1) {
-                throw new InvalidTpmtPublicException("Bytes remaining in pubArea after parsing tpmtPublic!");
-            }
+            TpmtUniqueParameter unique = parameters.getUniqueParameter(pubArea);
 
             return new TpmtPublic(type, name, objectAttrs, authPolicy, parameters, unique);
         } catch (IOException ioe) {

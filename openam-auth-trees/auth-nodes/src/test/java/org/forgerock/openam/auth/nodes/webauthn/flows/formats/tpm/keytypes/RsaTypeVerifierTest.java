@@ -11,17 +11,29 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
+import java.security.interfaces.RSAPublicKey;
 
+import org.forgerock.json.jose.jwk.KeyType;
+import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmAlg;
+import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.exceptions.InvalidTpmtPublicException;
 import org.testng.annotations.Test;
 
+/**
+ * Test for the {@link RsaTypeVerifier} class.
+ */
 public class RsaTypeVerifierTest {
 
     @Test
@@ -34,9 +46,123 @@ public class RsaTypeVerifierTest {
 
         //then
         assertThat(result.getExponent()).isEqualTo(65537);
-        assertThat(result.getKeyBits()).isEqualTo(new byte[] { 8, 0 });
+        assertThat(result.getKeyBits()).isEqualTo(new byte[]{8, 0});
         assertThat(result.getScheme()).isEqualTo(TpmAlg.TPM_ALG_NULL);
         assertThat(result.getSymmetric()).isEqualTo(TpmAlg.TPM_ALG_NULL);
     }
 
+    @Test
+    public void testVerify() throws IOException {
+        //given
+        byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
+
+        BigInteger modulus = new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B4F", 16);
+        byte[] unique = modulus.toByteArray();
+        RsaUniqueParameter rsaUniqueParameter = new RsaUniqueParameter(unique);
+
+        RsaJWK jwk = mockRsaJwk(modulus, KeyType.RSA, BigInteger.valueOf(65537));
+
+        //when
+        RsaTypeVerifier result = RsaTypeVerifier.parseToType(paramBytes);
+
+        //then
+        assertThat(result.verify(jwk, rsaUniqueParameter)).isTrue();
+    }
+
+    @Test
+    public void testVerifyFailsWhenKeyTypeIsInvalid() throws IOException {
+        //given
+        byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
+
+        BigInteger modulus = new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B4F", 16);
+        byte[] unique = modulus.toByteArray();
+        RsaUniqueParameter rsaUniqueParameter = new RsaUniqueParameter(unique);
+
+        RsaJWK jwk = mockRsaJwk(modulus, KeyType.EC, BigInteger.valueOf(65537));
+
+        //when
+        RsaTypeVerifier result = RsaTypeVerifier.parseToType(paramBytes);
+
+        //then
+        assertThat(result.verify(jwk, rsaUniqueParameter)).isFalse();
+    }
+
+    @Test
+    public void testVerifyFailsWhenPublicExponentIsInvalid() throws IOException {
+        //given
+        byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
+
+        BigInteger modulus = new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B4F", 16);
+        byte[] unique = modulus.toByteArray();
+        RsaUniqueParameter rsaUniqueParameter = new RsaUniqueParameter(unique);
+
+        RsaJWK jwk = mockRsaJwk(modulus, KeyType.RSA, BigInteger.valueOf(65538));
+
+        //when
+        RsaTypeVerifier result = RsaTypeVerifier.parseToType(paramBytes);
+
+        //then
+        assertThat(result.verify(jwk, rsaUniqueParameter)).isFalse();
+    }
+
+    @Test
+    public void testVerifyFailsWhenUniqueParameterIsInvalid() throws IOException {
+        //given
+        byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
+
+        BigInteger modulus = new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B4F", 16);
+        byte[] unique = modulus.toByteArray();
+        RsaUniqueParameter rsaUniqueParameter = new RsaUniqueParameter(unique);
+
+        RsaJWK jwk = mockRsaJwk(
+                new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B5F", 16),
+                KeyType.RSA, BigInteger.valueOf(65537));
+
+        //when
+        RsaTypeVerifier result = RsaTypeVerifier.parseToType(paramBytes);
+
+        //then
+        assertThat(result.verify(jwk, rsaUniqueParameter)).isFalse();
+    }
+
+    @Test
+    public void testGetUniqueParameter() throws IOException, InvalidTpmtPublicException {
+        //given
+        byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
+        byte[] pubAreaBytes = new byte[]{0, 3, 1, 2, 3};
+        RsaUniqueParameter rsaUniqueParameter = new RsaUniqueParameter(new byte[]{1, 2, 3});
+        DataInputStream pubArea = new DataInputStream(new ByteArrayInputStream(pubAreaBytes));
+
+        //when
+        RsaTypeVerifier result = RsaTypeVerifier.parseToType(paramBytes);
+        TpmtUniqueParameter uniqueParameter = result.getUniqueParameter(pubArea);
+
+        //then
+        assertThat(uniqueParameter).isInstanceOf(RsaUniqueParameter.class);
+        assertThat((RsaUniqueParameter) uniqueParameter).isEqualTo(rsaUniqueParameter);
+    }
+
+    @Test (expectedExceptions = InvalidTpmtPublicException.class)
+    public void testGetUniqueParameterThrowsException() throws IOException, InvalidTpmtPublicException {
+        //given
+        byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
+        byte[] pubAreaBytes = new byte[]{0, 3, 1, 2, 3, 0};
+        DataInputStream pubArea = new DataInputStream(new ByteArrayInputStream(pubAreaBytes));
+
+        //when
+        RsaTypeVerifier result = RsaTypeVerifier.parseToType(paramBytes);
+        result.getUniqueParameter(pubArea);
+    }
+
+    private RsaJWK mockRsaJwk(BigInteger modulus, KeyType keyType, BigInteger publicExponent) {
+        RSAPublicKey publicKey = mock(RSAPublicKey.class);
+        when(publicKey.getPublicExponent()).thenReturn(publicExponent);
+        when(publicKey.getModulus()).thenReturn(modulus);
+
+        RsaJWK jwk = mock(RsaJWK.class);
+        when(jwk.getKeyType()).thenReturn(keyType);
+        when(jwk.toRSAPublicKey()).thenReturn(publicKey);
+
+        return jwk;
+    }
 }

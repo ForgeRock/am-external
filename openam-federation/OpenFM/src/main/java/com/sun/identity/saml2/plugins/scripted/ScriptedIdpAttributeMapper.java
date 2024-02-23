@@ -81,7 +81,8 @@ public class ScriptedIdpAttributeMapper implements IDPAttributeMapper {
                     .withRealm(realm)
                     .withRemoteEntityId(remoteEntityId)
                     .withSession(session)
-                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ATTRIBUTE_MAPPER.name(),
+                            script.getId(), script.getName()))
                     .withScriptName(script.getName())
                     .build();
 

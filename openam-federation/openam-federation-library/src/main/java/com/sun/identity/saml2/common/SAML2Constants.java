@@ -24,7 +24,7 @@
  *
  * $Id: SAML2Constants.java,v 1.44 2009/11/24 21:53:02 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2023 ForgeRock AS.
+ * Portions Copyrighted 2010-2024 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -189,10 +189,10 @@ public interface SAML2Constants {
     public String AUTH_URL = "AuthUrl";
 
     /**
-     * Used when the SAML endpoints are RP'd to a non-server/site URL, typically
+     * Used when the SAML endpoints are reverse proxied to a non-server/site URL, typically
      * to DAS
      */
-    public String RP_URL = "RpUrl";
+    public String REVERSE_PROXY_URL = "RpUrl";
 
     /**
      * Strings represent primitive top-level StatusCode values 

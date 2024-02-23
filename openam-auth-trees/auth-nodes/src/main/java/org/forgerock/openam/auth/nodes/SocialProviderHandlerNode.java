@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -356,9 +356,17 @@ public class SocialProviderHandlerNode implements Node {
 
         Optional<String> universalId = identityService.getUniversalId(resolvedId, realm.asPath(), IdType.USER);
 
-        return goTo(user.isPresent()
-                ? SocialAuthOutcome.ACCOUNT_EXISTS.name()
-                : SocialAuthOutcome.NO_ACCOUNT.name())
+        Action.ActionBuilder actionBuilder;
+        if (user.isPresent()) {
+            actionBuilder = goTo(SocialAuthOutcome.ACCOUNT_EXISTS.name());
+            if (resolvedId != null) {
+                actionBuilder.withIdentifiedIdentity(resolvedId, IdType.USER);
+            }
+        } else {
+            actionBuilder = goTo(SocialAuthOutcome.NO_ACCOUNT.name());
+        }
+
+        return actionBuilder
                 .withUniversalId(universalId)
                 .replaceSharedState(context.sharedState.copy())
                 .replaceTransientState(context.transientState.copy()
@@ -447,7 +455,8 @@ public class SocialProviderHandlerNode implements Node {
                         : null)
                 .withSharedState(context.sharedState.getObject())
                 .withTransientState(context.transientState.getObject())
-                .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME,
+                        script.getId(), script.getName()))
                 .withScriptName(script.getName())
                 .build();
 

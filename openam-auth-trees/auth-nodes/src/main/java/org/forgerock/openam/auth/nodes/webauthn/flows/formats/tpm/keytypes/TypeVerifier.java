@@ -11,13 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+
 import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmAlg;
+import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.exceptions.InvalidTpmtPublicException;
 
 /**
  * Functional interface for verifying a JWK against the provided pubArea's unique field.
@@ -28,10 +32,10 @@ public interface TypeVerifier {
      * Verify the provided JWK and the pubArea unique field.
      *
      * @param publicKey The public key information in JWK format.
-     * @param unique PubArea unique field.
+     * @param unique PubArea unique field, abstracted behind an interface.
      * @return true if valid, false if not.
      */
-    boolean verify(JWK publicKey, byte[] unique);
+    boolean verify(JWK publicKey, TpmtUniqueParameter unique);
 
     /**
      * Retrieve the scheme algorithm this type verifier instance uses.
@@ -47,4 +51,13 @@ public interface TypeVerifier {
      */
     TpmAlg getSymmetric();
 
+    /**
+     * Retrieve the pubArea unique parameter value.
+     *
+     * @param pubArea the pubArea part of TPM attestation data
+     * @return The pubArea unique parameter
+     * @throws InvalidTpmtPublicException If an invalid pubArea is identified
+     * @throws IOException If an error occurs reading data from the pubArea
+     */
+    TpmtUniqueParameter getUniqueParameter(DataInputStream pubArea) throws InvalidTpmtPublicException, IOException;
 }

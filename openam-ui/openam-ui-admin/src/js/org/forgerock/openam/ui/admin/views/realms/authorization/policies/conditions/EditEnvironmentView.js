@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2019 ForgeRock AS.
+ * Copyright 2014-2024 ForgeRock AS.
  */
 
 import $ from "jquery";
@@ -78,6 +78,7 @@ export default AbstractView.extend({
 
             self.$el.data("itemData", itemData);
             self.$el.find("select.type-selection:first").val(itemData.type).trigger("change");
+            self.createListItem(schema, self.$el);
         }
 
         self.$el.find("select.type-selection:first").focus();

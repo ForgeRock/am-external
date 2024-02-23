@@ -17,6 +17,7 @@ package com.sun.identity.saml2.plugins.scripted;
 
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ADAPTER_SCRIPT;
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ROLE;
+import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ADAPTER;
 
 import javax.script.Bindings;
 import javax.servlet.http.HttpServletRequest;
@@ -51,7 +52,7 @@ public class ScriptedIdpAdapter implements IDPAdapter {
             ValidationHelper validationHelper,
             IdpAdapterScriptHelper idpAdapterScriptHelper,
             ScriptExecutor executor) {
-        this.scriptEvaluator = scriptEvaluatorFactory.create(Saml2ScriptContext.SAML2_IDP_ADAPTER);
+        this.scriptEvaluator = scriptEvaluatorFactory.create(SAML2_IDP_ADAPTER);
         this.validationHelper = validationHelper;
         this.idpAdapterScriptHelper = idpAdapterScriptHelper;
         this.executor = executor;
@@ -83,7 +84,8 @@ public class ScriptedIdpAdapter implements IDPAdapter {
                 .withHostedEntityId(hostedEntityId)
                 .withRealm(realm)
                 .withIdpAdapterScriptHelper(idpAdapterScriptHelper)
-                .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ADAPTER.name(),
+                        script.getId(), script.getName()))
                 .withScriptName(script.getName())
                 .build();
 
@@ -109,7 +111,8 @@ public class ScriptedIdpAdapter implements IDPAdapter {
                         .withHostedEntityId(hostedEntityId)
                         .withRealm(realm)
                         .withIdpAdapterScriptHelper(idpAdapterScriptHelper)
-                        .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                        .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ADAPTER.name(),
+                                script.getId(), script.getName()))
                         .withScriptName(script.getName())
                         .build();
 
@@ -137,7 +140,8 @@ public class ScriptedIdpAdapter implements IDPAdapter {
                         .withHostedEntityId(hostedEntityId)
                         .withRealm(realm)
                         .withIdpAdapterScriptHelper(idpAdapterScriptHelper)
-                        .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                        .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ADAPTER.name(),
+                                script.getId(), script.getName()))
                         .withScriptName(script.getName())
                         .build();
 
@@ -162,7 +166,8 @@ public class ScriptedIdpAdapter implements IDPAdapter {
                         .withHostedEntityId(hostedEntityId)
                         .withRealm(realm)
                         .withIdpAdapterScriptHelper(idpAdapterScriptHelper)
-                        .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                        .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ADAPTER.name(),
+                                script.getId(), script.getName()))
                         .withScriptName(script.getName())
                         .build();
 
@@ -193,7 +198,8 @@ public class ScriptedIdpAdapter implements IDPAdapter {
                         .withHostedEntityId(hostedEntityId)
                         .withRealm(realm)
                         .withIdpAdapterScriptHelper(idpAdapterScriptHelper)
-                        .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                        .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ADAPTER.name(),
+                                script.getId(), script.getName()))
                         .withScriptName(script.getName())
                         .build();
 

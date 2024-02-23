@@ -179,7 +179,8 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
                     .withDeviceProfilesDao(deviceProfilesDao)
                     .withSharedState(context.sharedState)
                     .withTransientState(context.transientState)
-                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", AUTHENTICATION_TREE_DECISION_NODE_NAME,
+                            script.getId(), script.getName()))
                     .withScriptName(script.getName())
                     .build();
             Bindings binding = scriptBindings.convert(script.getEvaluatorVersion());

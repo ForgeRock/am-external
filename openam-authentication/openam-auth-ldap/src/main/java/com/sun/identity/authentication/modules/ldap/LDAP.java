@@ -30,8 +30,7 @@
 package com.sun.identity.authentication.modules.ldap;
 
 import static com.sun.identity.authentication.service.AMAuthErrorCode.USERID_NOT_FOUND;
-import static org.forgerock.openam.utils.StringUtils.*;
-import static org.forgerock.openam.utils.Time.*;
+import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
 import com.sun.identity.authentication.spi.AMAuthCallBackImpl;
 import com.sun.identity.authentication.spi.AMAuthCallBackException;
@@ -311,8 +310,7 @@ public class LDAP extends AMLoginModule {
                 } else {
                     //callbacks is not null
                     userName = ( (NameCallback) callbacks[0]).getName();
-                    userPassword = charToString(((PasswordCallback)
-                    callbacks[1]).getPassword(), callbacks[1]);
+                    userPassword = getPasswordFromCallbackAsString(((PasswordCallback) callbacks[1]));
                 }
 
                 if (userPassword == null || userPassword.length() == 0) {
@@ -348,17 +346,13 @@ public class LDAP extends AMLoginModule {
                 int pwdAction =
                     ((ConfirmationCallback)callbacks[3]).getSelectedIndex();
                 if (pwdAction == 0) {
-                    String oldPassword = charToString(((PasswordCallback)
-                    callbacks[0]).getPassword(), callbacks[0]);
-                    String newPassword = charToString(((PasswordCallback)
-                    callbacks[1]).getPassword(), callbacks[1]);
-                    String confirmPassword = charToString(((PasswordCallback)
-                    callbacks[2]).getPassword(), callbacks[2]);
-
-                    if (isEmpty(oldPassword)) {
+                    char[] oldPassword = getPasswordFromCallback((PasswordCallback) callbacks[0]);
+                    char[] newPassword = getPasswordFromCallback((PasswordCallback) callbacks[1]);
+                    char[] confirmPassword = getPasswordFromCallback((PasswordCallback) callbacks[2]);
+                    if (oldPassword.length == 0) {
                         debug.debug("LDAP.process: old password is empty");
                         newState = ModuleState.MUST_SUPPLY_OLD_PASSWORD;
-                    } else if (isNotEmpty(newPassword) &&  newPassword.length() < requiredPasswordLength) {
+                    } else if (newPassword.length != 0 && newPassword.length < requiredPasswordLength) {
                         debug.debug("LDAP.process: new password less than the minimal length of {} ",
                                  requiredPasswordLength);
                         newState = ModuleState.PASSWORD_MIN_CHARACTERS;
@@ -416,7 +410,7 @@ public class LDAP extends AMLoginModule {
 
                 String failureUserID = ldapUtil.getUserId();
                 throw new InvalidPasswordException(AM_AUTH, "InvalidUP",
-                    null, failureUserID, null);
+                    null, failureUserID, isReturningPrincipalAsDn(), null);
             } else if (ResultCode.UNWILLING_TO_PERFORM.equals(ex.getResultCode())) {
                 if (debug.isDebugEnabled()) {
                     debug.debug("Unwilling to perform. Account inactivated.");
@@ -678,15 +672,14 @@ public class LDAP extends AMLoginModule {
         }
     }
 
-    private String charToString(char[] tmpPassword, Callback cbk) {
-        if (tmpPassword == null) {
-            // treat a NULL password as an empty password
-            tmpPassword = new char[0];
-        }
-        char[] pwd = new char[tmpPassword.length];
-        System.arraycopy(tmpPassword, 0, pwd, 0, tmpPassword.length);
-        ((PasswordCallback) cbk).clearPassword();
-        return new String(pwd);
+    private String getPasswordFromCallbackAsString(PasswordCallback callback) {
+        return new String(getPasswordFromCallback(callback));
+    }
+
+    private char[] getPasswordFromCallback(PasswordCallback callback) {
+        char[] password = callback.getPassword() == null ? new char[0] : callback.getPassword();
+        callback.clearPassword();
+        return password;
     }
 
     /**

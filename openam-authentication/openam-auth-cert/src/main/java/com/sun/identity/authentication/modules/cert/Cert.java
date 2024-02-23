@@ -24,7 +24,7 @@
  *
  * $Id: Cert.java,v 1.14 2009/03/13 20:54:42 beomsuk Exp $
  *
- * Portions Copyrighted 2013-2020 ForgeRock AS.
+ * Portions Copyrighted 2013-2024 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.cert;
@@ -147,7 +147,7 @@ public class Cert extends AMLoginModule {
     
     private static org.slf4j.Logger debug = null;
 
-    static String UPNOID = "1.3.6.1.4.1.311.20.2.3";
+    static int[] UPNOID = {1, 3, 6, 1, 4, 1, 311, 20, 2, 3};
 
     private String amAuthCert_cacheCRL;
     private boolean doCRLCaching = true;
@@ -564,7 +564,7 @@ public class Cert extends AMLoginModule {
                     (SubjectAlternativeNameExtension.SUBJECT_NAME);
         
                 GeneralName generalname = null;  
-                ObjectIdentifier upnoid = new ObjectIdentifier(UPNOID); 
+                ObjectIdentifier upnoid = new ObjectIdentifier(UPNOID);
                 Iterator itr = (Iterator) names.iterator();
                 while ((userTokenId == null) && itr.hasNext()) {
                     generalname = (GeneralName) itr.next(); 

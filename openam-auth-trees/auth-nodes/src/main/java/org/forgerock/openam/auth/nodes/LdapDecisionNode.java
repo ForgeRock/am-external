@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -357,7 +357,7 @@ public class LdapDecisionNode implements Node {
                 if (!userStatus.equalsIgnoreCase(STATUS_ACTIVE)) {
                     ldapUtil.setState(ModuleState.ACCOUNT_LOCKED);
                 }
-                action = processLogin(ldapUtil.getState(), newState, context);
+                action = processLogin(ldapUtil.getState(), newState, context, username);
             } else {
                 logger.debug("processing password change");
                 action = processPasswordChange(context, sharedStateSubmittedUsername, userPassword);
@@ -431,15 +431,12 @@ public class LdapDecisionNode implements Node {
         ldapUtil.searchForUser(additionalPwdChangeSearchAttrs);
         if (userClickedSubmit(context)) {
             List<PasswordCallback> passwordCallbacks = context.getCallbacks(PasswordCallback.class);
-            String oldPassword = charToString(passwordCallbacks.get(OLD_PASSWORD_CALLBACK).getPassword(),
-                    passwordCallbacks.get(OLD_PASSWORD_CALLBACK));
-            String newPassword = charToString(passwordCallbacks.get(NEW_PASSWORD_CALLBACK).getPassword(),
-                    passwordCallbacks.get(NEW_PASSWORD_CALLBACK));
-            String confirmPassword = charToString(passwordCallbacks.get(CONFIRM_PASSWORD_CALLBACK).getPassword(),
-                    passwordCallbacks.get(CONFIRM_PASSWORD_CALLBACK));
+            char[] oldPassword = getPasswordFromCallback(passwordCallbacks.get(OLD_PASSWORD_CALLBACK));
+            char[] newPassword = getPasswordFromCallback(passwordCallbacks.get(NEW_PASSWORD_CALLBACK));
+            char[] confirmPassword = getPasswordFromCallback(passwordCallbacks.get(CONFIRM_PASSWORD_CALLBACK));
 
             ModuleState passwordChangeState;
-            if (newPassword.length() < config.minimumPasswordLength()) {
+            if (newPassword.length < config.minimumPasswordLength()) {
                 logger.debug("LDAP.process: new password less"
                             + " than the minimal length of {}", config.minimumPasswordLength());
                 passwordChangeState = ModuleState.PASSWORD_MIN_CHARACTERS;
@@ -564,20 +561,18 @@ public class LdapDecisionNode implements Node {
         return context.getCallback(ConfirmationCallback.class).get().getSelectedIndex() == 0;
     }
 
-    private String charToString(char[] temporaryPassword, Callback callback) {
-        if (temporaryPassword == null) {
-            // treat a NULL password as an empty password
-            temporaryPassword = new char[0];
-        }
-        char[] password = new char[temporaryPassword.length];
-        System.arraycopy(temporaryPassword, 0, password, 0, temporaryPassword.length);
-        ((PasswordCallback) callback).clearPassword();
-        return new String(password);
+    private char[] getPasswordFromCallback(PasswordCallback callback) {
+        char[] password = callback.getPassword() == null ? new char[0] : callback.getPassword();
+        callback.clearPassword();
+        return password;
     }
 
-    private ActionBuilder processLogin(ModuleState loginState, JsonValue newState, TreeContext context) throws
-            NodeProcessException {
+    private ActionBuilder processLogin(ModuleState loginState, JsonValue newState, TreeContext context, String username)
+            throws NodeProcessException {
         ActionBuilder loginResult = goTo(LdapOutcome.TRUE);
+        if (username != null) {
+            loginResult.withIdentifiedIdentity(username, USER);
+        }
         ResourceBundle bundle = context.request.locales
                 .getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
         logger.debug("loginState {}", loginState);

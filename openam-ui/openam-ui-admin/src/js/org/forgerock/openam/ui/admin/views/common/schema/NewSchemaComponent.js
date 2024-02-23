@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -91,7 +91,7 @@ export default Backbone.View.extend({
 
     onSave () {
         const formData = _.cloneDeep(this.jsonSchemaView.getData());
-        const instanceId = this.$el.find("[data-instance-id]").val();
+        const instanceId = this.$el.find("[data-instance-id]").val().trim();
         formData["_id"] = instanceId;
         const values = new JSONValues(formData);
         const valuesWithoutNullPasswords = values.removeNullPasswords(this.schema);

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 
@@ -126,12 +126,12 @@ public class ${authNodeName} extends AbstractDecisionNode {
 
     private boolean isMemberOfGroup(AMIdentity userIdentity, String groupName) {
         try {
-            Set<String> userGroups = userIdentity.getMemberships(IdType.GROUP);
-            for (String group : userGroups) {
-                if (groupName.equals(group)) {
+            Set<AMIdentity> userGroups = userIdentity.getMemberships(IdType.GROUP);
+            for (AMIdentity group : userGroups) {
+                if (groupName.equals(group.getName())) {
                     return true;
                 }
-                Matcher dnMatcher = DN_PATTERN.matcher(group);
+                Matcher dnMatcher = DN_PATTERN.matcher(group.getName());
                 if (dnMatcher.find() && dnMatcher.group(1).equals(groupName)) {
                     return true;
                 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -99,6 +99,9 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
         logger.debug("NameCallback and PasswordCallback set");
         Callback[] callbacks = new Callback[]{nameCallback, passwordCallback};
         Action.ActionBuilder action = goTo(true);
+        if (username != null) {
+            action.withIdentifiedIdentity(username, getIdentityType());
+        }
         try {
             logger.debug("authenticating {} ", nameCallback.getName());
             boolean isAuthenticationFailed = !identityStore.authenticate(getIdentityType(), callbacks);

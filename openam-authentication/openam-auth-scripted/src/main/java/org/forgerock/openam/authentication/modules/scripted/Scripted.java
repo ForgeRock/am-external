@@ -183,7 +183,8 @@ public class Scripted extends AMLoginModule {
                 .withFailureValue(FAILURE_VALUE)
                 .withHttpClient(httpClient)
                 .withIdentityRepository(identityRepository)
-                .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                .withLoggerReference(String.format("scripts.%s.%s.(%s)", AUTHENTICATION_SERVER_SIDE.name(),
+                        script.getId(), script.getName()))
                 .withScriptName(script.getName())
                 .build();
 

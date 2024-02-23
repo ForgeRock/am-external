@@ -11,12 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -26,15 +28,18 @@ import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Optional;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.mockito.Mock;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.sun.identity.idm.IdType;
 
 /**
  * Test the anonymous user node.
@@ -49,6 +54,37 @@ public class AnonymousUserNodeTest {
     @BeforeMethod
     public void before() {
         openMocks(this);
+    }
+
+    @Test
+    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+        //GIVEN
+        when(config.anonymousUserName()).thenReturn("anonymous");
+        TreeContext context = new TreeContext(json(object(1)),
+                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        AnonymousUserNode node = new AnonymousUserNode(identityService, config);
+
+        //WHEN
+        Action result = node.process(context);
+
+        //THEN
+        assertThat(result.identifiedIdentity).isPresent();
+        IdentifiedIdentity idid = result.identifiedIdentity.get();
+        assertThat(idid.getUsername()).isEqualTo("anonymous");
+        assertThat(idid.getIdentityType()).isEqualTo(IdType.USER);
+    }
+    @Test
+    public void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
+        //GIVEN
+        when(config.anonymousUserName()).thenReturn(null);
+        TreeContext context = new TreeContext(json(object(1)),
+                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        AnonymousUserNode node = new AnonymousUserNode(identityService, config);
+
+        //WHEN
+        assertThatThrownBy(() -> node.process(context))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Anonymous user name could not be found in the configuration");
     }
 
     @Test

@@ -206,13 +206,15 @@ const LoginView = AbstractView.extend({
         // START CUSTOM STAGE-SPECIFIC LOGIC HERE
 
         // Known to be used by username/password based authn stages
+        const secure = (location.protocol === "https:");
         if (this.$el.find("[name=loginRemember]:checked").length !== 0) {
             expire = new Date();
             expire.setDate(expire.getDate() + 20);
             // An assumption that the login name is the first text input box
-            CookieHelper.setCookie("login", this.$el.find("input[type=text]:first").val(), expire);
+            CookieHelper.setCookie("login", this.$el.find("input[type=text]:first").val(), expire, undefined,
+                undefined, secure, "None");
         } else if (this.$el.find("[name=loginRemember]").length !== 0) {
-            CookieHelper.deleteCookie("login");
+            CookieHelper.deleteCookie("login", undefined, undefined, secure, "None");
         }
 
         // Check for KbaCreateCallback, merge question and answer into array
@@ -245,8 +247,9 @@ const LoginView = AbstractView.extend({
     },
 
     renderLoginFailure () {
-        // If its not the first stage then render the Login Unavailable view with link back to login screen.
-        if (Configuration.globalData.auth.currentStage > 1) {
+        // If its not the first stage or if we are not using the default login service
+        // then render the Login Unavailable view with link back to login screen
+        if (Configuration.globalData.auth.currentStage > 1 || !Configuration.globalData.auth.isDefaultService) {
             let fragmentParams = URIUtils.getCurrentFragmentQueryString();
             if (fragmentParams) {
                 fragmentParams = `&${fragmentParams}`;

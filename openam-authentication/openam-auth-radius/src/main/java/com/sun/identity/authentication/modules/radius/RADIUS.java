@@ -24,7 +24,7 @@
  *
  * $Id: AccessAccept.java,v 1.2 2008/06/25 05:42:00 qcheng Exp $
  *
- * Portions Copyrighted 2011-2022 ForgeRock AS.
+ * Portions Copyrighted 2011-2023 ForgeRock AS.
  * Portions Copyrighted [2015] [Intellectual Reserve, Inc (IRI)]
  */
 package com.sun.identity.authentication.modules.radius;
@@ -266,7 +266,7 @@ public class RADIUS extends AMLoginModule {
 
                 shutdown();
                 setFailureID(username);
-                throw new InvalidPasswordException(AM_AUTH_RADIUS, "RadiusLoginFailed", null, username, re);
+                throw new InvalidPasswordException(AM_AUTH_RADIUS, "RadiusLoginFailed", null, username, false, re);
             } catch (IOException ioe) {
                 if (getCredentialsFromSharedState && !isUseFirstPassEnabled()) {
                     getCredentialsFromSharedState = false;
@@ -369,7 +369,7 @@ public class RADIUS extends AMLoginModule {
                 debug.error("Radius challenge response rejected", ex);
                 shutdown();
                 setFailureID(username);
-                throw new InvalidPasswordException(AM_AUTH_RADIUS, "RadiusLoginFailed", null, username, ex);
+                throw new InvalidPasswordException(AM_AUTH_RADIUS, "RadiusLoginFailed", null, username, false, ex);
             } catch (IOException ioe) {
                 debug.error("Radius challenge IOException", ioe);
                 shutdown();

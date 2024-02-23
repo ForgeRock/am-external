@@ -18,6 +18,7 @@ package com.sun.identity.saml2.plugins.scripted;
 
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ADAPTER_SCRIPT;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
+import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_SP_ADAPTER;
 
 import java.io.PrintWriter;
 
@@ -59,7 +60,7 @@ public class ScriptedSpAdapter implements SPAdapter {
     @Inject
     public ScriptedSpAdapter(ScriptEvaluatorFactory scriptEvaluatorFactory, SpAdapterScriptHelper spAdapterScriptHelper,
             Client httpClient, ScriptExecutor executor) {
-        this.scriptEvaluator = scriptEvaluatorFactory.create(Saml2ScriptContext.SAML2_SP_ADAPTER);
+        this.scriptEvaluator = scriptEvaluatorFactory.create(SAML2_SP_ADAPTER);
         this.spAdapterScriptHelper = spAdapterScriptHelper;
         this.httpClient = httpClient;
         this.executor = executor;
@@ -78,7 +79,8 @@ public class ScriptedSpAdapter implements SPAdapter {
                 .withRequest(request)
                 .withResponse(response)
                 .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
+                        script.getId(), script.getName()))
                 .withScriptName(script.getName())
                 .build()
                 .convert(script.getEvaluatorVersion());
@@ -100,7 +102,8 @@ public class ScriptedSpAdapter implements SPAdapter {
                 .withRequest(request)
                 .withResponse(response)
                 .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
+                        script.getId(), script.getName()))
                 .withScriptName(script.getName())
                 .build()
                 .convert(script.getEvaluatorVersion());
@@ -125,7 +128,8 @@ public class ScriptedSpAdapter implements SPAdapter {
                 .withRequest(request)
                 .withResponse(response)
                 .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
+                        script.getId(), script.getName()))
                 .withScriptName(script.getName())
                 .build()
                 .convert(script.getEvaluatorVersion());
@@ -149,7 +153,8 @@ public class ScriptedSpAdapter implements SPAdapter {
                     .withRequest(request)
                     .withResponse(response)
                     .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
+                            script.getId(), script.getName()))
                     .withScriptName(script.getName())
                     .build()
                     .convert(script.getEvaluatorVersion());
@@ -176,7 +181,8 @@ public class ScriptedSpAdapter implements SPAdapter {
                     .withRequest(request)
                     .withResponse(response)
                     .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
+                            script.getId(), script.getName()))
                     .withScriptName(script.getName())
                     .build()
                     .convert(script.getEvaluatorVersion());
@@ -203,7 +209,8 @@ public class ScriptedSpAdapter implements SPAdapter {
                     .withRequest(request)
                     .withResponse(response)
                     .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
+                            script.getId(), script.getName()))
                     .withScriptName(script.getName())
                     .build()
                     .convert(script.getEvaluatorVersion());
@@ -229,7 +236,8 @@ public class ScriptedSpAdapter implements SPAdapter {
                 .withRequest(request)
                 .withResponse(response)
                 .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
+                        script.getId(), script.getName()))
                 .withScriptName(script.getName())
                 .build()
                 .convert(script.getEvaluatorVersion());
@@ -253,7 +261,8 @@ public class ScriptedSpAdapter implements SPAdapter {
                     .withRequest(request)
                     .withResponse(response)
                     .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                    .withLoggerReference(String.format("%s (%s)", script.getName(), script.getId()))
+                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
+                            script.getId(), script.getName()))
                     .withScriptName(script.getName())
                     .build()
                     .convert(script.getEvaluatorVersion());
