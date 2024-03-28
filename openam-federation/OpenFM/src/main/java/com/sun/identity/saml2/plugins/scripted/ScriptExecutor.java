@@ -15,13 +15,12 @@
  */
 package com.sun.identity.saml2.plugins.scripted;
 
-import javax.script.Bindings;
-
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.core.realms.RealmLookupException;
 import org.forgerock.openam.scripting.application.ScriptEvaluationHelper;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
 import org.forgerock.util.Reject;
@@ -49,10 +48,10 @@ class ScriptExecutor {
     }
 
     void evaluateVoidScriptFunction(ScriptEvaluator scriptEvaluator, Script script, String realm,
-            Bindings scriptVariables, String functionName) throws SAML2Exception {
+            ScriptBindings scriptBindings, String functionName) throws SAML2Exception {
         Reject.ifNull(script);
         try {
-            scriptEvaluationHelper.evaluateFunction(scriptEvaluator, script, scriptVariables, functionName,
+            scriptEvaluationHelper.evaluateFunction(scriptEvaluator, script, scriptBindings, functionName,
                     realmLookup.lookup(realm));
         } catch (javax.script.ScriptException | RealmLookupException e) {
             throw new SAML2Exception(e);
@@ -60,10 +59,10 @@ class ScriptExecutor {
     }
 
     boolean evaluateScriptFunction(ScriptEvaluator scriptEvaluator, Script script, String realm,
-            Bindings scriptVariables, String functionName) throws SAML2Exception {
+            ScriptBindings scriptBindings, String functionName) throws SAML2Exception {
         Reject.ifNull(script);
         try {
-            return scriptEvaluationHelper.evaluateFunction(scriptEvaluator, script, scriptVariables, Boolean.class,
+            return scriptEvaluationHelper.evaluateFunction(scriptEvaluator, script, scriptBindings, Boolean.class,
                     functionName, realmLookup.lookup(realm)).orElse(false);
         } catch (javax.script.ScriptException | RealmLookupException e) {
             throw new SAML2Exception(e);

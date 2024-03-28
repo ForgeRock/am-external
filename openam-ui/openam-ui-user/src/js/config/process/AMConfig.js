@@ -38,14 +38,9 @@ export default [{
 
         if (urlParams.get("suspendedId")) {
             // If url contains a suspendedId query parameter, assume user is
-            // attempting to continue a suspended login tree. Logout the current
-            // user and redirect to login to continue the tree. If no user was
-            // logged in, this would be handled by the first if statement above.
-            const routeToLogin = () => {
-                Router.routeTo(Router.configuration.routes.login, routerParams);
-            };
-
-            logout().then(routeToLogin, routeToLogin);
+            // attempting to continue a suspended login tree so route to login
+            // where the request will be handled by the backend
+            Router.routeTo(Router.configuration.routes.login, routerParams);
         } else if (!Configuration.loggedUser) {
             Router.routeTo(Router.configuration.routes.login, routerParams);
         } else if (_.includes(Configuration.loggedUser.uiroles, "ui-realm-admin")) {

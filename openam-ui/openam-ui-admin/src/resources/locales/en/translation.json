@@ -136,7 +136,7 @@
             "complete" : "Complete",
             "confirm": "Confirm",
             "continue" : "Continue",
-            "copyright" : "Copyright &copy; 2010-2023 ForgeRock AS. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2024 ForgeRock AS. All rights reserved.",
             "create" : "Create",
             "createdAt" : "Created at",
             "createNew": "Create New",
@@ -617,6 +617,7 @@
                                 "identityManagement": "Identity Management",
                                 "utilities": "Utilities",
                                 "iot": "IoT",
+                                "designer": "Designer",
                                 "uncategorized": "Uncategorized"
                             }
                         },
@@ -760,6 +761,7 @@
                 "scriptBindings": "Available Bindings",
                 "script": "Script",
                 "scriptType": "Script Type",
+                "scriptTypes": "Script Types...",
                 "validation": {
                     "line": "line",
                     "column": "column",

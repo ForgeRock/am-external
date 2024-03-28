@@ -24,7 +24,7 @@
  *
  * $Id: SAML2MetaManager.java,v 1.18 2009/10/28 23:58:58 exu Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2024 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.meta;
@@ -1283,6 +1283,19 @@ public class SAML2MetaManager {
      */
     public List<EntityConfigElement> getAllHostedEntityConfigs(String realm) throws SAML2MetaException {
         return getAllHostedEntities(realm)
+                .stream()
+                .map(rethrowFunction(entityId -> getEntityConfig(realm, entityId)))
+                .collect(toList());
+    }
+
+    /**
+     * Gets all remote entities configured in the realm.
+     *
+     * @param realm The realm under which the entities reside.
+     * @return The remote entities.
+     */
+    public List<EntityConfigElement> getAllRemoteEntityConfigs(String realm) throws SAML2MetaException {
+        return getAllRemoteEntities(realm)
                 .stream()
                 .map(rethrowFunction(entityId -> getEntityConfig(realm, entityId)))
                 .collect(toList());

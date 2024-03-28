@@ -24,7 +24,7 @@
  *
  * $Id: KeyInfoConfirmationDataImpl.java,v 1.2 2008/06/25 05:47:44 qcheng Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 
 
@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -57,7 +58,8 @@ import com.sun.identity.shared.xml.XMLUtils;
  * confirmation data can be used. The optional attributes defined by
  * <code>SubjectConfirmationData</code> MAY also appear.
  */
-public class KeyInfoConfirmationDataImpl 
+@SupportedAll(scriptingApi = true, javaApi = false)
+public class KeyInfoConfirmationDataImpl
 extends SubjectConfirmationDataImpl implements  KeyInfoConfirmationData 
 {
     private static final Logger logger = LoggerFactory.getLogger(KeyInfoConfirmationDataImpl.class);

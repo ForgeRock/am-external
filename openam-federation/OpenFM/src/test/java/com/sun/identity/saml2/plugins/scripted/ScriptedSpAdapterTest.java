@@ -30,7 +30,6 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.LOGOUT_R
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.LOGOUT_RESPONSE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.OUT;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.PROFILE;
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REALM;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REQUEST;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.RESPONSE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SAML2_RESPONSE;
@@ -42,18 +41,16 @@ import static org.assertj.core.api.AssertionsForClassTypes.entry;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_SP_ADAPTER;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockConstructionWithAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
-import static org.powermock.api.mockito.PowerMockito.whenNew;
 
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.script.Bindings;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
@@ -64,11 +61,15 @@ import org.forgerock.http.Client;
 import org.forgerock.http.handler.HttpClientHandler;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.MockitoAnnotations;
 
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.LogoutRequest;
@@ -109,12 +110,11 @@ public class ScriptedSpAdapterTest {
     private final LogoutRequest logoutRequest = mock(LogoutRequest.class);
     private final LogoutResponse logoutResponse = mock(LogoutResponse.class);
 
-    private final ArgumentCaptor<Bindings> bindingsCaptor = ArgumentCaptor.forClass(Bindings.class);
+    private final ArgumentCaptor<ScriptBindings> bindingsCaptor = ArgumentCaptor.forClass(ScriptBindings.class);
     private final ArgumentCaptor<Script> scriptConfigurationCaptor = ArgumentCaptor.forClass(Script.class);
 
     private final MapEntry<String, Object> HOSTED_ENTITY_ID_BINDING = entry(HOSTED_ENTITYID, hostedEntityId);
     private final MapEntry<String, Object> IDP_ENTITY_ID_BINDING = entry(IDP_ENTITY_ID, idpEntityId);
-    private final MapEntry<String, Object> REALM_BINDING = entry(REALM, realm);
     private final MapEntry<String, Object> AUTHN_REQUEST_BINDING = entry(AUTHN_REQUEST, authnRequest);
     private final MapEntry<String, Object> SESSION_BINDING = entry(SESSION, session);
     private final MapEntry<String, Object> SAML2_RESPONSE_BINDING = entry(SAML2_RESPONSE, saml2Response);
@@ -131,22 +131,35 @@ public class ScriptedSpAdapterTest {
 
     private MapEntry<String, Object> HTTP_CLIENT_BINDING;
 
+    private static MockedConstruction<HttpServletRequestWrapper> ignoredHttpServletRequestWrapper;
+    private static MockedConstruction<HttpServletResponseWrapper> ignoredHttpServletResponseWrapper;
+
     // Class under test
     private ScriptedSpAdapter scriptedSpAdapter;
 
     @Before
     public void setup() throws Exception {
-        initMocks(this);
+        MockitoAnnotations.openMocks(this).close();
         HttpClientHandler httpClientHandler = new HttpClientHandler();
         Client httpClient = new Client(httpClientHandler);
         HTTP_CLIENT_BINDING = entry(HTTP_CLIENT, httpClient);
-        scriptedSpAdapter = new ScriptedSpAdapter(__ -> scriptEvaluator, spAdapterScriptHelper, httpClient, executor);
+        scriptedSpAdapter = new ScriptedSpAdapter(__ -> scriptEvaluator, spAdapterScriptHelper, httpClient, executor
+        );
 
         // Given
         when(executor.getScriptConfiguration(realm, hostedEntityId, SP_ROLE, SP_ADAPTER_SCRIPT))
                 .thenReturn(scriptConfiguration(scriptId.toString()));
-        whenNew(HttpServletRequestWrapper.class).withArguments(request).thenReturn(wrappedRequest);
-        whenNew(HttpServletResponseWrapper.class).withArguments(response).thenReturn(wrappedResponse);
+        ignoredHttpServletRequestWrapper = mockConstructionWithAnswer(
+                HttpServletRequestWrapper.class, invocation -> wrappedRequest);
+
+        ignoredHttpServletResponseWrapper = mockConstructionWithAnswer(
+                HttpServletResponseWrapper.class, invocation -> wrappedResponse);
+    }
+
+    @After
+    public void tearDown() {
+        ignoredHttpServletRequestWrapper.close();
+        ignoredHttpServletResponseWrapper.close();
     }
 
     @Test
@@ -157,7 +170,6 @@ public class ScriptedSpAdapterTest {
         // Then
         verifyScriptEvaluation("preSingleSignOnRequest", null, List.of(SP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 AUTHN_REQUEST_BINDING,
                 IDP_ENTITY_ID_BINDING,
                 HTTP_CLIENT_BINDING);
@@ -172,7 +184,6 @@ public class ScriptedSpAdapterTest {
         // Then
         verifyScriptEvaluation("preSingleSignOnProcess", null, List.of(SP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 AUTHN_REQUEST_BINDING,
                 SAML2_RESPONSE_BINDING,
                 PROFILE_BINDING,
@@ -189,7 +200,6 @@ public class ScriptedSpAdapterTest {
         verifyScriptEvaluation("postSingleSignOnSuccess", Boolean.class,
                 List.of(SP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 OUT_BINDING,
                 SESSION_BINDING,
                 AUTHN_REQUEST_BINDING,
@@ -209,7 +219,6 @@ public class ScriptedSpAdapterTest {
         verifyScriptEvaluation("postSingleSignOnFailure", Boolean.class,
                 List.of(SP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 AUTHN_REQUEST_BINDING,
                 SAML2_RESPONSE_BINDING,
                 FAILURE_CODE_BINDING,
@@ -226,7 +235,6 @@ public class ScriptedSpAdapterTest {
         verifyScriptEvaluation("postNewNameIDSuccess", null,
                 List.of(SP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 USER_ID_BINDING,
                 ID_REQUEST_BINDING,
                 ID_RESPONSE_BINDING,
@@ -244,7 +252,6 @@ public class ScriptedSpAdapterTest {
         verifyScriptEvaluation("postTerminateNameIDSuccess", null,
                 List.of(SP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 USER_ID_BINDING,
                 ID_REQUEST_BINDING,
                 ID_RESPONSE_BINDING,
@@ -262,7 +269,6 @@ public class ScriptedSpAdapterTest {
         verifyScriptEvaluation("preSingleLogoutProcess", null,
                 List.of(SP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 USER_ID_BINDING,
                 LOGOUT_REQUEST_BINDING,
                 LOGOUT_RESPONSE_BINDING,
@@ -280,7 +286,6 @@ public class ScriptedSpAdapterTest {
         verifyScriptEvaluation("postSingleLogoutSuccess", null,
                 List.of(SP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 USER_ID_BINDING,
                 LOGOUT_REQUEST_BINDING,
                 LOGOUT_RESPONSE_BINDING,
@@ -300,8 +305,9 @@ public class ScriptedSpAdapterTest {
         final Script script = scriptConfigurationCaptor.getValue();
         assertThat(script.getScript()).isEqualTo(exampleScript);
         assertThat(script.getName()).isEqualTo(SP_ADAPTER_SCRIPT);
-        assertThat(bindingsCaptor.getValue().keySet()).containsAll(expectedKeys);
-        assertThat(bindingsCaptor.getValue()).contains(expectedBindings);
+
+        assertThat(bindingsCaptor.getValue().legacyBindings().keySet()).containsAll(expectedKeys);
+        assertThat(bindingsCaptor.getValue().legacyBindings()).contains(expectedBindings);
     }
 
     private Script scriptConfiguration(String id) throws Exception{

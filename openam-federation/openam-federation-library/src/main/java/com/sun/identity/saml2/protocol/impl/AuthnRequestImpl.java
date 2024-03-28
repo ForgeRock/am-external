@@ -24,7 +24,7 @@
  *
  * $Id: AuthnRequestImpl.java,v 1.8 2009/06/09 20:28:32 exu Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 
 
@@ -47,6 +47,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.PROVIDER_NAME;
 import static com.sun.identity.saml2.common.SAML2Constants.VERSION;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -76,6 +77,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * properties required by a saml request.
  */
 
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class AuthnRequestImpl extends RequestAbstractImpl 
 			      implements AuthnRequest {
     private static final Logger logger = LoggerFactory.getLogger(AuthnRequestImpl.class);

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2010-2023 ForgeRock AS.
+ * Copyright 2010-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.scripting.api.http;
@@ -36,7 +36,6 @@ import org.forgerock.http.header.MalformedHeaderException;
 import org.forgerock.http.header.TransactionIdHeader;
 import org.forgerock.http.protocol.Request;
 import org.forgerock.http.protocol.Response;
-import org.forgerock.services.TransactionId;
 import org.forgerock.util.promise.NeverThrowsException;
 import org.forgerock.util.promise.Promise;
 import org.slf4j.Logger;
@@ -91,8 +90,7 @@ public class GroovyHttpClient extends ChfHttpClient {
      * @return A promise representing the pending HTTP response.
      */
     public Promise<Response, NeverThrowsException> send(final Request request) {
-        TransactionId subTransactionId = new TransactionId(getAuditRequestContext().createSubTransactionIdValue());
-        request.getHeaders().add(new TransactionIdHeader(subTransactionId));
+        request.getHeaders().add(new TransactionIdHeader(getAuditRequestContext().createSubTransactionId()));
         return client.send(request);
     }
 }

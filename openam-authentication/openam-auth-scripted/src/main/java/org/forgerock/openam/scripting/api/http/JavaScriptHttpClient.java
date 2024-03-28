@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2010-2023 ForgeRock AS.
+ * Copyright 2010-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.scripting.api.http;
@@ -24,6 +24,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -37,7 +38,6 @@ import org.forgerock.http.header.MalformedHeaderException;
 import org.forgerock.http.header.TransactionIdHeader;
 import org.forgerock.http.protocol.Request;
 import org.forgerock.http.protocol.Response;
-import org.forgerock.services.TransactionId;
 import org.forgerock.util.promise.NeverThrowsException;
 import org.forgerock.util.promise.Promise;
 import org.mozilla.javascript.NativeArray;
@@ -95,61 +95,54 @@ public class JavaScriptHttpClient extends ChfHttpClient {
      * @return A promise representing the pending HTTP response.
      */
     public Promise<Response, NeverThrowsException> send(final Request request) {
-        TransactionId subTransactionId = new TransactionId(getAuditRequestContext().createSubTransactionIdValue());
-        request.getHeaders().add(new TransactionIdHeader(subTransactionId));
+        request.getHeaders().add(new TransactionIdHeader(getAuditRequestContext().createSubTransactionId()));
         return client.send(request);
     }
 
-    private Map convertRequestData(NativeObject requestData) {
-        HashMap<String, ArrayList<HashMap>> convertedRequestData = new HashMap<String, ArrayList<HashMap>>();
-
-        if (requestData != null) {
-            NativeArray cookies = (NativeArray) NativeObject.getProperty(requestData, "cookies");
-            ArrayList<HashMap> convertedCookies = new ArrayList<HashMap>();
-
-            if (cookies != null) {
-                Object[] cookieIds = cookies.getIds();
-
-                for (Object id : cookieIds) {
-                    NativeObject cookie = (NativeObject) cookies.get((Integer) id, null);
-                    String domain = (String) cookie.get("domain", null);
-                    String field = (String) cookie.get("field", null);
-                    String value = (String) cookie.get("value", null);
-
-                    convertedCookies.add(convertCookie(domain, field, value));
-                }
-            }
-
-            convertedRequestData.put("cookies", convertedCookies);
-
-            NativeArray headers = (NativeArray) NativeObject.getProperty(requestData, "headers");
-            ArrayList<HashMap> convertedHeaders = new ArrayList<HashMap>();
-
-            if (headers != null) {
-                Object[] headerIds = headers.getIds();
-
-                for (Object id : headerIds) {
-                    NativeObject header = (NativeObject) headers.get((Integer) id, null);
-                    String field = (String) header.get("field", null);
-                    String value = (String) header.get("value", null);
-                    convertedHeaders.add(convertHeader(field, value));
-                }
-            }
-
-            convertedRequestData.put("headers", convertedHeaders);
+    private Map<String, List<Map<String, String>>> convertRequestData(NativeObject requestData) {
+        if (requestData == null) {
+            return new HashMap<>();
         }
+
+        Map<String, List<Map<String, String>>> convertedRequestData = new HashMap<>();
+        NativeArray cookies = (NativeArray) NativeObject.getProperty(requestData, "cookies");
+        List<Map<String, String>> convertedCookies = new ArrayList<>();
+        if (cookies != null) {
+            for (Object id : cookies.getIds()) {
+                NativeObject cookie = (NativeObject) cookies.get((Integer) id, null);
+                String domain = (String) cookie.get("domain", null);
+                String field = (String) cookie.get("field", null);
+                String value = (String) cookie.get("value", null);
+
+                convertedCookies.add(convertCookie(domain, field, value));
+            }
+        }
+        convertedRequestData.put("cookies", convertedCookies);
+
+        NativeArray headers = (NativeArray) NativeObject.getProperty(requestData, "headers");
+        List<Map<String, String>> convertedHeaders = new ArrayList<>();
+        if (headers != null) {
+            for (Object id : headers.getIds()) {
+                NativeObject header = (NativeObject) headers.get((Integer) id, null);
+                String field = (String) header.get("field", null);
+                String value = (String) header.get("value", null);
+
+                convertedHeaders.add(convertHeader(field, value));
+            }
+        }
+        convertedRequestData.put("headers", convertedHeaders);
         return convertedRequestData;
     }
 
-    private HashMap convertHeader(String field, String value) {
-        HashMap<String, String> convertedHeader = new HashMap<String,String>();
+    private HashMap<String, String> convertHeader(String field, String value) {
+        HashMap<String, String> convertedHeader = new HashMap<>();
         convertedHeader.put("field", field);
         convertedHeader.put("value", value);
         return convertedHeader;
     }
 
     private HashMap<String,String> convertCookie(String domain, String field, String value) {
-        HashMap<String,String> convertedCookie = new HashMap<String,String>();
+        HashMap<String,String> convertedCookie = new HashMap<>();
         convertedCookie.put("domain", domain);
         convertedCookie.put("field", field);
         convertedCookie.put("value", value);

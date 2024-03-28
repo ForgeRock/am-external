@@ -24,7 +24,7 @@
  *
  * $Id: SPACSUtils.java,v 1.48 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2010-2023 ForgeRock AS.
+ * Portions Copyrighted 2010-2024 ForgeRock AS.
  * Portions Copyrighted 2016 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.saml2.profile;
@@ -61,12 +61,15 @@ import javax.xml.soap.SOAPMessage;
 import org.forgerock.am.saml2.profile.Saml2SsoResult;
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.annotations.Supported;
+import org.forgerock.openam.core.realms.RealmLookupException;
+import org.forgerock.openam.core.realms.Realms;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.Saml2EntityRole;
 import org.forgerock.openam.saml2.audit.SAML2EventLogger;
 import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
+import org.forgerock.openam.saml2.soap.SOAPConnectionFactory;
 import org.forgerock.openam.utils.ClientUtils;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
@@ -402,13 +405,11 @@ public class SPACSUtils {
                         + "ArtifactResolve=" + resolveString);
             }
 
-            SOAPConnection con = SOAPCommunicator.getInstance().openSOAPConnection();
             SOAPMessage msg = SOAPCommunicator.getInstance().createSOAPMessage(resolveString, true);
+            IDPSSOConfigElement idpssoConfig = sm.getIDPSSOConfig(realm, idpEntityID);
+            location = SAML2Utils.fillInBasicAuthInfo(idpssoConfig, location, realm);
 
-            IDPSSOConfigElement config = null;
-            config = sm.getIDPSSOConfig(realm, idpEntityID);
-            location = SAML2Utils.fillInBasicAuthInfo(
-                    config, location);
+            SOAPConnection con = getSOAPConnectionForArtifactResolve(realm, idpEntityID, hostEntityId);
             resMsg = con.call(msg, location);
         } catch (SAML2Exception s2e) {
             logger.error("SPACSUtils.getResponseFromArtifact: "
@@ -1070,7 +1071,7 @@ public class SPACSUtils {
             throw se;
         }
         String nameIDFormat = nameId.getFormat();
-        if (nameIDFormat != null) {
+        if (StringUtils.isNotBlank(nameIDFormat)) {
             List spNameIDFormatList = spDesc.getNameIDFormat();
 
             if ((spNameIDFormatList != null) && (!spNameIDFormatList.isEmpty())
@@ -2034,7 +2035,7 @@ public class SPACSUtils {
 
         final String nameIDFormat = nameId.getFormat();
 
-        if (nameIDFormat != null) {
+        if (StringUtils.isNotBlank(nameIDFormat)) {
             List spNameIDFormatList = spDesc.getNameIDFormat();
 
             if (CollectionUtils.isNotEmpty(spNameIDFormatList) && !spNameIDFormatList.contains(nameIDFormat)) {
@@ -2132,5 +2133,31 @@ public class SPACSUtils {
             logger.error("Invalid universalId username", e);
             throw new SAML2Exception("Invalid user");
         }
+    }
+
+    private static SOAPConnection getSOAPConnectionForArtifactResolve(String realm, String idpEntityID,
+            String hostEntityId) throws SOAPException {
+        boolean mTLSEnabled = SAML2Utils.getBooleanAttributeValueFromSSOConfig(
+                realm,
+                idpEntityID,
+                SAML2Constants.IDP_ROLE,
+                SAML2Constants.WANT_ARTIFACT_RESOLVE_MTLS);
+
+        SOAPCommunicator soapCommunicator = SOAPCommunicator.getInstance();
+        SOAPConnection soapConnection;
+        if (mTLSEnabled) {
+            try {
+                logger.debug("mTLS required for connection, using mTLS-enabled handler");
+                soapConnection = InjectorHolder.getInstance(SOAPConnectionFactory.class)
+                        .create(Realms.of(realm), soapCommunicator, hostEntityId, SP);
+            } catch (RealmLookupException rle) {
+                logger.error("SPACSUtils.getResponseFromArtifact: "
+                        + "couldn't get ArtifactResponse. Realm lookup error:", rle);
+                throw new SOAPException(rle);
+            }
+        } else {
+            soapConnection = soapCommunicator.openSOAPConnection();
+        }
+        return soapConnection;
     }
 }

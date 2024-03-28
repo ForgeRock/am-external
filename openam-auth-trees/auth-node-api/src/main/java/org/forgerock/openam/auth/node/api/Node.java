@@ -58,6 +58,21 @@ public interface Node {
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.TYPE)
     @interface Metadata {
+
+        /**
+         * The name of the node. If not provided, the simple name of the annotated interface is used.
+         * @return the name.
+         */
+        String name() default "";
+
+        /**
+         * The name of the i18n bundle file relative to the root package.
+         * <p>If not provided, this will default to the node class name.
+         *
+         * @return the i18n file name.
+         */
+        String i18nFile() default "";
+
         /**
          * A provider for the possible outcomes of the node.
          *

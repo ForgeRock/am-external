@@ -24,7 +24,7 @@
  *
  * $Id: SAML2Exception.java,v 1.3 2008/06/25 05:47:45 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
 
@@ -36,7 +36,7 @@ import com.sun.identity.shared.locale.L10NMessageImpl;
  * This class is an extension point for all SAML related exceptions.
  * This class also handles message localization in SAML exceptions.
  */
-@SupportedAll
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class SAML2Exception extends L10NMessageImpl {
 
     /**

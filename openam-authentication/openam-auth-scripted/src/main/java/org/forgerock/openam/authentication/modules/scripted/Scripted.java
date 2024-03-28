@@ -178,20 +178,16 @@ public class Scripted extends AMLoginModule {
                 .withState(state)
                 .withSharedState(sharedState)
                 .withUsername(userName)
-                .withRealm(realm)
                 .withSuccessValue(SUCCESS_VALUE)
                 .withFailureValue(FAILURE_VALUE)
                 .withHttpClient(httpClient)
                 .withIdentityRepository(identityRepository)
-                .withLoggerReference(String.format("scripts.%s.%s.(%s)", AUTHENTICATION_SERVER_SIDE.name(),
-                        script.getId(), script.getName()))
-                .withScriptName(script.getName())
                 .build();
 
-        Bindings scriptVariables = scriptBindings.convert(script.getEvaluatorVersion());
-
+        Bindings bindings;
         try {
-            scriptEvaluator.evaluateScript(script, scriptVariables, Realms.of(realm));
+            ScriptEvaluator.ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script, scriptBindings, Realms.of(realm));
+            bindings = scriptResult.getBindings();
         } catch (ScriptException e) {
             DEBUG.debug("Error running server side scripts", e);
             throw new AuthLoginException("Error running script", e);
@@ -200,8 +196,8 @@ public class Scripted extends AMLoginModule {
             throw new AuthLoginException("Error running script", e);
         }
 
-        state = ((Number) scriptVariables.get(STATE_VARIABLE_NAME)).intValue();
-        userName = (String) scriptVariables.get(USERNAME_VARIABLE_NAME);
+        state = ((Number) bindings.get(STATE_VARIABLE_NAME)).intValue();
+        userName = (String) bindings.get(USERNAME_VARIABLE_NAME);
         sharedState.put(CLIENT_SCRIPT_OUTPUT_DATA_VARIABLE_NAME, clientScriptOutputData);
 
         if (state != SUCCESS_VALUE) {

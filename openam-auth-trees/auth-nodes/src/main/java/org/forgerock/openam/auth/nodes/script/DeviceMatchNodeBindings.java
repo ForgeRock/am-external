@@ -21,19 +21,18 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_I
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.TRANSIENT_STATE_IDENTIFIER;
 
 import java.util.List;
-import java.util.Map;
 
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.openam.scripting.domain.Binding;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 
 /**
  * Script bindings for the DeviceMatchNode script.
  */
-public final class DeviceMatchNodeBindings extends ScriptBindings {
+public final class DeviceMatchNodeBindings implements ScriptBindings {
 
     private static final String DEVICE_PROFILES_DAO_IDENTIFIER = "deviceProfilesDao";
     private final NodeState nodeState;
@@ -43,7 +42,6 @@ public final class DeviceMatchNodeBindings extends ScriptBindings {
     private final Object transientState;
 
     private DeviceMatchNodeBindings(Builder builder) {
-        super(builder);
         this.nodeState = builder.nodeState;
         this.callbacks = builder.callbacks;
         this.deviceProfilesDao = builder.deviceProfilesDao;
@@ -60,30 +58,15 @@ public final class DeviceMatchNodeBindings extends ScriptBindings {
         return new Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
-    }
-
     @Override
-    public String getDisplayName() {
-        return "Device Match Node Bindings";
-    }
-
-    @Override
-    protected List<Binding> additionalV1Bindings() {
-        return List.of(
-                Binding.of(SHARED_STATE_IDENTIFIER, sharedState, Map.class),
-                Binding.of(TRANSIENT_STATE_IDENTIFIER, transientState, Map.class),
-                Binding.of(STATE_IDENTIFIER, nodeState, NodeState.class),
-                Binding.of(CALLBACKS_IDENTIFIER, callbacks, List.class),
-                Binding.of(DEVICE_PROFILES_DAO_IDENTIFIER, deviceProfilesDao, DeviceProfilesDao.class)
-        );
+    public BindingsMap legacyBindings() {
+        BindingsMap bindings = new BindingsMap();
+        bindings.put(SHARED_STATE_IDENTIFIER, sharedState);
+        bindings.put(TRANSIENT_STATE_IDENTIFIER, transientState);
+        bindings.put(STATE_IDENTIFIER, nodeState);
+        bindings.put(CALLBACKS_IDENTIFIER, callbacks);
+        bindings.put(DEVICE_PROFILES_DAO_IDENTIFIER, deviceProfilesDao);
+        return bindings;
     }
 
     /**
@@ -148,15 +131,14 @@ public final class DeviceMatchNodeBindings extends ScriptBindings {
          * @param transientState the transient state
          * @return the next step of the {@link Builder}
          */
-        ScriptBindingsStep1 withTransientState(Object transientState);
+        Builder withTransientState(Object transientState);
     }
 
     /**
      * Builder object to construct a {@link DeviceMatchNodeBindings}.
      */
-    private static final class Builder extends ScriptBindings.Builder<Builder>
-            implements DeviceMatchNodeBindingsStep1, DeviceMatchNodeBindingsStep2, DeviceMatchNodeBindingsStep3,
-            DeviceMatchNodeBindingsStep4, DeviceMatchNodeBindingsStep5 {
+    public static final class Builder implements DeviceMatchNodeBindingsStep1, DeviceMatchNodeBindingsStep2,
+            DeviceMatchNodeBindingsStep3, DeviceMatchNodeBindingsStep4, DeviceMatchNodeBindingsStep5 {
 
         private NodeState nodeState;
         private List<? extends Callback> callbacks;
@@ -219,7 +201,7 @@ public final class DeviceMatchNodeBindings extends ScriptBindings {
          * @return The next step of the Builder.
          */
         @Override
-        public ScriptBindingsStep1 withTransientState(Object transientState) {
+        public Builder withTransientState(Object transientState) {
             this.transientState = transientState;
             return this;
         }
@@ -229,7 +211,6 @@ public final class DeviceMatchNodeBindings extends ScriptBindings {
          *
          * @return the {@link DeviceMatchNodeBindings}.
          */
-        @Override
         public DeviceMatchNodeBindings build() {
             return new DeviceMatchNodeBindings(this);
         }

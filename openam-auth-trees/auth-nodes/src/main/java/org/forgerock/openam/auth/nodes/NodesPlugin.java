@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -52,8 +52,10 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
 
     /**
      * The current version of the nodes plugin.
+     * N.B. If upgrading this version you must ensure that the amPluginService version in the latest.groovy
+     * FBC upgrade rules file is kept in sync.
      */
-    public static final String NODES_PLUGIN_VERSION = "14.0.0";
+    public static final String NODES_PLUGIN_VERSION = "21.0.0";
 
     @Override
     public String getPluginVersion() {
@@ -70,15 +72,12 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
         if (inRangeLess("1.0.0", fromVersion, "5.0.0")) {
             pluginTools.upgradeAuthNode(ScriptedDecisionNode.class);
         }
-        if (inRangeLess("2.0.0", fromVersion, "7.0.1")) {
+        if (inRangeLess("2.0.0", fromVersion, "17.0.0")) {
             pluginTools.upgradeAuthNode(OneTimePasswordSmsSenderNode.class);
             pluginTools.upgradeAuthNode(OneTimePasswordSmtpSenderNode.class);
         }
         if (inRangeLess("2.0.0", fromVersion, "8.0.0")) {
             pluginTools.upgradeAuthNode(RetryLimitDecisionNode.class);
-        }
-        if (inRange("5.0.0", fromVersion, "8.0.0")) {
-            pluginTools.upgradeAuthNode(SocialProviderHandlerNode.class);
         }
         if (inRange("3.0.0", fromVersion, "8.2.2")) {
             pluginTools.upgradeAuthNode(MessageNode.class);
@@ -101,15 +100,26 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
         if (inRange("5.0.0", fromVersion, "9.0.0")) {
             pluginTools.upgradeAuthNode(Saml2Node.class);
         }
-        if (inRange("5.0.0", fromVersion, "10.0.1")) {
-            pluginTools.upgradeAuthNode(KbaCreateNode.class);
-        }
         if (inRange("2.0.0", fromVersion, "14.0.0")) {
-            pluginTools.upgradeAuthNode(LdapDecisionNode.class);
             pluginTools.upgradeAuthNode(PushAuthenticationSenderNode.class);
         }
         if (inRange("10.1.0", fromVersion, "11.0.1")) {
             pluginTools.upgradeAuthNode(CombinedMultiFactorRegistrationNode.class);
+        }
+        if (inRange("5.0.0", fromVersion, "15.0.0")) {
+            pluginTools.upgradeAuthNode(CertificateValidationNode.class);
+        }
+        if (inRange("2.0.0", fromVersion, "16.0.0")) {
+            pluginTools.upgradeAuthNode(LdapDecisionNode.class);
+        }
+        if (inRange("2.0.0", fromVersion, "19.0.0")) {
+            pluginTools.upgradeAuthNode(PersistentCookieDecisionNode.class);
+        }
+        if (inRange("11.1.0", fromVersion, "20.0.0")) {
+            pluginTools.upgradeAuthNode(DeviceSigningVerifierNode.class);
+        }
+        if (inRange("8.2.0", fromVersion, "21.0.0")) {
+            pluginTools.upgradeAuthNode(CaptchaNode.class);
         }
         super.upgrade(fromVersion);
     }
@@ -141,7 +151,6 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 .put("2.0.0", asList(
                         AccountLockoutNode.class,
                         AnonymousUserNode.class,
-                        CreatePasswordNode.class,
                         LdapDecisionNode.class,
                         MeterNode.class,
                         OneTimePasswordCollectorDecisionNode.class,
@@ -150,15 +159,12 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                         OneTimePasswordSmtpSenderNode.class,
                         PersistentCookieDecisionNode.class,
                         PollingWaitNode.class,
-                        ProvisionDynamicAccountNode.class,
-                        ProvisionIdmAccountNode.class,
                         PushAuthenticationSenderNode.class,
                         PushResultVerifierNode.class,
                         RecoveryCodeCollectorDecisionNode.class,
                         RegisterLogoutWebhookNode.class,
                         RetryLimitDecisionNode.class,
                         SocialOAuthIgnoreProfileNode.class,
-                        SessionDataNode.class,
                         SetFailureUrlNode.class,
                         SetSuccessUrlNode.class,
                         SocialFacebookNode.class,
@@ -180,35 +186,10 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                         SocialOpenIdConnectNode.class)
                 )
                 .put("5.0.0", asList(
-                        AcceptTermsAndConditionsNode.class,
                         AccountActiveDecisionNode.class,
-                        AttributePresentDecisionNode.class,
-                        AttributeCollectorNode.class,
-                        AttributeValueDecisionNode.class,
-                        ConsentNode.class,
-                        CreateObjectNode.class,
-                        DisplayUserNameNode.class,
-                        EmailSuspendNode.class,
-                        EmailTemplateNode.class,
-                        IdentifyExistingUserNode.class,
-                        IncrementLoginCountNode.class,
-                        KbaCreateNode.class,
-                        KbaDecisionNode.class,
-                        KbaVerifyNode.class,
                         KerberosNode.class,
-                        LoginCountDecisionNode.class,
-                        PatchObjectNode.class,
-                        ProfileCompletenessDecisionNode.class,
-                        QueryFilterDecisionNode.class,
                         ReCaptchaNode.class,
-                        RequiredAttributesDecisionNode.class,
                         Saml2Node.class,
-                        SelectIdPNode.class,
-                        SocialProviderHandlerNode.class,
-                        TermsAndConditionsDecisionNode.class,
-                        TimeSinceDecisionNode.class,
-                        ValidatedPasswordNode.class,
-                        ValidatedUsernameNode.class,
                         AnonymousSessionUpgradeNode.class,
                         WriteFederationInformationNode.class,
                         WebAuthnDeviceStorageNode.class,
@@ -231,9 +212,6 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 .put("7.0.0", asList(
                         OathRegistrationNode.class,
                         OathTokenVerifierNode.class)
-                )
-                .put("8.1.0", asList(
-                        PassthroughAuthenticationNode.class)
                 )
                 .put("8.2.0", asList(
                         CaptchaNode.class)
@@ -265,6 +243,9 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                 )
                 .put("13.0.0", asList(
                         DeviceBindingStorageNode.class
+                ))
+                .put("19.0.0", asList(
+                        RequestHeaderNode.class
                 ))
                 .build();
     }

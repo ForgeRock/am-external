@@ -24,13 +24,14 @@
  *
  * $Id: ArtifactImpl.java,v 1.2 2008/06/25 05:47:58 qcheng Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * MessageHandle     := 20-byte_sequence
  * </pre>
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class ArtifactImpl implements Artifact {
 
     private static final Logger logger = LoggerFactory.getLogger(ArtifactImpl.class);

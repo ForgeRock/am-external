@@ -20,11 +20,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.ID_REQUE
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.ID_RESPONSE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.USER_ID;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.forgerock.openam.scripting.domain.Binding;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 
 import com.sun.identity.saml2.protocol.ManageNameIDRequest;
 import com.sun.identity.saml2.protocol.ManageNameIDResponse;
@@ -61,31 +57,24 @@ final class SamlSpUserIdRequestResponseBindings extends BaseSamlSpBindings {
         return new Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
+    @Override
+    public BindingsMap legacyBindings() {
+        BindingsMap bindings = new BindingsMap(legacyCommonBindings());
+        bindings.put(USER_ID, userId);
+        bindings.put(ID_REQUEST, idRequest);
+        bindings.put(ID_RESPONSE, idResponse);
+        bindings.put(BINDING, binding);
+        return bindings;
     }
 
     @Override
-    public String getDisplayName() {
-        return "SAML SP User ID Request/Response Bindings";
-    }
-
-    @Override
-    protected List<Binding> additionalV1Bindings() {
-        List<Binding> v1Bindings = new ArrayList<>(v1CommonBindings());
-        v1Bindings.addAll(List.of(
-                Binding.of(USER_ID, userId, String.class),
-                Binding.of(ID_REQUEST, idRequest, ManageNameIDRequest.class),
-                Binding.of(ID_RESPONSE, idResponse, ManageNameIDResponse.class),
-                Binding.of(BINDING, binding, String.class)
-        ));
-        return v1Bindings;
+    public BindingsMap nextGenBindings() {
+        BindingsMap bindings = new BindingsMap(nextGenCommonBindings());
+        bindings.put(USER_ID, userId);
+        bindings.put(ID_REQUEST, idRequest);
+        bindings.put(ID_RESPONSE, idResponse);
+        bindings.put(BINDING, binding);
+        return bindings;
     }
 
     /**

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -27,17 +27,13 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import javax.security.auth.callback.Callback;
 
@@ -53,20 +49,22 @@ import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingManager;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingSettings;
 import org.forgerock.openam.core.rest.devices.services.binding.AndroidKeyAttestationService;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import com.iplanet.sso.SSOException;
-import com.iplanet.sso.SSOToken;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdType;
 
 /**
- * Test for Device Binding
+ * Test for Device Binding.
  */
+@RunWith(MockitoJUnitRunner.class)
 public class DeviceBindingNodeTest {
 
     @Mock
@@ -93,17 +91,8 @@ public class DeviceBindingNodeTest {
     @Mock
     AndroidKeyAttestationService androidKeyAttestationService;
 
-    @BeforeMethod
+    @Before
     public void setup() throws IdRepoException, SSOException {
-        node = null;
-        openMocks(this);
-
-        given(identityService.getAmIdentity(any(SSOToken.class), any(String.class), eq(IdType.USER), any()))
-                .willReturn(amIdentity);
-
-        given(identityService.getUniversalId(any(), (IdType) any(), any()))
-                .willReturn(UUID.randomUUID().toString());
-
         given(identityService.getUniversalId(any(), any(), (IdType) any())).willReturn(Optional.of("bob"));
 
         given(coreWrapper.getIdentity(anyString())).willReturn(amIdentity);
@@ -120,8 +109,6 @@ public class DeviceBindingNodeTest {
         given(config.description()).willReturn(Map.of(Locale.ENGLISH, "description"));
         given(config.maxSavedDevices()).willReturn(2);
         given(config.timeout()).willReturn(60);
-        given(config.clientErrorOutcomes()).willReturn(Collections.singletonList("unsupported"));
-        given(androidKeyAttestationService.verify(any(), any(), any())).willReturn(true);
         when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
     }
 
@@ -148,8 +135,7 @@ public class DeviceBindingNodeTest {
         assertThat(((DeviceBindingCallback) result.callbacks.get(0)).getUserId()).isEqualTo("bob");
     }
 
-    @Test(expectedExceptions = NodeProcessException.class,
-            expectedExceptionsMessageRegExp = "Failed to lookup user")
+    @Test(expected = NodeProcessException.class)
     public void testUserNotActive() throws NodeProcessException, IdRepoException, SSOException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -157,6 +143,7 @@ public class DeviceBindingNodeTest {
 
         // When
         node.process(getContext(sharedState, transientState, emptyList()));
+
     }
 
     @Test

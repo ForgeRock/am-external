@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.sns.utils;
 
@@ -33,7 +33,7 @@ import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.services.push.PushNotificationServiceConfig;
 import org.forgerock.openam.utils.StringUtils;
 
-import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.CreatePlatformEndpointRequest;
 import com.amazonaws.services.sns.model.CreatePlatformEndpointResult;
 import com.amazonaws.services.sns.model.InvalidParameterException;
@@ -65,9 +65,10 @@ public class SnsPushResponseUpdater {
      *
      * @param config The config of the amazon push service.
      * @param content The content of the response message from the push device.
+     * @param realm   The realm we are operating in.
      * @return true if the update was performed successfully.
      */
-    public boolean updateResponse(PushNotificationServiceConfig.Realm config, JsonValue content) {
+    public boolean updateResponse(PushNotificationServiceConfig.Realm config, JsonValue content, String realm) {
 
         if (content.get(DATA_JSON_POINTER) == null) {
             return false;
@@ -77,12 +78,13 @@ public class SnsPushResponseUpdater {
         JwtClaimsSet claimsSet = jwt.getClaimsSet();
 
         updateBasicJsonContent(content, claimsSet);
-        return updateCommunicationId(content, claimsSet, config);
+        return updateCommunicationId(content, claimsSet, config, realm);
     }
 
     private boolean updateCommunicationId(JsonValue content, JwtClaimsSet claimsSet,
-                                       PushNotificationServiceConfig.Realm config) {
-        AmazonSNSClient client = clientFactory.produce(config);
+                                       PushNotificationServiceConfig.Realm config,
+            String realm) {
+        AmazonSNS client = clientFactory.produce(config, realm);
 
         String communicationType = (String) claimsSet.getClaim(COMMUNICATION_TYPE);
         String deviceId = (String) claimsSet.getClaim(DEVICE_ID);
@@ -113,7 +115,7 @@ public class SnsPushResponseUpdater {
         content.put(COMMUNICATION_TYPE, communicationType);
     }
 
-    private void setCommunicationId(AmazonSNSClient client, String arn, String deviceId, JsonValue content) {
+    private void setCommunicationId(AmazonSNS client, String arn, String deviceId, JsonValue content) {
         Map<String, String> attributes = standardAttributes(deviceId);
         String answer;
 

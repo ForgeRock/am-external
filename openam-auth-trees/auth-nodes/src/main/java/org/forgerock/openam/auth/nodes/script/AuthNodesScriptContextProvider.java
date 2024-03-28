@@ -20,34 +20,31 @@ import static org.forgerock.openam.auth.nodes.script.AuthNodesGlobalScript.CONFI
 import static org.forgerock.openam.auth.nodes.script.AuthNodesGlobalScript.DECISION_NODE_SCRIPT;
 import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
 import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.CONFIG_PROVIDER_NODE;
-import static org.forgerock.openam.scripting.domain.EvaluatorVersion.V1_0;
-import static org.forgerock.openam.scripting.domain.EvaluatorVersion.V2_0;
-import static org.forgerock.openam.scripting.domain.ScriptingLanguage.GROOVY;
-import static org.forgerock.openam.scripting.domain.ScriptingLanguage.JAVASCRIPT;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.Date;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.OAEPParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.PSource;
 
 import org.forgerock.json.JsonValue;
@@ -72,8 +69,13 @@ import ch.qos.logback.classic.Logger;
  */
 public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScriptContextDetailsProvider {
 
+    /**
+     * Construct a new {@code AuthNodesScriptContextProvider}.
+     *
+     * @param annotatedServiceRegistry the annotated service registry.
+     */
     @Inject
-    AuthNodesScriptContextProvider(AnnotatedServiceRegistry annotatedServiceRegistry) {
+    protected AuthNodesScriptContextProvider(AnnotatedServiceRegistry annotatedServiceRegistry) {
         super(annotatedServiceRegistry);
     }
 
@@ -90,8 +92,12 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
                 "java.util.LinkedList", "java.util.TreeMap", "java.util.TreeSet",
                 "java.security.KeyPair", "java.security.KeyPairGenerator", "java.security.KeyPairGenerator$*",
                 "java.security.PrivateKey", "java.security.PublicKey",
+                "java.security.spec.InvalidKeySpecException",
                 "java.security.spec.X509EncodedKeySpec", "java.security.spec.MGF1ParameterSpec",
-                "javax.crypto.spec.OAEPParameterSpec", "javax.crypto.spec.PSource",
+                "javax.crypto.SecretKeyFactory",
+                "javax.crypto.spec.OAEPParameterSpec",
+                "javax.crypto.spec.PBEKeySpec",
+                "javax.crypto.spec.PSource",
                 "javax.crypto.spec.PSource$*",
                 "javax.security.auth.callback.NameCallback",
                 "javax.security.auth.callback.PasswordCallback",
@@ -100,6 +106,7 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
                 "javax.security.auth.callback.LanguageCallback",
                 "javax.security.auth.callback.TextInputCallback",
                 "javax.security.auth.callback.TextOutputCallback",
+                "com.sun.crypto.provider.PBKDF2KeyImpl",
                 "com.sun.identity.authentication.callbacks.HiddenValueCallback",
                 "com.sun.identity.authentication.callbacks.ScriptTextOutputCallback",
                 "com.sun.identity.authentication.spi.HttpCallback",
@@ -143,11 +150,18 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
                 "sun.security.ec.ECPrivateKeyImpl",
                 "org.forgerock.openam.authentication.callbacks.BooleanAttributeInputCallback",
                 "org.forgerock.openam.authentication.callbacks.NumberAttributeInputCallback",
-                "org.forgerock.openam.authentication.callbacks.StringAttributeInputCallback"
+                "org.forgerock.openam.authentication.callbacks.StringAttributeInputCallback",
+                "org.forgerock.opendj.ldap.Rdn",
+                "org.forgerock.opendj.ldap.Dn"
         );
     }
 
-    private List<String> whiteListV2() {
+    /**
+     * List of classes for the allow list for scripting version 2.
+     *
+     * @return the allow list for scripting version 2.
+     */
+    protected List<String> whiteListV2() {
         return List.of(
                 Boolean.class.getName(),
                 Byte.class.getName(),
@@ -182,7 +196,9 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
                 PublicKey.class.getName(),
                 X509EncodedKeySpec.class.getName(),
                 MGF1ParameterSpec.class.getName(),
+                SecretKeyFactory.class.getName(),
                 OAEPParameterSpec.class.getName(),
+                PBEKeySpec.class.getName(),
                 PSource.class.getName(),
                 anyInnerClassOf(PSource.class),
                 JsonValue.class.getName(),
@@ -193,6 +209,7 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
                 PromiseImpl.class.getName(),
                 // Using a code reference to the callbackhandlers package creates a circular dependency
                 "org.forgerock.openam.core.rest.authn.callbackhandlers.*",
+                "com.sun.crypto.provider.PBKDF2KeyImpl", // Cannot access internal JDK classes by name
                 DeviceProfilesDao.class.getName(),
                 "org.forgerock.openam.scripting.api.PrefixedScriptPropertyResolver", // located in openam-scripting
                 List.class.getName(),
@@ -204,7 +221,8 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
                 Logger.class.getName(),
                 anyInnerClassOf(Promises.class),
                 "com.sun.proxy.$*",
-                Date.class.getName()
+                Date.class.getName(),
+                InvalidKeySpecException.class.getName()
         );
     }
 
@@ -216,22 +234,17 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
                 .withContextReference(AUTHENTICATION_TREE_DECISION_NODE)
                 .withI18NKey("script-type-05")
                 .withDefaultScript(DECISION_NODE_SCRIPT.getId())
-                .withBindings(ScriptedDecisionNodeBindings.signature(), DeviceMatchNodeBindings.signature())
                 .withWhiteList(EvaluatorVersionAllowList.builder()
                         .v1AllowList(whiteListV1())
                         .v2AllowList(whiteListV2())
                         .build())
-                .withEvaluatorVersions(Map.of(
-                        GROOVY, EnumSet.of(V1_0),
-                        JAVASCRIPT, EnumSet.of(V1_0, V2_0))
-                )
+                .withNextGenEnabled(true)
                 .build());
 
         scriptContexts.add(ScriptContextDetails.builder()
                 .withContextReference(CONFIG_PROVIDER_NODE)
                 .withI18NKey("script-type-14")
                 .withDefaultScript(CONFIG_PROVIDER_NODE_SCRIPT.getId())
-                .withBindings(ConfigProviderNodeBindings.signature())
                 .overrideDefaultWhiteList(whiteListV1().toArray(new String[0])).build());
 
         return scriptContexts;

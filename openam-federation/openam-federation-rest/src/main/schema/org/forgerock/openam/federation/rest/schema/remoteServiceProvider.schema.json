@@ -117,6 +117,18 @@
               "nameIdFormatList": {
                 "$ref": "definitions.json#/nameIdFormatList"
               },
+              "nameIdValueMap": {
+                "attributeKey": {
+                  "value": "nameIDFormatMap",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.NameIdValueMapper"
+                },
+                "description": "Maps the NameID format to a user profile attribute, for example: <code>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress=mail</code> or <code>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent=objectGUID;binary</code>. If the NameID format defined is used in the protocol, the profile attribute value will be used as the NameID value for the format in the Subject. The <code>;binary</code> flag is used to indicate that the profile attribute is binary and should be Base64 encoded when used as the NameID value. This mapping overrides the NameID Value Map on the IdP.",
+                "title": "NameID Value Map",
+                "type": "array",
+                "items": {
+                  "$ref": "definitions.json#/nameIdValueMap"
+                }
+              },
               "disableNameIdPersistence": {
                 "attributeKey": "spDoNotWriteFederationInfo",
                 "title": "Disable NameID persistence",
@@ -125,8 +137,32 @@
               }
             }
           },
+          "secrets": {
+            "$ref": "definitions.json#/secrets"
+          },
           "basicAuthentication": {
-            "$ref": "definitions.json#/basicAuthentication"
+            "traverseObject": true,
+            "description": "Configure basic authentication setting for Soap based binding",
+            "title": "Basic Authentication",
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "$ref": "definitions.json#/basicAuthentication/properties/enabled"
+              },
+              "userName": {
+                "$ref": "definitions.json#/basicAuthentication/properties/userName"
+              },
+              "password": {
+                "title": "Password",
+                "attributeKey": {
+                  "value": "basicAuthPassword",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.PasswordMapper"
+                },
+                "type": "string",
+                "format": "password",
+                "description": "<strong>Note:</strong> This value is ignored if the value of the Secret Label Identifier is provided and a mapping exists for the secret label \n<code>am.applications.federation.entity.providers.saml2.demo.basicauth</code> to a secret in a secret store where \"demo\" is the value of the Secret Label Identifier in this example."
+              }
+            }
           }
         }
       },

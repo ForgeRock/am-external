@@ -17,7 +17,6 @@ package org.forgerock.openam.auth.nodes.script;
 
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.EXISTING_SESSION;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HEADERS_IDENTIFIER;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.REALM_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_IDENTIFIER;
 
 import java.util.List;
@@ -25,20 +24,19 @@ import java.util.Map;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeState;
-import org.forgerock.openam.scripting.domain.Binding;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 
 /**
  * Script bindings for the OidcNode script.
  */
-public final class OidcNodeBindings extends ScriptBindings {
+public final class OidcNodeBindings implements ScriptBindings {
 
     private static final String JWT_CLAIMS = "jwtClaims";
 
     private final JsonValue jwtClaims;
     private final NodeState nodeState;
     private final Map<String, List<String>> headers;
-    private final String realm;
     private final Object existingSession;
 
     /**
@@ -47,11 +45,9 @@ public final class OidcNodeBindings extends ScriptBindings {
      * @param builder The builder.
      */
     private OidcNodeBindings(Builder builder) {
-        super(builder);
         this.jwtClaims = builder.jwtClaims;
         this.nodeState = builder.nodeState;
         this.headers = builder.headers;
-        this.realm = builder.realm;
         this.existingSession = builder.existingSession;
     }
 
@@ -64,30 +60,14 @@ public final class OidcNodeBindings extends ScriptBindings {
         return new Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
-    }
-
     @Override
-    public String getDisplayName() {
-        return "OIDC Node Bindings";
-    }
-
-    @Override
-    public List<Binding> additionalV1Bindings() {
-        return List.of(
-                Binding.of(JWT_CLAIMS, jwtClaims, JsonValue.class),
-                Binding.of(HEADERS_IDENTIFIER, headers, Map.class),
-                Binding.of(REALM_IDENTIFIER, realm, String.class),
-                Binding.of(STATE_IDENTIFIER, nodeState, NodeState.class),
-                Binding.ofMayBeUndefined(EXISTING_SESSION, existingSession, Map.class)
-        );
+    public BindingsMap legacyBindings() {
+        BindingsMap bindings = new BindingsMap();
+        bindings.put(JWT_CLAIMS, jwtClaims);
+        bindings.put(HEADERS_IDENTIFIER, headers);
+        bindings.put(STATE_IDENTIFIER, nodeState);
+        bindings.putIfDefined(EXISTING_SESSION, existingSession);
+        return bindings;
     }
 
     /**
@@ -134,39 +114,25 @@ public final class OidcNodeBindings extends ScriptBindings {
      */
     public interface OidcNodeBindingsStep4 {
         /**
-         * Sets the realm.
-         *
-         * @param realm the realm
-         * @return the next step of the {@link Builder}
-         */
-        OidcNodeBindingsStep5 withRealm(String realm);
-    }
-
-    /**
-     * Step 5 of the builder.
-     */
-    public interface OidcNodeBindingsStep5 {
-        /**
          * Sets existing session.
          *
          * @param existingSession the existing session
          * @return the next step of the {@link Builder}
          */
-        ScriptBindingsStep1 withExistingSession(Map<String, String> existingSession);
+        Builder withExistingSession(Map<String, String> existingSession);
     }
 
 
     /**
      * Builder object to construct a {@link OidcNodeBindings}.
      */
-    private static final class Builder extends ScriptBindings.Builder<Builder> implements OidcNodeBindingsStep1,
-            OidcNodeBindingsStep2, OidcNodeBindingsStep3, OidcNodeBindingsStep4, OidcNodeBindingsStep5 {
+    public static final class Builder implements OidcNodeBindingsStep1,
+            OidcNodeBindingsStep2, OidcNodeBindingsStep3, OidcNodeBindingsStep4 {
 
 
         private JsonValue jwtClaims;
         private NodeState nodeState;
         private Map<String, List<String>> headers;
-        private String realm;
         private Map<String, String> existingSession;
 
         /**
@@ -206,30 +172,22 @@ public final class OidcNodeBindings extends ScriptBindings {
         }
 
         /**
-         * Sets the realm.
-         *
-         * @param realm The realm.
-         * @return The next step of the builder.
-         */
-        @Override
-        public OidcNodeBindingsStep5 withRealm(String realm) {
-            this.realm = realm;
-            return this;
-        }
-
-        /**
          * Sets the existing session.
          *
          * @param existingSession The existing session.
          * @return The next step of the builder.
          */
         @Override
-        public ScriptBindingsStep1 withExistingSession(Map<String, String> existingSession) {
+        public Builder withExistingSession(Map<String, String> existingSession) {
             this.existingSession = existingSession;
             return this;
         }
 
-        @Override
+        /**
+         * Creates the {@link OidcNodeBindings} from the configured attributes.
+         *
+         * @return an instance of {@link OidcNodeBindings}.
+         */
         public OidcNodeBindings build() {
             return new OidcNodeBindings(this);
         }

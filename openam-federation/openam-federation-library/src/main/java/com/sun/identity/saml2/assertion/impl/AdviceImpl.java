@@ -24,7 +24,7 @@
  *
  * $Id: AdviceImpl.java,v 1.4 2008/06/25 05:47:42 qcheng Exp $
  *
- * Portions Copyrighted 2018-2021 ForgeRock AS.
+ * Portions Copyrighted 2018-2023 ForgeRock AS.
  */
 
 
@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -63,6 +64,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * of zero or more <code>Assertion</code>, <code>EncryptedAssertion</code>,
  * <code>AssertionIDRef</code>, and <code>AssertionURIRef</code>.
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class AdviceImpl implements Advice {
 
     private static final Logger logger = LoggerFactory.getLogger(AdviceImpl.class);

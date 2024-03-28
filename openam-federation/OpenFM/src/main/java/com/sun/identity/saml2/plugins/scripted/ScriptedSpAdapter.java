@@ -22,13 +22,11 @@ import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_SP_ADA
 
 import java.io.PrintWriter;
 
-import javax.script.Bindings;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.forgerock.http.Client;
 import org.forgerock.openam.saml2.plugins.SPAdapter;
-import org.forgerock.openam.saml2.service.Saml2ScriptContext;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
 import org.forgerock.openam.scripting.domain.Script;
@@ -37,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.plugins.scripted.bindings.BaseSamlSpBindings;
 import com.sun.identity.saml2.plugins.scripted.bindings.SamlBindings.SpBindings;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.LogoutRequest;
@@ -70,20 +69,16 @@ public class ScriptedSpAdapter implements SPAdapter {
     public void preSingleSignOnRequest(String hostedEntityId, String idpEntityId, String realm,
             HttpServletRequest request, HttpServletResponse response, AuthnRequest authnRequest) throws SAML2Exception {
         Script script = executor.getScriptConfiguration(realm, hostedEntityId, SP_ROLE, SP_ADAPTER_SCRIPT);
-        Bindings bindings = SpBindings.preSingleSignOnRequest()
+        BaseSamlSpBindings bindings = SpBindings.preSingleSignOnRequest()
                 .withAuthnRequest(authnRequest)
                 .withIdpEntityId(idpEntityId)
                 .withHostedEntityId(hostedEntityId)
-                .withRealm(realm)
                 .withHttpClient(httpClient)
                 .withRequest(request)
                 .withResponse(response)
                 .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
-                        script.getId(), script.getName()))
-                .withScriptName(script.getName())
-                .build()
-                .convert(script.getEvaluatorVersion());
+                .build();
+
         executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, bindings, "preSingleSignOnRequest");
     }
 
@@ -92,21 +87,17 @@ public class ScriptedSpAdapter implements SPAdapter {
             HttpServletResponse response, AuthnRequest authnRequest,
             Response ssoResponse, String profile) throws SAML2Exception {
         Script script = executor.getScriptConfiguration(realm, hostedEntityId, SP_ROLE, SP_ADAPTER_SCRIPT);
-        Bindings bindings = SpBindings.preSingleSignOnProcess()
+        BaseSamlSpBindings bindings = SpBindings.preSingleSignOnProcess()
                 .withAuthnRequest(authnRequest)
                 .withSsoResponse(ssoResponse)
                 .withProfile(profile)
                 .withHostedEntityId(hostedEntityId)
-                .withRealm(realm)
                 .withHttpClient(httpClient)
                 .withRequest(request)
                 .withResponse(response)
                 .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
-                        script.getId(), script.getName()))
-                .withScriptName(script.getName())
-                .build()
-                .convert(script.getEvaluatorVersion());
+                .build();
+
         executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, bindings, "preSingleSignOnProcess");
     }
 
@@ -115,7 +106,7 @@ public class ScriptedSpAdapter implements SPAdapter {
             HttpServletResponse response, PrintWriter out, Object session, AuthnRequest authnRequest,
             Response ssoResponse, String profile, boolean isFederation) throws SAML2Exception {
         Script script = executor.getScriptConfiguration(realm, hostedEntityId, SP_ROLE, SP_ADAPTER_SCRIPT);
-        Bindings bindings = SpBindings.postSingleSignOnSuccess()
+        BaseSamlSpBindings bindings = SpBindings.postSingleSignOnSuccess()
                 .withAuthnRequest(authnRequest)
                 .withProfile(profile)
                 .withOut(out)
@@ -123,16 +114,12 @@ public class ScriptedSpAdapter implements SPAdapter {
                 .withSession(session)
                 .withFederation(isFederation)
                 .withHostedEntityId(hostedEntityId)
-                .withRealm(realm)
                 .withHttpClient(httpClient)
                 .withRequest(request)
                 .withResponse(response)
                 .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
-                        script.getId(), script.getName()))
-                .withScriptName(script.getName())
-                .build()
-                .convert(script.getEvaluatorVersion());
+                .build();
+
         return executor.evaluateScriptFunction(scriptEvaluator, script, realm, bindings, "postSingleSignOnSuccess");
     }
 
@@ -142,22 +129,18 @@ public class ScriptedSpAdapter implements SPAdapter {
             String profile, int failureCode) {
         try {
             Script script = executor.getScriptConfiguration(realm, hostedEntityId, SP_ROLE, SP_ADAPTER_SCRIPT);
-            Bindings bindings = SpBindings.postSingleSignOnFailure()
+            BaseSamlSpBindings bindings = SpBindings.postSingleSignOnFailure()
                     .withAuthnRequest(authnRequest)
                     .withProfile(profile)
                     .withSsoResponse(ssoResponse)
                     .withFailureCode(failureCode)
                     .withHostedEntityId(hostedEntityId)
-                    .withRealm(realm)
                     .withHttpClient(httpClient)
                     .withRequest(request)
                     .withResponse(response)
                     .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
-                            script.getId(), script.getName()))
-                    .withScriptName(script.getName())
-                    .build()
-                    .convert(script.getEvaluatorVersion());
+                    .build();
+
             return executor.evaluateScriptFunction(scriptEvaluator, script, realm, bindings, "postSingleSignOnFailure");
         } catch (SAML2Exception e) {
             return false;
@@ -170,22 +153,18 @@ public class ScriptedSpAdapter implements SPAdapter {
             String binding) {
         try {
             Script script = executor.getScriptConfiguration(realm, hostedEntityId, SP_ROLE, SP_ADAPTER_SCRIPT);
-            Bindings bindings = SpBindings.userIdRequestBindings()
+            BaseSamlSpBindings bindings = SpBindings.userIdRequestBindings()
                     .withUserId(userId)
                     .withIdRequest(idRequest)
                     .withIdResponse(idResponse)
                     .withBinding(binding)
                     .withHostedEntityId(hostedEntityId)
-                    .withRealm(realm)
                     .withHttpClient(httpClient)
                     .withRequest(request)
                     .withResponse(response)
                     .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
-                            script.getId(), script.getName()))
-                    .withScriptName(script.getName())
-                    .build()
-                    .convert(script.getEvaluatorVersion());
+                    .build();
+
             executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, bindings, "postNewNameIDSuccess");
         } catch (SAML2Exception e) {
             logger.error("Exception in SP Adapter's postNewNameIDSuccess", e);
@@ -198,22 +177,18 @@ public class ScriptedSpAdapter implements SPAdapter {
             ManageNameIDResponse idResponse, String binding) {
         try {
             Script script = executor.getScriptConfiguration(realm, hostedEntityId, SP_ROLE, SP_ADAPTER_SCRIPT);
-            Bindings bindings = SpBindings.userIdRequestBindings()
+            BaseSamlSpBindings bindings = SpBindings.userIdRequestBindings()
                     .withUserId(userId)
                     .withIdRequest(idRequest)
                     .withIdResponse(idResponse)
                     .withBinding(binding)
                     .withHostedEntityId(hostedEntityId)
-                    .withRealm(realm)
                     .withHttpClient(httpClient)
                     .withRequest(request)
                     .withResponse(response)
                     .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
-                            script.getId(), script.getName()))
-                    .withScriptName(script.getName())
-                    .build()
-                    .convert(script.getEvaluatorVersion());
+                    .build();
+
             executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, bindings, "postTerminateNameIDSuccess");
         } catch (SAML2Exception e) {
             logger.error("Exception in SP Adapter's postTerminateNameIDSuccess", e);
@@ -225,22 +200,18 @@ public class ScriptedSpAdapter implements SPAdapter {
             HttpServletResponse response, String userId, LogoutRequest logoutRequest,
             LogoutResponse logoutResponse, String binding) throws SAML2Exception {
         Script script = executor.getScriptConfiguration(realm, hostedEntityId, SP_ROLE, SP_ADAPTER_SCRIPT);
-        Bindings bindings = SpBindings.loginLogoutBindings()
+        BaseSamlSpBindings bindings = SpBindings.loginLogoutBindings()
                 .withUserId(userId)
                 .withLogoutRequest(logoutRequest)
                 .withLogoutResponse(logoutResponse)
                 .withBinding(binding)
                 .withHostedEntityId(hostedEntityId)
-                .withRealm(realm)
                 .withHttpClient(httpClient)
                 .withRequest(request)
                 .withResponse(response)
                 .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
-                        script.getId(), script.getName()))
-                .withScriptName(script.getName())
-                .build()
-                .convert(script.getEvaluatorVersion());
+                .build();
+
         executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, bindings, "preSingleLogoutProcess");
     }
 
@@ -250,22 +221,18 @@ public class ScriptedSpAdapter implements SPAdapter {
             LogoutResponse logoutResponse, String binding) {
         try {
             Script script = executor.getScriptConfiguration(realm, hostedEntityId, SP_ROLE, SP_ADAPTER_SCRIPT);
-            Bindings bindings = SpBindings.loginLogoutBindings()
+            BaseSamlSpBindings bindings = SpBindings.loginLogoutBindings()
                     .withUserId(userId)
                     .withLogoutRequest(logoutRequest)
                     .withLogoutResponse(logoutResponse)
                     .withBinding(binding)
                     .withHostedEntityId(hostedEntityId)
-                    .withRealm(realm)
                     .withHttpClient(httpClient)
                     .withRequest(request)
                     .withResponse(response)
                     .withSpAdapterScriptHelper(spAdapterScriptHelper)
-                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_SP_ADAPTER.name(),
-                            script.getId(), script.getName()))
-                    .withScriptName(script.getName())
-                    .build()
-                    .convert(script.getEvaluatorVersion());
+                    .build();
+
             executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, bindings, "postSingleLogoutSuccess");
         } catch (SAML2Exception e) {
             logger.error("Exception in SP Adapter's postSingleLogoutSuccess", e);

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2023 ForgeRock AS.
+ * Copyright 2014-2024 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -66,6 +66,7 @@ export default AbstractView.extend({
                     self.$el.data("hiddenData", data);
                     self.$el.data("itemData", itemData);
                     self.$el.find("select.type-selection:first").val(itemData.type).trigger("change");
+                    self.createListItem(schema, self.$el);
 
                     if (callback) {
                         callback();
@@ -83,6 +84,7 @@ export default AbstractView.extend({
             } else {
                 self.$el.data("itemData", itemData);
                 self.$el.find("select.type-selection:first").val(itemData.type).trigger("change");
+                self.createListItem(schema, self.$el);
             }
         }
 
@@ -304,7 +306,7 @@ export default AbstractView.extend({
                     console.error("error", error);
                 });
         } else {
-            return returnObj;
+            return Promise.resolve(returnObj);
         }
     }
 });

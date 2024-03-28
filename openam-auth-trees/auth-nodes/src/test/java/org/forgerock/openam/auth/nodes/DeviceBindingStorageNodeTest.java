@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -58,7 +58,7 @@ import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdType;
 
 /**
- * Test for Device Unbinding
+ * Test for Device Unbinding.
  */
 public class DeviceBindingStorageNodeTest {
 
@@ -121,7 +121,7 @@ public class DeviceBindingStorageNodeTest {
     public void testDeviceStorage()
             throws NodeProcessException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
-        JsonValue transientState = json(object(field(DeviceBindingNode.DEVICE, "dummy")));
+        JsonValue transientState = json(object(field(DeviceBinding.DEVICE, "dummy")));
 
         // When
         Action result = node.process(getContext(sharedState, transientState, emptyList()));

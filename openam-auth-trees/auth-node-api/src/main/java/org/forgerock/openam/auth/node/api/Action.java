@@ -11,12 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
 import static java.util.Arrays.asList;
 import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.fieldIfNotNull;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.NODE_TYPE;
@@ -37,6 +38,9 @@ import javax.security.auth.callback.Callback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.SupportedAll;
 import org.forgerock.util.Reject;
+
+import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.IdType;
 
 /**
  * Immutable container for the result of processing a node.
@@ -102,8 +106,14 @@ public final class Action {
     public final SuspensionHandler suspensionHandler;
     /**
      * The universal id of the identity object.
+     * @deprecated use {@link #identifiedIdentity} instead.
      */
-    public final Optional <String> universalId;
+    @Deprecated
+    public final Optional<String> universalId;
+    /**
+     * Optionally the identity confirmed to exist as part of this action.
+     */
+    public final Optional<IdentifiedIdentity> identifiedIdentity;
 
     /**
      * Move on to the next node in the tree that is connected to the given outcome.
@@ -152,7 +162,8 @@ public final class Action {
     private Action(JsonValue sharedState, JsonValue transientState, String outcome,
             Map<String, Object> returnProperties, String errorMessage, String lockoutMessage,
             List<? extends Callback> callbacks, Map<String, String> sessionProperties, List<JsonValue> sessionHooks,
-            List<String> webhooks, SuspensionHandler suspensionHandler, Optional<String> universalId) {
+            List<String> webhooks, SuspensionHandler suspensionHandler, Optional<String> universalId,
+            Optional<IdentifiedIdentity> identifiedIdentity) {
         this.sharedState = sharedState;
         this.transientState = transientState;
         this.outcome = outcome;
@@ -165,6 +176,7 @@ public final class Action {
         this.webhooks = webhooks;
         this.suspensionHandler = suspensionHandler;
         this.universalId = universalId;
+        this.identifiedIdentity = identifiedIdentity;
     }
 
     /**
@@ -186,6 +198,7 @@ public final class Action {
         private String errorMessage;
         private String lockoutMessage;
         private String universalId;
+        private IdentifiedIdentity identifiedIdentity;
         private final String outcome;
         private final List<? extends Callback> callbacks;
         private final Map<String, String> sessionProperties = new HashMap<>();
@@ -320,7 +333,9 @@ public final class Action {
          *
          * @param universalId The universal id of the user object.
          * @return the same instance of the ActionBuilder.
+         * @deprecated use {@link #withIdentifiedIdentity} instead.
          */
+        @Deprecated
         public ActionBuilder withUniversalId(String universalId) {
             if (isNotEmpty(universalId)) {
                 this.universalId = universalId;
@@ -335,7 +350,9 @@ public final class Action {
          *
          * @param universalId The optional universal id of the user object.
          * @return the same instance of the ActionBuilder.
+         * @deprecated use {@link #withIdentifiedIdentity} instead.
          */
+        @Deprecated
         public ActionBuilder withUniversalId(Optional<String> universalId) {
             universalId.ifPresent(this::withUniversalId);
             return this;
@@ -380,12 +397,28 @@ public final class Action {
          * @return the same instance of ActionBuilder
          */
         public ActionBuilder addSessionHook(Class<? extends TreeHook> sessionHook, UUID nodeId, String nodeType) {
+            return addSessionHook(sessionHook, nodeId, nodeType, null);
+        }
+
+        /**
+         * Sets a class that will be run after successful login.
+         * The class has to implement {@link TreeHook}.
+         *
+         * @param sessionHook The class to be run.
+         * @param nodeId The ID of the node.
+         * @param nodeType The type of the node.
+         * @param data The additional data for session hook.
+         * @return the same instance of ActionBuilder
+         */
+        public ActionBuilder addSessionHook(Class<? extends TreeHook> sessionHook, UUID nodeId, String nodeType,
+                JsonValue data) {
             Reject.ifNull(sessionHook);
             sessionHooks.add(
                     json(object(
                             field(TreeHook.SESSION_HOOK_CLASS_KEY, sessionHook.getName()),
                             field(TreeHook.NODE_ID_KEY, nodeId.toString()),
-                            field(TreeHook.NODE_TYPE_KEY, nodeType))));
+                            field(TreeHook.NODE_TYPE_KEY, nodeType),
+                            fieldIfNotNull(TreeHook.HOOK_DATA, data))));
             return this;
         }
 
@@ -462,6 +495,31 @@ public final class Action {
         }
 
         /**
+         * Set the identified identity that has been verified to exist in an identity store.
+         * <p>The identity may or may not have been authenticated as part of the tree execution.
+         *
+         * @param username the username of the identified identity.
+         * @param identityType the identity type of the identified identity. Must be one of the identity types
+         *                     defined in com.sun.identity.idm.IdType.
+         * @return this action builder.
+         */
+        public ActionBuilder withIdentifiedIdentity(String username, IdType identityType) {
+            identifiedIdentity = new IdentifiedIdentity(username, identityType);
+            return this;
+        }
+
+        /**
+         * Set the identified identity that has been verified to exist in an identity store.
+         * <p>The identity may or may not have been authenticated as part of the tree execution.
+         *
+         * @param identity the identified identity.
+         * @return this action builder.
+         */
+        public ActionBuilder withIdentifiedIdentity(AMIdentity identity) {
+            return withIdentifiedIdentity(identity.getName(), identity.getType());
+        }
+
+        /**
          * Build the Action.
          *
          * @return an Action.
@@ -470,8 +528,8 @@ public final class Action {
         public Action build() {
             return new Action(this.sharedState, this.transientState, this.outcome, this.returnProperties,
                     this.errorMessage, this.lockoutMessage, this.callbacks, sessionProperties, sessionHooks,
-                    webhooks, suspensionHandler, Optional.ofNullable(this.universalId));
+                    webhooks, suspensionHandler, Optional.ofNullable(this.universalId),
+                    Optional.ofNullable(identifiedIdentity));
         }
-
     }
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -24,6 +24,7 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.TEST_UNIVERSAL_ID;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.newTreeContext;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.BDDMockito.doThrow;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.reset;
@@ -38,11 +39,13 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.junit.Before;
 import org.junit.Test;
@@ -80,10 +83,15 @@ public class OneTimePasswordSmsSenderNodeTest {
     private AMIdentity amIdentity;
     @Mock
     private OneTimePasswordSmsSenderNode.Config serviceConfig;
+    @Mock
+    private Realm realm;
     private JsonValue sharedState;
     private JsonValue secureState;
     private Map<String, SMSGateway> smsGatewayMap;
     private SMSGatewayLookup smsGatewayLookup;
+
+    @Mock
+    private OtpNodeConnectionConfigMapper connectionConfigMapper;
 
     @Before
     public void setUp() throws Exception {
@@ -98,15 +106,14 @@ public class OneTimePasswordSmsSenderNodeTest {
         smsGatewayLookup = new SMSGatewayLookup(smsGatewayMap);
     }
 
-
     @Test
     public void shouldSendEmailWhenConfigurationAndSharedStateEmailAddressAreValid()
             throws NodeProcessException, AuthLoginException, IdRepoException, SSOException {
         given(amIdentity.getAttribute(PHONE_CARRIER_ATTR)).willReturn(Collections.singleton(PHONE_CARRIER));
 
         //when
-        new OneTimePasswordSmsSenderNode(serviceConfig, coreWrapper, identityService, localeSelector, smsGatewayLookup)
-                .process(newTreeContext(sharedState, secureState));
+        new OneTimePasswordSmsSenderNode(serviceConfig, realm, coreWrapper, identityService, localeSelector,
+                smsGatewayLookup, connectionConfigMapper).process(newTreeContext(sharedState, secureState));
 
         then(MockSMSGateway.smsGateway).should()
                 .sendSMSMessage(eq(serviceConfig.fromEmailAddress()), eq(PHONE_NUMBER + PHONE_CARRIER),
@@ -119,8 +126,8 @@ public class OneTimePasswordSmsSenderNodeTest {
         given(amIdentity.getAttribute(PHONE_CARRIER_ATTR)).willReturn(null);
 
         //when
-        new OneTimePasswordSmsSenderNode(serviceConfig, coreWrapper, identityService, localeSelector, smsGatewayLookup)
-                .process(newTreeContext(sharedState, secureState));
+        new OneTimePasswordSmsSenderNode(serviceConfig, realm, coreWrapper, identityService, localeSelector,
+                smsGatewayLookup, connectionConfigMapper).process(newTreeContext(sharedState, secureState));
 
         then(MockSMSGateway.smsGateway).should().sendSMSMessage(eq(serviceConfig.fromEmailAddress()), eq(PHONE_NUMBER),
                 any(), any(), any(), any());
@@ -132,8 +139,8 @@ public class OneTimePasswordSmsSenderNodeTest {
         given(amIdentity.getAttribute(PHONE_CARRIER_ATTR)).willReturn(Collections.singleton(PHONE_CARRIER_NO_AT));
 
         //when
-        new OneTimePasswordSmsSenderNode(serviceConfig, coreWrapper, identityService, localeSelector, smsGatewayLookup)
-                .process(newTreeContext(sharedState, secureState));
+        new OneTimePasswordSmsSenderNode(serviceConfig, realm, coreWrapper, identityService, localeSelector,
+                smsGatewayLookup, connectionConfigMapper).process(newTreeContext(sharedState, secureState));
 
         then(MockSMSGateway.smsGateway).should()
                 .sendSMSMessage(eq(serviceConfig.fromEmailAddress()),
@@ -145,8 +152,8 @@ public class OneTimePasswordSmsSenderNodeTest {
     public void throwsNodeProcessExceptionWhenEmailSendFails() throws AuthLoginException {
         willThrow(AuthLoginException.class).given(MockSMSGateway.smsGateway)
                 .sendSMSMessage(any(), any(), any(), any(), any(), any());
-        assertThatThrownBy(() -> new OneTimePasswordSmsSenderNode(serviceConfig, coreWrapper, identityService,
-                localeSelector, smsGatewayLookup)
+        assertThatThrownBy(() -> new OneTimePasswordSmsSenderNode(serviceConfig, realm, coreWrapper, identityService,
+                localeSelector, smsGatewayLookup, connectionConfigMapper)
                 .process(newTreeContext(sharedState, secureState)))
                 .isInstanceOf(NodeProcessException.class);
     }
@@ -154,8 +161,8 @@ public class OneTimePasswordSmsSenderNodeTest {
     @Test
     public void throwsNodeProcessExceptionWhenFailToRetrieveIdentity() {
         PreferredLocales preferredLocales = new PreferredLocales(ImmutableList.of(Locale.ENGLISH));
-        assertThatThrownBy(() -> new OneTimePasswordSmsSenderNode(serviceConfig, coreWrapper, identityService,
-                localeSelector, smsGatewayLookup)
+        assertThatThrownBy(() -> new OneTimePasswordSmsSenderNode(serviceConfig, realm, coreWrapper, identityService,
+                localeSelector, smsGatewayLookup, connectionConfigMapper)
                 .process(newTreeContext(sharedState, secureState, preferredLocales)))
                 .isInstanceOf(NodeProcessException.class);
     }
@@ -163,8 +170,8 @@ public class OneTimePasswordSmsSenderNodeTest {
     @Test
     public void throwsNodeProcessExceptionWhenFailToRetrievePhoneNumberFromIdentity() {
         PreferredLocales preferredLocales = new PreferredLocales(ImmutableList.of(Locale.ENGLISH));
-        assertThatThrownBy(() -> new OneTimePasswordSmsSenderNode(serviceConfig, coreWrapper, identityService,
-                localeSelector, smsGatewayLookup)
+        assertThatThrownBy(() -> new OneTimePasswordSmsSenderNode(serviceConfig, realm, coreWrapper, identityService,
+                localeSelector, smsGatewayLookup, connectionConfigMapper)
                 .process(newTreeContext(sharedState, secureState, preferredLocales)))
                 .isInstanceOf(NodeProcessException.class);
     }
@@ -173,8 +180,8 @@ public class OneTimePasswordSmsSenderNodeTest {
     public void throwsNodeProcessExceptionWhenFailToRetrieveCarrierFromIdentity()
             throws IdRepoException, SSOException {
         PreferredLocales preferredLocales = new PreferredLocales(ImmutableList.of(Locale.ENGLISH));
-        assertThatThrownBy(() -> new OneTimePasswordSmsSenderNode(serviceConfig, coreWrapper, identityService,
-                localeSelector, smsGatewayLookup)
+        assertThatThrownBy(() -> new OneTimePasswordSmsSenderNode(serviceConfig, realm, coreWrapper, identityService,
+                localeSelector, smsGatewayLookup, connectionConfigMapper)
                 .process(newTreeContext(sharedState, secureState, preferredLocales)))
                 .isInstanceOf(NodeProcessException.class);
     }
@@ -185,8 +192,8 @@ public class OneTimePasswordSmsSenderNodeTest {
         PreferredLocales preferredLocales = new PreferredLocales(ImmutableList.of(Locale.ENGLISH));
         doThrow(AuthLoginException.class).when(MockSMSGateway.smsGateway)
                 .sendSMSMessage(any(), any(), any(), any(), any(), any());
-        assertThatThrownBy(() -> new OneTimePasswordSmsSenderNode(serviceConfig, coreWrapper, identityService,
-                localeSelector, smsGatewayLookup)
+        assertThatThrownBy(() -> new OneTimePasswordSmsSenderNode(serviceConfig, realm, coreWrapper, identityService,
+                localeSelector, smsGatewayLookup, connectionConfigMapper)
                 .process(newTreeContext(sharedState, secureState, preferredLocales)))
                 .isInstanceOf(NodeProcessException.class);
     }
@@ -198,13 +205,15 @@ public class OneTimePasswordSmsSenderNodeTest {
         StubGuiceSMSGateway stubGuiceSMSGateway = new StubGuiceSMSGateway(mock(SMSGateway.class));
         smsGatewayMap.put(StubGuiceSMSGateway.class.getName(), stubGuiceSMSGateway);
         given(amIdentity.getAttribute(PHONE_CARRIER_ATTR)).willReturn(Collections.singleton(PHONE_CARRIER));
+        Map<String, Set<String>> map = Map.of("key", Set.of("value"));
+        given(connectionConfigMapper.asConfigMap(any(), any())).willReturn(map);
 
-        new OneTimePasswordSmsSenderNode(serviceConfig, coreWrapper, identityService, localeSelector, smsGatewayLookup)
-                .process(newTreeContext(sharedState, secureState));
+        new OneTimePasswordSmsSenderNode(serviceConfig, realm, coreWrapper, identityService, localeSelector,
+                smsGatewayLookup, connectionConfigMapper).process(newTreeContext(sharedState, secureState));
 
         then(stubGuiceSMSGateway.smsGateway).should()
                 .sendSMSMessage(eq(serviceConfig.fromEmailAddress()), eq(PHONE_NUMBER + PHONE_CARRIER),
-                        any(), any(), any(), any());
+                        any(), any(), any(), same(map));
     }
 
     private void initConfig() {

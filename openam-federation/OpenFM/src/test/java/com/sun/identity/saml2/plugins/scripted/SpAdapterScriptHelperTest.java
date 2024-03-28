@@ -23,34 +23,38 @@ import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.openam.saml2.plugins.InitializablePlugin.HOSTED_ENTITY_ID;
 import static org.forgerock.openam.saml2.plugins.InitializablePlugin.REALM;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockedStatic;
 
 import com.sun.identity.saml2.common.SAML2Utils;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SAML2Utils.class})
+
 public class SpAdapterScriptHelperTest {
 
     private static final String realm = "myRealm";
     private static final String spEntityId = "mySp";
     private static final List<String> SpAdapterEnvList = List.of("key1=value1", "key2=value2", "key3=value3");
+    private static MockedStatic<SAML2Utils> saml2UtilsMockedStatic;
 
     // Class under test
     SpAdapterScriptHelper scriptHelper = new SpAdapterScriptHelper();
 
     @Before
     public void setup() {
-        PowerMockito.mockStatic(SAML2Utils.class);
+        saml2UtilsMockedStatic = mockStatic(SAML2Utils.class);
+    }
+
+    @After
+    public void tearDown() {
+        saml2UtilsMockedStatic.close();
     }
 
     @Test

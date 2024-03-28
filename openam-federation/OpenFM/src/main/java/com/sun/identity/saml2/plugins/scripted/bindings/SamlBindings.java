@@ -15,10 +15,6 @@
  */
 package com.sun.identity.saml2.plugins.scripted.bindings;
 
-import java.util.List;
-
-import org.forgerock.openam.scripting.domain.ScriptBindings;
-
 import com.sun.identity.saml2.plugins.scripted.bindings.SamlIdpPreAuthenticationBindings.SamlIdpPreAuthenticationBindingsStep1;
 import com.sun.identity.saml2.plugins.scripted.bindings.SamlIdpPreSendFailureResponseBindings.SamlIdpPreSendFailureResponseBindingsStep1;
 import com.sun.identity.saml2.plugins.scripted.bindings.SamlIdpPreSendResponseBindings.SamlIdpPreSendResponseBindingsStep1;
@@ -94,22 +90,6 @@ public class SamlBindings {
             return SamlSpUserIdRequestResponseBindings.builder();
         }
 
-        /**
-         * The signature of these bindings. Used to provide information about available bindings via REST without the
-         * stateful underlying objects.
-         *
-         * @return The signature of this ScriptBindings implementation.
-         */
-        public static List<ScriptBindings> signature() {
-            return List.of(
-                    SamlSpPreSingleSignOnRequestBindings.signature(),
-                    SamlSpPreSingleSignOnProcessBindings.signature(),
-                    SamlSpPostSingleSignOnSuccessBindings.signature(),
-                    SamlSpPostSingleSignOnFailureBindings.signature(),
-                    SamlSpUserIdRequestResponseBindings.signature(),
-                    SamlSpUserIdLoginLogoutBindings.signature()
-            );
-        }
     }
 
     /**
@@ -162,20 +142,5 @@ public class SamlBindings {
             return SamlIdpPreSingleSignOnBindings.builder();
         }
 
-        /**
-         * The signature of these bindings. Used to provide information about available bindings via REST without the
-         * stateful underlying objects.
-         *
-         * @return The signature of this ScriptBindings implementation.
-         */
-        public static List<ScriptBindings> signature() {
-            return List.of(
-                    SamlIdpPreSingleSignOnBindings.signature(),
-                    SamlIdpPreAuthenticationBindings.signature(),
-                    SamlIdpPreSendResponseBindings.signature(),
-                    SamlIdpPreSignResponseBindings.signature(),
-                    SamlIdpPreSendFailureResponseBindings.signature()
-            );
-        }
     }
 }

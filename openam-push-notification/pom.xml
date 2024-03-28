@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2022 ForgeRock AS. All Rights Reserved
+ * Copyright 2016-2023 ForgeRock AS. All Rights Reserved
  * 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -21,7 +21,7 @@
     <parent>
         <artifactId>openam-parent</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>7.4.0</version>
+        <version>7.5.0</version>
     </parent>
 
     <properties>
@@ -51,6 +51,12 @@
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-rest</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-shared</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-sns</artifactId>
@@ -86,8 +92,8 @@
     <repositories>
         <repository>
             <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 7.4.0</name>
-            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.4.0-dependencies</url>
+            <name>ForgeRock Private Release Repository for AM 7.5.0</name>
+            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.5.0-dependencies</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>

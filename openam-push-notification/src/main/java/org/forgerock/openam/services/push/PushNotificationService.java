@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2021 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 package org.forgerock.openam.services.push;
 
@@ -28,10 +28,14 @@ import java.util.concurrent.ConcurrentMap;
 import javax.inject.Inject;
 
 import org.forgerock.json.resource.NotFoundException;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.secrets.rotation.ReloadableSecret;
+import org.forgerock.openam.secrets.rotation.SecretLabelListener;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcher;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcherFactory;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
 import org.forgerock.openam.services.push.dispatch.predicates.Predicate;
+import org.forgerock.openam.shared.secrets.Labels;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,12 +67,18 @@ import com.sun.identity.sm.SMSException;
  * re-creating the same delegate.
  */
 @Singleton
-public class PushNotificationService {
+public class PushNotificationService implements ReloadableSecret {
 
-    /** Holds a map of the current PushNotificationDelegate for a given realm. */
+    private static final Logger logger = LoggerFactory.getLogger(PushNotificationService.class);
+
+    /**
+     * Holds a map of the current PushNotificationDelegate for a given realm.
+     */
     private final ConcurrentMap<String, PushNotificationDelegate> pushRealmMap;
 
-    /** Holds a cache of all pushNotificationDelegateFactories we have used for quick loading. */
+    /**
+     * Holds a cache of all pushNotificationDelegateFactories we have used for quick loading.
+     */
     private final ConcurrentMap<String, PushNotificationDelegateFactory> pushFactoryMap;
 
     private final Logger debug = LoggerFactory.getLogger(PushNotificationService.class);
@@ -81,23 +91,28 @@ public class PushNotificationService {
 
     private final PushNotificationServiceConfig config;
 
+    private final SecretLabelListener secretLabelListener;
+
     /**
-     * Constructor (called by Guice), registers a listener for this class against all
-     * PushNotificationService changes in a realm.
-     * @param pushRealmMap Map holding all delegates mapped to the realm in which they belong.
-     * @param pushFactoryMap Map holding all factories registered during the lifetime of this service.
-     * @param configHelperFactory Produces config helpers for the appropriate realms.
+     * Constructor (called by Guice), registers a listener for this class against all PushNotificationService changes in
+     * a realm.
+     *
+     * @param pushRealmMap             Map holding all delegates mapped to the realm in which they belong.
+     * @param pushFactoryMap           Map holding all factories registered during the lifetime of this service.
+     * @param configHelperFactory      Produces config helpers for the appropriate realms.
      * @param messageDispatcherFactory Produces MessageDispatchers according to the configured options.
-     * @param config The Push Notification config.
+     * @param config                   The Push Notification config.
+     * @param secretLabelListener      The guice managed secret label listener instance.
      */
     @Inject
     public PushNotificationService(ConcurrentMap<String, PushNotificationDelegate> pushRealmMap,
                                    ConcurrentMap<String, PushNotificationDelegateFactory> pushFactoryMap,
                                    PushNotificationServiceConfigHelperFactory configHelperFactory,
                                    MessageDispatcherFactory messageDispatcherFactory,
-                                   PushNotificationServiceConfig config) {
+                                   PushNotificationServiceConfig config, SecretLabelListener secretLabelListener) {
         this.pushRealmMap = new ConcurrentHashMap<>(pushRealmMap);
         this.pushFactoryMap = new ConcurrentHashMap<>(pushFactoryMap);
+        this.secretLabelListener = secretLabelListener;
         this.delegateUpdater = new PushNotificationDelegateUpdater();
         this.configHelperFactory = configHelperFactory;
         this.messageDispatcherFactory = messageDispatcherFactory;
@@ -110,14 +125,8 @@ public class PushNotificationService {
     public void registerServiceListener() {
         config.watch()
                 .onRealmChange(realm -> {
-                    try {
-                        synchronized (pushRealmMap) { // wait here for the thread with first access to update
-                            updatePreferences(realm.asPath());
-                        }
-                    } catch (PushNotificationException e) {
-                        debug.error("Unable to update preferences for organization {}", realm.asPath(), e);
-                    } catch (NoSuchElementException e) {
-                        debug.warn("No Push Notification Service Config found for realm " + realm.asPath(), e);
+                    synchronized (pushRealmMap) {
+                        updatePreferencesCatchingExceptions(realm.asPath());
                     }
                 }, ServiceListenerEvent.ADDED, ServiceListenerEvent.MODIFIED)
                 .onRealmChange(realm -> {
@@ -128,6 +137,39 @@ public class PushNotificationService {
                     }
                 }, ServiceListenerEvent.REMOVED)
                     .listen();
+    }
+
+    /**
+     * Callback triggered if the secret label mapping is changed.
+     *
+     * @param realm The realm the secret was changed in.  This will be 'null' if it was a global secrets change.
+     */
+    @Override
+    public void setNeedsReload(Realm realm) {
+        synchronized (pushRealmMap) {
+            if (realm == null) { // Global secret mapping has changed, so update all delegates.
+                for (String realmPath : pushRealmMap.keySet()) {
+                    updatePreferencesCatchingExceptions(realmPath);
+                }
+            } else {
+                String realmPath = realm.asPath();
+                if (pushRealmMap.containsKey(realmPath)) {
+                    updatePreferencesCatchingExceptions(realmPath);
+                }
+            }
+        }
+    }
+
+    @Override
+    public String getLabel() {
+        return Labels.PUSH_NOTIFICATION_PASSWORD;
+    }
+
+    /**
+     * Register this class as a listener for any secret mapping changes.
+     */
+    public void registerSecretListeners() {
+        secretLabelListener.addListener(this);
     }
 
     /**
@@ -255,7 +297,7 @@ public class PushNotificationService {
                 .produceDelegateFor(config, realm, createDispatcher(configHelper));
 
         if (pushNotificationDelegate == null) {
-            throw new PushNotificationException("PushNotificationFactory produced a null delegate. Aborting update.");
+            debug.error("PushNotificationFactory produced a null delegate. Aborting update.");
         }
 
         delegateUpdater.replaceDelegate(realm, pushNotificationDelegate, config);
@@ -297,12 +339,21 @@ public class PushNotificationService {
         return (PushNotificationDelegateFactory) Class.forName(factoryClass).newInstance();
     }
 
+    private void updatePreferencesCatchingExceptions(String realmPath) {
+        try {
+            updatePreferences(realmPath);
+        } catch (PushNotificationException e) {
+            debug.error("Unable to update preferences for organization {}", realmPath, e);
+        } catch (NoSuchElementException e) {
+            debug.warn("No Push Notification Service Config found for realm " + realmPath, e);
+        }
+    }
+
     /**
      * Our delegate updater.
      */
     @VisibleForTesting
     final class PushNotificationDelegateUpdater {
-
         void replaceDelegate(String realm, PushNotificationDelegate newDelegate,
                          PushNotificationServiceConfig.Realm config) throws PushNotificationException {
             try {

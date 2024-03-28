@@ -35,19 +35,6 @@ const processLoginRequest = (event) => {
             return;
         }
 
-        // If at this point the url contains a suspendedId query parameter, we
-        // have just finished a suspended login tree. We need to remove the
-        // suspendedId parameter from the url so we don't get redirected back to
-        // the login page which happens if we hit the default route and the
-        // parameter is present - see src/js/config/process/AMConfig.js.
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get("suspendedId")) {
-            // Remove the parameter
-            urlParams.delete("suspendedId");
-            // Replace the current url with url no longer containing the suspendedId
-            window.history.replaceState({}, "", `${location.pathname}?${urlParams}`);
-        }
-
         Configuration.setProperty("loggedUser", user);
         ServiceInvoker.removeAnonymousDefaultHeaders();
         if (Configuration.globalData.xuiUserSessionValidationEnabled) {

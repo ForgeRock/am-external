@@ -24,7 +24,7 @@
  *
  * $Id: AssertionIDRequestImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2018-2021 ForgeRock AS.
+ * Portions Copyrighted 2018-2023 ForgeRock AS.
  */
 
 
@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -59,6 +60,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * </pre>
  *
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class AssertionIDRequestImpl extends RequestAbstractImpl
     implements AssertionIDRequest {
 

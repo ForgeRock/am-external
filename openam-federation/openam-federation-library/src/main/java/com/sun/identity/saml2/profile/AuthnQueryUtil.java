@@ -24,7 +24,7 @@
  *
  * $Id: AuthnQueryUtil.java,v 1.8 2008/12/03 00:32:31 hengming Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2024 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -448,8 +448,8 @@ public class AuthnQueryUtil {
 
         AuthnAuthorityConfigElement config =
             metaManager.getAuthnAuthorityConfig(realm, authnAuthorityEntityID);
-        authnServiceURL = SAML2Utils.fillInBasicAuthInfo(config,
-            authnServiceURL);
+        authnServiceURL = SAML2Utils.fillInBasicAuthInfo(
+                config, authnServiceURL, realm);
         
         SOAPMessage resMsg = null;
         try {

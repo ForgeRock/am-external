@@ -24,7 +24,7 @@
  *
  * $Id: DefaultIDPAccountMapper.java,v 1.9 2008/11/10 22:57:02 veiming Exp $
  *
- * Portions Copyrighted 2015-2020 ForgeRock AS.
+ * Portions Copyrighted 2015-2024 ForgeRock AS.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -54,6 +54,7 @@ import com.sun.identity.saml2.profile.IDPCache;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
 import com.sun.identity.saml2.profile.IDPSession;
 import com.sun.identity.saml2.profile.NameIDandSPpair;
+import com.sun.identity.saml2.profile.SPCache;
 import com.sun.identity.shared.encode.Base64;
 
 /**
@@ -100,13 +101,13 @@ public class DefaultIDPAccountMapper extends DefaultAccountMapper implements IDP
                 }
             }
             if (nameIDValue == null) {
-                nameIDValue = getNameIDValueFromUserProfile(realm, hostEntityID, userID, nameIDFormat);
+                nameIDValue = getNameIDValueFromUserProfile(realm, hostEntityID, remoteEntityID, userID, nameIDFormat);
                 if (nameIDValue == null) {
                     nameIDValue = SAML2Utils.createNameIdentifier();
                 }
             }
         } else {
-            nameIDValue = getNameIDValueFromUserProfile(realm, hostEntityID, userID, nameIDFormat);
+            nameIDValue = getNameIDValueFromUserProfile(realm, hostEntityID, remoteEntityID, userID, nameIDFormat);
             if (nameIDValue == null) {
                 if (nameIDFormat.equals(SAML2Constants.PERSISTENT)) {
                     // Double check that NameID persistence is enabled, there is no point in generating a value if not.
@@ -190,10 +191,22 @@ public class DefaultIDPAccountMapper extends DefaultAccountMapper implements IDP
                 SAML2Constants.SP_ROLE, SAML2Constants.SP_DO_NOT_WRITE_FEDERATION_INFO));
     }
 
-    protected String getNameIDValueFromUserProfile(String realm, String hostEntityID, String userID,
-                String nameIDFormat) {
+    /**
+     * Retrieves the appropriate NameID value from the user profile for the hosted and remote entities.
+     * This implementation first checks if any NameID value mappings have been defined at the SP level, using those
+     * exclusively if so, and if none are defined, will collect NameID value mappings from the IdP configuration.
+     *
+     * @param realm Name of the realm.
+     * @param hostEntityID <code>EntityID</code> of the hosted entity.
+     * @param remoteEntityID <code>EntityID</code> of the remote entity.
+     * @param userID Universal identifier of the user.
+     * @param nameIDFormat <code>NameID</code> format.
+     * @return The <code>NameID</code> value from the user's profile.
+     */
+    protected String getNameIDValueFromUserProfile(String realm, String hostEntityID, String remoteEntityID,
+               String userID, String nameIDFormat) {
         String nameIDValue = null;
-        Map<String, String> formatAttrMap = getFormatAttributeMap(realm, hostEntityID);
+        Map<String, String> formatAttrMap = getFormatAttributeMap(realm, hostEntityID, remoteEntityID);
         String attrName = formatAttrMap.get(nameIDFormat);
         if (attrName != null) {
             try {
@@ -219,16 +232,53 @@ public class DefaultIDPAccountMapper extends DefaultAccountMapper implements IDP
         return nameIDValue;
     }
 
-    private Map<String, String> getFormatAttributeMap(String realm, String hostEntityID) {
-        String key = hostEntityID + "|" + realm;
-        Map<String, String> formatAttributeMap = IDPCache.formatAttributeHash.get(key);
-        if (formatAttributeMap != null) {
+
+    protected String getNameIDValueFromUserProfile(String realm, String hostEntityID, String userID,
+                   String nameIDFormat) {
+        return getNameIDValueFromUserProfile(realm, hostEntityID, null, userID, nameIDFormat);
+    }
+
+    private Map<String, String> getFormatAttributeMap(String realm, String hostEntityID, String remoteEntityID) {
+        if (remoteEntityID == null) {
+            String key = hostEntityID + "|" + realm;
+            Map<String, String> formatAttributeMap = IDPCache.formatAttributeHash.get(key);
+
+            if (formatAttributeMap != null) {
+                return formatAttributeMap;
+            }
+
+            List<String> idpAttributeValues = SAML2Utils.getAllAttributeValueFromSSOConfig(realm, hostEntityID, role,
+                    SAML2Constants.NAME_ID_FORMAT_MAP);
+            formatAttributeMap = mapAttributes(idpAttributeValues);
+
+            IDPCache.formatAttributeHash.put(key, formatAttributeMap);
+            return formatAttributeMap;
+
+        } else {
+            String key = remoteEntityID + "|" + realm;
+            Map<String, String> formatAttributeMap = SPCache.formatAttributeHash.get(key);
+
+            if (formatAttributeMap != null) {
+                return formatAttributeMap;
+            }
+
+            List<String> spAttributeValues = SAML2Utils.getAllAttributeValueFromSSOConfig(realm, remoteEntityID,
+                    SAML2Constants.SP_ROLE, SAML2Constants.NAME_ID_FORMAT_MAP);
+            formatAttributeMap = mapAttributes(spAttributeValues);
+
+            if (formatAttributeMap.isEmpty()) {
+                List<String> idpAttributeValues = SAML2Utils.getAllAttributeValueFromSSOConfig(realm, hostEntityID,
+                        role, SAML2Constants.NAME_ID_FORMAT_MAP);
+                formatAttributeMap = mapAttributes(idpAttributeValues);
+            }
+
+            SPCache.formatAttributeHash.put(key, formatAttributeMap);
             return formatAttributeMap;
         }
+    }
 
-        formatAttributeMap = new HashMap<>();
-        List<String> values = SAML2Utils.getAllAttributeValueFromSSOConfig(realm, hostEntityID, role,
-                SAML2Constants.NAME_ID_FORMAT_MAP);
+    private Map<String, String> mapAttributes(List<String> values) {
+        Map<String, String> attrMap = new HashMap<>();
         if (values != null) {
             for (String value : values) {
                 int index = value.indexOf('=');
@@ -236,14 +286,11 @@ public class DefaultIDPAccountMapper extends DefaultAccountMapper implements IDP
                     String format = value.substring(0, index).trim();
                     String attrName = value.substring(index + 1).trim();
                     if (!format.isEmpty() && !attrName.isEmpty()) {
-                        formatAttributeMap.put(format, attrName);
+                        attrMap.put(format, attrName);
                     }
                 }
             }
         }
-
-        IDPCache.formatAttributeHash.put(key, formatAttributeMap);
-
-        return formatAttributeMap;
+        return attrMap;
     }
 }

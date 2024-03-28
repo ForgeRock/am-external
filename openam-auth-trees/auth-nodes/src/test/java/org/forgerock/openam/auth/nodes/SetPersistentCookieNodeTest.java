@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -30,6 +30,8 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.TreeHook;
 import org.forgerock.openam.auth.nodes.treehook.CreatePersistentCookieTreeHook;
+import org.forgerock.secrets.Purpose;
+import org.forgerock.secrets.keys.SigningKey;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,7 +47,17 @@ public class SetPersistentCookieNodeTest {
     @Before
     public void setup() throws NodeProcessException {
         nodeId = UUID.randomUUID();
-        SetPersistentCookieNode.Config config = () -> new char[0];
+        SetPersistentCookieNode.Config config = new SetPersistentCookieNode.Config() {
+            @Override
+            public Optional<char[]> hmacSigningKey() {
+                return Optional.of(new char[0]);
+            }
+
+            @Override
+            public Optional<Purpose<SigningKey>> signingKeyPurpose() {
+                return Optional.empty();
+            }
+        };
         setPersistentCookieNode = new SetPersistentCookieNode(config, nodeId);
     }
 

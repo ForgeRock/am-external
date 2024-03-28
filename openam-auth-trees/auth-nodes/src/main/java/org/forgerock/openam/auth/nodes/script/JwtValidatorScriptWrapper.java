@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -88,7 +88,11 @@ public class JwtValidatorScriptWrapper {
         VerificationKey verificationKey = getVerificationKey(accountId,
                 new SecretKeySpec(Base64.decode(signingKey), "Hmac"));
         SecretHmacSigningHandler verificationHandler = new SecretHmacSigningHandler(verificationKey);
-        SecretKeySpec decryptionKey = new SecretKeySpec(Base64.decode(encryptionKey), "AES");
+
+        SecretKeySpec decryptionKey = null;
+        if (!encryptionKey.isEmpty()) {
+            decryptionKey = new SecretKeySpec(Base64.decode(encryptionKey), "AES");
+        }
 
         return getClaimsMapFromReconstructedJwt(jwtString, accountId, audience, jwtBuilderType,
                 verificationHandler, decryptionKey);

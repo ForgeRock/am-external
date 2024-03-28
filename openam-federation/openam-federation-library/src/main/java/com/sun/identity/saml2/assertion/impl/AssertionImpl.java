@@ -42,6 +42,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +77,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * and Attribute assertions.
  */
 
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class AssertionImpl implements Assertion {
     private static final Logger logger = LoggerFactory.getLogger(AssertionImpl.class);
     private String version;

@@ -30,6 +30,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.time.Instant;
@@ -38,8 +39,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import javax.script.Bindings;
 import javax.script.ScriptException;
+import javax.script.SimpleBindings;
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.am.identity.application.LegacyIdentityService;
@@ -56,11 +57,11 @@ import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.stubbing.Answer;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -358,32 +359,28 @@ public class DeviceMatchNodeTest {
 
         JsonValue transientState = json(object());
 
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(realm)))
-                .will(answerWithOutcome("true"));
+        ScriptEvaluator.ScriptResult<Object> scriptResult = mock(ScriptEvaluator.ScriptResult.class);
+        SimpleBindings bindings = new SimpleBindings();
+        bindings.put("outcome", "true");
+        when(scriptResult.getBindings()).thenReturn(bindings);
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(realm)))
+                .willReturn(scriptResult);
         Action action = node.process(getContext(sharedState, transientState, emptyList()));
 
         ArgumentCaptor<Script> scriptCaptor = ArgumentCaptor.forClass(Script.class);
-        ArgumentCaptor<Bindings> bindingCaptor = ArgumentCaptor.forClass(Bindings.class);
+        ArgumentCaptor<ScriptBindings> bindingCaptor = ArgumentCaptor.forClass(ScriptBindings.class);
         verify(scriptEvaluator).evaluateScript(scriptCaptor.capture(), bindingCaptor.capture(), eq(realm));
 
         assertThat(scriptCaptor.getValue().getName()).isEqualTo("mock-script-name");
         assertThat(scriptCaptor.getValue().getScript()).isEqualTo("mock-script-body");
         assertThat(scriptCaptor.getValue().getLanguage()).isEqualTo(ScriptingLanguage.JAVASCRIPT);
 
-        assertThat(bindingCaptor.getValue().get("sharedState")).isNotNull();
-        assertThat(bindingCaptor.getValue().get("transientState")).isNotNull();
-        assertThat(bindingCaptor.getValue().get("deviceProfilesDao")).isNotNull();
+        assertThat(bindingCaptor.getValue().legacyBindings().get("sharedState")).isNotNull();
+        assertThat(bindingCaptor.getValue().legacyBindings().get("transientState")).isNotNull();
+        assertThat(bindingCaptor.getValue().legacyBindings().get("deviceProfilesDao")).isNotNull();
 
         assertThat(action.outcome).isEqualTo("true");
 
-    }
-
-    private static Answer<Object> answerWithOutcome(Object outcome) {
-        return invocationOnMock -> {
-            Bindings bindings = invocationOnMock.getArgument(1);
-            bindings.put("outcome", outcome);
-            return null;
-        };
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,

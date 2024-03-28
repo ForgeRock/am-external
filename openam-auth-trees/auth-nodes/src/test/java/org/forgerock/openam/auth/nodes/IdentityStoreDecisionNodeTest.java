@@ -44,6 +44,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.ldap.ConnectionFactoryAuditWrapperFactory;
 import org.forgerock.openam.ldap.LDAPAuthUtils;
 import org.forgerock.openam.ldap.LDAPUtilException;
 import org.forgerock.openam.ldap.ModuleState;
@@ -95,6 +96,8 @@ public class IdentityStoreDecisionNodeTest {
     private Realm realm;
     @Mock
     private Secrets secrets;
+    @Mock
+    private ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory;
 
     private JsonValue sharedState;
     private JsonValue secureState;
@@ -120,7 +123,7 @@ public class IdentityStoreDecisionNodeTest {
 
         secureState = json(object(field(ONE_TIME_PASSWORD, TEST_ONE_TIME_PASSWORD)));
         identityStoreDecisionNode = new IdentityStoreDecisionNode(serviceConfig, realm, configManagerFactory,
-                coreWrapper, identityService, idRepoUtilityService, secrets);
+                coreWrapper, identityService, idRepoUtilityService, secrets, connectionFactoryAuditWrapperFactory);
     }
 
     @Test

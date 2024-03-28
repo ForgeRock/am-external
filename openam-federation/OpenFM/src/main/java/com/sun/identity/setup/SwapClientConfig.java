@@ -24,7 +24,7 @@
  *
  * $Id: SwapClientConfig.java,v 1.2 2009/12/03 18:57:50 mrudul_uchil Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2024 ForgeRock AS.
  */
 
 package com.sun.identity.setup;
@@ -41,10 +41,10 @@ import com.iplanet.services.util.Crypt;
  * Tag swap client properties for server protocol, host, port and deploy uri.
  */
 public class SwapClientConfig {
-    
+
     private SwapClientConfig() {
     }
-    
+
     public static void main(String[] args) throws Exception {
         if (args.length < 8) {
             System.err.println("Too few arguments.");
@@ -133,7 +133,7 @@ public class SwapClientConfig {
 
         content = content.replaceAll("@APPLICATION_USER@", appUser);
         content = content.replaceAll("@ENCODED_APPLICATION_PASSWORD@",
-            Crypt.encrypt(appPassword));
+            Crypt.encryptAndEncode(appPassword));
 
         if((wscProviderName != null) && (wscProviderName.trim().length() != 0)
                 && (!wscProviderName.equals("<@wsc.providername@>"))) {
@@ -143,7 +143,7 @@ public class SwapClientConfig {
 
         writeToFile(content, configFile);
     }
-    
+
     /**
      * Returns input file as StringBuffer.
      * @param filename Name of the file.
@@ -151,7 +151,7 @@ public class SwapClientConfig {
      *        of the input file. if true, remove the copyright notice.
      * @return StringBuffer
      */
-    private static StringBuffer getInputStringBuffer(String filename, 
+    private static StringBuffer getInputStringBuffer(String filename,
         boolean skipCopyright)
         throws Exception {
         StringBuffer buff = new StringBuffer(20480);
@@ -166,7 +166,7 @@ public class SwapClientConfig {
                 }
                 if (skipCopyright && line.startsWith("#")) {
                     continue;
-                } 
+                }
                 // done skipping the copyright in the beginning of the file
                 skipCopyright = false;
                 buff.append(line).append("\n");
@@ -183,7 +183,7 @@ public class SwapClientConfig {
         return buff;
     }
 
-    private static void writeToFile(String file1, String filename) 
+    private static void writeToFile(String file1, String filename)
         throws FileNotFoundException, IOException {
         FileOutputStream fout = null;
         try {

@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -32,8 +33,12 @@ import javax.validation.constraints.NotNull;
 import org.forgerock.guava.common.collect.ListMultimap;
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.nodes.script.ActionWrapper;
+import org.forgerock.openam.auth.nodes.script.ScriptedCallbacksBuilder;
 import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
+import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.session.Session;
@@ -109,10 +114,6 @@ public final class ScriptedNodeHelper {
      */
     public static final String CALLBACKS_IDENTIFIER = "callbacks";
     /**
-     * Idm identifier for script bindings.
-     */
-    public static final String IDM_IDENTIFIER = "openidm";
-    /**
      * Node state wildcard character.
      */
     public static final String WILDCARD = "*";
@@ -121,6 +122,11 @@ public final class ScriptedNodeHelper {
      * Action object identifier for script bindings.
      */
     public static final String ACTION = "action";
+
+    /**
+     * Outcome object identifier for script bindings.
+     */
+    public static final String OUTCOME_IDENTIFIER = "outcome";
 
     /**
      * Callbacks builder object for script bindings.
@@ -227,5 +233,65 @@ public final class ScriptedNodeHelper {
             }
         }
         return null;
+    }
+
+    /**
+     * Turn the action result into an action object.
+     *
+     * @param actionResult the raw action.
+     * @param evalVersion the evaluator version of the script.
+     * @param callbacksBuilder the raw builder for callbacks.
+     * @return an optional action, or empty optional if no action is found.
+     */
+    public static Optional<Action> getAction(Object actionResult, EvaluatorVersion evalVersion,
+            Object callbacksBuilder) {
+        Optional<Action> action = Optional.empty();
+        switch (evalVersion) {
+        case V1_0:
+            if (actionResult instanceof Action) {
+                action = Optional.of((Action) actionResult);
+            } else {
+                logger.warn("Found an action result from scripted node, but it was not an Action object");
+            }
+            break;
+
+        case V2_0:
+            if (actionResult instanceof ActionWrapper) {
+                ActionWrapper actionWrapper = ((ActionWrapper) actionResult);
+                if (callbacksBuilder instanceof ScriptedCallbacksBuilder) {
+                    actionWrapper.setCallbacks(((ScriptedCallbacksBuilder) callbacksBuilder).getCallbacks());
+                }
+                action = actionWrapper.isEmpty() ? Optional.empty() : Optional.of(actionWrapper.buildAction());
+            } else {
+                logger.warn("Found an action result from scripted node, but it was not an ActionWrapper object");
+            }
+            break;
+
+        default:
+            logger.error("Unexpected script evaluator version");
+            break;
+        }
+        return action;
+    }
+
+    /**
+     * Get the outcome string.
+     *
+     * @param rawOutcome the raw outcome from the script.
+     * @param allowedOutcomes outcomes that are allowed by the node.
+     * @return the outcome string.
+     * @throws NodeProcessException if the outcome is missing or is an invalid type.
+     */
+    public static String getOutcome(Object rawOutcome, List<String> allowedOutcomes) throws NodeProcessException {
+        if (!(rawOutcome instanceof String)) {
+            logger.warn("script outcome error");
+            throw new NodeProcessException("Script must set '" + OUTCOME_IDENTIFIER + "' to a string.");
+        }
+        String outcome = (String) rawOutcome;
+        if (!allowedOutcomes.contains(outcome)) {
+            logger.warn("invalid script outcome {}", outcome);
+            throw new NodeProcessException("Invalid outcome from script, '" + outcome + "'");
+        }
+        return outcome;
     }
 }

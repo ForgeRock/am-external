@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.oauth;
 
@@ -304,6 +304,7 @@ public abstract class AbstractSocialAuthLoginNode implements Node {
 
             String realm = context.sharedState.get(REALM).asString();
             action = goTo(SocialAuthOutcome.ACCOUNT_EXISTS.name())
+                    .withIdentifiedIdentity(user.get(), USER)
                     .withUniversalId(identityService.getUniversalId(user.get(), realm, USER))
                     .replaceSharedState(context.sharedState.add(USERNAME, user.get()));
         } else {

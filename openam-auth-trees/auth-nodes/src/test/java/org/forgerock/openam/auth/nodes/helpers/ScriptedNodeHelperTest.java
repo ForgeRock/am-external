@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.helpers;
 
@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -31,11 +32,17 @@ import javax.script.Bindings;
 import org.forgerock.guava.common.collect.ListMultimap;
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.nodes.script.ActionWrapper;
+import org.forgerock.openam.auth.nodes.script.ScriptedCallbacksBuilder;
 import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
+import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.session.Session;
+import org.forgerock.openam.test.rules.LoggerRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -44,6 +51,8 @@ import org.mockito.junit.MockitoJUnitRunner;
 import com.iplanet.dpro.session.SessionException;
 import com.iplanet.dpro.session.SessionID;
 import com.iplanet.dpro.session.service.SessionService;
+
+import ch.qos.logback.classic.spi.ILoggingEvent;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ScriptedNodeHelperTest {
@@ -62,6 +71,9 @@ public class ScriptedNodeHelperTest {
     private Session session;
     @Mock
     private Bindings bindings;
+
+    @Rule
+    public LoggerRule logger = new LoggerRule(ScriptedNodeHelper.class);
 
     @Test
     public void testConvertHeadersToModifiableObjects() {
@@ -191,5 +203,96 @@ public class ScriptedNodeHelperTest {
         given(bindings.get(AUDIT_ENTRY_DETAIL)).willReturn(expected);
         assertThatThrownBy(() -> ScriptedNodeHelper.getAuditEntryDetails(bindings))
                 .isInstanceOf(NodeProcessException.class);
+    }
+
+    @Test
+    public void testReturnActionIfTypeActionForVersion1Script() {
+
+        Action actionResult = Action.goTo("true").build();
+        Optional<Action> action = Optional.of(actionResult);
+
+        Object result = ScriptedNodeHelper.getAction(actionResult, EvaluatorVersion.V1_0, null);
+
+        assertThat(result).isEqualTo(action);
+    }
+
+    @Test
+    public void testShouldReturnWarningIfResultNotTypeActionForV1() {
+
+        ScriptedNodeHelper.getAction(null, EvaluatorVersion.V1_0, null);
+
+        assertThat(logger.getWarnings(ILoggingEvent::getFormattedMessage))
+                .contains("Found an action result from scripted node, but it was not an Action object");
+    }
+
+    @Test
+    public void testShouldReturnActionIfTypeActionWrapperForVersion2Script() {
+
+        ActionWrapper actionWrapper = new ActionWrapper().goTo("true");
+        Optional<Action> action = Optional.of(actionWrapper.buildAction());
+
+        Optional<Action> result = ScriptedNodeHelper.getAction(actionWrapper, EvaluatorVersion.V2_0, null);
+
+        assertThat(result.get().outcome).isEqualTo(action.get().outcome);
+    }
+
+    @Test
+    public void testShouldReturnActionWithCallbackForVersion2Script() {
+
+        ScriptedCallbacksBuilder callbacksBuilder = new ScriptedCallbacksBuilder();
+        callbacksBuilder.nameCallback("callback");
+        ActionWrapper actionWrapper = new ActionWrapper();
+        actionWrapper.setCallbacks(callbacksBuilder.getCallbacks());
+        Optional<Action> action = Optional.of(actionWrapper.buildAction());
+
+        Optional<Action> result = ScriptedNodeHelper.getAction(actionWrapper, EvaluatorVersion.V2_0, callbacksBuilder);
+
+        assertThat(result.get().callbacks).isNotNull();
+        assertThat(result.get().callbacks).isEqualTo(action.get().callbacks);
+    }
+
+    @Test
+    public void testShouldReturnWarningIfResultNotTypeActionWrapperForV2() {
+
+        ScriptedNodeHelper.getAction(null, EvaluatorVersion.V2_0, null);
+
+        assertThat(logger.getWarnings(ILoggingEvent::getFormattedMessage))
+                .contains("Found an action result from scripted node, but it was not an ActionWrapper object");
+    }
+
+    @Test
+    public void testShouldReturnOutcomeIfStringAndInListOfAllowedOutcomes() throws NodeProcessException {
+
+        String rawOutcome = "outcome";
+        List<String> allowedOutcomes = List.of("outcome");
+
+        String result = ScriptedNodeHelper.getOutcome(rawOutcome, allowedOutcomes);
+
+        assertThat(result).isEqualTo(rawOutcome);
+    }
+
+    @Test
+    public void testShouldThrowNodeProcessExceptionIfOutcomeNotInListOfAllowedOutcomes() throws NodeProcessException {
+
+        String rawOutcome = "badOutcome";
+        List<String> allowedOutcomes = List.of("allowedOutcome");
+
+        assertThatThrownBy(() -> ScriptedNodeHelper.getOutcome(rawOutcome, allowedOutcomes))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Invalid outcome from script, 'badOutcome'");
+        assertThat(logger.getWarnings(ILoggingEvent::getFormattedMessage))
+                .contains("invalid script outcome badOutcome");
+    }
+
+    @Test
+    public void testShouldThrowNodeProcessExceptionIfOutcomeNotString() {
+
+        Integer rawOutcome = 1;
+        List<String> allowedOutcomes = List.of("allowedOutcome");
+
+        assertThatThrownBy(() -> ScriptedNodeHelper.getOutcome(rawOutcome, allowedOutcomes))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Script must set 'outcome' to a string.");
+        assertThat(logger.getWarnings(ILoggingEvent::getFormattedMessage)).contains("script outcome error");
     }
 }

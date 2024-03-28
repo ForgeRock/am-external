@@ -30,32 +30,38 @@
                       "value": "/wantAuthnRequestsSigned"
                     },
                     "title": "Authentication Request",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": false
                   },
                   "artifactResolve": {
                     "attributeKey": "wantArtifactResolveSigned",
                     "title": "Artifact Resolve",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": false
                   },
                   "logoutRequest": {
                     "attributeKey": "wantLogoutRequestSigned",
                     "title": "Logout Request",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": false
                   },
                   "logoutResponse": {
                     "attributeKey": "wantLogoutResponseSigned",
                     "title": "Logout Response",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": false
                   },
                   "manageNameIdRequest": {
                     "attributeKey": "wantMNIRequestSigned",
                     "title": "Manage NameID Request",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": false
                   },
                   "manageNameIdResponse": {
                     "attributeKey": "wantMNIResponseSigned",
                     "title": "Manage NameID Response",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": false
                   }
                 },
                 "required": [
@@ -75,7 +81,8 @@
                   "nameIdEncryption": {
                     "attributeKey": "wantNameIDEncrypted",
                     "title": "NameID Encryption",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "default": false
                   }
                 },
                 "required": ["nameIdEncryption"]
@@ -108,8 +115,47 @@
               }
             }
           },
+          "secrets": {
+            "$ref": "definitions.json#/secrets"
+          },
           "basicAuthentication": {
-            "$ref": "definitions.json#/basicAuthentication"
+            "traverseObject": true,
+            "description": "Configure basic authentication setting for Soap based binding",
+            "title": "Basic Authentication",
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "$ref": "definitions.json#/basicAuthentication/properties/enabled"
+              },
+              "userName": {
+                "$ref": "definitions.json#/basicAuthentication/properties/userName"
+              },
+              "password": {
+                "title": "Password",
+                "attributeKey": {
+                  "value": "basicAuthPassword",
+                  "mapper": "org.forgerock.openam.federation.rest.schema.mappers.PasswordMapper"
+                },
+                "type": "string",
+                "format": "password",
+                "description": "<strong>Note:</strong> This value is ignored if the value of the Secret Label Identifier is provided and a mapping exists for the secret label \n<code>am.applications.federation.entity.providers.saml2.demo.basicauth</code> to a secret in a secret store where \"demo\" is the value of the Secret Label Identifier in this example."
+              }
+            }
+          },
+          "clientAuthentication":{
+            "traverseObject": true,
+            "title": "Client Authentication",
+            "description": "Select the checkbox for each request that should send a client certificate",
+            "type": "object",
+            "properties": {
+              "artifactResolveMTLS": {
+                "attributeKey": "wantArtifactResolveMTLS",
+                "title": "Artifact Resolve",
+                "description": "Instructs the SP to send a client certificate along with the Artifact Resolve request.",
+                "type": "boolean",
+                "default": false
+              }
+            }
           }
         }
       },

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2022 ForgeRock AS.
+ * Copyright 2015-2023 ForgeRock AS.
  */
 
 var START_TIME = 9;  // 9am
@@ -48,7 +48,7 @@ function getLongitudeLatitudeFromUserPostalAddress() {
     var response = httpClient.send(request).get();
     logResponse(response);
 
-    var geocode = JSON.parse(response.getEntity());
+    var geocode = JSON.parse(response.getEntity().getString());
     var i;
     for (i = 0; i < geocode.results.length; i++) {
         var result = geocode.results[i];
@@ -74,7 +74,7 @@ function getLocalTime() {
     var response = httpClient.send(request).get();
     logResponse(response);
 
-    var timezone = JSON.parse(response.getEntity());
+    var timezone = JSON.parse(response.getEntity().getString());
     var localTimestamp = parseInt(now) + parseInt(timezone.dstOffset) + parseInt(timezone.rawOffset);
     localTime = new Date(localTimestamp*1000);
 }
@@ -89,5 +89,5 @@ function getUserPostalAddress() {
 }
 
 function logResponse(response) {
-    logger.message("User REST Call. Status: " + response.getStatus() + ", Body: " + response.getEntity());
+    logger.message("User REST Call. Status: " + response.getStatus() + ", Body: " + response.getEntity().getString());
 }

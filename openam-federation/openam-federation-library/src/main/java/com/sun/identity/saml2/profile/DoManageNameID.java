@@ -24,7 +24,7 @@
  *
  * $Id: DoManageNameID.java,v 1.26 2009/11/24 21:53:27 madan_ranganath Exp $
  *
- * Portions copyright 2013-2022 ForgeRock AS.
+ * Portions copyright 2013-2024 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -307,7 +307,7 @@ public class DoManageNameID {
                 } else {
                     config = metaManager.getSPSSOConfig(realm, remoteEntityID);
                 }
-                mniURL = SAML2Utils.fillInBasicAuthInfo(config, mniURL);
+                mniURL = SAML2Utils.fillInBasicAuthInfo(config, mniURL, realm);
                 if (!doMNIBySOAP(mniRequest, mniURL, metaAlias, hostEntityRole,
                     request, response)) {
                     throw new SAML2Exception(

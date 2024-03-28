@@ -24,7 +24,7 @@
  *
  * $Id: SubjectConfirmationDataImpl.java,v 1.5 2008/11/10 22:57:01 veiming Exp $
  *
- * Portions Copyrighted 2018-2021 ForgeRock AS.
+ * Portions Copyrighted 2018-2023 ForgeRock AS.
  */
 
 
@@ -40,6 +40,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -67,6 +68,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  *  relationship between an entity presenting the assertion and the
  *  subject of the assertion's claims.
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class SubjectConfirmationDataImpl implements SubjectConfirmationData {
     private static final Logger logger = LoggerFactory.getLogger(SubjectConfirmationDataImpl.class);
     public final String elementName = "SubjectConfirmationData";

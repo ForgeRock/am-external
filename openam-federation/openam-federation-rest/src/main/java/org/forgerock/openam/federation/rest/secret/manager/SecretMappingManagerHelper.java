@@ -11,20 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.federation.rest.secret.manager;
 
 import static com.sun.identity.saml2.common.SAML2Constants.SECRET_ID_IDENTIFIER;
 import static java.util.stream.Collectors.toSet;
+import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_BASICAUTH;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_ENCRYPTION;
+import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_MTLS;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_SIGNING;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -37,6 +38,7 @@ import org.forgerock.openam.secrets.config.PurposeMapping;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
 import org.forgerock.openam.sm.annotations.subconfigs.Multiple;
 import org.forgerock.openam.utils.CollectionUtils;
+import org.forgerock.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +64,11 @@ class SecretMappingManagerHelper {
             .substring(SAML2_ENTITY_ROLE_SIGNING.indexOf(FORMAT_SPECIFIER) + FORMAT_SPECIFIER.length());
     private static final String ENCRYPTION = SAML2_ENTITY_ROLE_ENCRYPTION
             .substring(SAML2_ENTITY_ROLE_ENCRYPTION.indexOf(FORMAT_SPECIFIER) + FORMAT_SPECIFIER.length());
+    private static final String BASICAUTH = SAML2_ENTITY_ROLE_BASICAUTH
+            .substring(SAML2_ENTITY_ROLE_BASICAUTH.indexOf(FORMAT_SPECIFIER) + FORMAT_SPECIFIER.length());
+
+    private static final String MTLS = SAML2_ENTITY_ROLE_MTLS
+            .substring(SAML2_ENTITY_ROLE_MTLS.indexOf(FORMAT_SPECIFIER) + FORMAT_SPECIFIER.length());
 
     private final AnnotatedServiceRegistry serviceRegistry;
 
@@ -76,20 +83,36 @@ class SecretMappingManagerHelper {
     }
 
     /**
-     * Get all the secret id identifiers associated with all the SAML2 entities in the given realm.
+     * Get all the secret id identifiers associated with all the hosted SAML2 entities in the given realm.
      *
-     * @param realm The realm in which the SAML2 entities resides.
-     * @return All secret id identifiers associated with all the entities in the realm.
-     * @throws SAML2MetaException should an issue occur when getting all the secret id identifiers.
+     * @param realm The realm in which the hosted SAML2 entities resides.
+     * @return All secret id identifiers associated with all the hosted entities in the realm.
+     * @throws SAML2MetaException should an issue occur when getting all the hosted secret id identifiers.
      */
-    Set<String> getAllEntitySecretIdIdentifiers(String realm) throws SAML2MetaException {
+    Set<String> getAllHostedEntitySecretIdIdentifiers(String realm) throws SAML2MetaException {
+        return getAllEntitySecretIdIdentifiers(realm, true);
+    }
+
+    /**
+     * Get all the secret id identifiers associated with all the remote SAML2 entities in the given realm.
+     *
+     * @param realm The realm in which the remote SAML2 entities resides.
+     * @return All secret id identifiers associated with all the remote entities in the realm.
+     * @throws SAML2MetaException should an issue occur when getting all the remote secret id identifiers.
+     */
+    Set<String> getAllRemoteEntitySecretIdIdentifiers(String realm) throws SAML2MetaException {
+        return getAllEntitySecretIdIdentifiers(realm, false);
+    }
+
+    private Set<String> getAllEntitySecretIdIdentifiers(String realm, boolean isHosted) throws SAML2MetaException {
         SAML2MetaManager saml2MetaManager = SAML2Utils.getSAML2MetaManager();
-        List<EntityConfigElement> entityConfigElements = saml2MetaManager.getAllHostedEntityConfigs(realm);
+        List<EntityConfigElement> entityConfigElements = isHosted ? saml2MetaManager.getAllHostedEntityConfigs(realm)
+                : saml2MetaManager.getAllRemoteEntityConfigs(realm);
         return entityConfigElements.stream()
                 .map(e -> e.getValue().getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig())
                 .flatMap(List::stream)
                 .map(this::getSecretIdIdentifier)
-                .filter(Objects::nonNull)
+                .filter(s -> !Strings.isNullOrEmpty(s))
                 .collect(toSet());
     }
 
@@ -109,22 +132,46 @@ class SecretMappingManagerHelper {
     }
 
     /**
-     * Checks if the given mapping id is SAML2 secret id mapping and verifies
-     * if it is not used any more.
+     * Checks if the given mapping id is SAML2 hosted entity secret id mapping and verifies
+     * if it is not used anymore.
      *
      * @param secretIdIdentifiers The available saml2 secret id identifiers.
      * @param mappingId The mapping id to check.
      * @return if the mapping id is un used secret id mapping or not.
      */
-    boolean isUnusedSecretMapping(Set<String> secretIdIdentifiers, String mappingId) {
-        if (mappingId.startsWith(SAML2_ENTITY_SECRET_LABEL_PREFIX)
-                && (mappingId.endsWith(SIGNING) || mappingId.endsWith(ENCRYPTION))) {
-            if (secretIdIdentifiers.isEmpty()) {
-                return true;
-            }
-            return secretIdIdentifiers.stream().noneMatch(mappingId::contains);
+    boolean isUnusedHostedEntitySecretMapping(Set<String> secretIdIdentifiers, String mappingId) {
+        if (!(mappingId.startsWith(SAML2_ENTITY_SECRET_LABEL_PREFIX)
+                && (mappingId.endsWith(SIGNING) || mappingId.endsWith(ENCRYPTION)) || mappingId.endsWith(MTLS))) {
+            return false;
         }
-        return false;
+        if (secretIdIdentifiers.isEmpty()) {
+            return true;
+        }
+
+        String secretIdFromMapping = getSecretIdFromMapping(mappingId);
+
+        return secretIdIdentifiers.stream().noneMatch(secretIdFromMapping::equals);
+    }
+
+    /**
+     * Checks if the given mapping id is SAML2 remote entity secret id mapping and verifies
+     * if it is not used anymore.
+     *
+     * @param secretIdIdentifiers The available saml2 secret id identifiers.
+     * @param mappingId The mapping id to check.
+     * @return if the mapping id is un used secret id mapping or not.
+     */
+    boolean isUnusedRemoteEntitySecretMapping(Set<String> secretIdIdentifiers, String mappingId) {
+        if (!(mappingId.startsWith(SAML2_ENTITY_SECRET_LABEL_PREFIX) && mappingId.endsWith(BASICAUTH))) {
+            return false;
+        }
+        if (secretIdIdentifiers.isEmpty()) {
+            return true;
+        }
+
+        String secretIdFromMapping = getSecretIdFromMapping(mappingId);
+
+        return secretIdIdentifiers.stream().noneMatch(secretIdFromMapping::equals);
     }
 
     /**
@@ -149,5 +196,10 @@ class SecretMappingManagerHelper {
             identifier = value.get(0);
         }
         return identifier;
+    }
+
+    private String getSecretIdFromMapping(String mapping) {
+        String mappingWithoutPrefix = mapping.substring(SAML2_ENTITY_SECRET_LABEL_PREFIX.length());
+        return mappingWithoutPrefix.substring(0, mappingWithoutPrefix.lastIndexOf("."));
     }
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.service.datastore.secret;
 
@@ -87,7 +87,7 @@ public class DataStoreSecretIdProvider implements SecretIdProvider {
                     .map(secretLabel -> String.format(EXTERNAL_DATASTORE_MTLS_CERT, secretLabel))
                     .collect(Collectors.toSet());
         } catch (SMSException | SSOException e) {
-            logger.warn("Unable to read external data store configurations; no secret ids will be available", e);
+            logger.warn("Unable to read external data store configurations; no secret labels will be available", e);
             return Collections.emptySet();
         }
     }

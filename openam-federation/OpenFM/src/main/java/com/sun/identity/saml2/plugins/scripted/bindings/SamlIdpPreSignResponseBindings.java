@@ -19,11 +19,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.RELAY_ST
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SAML2_RESPONSE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SESSION;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.forgerock.openam.scripting.domain.Binding;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 
 import com.sun.identity.saml2.protocol.Response;
 
@@ -45,30 +41,22 @@ final class SamlIdpPreSignResponseBindings extends BaseSamlIdpBindings {
         return new Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
+    @Override
+    public BindingsMap legacyBindings() {
+        BindingsMap bindings = new BindingsMap(legacyPreResponseBindings());
+        bindings.put(RELAY_STATE, relayState);
+        bindings.put(SAML2_RESPONSE, saml2Response);
+        bindings.put(SESSION, session);
+        return bindings;
     }
 
     @Override
-    public String getDisplayName() {
-        return "SAML IDP Pre-sign Response Bindings";
-    }
-
-    @Override
-    protected List<Binding> additionalV1Bindings() {
-        List<Binding> v1Bindings = new ArrayList<>(v1PreResponseBindings());
-        v1Bindings.addAll(List.of(
-                Binding.of(RELAY_STATE, relayState, String.class),
-                Binding.of(SAML2_RESPONSE, saml2Response, Response.class),
-                Binding.of(SESSION, session, Object.class)
-        ));
-        return v1Bindings;
+    public BindingsMap nextGenBindings() {
+        BindingsMap bindings = new BindingsMap(nextGenPreResponseBindings());
+        bindings.put(RELAY_STATE, relayState);
+        bindings.put(SAML2_RESPONSE, saml2Response);
+        bindings.put(SESSION, session);
+        return bindings;
     }
 
     /**

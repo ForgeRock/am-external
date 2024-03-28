@@ -24,10 +24,12 @@
  *
  * $Id: Cert.java,v 1.14 2009/03/13 20:54:42 beomsuk Exp $
  *
- * Portions Copyrighted 2013-2023 ForgeRock AS.
+ * Portions Copyrighted 2013-2024 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.modules.cert;
+
+import static org.forgerock.opendj.io.Asn1Tag.contextSpecific;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -511,11 +513,7 @@ public class Cert extends AMLoginModule {
                        amAuthCert_principlePasswd,
                        amAuthCert_startSearchLoc,
                        amAuthCert_uriParamsCRL,
-                       amAuthCert_useSSL.equalsIgnoreCase("true"));
-
-            ldapParam.setDoCRLCaching(doCRLCaching);
-            ldapParam.setDoCRLUpdate(doCRLUpdate);
-
+                       amAuthCert_useSSL.equalsIgnoreCase("true"), doCRLCaching, doCRLUpdate);
         } catch (Exception e) {
             debug.error("validate.SSLSocketFactory", e);
             setFailureID(userTokenId);
@@ -555,6 +553,12 @@ public class Cert extends AMLoginModule {
                             String oid = reader.readObjectIdentifier();
                             if (oid.equals(UPNOID)) {
                                 try (var upn = reader.readExplicitTag()) {
+                                    // Java getSubjectAlternativeNames for otherName may be doubly tagged
+                                    // Despite the cert ASN.1 shows otherwise
+                                    if (upn.hasNextElement() && upn.peekType() == contextSpecific().constructed()
+                                            .number(0)) {
+                                        upn.readExplicitTag();
+                                    }
                                     userTokenId = upn.readOctetStringAsString();
                                 }
                             }

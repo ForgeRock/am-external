@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2023 ForgeRock AS. All Rights Reserved
+ * Copyright 2011-2024 ForgeRock AS. All Rights Reserved
  * 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-federation</artifactId>
-        <version>7.4.0</version>
+        <version>7.5.0</version>
     </parent>
 
     <!-- Component Definition -->
@@ -52,6 +52,11 @@
                     <systemPropertyVariables>
                         <com.sun.identity.systemconfiguration>com.sun.identity.configuration.FedLibSystemProperties</com.sun.identity.systemconfiguration>
                     </systemPropertyVariables>
+                    <argLine>
+                        --add-exports java.xml/com.sun.org.apache.xerces.internal.dom=ALL-UNNAMED
+                        --add-exports java.xml/com.sun.org.apache.xerces.internal.jaxp=ALL-UNNAMED
+                        --add-exports java.xml/com.sun.org.apache.xerces.internal.util=ALL-UNNAMED
+                    </argLine>
                 </configuration>
                 <!--
                     Broken into multiple executions to support some tests running independently of other tests due
@@ -269,7 +274,7 @@
             <groupId>external</groupId>
             <artifactId>jaxrpc-impl</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-idpdiscovery</artifactId>
@@ -313,6 +318,30 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-test-utils</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-guice-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <version>${mockito-inline.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>service-config-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-http-client</artifactId>
         </dependency>
     </dependencies>
 </project>

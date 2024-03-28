@@ -20,7 +20,6 @@ import static com.google.inject.name.Names.named;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.forgerock.openam.secrets.config.SecretStoreConfigChangeListener;
 import org.forgerock.openam.services.datastore.DataStoreConsistencyController;
 import org.forgerock.openam.services.datastore.DataStoreLookup;
 import org.forgerock.openam.services.datastore.DataStoreService;
@@ -29,7 +28,6 @@ import org.forgerock.opendj.ldap.ConnectionFactory;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.MapBinder;
-import com.google.inject.multibindings.Multibinder;
 import com.iplanet.services.naming.ServiceListeners;
 import com.sun.identity.sm.DataStoreInitializer;
 import com.sun.identity.sm.SMSNotificationManager;
@@ -54,9 +52,6 @@ public class DataStoreGuiceModule extends AbstractModule {
         bind(DataStoreConsistencyController.class).to(ReentrantVolatileActionConsistencyController.class);
 
         MapBinder.newMapBinder(binder(), String.class, String.class, named(SERVICE_DATA_STORE_ID_ATTRIBUTE_NAMES));
-
-        Multibinder.newSetBinder(binder(), SecretStoreConfigChangeListener.class).addBinding()
-                .to(LdapDataStoreService.class);
     }
 
     /**

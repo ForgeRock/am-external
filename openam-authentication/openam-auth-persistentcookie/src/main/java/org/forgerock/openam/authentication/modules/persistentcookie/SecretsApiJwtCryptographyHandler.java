@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 package org.forgerock.openam.authentication.modules.persistentcookie;
 
@@ -110,7 +110,7 @@ public class SecretsApiJwtCryptographyHandler implements JwtCryptographyHandler 
         try {
             return new JwtEncryptionHandler(new JwtEncryptionOptions(secretsProvider, ENCRYPTION_ALGORITHM,
                     ENCRYPTION_METHOD))
-                    .buildEncryptedThenSignedJwt(jwtBuilderFactory, PERSISTENT_COOKIE_ENCRYPTION, instanceId);
+                    .buildEncryptedJwt(jwtBuilderFactory, PERSISTENT_COOKIE_ENCRYPTION, instanceId);
         } catch (NoSuchSecretException nse) {
             throw new RuntimeException("No active secret for encryption using " + PERSISTENT_COOKIE_ENCRYPTION
                     + " for " + instanceId);

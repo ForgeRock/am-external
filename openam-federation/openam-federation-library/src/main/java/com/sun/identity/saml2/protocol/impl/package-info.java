@@ -24,10 +24,13 @@
  *
  * $Id: package-info.java,v 1.3 2008/06/25 05:48:01 qcheng Exp $
  *
+ * Portions Copyrighted 2023 ForgeRock AS.
  */
 
 /**
- * SAMLv2 Protocol Implemenetation Classes.
- *
+ * SAMLv2 Protocol Implementation Classes.
  */
+@Supported
 package com.sun.identity.saml2.protocol.impl;
+
+import org.forgerock.openam.annotations.Supported;

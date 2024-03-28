@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -65,6 +65,9 @@ import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.ldap.AffinityLevel;
+import org.forgerock.openam.ldap.ConnectionFactoryAuditWrapper;
+import org.forgerock.openam.ldap.ConnectionFactoryAuditWrapperFactory;
 import org.forgerock.openam.ldap.LDAPAuthUtils;
 import org.forgerock.openam.ldap.LDAPUtilException;
 import org.forgerock.openam.ldap.LDAPUtils;
@@ -119,6 +122,7 @@ public class LdapDecisionNode implements Node {
     private final LegacyIdentityService identityService;
     private final Realm realm;
     private final Secrets secrets;
+    private final ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory;
     private ResourceBundle bundle;
     private LDAPAuthUtils ldapUtil;
     private Set<String> additionalPwdChangeSearchAttrs;
@@ -339,6 +343,17 @@ public class LdapDecisionNode implements Node {
         default boolean mixedCaseForPasswordChangeMessages() {
             return false;
         }
+
+        /**
+         * Determines the level of connection affinity with LDAP server(s) when making requests.
+         * @see AffinityLevel
+         *
+         * @return the affinity level
+         */
+        @Attribute(order = 2000)
+        default AffinityLevel affinityLevel() {
+            return AffinityLevel.NONE;
+        }
     }
 
     /**
@@ -430,20 +445,23 @@ public class LdapDecisionNode implements Node {
     /**
      * Constructs a new {@link LdapDecisionNode} with the provided {@link Config}.
      *
-     * @param config          provides the settings for initialising an {@link LdapDecisionNode}.
-     * @param realm           The current realm.
-     * @param coreWrapper     A core wrapper instance.
-     * @param identityService An {@link LegacyIdentityService} instance.
-     * @param secrets         A Secrets instance.
+     * @param config                               provides the settings for initialising an {@link LdapDecisionNode}.
+     * @param realm                                The current realm.
+     * @param coreWrapper                          A core wrapper instance.
+     * @param identityService                      An {@link LegacyIdentityService} instance.
+     * @param secrets                              A Secrets instance.
+     * @param connectionFactoryAuditWrapperFactory A factory for creating {@link ConnectionFactoryAuditWrapper}.
      */
     @Inject
     public LdapDecisionNode(@Assisted Config config, @Assisted Realm realm, CoreWrapper coreWrapper,
-            LegacyIdentityService identityService, Secrets secrets) {
+            LegacyIdentityService identityService, Secrets secrets,
+            ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory) {
         this.config = config;
         this.realm = realm;
         this.coreWrapper = coreWrapper;
         this.identityService = identityService;
         this.secrets = secrets;
+        this.connectionFactoryAuditWrapperFactory = connectionFactoryAuditWrapperFactory;
     }
 
     @Override
@@ -481,7 +499,7 @@ public class LdapDecisionNode implements Node {
                 if (!userStatus.equalsIgnoreCase(STATUS_ACTIVE)) {
                     ldapUtil.setState(ModuleState.ACCOUNT_LOCKED);
                 }
-                action = processLogin(ldapUtil.getState(), newState, context);
+                action = processLogin(ldapUtil.getState(), newState, context, username);
             } else {
                 logger.debug("processing password change");
                 action = processPasswordChange(context, sharedStateSubmittedUsername, userPassword);
@@ -636,6 +654,7 @@ public class LdapDecisionNode implements Node {
             ldapUtil = coreWrapper.getLDAPAuthUtils(config.primaryServers(), config.secondaryServers(),
                     isSecure, bundle, baseDn, DEBUG);
             ldapUtil.setScope(searchScope);
+            ldapUtil.setConnectionFactoryAuditWrapperFactory(connectionFactoryAuditWrapperFactory);
             if (config.userSearchFilter().isPresent()) {
                 ldapUtil.setFilter(config.userSearchFilter().get());
             }
@@ -665,6 +684,7 @@ public class LdapDecisionNode implements Node {
             ldapUtil.setHeartBeatInterval(config.heartbeatInterval());
             ldapUtil.setHeartBeatTimeUnit(config.heartbeatTimeUnit().toString());
             ldapUtil.setOperationTimeout(config.ldapOperationsTimeout());
+            ldapUtil.setAffinityLevel(config.affinityLevel());
             additionalPwdChangeSearchAttrs = config.additionalPasswordChangeSearchAttributes();
 
             logger.debug("bindDN-> " + config.returnUserDn()
@@ -686,7 +706,8 @@ public class LdapDecisionNode implements Node {
                                    + "\nheartBeatInterval-> " + config.heartbeatInterval()
                                    + "\nheartBeatTimeUnit-> " + config.heartbeatTimeUnit()
                                    + "\noperationTimeout-> " + config.ldapOperationsTimeout()
-                                   + "\nadditionalPasswordChangeSearchAttributes-> " + additionalPwdChangeSearchAttrs);
+                                   + "\nadditionalPasswordChangeSearchAttributes-> " + additionalPwdChangeSearchAttrs
+                                   + "\naffinityLevel-> " + config.affinityLevel());
         } catch (LDAPUtilException e) {
             logger.warn("Init Exception");
             throw new NodeProcessException(bundle.getString("NoServer"), e);
@@ -713,9 +734,12 @@ public class LdapDecisionNode implements Node {
         return password;
     }
 
-    private ActionBuilder processLogin(ModuleState loginState, JsonValue newState, TreeContext context) throws
-            NodeProcessException {
+    private ActionBuilder processLogin(ModuleState loginState, JsonValue newState, TreeContext context, String username)
+            throws NodeProcessException {
         ActionBuilder loginResult = goTo(LdapOutcome.TRUE);
+        if (username != null) {
+            loginResult.withIdentifiedIdentity(username, USER);
+        }
         ResourceBundle bundle = context.request.locales
                 .getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
         logger.debug("loginState {}", loginState);

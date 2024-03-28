@@ -11,12 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.sns;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.core.realms.RealmLookup;
+import org.forgerock.openam.secrets.Secrets;
 import org.forgerock.openam.services.push.PushNotificationServiceConfig;
 import org.forgerock.openam.services.push.PushNotificationServiceConfigHelper;
 import org.forgerock.openam.services.push.PushNotificationServiceConfigHelperFactory;
@@ -45,9 +47,22 @@ public class SnsRegistrationPredicate extends AbstractPredicate {
             = InjectorHolder.getInstance(PushNotificationServiceConfigHelperFactory.class);
 
     @JsonIgnore
+    private final RealmLookup realmLookup = InjectorHolder.getInstance(RealmLookup.class);
+    @JsonIgnore
+    private final Secrets secrets = InjectorHolder.getInstance(Secrets.class);
+
+    @JsonIgnore
     private final SnsPushResponseUpdater responseUpdater;
 
     private String realm;
+
+    /**
+     * Default constructor for the SnsRegistrationPredicate, used for serialization and deserialization
+     * purposes.
+     */
+    public SnsRegistrationPredicate() {
+        responseUpdater = new SnsPushResponseUpdater(new SnsClientFactory(secrets, realmLookup));
+    }
 
     /**
      * Generate a new SnsRegistrationPredicate, which will use the supplied realm to read the config
@@ -77,20 +92,12 @@ public class SnsRegistrationPredicate extends AbstractPredicate {
         try {
             configHelper = configHelperFactory.getConfigHelperFor(realm);
             config = configHelper.getConfig();
-            responseUpdater.updateResponse(config, content);
+            responseUpdater.updateResponse(config, content, realm);
         } catch (SSOException | SMSException e) {
             return false;
         }
 
         return true;
-    }
-
-    /**
-     * Default constructor for the SnsRegistrationPredicate, used for serialization and deserialization
-     * purposes.
-     */
-    public SnsRegistrationPredicate() {
-        responseUpdater = new SnsPushResponseUpdater(new SnsClientFactory());
     }
 
     /**

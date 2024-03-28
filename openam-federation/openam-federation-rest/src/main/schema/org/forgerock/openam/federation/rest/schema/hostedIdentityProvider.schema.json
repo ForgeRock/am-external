@@ -111,24 +111,7 @@
                 "title": "NameID Value Map",
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "properties": {
-                    "key": {
-                      "title": "Key",
-                      "propertyOrder": 0,
-                      "type": "string"
-                    },
-                    "value": {
-                      "title": "Value",
-                      "propertyOrder": 1,
-                      "type": "string"
-                    },
-                    "binary": {
-                      "title": "Binary",
-                      "propertyOrder": 2,
-                      "type": "boolean"
-                    }
-                  }
+                  "$ref": "definitions.json#/nameIdValueMap"
                 },
                 "default": [
                   {

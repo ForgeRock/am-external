@@ -24,11 +24,12 @@
  *
  * $Id: NameIDImplWithoutSPNameQualifier.java,v 1.2 2008/06/25 05:47:44 qcheng Exp $
  *
- * Portions Copyrighted 2015-2021 ForgeRock AS.
+ * Portions Copyrighted 2015-2023 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.assertion.impl;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -43,7 +44,8 @@ import com.sun.identity.saml2.common.SAML2Exception;
  *  such as <code>Subject</code> and <code>SubjectConfirmation</code>
  *  elements, and in various protocol messages.
  */
-public class NameIDImplWithoutSPNameQualifier extends NameIDImpl 
+@SupportedAll(scriptingApi = true, javaApi = false)
+public class NameIDImplWithoutSPNameQualifier extends NameIDImpl
     implements NameID {
 
     private static final Logger logger = LoggerFactory.getLogger(NameIDImplWithoutSPNameQualifier.class);

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.oidc;
@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import javax.inject.Provider;
-import javax.script.Bindings;
 import javax.servlet.http.HttpServletRequest;
 
 import org.forgerock.json.JsonValue;
@@ -52,9 +51,9 @@ import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
-import org.forgerock.openam.secrets.Secrets;
-import org.forgerock.openam.secrets.SecretsProviderFacade;
+import org.forgerock.openam.secrets.cache.SecretReferenceCache;
 import org.forgerock.openam.sm.annotations.adapters.ExampleValue;
+import org.forgerock.openam.sm.annotations.adapters.SecretPurpose;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.secrets.GenericSecret;
 import org.forgerock.secrets.Purpose;
@@ -96,25 +95,25 @@ public class OidcNode extends AbstractDecisionNode {
      * @param realm                        Realm for the node
      * @param sessionServiceProvider       provides Sessions.
      * @param oidcIdTokenJwtHandlerFactory Factory for producing OidcIdTokenJwtHandler
-     * @param secretsProvider              Secrets provider for the node
      * @param scriptEvaluatorFactory       Factory for the scriptEvaluator
+     * @param secretReferenceCache         The secret reference cache
      * @throws NodeProcessException when an error occurs while processing the node
      */
     @Inject
     public OidcNode(@Assisted Config config,
             @Assisted Realm realm,
             OidcIdTokenJwtHandlerFactory oidcIdTokenJwtHandlerFactory,
-            Secrets secretsProvider,
             ScriptEvaluatorFactory scriptEvaluatorFactory,
-            Provider<SessionService> sessionServiceProvider) throws NodeProcessException {
+            Provider<SessionService> sessionServiceProvider,
+            SecretReferenceCache secretReferenceCache) throws NodeProcessException {
         this.config = config;
         this.realm = realm;
         this.sessionServiceProvider = sessionServiceProvider;
-        SecretsProviderFacade secretsProviderFacade = secretsProvider.getRealmSecrets(realm);
         // Set up the needed configuration for the client secret validation method
         SecretReference<GenericSecret> secret = null;
         if (config.oidcValidationType().equals(OpenIdValidationType.CLIENT_SECRET)) {
-            secret = secretsProviderFacade.createActiveReference(getSecretPurpose());
+            secret = secretReferenceCache.realm(realm).active(this.config.secretId()
+                    .orElseThrow(() -> new NodeProcessException("Client Secret Id is empty in node configuration")));
         }
         this.jwtHandler = oidcIdTokenJwtHandlerFactory.createOidcIdTokenJwtHandler(config, Optional.ofNullable(secret));
         this.scriptEvaluator = scriptEvaluatorFactory.create(SOCIAL_IDP_PROFILE_TRANSFORMATION);
@@ -175,46 +174,21 @@ public class OidcNode extends AbstractDecisionNode {
                     .withJwtClaims(inputData)
                     .withNodeState(context.getStateFor(this))
                     .withHeaders(convertHeadersToModifiableObjects(context.request.headers))
-                    .withRealm(realm.asPath())
                     .withExistingSession(StringUtils.isNotEmpty(context.request.ssoTokenId)
                             ? getSessionProperties(sessionServiceProvider.get(), context.request.ssoTokenId)
                             : null)
-                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME,
-                            script.getId(), script.getName()))
-                    .withScriptName(script.getName())
                     .build();
 
-            Bindings binding = scriptBindings.convert(script.getEvaluatorVersion());
+            ScriptEvaluator.ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script,
+                    scriptBindings, realm);
+            logger.debug("script {} \n binding {}", script, scriptResult.getBindings());
 
-            JsonValue output = evaluateScript(script, binding);
-            logger.debug("script {} \n binding {}", script, binding);
-
-            return output;
+            return (JsonValue) (script.getLanguage().equals(ScriptingLanguage.JAVASCRIPT)
+                    ? ((NativeJavaObject) scriptResult.getScriptReturnValue()).unwrap()
+                    : scriptResult.getScriptReturnValue());
         } catch (javax.script.ScriptException e) {
             logger.warn("Error evaluating the script", e);
             throw new NodeProcessException(e);
-        }
-    }
-
-    private JsonValue evaluateScript(Script script, Bindings binding) throws javax.script.ScriptException {
-        if (script.getLanguage().equals(ScriptingLanguage.JAVASCRIPT)) {
-            NativeJavaObject result = scriptEvaluator.evaluateScript(script, binding, realm);
-            return (JsonValue) result.unwrap();
-        } else {
-            return scriptEvaluator.evaluateScript(script, binding, realm);
-        }
-    }
-
-    /**
-     * Create a new promise from the given configuration.
-     *
-     * @return An instance of Purpose, created using configured secret id and GenericSecret
-     */
-    private Purpose<GenericSecret> getSecretPurpose() throws NodeProcessException {
-        if (config.secretId().isPresent()) {
-            return Purpose.purpose(config.secretId().get(), GenericSecret.class);
-        } else {
-            throw new NodeProcessException("Client Secret Id is empty in node configuration");
         }
     }
 
@@ -278,7 +252,8 @@ public class OidcNode extends AbstractDecisionNode {
          */
         @Attribute(order = 300)
         @ExampleValue("clientsecret")
-        Optional<String> secretId();
+        @SecretPurpose("%s")
+        Optional<Purpose<GenericSecret>> secretId();
 
         /**
          * The name of header referencing the ID token.

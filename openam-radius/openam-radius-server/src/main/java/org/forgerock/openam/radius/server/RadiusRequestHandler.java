@@ -12,7 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions copyright 2015-2019 ForgeRock AS.
+ * Portions copyright 2015-2024 ForgeRock AS.
  */
 package org.forgerock.openam.radius.server;
 
@@ -37,7 +37,6 @@ import org.forgerock.services.TransactionId;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import com.google.common.eventbus.EventBus;
 
@@ -63,12 +62,6 @@ public class RadiusRequestHandler implements Runnable {
     private final RadiusRequestContext requestContext;
 
     /**
-     * If an exception occurs while handling this request then an exception will be thrown which will be made available
-     * to the calling thread via this field.
-     */
-    private volatile RadiusProcessingException exception;
-
-    /**
      * The event bus is used by handlers and by this class to notify listeners of events occurring with the lifetime of
      * a radius request.
      */
@@ -77,7 +70,7 @@ public class RadiusRequestHandler implements Runnable {
     /**
      * factory that will attempt to construct the access request handler class.
      */
-    private AccessRequestHandlerFactory accessRequestHandlerFactory;
+    private final AccessRequestHandlerFactory accessRequestHandlerFactory;
 
     /**
      * Constructs a request handler.
@@ -115,7 +108,6 @@ public class RadiusRequestHandler implements Runnable {
             // This sets the request context so that when the OpenAM auth chains etc use the AuditRequestContext they
             // will use the same transaction id. This means log entries across the audit logs can be tied up.
             setAuditRequestContext(new AuditRequestContext(new TransactionId(requestId)));
-            MDC.put("transactionId", requestId);
 
             LOG.debug("Entering RadiusRequestHandler.run();");
             final Packet requestPacket = getValidPacket(buffer);
@@ -160,13 +152,11 @@ public class RadiusRequestHandler implements Runnable {
             }
 
         } catch (final Exception t) {
-            final StringBuilder sb = new StringBuilder(
-                    "Exception occured while handling radius request for RADIUS client '").append(getClientName())
-                    .append("'. Rejecting access.");
-            LOG.error(sb.toString(), t);
+            String sb = "Exception occurred while handling radius request for RADIUS client '"
+                    + getClientName() + "'. Rejecting access.";
+            LOG.error(sb, t);
 
             this.sendAccessReject(requestContext);
-            return;
         }
     }
 
@@ -192,7 +182,7 @@ public class RadiusRequestHandler implements Runnable {
             case ACCOUNTING_RESPONSE:
                 break;
             default:
-                LOG.warn("Unexpected type of responsePacket;", responsePacket.getType().toString());
+                LOG.warn("Unexpected type of responsePacket: {}", responsePacket.getType().toString());
                 break;
             }
         }
@@ -208,21 +198,20 @@ public class RadiusRequestHandler implements Runnable {
      * @return the <code>AccessRequest</code> object, or null if one could not be derived from requestPacket.
      */
     private AccessRequest createAccessRequest(Packet requestPacket) {
-        AccessRequest accessRequest = null;
         try {
-            accessRequest = (AccessRequest) requestPacket;
+            return (AccessRequest) requestPacket;
         } catch (final ClassCastException c) {
             // should never happen
-            final StringBuilder sb = new StringBuilder("Received packet of type ACCESS_REQUEST from RADIUS client '")
-                    .append(getClientName()).append("' but unable to cast to AccessRequest. Rejecting access.");
-            LOG.error(sb.toString(), c);
+            String sb = "Received packet of type ACCESS_REQUEST from RADIUS client '"
+                    + getClientName() + "' but unable to cast to AccessRequest. Rejecting access.";
+            LOG.error(sb, c);
             try {
                 requestContext.send(new AccessReject());
             } catch (final RadiusProcessingException e) {
                 LOG.warn("Failed to send AccessReject() response to client.");
             }
+            return null;
         }
-        return accessRequest;
     }
 
     /**
@@ -263,9 +252,7 @@ public class RadiusRequestHandler implements Runnable {
      * @param rre
      */
     private void handleResponseException(RadiusProcessingException rre, RadiusRequestContext reqCtx) {
-        final StringBuilder sb = new StringBuilder("Failed to process a radius request for RADIUS client '")
-                .append(reqCtx.getClientName()).append("'.");
-        LOG.error(sb.toString());
+        LOG.error("Failed to process a radius request for RADIUS client '" + reqCtx.getClientName() + "'.");
 
         if (rre.getNature() == RadiusProcessingExceptionNature.TEMPORARY_FAILURE) {
             sendAccessReject(reqCtx);

@@ -24,7 +24,7 @@
  *
  * $Id: LogoutUtil.java,v 1.16 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2012-2022 ForgeRock AS.
+ * Portions Copyrighted 2012-2024 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -301,7 +301,7 @@ public class LogoutUtil {
                 logger.debug(classMethod + "SLO Request after signing : ");
                 logger.debug(logoutReq.toXMLString(true, true));
             }
-            location = SAML2Utils.fillInBasicAuthInfo(config, location);
+            location = SAML2Utils.fillInBasicAuthInfo(config, location, realm);
 
             doSLOBySOAP(requestID, logoutReq, location, realm, requesterEntityID, hostEntityRole, request, response);
         } else if (binding.equals(SAML2Constants.HTTP_POST)) {

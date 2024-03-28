@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2021 ForgeRock AS.
+ * Copyright 2015-2024 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.common;
@@ -36,6 +36,7 @@ import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPFault;
 import javax.xml.soap.SOAPMessage;
 
+import org.forgerock.http.protocol.Response;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -408,5 +409,29 @@ public class SOAPCommunicator {
             debug.debug("SOAPCommunicator.getHeaders: Header=" + headers.toString());
         }
         return headers;
+    }
+
+    /**
+     * Returns SOAPMessage from a {@link Response}
+     *
+     * @param response response the http response
+     * @return the SOAP message from the response
+     * @throws SOAPException if the SOAP message from the response is invalid
+     * @throws IOException if there is a problem reading data from the response entity
+     */
+    public SOAPMessage getSOAPMessage(Response response) throws SOAPException, IOException {
+        if (response == null) {
+            throw new SOAPException("Attempt to get SOAP message from null response");
+        }
+
+        // Transfer headers
+        MimeHeaders mimeHeaders = new MimeHeaders();
+        response.getHeaders().asMapOfHeaders().forEach((k,v) -> mimeHeaders.addHeader(v.getName(), v.getFirstValue()));
+
+        // Get response entity as input stream
+        InputStream is = response.getEntity().getRawContentInputStream();
+
+        // Create and return SOAPMessage
+        return messageFactory.createMessage(mimeHeaders, is);
     }
 }

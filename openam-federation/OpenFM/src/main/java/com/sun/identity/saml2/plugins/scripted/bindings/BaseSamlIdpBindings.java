@@ -19,34 +19,30 @@ package com.sun.identity.saml2.plugins.scripted.bindings;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.AUTHN_REQUEST;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.HOSTED_ENTITYID;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.IDP_ADAPTER_SCRIPT_HELPER;
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REALM;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REQUEST;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REQ_ID;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.RESPONSE;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-import org.forgerock.openam.scripting.domain.Binding;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 
 import com.sun.identity.saml2.plugins.scripted.IdpAdapterScriptHelper;
+import com.sun.identity.saml2.plugins.scripted.wrappers.IdpAdapterHelperScriptWrapper;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 
 /**
  * Script bindings for the SamlIdp script.
  */
-abstract class BaseSamlIdpBindings extends ScriptBindings {
+abstract class BaseSamlIdpBindings implements ScriptBindings {
 
     protected final AuthnRequest authnRequest;
     protected final String hostedEntityId;
     protected final IdpAdapterScriptHelper idpAdapterScriptHelper;
-    protected final String realm;
     protected final String relayState;
     protected final HttpServletRequest request;
     protected final String requestId;
@@ -59,11 +55,9 @@ abstract class BaseSamlIdpBindings extends ScriptBindings {
      * @param builder The builder.
      */
     protected BaseSamlIdpBindings(Builder builder) {
-        super(builder);
         this.authnRequest = builder.authnRequest;
         this.hostedEntityId = builder.hostedEntityId;
         this.idpAdapterScriptHelper = builder.idpAdapterScriptHelper;
-        this.realm = builder.realm;
         this.relayState = builder.relayState;
         this.request = builder.request;
         this.requestId = builder.requestId;
@@ -71,33 +65,45 @@ abstract class BaseSamlIdpBindings extends ScriptBindings {
         this.session = builder.session;
     }
 
-    protected List<Binding> v1CommonBindings() {
-        return List.of(
-                Binding.of(HOSTED_ENTITYID, hostedEntityId, String.class),
-                Binding.of(REALM, realm, String.class),
-                Binding.of(IDP_ADAPTER_SCRIPT_HELPER, idpAdapterScriptHelper, IdpAdapterScriptHelper.class)
-        );
+    protected BindingsMap legacyCommonBindings() {
+        BindingsMap bindings = new BindingsMap();
+        bindings.put(HOSTED_ENTITYID, hostedEntityId);
+        bindings.put(IDP_ADAPTER_SCRIPT_HELPER, idpAdapterScriptHelper);
+        return bindings;
     }
 
-    protected List<Binding> v1PreResponseBindings() {
-        List<Binding> preResponseBindings = new ArrayList<>(v1CommonBindings());
-        preResponseBindings.addAll(
-                List.of(
-                        Binding.of(REQUEST, request, HttpServletRequest.class),
-                        Binding.of(AUTHN_REQUEST, authnRequest, AuthnRequest.class)
-                )
-        );
+    protected BindingsMap legacyPreResponseBindings() {
+        BindingsMap preResponseBindings = new BindingsMap(legacyCommonBindings());
+        preResponseBindings.put(REQUEST, request);
+        preResponseBindings.put(AUTHN_REQUEST, authnRequest);
         return preResponseBindings;
     }
 
-    protected List<Binding> v1RequestBindings() {
-        List<Binding> requestBindings = new ArrayList<>(v1PreResponseBindings());
-        requestBindings.addAll(
-                List.of(
-                        Binding.of(RESPONSE, response, HttpServletResponse.class),
-                        Binding.of(REQ_ID, requestId, String.class)
-                )
-        );
+    protected BindingsMap legacyRequestBindings() {
+        BindingsMap requestBindings = new BindingsMap(legacyPreResponseBindings());
+        requestBindings.put(RESPONSE, response);
+        requestBindings.put(REQ_ID, requestId);
+        return requestBindings;
+    }
+
+    protected BindingsMap nextGenCommonBindings() {
+        BindingsMap bindings = new BindingsMap();
+        bindings.put(HOSTED_ENTITYID, hostedEntityId);
+        bindings.put(IDP_ADAPTER_SCRIPT_HELPER, new IdpAdapterHelperScriptWrapper(idpAdapterScriptHelper));
+        return bindings;
+    }
+
+    protected BindingsMap nextGenPreResponseBindings() {
+        BindingsMap preResponseBindings = new BindingsMap(nextGenCommonBindings());
+        preResponseBindings.put(REQUEST, request);
+        preResponseBindings.put(AUTHN_REQUEST, authnRequest);
+        return preResponseBindings;
+    }
+
+    protected BindingsMap nextGenRequestBindings() {
+        BindingsMap requestBindings = new BindingsMap(nextGenPreResponseBindings());
+        requestBindings.put(RESPONSE, response);
+        requestBindings.put(REQ_ID, requestId);
         return requestBindings;
     }
 
@@ -137,26 +143,19 @@ abstract class BaseSamlIdpBindings extends ScriptBindings {
     }
 
     /**
-     * Interface utilised by the fluent builder to define step 2 in generating the SamlIdpAdapterCommonBindings.
-     */
-    public interface SamlIdpAdapterCommonBindingsStep2 {
-        SamlIdpAdapterCommonBindingsStep3 withRealm(String realm);
-    }
-
-    /**
      * Interface utilised by the fluent builder to define step 3 in generating the SamlIdpAdapterCommonBindings.
      */
-    public interface SamlIdpAdapterCommonBindingsStep3 {
-        ScriptBindingsStep1 withIdpAdapterScriptHelper(IdpAdapterScriptHelper idpAdapterScriptHelper);
+    public interface SamlIdpAdapterCommonBindingsStep2 {
+        Builder withIdpAdapterScriptHelper(IdpAdapterScriptHelper idpAdapterScriptHelper);
     }
 
     /**
      * Builder object to construct a {@link BaseSamlIdpBindings}.
      */
-    public abstract static class Builder<T extends Builder<T>> extends ScriptBindings.Builder<T> implements
+    public abstract static class Builder<T extends Builder<T>> implements
             SamlIdpAdapterRequestBindingsStep1, SamlIdpAdapterRequestBindingsStep2,
             SamlIdpAdapterPreResponseBindingsStep1, SamlIdpAdapterPreResponseBindingsStep2,
-            SamlIdpAdapterCommonBindingsStep1, SamlIdpAdapterCommonBindingsStep2, SamlIdpAdapterCommonBindingsStep3 {
+            SamlIdpAdapterCommonBindingsStep1, SamlIdpAdapterCommonBindingsStep2 {
         protected AuthnRequest authnRequest;
         protected String hostedEntityId;
         protected IdpAdapterScriptHelper idpAdapterScriptHelper;
@@ -195,19 +194,8 @@ abstract class BaseSamlIdpBindings extends ScriptBindings {
          * @param idpAdapterScriptHelper The {@link IdpAdapterScriptHelper}.
          * @return The next step of the builder.
          */
-        public ScriptBindingsStep1 withIdpAdapterScriptHelper(IdpAdapterScriptHelper idpAdapterScriptHelper) {
+        public Builder withIdpAdapterScriptHelper(IdpAdapterScriptHelper idpAdapterScriptHelper) {
             this.idpAdapterScriptHelper = idpAdapterScriptHelper;
-            return this;
-        }
-
-        /**
-         * Set the realm for the builder.
-         *
-         * @param realm The realm as String.
-         * @return The next step of the builder.
-         */
-        public SamlIdpAdapterCommonBindingsStep3 withRealm(String realm) {
-            this.realm = realm;
             return this;
         }
 
@@ -285,5 +273,11 @@ abstract class BaseSamlIdpBindings extends ScriptBindings {
         private HttpServletResponse wrapResponse(HttpServletResponse response) {
             return new HttpServletResponseWrapper(response);
         }
+
+        protected final T self() {
+            return (T) this;
+        }
+
+        public abstract BaseSamlIdpBindings build();
     }
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -31,9 +31,8 @@ import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.json.jose.jws.SignedJwt;
 import org.forgerock.json.jose.jws.SigningManager;
 import org.forgerock.json.jose.jwt.JwtClaimsSetKey;
-import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.jwt.JwtClaimsValidationHandler;
 import org.forgerock.openam.jwt.JwtClaimsValidationOptions;
 import org.forgerock.openam.utils.Time;
@@ -80,14 +79,13 @@ public interface DeviceBinding {
     /**
      * Retrieve the value from TreeContext.
      *
-     * @param node The Authentication Node
-     * @param context The TreeContext
+     * @param nodeState The NodeState
      * @param key The key in the Context
      * @return The Value
      * @throws NodeProcessException When there is no value with the provided key
      */
-    default String getContextValue(Node node, TreeContext context, String key) throws NodeProcessException {
-        JsonValue value = context.getStateFor(node).get(key);
+    default String getContextValue(NodeState nodeState, String key) throws NodeProcessException {
+        JsonValue value = nodeState.get(key);
         if (value == null) {
             throw new NodeProcessException(key + " missing from shared state");
         }
@@ -125,10 +123,10 @@ public interface DeviceBinding {
      * Validate the signature of the signedJwt with the provided jwk.
      *
      * @param signedJwt The JWT to be validated
-     * @param jwk The JWK for verification
+     * @param jwk       The JWK for verification
      * @throws NoSuchSecretException When no such secret for the Verification Key
-     * @throws SignatureException Invalid signature
-     * @throws InvalidKeyException Invalid Key
+     * @throws SignatureException    Invalid signature
+     * @throws InvalidKeyException   Invalid Key
      */
     default void validateSignature(SignedJwt signedJwt, JWK jwk) throws NoSuchSecretException,
             SignatureException, InvalidKeyException {
@@ -151,7 +149,7 @@ public interface DeviceBinding {
      *
      * @param signedJwt The JWT to be validated
      * @param challenge The signing challenge
-     * @param issuers the accepted issuers
+     * @param issuers   the accepted issuers
      */
     default void validateClaim(SignedJwt signedJwt, String challenge, Set<String> issuers) {
         //Validate Claim
@@ -171,6 +169,33 @@ public interface DeviceBinding {
                         })
                         .setIssuerRequired(false);
         new JwtClaimsValidationHandler<>(validationOptions, signedJwt.getClaimsSet()).validateClaims();
+    }
+
+    /**
+     * Error reason enum.
+     */
+    enum FailureReason {
+        /**
+         * Invalid Claim.
+         */
+        INVALID_CLAIM,
+
+        /**
+         * Invalid User.
+         */
+        INVALID_USER,
+        /**
+         * User not active.
+         */
+        NOT_ACTIVE_USER,
+        /**
+         * Invalid Subject.
+         */
+        INVALID_SUBJECT,
+        /**
+         * Invalid Signature.
+         */
+        INVALID_SIGNATURE,
     }
 
 }

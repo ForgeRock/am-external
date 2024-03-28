@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2023 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -21,6 +21,10 @@ package org.forgerock.openam.auth.node.api;
  */
 public enum Namespace {
 
+    /**
+     * Namespace used for nodes created in the node designer service.
+     */
+    DESIGNER("designer"),
     /**
      * Denotes a service introduced into the core AM product after originally
      * being present in a Marketplace plugin.

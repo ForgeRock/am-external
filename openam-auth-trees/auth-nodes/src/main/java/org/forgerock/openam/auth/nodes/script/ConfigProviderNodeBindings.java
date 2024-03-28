@@ -20,7 +20,6 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HEADERS
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HTTP_CLIENT_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.ID_REPO_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.QUERY_PARAMETER_IDENTIFIER;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.REALM_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.SECRETS_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_IDENTIFIER;
 
@@ -30,24 +29,22 @@ import java.util.Map;
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
-import org.forgerock.openam.scripting.domain.Binding;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 
 /**
  * Script bindings for the ConfigProviderNode script.
  */
-public final class ConfigProviderNodeBindings extends ScriptBindings {
+public final class ConfigProviderNodeBindings implements ScriptBindings {
 
     private final NodeState nodeState;
     private final ScriptIdentityRepository identityRepository;
     private final ScriptedSecrets secrets;
     private final Map<String, List<String>> headers;
     private final ChfHttpClient httpClient;
-    private final String realm;
     private final Object existingSession;
     private final Map<String, List<String>> queryParameters;
-
 
     /**
      * Constructor for ConfigProviderNodeBindings.
@@ -55,13 +52,11 @@ public final class ConfigProviderNodeBindings extends ScriptBindings {
      * @param builder The builder.
      */
     private ConfigProviderNodeBindings(Builder builder) {
-        super(builder);
         nodeState = builder.nodeState;
         identityRepository = builder.identityRepository;
         secrets = builder.secrets;
         headers = builder.headers;
         httpClient = builder.httpClient;
-        realm = builder.realm;
         queryParameters = builder.queryParameters;
         existingSession = builder.existingSession;
     }
@@ -75,33 +70,17 @@ public final class ConfigProviderNodeBindings extends ScriptBindings {
         return new ConfigProviderNodeBindings.Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
-    }
-
     @Override
-    public String getDisplayName() {
-        return "Config Provider Node Bindings";
-    }
-
-    @Override
-    protected List<Binding> additionalV1Bindings() {
-        return List.of(
-                Binding.of(STATE_IDENTIFIER, nodeState, NodeState.class),
-                Binding.of(ID_REPO_IDENTIFIER, identityRepository, ScriptIdentityRepository.class),
-                Binding.of(SECRETS_IDENTIFIER, secrets, ScriptedSecrets.class),
-                Binding.of(HEADERS_IDENTIFIER, headers, Map.class),
-                Binding.of(HTTP_CLIENT_IDENTIFIER, httpClient, ChfHttpClient.class),
-                Binding.of(REALM_IDENTIFIER, realm, String.class),
-                Binding.ofMayBeUndefined(EXISTING_SESSION, existingSession, Map.class),
-                Binding.of(QUERY_PARAMETER_IDENTIFIER, queryParameters, Map.class)
-        );
+    public BindingsMap legacyBindings() {
+        BindingsMap bindings = new BindingsMap();
+        bindings.put(STATE_IDENTIFIER, nodeState);
+        bindings.put(ID_REPO_IDENTIFIER, identityRepository);
+        bindings.put(SECRETS_IDENTIFIER, secrets);
+        bindings.put(HEADERS_IDENTIFIER, headers);
+        bindings.put(HTTP_CLIENT_IDENTIFIER, httpClient);
+        bindings.putIfDefined(EXISTING_SESSION, existingSession);
+        bindings.put(QUERY_PARAMETER_IDENTIFIER, queryParameters);
+        return bindings;
     }
 
     /**
@@ -174,12 +153,12 @@ public final class ConfigProviderNodeBindings extends ScriptBindings {
      */
     public interface ConfigProviderNodeBindingsStep6 {
         /**
-         * Sets the realm.
+         * Sets query parameters.
          *
-         * @param realm the realm
+         * @param queryParameters the query parameters
          * @return the next step of the {@link Builder}
          */
-        ConfigProviderNodeBindingsStep7 withRealm(String realm);
+        ConfigProviderNodeBindingsStep7 withQueryParameters(Map<String, List<String>> queryParameters);
     }
 
     /**
@@ -187,44 +166,34 @@ public final class ConfigProviderNodeBindings extends ScriptBindings {
      */
     public interface ConfigProviderNodeBindingsStep7 {
         /**
-         * Sets query parameters.
-         *
-         * @param queryParameters the query parameters
-         * @return the next step of the {@link Builder}
-         */
-        ConfigProviderNodeBindingsStep8 withQueryParameters(Map<String, List<String>> queryParameters);
-    }
-
-    /**
-     * Step 8 of the builder.
-     */
-    public interface ConfigProviderNodeBindingsStep8 extends ScriptBindingsStep1 {
-        /**
          * Sets the existing session.
          *
          * @param existingSession the existing session
          * @return the next step of the {@link Builder}
          */
-        ConfigProviderNodeBindingsStep8 withExistingSession(Map<String, String> existingSession);
+        Builder withExistingSession(Map<String, String> existingSession);
     }
 
     /**
      * Builder object to construct a {@link ConfigProviderNodeBindings}.
      */
-    private static final class Builder extends ScriptBindings.Builder<Builder> implements
+    public static final class Builder implements
             ConfigProviderNodeBindingsStep1, ConfigProviderNodeBindingsStep2, ConfigProviderNodeBindingsStep3,
             ConfigProviderNodeBindingsStep4, ConfigProviderNodeBindingsStep5, ConfigProviderNodeBindingsStep6,
-            ConfigProviderNodeBindingsStep7, ConfigProviderNodeBindingsStep8 {
+            ConfigProviderNodeBindingsStep7 {
         private NodeState nodeState;
         private ScriptIdentityRepository identityRepository;
         private ScriptedSecrets secrets;
         private Map<String, List<String>> headers;
         private ChfHttpClient httpClient;
-        private String realm;
         private Map<String, String> existingSession;
         private Map<String, List<String>> queryParameters;
 
-        @Override
+        /**
+         * Creates the {@link ConfigProviderNodeBindings} from the configured attributes.
+         *
+         * @return an instance of {@link ConfigProviderNodeBindings}.
+         */
         public ConfigProviderNodeBindings build() {
             return new ConfigProviderNodeBindings(this);
         }
@@ -285,23 +254,12 @@ public final class ConfigProviderNodeBindings extends ScriptBindings {
         }
 
         /**
-         * Set the realm for the builder.
-         *
-         * @param realm The realm path.
-         * @return The next step of the builder.
-         */
-        public ConfigProviderNodeBindingsStep7 withRealm(String realm) {
-            this.realm = realm;
-            return this;
-        }
-
-        /**
          * Set the existingSession for the builder.
          *
          * @param existingSession The existingSession.
          * @return The next step of the builder.
          */
-        public ConfigProviderNodeBindingsStep8 withExistingSession(Map<String, String> existingSession) {
+        public Builder withExistingSession(Map<String, String> existingSession) {
             this.existingSession = existingSession;
             return this;
         }
@@ -312,7 +270,7 @@ public final class ConfigProviderNodeBindings extends ScriptBindings {
          * @param queryParameters The queryParameters.
          * @return The next step of the builder.
          */
-        public ConfigProviderNodeBindingsStep8 withQueryParameters(Map<String, List<String>> queryParameters) {
+        public Builder withQueryParameters(Map<String, List<String>> queryParameters) {
             this.queryParameters = queryParameters;
             return this;
         }

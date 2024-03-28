@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -30,6 +30,7 @@ import org.forgerock.openam.auth.nodes.saml2.Saml2Node;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnAuthenticationNode;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnDeviceStorageNode;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnRegistrationNode;
+import org.forgerock.openam.auth.nodes.x509.CertificateValidationNode;
 import org.forgerock.openam.plugins.PluginException;
 import org.forgerock.openam.plugins.PluginTools;
 import org.junit.Before;
@@ -70,43 +71,57 @@ public class NodesPluginTest {
     private static Object[] upgradeDataProvider() {
         return new Object[][]{
                 {"12.0.0", LdapDecisionNode.class,
-                        PushAuthenticationSenderNode.class },
+                        PushAuthenticationSenderNode.class, CertificateValidationNode.class,
+                        OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
+                        PersistentCookieDecisionNode.class, DeviceSigningVerifierNode.class, CaptchaNode.class},
                 {"11.0.0", CombinedMultiFactorRegistrationNode.class, LdapDecisionNode.class,
-                        PushAuthenticationSenderNode.class},
-                {"10.0.0", KbaCreateNode.class, LdapDecisionNode.class,
-                        PushAuthenticationSenderNode.class},
-                {"9.0.0", KbaCreateNode.class, LdapDecisionNode.class, Saml2Node.class, OathRegistrationNode.class,
-                        PushAuthenticationSenderNode.class},
-                {"8.0.0", KbaCreateNode.class, LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
+                        PushAuthenticationSenderNode.class, OneTimePasswordSmsSenderNode.class,
+                        OneTimePasswordSmtpSenderNode.class, CertificateValidationNode.class,
+                        PersistentCookieDecisionNode.class, CaptchaNode.class},
+                {"10.0.0", LdapDecisionNode.class, PushAuthenticationSenderNode.class,
+                        OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
+                        CertificateValidationNode.class, PersistentCookieDecisionNode.class, CaptchaNode.class},
+                {"9.0.0", LdapDecisionNode.class, Saml2Node.class, OathRegistrationNode.class,
+                        PushAuthenticationSenderNode.class, OneTimePasswordSmsSenderNode.class,
+                        OneTimePasswordSmtpSenderNode.class, CertificateValidationNode.class,
+                        PersistentCookieDecisionNode.class, CaptchaNode.class},
+                {"8.0.0", LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class, OathRegistrationNode.class,
                         PushRegistrationNode.class, ChoiceCollectorNode.class, MessageNode.class,
-                        SocialProviderHandlerNode.class},
-                {"7.0.0", KbaCreateNode.class, LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
+                        OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
+                        CertificateValidationNode.class, PersistentCookieDecisionNode.class},
+                {"7.0.0", LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class, OathRegistrationNode.class,
                         PushRegistrationNode.class, ChoiceCollectorNode.class, MessageNode.class,
-                        SocialProviderHandlerNode.class, RetryLimitDecisionNode.class,
-                        OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class},
-                {"6.0.0", KbaCreateNode.class, LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
+                        RetryLimitDecisionNode.class,
+                        OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
+                        CertificateValidationNode.class, PersistentCookieDecisionNode.class},
+                {"6.0.0", LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class,
                         PushRegistrationNode.class, ChoiceCollectorNode.class, MessageNode.class,
-                        SocialProviderHandlerNode.class, RetryLimitDecisionNode.class,
-                        OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class},
-                {"5.0.0", KbaCreateNode.class, LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
+                        RetryLimitDecisionNode.class, OneTimePasswordSmsSenderNode.class,
+                        OneTimePasswordSmtpSenderNode.class, CertificateValidationNode.class,
+                        PersistentCookieDecisionNode.class},
+                {"5.0.0", LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class, ChoiceCollectorNode.class,
-                        MessageNode.class, SocialProviderHandlerNode.class, RetryLimitDecisionNode.class,
+                        MessageNode.class, RetryLimitDecisionNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
-                        WebAuthnAuthenticationNode.class},
+                        WebAuthnAuthenticationNode.class, CertificateValidationNode.class,
+                        PersistentCookieDecisionNode.class},
                 {"4.0.0", LdapDecisionNode.class, WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class,
                         ChoiceCollectorNode.class, MessageNode.class, RetryLimitDecisionNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
-                        WebAuthnAuthenticationNode.class, ScriptedDecisionNode.class},
+                        WebAuthnAuthenticationNode.class, ScriptedDecisionNode.class,
+                        PersistentCookieDecisionNode.class},
                 {"3.0.0", LdapDecisionNode.class, WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class,
                         ChoiceCollectorNode.class, MessageNode.class, RetryLimitDecisionNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
-                        WebAuthnAuthenticationNode.class, ScriptedDecisionNode.class},
+                        WebAuthnAuthenticationNode.class, ScriptedDecisionNode.class,
+                        PersistentCookieDecisionNode.class},
                 {"2.0.0", LdapDecisionNode.class, PushAuthenticationSenderNode.class, ChoiceCollectorNode.class,
                         RetryLimitDecisionNode.class, OneTimePasswordSmsSenderNode.class,
-                        OneTimePasswordSmtpSenderNode.class, ScriptedDecisionNode.class},
+                        OneTimePasswordSmtpSenderNode.class, ScriptedDecisionNode.class,
+                        PersistentCookieDecisionNode.class},
                 {"1.0.0", ChoiceCollectorNode.class, ScriptedDecisionNode.class, ZeroPageLoginNode.class},
                 {"0.0.0", new Class[]{} },
         };

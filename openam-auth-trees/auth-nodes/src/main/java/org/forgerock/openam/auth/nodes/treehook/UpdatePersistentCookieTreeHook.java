@@ -11,28 +11,37 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.treehook;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
-import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.http.protocol.Cookie;
 import org.forgerock.http.protocol.Request;
 import org.forgerock.http.protocol.Response;
 import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.openam.auth.node.api.TreeHook;
 import org.forgerock.openam.auth.node.api.TreeHookException;
-import org.forgerock.openam.auth.nodes.jwt.PersistentJwtProvider;
 import org.forgerock.openam.auth.nodes.PersistentCookieDecisionNode;
 import org.forgerock.openam.auth.nodes.jwt.InvalidPersistentJwtException;
+import org.forgerock.openam.auth.nodes.jwt.JwtHeaderUtilities;
 import org.forgerock.openam.auth.nodes.jwt.PersistentJwtStringSupplier;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.secrets.cache.SecretCache;
+import org.forgerock.openam.secrets.cache.SecretReferenceCache;
+import org.forgerock.secrets.NoSuchSecretException;
+import org.forgerock.secrets.SecretReference;
+import org.forgerock.secrets.ValidSecretsReference;
+import org.forgerock.secrets.keys.SigningKey;
+import org.forgerock.secrets.keys.VerificationKey;
+import org.forgerock.util.promise.NeverThrowsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,27 +56,34 @@ public class UpdatePersistentCookieTreeHook implements TreeHook {
     private final Request request;
     private final Response response;
     private final PersistentCookieDecisionNode.Config config;
-    private final PersistentJwtProvider persistentJwtProvider;
     private final PersistentJwtStringSupplier persistentJwtStringSupplier;
     private final PersistentCookieResponseHandler persistentCookieResponseHandler;
     private final Logger logger = LoggerFactory.getLogger(UpdatePersistentCookieTreeHook.class);
+    private final SecretCache secretCache;
 
     /**
      * The UpdatePersistentCookieTreeHook Constructor.
      *
-     * @param request The request.
-     * @param response The response.
-     * @param config the config for updating the cookie.
+     * @param request                         The request.
+     * @param response                        The response.
+     * @param config                          The config for updating the cookie.
+     * @param realm                           The realm.
+     * @param persistentJwtStringSupplier     The persistentJwtStringSupplier.
+     * @param persistentCookieResponseHandler The persistentCookieResponseHandler.
+     * @param secretReferenceCache            The secretReferenceCache.
      */
     @Inject
-    public UpdatePersistentCookieTreeHook(@Assisted Request request, @Assisted Response response,
-                                          @Assisted PersistentCookieDecisionNode.Config config) {
+    UpdatePersistentCookieTreeHook(@Assisted Request request, @Assisted Response response,
+            @Assisted PersistentCookieDecisionNode.Config config, @Assisted Realm realm,
+            PersistentJwtStringSupplier persistentJwtStringSupplier,
+            PersistentCookieResponseHandler persistentCookieResponseHandler,
+            SecretReferenceCache secretReferenceCache) {
         this.request = request;
         this.response = response;
         this.config = config;
-        this.persistentJwtProvider = InjectorHolder.getInstance(PersistentJwtProvider.class);
-        this.persistentJwtStringSupplier = InjectorHolder.getInstance(PersistentJwtStringSupplier.class);
-        this.persistentCookieResponseHandler = InjectorHolder.getInstance(PersistentCookieResponseHandler.class);
+        this.persistentJwtStringSupplier = persistentJwtStringSupplier;
+        this.persistentCookieResponseHandler = persistentCookieResponseHandler;
+        this.secretCache = secretReferenceCache.realm(realm);
     }
 
     @Override
@@ -75,34 +91,51 @@ public class UpdatePersistentCookieTreeHook implements TreeHook {
         logger.debug("UpdatePersistentCookieTreeHook.accept");
         String orgName = PersistentCookieResponseHandler.getOrgName(response);
         Cookie originalJwt = getJwtCookie(request, config.persistentCookieName());
-        if (originalJwt != null) {
-            String jwtString;
-            Date expirationTime;
-            try {
-                jwtString = persistentJwtStringSupplier.getUpdatedJwt(originalJwt.getValue(), orgName,
-                        String.valueOf(config.hmacSigningKey()), config.idleTimeout().to(TimeUnit.HOURS));
-                Jwt jwt = persistentJwtProvider.getValidDecryptedJwt(jwtString, orgName,
-                        String.valueOf(config.hmacSigningKey()));
-                expirationTime = jwt.getClaimsSet().getExpirationTime();
-            } catch (InvalidPersistentJwtException e) {
-                logger.error("Invalid jwt", e);
-                throw new TreeHookException(e);
-            }
+        if (originalJwt == null) {
+            return;
+        }
+        Date expirationTime;
+        Optional<String> kid = JwtHeaderUtilities.getHeader("kid", originalJwt.getValue());
+        SecretReference<SigningKey> signingKeySecretReference = config.signingKeyReference(secretCache);
+        ValidSecretsReference<VerificationKey, NeverThrowsException> verificationKeysReference =
+                config.verificationKeysReference(kid.orElse(null), secretCache);
+        Jwt jwt = getUpdatedJwt(originalJwt, orgName, signingKeySecretReference, verificationKeysReference);
+        if (jwt == null) {
+            throw new TreeHookException("Jwt reconstruction error");
+        }
+        expirationTime = jwt.getClaimsSet().getExpirationTime();
 
-            if (jwtString != null && !jwtString.isEmpty()) {
-                persistentCookieResponseHandler.setCookieOnResponse(response, request, config.persistentCookieName(),
-                        jwtString, expirationTime, config.useSecureCookie(), config.useHttpOnlyCookie());
-            }
+        String jwtString = jwt.build();
+        if (jwtString != null && !jwtString.isEmpty()) {
+            persistentCookieResponseHandler.setCookieOnResponse(response, request,
+                    config.persistentCookieName(),
+                    jwtString, expirationTime, config.useSecureCookie(), config.useHttpOnlyCookie());
+        }
+    }
+
+    private Jwt getUpdatedJwt(Cookie jwtCookie, String orgName,
+            SecretReference<SigningKey> signingKeyReference, ValidSecretsReference<VerificationKey,
+            NeverThrowsException> verificationKeysReference) {
+        try {
+            return persistentJwtStringSupplier.getUpdatedJwt(jwtCookie.getValue(), orgName,
+                    signingKeyReference, verificationKeysReference, config.idleTimeout().to(TimeUnit.HOURS));
+        } catch (InvalidPersistentJwtException e) {
+            logger.error("Attempt to verify JWT failed");
+            return null;
+        } catch (NoSuchSecretException e) {
+            logger.error("Could not find signing key");
+            return null;
         }
     }
 
     private Cookie getJwtCookie(Request request, String cookieName) {
-        if (request.getCookies().containsKey(cookieName)) {
-            List<Cookie> cookies = request.getCookies().get(cookieName);
-            for (Cookie cookie : cookies) {
-                if (cookie.getName().equals(cookieName)) {
-                    return cookie;
-                }
+        if (!request.getCookies().containsKey(cookieName)) {
+            return null;
+        }
+        List<Cookie> cookies = request.getCookies().get(cookieName);
+        for (Cookie cookie : cookies) {
+            if (cookie.getName().equals(cookieName)) {
+                return cookie;
             }
         }
         return null;

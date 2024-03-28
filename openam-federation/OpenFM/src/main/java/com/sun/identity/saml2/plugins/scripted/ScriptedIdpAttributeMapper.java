@@ -21,9 +21,9 @@ import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_AT
 
 import java.util.List;
 
-import javax.script.Bindings;
 import javax.script.ScriptException;
 
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.core.realms.RealmLookupException;
 import org.forgerock.openam.scripting.application.ScriptEvaluationHelper;
@@ -56,7 +56,6 @@ public class ScriptedIdpAttributeMapper implements IDPAttributeMapper {
     @Inject
     public ScriptedIdpAttributeMapper(ScriptEvaluatorFactory scriptEvaluatorFactory,
             ScriptStoreFactory scriptStoreFactory, ScriptEvaluationHelper scriptEvaluationHelper,
-
             ValidationHelper validationHelper, RealmLookup realmLookup) {
         this.scriptEvaluator = scriptEvaluatorFactory.create(SAML2_IDP_ATTRIBUTE_MAPPER);
         this.scriptStoreFactory = scriptStoreFactory;
@@ -78,19 +77,13 @@ public class ScriptedIdpAttributeMapper implements IDPAttributeMapper {
             ScriptBindings scriptBindings = SamlIdpAttributeMapperBindings.builder()
                     .withHostedEntityId(hostedEntityId)
                     .withIdpAttributeMapperScriptHelper(new IdpAttributeMapperScriptHelper())
-                    .withRealm(realm)
                     .withRemoteEntityId(remoteEntityId)
                     .withSession(session)
-                    .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ATTRIBUTE_MAPPER.name(),
-                            script.getId(), script.getName()))
-                    .withScriptName(script.getName())
                     .build();
 
-            Bindings scriptVariables = scriptBindings.convert(script.getEvaluatorVersion());
-
-            return scriptEvaluationHelper.evaluateScript(scriptEvaluator, script, scriptVariables, List.class,
-                    realmLookup.lookup(realm)).orElse(emptyList());
-        } catch (ScriptException | org.forgerock.openam.scripting.domain.ScriptException | RealmLookupException e) {
+            return scriptEvaluationHelper.evaluateScript(scriptEvaluator, script, scriptBindings, List.class,
+                    getRealm(realm)).orElse(emptyList());
+        } catch (ScriptException | org.forgerock.openam.scripting.domain.ScriptException e) {
             throw new SAML2Exception(e);
         }
     }
@@ -99,8 +92,12 @@ public class ScriptedIdpAttributeMapper implements IDPAttributeMapper {
             throws org.forgerock.openam.scripting.domain.ScriptException {
         String idpAttributeMapperScript = IDPSSOUtil.getAttributeValueFromIDPSSOConfig(realm, hostedEntityID,
                 SAML2Constants.IDP_ATTRIBUTE_MAPPER_SCRIPT);
+        return scriptStoreFactory.create(getRealm(realm)).get(idpAttributeMapperScript);
+    }
+
+    private Realm getRealm(String realm) {
         try {
-            return scriptStoreFactory.create(realmLookup.lookup(realm)).get(idpAttributeMapperScript);
+            return realmLookup.lookup(realm);
         } catch (RealmLookupException e) {
             throw new IllegalArgumentException("Cannot find realm " + realm, e);
         }

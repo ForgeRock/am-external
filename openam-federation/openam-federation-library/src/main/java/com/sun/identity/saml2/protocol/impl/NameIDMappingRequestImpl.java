@@ -24,7 +24,7 @@
  *
  * $Id: NameIDMappingRequestImpl.java,v 1.3 2008/11/10 22:57:03 veiming Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
@@ -33,6 +33,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_U
 
 import java.util.ListIterator;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -49,6 +50,7 @@ import com.sun.identity.saml2.protocol.NameIDPolicy;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.shared.xml.XMLUtils;
 
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class NameIDMappingRequestImpl extends RequestAbstractImpl
     implements NameIDMappingRequest {
 

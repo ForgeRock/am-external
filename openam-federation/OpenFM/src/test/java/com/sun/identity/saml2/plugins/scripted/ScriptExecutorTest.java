@@ -19,35 +19,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.UUID;
 
-import javax.script.Bindings;
-import javax.script.SimpleBindings;
-
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.scripting.application.ScriptEvaluationHelper;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.ScriptStore;
 import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockedStatic;
+import org.mockito.MockitoAnnotations;
 
 import com.sun.identity.saml2.common.SAML2Utils;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SAML2Utils.class, ScriptExecutor.class})
 public class ScriptExecutorTest {
     private static final UUID scriptId = UUID.randomUUID();
     private static final String exampleScript = "exampleScript";
@@ -72,13 +68,16 @@ public class ScriptExecutorTest {
     @Mock
     private Script script;
 
+    private MockedStatic<SAML2Utils> saml2UtilsMockedStatic;
+
     // Class under test
     private ScriptExecutor executor;
 
     @Before
     public void setup() throws Exception {
+        MockitoAnnotations.openMocks(this).close();
         executor = new ScriptExecutor(scriptStoreFactory, realmLookup, scriptEvaluationHelper);
-        PowerMockito.mockStatic(SAML2Utils.class);
+        saml2UtilsMockedStatic = mockStatic(SAML2Utils.class);
         Realm mockRealm = mock(Realm.class);
         // Given
         when(realmLookup.lookup(realm)).thenReturn(mockRealm);
@@ -88,9 +87,14 @@ public class ScriptExecutorTest {
         when(scriptStore.get(scriptAttributeValue)).thenReturn(scriptConfiguration(scriptId.toString()));
     }
 
+    @After
+    public void tearDown() {
+        saml2UtilsMockedStatic.close();
+    }
+
     @Test
     public void testEvaluateVoidScriptFunction() throws Exception {
-        Bindings bindings = new SimpleBindings();
+        ScriptBindings bindings = mock(ScriptBindings.class);
         executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, bindings, function);
 
         verifyScriptEvaluation(bindings, null);
@@ -98,7 +102,7 @@ public class ScriptExecutorTest {
 
     @Test
     public void testEvaluateScriptFunction() throws Exception {
-        Bindings bindings = new SimpleBindings();
+        ScriptBindings bindings = mock(ScriptBindings.class);
         executor.evaluateScriptFunction(scriptEvaluator, script, realm, bindings, function);
 
         verifyScriptEvaluation(bindings, Boolean.class);
@@ -111,7 +115,7 @@ public class ScriptExecutorTest {
         assertThat(script.getName()).isEqualTo(scriptName);
     }
 
-    private void verifyScriptEvaluation(Bindings bindings, Class returnType) throws Exception {
+    private void verifyScriptEvaluation(ScriptBindings bindings, Class returnType) throws Exception {
         if (returnType == null) {
             verify(scriptEvaluationHelper, times(1)).evaluateFunction(eq(scriptEvaluator), eq(script), eq(bindings),
                     eq(function), any(Realm.class));

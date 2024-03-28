@@ -4,14 +4,14 @@
   "title": "Definitions for entity providers",
   "secretIdAndAlgorithms": {
     "traverseObject": true,
-    "title": "Secret ID And Algorithms",
+    "title": "Secret Label And Algorithms",
     "type": "object",
     "properties": {
       "secretIdIdentifier": {
         "type": "string",
         "attributeKey": "secretIdIdentifier",
-        "title": "Secret ID Identifier",
-        "description": "This identifier determines the secret ID for this entity provider when resolving secrets. For example when this value is set to \"demo\", the entity provider will use am.applications.federation.entity.providers.saml2.demo.signing and am.applications.federation.entity.providers.saml2.demo.encryption secret IDs to resolve the signing and encryption secrets. When left unspecified, AM will use the entity provider role (service provider, identity provider, etc.) specific default global secret IDs. When the secret ID identifier for a given role is modified, the corresponding mapping is removed if it isn’t referenced by other entities."
+        "title": "Secret Label Identifier",
+        "description": "This identifier determines the secret label for this entity provider when resolving secrets. For example when this value is set to \"demo\", the entity provider will use am.applications.federation.entity.providers.saml2.demo.signing and am.applications.federation.entity.providers.saml2.demo.encryption secret labels to resolve the signing and encryption secrets. When left unspecified, AM will use the entity provider role (service provider, identity provider, etc.) specific default global secret labels. When the secret label identifier for a given role is modified, the corresponding mapping is removed if it isn’t referenced by other entities."
       },
       "signingAlgorithm": {
         "title": "Signing Algorithm",
@@ -141,6 +141,19 @@
       "effectiveTime": {
         "type": "integer",
         "minimum": 0
+      }
+    }
+  },
+  "secrets": {
+    "traverseObject": true,
+    "title": "Secrets",
+    "type": "object",
+    "properties": {
+      "secretIdIdentifier": {
+        "type": "string",
+        "attributeKey": "secretIdIdentifier",
+        "title": "Secret Label Identifier",
+        "description": "This identifier determines the secret label for this entity provider when resolving secrets. For example when this value is set to \"demo\" and is used for a \"purpose\", the entity provider will use am.applications.federation.entity.providers.saml2.demo.purpose secret label to resolve the secret. When the secret label identifier for a given role is modified, the corresponding mappings are removed if they aren’t referenced by other entities."
       }
     }
   },
@@ -456,7 +469,8 @@
       "binary": {
         "title": "Binary",
         "propertyOrder": 3,
-        "type": "boolean"
+        "type": "boolean",
+        "default": false
       }
     },
     "required": [
@@ -497,6 +511,28 @@
           "FORM"
         ],
         "default": "URI"
+      }
+    }
+  },
+  "nameIdValueMap": {
+    "javaType": "org.forgerock.openam.federation.rest.schema.shared.NameIdValueMap",
+    "type": "object",
+    "properties": {
+      "key": {
+        "title": "Key",
+        "propertyOrder": 0,
+        "type": "string"
+      },
+      "value": {
+        "title": "Value",
+        "propertyOrder": 1,
+        "type": "string"
+      },
+      "binary": {
+        "title": "Binary",
+        "propertyOrder": 2,
+        "type": "boolean",
+        "default": false
       }
     }
   }

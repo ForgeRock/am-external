@@ -24,9 +24,11 @@
  *
  * $Id: SAML2SDKUtils.java,v 1.12 2008/08/31 05:49:48 bina Exp $
  *
- * Portions copyright 2014-2022 ForgeRock AS.
+ * Portions copyright 2014-2024 ForgeRock AS.
  */
 package com.sun.identity.saml2.common;
+
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -34,6 +36,7 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import javax.xml.bind.JAXBElement;
@@ -47,10 +50,12 @@ import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 
+import com.google.common.base.Strings;
 import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.saml.common.SAMLUtilsCommon;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
+import com.sun.identity.saml2.secrets.BasicAuthSecrets;
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
 import com.sun.identity.shared.locale.Locale;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -584,7 +589,6 @@ public class SAML2SDKUtils {
         return sb.toString();
     }
 
-
     /**
      * Fills in basic auth user and password inside the location URL
      * if configuration is done properly
@@ -596,56 +600,67 @@ public class SAML2SDKUtils {
      * @return The modified location URL with the basic auth user
      *         and password if configured properly
      */
+    public static String fillInBasicAuthInfo(JAXBElement<BaseConfigType> config, String locationURL) {
+        return fillInBasicAuthInfo(config, locationURL, "");
+    }
+
+
+    /**
+     * Fills in basic auth user and password inside the location URL
+     * if configuration is done properly.  It will retrieve the password
+     * from the realm's secret store if the secret mapping is set.
+     * @param config Either an SPSSOConfigElement object , an
+     *               IDPSSOConfigElement object or PEPConfigElement.
+     * @param locationURL The original location URL which is to be
+     *                    inserted with user:password@ before the
+     *                    hostname part and after //
+     * @param realm the realm in which the secret mapping is to be looked up.
+     * @return The modified location URL with the basic auth user
+     *         and password if configured properly
+     */
     public static String fillInBasicAuthInfo(
             JAXBElement<BaseConfigType> config,
-            String locationURL) {
+            String locationURL,
+            String realm) {
 
         if (config == null) {
             return locationURL;
         }
-        Map map = SAML2MetaUtils.getAttributes(config);
-        List baoList = (List)map.get(
+        Map<String, List<String>> map = SAML2MetaUtils.getAttributes(config);
+        List<String> baoList = map.get(
                 SAML2Constants.BASIC_AUTH_ON);
         if (baoList == null || baoList.isEmpty()) {
             return locationURL;
         }
-        String on = (String)baoList.get(0);
+        String on = baoList.get(0);
         if (on == null) {
             return locationURL;
         }
         on = on.trim();
-        if (on.length() == 0 || !on.equalsIgnoreCase("true")) {
+        if (!on.equalsIgnoreCase("true")) {
             return locationURL;
         }
-        List ul =  (List)map.get(
+        List<String> ul = map.get(
                 SAML2Constants.BASIC_AUTH_USER);
 
         if (ul == null || ul.isEmpty()) {
             return locationURL;
         }
-        String u = (String) ul.get(0);
+        String u = ul.get(0);
         if (u == null) {
             return locationURL;
         }
         u = u.trim();
-        if (u.length() == 0) {
+        if (u.isEmpty()) {
             return locationURL;
         }
-        List pl = (List)map.get(
-                SAML2Constants.BASIC_AUTH_PASSWD);
-        String p = null;
-        if (pl != null && !pl.isEmpty()) {
-            p = (String) pl.get(0);
-        }
-        if (p == null) {
-            p = "";
-        }
 
-        String dp = SAMLUtilsCommon.decodePassword(p);
+        // Attempt to get password from Secrets
+        String p = getBasicAuthPasswordFromSecrets(map, realm).orElseGet(() -> getBasicAuthPassword(map));
 
         int index = locationURL.indexOf("//");
         return locationURL.substring(0, index+2) +
-                u + ":" + dp + "@" +
+                u + ":" + p + "@" +
                 locationURL.substring(index+2);
     }
 
@@ -724,5 +739,44 @@ public class SAML2SDKUtils {
      */
     public static boolean isSAMLDecryptionDebugEnabled() {
         return SystemPropertiesManager.getAsBoolean(SAML2Constants.SAML_DECRYPTION_DEBUG_MODE);
+    }
+
+    /**
+     * Fetches the basic auth password from the attribute map.
+     * @param map attribute value pairs from {@link BaseConfigType}.
+     * @return the basic auth password
+     */
+    private static String getBasicAuthPassword(Map<String, List<String>> map) {
+        List<String> pl = map.get(
+                SAML2Constants.BASIC_AUTH_PASSWD);
+        if (pl != null && !pl.isEmpty()) {
+            String p = pl.get(0);
+            return SAMLUtilsCommon.decodePassword(p);
+        }
+        return "";
+    }
+
+    /**
+     * Fetches the basic auth password from secrets if it exists.
+     * @param map attribute value pairs from {@link BaseConfigType}.
+     * @param realm the realm in which the secret mapping is to be looked up.
+     * @return the basic auth password if it can be retrieved from secrets as an {@link Optional}<{@link String}>.
+     */
+    private static Optional<String> getBasicAuthPasswordFromSecrets(Map<String, List<String>> map, String realm) {
+        if (Strings.isNullOrEmpty(realm)) {
+            return Optional.empty();
+        }
+        List<String> el = map.get(
+                SAML2Constants.SECRET_ID_IDENTIFIER);
+        if (el == null || el.isEmpty()) {
+            return Optional.empty();
+        }
+        String secretIDIdentifier = el.get(0);
+        Optional<char[]> pass = Optional.empty();
+        if (!isBlank(secretIDIdentifier)) {
+            pass = new BasicAuthSecrets()
+                    .getBasicAuthPassword(realm, secretIDIdentifier);
+        }
+        return pass.map(String::valueOf);
     }
 }

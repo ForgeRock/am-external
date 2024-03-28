@@ -18,6 +18,8 @@ package org.forgerock.openam.service.datastore;
 
 import static com.sun.identity.shared.Constants.LDAP_SM_HEARTBEAT_INTERVAL;
 
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Set;
 
 import org.forgerock.openam.ldap.ConnectionConfig;
@@ -120,6 +122,37 @@ public final class DataStoreConfig implements ConnectionConfig {
 
     public static Builder builder(DataStoreId id) {
         return new Builder(id);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        DataStoreConfig that = (DataStoreConfig) o;
+        return minimumConnectionPool == that.minimumConnectionPool
+                && maximumConnectionPool == that.maximumConnectionPool
+                && useSsl == that.useSsl
+                && useStartTLS == that.useStartTLS
+                && affinityEnabled == that.affinityEnabled
+                && dataStoreEnabled == that.dataStoreEnabled
+                && mtlsEnabled == that.mtlsEnabled
+                && Objects.equals(id, that.id)
+                && Objects.equals(serverUrls, that.serverUrls)
+                && Objects.equals(bindDN, that.bindDN)
+                && Arrays.equals(bindPassword, that.bindPassword)
+                && Objects.equals(mtlsSecretId, that.mtlsSecretId);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(id, serverUrls, bindDN, minimumConnectionPool, maximumConnectionPool, useSsl,
+                useStartTLS, affinityEnabled, dataStoreEnabled, mtlsEnabled, mtlsSecretId);
+        result = 31 * result + Arrays.hashCode(bindPassword);
+        return result;
     }
 
     /**

@@ -11,18 +11,23 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2021-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.oauth.clients.oauth2.OAuth2Client.HTTP_POST;
 import static org.forgerock.openam.auth.node.api.Action.send;
+import static org.forgerock.openam.utils.CollectionUtils.getFirstItem;
+import static org.forgerock.openam.utils.StringUtils.isBlank;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -41,13 +46,27 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.validators.DecimalBetweenZeroAndOneValidator;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.secrets.cache.SecretReferenceCache;
+import org.forgerock.openam.sm.AnnotatedServiceRegistry;
+import org.forgerock.openam.sm.ServiceConfigException;
+import org.forgerock.openam.sm.ServiceConfigValidator;
+import org.forgerock.openam.sm.ServiceErrorException;
+import org.forgerock.openam.sm.annotations.adapters.SecretPurpose;
+import org.forgerock.secrets.GenericSecret;
+import org.forgerock.secrets.Purpose;
+import org.forgerock.secrets.SecretReference;
 import org.forgerock.services.context.RootContext;
+import org.forgerock.util.Reject;
+import org.forgerock.util.promise.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.callbacks.ReCaptchaCallback;
 import com.sun.identity.sm.RequiredValueValidator;
+import com.sun.identity.sm.SMSException;
 
 /**
  * A node that displays a CAPTCHA to a user and verifies their response, the default values are for Google
@@ -66,10 +85,10 @@ import com.sun.identity.sm.RequiredValueValidator;
 @Node.Metadata(outcomeProvider = AbstractDecisionNode.OutcomeProvider.class,
         configClass = CaptchaNode.Config.class,
         tags = {"risk"},
-        namespace = Namespace.PRODUCT)
+        namespace = Namespace.PRODUCT, configValidator = CaptchaNode.ConfigValidator.class)
 public class CaptchaNode extends AbstractDecisionNode {
 
-    private final Logger logger = LoggerFactory.getLogger(CaptchaNode.class);
+    private static final Logger logger = LoggerFactory.getLogger(CaptchaNode.class);
 
     /**
      * Configuration for the node.
@@ -89,8 +108,18 @@ public class CaptchaNode extends AbstractDecisionNode {
          *
          * @return the key.
          */
-        @Attribute(order = 200, validators = {RequiredValueValidator.class})
-        String secretKey();
+        @Deprecated
+        @Attribute(order = 200)
+        Optional<String> secretKey();
+
+        /**
+         * The (optional) secret key purpose.
+         *
+         * @return The secret key purpose.
+         */
+        @Attribute(order = 250, resourceName = "secretLabelIdentifier")
+        @SecretPurpose("am.authentication.nodes.captcha.%s.secret")
+        Optional<Purpose<GenericSecret>> secretKeyPurpose();
 
         /**
          * The uri to verify the reCAPTCHA.
@@ -156,18 +185,24 @@ public class CaptchaNode extends AbstractDecisionNode {
 
     private final Config config;
     private final Handler handler;
+    private final Realm realm;
+    private final SecretReferenceCache secretReferenceCache;
 
     /**
      * Guice constructor.
      *
-     * @param config  The node configuration.
-     * @param handler the http handler.
+     * @param config The node configuration.
+     * @param handler The http handler.
+     * @param realm The current realm.
+     * @param secretReferenceCache The secret reference cache.
      */
     @Inject
-    public CaptchaNode(@Assisted Config config, @Named("CloseableHttpClientHandler") Handler handler) {
+    public CaptchaNode(@Assisted Config config, @Named("CloseableHttpClientHandler") Handler handler,
+                       @Assisted Realm realm, SecretReferenceCache secretReferenceCache) {
         this.config = config;
         this.handler = handler;
-
+        this.realm = realm;
+        this.secretReferenceCache = secretReferenceCache;
     }
 
     @Override
@@ -217,7 +252,7 @@ public class CaptchaNode extends AbstractDecisionNode {
         URI uri = URI.create(config.captchaUri());
         try {
             Form form = new Form();
-            form.fromFormString("secret=" + config.secretKey() + "&response=" + response);
+            form.fromFormString("secret=" + getSecretKey() + "&response=" + response);
             Request request = new Request().setUri(uri)
                     .setMethod(HTTP_POST);
             form.toRequestEntity(request);
@@ -231,6 +266,18 @@ public class CaptchaNode extends AbstractDecisionNode {
             logger.debug("Unable to retrieve state from token response", e);
             throw new JsonException("Unable to retrieve state from token response");
         }
+    }
+
+    private String getSecretKey() throws NodeProcessException {
+        return config.secretKeyPurpose()
+                .map(purpose -> secretReferenceCache.realm(realm).active(purpose))
+                .map(SecretReference::getAsync)
+                .map(promise -> promise.then(secret -> secret.revealAsUtf8(String::new))
+                                        .thenCatch(ex -> null)
+                                        .then(Optional::ofNullable))
+                .map(Promise::getOrThrowIfInterrupted)
+                .orElseGet(config::secretKey)
+                .orElseThrow(() -> new NodeProcessException("No secret key found"));
     }
 
     /**
@@ -312,6 +359,60 @@ public class CaptchaNode extends AbstractDecisionNode {
             private static final String ACTION = "action";
             private static final String HOSTNAME = "hostname";
             private static final String ERROR_CODES = "error-codes";
+        }
+    }
+
+    /*
+     * A config validator for the captcha node.
+     *
+     * Ensures that all required attributes are present and that either the secret key or secret key purpose is
+     * provided.
+     */
+    static class ConfigValidator implements ServiceConfigValidator {
+
+        private static final String SECRET_KEY_METHOD_NAME = "secretKey";
+        private static final String SECRET_KEY_PURPOSE_METHOD_NAME = "secretKeyPurpose";
+
+        private final AnnotatedServiceRegistry serviceRegistry;
+
+        @Inject
+        ConfigValidator(AnnotatedServiceRegistry serviceRegistry) {
+            this.serviceRegistry = serviceRegistry;
+        }
+
+        @Override
+        public void validate(Realm realm, List<String> configPath, Map<String, Set<String>> attributes)
+                throws ServiceConfigException, ServiceErrorException {
+            Reject.ifNull(configPath, "The configuration path is required for validation.");
+            Reject.ifTrue(configPath.isEmpty(), "The configuration path is required for validation.");
+            Reject.ifNull(realm, "The realm is required for validation.");
+            Reject.ifNull(attributes, "Attributes are required for validation");
+            String nodeId = configPath.get(configPath.size() - 1);
+            Optional<CaptchaNode.Config> possibleExistingConfig;
+            try {
+                possibleExistingConfig = serviceRegistry.getRealmInstance(CaptchaNode.Config.class, realm, nodeId);
+            } catch (SSOException | SMSException e) {
+                logger.error("An error occurred validating CAPTCHA Node configuration", e);
+                throw new ServiceErrorException("Error validating CAPTCHA Node configuration");
+            }
+            String secretKey = getConfigValue(SECRET_KEY_METHOD_NAME, config -> config.secretKey().orElse(null),
+                    possibleExistingConfig, attributes);
+            String secretKeyPurpose = getConfigValue(
+                    SECRET_KEY_PURPOSE_METHOD_NAME, config -> config.secretKeyPurpose().orElse(null),
+                    possibleExistingConfig, attributes);
+
+            if (isBlank(secretKey) && isBlank(secretKeyPurpose)) {
+                throw new ServiceConfigException(
+                        "Either CAPTCHA Secret Key or CAPTCHA Secret Label Identifier must be provided");
+            }
+        }
+
+        private String getConfigValue(String attribute, Function<CaptchaNode.Config, ?> attributeMethod,
+                Optional<CaptchaNode.Config> existingConfig, Map<String, Set<String>> attributes) {
+            if (attributes.containsKey(attribute)) {
+                return getFirstItem(attributes.get(attribute));
+            }
+            return existingConfig.map(attributeMethod).map(Object::toString).orElse(null);
         }
     }
 }

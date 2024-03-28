@@ -20,14 +20,10 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.FAULT_DE
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REQUEST;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.RESPONSE;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.forgerock.openam.scripting.domain.Binding;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 
 final class SamlIdpPreSendFailureResponseBindings extends BaseSamlIdpBindings {
 
@@ -49,31 +45,24 @@ final class SamlIdpPreSendFailureResponseBindings extends BaseSamlIdpBindings {
         return new Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
+    @Override
+    public BindingsMap legacyBindings() {
+        BindingsMap bindings = new BindingsMap(legacyCommonBindings());
+        bindings.put(REQUEST, request);
+        bindings.put(FAULT_CODE, faultCode);
+        bindings.put(FAULT_DETAIL, faultDetail);
+        bindings.put(RESPONSE, response);
+        return bindings;
     }
 
     @Override
-    public String getDisplayName() {
-        return "SAML IDP Pre-send Failure Response Bindings";
-    }
-
-    @Override
-    protected List<Binding> additionalV1Bindings() {
-        List<Binding> v1Bindings = new ArrayList<>(v1CommonBindings());
-        v1Bindings.addAll(List.of(
-                Binding.of(REQUEST, request, HttpServletRequest.class),
-                Binding.of(FAULT_CODE, faultCode, String.class),
-                Binding.of(FAULT_DETAIL, faultDetail, String.class),
-                Binding.of(RESPONSE, response, HttpServletResponse.class)
-        ));
-        return v1Bindings;
+    public BindingsMap nextGenBindings() {
+        BindingsMap bindings = new BindingsMap(nextGenCommonBindings());
+        bindings.put(REQUEST, request);
+        bindings.put(FAULT_CODE, faultCode);
+        bindings.put(FAULT_DETAIL, faultDetail);
+        bindings.put(RESPONSE, response);
+        return bindings;
     }
 
     /**

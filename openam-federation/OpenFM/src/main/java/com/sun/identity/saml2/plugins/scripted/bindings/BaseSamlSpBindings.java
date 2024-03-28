@@ -22,27 +22,24 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REQUEST;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.RESPONSE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SP_ADAPTER_SCRIPT_HELPER;
 
-import java.util.List;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.forgerock.http.Client;
-import org.forgerock.openam.scripting.domain.Binding;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.plugins.scripted.SpAdapterScriptHelper;
+import com.sun.identity.saml2.plugins.scripted.wrappers.SpAdapterHelperScriptWrapper;
 
 /**
  * Common script bindings for the SamlSp scripts.
  */
-public abstract class BaseSamlSpBindings extends ScriptBindings {
+public abstract class BaseSamlSpBindings implements ScriptBindings {
 
     private final String hostedEntityId;
-    private final String realm;
     private final Client httpClient;
     private final HttpServletRequest request;
     private final HttpServletResponse response;
@@ -54,24 +51,30 @@ public abstract class BaseSamlSpBindings extends ScriptBindings {
      * @param builder The builder.
      */
     protected BaseSamlSpBindings(Builder builder) {
-        super(builder);
         this.hostedEntityId = builder.hostedEntityId;
-        this.realm = builder.realm;
         this.httpClient = builder.httpClient;
         this.request = builder.request;
         this.response = builder.response;
         this.spAdapterScriptHelper = builder.spAdapterScriptHelper;
     }
 
-    protected List<Binding> v1CommonBindings() {
-        return List.of(
-                Binding.of(HOSTED_ENTITYID, hostedEntityId, String.class),
-                Binding.of(SAML2Constants.ScriptParams.REALM, realm, String.class),
-                Binding.of(HTTP_CLIENT, httpClient, Client.class),
-                Binding.of(REQUEST, request, HttpServletRequest.class),
-                Binding.of(RESPONSE, response, HttpServletResponse.class),
-                Binding.of(SP_ADAPTER_SCRIPT_HELPER, spAdapterScriptHelper, SpAdapterScriptHelper.class)
-        );
+    protected BindingsMap legacyCommonBindings() {
+        BindingsMap bindings = new BindingsMap();
+        bindings.put(HOSTED_ENTITYID, hostedEntityId);
+        bindings.put(HTTP_CLIENT, httpClient);
+        bindings.put(REQUEST, request);
+        bindings.put(RESPONSE, response);
+        bindings.put(SP_ADAPTER_SCRIPT_HELPER, spAdapterScriptHelper);
+        return bindings;
+    }
+
+    protected BindingsMap nextGenCommonBindings() {
+        BindingsMap bindings = new BindingsMap();
+        bindings.put(HOSTED_ENTITYID, hostedEntityId);
+        bindings.put(REQUEST, request);
+        bindings.put(RESPONSE, response);
+        bindings.put(SP_ADAPTER_SCRIPT_HELPER, new SpAdapterHelperScriptWrapper(spAdapterScriptHelper));
+        return bindings;
     }
 
     /**
@@ -85,45 +88,36 @@ public abstract class BaseSamlSpBindings extends ScriptBindings {
      * Interface utilised by the fluent builder to define step 2 in generating the SamlSpBindings.
      */
     public interface SamlSpBindingsStep2 {
-        SamlSpBindingsStep3 withRealm(String realm);
+        SamlSpBindingsStep3 withHttpClient(Client httpClient);
     }
 
     /**
      * Interface utilised by the fluent builder to define step 3 in generating the SamlSpBindings.
      */
     public interface SamlSpBindingsStep3 {
-        SamlSpBindingsStep4 withHttpClient(Client httpClient);
+        SamlSpBindingsStep4 withRequest(HttpServletRequest request);
     }
 
     /**
      * Interface utilised by the fluent builder to define step 4 in generating the SamlSpBindings.
      */
     public interface SamlSpBindingsStep4 {
-        SamlSpBindingsStep5 withRequest(HttpServletRequest request);
+        SamlSpBindingsStep5 withResponse(HttpServletResponse response);
     }
 
     /**
      * Interface utilised by the fluent builder to define step 5 in generating the SamlSpBindings.
      */
     public interface SamlSpBindingsStep5 {
-        SamlSpBindingsStep6 withResponse(HttpServletResponse response);
-    }
-
-    /**
-     * Interface utilised by the fluent builder to define step 6 in generating the SamlSpBindings.
-     */
-    public interface SamlSpBindingsStep6 {
-        ScriptBindingsStep1 withSpAdapterScriptHelper(SpAdapterScriptHelper spAdapterScriptHelper);
+        Builder withSpAdapterScriptHelper(SpAdapterScriptHelper spAdapterScriptHelper);
     }
 
     /**
      * Abstract builder to construct common {@link BaseSamlSpBindings}.
      */
-    public abstract static class Builder<T extends Builder<T>> extends ScriptBindings.Builder<T> implements
-            SamlSpBindingsStep1, SamlSpBindingsStep2, SamlSpBindingsStep3, SamlSpBindingsStep4, SamlSpBindingsStep5,
-            SamlSpBindingsStep6 {
+    public abstract static class Builder<T extends Builder<T>> implements
+            SamlSpBindingsStep1, SamlSpBindingsStep2, SamlSpBindingsStep3, SamlSpBindingsStep4, SamlSpBindingsStep5 {
         private String hostedEntityId;
-        private String realm;
         private Client httpClient;
         private HttpServletRequest request;
         private HttpServletResponse response;
@@ -141,23 +135,12 @@ public abstract class BaseSamlSpBindings extends ScriptBindings {
         }
 
         /**
-         * Set the realm for the builder.
-         *
-         * @param realm The realm as String.
-         * @return The next step of the builder.
-         */
-        public SamlSpBindingsStep3 withRealm(String realm) {
-            this.realm = realm;
-            return self();
-        }
-
-        /**
          * Set the httpClient for the builder.
          *
          * @param httpClient The {@link Client}.
          * @return The next step of the builder.
          */
-        public SamlSpBindingsStep4 withHttpClient(Client httpClient) {
+        public SamlSpBindingsStep3 withHttpClient(Client httpClient) {
             this.httpClient = httpClient;
             return self();
         }
@@ -168,7 +151,7 @@ public abstract class BaseSamlSpBindings extends ScriptBindings {
          * @param request The {@link HttpServletRequest}.
          * @return The next step of the builder.
          */
-        public SamlSpBindingsStep5 withRequest(HttpServletRequest request) {
+        public SamlSpBindingsStep4 withRequest(HttpServletRequest request) {
             this.request = wrapRequest(request);
             return self();
         }
@@ -179,7 +162,7 @@ public abstract class BaseSamlSpBindings extends ScriptBindings {
          * @param response The {@link HttpServletResponse}.
          * @return The next step of the builder.
          */
-        public SamlSpBindingsStep6 withResponse(HttpServletResponse response) {
+        public SamlSpBindingsStep5 withResponse(HttpServletResponse response) {
             this.response = wrapResponse(response);
             return self();
         }
@@ -190,7 +173,7 @@ public abstract class BaseSamlSpBindings extends ScriptBindings {
          * @param spAdapterScriptHelper The {@link SpAdapterScriptHelper}.
          * @return The next step of the builder.
          */
-        public ScriptBindingsStep1 withSpAdapterScriptHelper(SpAdapterScriptHelper spAdapterScriptHelper) {
+        public Builder withSpAdapterScriptHelper(SpAdapterScriptHelper spAdapterScriptHelper) {
             this.spAdapterScriptHelper = spAdapterScriptHelper;
             return self();
         }
@@ -214,5 +197,11 @@ public abstract class BaseSamlSpBindings extends ScriptBindings {
         private HttpServletResponse wrapResponse(HttpServletResponse response) {
             return new HttpServletResponseWrapper(response);
         }
+
+        protected final T self() {
+            return (T) this;
+        }
+
+        public abstract BaseSamlSpBindings build();
     }
 }

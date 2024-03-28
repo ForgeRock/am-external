@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 package org.forgerock.openam.saml2.plugins;
 
@@ -22,8 +22,10 @@ import static org.forgerock.openam.saml2.Saml2EntityRole.SP;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_IDP_ENCRYPTION;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_IDP_SIGNING;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_SP_ENCRYPTION;
+import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_SP_MTLS;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_SP_SIGNING;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_ENCRYPTION;
+import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_MTLS;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_SIGNING;
 import static org.forgerock.secrets.Purpose.purpose;
 import static org.forgerock.util.LambdaExceptionUtils.rethrowFunction;
@@ -72,6 +74,8 @@ public class SecretsSaml2CredentialResolver implements Saml2CredentialResolver {
     private static final Map<Saml2EntityRole, Purpose<KeyDecryptionKey>> ENCRYPTION_PURPOSES = Maps.immutableEnumMap(
             ImmutableMap.of(IDP, purpose(SAML2_DEFAULT_IDP_ENCRYPTION, KeyDecryptionKey.class),
                     SP, purpose(SAML2_DEFAULT_SP_ENCRYPTION, KeyDecryptionKey.class)));
+    private static final Map<Saml2EntityRole, Purpose<SigningKey>> MTLS_PURPOSES = Maps.immutableEnumMap(
+            ImmutableMap.of(SP, purpose(SAML2_DEFAULT_SP_MTLS, SigningKey.class)));
     private static final Saml2SigningCredentials NO_SIGNING_DETAILS = new Saml2SigningCredentials(null, null);
     private final Secrets secrets;
     private final KeyStoreSaml2CredentialResolver keyStoreResolver;
@@ -100,7 +104,7 @@ public class SecretsSaml2CredentialResolver implements Saml2CredentialResolver {
         try {
             Realm realm = Realms.of(realmName);
             secretIdIdentifier = getSecretIdIdentifier(realmName, entityId, role);
-            logger.debug("secret id identifier is {} for the entity {} with role {}",
+            logger.debug("secret label identifier is {} for the entity {} with role {}",
                     secretIdIdentifier, entityId, role.name());
             DefaultingPurpose<SigningKey> purpose = new DefaultingPurpose<>(SIGNING_PURPOSES.get(role),
                     SAML2_ENTITY_ROLE_SIGNING);
@@ -111,7 +115,7 @@ public class SecretsSaml2CredentialResolver implements Saml2CredentialResolver {
         } catch (RealmLookupException ex) {
             throw new SAML2Exception(ex);
         } catch (NoSuchSecretException ex) {
-            logger.warn("Secret not found for the entity {} with role {} and secret id identifier {}",
+            logger.warn("Secret not found for the entity {} with role {} and secret label identifier {}",
                     entityId, role, secretIdIdentifier, ex);
             return NO_SIGNING_DETAILS;
         }
@@ -122,6 +126,15 @@ public class SecretsSaml2CredentialResolver implements Saml2CredentialResolver {
             throws SAML2Exception {
         if (!SIGNING_PURPOSES.containsKey(role)) {
             return keyStoreResolver.resolveValidSigningCredentials(realm, entityId, role);
+        }
+
+        if (MTLS_PURPOSES.containsKey(role)) {
+            return Stream.concat(resolveValidSecrets(realm, entityId,
+                    new DefaultingPurpose<>(SIGNING_PURPOSES.get(role), SAML2_ENTITY_ROLE_SIGNING), role),
+                    resolveValidSecrets(realm, entityId,
+                    new DefaultingPurpose<>(MTLS_PURPOSES.get(role), SAML2_ENTITY_ROLE_MTLS), role))
+                    .map(this::getX509Certificate)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
         }
 
         return resolveValidSecrets(realm, entityId,

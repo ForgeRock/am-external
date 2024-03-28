@@ -11,12 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2021-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.ldap.LDAPConstants.BEHERA_SUPPORT_ENABLED;
+import static org.forgerock.openam.ldap.LDAPConstants.LDAP_CONNECTION_AFFINITY_ENABLED;
+import static org.forgerock.openam.ldap.LDAPConstants.LDAP_CONNECTION_AFFINITY_LEVEL;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_CONNECTION_MODE;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_CONNECTION_TRUST_ALL_SERVER_CERTIFICATES;
 import static org.forgerock.openam.ldap.LDAPConstants.LDAP_CREATION_ATTR_MAPPING;
@@ -51,6 +53,9 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.ldap.AffinityLevel;
+import org.forgerock.openam.ldap.ConnectionFactoryAuditWrapper;
+import org.forgerock.openam.ldap.ConnectionFactoryAuditWrapperFactory;
 import org.forgerock.openam.ldap.LDAPConstants;
 import org.forgerock.openam.ldap.LDAPURL;
 import org.forgerock.openam.secrets.Secrets;
@@ -144,22 +149,25 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
     /**
      * Constructs a new {@link IdentityStoreDecisionNode}.
      *
-     * @param config               provides the settings for initialising an {@link IdentityStoreDecisionNode}.
-     * @param realm                The realm.
-     * @param configManagerFactory A ServiceConfigManagerFactory instance.
-     * @param coreWrapper          A core wrapper instance.
-     * @param identityService      An IdentityService instance.
-     * @param idRepoUtilityService the IdRepo utilities.
-     * @param secrets              A Secrets instance.
+     * @param config                               provides the settings for initialising an
+     *                                             {@link IdentityStoreDecisionNode}.
+     * @param realm                                The realm.
+     * @param configManagerFactory                 A ServiceConfigManagerFactory instance.
+     * @param coreWrapper                          A core wrapper instance.
+     * @param identityService                      An IdentityService instance.
+     * @param idRepoUtilityService                 the IdRepo utilities.
+     * @param secrets                              A Secrets instance.
+     * @param connectionFactoryAuditWrapperFactory A factory for creating {@link ConnectionFactoryAuditWrapper}.
      * @throws NodeProcessException if there is a problem during construction.
      */
     @Inject
     public IdentityStoreDecisionNode(@Assisted Config config, @Assisted Realm realm,
             ServiceConfigManagerFactory configManagerFactory, CoreWrapper coreWrapper,
-            LegacyIdentityService identityService, IdRepoUtilityService idRepoUtilityService, Secrets secrets)
+            LegacyIdentityService identityService, IdRepoUtilityService idRepoUtilityService, Secrets secrets,
+            ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory)
             throws NodeProcessException {
         super(config.getConfig(configManagerFactory, idRepoUtilityService), realm, coreWrapper, identityService,
-                secrets);
+                secrets, connectionFactoryAuditWrapperFactory);
         this.config = config;
     }
 
@@ -359,6 +367,15 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
         public Set<String> additionalPasswordChangeSearchAttributes() {
             String ldapUserSearchAttribute = CollectionHelper.getMapAttr(attributes, LDAP_USER_SEARCH_ATTR);
             return ldapUserSearchAttribute == null ? Collections.emptySet() : Set.of(ldapUserSearchAttribute);
+        }
+
+        @Override
+        public AffinityLevel affinityLevel() {
+            if (CollectionHelper.getBooleanMapAttr(attributes, LDAP_CONNECTION_AFFINITY_ENABLED, false)) {
+                return AffinityLevel.fromConfigValue(CollectionHelper.getMapAttr(attributes,
+                        LDAP_CONNECTION_AFFINITY_LEVEL));
+            }
+            return AffinityLevel.NONE;
         }
     }
 

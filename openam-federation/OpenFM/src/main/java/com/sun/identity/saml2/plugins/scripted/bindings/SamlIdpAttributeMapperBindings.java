@@ -18,25 +18,22 @@ package com.sun.identity.saml2.plugins.scripted.bindings;
 
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.HOSTED_ENTITYID;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER;
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REALM;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REMOTE_ENTITY;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SESSION;
 
-import java.util.List;
-
-import org.forgerock.openam.scripting.domain.Binding;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 
 import com.sun.identity.saml2.plugins.scripted.IdpAttributeMapperScriptHelper;
+import com.sun.identity.saml2.plugins.scripted.wrappers.IdpAttributeMapperHelperScriptWrapper;
 
 /**
  * Script bindings for the SamlIdpAttributeMapper script.
  */
-public class SamlIdpAttributeMapperBindings extends ScriptBindings {
+public class SamlIdpAttributeMapperBindings implements ScriptBindings {
 
     private final String hostedEntityId;
     private final IdpAttributeMapperScriptHelper idpAttributeMapperScriptHelper;
-    private final String realm;
     private final String remoteEntityId;
     private final Object session;
 
@@ -46,10 +43,8 @@ public class SamlIdpAttributeMapperBindings extends ScriptBindings {
      * @param builder The builder.
      */
     private SamlIdpAttributeMapperBindings(Builder builder) {
-        super(builder);
         this.hostedEntityId = builder.hostedEntityId;
         this.idpAttributeMapperScriptHelper = builder.idpAttributeMapperScriptHelper;
-        this.realm = builder.realm;
         this.remoteEntityId = builder.remoteEntityId;
         this.session = builder.session;
     }
@@ -63,30 +58,25 @@ public class SamlIdpAttributeMapperBindings extends ScriptBindings {
         return new Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
+    @Override
+    public BindingsMap legacyBindings() {
+        BindingsMap bindings = new BindingsMap();
+        bindings.put(HOSTED_ENTITYID, hostedEntityId);
+        bindings.put(IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER, idpAttributeMapperScriptHelper);
+        bindings.put(REMOTE_ENTITY, remoteEntityId);
+        bindings.put(SESSION, session);
+        return bindings;
     }
 
     @Override
-    public String getDisplayName() {
-        return "SAML IDP Attribute Mapper Bindings";
-    }
-
-    @Override
-    protected List<Binding> additionalV1Bindings() {
-        return List.of(
-                Binding.of(HOSTED_ENTITYID, hostedEntityId, String.class),
-                Binding.of(IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER, idpAttributeMapperScriptHelper, IdpAttributeMapperScriptHelper.class),
-                Binding.of(REALM, realm, String.class),
-                Binding.of(REMOTE_ENTITY, remoteEntityId, String.class),
-                Binding.of(SESSION, session, Object.class)
-        );
+    public BindingsMap nextGenBindings() {
+        BindingsMap bindings = new BindingsMap();
+        bindings.put(HOSTED_ENTITYID, hostedEntityId);
+        bindings.put(IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER,
+                new IdpAttributeMapperHelperScriptWrapper(idpAttributeMapperScriptHelper));
+        bindings.put(REMOTE_ENTITY, remoteEntityId);
+        bindings.put(SESSION, session);
+        return bindings;
     }
 
     /**
@@ -107,38 +97,28 @@ public class SamlIdpAttributeMapperBindings extends ScriptBindings {
      * Interface utilised by the fluent builder to define step 3 in generating the SamlIdpAttributeMapperBindings.
      */
     public interface SamlIdpAttributeMapperBindingsStep3 {
-        SamlIdpAttributeMapperBindingsStep4 withRealm(String realm);
+        SamlIdpAttributeMapperBindingsStep4 withRemoteEntityId(String remoteEntityId);
     }
 
     /**
      * Interface utilised by the fluent builder to define step 4 in generating the SamlIdpAttributeMapperBindings.
      */
     public interface SamlIdpAttributeMapperBindingsStep4 {
-        SamlIdpAttributeMapperBindingsStep5 withRemoteEntityId(String remoteEntityId);
-    }
-
-    /**
-     * Interface utilised by the fluent builder to define step 5 in generating the SamlIdpAttributeMapperBindings.
-     */
-    public interface SamlIdpAttributeMapperBindingsStep5 {
-        ScriptBindingsStep1 withSession(Object session);
+        Builder withSession(Object session);
     }
 
     /**
      * Builder object to construct a {@link SamlIdpAttributeMapperBindings}.
      */
-    private static class Builder extends ScriptBindings.Builder<Builder> implements
+    public static class Builder implements
             SamlIdpAttributeMapperBindingsStep1, SamlIdpAttributeMapperBindingsStep2,
-            SamlIdpAttributeMapperBindingsStep3, SamlIdpAttributeMapperBindingsStep4,
-            SamlIdpAttributeMapperBindingsStep5 {
+            SamlIdpAttributeMapperBindingsStep3, SamlIdpAttributeMapperBindingsStep4 {
 
         private String hostedEntityId;
         private IdpAttributeMapperScriptHelper idpAttributeMapperScriptHelper;
-        private String realm;
         private String remoteEntityId;
         private Object session;
 
-        @Override
         public SamlIdpAttributeMapperBindings build() {
             return new SamlIdpAttributeMapperBindings(this);
         }
@@ -166,23 +146,12 @@ public class SamlIdpAttributeMapperBindings extends ScriptBindings {
         }
 
         /**
-         * Set the realm for the builder.
-         *
-         * @param realm The realm as String.
-         * @return The next step of the builder.
-         */
-        public SamlIdpAttributeMapperBindingsStep4 withRealm(String realm) {
-            this.realm = realm;
-            return this;
-        }
-
-        /**
          * Set the remoteEntityId for the builder.
          *
          * @param remoteEntityId The remoteEntityId as String.
          * @return The next step of the builder.
          */
-        public SamlIdpAttributeMapperBindingsStep5 withRemoteEntityId(String remoteEntityId) {
+        public SamlIdpAttributeMapperBindingsStep4 withRemoteEntityId(String remoteEntityId) {
             this.remoteEntityId = remoteEntityId;
             return this;
         }
@@ -193,7 +162,7 @@ public class SamlIdpAttributeMapperBindings extends ScriptBindings {
          * @param session The session as {@link Object}.
          * @return The next step of the builder.
          */
-        public ScriptBindingsStep1 withSession(Object session) {
+        public Builder withSession(Object session) {
             this.session = session;
             return this;
         }

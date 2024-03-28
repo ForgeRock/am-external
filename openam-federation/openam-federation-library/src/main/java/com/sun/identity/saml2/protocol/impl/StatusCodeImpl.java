@@ -24,7 +24,7 @@
  *
  * $Id: StatusCodeImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions copyright 2014-2021 ForgeRock AS.
+ * Portions copyright 2014-2023 ForgeRock AS.
  */
 
 
@@ -36,6 +36,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.STATUS_CODE;
 import static com.sun.identity.saml2.common.SAML2Constants.VALUE;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -55,6 +56,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * This class defines methods for <code>StatusCode</code> element.
  */
 
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class StatusCodeImpl implements StatusCode {
     
     private static final Logger logger = LoggerFactory.getLogger(StatusCodeImpl.class);

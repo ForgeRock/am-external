@@ -24,7 +24,7 @@
  *
  * $Id: ConditionsImpl.java,v 1.3 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2018-2021 ForgeRock AS.
+ * Portions Copyrighted 2018-2023 ForgeRock AS.
  */
 
 
@@ -40,6 +40,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -63,6 +64,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * The <code>Conditions</code> defines the SAML constructs that place
  * constraints on the acceptable use if SAML <code>Assertion</code>s.
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class ConditionsImpl implements Conditions {
 
     private static final Logger logger = LoggerFactory.getLogger(ConditionsImpl.class);

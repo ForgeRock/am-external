@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.federation.rest.secret.manager;
@@ -90,23 +90,39 @@ public class Saml2EntitySecretMappingManager implements ServiceListener {
             return;
         }
         try {
-            Set<String> secretIdIdentifiers = helper.getAllEntitySecretIdIdentifiers(realm);
+            /* secret id identifiers exist for both hosted and remote entities. However, the available mappings for
+             * each are not the same (e.g hosted -> signing/encryption, remote -> basicAuth), so treat each separately
+            */
+            Set<String> hostedSecretIdIdentifiers = helper.getAllHostedEntitySecretIdIdentifiers(realm);
+            Set<String> remoteSecretIdIdentifiers = helper.getAllRemoteEntitySecretIdIdentifiers(realm);
             Set<KeyStoreSecretStore> stores = helper.getRealmStores(realm);
             for (KeyStoreSecretStore store : stores) {
                 Multiple<PurposeMapping> mappings = store.mappings();
-                deleteUnusedMappings(realm, secretIdIdentifiers, store, mappings);
+                deleteUnusedHostedEntityMappings(realm, hostedSecretIdIdentifiers, store, mappings);
+                deleteUnusedRemoteEntityMappings(realm, remoteSecretIdIdentifiers, store, mappings);
             }
         } catch (SAML2MetaException e) {
             logger.error("Failed to get the entity configs for the realm {}", realm, e);
         }
     }
 
-    private void deleteUnusedMappings(String realm, Set <String> secretIdIdentifiers,
+    private void deleteUnusedHostedEntityMappings(String realm, Set <String> secretIdIdentifiers,
             KeyStoreSecretStore store, Multiple <PurposeMapping> mappings) {
+        deleteUnusedEntityMappings(realm, secretIdIdentifiers, store, mappings, true);
+    }
+
+    private void deleteUnusedRemoteEntityMappings(String realm, Set <String> secretIdIdentifiers,
+            KeyStoreSecretStore store, Multiple <PurposeMapping> mappings) {
+        deleteUnusedEntityMappings(realm, secretIdIdentifiers, store, mappings, false);
+    }
+
+    private void deleteUnusedEntityMappings(String realm, Set <String> secretIdIdentifiers,
+            KeyStoreSecretStore store, Multiple <PurposeMapping> mappings, boolean isHosted) {
         if (mappings != null) {
             try {
                 mappings.idSet().stream()
-                        .filter(id -> helper.isUnusedSecretMapping(secretIdIdentifiers, id))
+                        .filter(id -> isHosted ? helper.isUnusedHostedEntitySecretMapping(secretIdIdentifiers, id)
+                                : helper.isUnusedRemoteEntitySecretMapping(secretIdIdentifiers, id))
                         .forEach(id -> helper.deleteSecretMapping(mappings, id));
             } catch (SMSException | SSOException e) {
                 logger.error("Failed to read mapping ids for the store {} in realm {}", store.id(), realm, e);

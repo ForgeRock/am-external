@@ -34,10 +34,9 @@ import java.util.Optional;
 
 import javax.script.Bindings;
 import javax.script.ScriptException;
+import javax.script.SimpleBindings;
 
 import org.forgerock.guice.core.GuiceTestCase;
-import org.forgerock.http.Client;
-import org.forgerock.http.handler.HttpClientHandler;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
@@ -46,13 +45,13 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmTestHelper;
-import org.forgerock.openam.integration.idm.IdmIntegrationServiceForScripts;
 import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
 import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepository;
 import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 import org.forgerock.util.i18n.PreferredLocales;
@@ -94,9 +93,6 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     @Mock
     ScriptedSecrets secrets;
 
-    @Mock
-    IdmIntegrationServiceForScripts idmIntegrationServiceForScripts;
-
     @RealmTestHelper.RealmHelper
     static Realm mockRealm;
 
@@ -115,18 +111,18 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
         ScriptedSecrets.Factory secretsFactory = mock(ScriptedSecrets.Factory.class);
         given(secretsFactory.create(any(), any())).willReturn(secrets);
         node = new ScriptedDecisionNode(__ -> scriptEvaluator, serviceConfig, null,
-                httpClientFactory, new Client(new HttpClientHandler()), mockRealm, scriptIdentityRepositoryFactory,
-                scriptedIdentityRepositoryFactory, secretsFactory, idmIntegrationServiceForScripts);
+                httpClientFactory, mockRealm, scriptIdentityRepositoryFactory,
+                scriptedIdentityRepositoryFactory, secretsFactory);
     }
 
     @Test
     public void correctScriptIsEvaluated() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithOutcome("a"));
         node.process(getContext());
 
         ArgumentCaptor<Script> scriptCaptor = ArgumentCaptor.forClass(Script.class);
-        verify(scriptEvaluator).evaluateScript(scriptCaptor.capture(), any(Bindings.class), eq(mockRealm));
+        verify(scriptEvaluator).evaluateScript(scriptCaptor.capture(), any(ScriptBindings.class), eq(mockRealm));
 
         assertThat(scriptCaptor.getValue().getName()).isEqualTo("mock-script-name");
         assertThat(scriptCaptor.getValue().getScript()).isEqualTo("mock-script-body");
@@ -135,39 +131,40 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
 
     @Test
     public void scriptIsPassedState() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithOutcomeAndOutput("a", "foo:bar"));
         given(serviceConfig.outputs()).willReturn(ImmutableList.of("foo"));
         JsonValue sharedState = json(object(field("foo", "bar")));
         JsonValue transientState = json(object(field("fizz", "buzz")));
         node.process(getContext(sharedState, transientState));
 
-        ArgumentCaptor<Bindings> bindingCaptor = ArgumentCaptor.forClass(Bindings.class);
+        ArgumentCaptor<ScriptBindings> bindingCaptor = ArgumentCaptor.forClass(ScriptBindings.class);
         verify(scriptEvaluator).evaluateScript(any(Script.class), bindingCaptor.capture(), eq(mockRealm));
 
-        assertThat(json(bindingCaptor.getValue().get("sharedState")).diff(sharedState).size() == 0).isTrue();
-        assertThat(json(bindingCaptor.getValue().get("transientState")).diff(transientState).size() == 1)
-                .isTrue();
+        assertThat(json(bindingCaptor.getValue().legacyBindings().get("sharedState"))
+                .diff(sharedState).size() == 0).isTrue();
+        assertThat(json(bindingCaptor.getValue().legacyBindings().get("transientState"))
+                .diff(transientState).size() == 1).isTrue();
     }
 
     @Test
     public void scriptProvidesDeclaredOutputs() throws Exception {
         given(serviceConfig.outputs()).willReturn(ImmutableList.of("out"));
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithOutcomeAndOutput("a", "out:put"));
         JsonValue sharedState = json(object(field("foo", "bar")));
         JsonValue transientState = json(object(field("fizz", "buzz")));
         node.process(getContext(sharedState, transientState));
 
-        ArgumentCaptor<Bindings> bindingCaptor = ArgumentCaptor.forClass(Bindings.class);
+        ArgumentCaptor<ScriptBindings> bindingCaptor = ArgumentCaptor.forClass(ScriptBindings.class);
         verify(scriptEvaluator).evaluateScript(any(Script.class), bindingCaptor.capture(), eq(mockRealm));
 
-        assertThat(json(bindingCaptor.getValue().get("sharedState")).isDefined("out")).isTrue();
+        assertThat(json(bindingCaptor.getValue().legacyBindings().get("sharedState")).isDefined("out")).isTrue();
     }
 
     @Test
     public void scriptIsPassedParameter() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithOutcome("a"));
         JsonValue sharedState = json(object(field("foo", "bar")));
         JsonValue transientState = json(object(field("fizz", "buzz")));
@@ -186,15 +183,15 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
                 .build();
         node.process(getContext(sharedState, transientState, request));
 
-        ArgumentCaptor<Bindings> bindingCaptor = ArgumentCaptor.forClass(Bindings.class);
+        ArgumentCaptor<ScriptBindings> bindingCaptor = ArgumentCaptor.forClass(ScriptBindings.class);
         verify(scriptEvaluator).evaluateScript(any(Script.class), bindingCaptor.capture(), eq(mockRealm));
 
-        Assert.assertEquals(bindingCaptor.getValue().get("requestParameters"), request.parameters);
+        Assert.assertEquals(bindingCaptor.getValue().legacyBindings().get("requestParameters"), request.parameters);
     }
 
     @Test
     public void whenScriptSetsOutcomeToConfiguredOutcomeItReturnsANodeResultWithTheOutcome() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithOutcome("a"));
         Action result = node.process(getContext());
 
@@ -205,7 +202,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     public void whenScriptSetsAnAction() throws Exception {
         // Given
         Action action = Action.goTo("a").build();
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithAction(action));
 
         // When
@@ -219,7 +216,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     public void whenScriptSetsAnActionWithInvalidOutcome() throws Exception {
         // Given
         Action action = Action.goTo("c").build();
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithAction(action));
 
         // When
@@ -233,7 +230,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     public void whenScriptSetsAnActionAndOutcome() throws Exception {
         // Given
         Action action = Action.goTo("a").build();
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithActionAndOutcome("a", action));
 
         // When
@@ -246,7 +243,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     @Test
     public void whenActionIsNotCorrectType() throws Exception {
         // Given
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithActionAndOutcome("a", new Object()));
 
         // When
@@ -262,7 +259,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
         Map<String, Object> extraAuditInfo = new HashMap<>();
         extraAuditInfo.put("key", "value");
         JsonValue auditEntryDetail = json(object(field("auditInfo", extraAuditInfo)));
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithOutcomeAndAuditEntryDetail("a", extraAuditInfo));
 
         // When
@@ -276,19 +273,21 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void whenScriptSetsOutcomeToValueNotConfiguredItThrowsException() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithOutcome("c"));
         node.process(getContext());
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void whenScriptDoesNotSetOutcomeItThrowsException() throws Exception {
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
+                .will(answerWithOutcome(null));
         node.process(getContext());
     }
 
     @Test(expectedExceptions = NodeProcessException.class)
     public void whenScriptSetsOutcomeToNonBooleanItThrowsNodeProcessException() throws Exception {
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .will(answerWithOutcome(1));
         node.process(getContext());
     }
@@ -296,7 +295,7 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
     @Test
     public void whenScriptThrowsExceptionItThrowsNodeProcessException() throws Exception {
         Throwable scriptException = new ScriptException("problem");
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(Bindings.class), eq(mockRealm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(mockRealm)))
                 .willThrow(scriptException);
 
         assertThatThrownBy(() -> node.process(getContext())).isExactlyInstanceOf(NodeProcessException.class)
@@ -317,48 +316,60 @@ public class ScriptedDecisionNodeTest extends GuiceTestCase {
 
     private static Answer<Object> answerWithOutcome(Object outcome) {
         return invocationOnMock -> {
-            Bindings bindings = invocationOnMock.getArgument(1);
+            Bindings bindings = new SimpleBindings();
             bindings.put("outcome", outcome);
-            return null;
+            ScriptEvaluator.ScriptResult scriptResult = mock(ScriptEvaluator.ScriptResult.class);
+            given(scriptResult.getBindings()).willReturn(bindings);
+            return scriptResult;
         };
     }
 
     private static Answer<Object> answerWithAction(Object action) {
         return invocationOnMock -> {
-            Bindings bindings = invocationOnMock.getArgument(1);
+            Bindings bindings = new SimpleBindings();
             bindings.put("action", action);
-            return null;
+            ScriptEvaluator.ScriptResult scriptResult = mock(ScriptEvaluator.ScriptResult.class);
+            given(scriptResult.getBindings()).willReturn(bindings);
+            return scriptResult;
         };
     }
 
     private static Answer<Object> answerWithActionAndOutcome(Object outcome, Object action) {
         return invocationOnMock -> {
-            Bindings bindings = invocationOnMock.getArgument(1);
+            Bindings bindings = new SimpleBindings();
             bindings.put("action", action);
             bindings.put("outcome", outcome);
-            return null;
+            ScriptEvaluator.ScriptResult scriptResult = mock(ScriptEvaluator.ScriptResult.class);
+            given(scriptResult.getBindings()).willReturn(bindings);
+            return scriptResult;
         };
     }
 
     private static Answer<Object> answerWithOutcomeAndOutput(Object outcome, String... outputs) {
         return invocationOnMock -> {
-            Bindings bindings = invocationOnMock.getArgument(1);
+            ScriptBindings bindingsIn = invocationOnMock.getArgument(1);
+            Bindings bindings = new SimpleBindings();
+            bindings.put("outcome", outcome);
+            bindings.put("sharedState", bindingsIn.legacyBindings().get("sharedState"));
             for (String output : outputs) {
                 String[] parts = output.split(":");
                 ((Map<String, Object>) bindings.get("sharedState")).put(parts[0], parts[1]);
             }
-            bindings.put("outcome", outcome);
-            return null;
+            ScriptEvaluator.ScriptResult scriptResult = mock(ScriptEvaluator.ScriptResult.class);
+            given(scriptResult.getBindings()).willReturn(bindings);
+            return scriptResult;
         };
     }
 
     private static Answer<Object> answerWithOutcomeAndAuditEntryDetail(Object outcome,
             Map<String, Object> auditEntryDetail) {
         return invocationOnMock -> {
-            Bindings bindings = invocationOnMock.getArgument(1);
+            Bindings bindings = new SimpleBindings();
             bindings.put("outcome", outcome);
             bindings.put("auditEntryDetail", auditEntryDetail);
-            return null;
+            ScriptEvaluator.ScriptResult scriptResult = mock(ScriptEvaluator.ScriptResult.class);
+            given(scriptResult.getBindings()).willReturn(bindings);
+            return scriptResult;
         };
     }
 }

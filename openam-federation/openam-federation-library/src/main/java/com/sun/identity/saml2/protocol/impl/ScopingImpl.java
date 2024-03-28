@@ -24,7 +24,7 @@
  *
  * $Id: ScopingImpl.java,v 1.5 2009/03/12 20:32:41 huacui Exp $
  *
- * Portions Copyrighted 2014-2021 ForgeRock AS.
+ * Portions Copyrighted 2014-2023 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -61,6 +62,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * message.
  */
 
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class ScopingImpl implements Scoping {
 
     private static final Logger logger = LoggerFactory.getLogger(ScopingImpl.class);

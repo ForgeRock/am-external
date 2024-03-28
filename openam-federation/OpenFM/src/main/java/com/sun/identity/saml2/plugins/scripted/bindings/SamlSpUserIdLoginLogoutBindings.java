@@ -20,11 +20,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.LOGOUT_R
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.LOGOUT_RESPONSE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.USER_ID;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.forgerock.openam.scripting.domain.Binding;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 
 import com.sun.identity.saml2.protocol.LogoutRequest;
 import com.sun.identity.saml2.protocol.LogoutResponse;
@@ -61,31 +57,24 @@ final class SamlSpUserIdLoginLogoutBindings extends BaseSamlSpBindings {
         return new Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
+    @Override
+    public BindingsMap legacyBindings() {
+        BindingsMap bindings = new BindingsMap(legacyCommonBindings());
+        bindings.put(USER_ID, userId);
+        bindings.put(LOGOUT_REQUEST, logoutRequest);
+        bindings.put(LOGOUT_RESPONSE, logoutResponse);
+        bindings.put(BINDING, binding);
+        return bindings;
     }
 
     @Override
-    public String getDisplayName() {
-        return "SAML SP User ID Login/Logout Bindings";
-    }
-
-    @Override
-    protected List<Binding> additionalV1Bindings() {
-        List<Binding> v1Bindings = new ArrayList<>(v1CommonBindings());
-        v1Bindings.addAll(List.of(
-                Binding.of(USER_ID, userId, String.class),
-                Binding.of(LOGOUT_REQUEST, logoutRequest, LogoutRequest.class),
-                Binding.of(LOGOUT_RESPONSE, logoutResponse, LogoutResponse.class),
-                Binding.of(BINDING, binding, String.class)
-        ));
-        return v1Bindings;
+    public BindingsMap nextGenBindings() {
+        BindingsMap bindings = new BindingsMap(nextGenCommonBindings());
+        bindings.put(USER_ID, userId);
+        bindings.put(LOGOUT_REQUEST, logoutRequest);
+        bindings.put(LOGOUT_RESPONSE, logoutResponse);
+        bindings.put(BINDING, binding);
+        return bindings;
     }
 
     /**

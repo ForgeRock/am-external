@@ -15,10 +15,7 @@
  */
 package com.sun.identity.saml2.plugins.scripted.bindings;
 
-import java.util.List;
-
-import org.forgerock.openam.scripting.domain.Binding;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 
 final class SamlIdpPreSingleSignOnBindings extends BaseSamlIdpBindings {
 
@@ -35,24 +32,14 @@ final class SamlIdpPreSingleSignOnBindings extends BaseSamlIdpBindings {
         return new Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
+    @Override
+    public BindingsMap legacyBindings() {
+        return legacyRequestBindings();
     }
 
     @Override
-    public String getDisplayName() {
-        return "SAML IDP Single Sign On Bindings";
-    }
-
-    @Override
-    protected List<Binding> additionalV1Bindings() {
-        return v1RequestBindings();
+    public BindingsMap nextGenBindings() {
+        return nextGenRequestBindings();
     }
 
     private static final class Builder extends BaseSamlIdpBindings.Builder<Builder> {

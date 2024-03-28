@@ -18,24 +18,22 @@ package org.forgerock.openam.authentication.modules.scripted;
 import static org.forgerock.openam.authentication.modules.scripted.Scripted.CLIENT_SCRIPT_OUTPUT_DATA_VARIABLE_NAME;
 import static org.forgerock.openam.authentication.modules.scripted.Scripted.HTTP_CLIENT_VARIABLE_NAME;
 import static org.forgerock.openam.authentication.modules.scripted.Scripted.IDENTITY_REPOSITORY;
-import static org.forgerock.openam.authentication.modules.scripted.Scripted.REALM_VARIABLE_NAME;
 import static org.forgerock.openam.authentication.modules.scripted.Scripted.REQUEST_DATA_VARIABLE_NAME;
 import static org.forgerock.openam.authentication.modules.scripted.Scripted.SHARED_STATE;
 import static org.forgerock.openam.authentication.modules.scripted.Scripted.STATE_VARIABLE_NAME;
 import static org.forgerock.openam.authentication.modules.scripted.Scripted.USERNAME_VARIABLE_NAME;
 
-import java.util.List;
 import java.util.Map;
 
 import org.forgerock.http.client.ChfHttpClient;
-import org.forgerock.openam.scripting.domain.Binding;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 
 /**
  * Script bindings for the Scripted Module script.
  */
-public final class ServerSideAuthenticationScriptBindings extends ScriptBindings {
+public final class ServerSideAuthenticationScriptBindings implements ScriptBindings {
 
     private static final String SUCCESS_ATTR_NAME = "SUCCESS";
     private static final String FAILED_ATTR_NAME = "FAILED";
@@ -44,7 +42,6 @@ public final class ServerSideAuthenticationScriptBindings extends ScriptBindings
     private final Integer state;
     private final Map<String, Object> sharedState;
     private final String username;
-    private final String realm;
     private final Integer successValue;
     private final Integer failureValue;
     private final ChfHttpClient httpClient;
@@ -56,13 +53,11 @@ public final class ServerSideAuthenticationScriptBindings extends ScriptBindings
      * @param builder The builder.
      */
     private ServerSideAuthenticationScriptBindings(Builder builder) {
-        super(builder);
         requestData = builder.requestData;
         clientScriptOutputData = builder.clientScriptOutputData;
         state = builder.state;
         sharedState = builder.sharedState;
         username = builder.username;
-        realm = builder.realm;
         successValue = builder.successValue;
         failureValue = builder.failureValue;
         httpClient = builder.httpClient;
@@ -78,35 +73,19 @@ public final class ServerSideAuthenticationScriptBindings extends ScriptBindings
         return new Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
-    }
-
     @Override
-    public String getDisplayName() {
-        return "Server Side Authentication Script Bindings";
-    }
-
-    @Override
-    protected List<Binding> additionalV1Bindings() {
-        return List.of(
-                Binding.of(REQUEST_DATA_VARIABLE_NAME, requestData, ScriptHttpRequestWrapper.class),
-                Binding.of(CLIENT_SCRIPT_OUTPUT_DATA_VARIABLE_NAME, clientScriptOutputData, String.class),
-                Binding.of(STATE_VARIABLE_NAME, state, Integer.class),
-                Binding.of(SHARED_STATE, sharedState, Map.class),
-                Binding.of(USERNAME_VARIABLE_NAME, username, String.class),
-                Binding.of(REALM_VARIABLE_NAME, realm, String.class),
-                Binding.of(SUCCESS_ATTR_NAME, successValue, Integer.class),
-                Binding.of(FAILED_ATTR_NAME, failureValue, Integer.class),
-                Binding.of(HTTP_CLIENT_VARIABLE_NAME, httpClient, ChfHttpClient.class),
-                Binding.of(IDENTITY_REPOSITORY, identityRepository, ScriptIdentityRepository.class)
-        );
+    public BindingsMap legacyBindings() {
+        BindingsMap bindings = new BindingsMap();
+        bindings.put(REQUEST_DATA_VARIABLE_NAME, requestData);
+        bindings.put(CLIENT_SCRIPT_OUTPUT_DATA_VARIABLE_NAME, clientScriptOutputData);
+        bindings.put(STATE_VARIABLE_NAME, state);
+        bindings.put(SHARED_STATE, sharedState);
+        bindings.put(USERNAME_VARIABLE_NAME, username);
+        bindings.put(SUCCESS_ATTR_NAME, successValue);
+        bindings.put(FAILED_ATTR_NAME, failureValue);
+        bindings.put(HTTP_CLIENT_VARIABLE_NAME, httpClient);
+        bindings.put(IDENTITY_REPOSITORY, identityRepository);
+        return bindings;
     }
 
     /**
@@ -148,57 +127,47 @@ public final class ServerSideAuthenticationScriptBindings extends ScriptBindings
      * Interface utilised by the fluent builder to define step 6 in generating the ScriptedBindings.
      */
     public interface ScriptedBindingsStep6 {
-        ScriptedBindingsStep7 withRealm(String realm);
+        ScriptedBindingsStep7 withSuccessValue(Integer successValue);
     }
 
     /**
      * Interface utilised by the fluent builder to define step 7 in generating the ScriptedBindings.
      */
     public interface ScriptedBindingsStep7 {
-        ScriptedBindingsStep8 withSuccessValue(Integer successValue);
+        ScriptedBindingsStep8 withFailureValue(Integer failureValue);
     }
 
     /**
      * Interface utilised by the fluent builder to define step 8 in generating the ScriptedBindings.
      */
     public interface ScriptedBindingsStep8 {
-        ScriptedBindingsStep9 withFailureValue(Integer failureValue);
-    }
-
-    /**
-     * Interface utilised by the fluent builder to define step 9 in generating the ScriptedBindings.
-     */
-    public interface ScriptedBindingsStep9 {
-        ScriptedBindingsStep10 withHttpClient(ChfHttpClient httpClient);
+        ScriptedBindingsStep9 withHttpClient(ChfHttpClient httpClient);
     }
 
     /**
      * Interface utilised by the fluent builder to define step 10 in generating the ScriptedBindings.
      */
-    public interface ScriptedBindingsStep10 {
-        ScriptBindingsStep1 withIdentityRepository(ScriptIdentityRepository identityRepository);
+    public interface ScriptedBindingsStep9 {
+        Builder withIdentityRepository(ScriptIdentityRepository identityRepository);
     }
 
     /**
      * Builder object to construct a {@link ServerSideAuthenticationScriptBindings}.
      */
-    private static final class Builder extends ScriptBindings.Builder<Builder> implements ScriptedBindingsStep1,
+    public static final class Builder implements ScriptedBindingsStep1,
             ScriptedBindingsStep2, ScriptedBindingsStep3, ScriptedBindingsStep4, ScriptedBindingsStep5,
-            ScriptedBindingsStep6, ScriptedBindingsStep7, ScriptedBindingsStep8, ScriptedBindingsStep9,
-            ScriptedBindingsStep10 {
+            ScriptedBindingsStep6, ScriptedBindingsStep7, ScriptedBindingsStep8, ScriptedBindingsStep9 {
 
         private ScriptHttpRequestWrapper requestData;
         private String clientScriptOutputData;
         private int state;
         private Map<String, Object> sharedState;
         private String username;
-        private String realm;
         private Integer successValue;
         private Integer failureValue;
         private ChfHttpClient httpClient;
         private ScriptIdentityRepository identityRepository;
 
-        @Override
         public ServerSideAuthenticationScriptBindings build() {
             return new ServerSideAuthenticationScriptBindings(this);
         }
@@ -259,23 +228,12 @@ public final class ServerSideAuthenticationScriptBindings extends ScriptBindings
         }
 
         /**
-         * Set the realm for the builder.
-         *
-         * @param realm The realm as String.
-         * @return The next step of the builder.
-         */
-        public ScriptedBindingsStep7 withRealm(String realm) {
-            this.realm = realm;
-            return this;
-        }
-
-        /**
          * Set the successValue for the builder.
          *
          * @param successValue The successValue.
          * @return The next step of the builder.
          */
-        public ScriptedBindingsStep8 withSuccessValue(Integer successValue) {
+        public ScriptedBindingsStep7 withSuccessValue(Integer successValue) {
             this.successValue = successValue;
             return this;
         }
@@ -286,7 +244,7 @@ public final class ServerSideAuthenticationScriptBindings extends ScriptBindings
          * @param failureValue The failureValue.
          * @return The next step of the builder.
          */
-        public ScriptedBindingsStep9 withFailureValue(Integer failureValue) {
+        public ScriptedBindingsStep8 withFailureValue(Integer failureValue) {
             this.failureValue = failureValue;
             return this;
         }
@@ -297,7 +255,7 @@ public final class ServerSideAuthenticationScriptBindings extends ScriptBindings
          * @param httpClient The {@link ChfHttpClient}.
          * @return The next step of the builder.
          */
-        public ScriptedBindingsStep10 withHttpClient(ChfHttpClient httpClient) {
+        public ScriptedBindingsStep9 withHttpClient(ChfHttpClient httpClient) {
             this.httpClient = httpClient;
             return this;
         }
@@ -308,7 +266,7 @@ public final class ServerSideAuthenticationScriptBindings extends ScriptBindings
          * @param identityRepository The {@link ScriptIdentityRepository}.
          * @return The next step of the builder.
          */
-        public ScriptBindingsStep1 withIdentityRepository(ScriptIdentityRepository identityRepository) {
+        public Builder withIdentityRepository(ScriptIdentityRepository identityRepository) {
             this.identityRepository = identityRepository;
             return this;
         }

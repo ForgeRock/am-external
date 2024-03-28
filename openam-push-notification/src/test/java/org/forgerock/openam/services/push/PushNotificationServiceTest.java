@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2020 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 package org.forgerock.openam.services.push;
 
@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.forgerock.openam.secrets.rotation.SecretLabelListener;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcher;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcherFactory;
 import org.testng.annotations.BeforeMethod;
@@ -45,6 +46,8 @@ public class PushNotificationServiceTest {
     private PushNotificationServiceConfig config;
     private MessageId mockMessageId;
     private static PushNotificationDelegate mockTestDelegate;
+
+    private SecretLabelListener secretLabelListener;
 
     private PushNotificationService notificationService;
 
@@ -88,6 +91,7 @@ public class PushNotificationServiceTest {
         this.mockOldDelegate = mock(PushNotificationDelegate.class);
         this.mockMessageDispatcherFactory = mock(MessageDispatcherFactory.class);
         this.config = mock(PushNotificationServiceConfig.class);
+        this.secretLabelListener = mock(SecretLabelListener.class);
         mockMessageId = mock(MessageId.class);
         mockTestDelegate = mock(PushNotificationDelegate.class);
 
@@ -102,7 +106,7 @@ public class PushNotificationServiceTest {
         given(mockHelperFactory.getConfigHelperFor("realm4")).willThrow(new SMSException("Error reading service"));
 
         this.notificationService = new PushNotificationService(pushRealmMap, pushFactoryMap,
-                mockHelperFactory, mockMessageDispatcherFactory, config);
+                mockHelperFactory, mockMessageDispatcherFactory, config, secretLabelListener);
     }
 
     @Test

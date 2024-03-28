@@ -24,7 +24,7 @@
  *
  * $Id: AuthnContextImpl.java,v 1.3 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2015-2021 ForgeRock AS.
+ * Portions Copyrighted 2015-2023 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
 
@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -90,6 +91,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * &lt;/complexType&gt;
  * </pre>
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class AuthnContextImpl implements AuthnContext {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthnContextImpl.class);

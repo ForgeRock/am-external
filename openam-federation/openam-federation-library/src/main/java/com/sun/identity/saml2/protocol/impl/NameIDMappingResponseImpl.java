@@ -24,7 +24,7 @@
  *
  * $Id: NameIDMappingResponseImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
@@ -33,6 +33,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.NAME_ID_MAPPING_RESPO
 import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
 import static com.sun.identity.saml2.common.SAML2Constants.STATUS;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -50,6 +51,7 @@ import com.sun.identity.saml2.protocol.NameIDMappingResponse;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.shared.xml.XMLUtils;
 
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class NameIDMappingResponseImpl extends StatusResponseImpl
    implements NameIDMappingResponse {
 

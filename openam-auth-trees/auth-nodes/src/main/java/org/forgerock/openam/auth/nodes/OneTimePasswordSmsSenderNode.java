@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -30,6 +30,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -39,8 +40,11 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.sm.annotations.adapters.SecretPurpose;
 import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.secrets.GenericSecret;
+import org.forgerock.secrets.Purpose;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,11 +70,12 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
     private final LegacyIdentityService identityService;
     private final LocaleSelector localeSelector;
     private final SMSGatewayLookup smsGatewayLookup;
+    private final Realm realm;
 
     /**
      * Configuration for the node.
      */
-    public interface Config extends SmtpBaseConfig {
+    public interface Config extends OtpNodeBaseConfig {
         /**
          * The attribute name for storing the mobile phone number in the data store.
          *
@@ -104,29 +109,45 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
          */
         @Attribute(order = 1400)
         Map<Locale, String> smsContent();
+
+        /**
+         * The (optional) password purpose to use when the mail server is using SMTP authentication.
+         * @return The password purpose.
+         */
+        @Override
+        @Attribute(order = 550, resourceName = "secretLabelIdentifier")
+        @SecretPurpose("am.authentication.nodes.otp.sms.%s.password")
+        Optional<Purpose<GenericSecret>> passwordPurpose();
     }
 
     private final Config config;
+
+    private final OtpNodeConnectionConfigMapper connectionConfigMapper;
 
     private static final String BUNDLE = OneTimePasswordSmsSenderNode.class.getName();
 
     /**
      * Constructs a new OneTimePasswordSmsSenderNode instance.
      *
-     * @param config Node configuration.
-     * @param coreWrapper A wrapper for core utility methods.
-     * @param identityService An instance IdentityService.
-     * @param localeSelector An instance of LocaleSelector.
-     * @param smsGatewayLookup lookup for {@link SMSGateway}.
+     * @param config                  Node configuration.
+     * @param realm                   The current realm.
+     * @param coreWrapper             A wrapper for core utility methods.
+     * @param identityService         An instance IdentityService.
+     * @param localeSelector          An instance of LocaleSelector.
+     * @param smsGatewayLookup        lookup for {@link SMSGateway}.
+     * @param connectionConfigMapper  the config mapper.
      */
     @Inject
-    public OneTimePasswordSmsSenderNode(@Assisted Config config, CoreWrapper coreWrapper,
-            LegacyIdentityService identityService, LocaleSelector localeSelector, SMSGatewayLookup smsGatewayLookup) {
+    public OneTimePasswordSmsSenderNode(@Assisted Config config, @Assisted Realm realm, CoreWrapper coreWrapper,
+            LegacyIdentityService identityService, LocaleSelector localeSelector, SMSGatewayLookup smsGatewayLookup,
+            OtpNodeConnectionConfigMapper connectionConfigMapper) {
         this.config = config;
+        this.realm = realm;
         this.coreWrapper = coreWrapper;
         this.identityService = identityService;
         this.localeSelector = localeSelector;
         this.smsGatewayLookup = smsGatewayLookup;
+        this.connectionConfigMapper = connectionConfigMapper;
     }
 
     @Override
@@ -170,7 +191,7 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
             String content = getLocalisedMessage(context, localeSelector, this.getClass(), config.smsContent(),
                     "messageContent");
             gateway.sendSMSMessage(config.fromEmailAddress(), phone, subject, content, oneTimePassword.asString(),
-                    config.asConfigMap());
+                    connectionConfigMapper.asConfigMap(config, realm));
         } catch (AuthLoginException e) {
             logger.warn("SMSGateway sending error", e);
             throw new NodeProcessException(bundle.getString("sms.send.failure"), e);

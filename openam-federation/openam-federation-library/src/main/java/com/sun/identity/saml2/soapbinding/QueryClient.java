@@ -24,7 +24,7 @@
  *
  * $Id: QueryClient.java,v 1.9 2009/10/29 00:19:21 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2020 ForgeRock AS.
+ * Portions Copyrighted 2015-2024 ForgeRock AS.
  * Portions Copyrighted 2016 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.saml2.soapbinding;
@@ -194,9 +194,7 @@ public class QueryClient {
                    String soapMessage =
                        SAML2SDKUtils.createSOAPMessageString(xmlString);
                         
-                   endPoint =
-                                SAML2SDKUtils.fillInBasicAuthInfo(
-                                pepConfig,endPoint);
+                   endPoint = SAML2SDKUtils.fillInBasicAuthInfo(pepConfig, endPoint, realm);
                         String[] urls = { endPoint };
                         SOAPClient soapClient = new SOAPClient(urls);
                         if (logger.isDebugEnabled()) {

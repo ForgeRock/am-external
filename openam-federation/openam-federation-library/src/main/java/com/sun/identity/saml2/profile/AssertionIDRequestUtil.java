@@ -24,7 +24,7 @@
  *
  * $Id: AssertionIDRequestUtil.java,v 1.8 2009/06/12 22:21:40 mallas Exp $
  *
- * Portions Copyrighted 2013-2022 ForgeRock AS.
+ * Portions Copyrighted 2013-2024 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -640,7 +640,7 @@ public class AssertionIDRequestUtil {
             }
         }
 
-        return SAML2Utils.fillInBasicAuthInfo(config, location);
+        return SAML2Utils.fillInBasicAuthInfo(config, location, realm);
     }
 
     private static Response sendAssertionIDRequestBySOAP(

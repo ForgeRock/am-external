@@ -24,7 +24,7 @@
  *
  * $Id: GetCompleteImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 
 
@@ -34,6 +34,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.GETCOMPLETE;
 import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
 import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -50,6 +51,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * <code>GetComplete</code> Element specifies a URI which resolves to 
  * the complete IDPList.
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class GetCompleteImpl implements GetComplete {
 
     private String getCompleteURI;

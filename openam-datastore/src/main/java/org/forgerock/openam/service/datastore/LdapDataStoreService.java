@@ -71,8 +71,7 @@ import com.sun.identity.sm.ServiceListener;
  * @since 6.0.0
  */
 @Singleton
-final class LdapDataStoreService implements DataStoreService, ServiceListener, DataStoreServiceRegister,
-                                                    SecretStoreConfigChangeListener {
+final class LdapDataStoreService implements DataStoreService, ServiceListener, DataStoreServiceRegister {
 
     private static final Logger logger = LoggerFactory.getLogger(LdapDataStoreService.class);
 
@@ -344,97 +343,6 @@ final class LdapDataStoreService implements DataStoreService, ServiceListener, D
     private synchronized void shutDown() {
         shuttingDown = true;
         factoryCache.forEach((key, factory) -> factory.close());
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * When a change is detected with the Secret Stores, locate all Data Store configurations that use one of the
-     * mappings within that Secret Store for mTLS and trigger a reload of the Data Stores. This ensures that have
-     * re-connected with the correct connection details.
-     *
-     * @see #secretStoreMappingHasChanged(PurposeMapping, String, int)
-     *
-     * @param secretStore the secret store that has changed.
-     * @param orgName the realm containing the secret store, if the secret store is global then this will be null.
-     * @param type the type of change, ADDED(1), REMOVED(2) or MODIFIED(4).
-     */
-    @Override
-    public void secretStoreHasChanged(SecretStoreWithMappings secretStore, String orgName, int type) {
-        if (orgName != null) {
-            // data store mtls can only be configured globally
-            return;
-        }
-        switch (type) {
-            case ServiceListener.ADDED :
-                break;
-            case ServiceListener.REMOVED :
-                if (secretStore == null) {
-                    secretStoreMappingHasChanged(null, null, type);
-                }
-                break;
-            case ServiceListener.MODIFIED :
-                if (secretStore != null) {
-                    try {
-                        secretStore.mappings().get(QueryFilter.alwaysTrue())
-                                .forEach(mapping -> secretStoreMappingHasChanged(mapping, null, type));
-                    } catch (SMSException | SSOException e) {
-                        logger.error("Unable to get secret mappings for {}", secretStore.id(), e);
-                    }
-                }
-                break;
-            default :
-                logger.warn("Unknown change type {}", type);
-                break;
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * Given a change in the Secret Store mapping, locate all Data Stores that use the mapping for mTLS and trigger
-     * a reload of their connections. This is to ensure that each Data Store connection is using the up-to-date mTLS
-     * connection details.
-     *
-     * @param mapping the secret mapping that has changed.
-     * @param orgName the realm containing the secret store, if the secret store is global then this will be null.
-     * @param type the type of change, ADDED(1), REMOVED(2) or MODIFIED(4).
-     */
-    @Override
-    public void secretStoreMappingHasChanged(PurposeMapping mapping, String orgName, int type) {
-        if (orgName != null) {
-            // data store mtls can only be configured globally
-            return;
-        }
-        if (mapping == null && type != ServiceListener.REMOVED) {
-            logger.error("No mapping provided but type is not delete");
-            return;
-        }
-        Set<String> datastoreNames;
-        try {
-            ServiceConfig globalConfig = getServiceConfigManager().getGlobalConfig("default");
-            ServiceConfig containerConfig = globalConfig.getSubConfig("dataStoreContainer");
-            datastoreNames = containerConfig.getSubConfigNames();
-        } catch (SMSException | SSOException e) {
-            logger.error("Unable to get datastore service configuration", e);
-            return;
-        }
-        datastoreNames.forEach(datastoreName -> {
-            DataStoreId id = DataStoreId.of(datastoreName);
-            ConnectionConfig connectionConfig = getConfig(id);
-            if (connectionConfig.isMtlsEnabled() && connectionConfig.isDataStoreEnabled()) {
-                if (mapping != null) {
-                    if (mapping.secretId().equals(connectionConfig.getMtlsSecretId())) {
-                        logger.info("Refreshing connection for secret ID {} as secret mapping has changed",
-                                mapping.secretId());
-                        notifyOfDataStoreChange(id, MODIFIED);
-                    }
-                } else {
-                    logger.info("Refreshing connections as secret mapping has been deleted");
-                    notifyOfDataStoreChange(id, MODIFIED);
-                }
-            }
-        });
     }
 
     /**

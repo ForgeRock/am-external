@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2021 ForgeRock AS.
+ * Copyright 2014-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.services.push;
@@ -64,6 +64,7 @@ public class PushNotificationServiceSetupListener implements SetupListener {
                         }
 
                         service.registerServiceListener();
+                        service.registerSecretListeners();
                     }
                 }
         ).start();

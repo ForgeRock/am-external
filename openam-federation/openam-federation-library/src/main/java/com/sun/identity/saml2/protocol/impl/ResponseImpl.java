@@ -24,7 +24,7 @@
  *
  * $Id: ResponseImpl.java,v 1.4 2009/12/16 05:26:39 ericow Exp $
  *
- * Portions Copyrighted 2018-2021 ForgeRock AS.
+ * Portions Copyrighted 2018-2023 ForgeRock AS.
  */
 
 
@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -79,6 +80,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * &lt;/complexType&gt;
  * </pre>
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class ResponseImpl extends StatusResponseImpl implements Response {
 
     private static final Logger logger = LoggerFactory.getLogger(ResponseImpl.class);

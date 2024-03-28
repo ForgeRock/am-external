@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.federation.rest.secret.manager;
@@ -19,20 +19,37 @@ package org.forgerock.openam.federation.rest.secret.manager;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Set;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+import junitparams.naming.TestCaseName;
+
+@RunWith(JUnitParamsRunner.class)
 public class SecretMappingManagerHelperTest {
 
     private SecretMappingManagerHelper helper;
 
-    @BeforeMethod
+    private static final String SIGNING_MAPPING = "am.applications.federation.entity.providers.saml2.%s.signing";
+    private static final String BASIC_AUTH_MAPPING = "am.applications.federation.entity.providers.saml2.%s.basicauth";
+
+    private Object[] similarSecretIdProvider() {
+        return new Object[][] {
+                { "asecretbutdifferent", singleton("asecret") },
+                { "a.secret.but.different", singleton("secret") },
+                { "a.secret.but.different", singleton("a.secret") }
+        };
+    }
+
+    @Before
     public void setup() {
-        initMocks(this);
+        openMocks(this);
         helper = new SecretMappingManagerHelper(null);
     }
 
@@ -42,47 +59,116 @@ public class SecretMappingManagerHelperTest {
         String mappingId = "non.saml2.mapping.id";
 
         //when
-        boolean isUnused = helper.isUnusedSecretMapping(emptySet(), mappingId);
+        boolean isUnusedHosted = helper.isUnusedHostedEntitySecretMapping(emptySet(), mappingId);
+        boolean isUnusedRemote = helper.isUnusedRemoteEntitySecretMapping(emptySet(), mappingId);
 
         //then
-        assertThat(isUnused).isFalse();
+        assertThat(isUnusedHosted).isFalse();
+        assertThat(isUnusedRemote).isFalse();
     }
 
     @Test
-    public void shouldReturnUnusedWhenSaml2MappingIdAndNoEntitiesAvailable() {
-        //given
-        String mappingId = "am.applications.federation.entity.providers.saml2.secret.signing";
-
+    @TestCaseName("{method}: {0}")
+    @Parameters({
+            "am.applications.federation.entity.providers.saml2.secret.signing",
+            "am.applications.federation.entity.providers.saml2.secret.encryption"})
+    public void shouldReturnUnusedWhenSaml2MappingIdAndNoHostedEntitiesAvailable(String mappingId) {
         //when
-        boolean isUnused = helper.isUnusedSecretMapping(emptySet(), mappingId);
+        boolean isUnused = helper.isUnusedHostedEntitySecretMapping(emptySet(), mappingId);
 
         //then
         assertThat(isUnused).isTrue();
     }
 
     @Test
-    public void shouldReturnUnusedWhenSaml2MappingIdAndNoIdentifiersMatch() {
+    public void shouldReturnUnusedWhenSaml2MappingIdAndNoRemoteEntitiesAvailable() {
+        //given
+        String mappingId = "am.applications.federation.entity.providers.saml2.secret.basicauth";
+
+        //when
+        boolean isUnused = helper.isUnusedRemoteEntitySecretMapping(emptySet(), mappingId);
+
+        //then
+        assertThat(isUnused).isTrue();
+    }
+
+    @Test
+    public void shouldReturnUnusedWhenSaml2MappingIdAndNoHostedIdentifiersMatch() {
         //given
         String mappingId = "am.applications.federation.entity.providers.saml2.old.secret.signing";
         Set<String> identifiers = singleton("new.secret");
 
         //when
-        boolean isUnused = helper.isUnusedSecretMapping(identifiers, mappingId);
+        boolean isUnused = helper.isUnusedHostedEntitySecretMapping(identifiers, mappingId);
 
         //then
         assertThat(isUnused).isTrue();
     }
 
     @Test
-    public void shouldReturnInUseWhenSaml2MappingIdAndIdentifiersMatch() {
+    public void shouldReturnUnusedWhenSaml2MappingIdAndNoRemoteIdentifiersMatch() {
+        //given
+        String mappingId = "am.applications.federation.entity.providers.saml2.old.secret.basicauth";
+        Set<String> identifiers = singleton("new.secret");
+
+        //when
+        boolean isUnused = helper.isUnusedRemoteEntitySecretMapping(identifiers, mappingId);
+
+        //then
+        assertThat(isUnused).isTrue();
+    }
+
+    @Test
+    public void shouldReturnInUseWhenSaml2MappingIdAndHostedIdentifiersMatch() {
         //given
         String mappingId = "am.applications.federation.entity.providers.saml2.secret.still.in.use.signing";
         Set<String> identifiers = singleton("secret.still.in.use");
 
         //when
-        boolean isUnused = helper.isUnusedSecretMapping(identifiers, mappingId);
+        boolean isUnused = helper.isUnusedHostedEntitySecretMapping(identifiers, mappingId);
 
         //then
         assertThat(isUnused).isFalse();
+    }
+
+    @Test
+    public void shouldReturnInUseWhenSaml2MappingIdAndRemoteIdentifiersMatch() {
+        //given
+        String mappingId = "am.applications.federation.entity.providers.saml2.secret.still.in.use.signing";
+        Set<String> identifiers = singleton("secret.still.in.use");
+
+        //when
+        boolean isUnused = helper.isUnusedHostedEntitySecretMapping(identifiers, mappingId);
+
+        //then
+        assertThat(isUnused).isFalse();
+    }
+
+    @Test
+    @Parameters(method = "similarSecretIdProvider")
+    public void shouldReturnRemoteMappingNotInUseWhenSimilarSecretIdExists(String mappingIdSecret,
+            Set<String> identifiers) {
+        // given
+        String mappingId = String.format(BASIC_AUTH_MAPPING, mappingIdSecret);
+
+        //when
+        boolean isUnused = helper.isUnusedRemoteEntitySecretMapping(identifiers, mappingId);
+
+        //then
+        assertThat(isUnused).isTrue();
+    }
+
+    @Test
+    @Parameters(method = "similarSecretIdProvider")
+    public void shouldReturnHostedMappingNotInUseWhenSimilarSecretIdExists(String mappingIdSecret,
+            Set<String> identifiers) {
+        // given
+        String mappingId = String.format(SIGNING_MAPPING, mappingIdSecret);
+
+        //when
+        boolean isUnused = helper.isUnusedHostedEntitySecretMapping(identifiers, mappingId);
+
+        //then
+        assertThat(isUnused).isTrue();
     }
 }

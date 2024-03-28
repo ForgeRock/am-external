@@ -11,10 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
+import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.spi.HttpCallback;
 import com.sun.identity.authentication.spi.X509CertificateCallback;
 import org.forgerock.openam.annotations.Supported;
@@ -104,6 +105,17 @@ public class ScriptedCallbacksWrapper {
         return getCallbackByType(PasswordCallback.class).stream()
                 .map(c -> String.valueOf(c.getPassword()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Getter for HiddenValueCallback type callbacks.
+     *
+     * @return Map of the HiddenValueCallbacks by id - value pairs.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public Map<String, String> getHiddenValueCallbacks() {
+        return getCallbackByType(HiddenValueCallback.class).stream()
+                .collect(Collectors.toMap(HiddenValueCallback::getId, HiddenValueCallback::getValue));
     }
 
     /**

@@ -24,7 +24,7 @@
  *
  * $Id: BaseIDImpl.java,v 1.2 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 
 
@@ -33,6 +33,7 @@ package com.sun.identity.saml2.assertion.impl;
 import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
 import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -48,6 +49,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  *  The <code>BaseID</code> is an extension point that allows 
  *  applications to add new kinds of identifiers.
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class BaseIDImpl extends BaseIDAbstractImpl implements BaseID {
     private static final Logger logger = LoggerFactory.getLogger(BaseIDImpl.class);
     public static final String BASE_ID_ELEMENT = "BaseID";

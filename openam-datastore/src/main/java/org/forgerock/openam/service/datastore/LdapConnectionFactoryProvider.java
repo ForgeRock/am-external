@@ -22,6 +22,7 @@ import static org.forgerock.opendj.ldap.LdapClients.LDAP_CLIENT_REQUEST_TIMEOUT;
 
 import java.util.concurrent.TimeUnit;
 
+import org.forgerock.openam.ldap.ConnectionConfig;
 import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.openam.ldap.LDAPUtils.CachedPoolOptions;
 import org.forgerock.openam.secrets.Secrets;
@@ -39,7 +40,7 @@ import com.iplanet.am.util.SystemProperties;
  *
  * @since 6.5.0
  */
-class LdapConnectionFactoryProvider {
+public class LdapConnectionFactoryProvider {
 
     private final Secrets secrets;
 
@@ -48,7 +49,14 @@ class LdapConnectionFactoryProvider {
         this.secrets = secrets;
     }
 
-    ConnectionFactory createLdapConnectionFactory(DataStoreConfig config) {
+    /**
+     * Create a new LDAP connection factory. The connection factory will not be managed or cached and the caller
+     * must close the factory when its no longer in use.
+     *
+     * @param config The details required to establish a Connection to an LDAP server.
+     * @return A new {@link ConnectionFactory}.
+     */
+    public ConnectionFactory createLdapConnectionFactory(ConnectionConfig config) {
         Options ldapOptions = populateLdapOptions(config);
         if (config.isMtlsEnabled()) {
             return newFailoverConnectionFactory(config, ldapOptions, secrets);
@@ -59,7 +67,7 @@ class LdapConnectionFactoryProvider {
                 ldapOptions);
     }
 
-    private Options populateLdapOptions(DataStoreConfig config) {
+    private Options populateLdapOptions(ConnectionConfig config) {
         int idleTimeout = SystemProperties.getAsInt(LDAP_CONN_IDLE_TIME_IN_SECS, 0);
         int timeout = SystemProperties.getAsInt(DataLayerConstants.DATA_LAYER_TIMEOUT, 10);
         return Options.defaultOptions()

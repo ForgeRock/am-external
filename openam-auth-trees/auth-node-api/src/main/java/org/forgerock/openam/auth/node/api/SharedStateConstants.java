@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -82,7 +82,11 @@ public final class SharedStateConstants {
     /** The AuthType parameter key. Must be kept in sync with: ISAuthConstants#NODE_TYPE. **/
     public static final String NODE_TYPE = "NodeType";
 
-    /** The container for user object attribute data. This should never be imported by a Node. */
+    /**
+     * The container for user object attribute data. This should never be imported by a Node.
+     * @deprecated use {@link org.forgerock.openam.integration.idm.IdmIntegrationService#OBJECT_ATTRIBUTES} instead.
+     */
+    @Deprecated
     public static final String OBJECT_ATTRIBUTES = "objectAttributes";
 
     /** User info payload key. */

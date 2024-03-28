@@ -24,7 +24,7 @@
  *
  * $Id: IssuerImpl.java,v 1.2 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 
 
@@ -34,6 +34,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_U
 import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -49,6 +50,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  *  The <code>Issuer</code> provides information about the issuer of  
  *  a SAML assertion or protocol message.
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class IssuerImpl extends NameIDTypeImpl implements Issuer {
 
     private static final Logger logger = LoggerFactory.getLogger(IssuerImpl.class);

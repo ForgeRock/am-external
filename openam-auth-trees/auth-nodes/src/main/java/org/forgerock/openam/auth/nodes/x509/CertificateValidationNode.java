@@ -11,11 +11,13 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
 
+import static com.sun.identity.security.cert.AMLDAPCertStoreParameters.createBasicAuthAMLDAPCertStoreParameters;
+import static com.sun.identity.security.cert.AMLDAPCertStoreParameters.createMtlsAMLDAPCertStoreParameters;
 import static org.forgerock.openam.auth.nodes.x509.CertificateUtils.getX509Certificate;
 
 import java.security.InvalidAlgorithmParameterException;
@@ -41,8 +43,13 @@ import org.forgerock.openam.auth.node.api.Namespace;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.secrets.Secrets;
 import org.forgerock.openam.sm.annotations.adapters.Password;
+import org.forgerock.openam.sm.annotations.adapters.SecretPurpose;
 import org.forgerock.opendj.ldap.LdapUrl;
+import org.forgerock.secrets.Purpose;
+import org.forgerock.secrets.keys.SigningKey;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +76,8 @@ public class CertificateValidationNode extends AbstractDecisionNode {
     private static final String BUNDLE = "org/forgerock/openam/auth/nodes/x509/CertificateValidationNode";
     private final Logger logger = LoggerFactory.getLogger(CertificateValidationNode.class);
     private final Config config;
+    private final Realm realm;
+    private final Secrets secrets;
 
     /**
      * Configuration for the node.
@@ -201,6 +210,25 @@ public class CertificateValidationNode extends AbstractDecisionNode {
         Optional<char[]> userBindPassword();
 
         /**
+         * Indicates if mTLS is enabled.
+         *
+         * @return true if mTLS is enabled otherwise false.
+         */
+        @Attribute(order = 1325, requiredValue = true)
+        default boolean mtlsEnabled() {
+            return false;
+        }
+
+        /**
+         * Label used for mapping to the mTLS certificate in the secret store.
+         *
+         * @return the label
+         */
+        @Attribute(order = 1350)
+        @SecretPurpose("am.authentication.nodes.certificate.validation.mtls.%s.cert")
+        Optional<Purpose<SigningKey>> mtlsSecretLabel();
+
+        /**
          * Sets whether ssl is enabled.
          *
          * @return whether ssl is enabled.
@@ -214,11 +242,15 @@ public class CertificateValidationNode extends AbstractDecisionNode {
     /**
      * The constructor.
      *
-     * @param config node config.
+     * @param config  node config.
+     * @param realm the realm configuration.
+     * @param secrets the secrets API object.
      */
     @Inject
-    public CertificateValidationNode(@Assisted Config config) {
+    public CertificateValidationNode(@Assisted Config config, @Assisted Realm realm, Secrets secrets) {
         this.config = config;
+        this.realm = realm;
+        this.secrets = secrets;
     }
 
     private static String getDirectoryServerURL() {
@@ -335,20 +367,26 @@ public class CertificateValidationNode extends AbstractDecisionNode {
             // set LDAP Parameters
             try {
                 LdapUrl ldapUrl = LdapUrl.valueOf("ldap://" + serverHost);
-                String userBindDn = config.userBindDN()
-                        .orElseThrow(() -> new IllegalStateException("Missing User Bind DN attribute value"));
-                String userBindPassword = String.valueOf(config.userBindPassword()
-                                .orElseThrow(() ->
-                                        new IllegalStateException("Missing User Bind Password attribute value")));
                 String crlHttpParameters = config.crlHttpParameters()
                         .orElseThrow(() -> new IllegalStateException("Missing CRL Http Parameters attribute value"));
-                AMLDAPCertStoreParameters ldapParam = AMCertStore.setLdapStoreParam(ldapUrl.getHost(),
-                        ldapUrl.getPort(), userBindDn, userBindPassword,
-                        CollectionHelper.getServerMapAttr(configMap, "ldapSearchStartDN"), crlHttpParameters,
-                        config.sslEnabled());
-                ldapParam.setDoCRLCaching(config.cacheCRLsInMemory());
-                ldapParam.setDoCRLUpdate(config.updateCRLsFromDistributionPoint());
-                return ldapParam;
+                if (config.mtlsEnabled()) {
+                    Purpose<SigningKey> secretLabel = config.mtlsSecretLabel().orElseThrow(
+                        () -> new IllegalStateException("Missing mTLS Secret Label Identifier"));
+                    return createMtlsAMLDAPCertStoreParameters(ldapUrl.getHost(),
+                            ldapUrl.getPort(),
+                            CollectionHelper.getServerMapAttr(configMap, "ldapSearchStartDN"),
+                            config.sslEnabled(), crlHttpParameters, config.cacheCRLsInMemory(),
+                            config.updateCRLsFromDistributionPoint(), secretLabel.getLabel(), realm, secrets);
+                } else {
+                    String userBindDn = config.userBindDN()
+                            .orElseThrow(() -> new IllegalStateException("Missing User Bind DN attribute value"));
+                    String userBindPassword = String.valueOf(config.userBindPassword().orElseThrow(() ->
+                                    new IllegalStateException("Missing User Bind Password attribute value")));
+                    return createBasicAuthAMLDAPCertStoreParameters(ldapUrl.getHost(),
+                            ldapUrl.getPort(), userBindDn, userBindPassword,
+                            CollectionHelper.getServerMapAttr(configMap, "ldapSearchStartDN"), config.sslEnabled(),
+                            crlHttpParameters, config.cacheCRLsInMemory(), config.updateCRLsFromDistributionPoint());
+                }
             } catch (Exception e) {
                 throw new NodeProcessException("Unable to set LDAP Server configuration", e);
             }

@@ -24,12 +24,13 @@
  *
  * $Id: ManageNameIDResponseImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -54,6 +55,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  *   type="{urn:oasis:names:tc:SAML:2.0:protocol}StatusResponseType"/>
  * </pre>
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class ManageNameIDResponseImpl 
 extends StatusResponseImpl implements ManageNameIDResponse {
     private static final Logger logger = LoggerFactory.getLogger(ManageNameIDResponseImpl.class);

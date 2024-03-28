@@ -26,6 +26,7 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.HeartbeatTimeUnit.MINUTES;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.SearchScope.SUBTREE;
 import static org.forgerock.openam.ldap.ModuleState.SUCCESS;
+import static org.forgerock.openam.ldap.ModuleState.USER_NOT_FOUND;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -41,9 +42,11 @@ import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.ldap.ConnectionFactoryAuditWrapperFactory;
 import org.forgerock.openam.ldap.LDAPAuthUtils;
 import org.forgerock.openam.secrets.Secrets;
 import org.junit.Before;
@@ -51,6 +54,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+
+import com.sun.identity.idm.IdType;
 
 /**
  * Unit tests for {@link LdapDecisionNode}.
@@ -75,6 +80,8 @@ public class LdapDecisionNodeTest {
 
     @Mock
     private Secrets secrets;
+    @Mock
+    private ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory;
     private LdapDecisionNode node;
 
     @Before
@@ -83,7 +90,43 @@ public class LdapDecisionNodeTest {
         given(config.heartbeatTimeUnit()).willReturn(MINUTES);
         given(coreWrapper.getLDAPAuthUtils(anySet(), anySet(),
                 anyBoolean(), any(), anyString(), any())).willReturn(ldapAuthUtils);
-        node = new LdapDecisionNode(config, realm, coreWrapper, identityService, secrets);
+        node = new LdapDecisionNode(config, realm, coreWrapper, identityService, secrets,
+                connectionFactoryAuditWrapperFactory);
+    }
+
+    @Test
+    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+        //Given
+        JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
+                field("password", "password"),
+                field("realm", "testRealm")));
+        given(ldapAuthUtils.getUserId()).willReturn("testUser");
+        given(ldapAuthUtils.getState()).willReturn(SUCCESS);
+
+        //When
+        Action result = node.process(getContext(sharedState));
+
+        // Then
+        Assertions.assertThat(result.identifiedIdentity).isPresent();
+        IdentifiedIdentity idid = result.identifiedIdentity.get();
+        Assertions.assertThat(idid.getUsername()).isEqualTo("testUser");
+        Assertions.assertThat(idid.getIdentityType()).isEqualTo(IdType.USER);
+    }
+
+    @Test
+    public void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
+        //Given
+        JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
+                field("password", "password"),
+                field("realm", "testRealm")));
+        given(ldapAuthUtils.getUserId()).willReturn("testUser");
+        given(ldapAuthUtils.getState()).willReturn(USER_NOT_FOUND);
+
+        //When
+        Action result = node.process(getContext(sharedState));
+
+        // Then
+        Assertions.assertThat(result.identifiedIdentity).isEmpty();
     }
 
     @Test
@@ -100,6 +143,7 @@ public class LdapDecisionNodeTest {
         Action result = node.process(getContext(sharedState));
 
         //Then
+        verify(ldapAuthUtils).setConnectionFactoryAuditWrapperFactory(connectionFactoryAuditWrapperFactory);
         verify(identityService, only()).getUniversalId("testUser", "testRealm", USER);
         assertThat(result.sharedState).isObject().contains(USERNAME, "testUser");
     }
@@ -120,6 +164,7 @@ public class LdapDecisionNodeTest {
         Action result = node.process(getContext(sharedState));
 
         //Then
+        verify(ldapAuthUtils).setConnectionFactoryAuditWrapperFactory(connectionFactoryAuditWrapperFactory);
         Assertions.assertThat(result.universalId.get())
                 .isEqualTo("uid=testUsername@example.com,ou=people,dc=openam,dc=forgerock,dc=org");
     }

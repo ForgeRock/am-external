@@ -22,7 +22,6 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.FAULT_CO
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.FAULT_DETAIL;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.HOSTED_ENTITYID;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.IDP_ADAPTER_SCRIPT_HELPER;
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REALM;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.RELAY_STATE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REQUEST;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REQ_ID;
@@ -34,17 +33,15 @@ import static org.assertj.core.api.AssertionsForClassTypes.entry;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ADAPTER;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockConstructionWithAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
-import static org.powermock.api.mockito.PowerMockito.whenNew;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.script.Bindings;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
@@ -53,11 +50,15 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import org.assertj.core.data.MapEntry;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.MockitoAnnotations;
 
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.plugins.ValidationHelper;
@@ -93,7 +94,6 @@ public class ScriptedIdpAdapterTest {
     private final Response saml2Response = mock(Response.class);
 
     private final MapEntry<String, Object> HOSTED_ENTITY_ID_BINDING = entry(HOSTED_ENTITYID, hostedEntityId);
-    private final MapEntry<String, Object> REALM_BINDING = entry(REALM, realm);
     private final MapEntry<String, Object> AUTHN_REQUEST_BINDING = entry(AUTHN_REQUEST, authnRequest);
     private final MapEntry<String, Object> REQ_ID_BINDING = entry(REQ_ID, reqId);
     private final MapEntry<String, Object> SESSION_BINDING = entry(SESSION, session);
@@ -102,15 +102,18 @@ public class ScriptedIdpAdapterTest {
     private final MapEntry<String, Object> FAULT_CODE_BINDING = entry(FAULT_CODE, faultCode);
     private final MapEntry<String, Object> FAULT_DETAIL_BINDING = entry(FAULT_DETAIL, faultDetail);
 
-    private final ArgumentCaptor<Bindings> bindingsCaptor = ArgumentCaptor.forClass(Bindings.class);
+    private final ArgumentCaptor<ScriptBindings> bindingsCaptor = ArgumentCaptor.forClass(ScriptBindings.class);
     private final ArgumentCaptor<Script> scriptConfigurationCaptor = ArgumentCaptor.forClass(Script.class);
+
+    private MockedConstruction<HttpServletRequestWrapper> ignoredHttpServletRequestWrapper;
+    private MockedConstruction<HttpServletResponseWrapper> ignoredHttpServletResponseWrapper;
 
     // Class under test
     private ScriptedIdpAdapter scriptedIdpAdapter;
 
     @Before
     public void setup() throws Exception {
-        initMocks(this);
+        MockitoAnnotations.openMocks(this).close();
         scriptedIdpAdapter = new ScriptedIdpAdapter(__ -> scriptEvaluator, validationHelper, idpAdapterScriptHelper,
                 executor);
 
@@ -118,8 +121,18 @@ public class ScriptedIdpAdapterTest {
         when(executor.getScriptConfiguration(realm, hostedEntityId, IDP_ROLE, IDP_ADAPTER_SCRIPT))
                 .thenReturn(scriptConfiguration(scriptId.toString()));
 
-        whenNew(HttpServletRequestWrapper.class).withArguments(request).thenReturn(wrappedRequest);
-        whenNew(HttpServletResponseWrapper.class).withArguments(response).thenReturn(wrappedResponse);
+        ignoredHttpServletRequestWrapper = mockConstructionWithAnswer(
+                HttpServletRequestWrapper.class, invocation -> wrappedRequest);
+
+        ignoredHttpServletResponseWrapper = mockConstructionWithAnswer(
+                HttpServletResponseWrapper.class, invocation -> wrappedResponse);
+
+    }
+
+    @After
+    public void tearDown() {
+        ignoredHttpServletRequestWrapper.close();
+        ignoredHttpServletResponseWrapper.close();
     }
 
     @Test
@@ -130,7 +143,6 @@ public class ScriptedIdpAdapterTest {
         // Then
         verifyScriptEvaluation("preSingleSignOn", Boolean.class, List.of(IDP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 AUTHN_REQUEST_BINDING,
                 REQ_ID_BINDING);
     }
@@ -143,7 +155,6 @@ public class ScriptedIdpAdapterTest {
         // Then
         verifyScriptEvaluation("preAuthentication", Boolean.class, List.of(IDP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 AUTHN_REQUEST_BINDING,
                 SESSION_BINDING,
                 REQ_ID_BINDING,
@@ -158,7 +169,6 @@ public class ScriptedIdpAdapterTest {
         // Then
         verifyScriptEvaluation("preSendResponse", Boolean.class, List.of(IDP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 AUTHN_REQUEST_BINDING,
                 SESSION_BINDING,
                 REQ_ID_BINDING,
@@ -173,7 +183,6 @@ public class ScriptedIdpAdapterTest {
         // Then
         verifyScriptEvaluation("preSignResponse", null, List.of(IDP_ADAPTER_SCRIPT_HELPER, REQUEST),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 SAML2_RESPONSE_BINDING,
                 AUTHN_REQUEST_BINDING,
                 SESSION_BINDING,
@@ -188,7 +197,6 @@ public class ScriptedIdpAdapterTest {
         // Then
         verifyScriptEvaluation("preSendFailureResponse", null, List.of(IDP_ADAPTER_SCRIPT_HELPER, REQUEST, RESPONSE),
                 HOSTED_ENTITY_ID_BINDING,
-                REALM_BINDING,
                 FAULT_CODE_BINDING,
                 FAULT_DETAIL_BINDING);
     }
@@ -210,8 +218,9 @@ public class ScriptedIdpAdapterTest {
         final Script script = scriptConfigurationCaptor.getValue();
         assertThat(script.getScript()).isEqualTo(exampleScript);
         assertThat(script.getName()).isEqualTo(IDP_ADAPTER_SCRIPT);
-        assertThat(bindingsCaptor.getValue().keySet()).containsAll(expectedKeys);
-        assertThat(bindingsCaptor.getValue()).contains(expectedBindings);
+
+        assertThat(bindingsCaptor.getValue().legacyBindings().keySet()).containsAll(expectedKeys);
+        assertThat(bindingsCaptor.getValue().legacyBindings()).contains(expectedBindings);
     }
 
     private Script scriptConfiguration(String id) throws Exception{

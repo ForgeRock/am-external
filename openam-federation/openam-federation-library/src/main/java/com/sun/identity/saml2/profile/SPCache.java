@@ -24,13 +24,15 @@
  *
  * $Id: SPCache.java,v 1.17 2009/06/09 20:28:32 exu Exp $
  *
- * Portions Copyrighted 2015-2022 ForgeRock AS.
+ * Portions Copyrighted 2015-2024 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.profile;
 
 import java.util.Hashtable;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
@@ -174,7 +176,15 @@ public class SPCache {
     final public static PeriodicCleanUpMap assertionByIDCache =
         new PeriodicCleanUpMap(interval * 1000,
         interval * 1000);
-    
+
+    /**
+     * Hashtable saves NameID format to user profile attribute mapping
+     * key  : remoteEntityID + "|" + realm
+     * value: Map containing NameID format as Key and user profile
+     *     attribute name as Value.
+     */
+    public static final Map<String, Map<String, String>> formatAttributeHash = new ConcurrentHashMap<>();
+
     /**
      * Clears the auth context object hash table.
      *
@@ -188,5 +198,6 @@ public class SPCache {
                         (!authContextHash.isEmpty())) {
             authContextHash.clear();
         }
+        formatAttributeHash.clear();
    }
 }

@@ -24,7 +24,7 @@
  *
  * $Id: NameIDMapping.java,v 1.6 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2013-2020 ForgeRock AS.
+ * Portions Copyrighted 2013-2024 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -209,7 +209,7 @@ public class NameIDMapping {
             IDPSSOConfigElement config = metaManager.getIDPSSOConfig(realm,
                 idpEntityID);
 
-            nimURL = SAML2SDKUtils.fillInBasicAuthInfo(config, nimURL);
+            nimURL = SAML2SDKUtils.fillInBasicAuthInfo(config, nimURL, realm);
 
             return doNIMBySOAP(nimRequest.toXMLString(true,true), nimURL, 
                 realm, spEntityID);

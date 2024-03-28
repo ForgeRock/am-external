@@ -24,13 +24,14 @@
  *
  * $Id: EncryptedAssertionImpl.java,v 1.2 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions copyright 2014-2019 ForgeRock AS.
+ * Portions copyright 2014-2023 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
 
 import java.security.PrivateKey;
 import java.util.Set;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -51,6 +52,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * an <code>EncryptedData</code> and zero or more
  * <code>EncryptedKey</code>s.
  */
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class EncryptedAssertionImpl extends EncryptedElementImpl implements EncryptedAssertion {
     private static final Logger logger = LoggerFactory.getLogger(EncryptedAssertionImpl.class);
     public final String elementName = "EncryptedAssertion";

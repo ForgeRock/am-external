@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -56,7 +56,11 @@ public class JwtAssertionScriptWrapper {
     enum JwtBuilderType {
         SIGNED,
         SIGNED_THEN_ENCRYPTED,
-        ENCRYPTED_THEN_SIGNED
+        ENCRYPTED_THEN_SIGNED;
+
+        boolean isEncrypted() {
+            return this == SIGNED_THEN_ENCRYPTED || this == ENCRYPTED_THEN_SIGNED;
+        }
     }
 
     /**
@@ -153,12 +157,15 @@ public class JwtAssertionScriptWrapper {
                     new SecretKeySpec(Base64.decode(signingKey), "Hmac")));
             SecretHmacSigningHandler hmacSigningHandler = new SecretHmacSigningHandler(hmacKey);
 
-            KeyEncryptionKey encryptedKey = new KeyEncryptionKey(getSecretBuilderForKey(accountId,
-                    new SecretKeySpec(Base64.decode(encryptionKey), "AES")));
+            KeyEncryptionKey encryptedKey = null;
+            if (jwtBuilderType.isEncrypted()) {
+                encryptedKey = new KeyEncryptionKey(getSecretBuilderForKey(accountId,
+                        new SecretKeySpec(Base64.decode(encryptionKey), "AES")));
+            }
 
             return buildJwt(jwsAlgorithm, jwtBuilderType, hmacSigningHandler, encryptedKey, jwtClaims);
         case RS256:
-            if (jwtBuilderType.compareTo(JwtBuilderType.SIGNED) != 0) {
+            if (jwtBuilderType.isEncrypted()) {
                 logger.warn("The jwtType " + jwtBuilderType + " is not supported for algorithm: " + jwsAlgorithm);
                 return null;
             }

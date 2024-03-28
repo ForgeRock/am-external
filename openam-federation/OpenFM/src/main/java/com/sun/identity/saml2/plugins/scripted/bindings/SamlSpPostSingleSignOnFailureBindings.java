@@ -20,11 +20,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.FAILURE_
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.PROFILE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SAML2_RESPONSE;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.forgerock.openam.scripting.domain.Binding;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.Response;
@@ -61,31 +57,24 @@ final class SamlSpPostSingleSignOnFailureBindings extends BaseSamlSpBindings {
         return new Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
+    @Override
+    public BindingsMap legacyBindings() {
+        BindingsMap bindings = new BindingsMap(legacyCommonBindings());
+        bindings.put(AUTHN_REQUEST, authnRequest);
+        bindings.put(PROFILE, profile);
+        bindings.put(SAML2_RESPONSE, ssoResponse);
+        bindings.put(FAILURE_CODE, failureCode);
+        return bindings;
     }
 
     @Override
-    public String getDisplayName() {
-        return "SAML SP Post Single Sign On Failure Bindings";
-    }
-
-    @Override
-    protected List<Binding> additionalV1Bindings() {
-        List<Binding> v1Bindings = new ArrayList<>(v1CommonBindings());
-        v1Bindings.addAll(List.of(
-                Binding.of(AUTHN_REQUEST, authnRequest, AuthnRequest.class),
-                Binding.of(PROFILE, profile, String.class),
-                Binding.of(SAML2_RESPONSE, ssoResponse, Response.class),
-                Binding.of(FAILURE_CODE, failureCode, Integer.class)
-        ));
-        return v1Bindings;
+    public BindingsMap nextGenBindings() {
+        BindingsMap bindings = new BindingsMap(nextGenCommonBindings());
+        bindings.put(AUTHN_REQUEST, authnRequest);
+        bindings.put(PROFILE, profile);
+        bindings.put(SAML2_RESPONSE, ssoResponse);
+        bindings.put(FAILURE_CODE, failureCode);
+        return bindings;
     }
 
     /**

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -47,6 +47,7 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.x509.CertificateUtils;
@@ -85,7 +86,6 @@ public class DeviceBindingNode implements Node, DeviceBinding {
     private static final String ATTESTATION = DeviceBindingNode.class.getSimpleName() + ".ATTESTATION";
     private static final String DEVICE_NAME = "deviceName";
     private static final Logger logger = LoggerFactory.getLogger(DeviceBindingNode.class);
-
     static final String SUCCESS_OUTCOME_ID = "success";
     static final String FAILURE_OUTCOME_ID = "failure";
     static final String MAX_SAVED_DEVICES = "maxSavedDevices";
@@ -93,7 +93,6 @@ public class DeviceBindingNode implements Node, DeviceBinding {
     static final String CLIENT_ERROR_OUTCOMES = "clientErrorOutcomes";
     static final String PLATFORM = "platform";
     static final String IOS = "ios";
-
     private final Config config;
     private final LegacyIdentityService identityService;
     private final CoreWrapper coreWrapper;
@@ -203,7 +202,6 @@ public class DeviceBindingNode implements Node, DeviceBinding {
             return false;
         }
 
-
         /**
          * Client error outcomes.
          *
@@ -213,7 +211,6 @@ public class DeviceBindingNode implements Node, DeviceBinding {
         default List<String> clientErrorOutcomes() {
             return DEFAULT_CLIENT_ERROR_OUTCOMES;
         }
-
     }
 
     /**
@@ -251,6 +248,8 @@ public class DeviceBindingNode implements Node, DeviceBinding {
 
         Optional<DeviceBindingCallback> deviceBindingCallback = context.getCallback(DeviceBindingCallback.class);
 
+        NodeState nodeState = context.getStateFor(this);
+
         //Make sure we have a valid user in the context.
         Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
                 identityService, coreWrapper);
@@ -287,11 +286,11 @@ public class DeviceBindingNode implements Node, DeviceBinding {
             try {
                 signedJwt = new JwtReconstruction().reconstructJwt(deviceBindingCallback.get().getJws(),
                         SignedJwt.class);
-                validateClaim(context, signedJwt);
+                validateClaim(nodeState, signedJwt);
                 JWK jwk = signedJwt.getHeader().getJsonWebKey();
                 validateSignature(signedJwt, jwk);
-                validateKeyAttestation(context, signedJwt);
-                persist(context, deviceBindingCallback.get(), username, userRealm, jwk);
+                validateKeyAttestation(nodeState, signedJwt);
+                persist(context, nodeState, deviceBindingCallback.get(), username, userRealm, jwk);
             } catch (Exception e) {
                 logger.warn("Device Binding failed:", e);
                 return Action.goTo(FAILURE_OUTCOME_ID).build();
@@ -304,11 +303,12 @@ public class DeviceBindingNode implements Node, DeviceBinding {
             return Action.goTo(deviceBindingCallback.get().getClientError()).build();
         } else {
             logger.debug("Send DeviceProfileCallback to client.");
-            return getCallback(context, userIdentity.get(), username);
+            return getCallback(context, nodeState, userIdentity.get(), username);
         }
     }
 
-    private DeviceSettings persist(TreeContext context, DeviceBindingCallback deviceBindingCallback, String username,
+    private DeviceSettings persist(TreeContext context, NodeState nodeState,
+            DeviceBindingCallback deviceBindingCallback, String username,
             String realm, JWK jwk) throws DevicePersistenceException, IOException {
         //Get device name, if empty use default
         String deviceName = deviceBindingCallback.getDeviceName();
@@ -324,7 +324,7 @@ public class DeviceBindingNode implements Node, DeviceBinding {
 
         if (config.postponeDeviceProfileStorage()) {
             //persist to transient state
-            context.getStateFor(this).putTransient(DEVICE, deviceBindingJsonUtils.toJsonValue(device));
+            nodeState.putTransient(DEVICE, deviceBindingJsonUtils.toJsonValue(device));
         } else {
             //persist to storage
             deviceBindingManager.saveDeviceProfile(username, realm, device);
@@ -332,13 +332,13 @@ public class DeviceBindingNode implements Node, DeviceBinding {
         return device;
     }
 
-    private void validateClaim(TreeContext context, SignedJwt signedJwt) throws NodeProcessException {
+    private void validateClaim(NodeState nodeState, SignedJwt signedJwt) throws NodeProcessException {
         //Validate Claim
-        String challenge = getContextValue(DeviceBindingNode.this, context, CHALLENGE);
+        String challenge = getContextValue(nodeState, CHALLENGE);
         validateClaim(signedJwt, challenge, config.applicationIds());
     }
 
-    private void validateKeyAttestation(TreeContext context, SignedJwt signedJwt) throws NodeProcessException,
+    private void validateKeyAttestation(NodeState nodeState, SignedJwt signedJwt) throws NodeProcessException,
             KeyAttestationException {
 
         if (signedJwt.getClaimsSet().isDefined(PLATFORM)
@@ -347,13 +347,13 @@ public class DeviceBindingNode implements Node, DeviceBinding {
         }
 
         if (config.attestation()) {
-            String challenge = getContextValue(this, context, CHALLENGE);
+            String challenge = getContextValue(nodeState, CHALLENGE);
             X509Certificate[] chain = toCertificateChain(signedJwt);
             if (!androidKeyAttestationService.verify(realm, chain,
                     Base64.getDecoder().decode(challenge))) {
                 throw new KeyAttestationException("Key Attestation Failed.");
             }
-            context.getStateFor(this).putTransient(ATTESTATION,
+            nodeState.putTransient(ATTESTATION,
                     androidKeyAttestationService.asJson(realm, chain, Base64.getDecoder().decode(challenge)));
         }
     }
@@ -369,9 +369,9 @@ public class DeviceBindingNode implements Node, DeviceBinding {
         }
     }
 
-    private Action getCallback(TreeContext context, AMIdentity identity, String contextUsername) {
+    private Action getCallback(TreeContext context, NodeState nodeState, AMIdentity identity, String contextUsername) {
         String challenge = createRandomBytes();
-        context.getStateFor(this).putShared(CHALLENGE, challenge);
+        nodeState.putShared(CHALLENGE, challenge);
         String username = "";
         try {
             //We need to provide fallback for the username, the getAttribute may not return the username.
@@ -431,7 +431,7 @@ public class DeviceBindingNode implements Node, DeviceBinding {
 
     @Override
     public OutputState[] getOutputs() {
-        return new OutputState[] {
+        return new OutputState[]{
             new OutputState(DEVICE, Map.of(SUCCESS_OUTCOME_ID, false))
         };
     }

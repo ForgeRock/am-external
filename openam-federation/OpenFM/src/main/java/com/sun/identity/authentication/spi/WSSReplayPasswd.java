@@ -24,7 +24,7 @@
  *
  * $Id: WSSReplayPasswd.java,v 1.3 2009/11/10 08:37:28 mrudul_uchil Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2024 ForgeRock AS.
  */
 
 package com.sun.identity.authentication.spi;
@@ -49,20 +49,20 @@ import com.sun.identity.security.AdminTokenAction;
 
 /**
  * This class is used to set the encrypted password as a session property.
- * This is a convenient class primarily used for web services security 
- * user name token profile where the end user password is encrypted.  
+ * This is a convenient class primarily used for web services security
+ * user name token profile where the end user password is encrypted.
  */
 public class WSSReplayPasswd implements AMPostAuthProcessInterface {
-   
+
     private static final String PASSWORD_TOKEN = "IDToken2";
-    private static boolean useHashedPassword = 
+    private static boolean useHashedPassword =
             Boolean.valueOf(SystemConfigurationUtil.getProperty(
             "com.sun.identity.wss.security.useHashedPassword", "true"));
     private static Logger debug = LoggerFactory.getLogger(WSSReplayPasswd.class);
-            
-            
-    
-    /** 
+
+
+
+    /**
      * Post processing on successful authentication.
      * @param requestParamsMap contains HttpServletRequest parameters
      * @param request HttpServlet  request
@@ -75,13 +75,13 @@ public class WSSReplayPasswd implements AMPostAuthProcessInterface {
         HttpServletRequest request,
         HttpServletResponse response,
         SSOToken ssoToken) throws AuthenticationException {
-        
+
         try {
             if(!useHashedPassword) {
                String userpasswd = request.getParameter(PASSWORD_TOKEN);
                if (userpasswd != null) {
-                   ssoToken.setProperty("EncryptedUserPassword", 
-                       Crypt.encrypt(userpasswd));
+                   ssoToken.setProperty("EncryptedUserPassword",
+                       Crypt.encryptAndEncode(userpasswd));
                }
             } else {
                String userName = ssoToken.getPrincipal().getName();
@@ -96,22 +96,22 @@ public class WSSReplayPasswd implements AMPostAuthProcessInterface {
                AMIdentity amId = new AMIdentity(getAdminToken(), universalID);
                Set tmp = amId.getAttribute("userPassword");
                if(tmp != null && !tmp.isEmpty()) {
-                  String userPassword = (String)tmp.iterator().next();                  
+                  String userPassword = (String)tmp.iterator().next();
                   ssoToken.setProperty("HashedUserPassword", userPassword);
-               }                
+               }
             }
         } catch (SSOException sse) {
             debug.warn("WSSReplayPasswd.onLoginSuccess: " +
                     "sso exception", sse);
         } catch (IdRepoException ire) {
             if(debug.isWarnEnabled()) {
-               debug.warn("WSSReplayPassword.onLoginSuccess: ", ire); 
+               debug.warn("WSSReplayPassword.onLoginSuccess: ", ire);
             }
-            
+
         }
     }
 
-    /** 
+    /**
      * Post processing on failed authentication.
      * @param requestParamsMap contains HttpServletRequest parameters
      * @param req HttpServlet request
@@ -121,10 +121,10 @@ public class WSSReplayPasswd implements AMPostAuthProcessInterface {
     public void onLoginFailure(Map requestParamsMap,
         HttpServletRequest req,
         HttpServletResponse res) throws AuthenticationException {
-           
+
     }
 
-    /** 
+    /**
      * Post processing on Logout.
      * @param req HttpServlet request
      * @param res HttpServlet response
@@ -133,11 +133,11 @@ public class WSSReplayPasswd implements AMPostAuthProcessInterface {
      */
     public void onLogout(HttpServletRequest req,
         HttpServletResponse res,
-        SSOToken ssoToken) throws AuthenticationException {           
+        SSOToken ssoToken) throws AuthenticationException {
     }
-    
+
      private static SSOToken getAdminToken() {
         return (SSOToken) AccessController.doPrivileged(
-                         AdminTokenAction.getInstance());                            
+                         AdminTokenAction.getInstance());
     }
 }

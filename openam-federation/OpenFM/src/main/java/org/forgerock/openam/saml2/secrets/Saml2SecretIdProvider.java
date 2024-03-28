@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2024 ForgeRock AS.
  */
 package org.forgerock.openam.saml2.secrets;
 
@@ -21,8 +21,11 @@ import static org.forgerock.openam.shared.secrets.Labels.SAML2_CLIENT_STORAGE_JW
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_IDP_ENCRYPTION;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_IDP_SIGNING;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_SP_ENCRYPTION;
+import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_SP_MTLS;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_SP_SIGNING;
+import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_BASICAUTH;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_ENCRYPTION;
+import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_MTLS;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_SIGNING;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_METADATA_SIGNING_RSA;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
@@ -41,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.meta.SAML2MetaException;
@@ -64,7 +68,8 @@ public class Saml2SecretIdProvider implements SecretIdProvider {
                         SAML2_DEFAULT_IDP_SIGNING,
                         SAML2_DEFAULT_IDP_ENCRYPTION,
                         SAML2_DEFAULT_SP_SIGNING,
-                        SAML2_DEFAULT_SP_ENCRYPTION)
+                        SAML2_DEFAULT_SP_ENCRYPTION,
+                        SAML2_DEFAULT_SP_MTLS)
                 .build();
     }
 
@@ -76,7 +81,8 @@ public class Saml2SecretIdProvider implements SecretIdProvider {
                         SAML2_DEFAULT_IDP_SIGNING,
                         SAML2_DEFAULT_IDP_ENCRYPTION,
                         SAML2_DEFAULT_SP_SIGNING,
-                        SAML2_DEFAULT_SP_ENCRYPTION)
+                        SAML2_DEFAULT_SP_ENCRYPTION,
+                        SAML2_DEFAULT_SP_MTLS)
                 .build();
     }
 
@@ -84,7 +90,8 @@ public class Saml2SecretIdProvider implements SecretIdProvider {
     public Multimap<String, String> getRealmMultiInstanceSecretIds(SSOToken token, Realm realm) {
         return ImmutableMultimap.<String, String>builder()
                 .putAll(SAML2_KEY,
-                        getSecretIdsForHostedRealmEntities(token, realm.asPath()))
+                        Sets.union(getSecretIdsForHostedRealmEntities(token, realm.asPath()),
+                                getSecretIdsForRemoteRealmEntities(token, realm.asPath())))
                 .build();
     }
 
@@ -94,7 +101,7 @@ public class Saml2SecretIdProvider implements SecretIdProvider {
             SAML2MetaManager metaManager = new SAML2MetaManager(token);
             List<String> entityIds = metaManager.getAllHostedEntities(realm);
             for (String entityId : entityIds) {
-                secretIds.addAll(createEntitySecretsIds(realm, metaManager, entityId));
+                secretIds.addAll(createHostedEntitySecretsIds(realm, metaManager, entityId));
             }
         } catch (SAML2MetaException e) {
             logger.error("Unable to retrieve secret IDs for saml2 entities", e);
@@ -103,7 +110,22 @@ public class Saml2SecretIdProvider implements SecretIdProvider {
         return secretIds;
     }
 
-    private Set<String> createEntitySecretsIds(String realm, SAML2MetaManager metaManager, String entity)
+    private Set<String> getSecretIdsForRemoteRealmEntities(SSOToken token, String realm) {
+        Set<String> secretIds = new HashSet<>();
+        try {
+            SAML2MetaManager metaManager = new SAML2MetaManager(token);
+            List<String> entityIds = metaManager.getAllRemoteEntities(realm);
+            for (String entityId : entityIds) {
+                secretIds.addAll(createRemoteEntitySecretsIds(realm, metaManager, entityId));
+            }
+        } catch (SAML2MetaException e) {
+            logger.error("Unable to retrieve secret IDs for saml2 entities", e);
+            return Collections.emptySet();
+        }
+        return secretIds;
+    }
+
+    private Set<String> createHostedEntitySecretsIds(String realm, SAML2MetaManager metaManager, String entity)
             throws SAML2MetaException {
         Set<String> secretIds = new HashSet<>();
         EntityDescriptorElement entityDescriptor = metaManager.getEntityDescriptor(realm, entity);
@@ -114,6 +136,23 @@ public class Saml2SecretIdProvider implements SecretIdProvider {
                 if (isNotBlank(secretIdIdentifier)) {
                     secretIds.add(String.format(SAML2_ENTITY_ROLE_SIGNING, secretIdIdentifier));
                     secretIds.add(String.format(SAML2_ENTITY_ROLE_ENCRYPTION, secretIdIdentifier));
+                    secretIds.add(String.format(SAML2_ENTITY_ROLE_MTLS, secretIdIdentifier));
+                }
+            }
+        }
+        return secretIds;
+    }
+
+    private Set<String> createRemoteEntitySecretsIds(String realm, SAML2MetaManager metaManager, String entity)
+            throws SAML2MetaException {
+        Set<String> secretIds = new HashSet<>();
+        EntityDescriptorElement entityDescriptor = metaManager.getEntityDescriptor(realm, entity);
+        for (Saml2EntityRole role : EnumSet.of(Saml2EntityRole.IDP, Saml2EntityRole.SP)) {
+            if (role.isPresent(entityDescriptor)) {
+                String secretIdIdentifier = getAttributeValueFromSSOConfig(realm, entity,
+                        role.getName(), SECRET_ID_IDENTIFIER);
+                if (isNotBlank(secretIdIdentifier)) {
+                    secretIds.add(String.format(SAML2_ENTITY_ROLE_BASICAUTH, secretIdIdentifier));
                 }
             }
         }

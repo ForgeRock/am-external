@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2020 ForgeRock AS.
+ * Copyright 2016-2023 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.utils;
 
@@ -47,9 +47,9 @@ public class AmazonSNSPushResponseUpdaterTest {
 
     @Test
     public void shouldSucceedWithValidInput() {
-
+        var realm = "/";
         //given
-        given(mockClientFactory.produce(config)).willReturn(mockClient);
+        given(mockClientFactory.produce(config, realm)).willReturn(mockClient);
 
         CreatePlatformEndpointResult endpointResult = new CreatePlatformEndpointResult();
         endpointResult.setEndpointArn("endpointArn");
@@ -71,7 +71,7 @@ public class AmazonSNSPushResponseUpdaterTest {
         JsonValue content = json(object(field("jwt", jwt)));
 
         //when
-        boolean result = responseUpdater.updateResponse(config, content);
+        boolean result = responseUpdater.updateResponse(config, content, realm);
 
         //then
         org.assertj.core.api.Assertions.assertThat(result).isTrue();
@@ -86,9 +86,9 @@ public class AmazonSNSPushResponseUpdaterTest {
 
     @Test
     public void shouldFailWithInvalidAmazonResponse() {
-
+        var realm = "/";
         //given
-        given(mockClientFactory.produce(config)).willReturn(mockClient);
+        given(mockClientFactory.produce(config, realm)).willReturn(mockClient);
 
         CreatePlatformEndpointResult endpointResult = new CreatePlatformEndpointResult();
 
@@ -109,7 +109,7 @@ public class AmazonSNSPushResponseUpdaterTest {
         JsonValue content = json(object(field("jwt", jwt)));
 
         //when
-        boolean result = responseUpdater.updateResponse(config, content);
+        boolean result = responseUpdater.updateResponse(config, content, realm);
 
         //then
         org.assertj.core.api.Assertions.assertThat(result).isFalse();
@@ -117,12 +117,13 @@ public class AmazonSNSPushResponseUpdaterTest {
 
     @Test
     public void shouldFailWhenNoJwtInContent() {
+        var realm = "/";
         //given
-        mockClientFactory.produce(config);
+        mockClientFactory.produce(config, realm);
         JsonValue content = JsonValue.json(object(field("", "")));
 
         //when
-        boolean result = responseUpdater.updateResponse(config, content);
+        boolean result = responseUpdater.updateResponse(config, content, realm);
 
         //then
         org.assertj.core.api.Assertions.assertThat(result).isFalse();

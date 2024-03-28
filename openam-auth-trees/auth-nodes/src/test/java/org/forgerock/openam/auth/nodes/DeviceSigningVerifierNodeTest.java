@@ -11,11 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
-
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -28,11 +27,9 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -41,7 +38,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -63,6 +59,7 @@ import org.forgerock.json.jose.jws.JwsAlgorithm;
 import org.forgerock.json.jose.jws.handlers.SecretRSASigningHandler;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
+import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.DeviceSigningVerifierCallback;
@@ -73,21 +70,23 @@ import org.forgerock.openam.core.rest.devices.binding.DeviceBindingSettings;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.secrets.SecretBuilder;
 import org.forgerock.secrets.keys.SigningKey;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import com.iplanet.sso.SSOException;
-import com.iplanet.sso.SSOToken;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdType;
 
 /**
- * Test for Device Binding
+ * Test for Device Signing Verifier Node.
  */
+@RunWith(MockitoJUnitRunner.class)
 public class DeviceSigningVerifierNodeTest {
 
     public static final String ISS = "com.example.app";
@@ -115,18 +114,8 @@ public class DeviceSigningVerifierNodeTest {
     @Mock
     LegacyIdentityService identityService;
 
-
-
-    @BeforeMethod
+    @Before
     public void setup() throws IdRepoException, SSOException {
-        node = null;
-        openMocks(this);
-
-        given(identityService.getAmIdentity(any(SSOToken.class), any(String.class), eq(IdType.USER), any()))
-                .willReturn(amIdentity);
-
-        given(identityService.getUniversalId(any(), (IdType) any(), any()))
-                .willReturn(UUID.randomUUID().toString());
 
         given(identityService.getUniversalId(any(), any(), (IdType) any())).willReturn(Optional.of("bob"));
 
@@ -135,6 +124,7 @@ public class DeviceSigningVerifierNodeTest {
         given(amIdentity.isActive()).willReturn(true);
         given(amIdentity.getName()).willReturn("bob");
         given(amIdentity.getUniversalId()).willReturn("bob");
+        given(amIdentity.getType()).willReturn(IdType.USER);
 
         given(config.challenge()).willReturn(true);
         given(config.title()).willReturn(Map.of(Locale.ENGLISH, "title"));
@@ -142,13 +132,83 @@ public class DeviceSigningVerifierNodeTest {
         given(config.description()).willReturn(Map.of(Locale.ENGLISH, "description"));
         given(config.timeout()).willReturn(60);
         given(config.applicationIds()).willReturn(Set.of(ISS));
-        given(config.clientErrorOutcomes()).willReturn(Collections.singletonList("unsupported"));
+        given(config.captureFailure()).willReturn(false);
         when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
     }
 
     @Test
-    public void testProcessWithNoInput()
-            throws NodeProcessException, NoSuchAlgorithmException, DevicePersistenceException {
+    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
+        JsonValue transientState = json(object());
+
+        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        String kid = UUID.randomUUID().toString();
+        JWK rsaJwk = RsaJWK.builder((RSAPublicKey) keyPair.getPublic())
+                .keyId(kid)
+                .algorithm(JwsAlgorithm.RS256)
+                .build();
+
+        DeviceBindingSettings deviceBindingSettings = new DeviceBindingSettings();
+        deviceBindingSettings.setKey(rsaJwk);
+        given(deviceBindingManager.getDeviceProfiles(anyString(), anyString())).willReturn(
+                asList(deviceBindingSettings));
+        deviceArgumentCaptor = ArgumentCaptor.forClass(DeviceBindingSettings.class);
+        doNothing().when(deviceBindingManager).saveDeviceProfile(any(), any(), deviceArgumentCaptor.capture());
+
+        //Call the process to generate Challenge in the sharedState
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        assertThat(((DeviceSigningVerifierCallback) result.callbacks.get(0)).getChallenge()).isNotNull();
+
+        //given
+        // Client
+        String challenge = ((DeviceSigningVerifierCallback) result.callbacks.get(0)).getChallenge();
+
+        DeviceSigningVerifierCallback callback = new DeviceSigningVerifierCallback("challenge",
+                "bob", "title", "subtitle", "description", 60);
+        callback.setJws(buildSignedJwt(keyPair, kid, ISS, "bob", challenge, null));
+
+        //When
+        result = node.process(getContext(sharedState, transientState, singletonList(callback)));
+
+        // Then
+        assertThat(result.identifiedIdentity).isPresent();
+        IdentifiedIdentity idid = result.identifiedIdentity.get();
+        assertThat(idid.getUsername()).isEqualTo("bob");
+        assertThat(idid.getIdentityType()).isEqualTo(IdType.USER);
+    }
+
+    @Test(expected = NodeProcessException.class)
+    public void testNonExistentUser() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
+        JsonValue transientState = json(object());
+
+        given(identityService.getUniversalId(any(), any(), (IdType) any())).willReturn(Optional.empty());
+
+        node.process(getContext(sharedState, transientState, emptyList()));
+    }
+
+    @Test
+    public void testNonExistentUserWithFailureOutcome() throws Exception {
+        // Given
+        given(config.captureFailure()).willReturn(true);
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
+        JsonValue transientState = json(object());
+
+        given(identityService.getUniversalId(any(), any(), (IdType) any())).willReturn(Optional.empty());
+
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+        assertThat(result.outcome).isEqualTo(DeviceSigningVerifierNode.FAILURE_OUTCOME_ID);
+        assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_USER.name());
+
+    }
+
+    @Test
+    public void testProcessWithNoInput() throws NodeProcessException,
+            NoSuchAlgorithmException, DevicePersistenceException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
 
@@ -219,8 +279,8 @@ public class DeviceSigningVerifierNodeTest {
         assertThat(result.callbacks).isEmpty();
     }
 
-    private String buildSignedJwt(KeyPair keyPair, String kid, String iss, String sub, String challenge, Date exp)
-            throws Exception {
+    private String buildSignedJwt(KeyPair keyPair, String kid, String iss, String sub,
+            String challenge, Date exp) throws Exception {
         SigningKey signingKey = new SigningKey(new SecretBuilder()
                 .secretKey(keyPair.getPrivate())
                 .publicKey(keyPair.getPublic())
@@ -324,13 +384,14 @@ public class DeviceSigningVerifierNodeTest {
         callback.setJws(buildSignedJwt(keyPair, kid, "invalid", "bob", challenge, null));
 
 
-
         //When
         result = node
                 .process(getContext(sharedState, transientState, singletonList(callback)));
 
         //Then
         assertThat(result.outcome).isEqualTo(DeviceSigningVerifierNode.FAILURE_OUTCOME_ID);
+        assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_CLAIM.name());
         assertThat(result.callbacks).isEmpty();
     }
 
@@ -375,6 +436,8 @@ public class DeviceSigningVerifierNodeTest {
 
         //Then
         assertThat(result.outcome).isEqualTo(DeviceSigningVerifierNode.FAILURE_OUTCOME_ID);
+        assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_CLAIM.name());
         assertThat(result.callbacks).isEmpty();
     }
 
@@ -417,6 +480,8 @@ public class DeviceSigningVerifierNodeTest {
 
         //Then
         assertThat(result.outcome).isEqualTo(DeviceSigningVerifierNode.FAILURE_OUTCOME_ID);
+        assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_CLAIM.name());
         assertThat(result.callbacks).isEmpty();
     }
 
@@ -459,6 +524,8 @@ public class DeviceSigningVerifierNodeTest {
 
         //Then
         assertThat(result.outcome).isEqualTo(DeviceSigningVerifierNode.FAILURE_OUTCOME_ID);
+        assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.INVALID_SIGNATURE.name());
         assertThat(result.callbacks).isEmpty();
     }
 
@@ -509,8 +576,7 @@ public class DeviceSigningVerifierNodeTest {
         assertThat(result.callbacks).isEmpty();
     }
 
-    @Test(expectedExceptions = NodeProcessException.class,
-            expectedExceptionsMessageRegExp = "Failed to lookup user")
+    @Test(expected = NodeProcessException.class)
     public void testUserNotActive() throws NodeProcessException, IdRepoException, SSOException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -520,8 +586,70 @@ public class DeviceSigningVerifierNodeTest {
         node.process(getContext(sharedState, transientState, emptyList()));
     }
 
+    @Test
+    public void testFailureOutcomeInactiveUserWithoutCallback()
+            throws NodeProcessException, IdRepoException, SSOException {
+        given(config.captureFailure()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(false);
+
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
+        JsonValue transientState = json(object());
+
+        //When
+        Action result = node
+                .process(getContext(sharedState, transientState, emptyList()));
+
+        //Then
+        assertThat(result.outcome).isEqualTo(DeviceSigningVerifierNode.FAILURE_OUTCOME_ID);
+        assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.NOT_ACTIVE_USER.name());
+        assertThat(result.callbacks).isEmpty();
+    }
+
+    @Test
+    public void testFailureOutcomeInactiveUserWithCallback() throws Exception {
+
+        given(config.captureFailure()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(false);
+
+        JsonValue sharedState = json(object(field(REALM, "/realm")));
+        JsonValue transientState = json(object());
+
+        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        String kid = UUID.randomUUID().toString();
+        JWK rsaJwk = RsaJWK.builder((RSAPublicKey) keyPair.getPublic())
+                .keyId(kid)
+                .algorithm(JwsAlgorithm.RS256)
+                .build();
+
+        DeviceBindingSettings deviceBindingSettings = new DeviceBindingSettings();
+        deviceBindingSettings.setKey(rsaJwk);
+
+        //Call the process to generate Challenge in the sharedState
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        assertThat(((DeviceSigningVerifierCallback) result.callbacks.get(0)).getChallenge()).isNotNull();
+
+        //given
+        String challenge = ((DeviceSigningVerifierCallback) result.callbacks.get(0)).getChallenge();
+
+        DeviceSigningVerifierCallback callback = new DeviceSigningVerifierCallback("challenge",
+                "bob", "title", "subtitle", "description", 60);
+        callback.setJws(buildSignedJwt(keyPair, kid, ISS, "bob", challenge, null));
+
+        //When
+        result = node
+                .process(getContext(sharedState, transientState, singletonList(callback)));
+
+        //Then
+        assertThat(result.outcome).isEqualTo(DeviceSigningVerifierNode.FAILURE_OUTCOME_ID);
+        assertThat(sharedState.get(DeviceSigningVerifierNode.FAILURE_REASON).asString())
+                .isEqualTo(DeviceSigningVerifierNode.FailureReason.NOT_ACTIVE_USER.name());
+        assertThat(result.callbacks).isEmpty();
+    }
+
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
-                                   List<? extends Callback> callbacks) {
+            List<? extends Callback> callbacks) {
         return new TreeContext(sharedState, transientState, new Builder().build(),
                 callbacks, Optional.empty());
     }

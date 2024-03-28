@@ -24,12 +24,13 @@
  *
  * $Id: ManageNameIDRequestImpl.java,v 1.3 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2023 ForgeRock AS.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -50,6 +51,7 @@ import com.sun.identity.saml2.protocol.NewID;
 import com.sun.identity.saml2.protocol.ProtocolFactory;
 import com.sun.identity.shared.xml.XMLUtils;
 
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class ManageNameIDRequestImpl 
    extends RequestAbstractImpl implements ManageNameIDRequest {
     private static final Logger logger = LoggerFactory.getLogger(ManageNameIDRequestImpl.class);

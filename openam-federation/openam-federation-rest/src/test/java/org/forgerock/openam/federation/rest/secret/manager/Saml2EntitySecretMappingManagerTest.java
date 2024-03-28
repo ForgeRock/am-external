@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.federation.rest.secret.manager;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Collections;
 import java.util.Set;
@@ -35,9 +35,9 @@ import org.forgerock.openam.secrets.config.KeyStoreSecretStore;
 import org.forgerock.openam.secrets.config.PurposeMapping;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
 import org.forgerock.openam.sm.annotations.subconfigs.Multiple;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 import com.sun.identity.saml2.meta.SAML2MetaException;
 
@@ -60,9 +60,9 @@ public class Saml2EntitySecretMappingManagerTest {
 
     private Saml2EntitySecretMappingManager manager;
 
-    @BeforeMethod
+    @Before
     public void setup() {
-        initMocks(this);
+        openMocks(this);
         manager = new Saml2EntitySecretMappingManager(configManagerFactory, helper, realmLookup);
         given(realmLookup.convertRealmDnToRealmPath(REALM)).willReturn(REALM_PATH);
     }
@@ -73,23 +73,23 @@ public class Saml2EntitySecretMappingManagerTest {
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 1);
 
         //then
-        verify(helper, never()).getAllEntitySecretIdIdentifiers(anyString());
+        verify(helper, never()).getAllHostedEntitySecretIdIdentifiers(anyString());
         verify(helper, never()).getRealmStores(anyString());
-        verify(helper, never()).isUnusedSecretMapping(anySet(), anyString());
+        verify(helper, never()).isUnusedHostedEntitySecretMapping(anySet(), anyString());
         verify(helper, never()).deleteSecretMapping(any(), anyString());
     }
 
     @Test
     public void shouldNotGetRealmStoresWhenGetSecretIdentifiersThrowException() throws Exception {
         //given
-        given(helper.getAllEntitySecretIdIdentifiers(REALM_PATH)).willThrow(SAML2MetaException.class);
+        given(helper.getAllHostedEntitySecretIdIdentifiers(REALM_PATH)).willThrow(SAML2MetaException.class);
 
         //when
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
 
         //then
         verify(helper, never()).getRealmStores(anyString());
-        verify(helper, never()).isUnusedSecretMapping(anySet(), anyString());
+        verify(helper, never()).isUnusedHostedEntitySecretMapping(anySet(), anyString());
         verify(helper, never()).deleteSecretMapping(any(), anyString());
     }
 
@@ -102,7 +102,8 @@ public class Saml2EntitySecretMappingManagerTest {
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
 
         //then
-        verify(helper, never()).isUnusedSecretMapping(anySet(), anyString());
+        verify(helper, never()).isUnusedHostedEntitySecretMapping(anySet(), anyString());
+        verify(helper, never()).isUnusedRemoteEntitySecretMapping(anySet(), anyString());
         verify(helper, never()).deleteSecretMapping(any(), anyString());
     }
 
@@ -116,7 +117,8 @@ public class Saml2EntitySecretMappingManagerTest {
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
 
         //then
-        verify(helper, never()).isUnusedSecretMapping(anySet(), anyString());
+        verify(helper, never()).isUnusedHostedEntitySecretMapping(anySet(), anyString());
+        verify(helper, never()).isUnusedRemoteEntitySecretMapping(anySet(), anyString());
         verify(helper, never()).deleteSecretMapping(any(), anyString());
     }
 
@@ -131,20 +133,21 @@ public class Saml2EntitySecretMappingManagerTest {
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
 
         //then
-        verify(helper, never()).isUnusedSecretMapping(anySet(), anyString());
+        verify(helper, never()).isUnusedHostedEntitySecretMapping(anySet(), anyString());
+        verify(helper, never()).isUnusedRemoteEntitySecretMapping(anySet(), anyString());
         verify(helper, never()).deleteSecretMapping(any(), anyString());
     }
 
     @Test
-    public void shouldNotDeleteWhenNoUnusedMappingFound() throws Exception {
+    public void shouldNotDeleteHostedEntitySecretMappingWhenNoUnusedMappingFound() throws Exception {
         //given
         Set <String> secretIds = singleton("secretId");
         String mappingId = "some.secret.mapping";
-        given(helper.getAllEntitySecretIdIdentifiers(REALM)).willReturn(secretIds);
+        given(helper.getAllHostedEntitySecretIdIdentifiers(REALM)).willReturn(secretIds);
         given(secretStore.mappings()).willReturn(mappings);
         given(mappings.idSet()).willReturn(singleton(mappingId));
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
-        given(helper.isUnusedSecretMapping(secretIds, mappingId)).willReturn(false);
+        given(helper.isUnusedHostedEntitySecretMapping(secretIds, mappingId)).willReturn(false);
 
         //when
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
@@ -154,20 +157,100 @@ public class Saml2EntitySecretMappingManagerTest {
     }
 
     @Test
-    public void shouldDeleteWhenUnusedMappingFound() throws Exception {
+    public void shouldNotDeleteRemoteEntitySecretMappingWhenNoUnusedMappingFound() throws Exception {
         //given
         Set <String> secretIds = singleton("secretId");
-        String mappingId = "unused.secret.mapping";
-        given(helper.getAllEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
+        String mappingId = "some.secret.mapping";
+        given(helper.getAllRemoteEntitySecretIdIdentifiers(REALM)).willReturn(secretIds);
         given(secretStore.mappings()).willReturn(mappings);
         given(mappings.idSet()).willReturn(singleton(mappingId));
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
-        given(helper.isUnusedSecretMapping(secretIds, mappingId)).willReturn(true);
+        given(helper.isUnusedRemoteEntitySecretMapping(secretIds, mappingId)).willReturn(false);
+
+        //when
+        manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
+
+        //then
+        verify(helper, never()).deleteSecretMapping(mappings, mappingId);
+    }
+
+    @Test
+    public void shouldDeleteHostedEntitySecretMappingWhenUnusedMappingFound() throws Exception {
+        //given
+        Set <String> secretIds = singleton("secretId");
+        String mappingId = "unused.secret.mapping";
+        given(helper.getAllHostedEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
+        given(secretStore.mappings()).willReturn(mappings);
+        given(mappings.idSet()).willReturn(singleton(mappingId));
+        given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
+        given(helper.isUnusedHostedEntitySecretMapping(secretIds, mappingId)).willReturn(true);
 
         //when
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
 
         //then
         verify(helper, atLeastOnce()).deleteSecretMapping(mappings, mappingId);
+    }
+
+    @Test
+    public void shouldDeleteHostedEntitySecretMappingWhenOnlyRemoteMappingFound() throws Exception {
+        //given
+        Set <String> secretIds = singleton("secretId");
+        String hostedMappingId = "hosted.secret.mapping";
+        String remoteMappingId = "remote.secret.mapping";
+        given(helper.getAllHostedEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
+        given(helper.getAllRemoteEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
+        given(secretStore.mappings()).willReturn(mappings);
+        given(mappings.idSet()).willReturn(Set.of(hostedMappingId, remoteMappingId));
+        given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
+        given(helper.isUnusedHostedEntitySecretMapping(secretIds, hostedMappingId)).willReturn(true);
+        given(helper.isUnusedRemoteEntitySecretMapping(secretIds, remoteMappingId)).willReturn(false);
+
+        //when
+        manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
+
+        //then
+        verify(helper, atLeastOnce()).deleteSecretMapping(mappings, hostedMappingId);
+        verify(helper, never()).deleteSecretMapping(mappings, remoteMappingId);
+    }
+
+    @Test
+    public void shouldDeleteRemoteEntitySecretMappingWhenUnusedMappingFound() throws Exception {
+        //given
+        Set <String> secretIds = singleton("secretId");
+        String mappingId = "unused.secret.mapping";
+        given(helper.getAllRemoteEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
+        given(secretStore.mappings()).willReturn(mappings);
+        given(mappings.idSet()).willReturn(singleton(mappingId));
+        given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
+        given(helper.isUnusedRemoteEntitySecretMapping(secretIds, mappingId)).willReturn(true);
+
+        //when
+        manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
+
+        //then
+        verify(helper, atLeastOnce()).deleteSecretMapping(mappings, mappingId);
+    }
+
+    @Test
+    public void shouldDeleteRemoteEntitySecretMappingWhenOnlyHostedMappingFound() throws Exception {
+        //given
+        Set <String> secretIds = singleton("secretId");
+        String hostedMappingId = "hosted.secret.mapping";
+        String remoteMappingId = "remote.secret.mapping";
+        given(helper.getAllHostedEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
+        given(helper.getAllRemoteEntitySecretIdIdentifiers(REALM_PATH)).willReturn(secretIds);
+        given(secretStore.mappings()).willReturn(mappings);
+        given(mappings.idSet()).willReturn(Set.of(hostedMappingId, remoteMappingId));
+        given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
+        given(helper.isUnusedHostedEntitySecretMapping(secretIds, hostedMappingId)).willReturn(false);
+        given(helper.isUnusedRemoteEntitySecretMapping(secretIds, remoteMappingId)).willReturn(true);
+
+        //when
+        manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 2);
+
+        //then
+        verify(helper, never()).deleteSecretMapping(mappings, hostedMappingId);
+        verify(helper, atLeastOnce()).deleteSecretMapping(mappings, remoteMappingId);
     }
 }

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2024 ForgeRock AS.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -19,7 +19,7 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.List;
 
-import org.forgerock.openam.federation.rest.schema.hosted.identity.NameIdValueMap;
+import org.forgerock.openam.federation.rest.schema.shared.NameIdValueMap;
 import org.forgerock.openam.objectenricher.EnricherContext;
 import org.forgerock.openam.objectenricher.mapper.ValueMapper;
 

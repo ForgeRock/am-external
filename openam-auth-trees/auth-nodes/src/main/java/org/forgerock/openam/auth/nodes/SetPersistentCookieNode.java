@@ -11,13 +11,14 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -31,13 +32,15 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.treehook.CreatePersistentCookieTreeHook;
 import org.forgerock.openam.auth.nodes.validators.HmacSigningKeyValidator;
 import org.forgerock.openam.sm.annotations.adapters.Password;
+import org.forgerock.openam.sm.annotations.adapters.SecretPurpose;
 import org.forgerock.openam.sm.annotations.adapters.TimeUnit;
+import org.forgerock.secrets.Purpose;
+import org.forgerock.secrets.keys.SigningKey;
 import org.forgerock.util.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
-import com.sun.identity.sm.RequiredValueValidator;
 
 /**
  * A node to instruct the tree to set a persistent cookie after the session is created.
@@ -55,7 +58,7 @@ public class SetPersistentCookieNode extends SingleOutcomeNode implements Persis
     /**
      * Configuration for the node.
      */
-    public interface Config {
+    public interface Config extends HmacSigningKeyConfig {
 
         /**
          * The idle time out. If the cookie is not used within this time, the jwt becomes invalid.
@@ -99,14 +102,16 @@ public class SetPersistentCookieNode extends SingleOutcomeNode implements Persis
             return true;
         }
 
-        /**
-         * The signing key.
-         *
-         * @return the hmac signing key.
-         */
-        @Attribute(order = 500, validators = {RequiredValueValidator.class, HmacSigningKeyValidator.class})
+        @Attribute(order = 500, validators = {HmacSigningKeyValidator.class})
         @Password
-        char[] hmacSigningKey();
+        @Deprecated
+        @Override
+        Optional<char[]> hmacSigningKey();
+
+        @Attribute(order = 550, resourceName = "hmacSigningKeySecretLabelIdentifier")
+        @SecretPurpose("am.authentication.nodes.persistentcookie.%s.signing")
+        @Override
+        Optional<Purpose<SigningKey>> signingKeyPurpose();
 
         /**
          * The name of the persistent cookie.

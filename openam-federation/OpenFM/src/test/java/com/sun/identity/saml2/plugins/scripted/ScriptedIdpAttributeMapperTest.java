@@ -19,52 +19,46 @@ package com.sun.identity.saml2.plugins.scripted;
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ATTRIBUTE_MAPPER_SCRIPT;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.HOSTED_ENTITYID;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER;
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.LOGGER;
-import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REALM;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REMOTE_ENTITY;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SESSION;
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.entry;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ATTRIBUTE_MAPPER;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
 import java.util.List;
 import java.util.UUID;
-
-import javax.script.Bindings;
 
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.scripting.application.ScriptEvaluationHelper;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 import org.forgerock.openam.scripting.domain.Script;
+import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.ScriptStore;
 import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
 import org.forgerock.openam.session.Session;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockedStatic;
+import org.mockito.MockitoAnnotations;
 
 import com.sun.identity.plugin.monitoring.MonitorManager;
 import com.sun.identity.plugin.monitoring.impl.AgentProvider;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.plugins.ValidationHelper;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
-import com.sun.identity.shared.debug.Debug;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({IDPSSOUtil.class, MonitorManager.class})
 public class ScriptedIdpAttributeMapperTest {
 
     @Mock
@@ -87,15 +81,24 @@ public class ScriptedIdpAttributeMapperTest {
     private final UUID scriptId = UUID.randomUUID();
     private final String exampleScript = "exampleScript";
 
+    private static MockedStatic<MonitorManager> monitorManagerMockedStatic;
+    private static MockedStatic<IDPSSOUtil> idpssoUtilMockedStatic;
     // Class under test
     private ScriptedIdpAttributeMapper scriptedIdpAttributeMapper;
 
     @Before
     public void setup() throws Exception {
+        MockitoAnnotations.openMocks(this).close();
         scriptedIdpAttributeMapper = new ScriptedIdpAttributeMapper(__ -> scriptEvaluator, scriptStoreFactory,
                 scriptEvaluationHelper, validationHelper, realmLookup);
-        PowerMockito.mockStatic(MonitorManager.class);
-        mockStatic(IDPSSOUtil.class);
+        monitorManagerMockedStatic = mockStatic(MonitorManager.class);
+        idpssoUtilMockedStatic = mockStatic(IDPSSOUtil.class);
+    }
+
+    @After
+    public void tearDown() {
+        monitorManagerMockedStatic.close();
+        idpssoUtilMockedStatic.close();
     }
 
     @Test
@@ -107,7 +110,7 @@ public class ScriptedIdpAttributeMapperTest {
         String scriptContent = "myScript";
         when(realmLookup.lookup(realm)).thenReturn(realmObject);
 
-        ArgumentCaptor<Bindings> bindingsCaptor = ArgumentCaptor.forClass(Bindings.class);
+        ArgumentCaptor<ScriptBindings> bindingsCaptor = ArgumentCaptor.forClass(ScriptBindings.class);
         ArgumentCaptor<Script> scriptCaptor = ArgumentCaptor.forClass(Script.class);
 
         // Given
@@ -126,12 +129,10 @@ public class ScriptedIdpAttributeMapperTest {
         final Script script = scriptCaptor.getValue();
         assertThat(script.getScript()).isEqualTo(exampleScript);
         assertThat(script.getName()).isEqualTo(IDP_ATTRIBUTE_MAPPER_SCRIPT);
-        assertThat(bindingsCaptor.getValue()).contains(entry(SESSION, session),
+        BindingsMap bindings = bindingsCaptor.getValue().legacyBindings();
+        assertThat(bindings).contains(entry(SESSION, session),
                         entry(HOSTED_ENTITYID, hostedEntityId),
-                        entry(REMOTE_ENTITY, remoteEntityId),
-                        entry(REALM, realm),
-                        entry(LOGGER, Debug.getInstance(String.format("scripts.%s.%s.(%s)",
-                                SAML2_IDP_ATTRIBUTE_MAPPER.name(), script.getId(), script.getName()))))
+                        entry(REMOTE_ENTITY, remoteEntityId))
                 .containsKey(IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER);
     }
 

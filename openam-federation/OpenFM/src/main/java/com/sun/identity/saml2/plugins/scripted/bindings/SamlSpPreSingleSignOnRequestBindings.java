@@ -18,11 +18,7 @@ package com.sun.identity.saml2.plugins.scripted.bindings;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.AUTHN_REQUEST;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.IDP_ENTITY_ID;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.forgerock.openam.scripting.domain.Binding;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.BindingsMap;
 
 import com.sun.identity.saml2.protocol.AuthnRequest;
 
@@ -54,29 +50,20 @@ final class SamlSpPreSingleSignOnRequestBindings extends BaseSamlSpBindings {
         return new Builder();
     }
 
-    /**
-     * The signature of these bindings. Used to provide information about available bindings via REST without the
-     * stateful underlying objects.
-     *
-     * @return The signature of this ScriptBindings implementation.
-     */
-    public static ScriptBindings signature() {
-        return new Builder().signature();
+    @Override
+    public BindingsMap legacyBindings() {
+        BindingsMap bindings = new BindingsMap(legacyCommonBindings());
+        bindings.put(AUTHN_REQUEST, authnRequest);
+        bindings.put(IDP_ENTITY_ID, idpEntityId);
+        return bindings;
     }
 
     @Override
-    public String getDisplayName() {
-        return "SAML SP Pre Single Sign On Request Bindings";
-    }
-
-    @Override
-    protected List<Binding> additionalV1Bindings() {
-        List<Binding> v1Bindings = new ArrayList<>(v1CommonBindings());
-        v1Bindings.addAll(List.of(
-                Binding.of(AUTHN_REQUEST, authnRequest, AuthnRequest.class),
-                Binding.of(IDP_ENTITY_ID, idpEntityId, String.class)
-        ));
-        return v1Bindings;
+    public BindingsMap nextGenBindings() {
+        BindingsMap bindings = new BindingsMap(nextGenCommonBindings());
+        bindings.put(AUTHN_REQUEST, authnRequest);
+        bindings.put(IDP_ENTITY_ID, idpEntityId);
+        return bindings;
     }
 
     /**

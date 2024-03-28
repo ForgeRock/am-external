@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -35,5 +35,24 @@ public class TreeHookException extends Exception {
      */
     public TreeHookException(Throwable e) {
         super(e);
+    }
+
+    /**
+     * Constructs the TreeHookException with a message.
+     *
+     * @param message The message.
+     */
+    public TreeHookException(String message) {
+        super(message);
+    }
+
+    /**
+     * Constructs the TreeHookException with a message and a wrapped throwable.
+     *
+     * @param message The message
+     * @param cause   Throwable we want to wrap into a TreeHookException.
+     */
+    public TreeHookException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

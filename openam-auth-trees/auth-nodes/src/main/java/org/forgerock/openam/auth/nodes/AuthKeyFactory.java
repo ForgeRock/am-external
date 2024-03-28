@@ -11,14 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
 
+import static org.forgerock.openam.utils.StringUtils.isBlank;
+
 import java.io.FileNotFoundException;
 import java.security.AccessController;
-import java.security.Key;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 
 import org.forgerock.openam.utils.AMKeyProvider;
 import org.slf4j.Logger;
@@ -52,11 +55,14 @@ public class AuthKeyFactory {
      * @throws SSOException          if the credentials are incorrect.
      * @throws SMSException          an exception from SMS, config related.
      */
-    public Key getPrivateAuthKey(AMKeyProvider amKeyProvider, String orgName) throws FileNotFoundException,
+    public PrivateKey getPrivateAuthKey(AMKeyProvider amKeyProvider, String orgName) throws FileNotFoundException,
             SSOException, SMSException {
         logger.debug("getPrivateAuthKey method started");
         String keyAlias = getKeyAlias(orgName);
         logger.debug("keyAlias {}", keyAlias);
+        if (isBlank(keyAlias)) {
+            throw new IllegalStateException("No auth key alias found for org " + orgName);
+        }
         return amKeyProvider.getPrivateKey(keyAlias);
     }
 
@@ -70,8 +76,8 @@ public class AuthKeyFactory {
      * @throws SSOException          if the credentials are incorrect.
      * @throws SMSException          an exception from SMS, config related.
      */
-    public Key getPublicAuthKey(AMKeyProvider amKeyProvider, String orgName) throws FileNotFoundException, SSOException,
-            SMSException {
+    public PublicKey getPublicAuthKey(AMKeyProvider amKeyProvider, String orgName) throws FileNotFoundException,
+            SSOException, SMSException {
         logger.debug("getPublicAuthKey started");
         String keyAlias = getKeyAlias(orgName);
         logger.debug("keyAlias {}", keyAlias);

@@ -342,6 +342,18 @@ const LoginView = AbstractView.extend({
                 });
                 return;
             }
+
+            // At this point the AM backend has processed the suspendedId param
+            // which means we can now remove it from the url so it is not processed
+            // again on subsequent steps
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get("suspendedId")) {
+                // Remove the parameter
+                urlParams.delete("suspendedId");
+                // Replace the current url with url no longer containing the suspendedId
+                window.history.replaceState({}, "", `${location.pathname}?${urlParams}`);
+            }
+
             // If simply by asking for the requirements, we end up with a token,
             // then we must have already had a session
             if (reqs.hasOwnProperty("tokenId")) {

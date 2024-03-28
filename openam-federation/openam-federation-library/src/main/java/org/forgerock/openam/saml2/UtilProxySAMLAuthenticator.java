@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2022 ForgeRock AS.
+ * Copyright 2015-2024 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
@@ -653,14 +653,12 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             loginUrl.append("&goto=");
         }
 
-        // compute gotoURL differently in case of forward or in case
-        // of redirection, forward needs a relative URI.
         StringBuilder secondVisitUrl;
-        String rpUrl = IDPSSOUtil.getAttributeValueFromIDPSSOConfig(data.getRealm(),
-                data.getIdpEntityID(), SAML2Constants.RP_URL);
-        if (isNotEmpty(rpUrl)) {
-            secondVisitUrl = new StringBuilder(rpUrl);
-            secondVisitUrl.append(getRelativePath(request.getRequestURI(), request.getContextPath()));
+        String reverseProxyUrl = IDPSSOUtil.getAttributeValueFromIDPSSOConfig(data.getRealm(), data.getIdpEntityID(),
+                SAML2Constants.REVERSE_PROXY_URL);
+        if (isNotEmpty(reverseProxyUrl)) {
+            // Trim context to get the path for the reverse proxy
+            secondVisitUrl = new StringBuilder(getRelativePath(request.getRequestURI(), request.getContextPath()));
         } else {
             secondVisitUrl = new StringBuilder(request.getRequestURI());
         }

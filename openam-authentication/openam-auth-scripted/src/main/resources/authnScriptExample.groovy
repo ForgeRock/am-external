@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2023 ForgeRock AS.
  */
 START_TIME = 9   // 9am
 END_TIME   = 17  // 5pm
@@ -34,7 +34,7 @@ if (username != null) {
         headers : []
     ]);
     // Log out response from users REST call
-    logger.message("User REST Call. Status: " + response.getStatusCode() + ", Body: " + response.getEntity())
+    logger.message("User REST Call. Status: " + response.getStatusCode() + ", Body: " + response.getEntity().getString())
 }
 
 now = new Date()

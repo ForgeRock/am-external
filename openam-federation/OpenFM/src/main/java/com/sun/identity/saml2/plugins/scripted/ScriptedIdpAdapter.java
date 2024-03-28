@@ -19,12 +19,10 @@ import static com.sun.identity.saml2.common.SAML2Constants.IDP_ADAPTER_SCRIPT;
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ROLE;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ADAPTER;
 
-import javax.script.Bindings;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.saml2.plugins.IDPAdapter;
-import org.forgerock.openam.saml2.service.Saml2ScriptContext;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
 import org.forgerock.openam.scripting.domain.Script;
@@ -82,15 +80,10 @@ public class ScriptedIdpAdapter implements IDPAdapter {
                 .withRequest(request)
                 .withAuthnRequest(authnRequest)
                 .withHostedEntityId(hostedEntityId)
-                .withRealm(realm)
                 .withIdpAdapterScriptHelper(idpAdapterScriptHelper)
-                .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ADAPTER.name(),
-                        script.getId(), script.getName()))
-                .withScriptName(script.getName())
                 .build();
 
-        Bindings scriptVariables = scriptBindings.convert(script.getEvaluatorVersion());
-        return executor.evaluateScriptFunction(scriptEvaluator, script, realm, scriptVariables, "preSingleSignOn");
+        return executor.evaluateScriptFunction(scriptEvaluator, script, realm, scriptBindings, "preSingleSignOn");
     }
 
     @Override
@@ -109,15 +102,10 @@ public class ScriptedIdpAdapter implements IDPAdapter {
                         .withRequest(request)
                         .withAuthnRequest(authnRequest)
                         .withHostedEntityId(hostedEntityId)
-                        .withRealm(realm)
                         .withIdpAdapterScriptHelper(idpAdapterScriptHelper)
-                        .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ADAPTER.name(),
-                                script.getId(), script.getName()))
-                        .withScriptName(script.getName())
                         .build();
 
-        Bindings scriptVariables = scriptBindings.convert(script.getEvaluatorVersion());
-        return executor.evaluateScriptFunction(scriptEvaluator, script, realm, scriptVariables, "preAuthentication");
+        return executor.evaluateScriptFunction(scriptEvaluator, script, realm, scriptBindings, "preAuthentication");
     }
 
     @Override
@@ -138,15 +126,10 @@ public class ScriptedIdpAdapter implements IDPAdapter {
                         .withRequest(request)
                         .withAuthnRequest(authnRequest)
                         .withHostedEntityId(hostedEntityId)
-                        .withRealm(realm)
                         .withIdpAdapterScriptHelper(idpAdapterScriptHelper)
-                        .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ADAPTER.name(),
-                                script.getId(), script.getName()))
-                        .withScriptName(script.getName())
                         .build();
 
-        Bindings scriptVariables = scriptBindings.convert(script.getEvaluatorVersion());
-        return executor.evaluateScriptFunction(scriptEvaluator, script, realm, scriptVariables, "preSendResponse");
+        return executor.evaluateScriptFunction(scriptEvaluator, script, realm, scriptBindings, "preSendResponse");
     }
 
     @Override
@@ -164,15 +147,10 @@ public class ScriptedIdpAdapter implements IDPAdapter {
                         .withRequest(request)
                         .withAuthnRequest(authnRequest)
                         .withHostedEntityId(hostedEntityId)
-                        .withRealm(realm)
                         .withIdpAdapterScriptHelper(idpAdapterScriptHelper)
-                        .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ADAPTER.name(),
-                                script.getId(), script.getName()))
-                        .withScriptName(script.getName())
                         .build();
 
-        Bindings scriptVariables = scriptBindings.convert(script.getEvaluatorVersion());
-        executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, scriptVariables, "preSignResponse");
+        executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, scriptBindings, "preSignResponse");
 
     }
 
@@ -196,15 +174,10 @@ public class ScriptedIdpAdapter implements IDPAdapter {
                         .withFaultCode(faultCode)
                         .withFaultDetail(faultDetail)
                         .withHostedEntityId(hostedEntityId)
-                        .withRealm(realm)
                         .withIdpAdapterScriptHelper(idpAdapterScriptHelper)
-                        .withLoggerReference(String.format("scripts.%s.%s.(%s)", SAML2_IDP_ADAPTER.name(),
-                                script.getId(), script.getName()))
-                        .withScriptName(script.getName())
                         .build();
 
-        Bindings scriptVariables = scriptBindings.convert(script.getEvaluatorVersion());
-        executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, scriptVariables, "preSendFailureResponse");
+        executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, scriptBindings, "preSendFailureResponse");
     }
 
     private void validateCommonAttributes(String hostedEntityId, String realm) throws SAML2Exception {

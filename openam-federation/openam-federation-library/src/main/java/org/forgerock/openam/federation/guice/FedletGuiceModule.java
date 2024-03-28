@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 package org.forgerock.openam.federation.guice;
 
@@ -19,6 +19,8 @@ import static com.sun.identity.saml2.common.SAML2Constants.SAML2_CREDENTIAL_RESO
 
 import org.forgerock.openam.saml2.plugins.KeyStoreSaml2CredentialResolver;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
+import org.forgerock.openam.saml2.soap.SOAPConnectionFactory;
+import org.forgerock.openam.saml2.soap.SimpleSOAPConnectionFactory;
 
 import com.google.inject.PrivateModule;
 import com.sun.identity.common.SystemConfigurationUtil;
@@ -40,6 +42,10 @@ public class FedletGuiceModule extends PrivateModule {
         } catch (ReflectiveOperationException ex) {
             throw new IllegalStateException(ex);
         }
+
+        bind(SOAPConnectionFactory.class).to(SimpleSOAPConnectionFactory.class);
+
         expose(Saml2CredentialResolver.class);
+        expose(SOAPConnectionFactory.class);
     }
 }

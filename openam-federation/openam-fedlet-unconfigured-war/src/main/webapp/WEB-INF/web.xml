@@ -26,13 +26,16 @@
 
    $Id: web.xml,v 1.5 2010/01/07 00:22:19 exu Exp $
 
-   Portions Copyrighted 2011-2016 ForgeRock AS.
+   Portions Copyrighted 2011-2024 ForgeRock AS.
 -->
 
 <web-app version="3.0" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
 <display-name>Fedlet Sample Application</display-name>
     <distributable/>
 
+    <listener>
+        <listener-class>com.sun.identity.fedlet.GuiceModuleConfig</listener-class>
+    </listener>
     <listener>
         <listener-class>com.sun.identity.common.ShutdownServletContextListener</listener-class>
     </listener>

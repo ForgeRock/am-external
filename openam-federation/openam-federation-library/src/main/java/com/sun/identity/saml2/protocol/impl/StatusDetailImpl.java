@@ -24,7 +24,7 @@
  *
  * $Id: StatusDetailImpl.java,v 1.2 2008/06/25 05:48:01 qcheng Exp $
  *
- * Portions Copyrighted 2018-2021 ForgeRock AS.
+ * Portions Copyrighted 2018-2023 ForgeRock AS.
  */
 
 
@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.forgerock.openam.annotations.SupportedAll;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -55,6 +56,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * This class defines methods for adding <code>StatusDetail</code> elements.
  */
 
+@SupportedAll(scriptingApi = true, javaApi = false)
 public class StatusDetailImpl implements StatusDetail {
 
     private boolean isMutable = false;

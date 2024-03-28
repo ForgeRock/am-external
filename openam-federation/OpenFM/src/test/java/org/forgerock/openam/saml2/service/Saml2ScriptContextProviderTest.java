@@ -25,9 +25,8 @@ import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_AD
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ATTRIBUTE_MAPPER;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_SP_ADAPTER;
 import static org.forgerock.openam.scripting.domain.ScriptingLanguage.JAVASCRIPT;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
 import java.util.Arrays;
 import java.util.List;
@@ -39,13 +38,14 @@ import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptContext;
 import org.forgerock.openam.scripting.domain.ScriptContextDetails;
 import org.forgerock.openam.scripting.domain.ScriptException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.MockedStatic;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
@@ -58,8 +58,7 @@ import com.sun.identity.saml2.meta.SAML2MetaUtils;
 /**
  * Tests for {@link Saml2ScriptContextProvider}.
  */
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({SAML2Utils.class, SAML2MetaUtils.class})
+@RunWith(MockitoJUnitRunner.class)
 public class Saml2ScriptContextProviderTest {
 
     private static final String ADAPTER_SCRIPT_IN_USE = "adapterScriptInUse";
@@ -86,12 +85,20 @@ public class Saml2ScriptContextProviderTest {
     @InjectMocks
     private Saml2ScriptContextProvider provider;
 
+    private MockedStatic<SAML2Utils> saml2UtilsMockedStatic;
+    private MockedStatic<SAML2MetaUtils> saml2MetaUtilsMockedStatic;
+
     @Before
     public void setup() throws Exception {
-        openMocks(this).close();
-        mockStatic(SAML2Utils.class);
-        mockStatic(SAML2MetaUtils.class);
+        saml2UtilsMockedStatic = mockStatic(SAML2Utils.class);
+        saml2MetaUtilsMockedStatic = mockStatic(SAML2MetaUtils.class);
         when(SAML2Utils.getSAML2MetaManager()).thenReturn(saml2MetaManager);
+    }
+
+    @After
+    public void tearDown() {
+        saml2UtilsMockedStatic.close();
+        saml2MetaUtilsMockedStatic.close();
     }
 
     @Test
@@ -140,7 +147,7 @@ public class Saml2ScriptContextProviderTest {
 
     @Test
     public void shouldReturnUsageCountWhenGivenScriptInUse() throws Exception {
-       //When
+        //When
         Script givenScript = createScript(ADAPTER_SCRIPT_IN_USE, SAML2_IDP_ADAPTER);
         mockSamlEntityConfig(ADAPTER_SCRIPT_IN_USE);
 

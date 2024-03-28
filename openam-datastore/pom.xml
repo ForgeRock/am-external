@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-parent</artifactId>
-        <version>7.4.0</version>
+        <version>7.5.0</version>
     </parent>
 
     <artifactId>openam-datastore</artifactId>
@@ -54,14 +54,6 @@
             <artifactId>openam-ldap-utils</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-api-mockito2</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-module-testng</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-test-utils</artifactId>
             <scope>test</scope>
@@ -71,12 +63,18 @@
             <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-inline</artifactId>
+            <version>${mockito-inline.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <repositories>
         <repository>
             <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 7.4.0</name>
-            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.4.0-dependencies</url>
+            <name>ForgeRock Private Release Repository for AM 7.5.0</name>
+            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.5.0-dependencies</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>

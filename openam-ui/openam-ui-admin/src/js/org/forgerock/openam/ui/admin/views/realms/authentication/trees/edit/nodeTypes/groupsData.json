@@ -35,6 +35,10 @@
         "tag": "iot",
         "icon": "microchip"
     },
+    "designer": {
+        "tag": "designer",
+        "icon": "pencil-square"
+    },
     "uncategorized": {
         "tag": "uncategorized",
         "icon": "square"

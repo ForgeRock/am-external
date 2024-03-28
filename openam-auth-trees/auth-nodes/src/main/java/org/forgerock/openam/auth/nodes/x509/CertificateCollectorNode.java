@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2019-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
@@ -192,7 +192,7 @@ public class CertificateCollectorNode implements Node {
         }
         logger.debug("Validate cert: {}", cert);
         if (cert == null || cert.isEmpty()) {
-            throw new NodeProcessException("Certificate: no cert from HttpServletRequest header");
+            return null;
         }
 
         byte[] decoded = Base64.decode(cert);

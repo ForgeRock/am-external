@@ -11,20 +11,62 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2022-2024 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.common;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mockConstruction;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import javax.xml.bind.JAXBElement;
+
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockedConstruction;
+import org.mockito.MockedStatic;
+import org.mockito.MockitoAnnotations;
+
+import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
+import com.sun.identity.saml2.meta.SAML2MetaUtils;
+import com.sun.identity.saml2.secrets.BasicAuthSecrets;
 
 public class SAML2SDKUtilsTest {
+    @Mock
+    private JAXBElement<BaseConfigType> config;
     private static final String HEX_STRING = "37767C58AF6BFD97970DED0BDC320983805B70F6";
     private static final byte[] BYTE_ARRAY = new byte[]{
             55, 118, 124, 88, -81, 107, -3, -105, -105, 13, -19, 11, -36, 50, 9, -125, -128, 91, 112, -10
     };
+
+    private static final String locationUrl = "https://example.com";
+    private static final String updatedLocationUrl = "https://user:password@example.com";
+    private static final String secretLocationUrl = "https://user:secret@example.com";
+    private static final char [] secret = new char[]{'s', 'e', 'c', 'r', 'e', 't'};
+
+    private static final Map<String, List<String>> configMap = Map.of(
+            SAML2Constants.BASIC_AUTH_ON,List.of("true"),
+            SAML2Constants.BASIC_AUTH_USER,List.of("user"),
+            SAML2Constants.BASIC_AUTH_PASSWD,List.of("password")
+    );
+
+    private static final Map<String, List<String>> secretConfigMap = Map.of(
+            SAML2Constants.BASIC_AUTH_ON,List.of("true"),
+            SAML2Constants.BASIC_AUTH_USER,List.of("user"),
+            SAML2Constants.SECRET_ID_IDENTIFIER,List.of("test")
+    );
+
+    @Before
+    public void setup() throws Exception {
+        MockitoAnnotations.openMocks(this).close();
+    }
 
     @Test
     public void shouldGiveCorrectByteArrayFromString() {
@@ -50,4 +92,39 @@ public class SAML2SDKUtilsTest {
     public void shouldGiveEmptyStringForEmptyByteArray() {
         assertThat(SAML2SDKUtils.byteArrayToHexString(new byte[]{})).isEqualTo("");
     }
+
+    @Test
+    public void shouldReturnOriginalLocationUrlIfConfigIsNull() {
+        String result = SAML2SDKUtils.fillInBasicAuthInfo(null, locationUrl, "alpha");
+        assertThat(result).isEqualTo(locationUrl);
+    }
+
+    @Test
+    public void shouldReturnUpdatedLocationUrl() {
+        MockedStatic<SAML2MetaUtils> mockSamlUtils = createMockSamlUtils(configMap);
+        String result = SAML2SDKUtils.fillInBasicAuthInfo(config, locationUrl, "alpha");
+        assertThat(result).isEqualTo(updatedLocationUrl);
+        mockSamlUtils.close();
+    }
+
+    @Test
+    public void shouldReturnSecretLocationUrlWhenSecretSet() {
+
+        MockedStatic<SAML2MetaUtils> mockSamlUtils = createMockSamlUtils(secretConfigMap);
+        try (MockedConstruction<BasicAuthSecrets> mockedBasicAuthSecrets = mockConstruction(BasicAuthSecrets.class,
+                (mock, context) -> when(mock.getBasicAuthPassword("alpha","test"))
+                        .thenReturn(Optional.of(secret))))
+        {
+            String result = SAML2SDKUtils.fillInBasicAuthInfo(config, locationUrl, "alpha");
+            assertThat(result).isEqualTo(secretLocationUrl);
+        }
+        mockSamlUtils.close();
+    }
+
+    private MockedStatic<SAML2MetaUtils> createMockSamlUtils(Map<String, List<String>> map) {
+        MockedStatic<SAML2MetaUtils> mockSamlUtils = mockStatic(SAML2MetaUtils.class);
+        mockSamlUtils.when(()-> SAML2MetaUtils.getAttributes(config)).thenReturn(map);
+        return mockSamlUtils;
+    }
+
 }
