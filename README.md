@@ -98,7 +98,9 @@ cd openam-authentication
 mvn clean install
 ```
 
-**N.B.** AM 7.0.0 should be compiled and run using Java 11.
+**N.B.** 
+  * AM 7.0.0-7.4.x should be compiled and run using Java 11.
+  * AM 7.5.x should be compiled and run using Java 17.
 
 ## Licensing
 
