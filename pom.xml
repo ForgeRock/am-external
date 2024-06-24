@@ -36,6 +36,7 @@
         <module>openam-push-notification</module>
         <module>openam-radius</module>
         <module>openam-datastore</module>
+        <module>idm-integration</module>
     </modules>
 
     <build>

@@ -1,0 +1,651 @@
+{
+  "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:User",
+  "title" : "User",
+  "icon" : "fa-user",
+  "viewable" : true,
+  "$schema" : "http://json-schema.org/draft-03/schema",
+  "order" : [
+    "_id",
+    "userName",
+    "password",
+    "givenName",
+    "sn",
+    "mail",
+    "description",
+    "accountStatus",
+    "telephoneNumber",
+    "postalAddress",
+    "address2",
+    "city",
+    "postalCode",
+    "country",
+    "stateProvince",
+    "roles",
+    "manager",
+    "authzRoles",
+    "reports",
+    "effectiveRoles",
+    "effectiveAssignments",
+    "lastSync",
+    "kbaInfo",
+    "preferences",
+    "consentedMappings",
+    "age"
+  ],
+  "properties" : {
+    "_id" : {
+      "description" : "User ID",
+      "type" : "string",
+      "viewable" : false,
+      "searchable" : false,
+      "userEditable" : false,
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "policies" : [
+        {
+          "policyId" : "cannot-contain-characters",
+          "params" : {
+            "forbiddenChars" : [
+              "/"
+            ]
+          }
+        }
+      ]
+    },
+    "password" : {
+      "title" : "Password",
+      "description" : "Password",
+      "type" : "string",
+      "viewable" : false,
+      "searchable" : false,
+      "userEditable" : true,
+      "encryption" : {
+        "purpose": "idm.password.encryption"
+      },
+      "scope" : "private",
+      "isProtected": true,
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "policies" : [
+        {
+          "policyId" : "at-least-X-capitals",
+          "params" : {
+            "numCaps" : 1
+          }
+        },
+        {
+          "policyId" : "at-least-X-numbers",
+          "params" : {
+            "numNums" : 1
+          }
+        },
+        {
+          "policyId" : "cannot-contain-others",
+          "params" : {
+            "disallowedFields" : [
+              "userName",
+              "givenName",
+              "sn"
+            ]
+          }
+        }
+      ]
+    },
+    "kbaInfo" : {
+      "description" : "KBA Info",
+      "type" : "array",
+      "userEditable" : true,
+      "viewable" : false,
+      "usageDescription" : "",
+      "isPersonal" : true,
+      "items" : {
+        "type" : "object",
+        "title" : "KBA Info Items",
+        "properties" : {
+          "answer" : {
+            "description" : "Answer",
+            "type" : "string"
+          },
+          "customQuestion" : {
+            "description" : "Custom question",
+            "type" : "string"
+          },
+          "questionId" : {
+            "description" : "Question ID",
+            "type" : "string"
+          }
+        },
+        "order": [
+          "answer",
+          "customQuestion",
+          "questionId"
+        ],
+        "required": []
+      }
+    },
+    "preferences" : {
+      "title" : "Preferences",
+      "description" : "Preferences",
+      "viewable" : true,
+      "searchable" : false,
+      "userEditable" : true,
+      "type" : "object",
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "properties" : {
+        "updates" : {
+          "description" : "Send me news and updates",
+          "type" : "boolean"
+        },
+        "marketing": {
+          "description" : "Send me special offers and services",
+          "type" : "boolean"
+        }
+      },
+      "order": [
+        "updates",
+        "marketing"
+      ],
+      "required": []
+    },
+    "mail" : {
+      "title" : "Email Address",
+      "description" : "Email Address",
+      "viewable" : true,
+      "type" : "string",
+      "searchable" : true,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : true,
+      "policies" : [
+        {
+          "policyId" : "valid-email-address-format"
+        }
+      ]
+    },
+    "sn" : {
+      "title" : "Last Name",
+      "description" : "Last Name",
+      "viewable" : true,
+      "type" : "string",
+      "searchable" : true,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : true
+    },
+    "description" : {
+      "title" : "Description",
+      "description" : "Description",
+      "viewable" : true,
+      "type" : [
+        "string",
+        "null"
+      ],
+      "searchable" : true,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : false
+    },
+    "address2" : {
+      "type" : "string",
+      "title" : "Address 2",
+      "description" : "Address 2",
+      "viewable" : true,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : true
+    },
+    "givenName" : {
+      "title" : "First Name",
+      "description" : "First Name",
+      "viewable" : true,
+      "type" : "string",
+      "searchable" : true,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : true
+    },
+    "city" : {
+      "type" : "string",
+      "title" : "City",
+      "description" : "City",
+      "viewable" : true,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : false
+    },
+    "country" : {
+      "type" : "string",
+      "title" : "Country",
+      "description" : "Country",
+      "viewable" : true,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : false
+    },
+    "postalCode" : {
+      "type" : "string",
+      "title" : "Postal Code",
+      "description" : "Postal Code",
+      "viewable" : true,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : false
+    },
+    "accountStatus" : {
+      "title" : "Status",
+      "description" : "Status",
+      "viewable" : true,
+      "type" : "string",
+      "searchable" : true,
+      "userEditable" : false,
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "policies" : [
+        {
+          "policyId" : "minimum-length",
+          "params" : {
+            "minLength" : 1
+          }
+        },
+        {
+          "policyId": "maximum-length",
+          "params": {
+            "maxLength": 255
+          }
+        }
+      ]
+    },
+    "roles" : {
+      "description" : "Provisioning Roles",
+      "title" : "Provisioning Roles",
+      "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:User:roles",
+      "viewable" : true,
+      "userEditable" : false,
+      "returnByDefault" : false,
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "type" : "array",
+      "relationshipGrantTemporalConstraintsEnforced" : true,
+      "items" : {
+        "type" : "relationship",
+        "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:User:roles:items",
+        "title" : "Provisioning Roles Items",
+        "reverseRelationship" : true,
+        "reversePropertyName" : "members",
+        "notifySelf" : true,
+        "validate" : true,
+        "properties" : {
+          "_ref" : {
+            "description" : "References a relationship from a managed object",
+            "type" : "string"
+          },
+          "_refProperties" : {
+            "description" : "Supports metadata within the relationship",
+            "type" : "object",
+            "title" : "Provisioning Roles Items _refProperties",
+            "properties" : {
+              "_id" : {
+                "description" : "_refProperties object ID",
+                "type" : "string"
+              },
+              "_grantType" : {
+                "description" : "Grant Type",
+                "type" : "string",
+                "label" : "Grant Type"
+              }
+            }
+          }
+        },
+        "resourceCollection" : [
+          {
+            "path" : "managed/role",
+            "label" : "Role",
+            "conditionalAssociationField" : "condition",
+            "query" : {
+              "queryFilter" : "true",
+              "fields" : [
+                "name"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "authzRoles" : {
+      "description" : "Authorization Roles",
+      "title" : "Authorization Roles",
+      "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:User:authzRoles",
+      "viewable" : true,
+      "type" : "array",
+      "userEditable" : false,
+      "returnByDefault" : false,
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "items" : {
+        "type" : "relationship",
+        "title" : "Authorization Roles Items",
+        "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:User:authzRoles:items",
+        "reverseRelationship" : true,
+        "reversePropertyName" : "authzMembers",
+        "validate" : true,
+        "properties" : {
+          "_ref" : {
+            "description" : "References a relationship from a managed object",
+            "type" : "string"
+          },
+          "_refProperties" : {
+            "description" : "Supports metadata within the relationship",
+            "type" : "object",
+            "title" : "Authorization Roles Items _refProperties",
+            "properties" : {
+              "_id" : {
+                "description" : "_refProperties object ID",
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "resourceCollection" : [
+          {
+            "path" : "internal/role",
+            "label" : "Internal Role",
+            "conditionalAssociationField" : "condition",
+            "query" : {
+              "queryFilter" : "true",
+              "fields" : [
+                "name"
+              ]
+            }
+          },
+          {
+            "path" : "managed/role",
+            "label" : "Role",
+            "conditionalAssociationField" : "condition",
+            "query" : {
+              "queryFilter" : "true",
+              "fields" : [
+                "name"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "reports" : {
+      "description" : "Direct Reports",
+      "title" : "Direct Reports",
+      "viewable" : true,
+      "userEditable" : false,
+      "type" : "array",
+      "returnByDefault" : false,
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "items" : {
+        "type" : "relationship",
+        "id" : "urn:jsonschema:org:forgerock:openidm:managed:api:User:reports:items",
+        "title" : "Direct Reports Items",
+        "reverseRelationship" : true,
+        "reversePropertyName" : "manager",
+        "validate" : true,
+        "properties" : {
+          "_ref" : {
+            "description" : "References a relationship from a managed object",
+            "type" : "string"
+          },
+          "_refProperties" : {
+            "description" : "Supports metadata within the relationship",
+            "type" : "object",
+            "title" : "Direct Reports Items _refProperties",
+            "properties" : {
+              "_id" : {
+                "description" : "_refProperties object ID",
+                "type" : "string"
+              }
+            }
+          }
+        },
+        "resourceCollection" : [
+          {
+            "path" : "managed/user",
+            "label" : "User",
+            "query" : {
+              "queryFilter" : "true",
+              "fields" : [
+                "userName",
+                "givenName",
+                "sn"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "effectiveRoles" : {
+      "type" : "array",
+      "title" : "Effective Roles",
+      "description" : "Effective Roles",
+      "viewable" : false,
+      "returnByDefault" : true,
+      "isVirtual" : true,
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "onRetrieve" : {
+        "type" : "text/javascript",
+        "source" : "require('roles/effectiveRoles').calculateEffectiveRoles(object, 'roles');"
+      },
+      "items" : {
+        "type" : "object",
+        "title" : "Effective Roles Items"
+      }
+    },
+    "effectiveAssignments" : {
+      "type" : "array",
+      "title" : "Effective Assignments",
+      "description" : "Effective Assignments",
+      "viewable" : false,
+      "returnByDefault" : true,
+      "isVirtual" : true,
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "onRetrieve" : {
+        "type" : "text/javascript",
+        "file" : "roles/effectiveAssignments.js",
+        "effectiveRolesPropName" : "effectiveRoles"
+      },
+      "items" : {
+        "type" : "object",
+        "title" : "Effective Assignments Items"
+      }
+    },
+    "telephoneNumber" : {
+      "type" : "string",
+      "title" : "Telephone Number",
+      "description" : "Telephone Number",
+      "viewable" : true,
+      "userEditable" : true,
+      "pattern" : "^\\+?([0-9\\- \\(\\)])*$",
+      "usageDescription" : "",
+      "isPersonal" : true
+    },
+    "stateProvince" : {
+      "type" : "string",
+      "title" : "State/Province",
+      "description" : "State/Province",
+      "viewable" : true,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : false
+    },
+    "postalAddress" : {
+      "type" : "string",
+      "title" : "Address 1",
+      "description" : "Address 1",
+      "viewable" : true,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : true
+    },
+    "userName" : {
+      "title" : "Username",
+      "description" : "Username",
+      "viewable" : true,
+      "type" : "string",
+      "searchable" : true,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : true,
+      "policies" : [
+        {
+          "policyId" : "unique"
+        },
+        {
+          "policyId" : "no-internal-user-conflict"
+        },
+        {
+          "policyId" : "cannot-contain-characters",
+          "params" : {
+            "forbiddenChars" : [
+              "/"
+            ]
+          }
+        }
+      ]
+    },
+    "manager" : {
+      "type" : "relationship",
+      "validate" : true,
+      "reverseRelationship" : true,
+      "reversePropertyName" : "reports",
+      "description" : "Manager",
+      "title" : "Manager",
+      "viewable" : true,
+      "searchable" : false,
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "properties" : {
+        "_ref" : {
+          "description" : "References a relationship from a managed object",
+          "type" : "string"
+        },
+        "_refProperties" : {
+          "description" : "Supports metadata within the relationship",
+          "type" : "object",
+          "title" : "Manager _refProperties",
+          "properties" : {
+            "_id" : {
+              "description" : "_refProperties object ID",
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "resourceCollection" : [
+        {
+          "path" : "managed/user",
+          "label" : "User",
+          "query" : {
+            "queryFilter" : "true",
+            "fields" : [
+              "userName",
+              "givenName",
+              "sn"
+            ]
+          }
+        }
+      ],
+      "userEditable" : false
+    },
+    "lastSync" : {
+      "description" : "Last Sync timestamp",
+      "title" : "Last Sync timestamp",
+      "type" : "object",
+      "scope" : "private",
+      "viewable" : false,
+      "searchable" : false,
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "properties" : {
+        "effectiveAssignments" : {
+          "description" : "Effective Assignments",
+          "title" : "Effective Assignments",
+          "type" : "array",
+          "items" : {
+            "type" : "object",
+            "title" : "Effective Assignments Items"
+          }
+        },
+        "timestamp" : {
+          "description" : "Timestamp",
+          "type" : "string"
+        }
+      },
+      "order" : [
+        "effectiveAssignments",
+        "timestamp"
+      ],
+      "required": []
+    },
+    "consentedMappings" : {
+      "title" : "Consented Mappings",
+      "description" : "Consented Mappings",
+      "type" : "array",
+      "viewable" : false,
+      "searchable" : false,
+      "userEditable" : true,
+      "usageDescription" : "",
+      "isPersonal" : false,
+      "items" : {
+        "type" : "array",
+        "title" : "Consented Mappings Items",
+        "items" : {
+          "type" : "object",
+          "title" : "Consented Mappings Item",
+          "properties" : {
+            "mapping" : {
+              "title" : "Mapping",
+              "description" : "Mapping",
+              "type" : "string",
+              "viewable" : true,
+              "searchable" : true,
+              "userEditable" : true
+            },
+            "consentDate" : {
+              "title" : "Consent Date",
+              "description" : "Consent Date",
+              "type" : "string",
+              "viewable" : true,
+              "searchable" : true,
+              "userEditable" : true
+            }
+          },
+          "order" : [
+            "mapping",
+            "consentDate"
+          ],
+          "required" : [
+            "mapping",
+            "consentDate"
+          ]
+        }
+      },
+      "returnByDefault" : false,
+      "isVirtual" : false
+    },
+    "age" : {
+      "title" : "Age",
+      "description" : "Age",
+      "type" : "number",
+      "viewable" : true,
+      "searchable" : true,
+      "userEditable" : true
+    }
+  },
+  "type" : "object",
+  "required" : [
+    "userName",
+    "givenName",
+    "sn",
+    "mail"
+  ]
+}
