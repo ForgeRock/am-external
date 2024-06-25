@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2017-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -69,7 +69,6 @@ public class SetSessionPropertiesNode extends SingleOutcomeNode {
         Action.ActionBuilder actionBuilder = goToNext();
         config.properties().entrySet().forEach(property -> {
             actionBuilder.putSessionProperty(property.getKey(), property.getValue());
-            logger.debug("set session property {}", property);
         });
         return actionBuilder.build();
     }

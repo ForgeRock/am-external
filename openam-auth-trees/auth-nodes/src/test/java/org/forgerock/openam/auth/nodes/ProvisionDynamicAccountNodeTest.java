@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -145,6 +145,8 @@ public class ProvisionDynamicAccountNodeTest {
                     verify(authModuleHelper).provisionUser(any(), any(), eq(userAttributes));
                     assertThat(result.outcome).isEqualTo("outcome");
                     assertThat(result.sharedState.get(USERNAME).asString()).isEqualTo(user);
+                    assertThat(result.identifiedIdentity).isPresent();
+                    assertThat(result.identifiedIdentity.get().getUsername()).isEqualTo(user);
 
                 });
             });
@@ -164,6 +166,8 @@ public class ProvisionDynamicAccountNodeTest {
                     assertThat(result.transientState).isNullOrEmpty();
                     assertThat(result.outcome).isEqualTo("outcome");
                     assertThat(result.sharedState.get(USERNAME).asString()).isEqualTo(user);
+                    assertThat(result.identifiedIdentity).isPresent();
+                    assertThat(result.identifiedIdentity.get().getUsername()).isEqualTo(user);
                 });
             });
 
@@ -181,6 +185,8 @@ public class ProvisionDynamicAccountNodeTest {
                     assertThat(result.transientState).isNullOrEmpty();
                     assertThat(result.outcome).isEqualTo("outcome");
                     assertThat(result.sharedState.get(USERNAME).asString()).isEqualTo(user);
+                    assertThat(result.identifiedIdentity).isPresent();
+                    assertThat(result.identifiedIdentity.get().getUsername()).isEqualTo(user);
                 });
             });
 

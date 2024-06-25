@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -28,7 +28,6 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
-import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
@@ -143,20 +142,23 @@ public class PersistentCookieDecisionNode extends AbstractDecisionNode implement
     /**
      * Creates a PersistentCookieDecisionNode.
      *
-     * @param config        the config.
-     * @param coreWrapper   the core wrapper.
+     * @param config        the config
+     * @param coreWrapper   the core wrapper
      * @param identityUtils an instance of the IdentityUtils.
-     * @param nodeId        the id of this node instance.
+     * @param nodeId        the id of this node instance
+     * @param persistentJwtProvider the persistent JWT provider instance
+     * @param persistentJwtClaimsHandler the persistence JWT claims  handler
      */
     @Inject
     public PersistentCookieDecisionNode(@Assisted Config config, CoreWrapper coreWrapper,
-            IdentityUtils identityUtils, @Assisted UUID nodeId) {
+            IdentityUtils identityUtils, @Assisted UUID nodeId, PersistentJwtProvider persistentJwtProvider,
+            PersistentJwtClaimsHandler persistentJwtClaimsHandler) {
         this.config = config;
         this.coreWrapper = coreWrapper;
         this.identityUtils = identityUtils;
-        this.persistentJwtProvider = InjectorHolder.getInstance(PersistentJwtProvider.class);
+        this.persistentJwtProvider = persistentJwtProvider;
         this.nodeId = nodeId;
-        this.persistentJwtClaimsHandler = new PersistentJwtClaimsHandler();
+        this.persistentJwtClaimsHandler = persistentJwtClaimsHandler;
     }
 
     @Override
@@ -182,6 +184,7 @@ public class PersistentCookieDecisionNode extends AbstractDecisionNode implement
                 actionBuilder = actionBuilder
                         .replaceSharedState(context.sharedState.copy().put(USERNAME, userName))
                         .withUniversalId(identityUtils.getUniversalId(userName, realm, USER))
+                        .withIdentifiedIdentity(userName, USER.getName())
                         .putSessionProperty(generateSessionPropertyName(config.persistentCookieName()),
                                 config.persistentCookieName())
                         .addSessionHook(UpdatePersistentCookieTreeHook.class, nodeId, getClass().getSimpleName());

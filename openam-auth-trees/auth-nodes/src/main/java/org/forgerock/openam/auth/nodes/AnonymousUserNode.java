@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -78,6 +78,7 @@ public class AnonymousUserNode extends SingleOutcomeNode {
         return goToNext()
                 .addNodeType(context, SessionUpgradeVerifier.ANONYMOUS_MODULE_TYPE)
                 .withUniversalId(identityUtils.getUniversalId(username, realm, USER))
+                .withIdentifiedIdentity(username, USER.getName())
                 .replaceSharedState(context.sharedState.put(USERNAME, username))
                 .build();
     }

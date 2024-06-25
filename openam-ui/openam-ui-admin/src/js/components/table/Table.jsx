@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 import BootstrapTable from "react-bootstrap-table-next";
@@ -42,14 +42,17 @@ const Table = ({ keyField, onRowClick, onSelectedChange, options = {}, selectedI
         onSizePerPageChange: options.onSizePerPageList,
         onPageChange: options.onPageChange
     };
+
+    // BootstrapTable requires an onTableChange prop to be passed,
+    // so if it does not exist in options, pass an empty function
+    const onTableChange = options.onTableChange || function () {};
+
     return (
         <BootstrapTable
             columns={ restProps.columns }
             fetchInfo={ fetchInfo }
             keyField={ keyField }
-            // BootstrapTable requires an onTableChange prop to be passed,
-            // we don't need to use it so pass an empty function
-            onTableChange={ function () {} } // eslint-disable-line
+            onTableChange={ onTableChange }
             pagination={ options.pagination ? paginationFactory(pagination) : undefined }
             ref={ tableRef }
             remote={ options.remote }

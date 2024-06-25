@@ -24,7 +24,7 @@
  *
  * $Id: IDPArtifactResolution.java,v 1.13 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2012-2021 ForgeRock AS.
+ * Portions Copyrighted 2012-2024 ForgeRock AS.
  */
 package com.sun.identity.saml2.profile;
 
@@ -47,7 +47,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeader;
 import javax.xml.soap.MimeHeaders;
-import javax.xml.soap.SOAPConnection;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
@@ -62,7 +61,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
-import com.sun.identity.common.SystemConfigurationUtil;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.Issuer;
@@ -319,58 +317,8 @@ public class IDPArtifactResolution {
         String artStr = art.getArtifactValue();
         Response res = 
             (Response)IDPCache.responsesByArtifacts.remove(artStr);
-        String remoteArtURL = null;
 
         if (res == null) {
-            // in LB case, artifact may reside on the other server.
-
-            String targetServerID = SAML2Utils.extractServerId(art
-                    .getMessageHandle());
-
-            if (targetServerID == null) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug(classMethod
-                            + "target serverID is null");
-                }
-                return SOAPCommunicator.getInstance().createSOAPFault(SAML2Constants.CLIENT_FAULT,
-                        "InvalidArtifactId", null);
-            }
-
-            String localServerID = SAML2Utils.getLocalServerID();
-            boolean localTarget = localServerID.equals(targetServerID);
-
-            if (!localTarget) {
-                if (!SystemConfigurationUtil.isValidServerId(targetServerID)) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(classMethod
-                                + "target serverID is not valid: "
-                                + targetServerID);
-                    }
-                    return SOAPCommunicator.getInstance().createSOAPFault(
-                            SAML2Constants.CLIENT_FAULT, "InvalidArtifactId",
-                            null);
-                }
-                try {
-                    String remoteServiceURL = SystemConfigurationUtil
-                            .getServerFromID(targetServerID);
-                    remoteArtURL = remoteServiceURL
-                            + SAML2Utils.removeDeployUri(request
-                                    .getRequestURI());
-                    SOAPConnection con = SOAPCommunicator.getInstance().openSOAPConnection();
-                    SOAPMessage resMsg = con.call(message, remoteArtURL);
-                    return resMsg;
-                } catch (Exception ex) {
-                    if (logger.isDebugEnabled()) {
-                        logger
-                                .debug(
-                                        classMethod
-                                                + "unable to forward request to remote server. "
-                                                + "remote url = "
-                                                + remoteArtURL, ex);
-                    }
-                }
-            }
-
             // Check the SAML2 Token Repository
             try {
                 if (logger.isDebugEnabled()) {

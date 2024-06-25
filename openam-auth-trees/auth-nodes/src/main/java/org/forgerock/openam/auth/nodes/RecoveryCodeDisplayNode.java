@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -28,6 +28,7 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.webauthn.ClientScriptUtilities;
@@ -81,10 +82,12 @@ public class RecoveryCodeDisplayNode extends SingleOutcomeNode {
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
 
-        List<String> codes = context.transientState.get(RECOVERY_CODE_KEY).asList(String.class);
-        String name = context.transientState.get(RECOVERY_CODE_DEVICE_NAME).asString();
+        NodeState nodeState = context.getStateFor(this);
+        List<String> codes = nodeState.isDefined(RECOVERY_CODE_KEY)
+                ? nodeState.get(RECOVERY_CODE_KEY).asList(String.class) : null;
 
         if (CollectionUtils.isNotEmpty(codes)) {
+            String name = nodeState.get(RECOVERY_CODE_DEVICE_NAME).asString();
             ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE,
                     RecoveryCodeDisplayNode.OutcomeProvider.class.getClassLoader());
 
@@ -99,6 +102,9 @@ public class RecoveryCodeDisplayNode extends SingleOutcomeNode {
             String script = String.format(dehydratedScript, entries.toArray());
 
             ScriptTextOutputCallback scriptCallback = new ScriptTextOutputCallback(script);
+
+            nodeState.remove(RECOVERY_CODE_KEY);
+            nodeState.remove(RECOVERY_CODE_DEVICE_NAME);
             return send(scriptCallback).build();
         } else {
             return goToNext().build();

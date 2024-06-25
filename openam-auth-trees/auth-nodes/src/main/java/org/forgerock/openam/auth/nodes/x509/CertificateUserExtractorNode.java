@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2019-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
@@ -81,6 +81,7 @@ import sun.security.x509.X509CertInfo;
 public class CertificateUserExtractorNode extends AbstractDecisionNode {
 
     private static final String BUNDLE = "org/forgerock/openam/auth/nodes/x509/CertificateUserExtractorNode";
+    private static final int[] UPNOID = {1, 3, 6, 1, 4, 1, 311, 20, 2, 3};
     private final Logger logger = LoggerFactory.getLogger(CertificateUserExtractorNode.class);
     private Config config;
     private final IdentityUtils identityUtils;
@@ -155,6 +156,7 @@ public class CertificateUserExtractorNode extends AbstractDecisionNode {
         String realm = context.sharedState.get(REALM).asString();
         return Action
                 .goTo(EXTRACTED.name())
+                .withIdentifiedIdentity(userTokenId, IdType.USER.getName())
                 .withUniversalId(identityUtils.getUniversalId(userTokenId, realm, IdType.USER))
                 .build();
     }
@@ -226,7 +228,7 @@ public class CertificateUserExtractorNode extends AbstractDecisionNode {
             ObjectIdentifier upnoid;
             try {
                 itr = altNameExt.get(SubjectAlternativeNameExtension.SUBJECT_NAME).iterator();
-                upnoid = new ObjectIdentifier("1.3.6.1.4.1.311.20.2.3");
+                upnoid = new ObjectIdentifier(UPNOID);
             } catch (IOException e) {
                 throw new NodeProcessException("Unable to get " + SubjectAlternativeNameExtension.SUBJECT_NAME, e);
             }

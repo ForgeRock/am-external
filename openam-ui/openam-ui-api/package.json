@@ -19,6 +19,7 @@
   "resolutions": {
     "**/**/meow/minimist": "1.2.6",
     "**/**/mkdirp/minimist": "1.2.6",
-    "**/**/path-parse": "1.0.7"
+    "**/**/path-parse": "1.0.7",
+    "minimatch": "3.0.5"
   }
 }

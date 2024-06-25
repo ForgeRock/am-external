@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2021 ForgeRock AS.
+ * Copyright 2013-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.idrepo.ldap;
@@ -62,7 +62,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 
 @PrepareForTest(value = {IdRepoListener.class, WebtopNaming.class})
-@PowerMockIgnore({"javax.net.ssl.*"})
+@PowerMockIgnore({"javax.net.ssl.*", "javax.security.auth.*"})
 public abstract class IdRepoTestBase extends PowerMockTestCase {
 
     protected static final String TEST1_GROUP = "test1";

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2022 ForgeRock AS.
+ * Copyright 2019-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.sun.identity.idm.IdType;
 import com.sun.identity.sm.RequiredValueValidator;
 
 /**
@@ -151,10 +152,13 @@ public class IdentifyExistingUserNode extends AbstractDecisionNode {
 
             NodeState globalState = context.getStateFor(this);
 
-            return goTo(true)
+            var action = goTo(true)
                     .replaceSharedState(copyState)
-                    .withUniversalId(context.universalId.or(() -> getUniversalId(globalState, identityUtils)))
-                     .build();
+                    .withUniversalId(context.universalId.or(() -> getUniversalId(globalState, identityUtils)));
+            if (copyState.get(USERNAME).isNotNull()) {
+                action.withIdentifiedIdentity(copyState.get(USERNAME).asString(), IdType.USER.getName());
+            }
+            return action.build();
         }
         logger.debug("No {} identified", context.identityResource);
         return goTo(false).build();

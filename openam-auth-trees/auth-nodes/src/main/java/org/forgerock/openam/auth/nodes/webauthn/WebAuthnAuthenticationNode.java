@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -21,7 +21,7 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getUniversalId;
+import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.ERROR_MESSAGE;
 import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.WEB_AUTHENTICATION_DOM_EXCEPTION;
 
@@ -311,10 +311,11 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
                 }
 
                 NodeState nodeState = context.getStateFor(this);
-                return responseAction
-                        .addNodeType(context, WEB_AUTHN_AUTH_TYPE)
-                        .withUniversalId(context.universalId.or(() -> getUniversalId(nodeState, identityUtils)))
-                        .build();
+                Action.ActionBuilder actionBuilder = responseAction.addNodeType(context, WEB_AUTHN_AUTH_TYPE);
+                Optional<AMIdentity> identity = getAMIdentity(context.universalId, nodeState, identityUtils,
+                        coreWrapper);
+                identity.ifPresent(id -> actionBuilder.withIdentifiedIdentity(id.getName(), id.getType().getName()));
+                return actionBuilder.withUniversalId(identity.map(AMIdentity::getUniversalId)).build();
             } else {
                 logger.debug("returning with failure outcome");
                 return Action.goTo(FAILURE_OUTCOME_ID).build();

@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS. All Rights Reserved
+ * Copyright 2017-2024 ForgeRock AS. All Rights Reserved
  * 
 -->
 
@@ -20,7 +20,7 @@
     <parent>
         <artifactId>openam-auth-trees</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>7.2.1</version>
+        <version>7.2.2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -133,7 +133,7 @@
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
+            <artifactId>bcprov-jdk18on</artifactId>
         </dependency>
         <dependency>
             <groupId>org.forgerock.commons</groupId>
@@ -176,6 +176,10 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
         </dependency>
     </dependencies>
 

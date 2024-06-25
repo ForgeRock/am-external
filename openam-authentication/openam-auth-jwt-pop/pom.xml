@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS. All Rights Reserved
+ * Copyright 2017-2023 ForgeRock AS. All Rights Reserved
  * 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-authentication</artifactId>
-        <version>7.2.1</version>
+        <version>7.2.2</version>
     </parent>
 
     <!-- Component Definition -->
@@ -39,7 +39,7 @@
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
+            <artifactId>bcpkix-jdk18on</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -115,6 +115,7 @@ public class ProvisionDynamicAccountNode extends SingleOutcomeNode {
         String realm = context.sharedState.get(REALM).asString();
         return goToNext()
                 .withUniversalId(identityUtils.getUniversalId(username, realm, USER))
+                .withIdentifiedIdentity(username, USER.getName())
                 .replaceSharedState(context.sharedState.put(USERNAME, username))
                 .build();
     }

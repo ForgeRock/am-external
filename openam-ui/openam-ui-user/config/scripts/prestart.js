@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2019-2024 ForgeRock AS.
  */
 require("dotenv").config();
 
@@ -61,15 +61,6 @@ questions.forEach((question) => {
 });
 
 const hasQuestions = questionsToAsk.length;
-if (hasQuestions) {
-    questionsToAsk.push({
-        "default": true,
-        message: "Save environment variables to \".env\" file?",
-        name: "saveDotenv",
-        type: "confirm"
-    });
-}
-
 const message = questionsToAsk.length
     ? chalk.yellow("Required environment variables not found.")
     : chalk.green("Environment variables successfully loaded. See README.md for more information.");
@@ -77,23 +68,22 @@ console.log(message);
 
 if (hasQuestions) {
     inquirer.prompt(questionsToAsk).then((answers) => {
-        // Ensure `saveDotenv` answer is not applied to process.env
-        const saveDotenv = answers.saveDotenv;
-        delete answers.saveDotenv;
 
-        // Apply answers to process.env
+        let envsToWrite = "";
+        
         forOwn(answers, (answer, key) => {
-            process.env[key] = answer;
+          envsToWrite = `${envsToWrite}${key}=${answer}\n`;
+          delete answers[key];
         });
 
         const missing = reduce(answers, (result, answer, key) => {
             return `${result}${key}=${answer}\n`;
         }, "");
 
-        // Save or show missing environment variables
-        if (saveDotenv) {
-            fs.writeFileSync(".env", missing);
-        } else {
+        // Save environment variables
+        fs.writeFileSync(".env", envsToWrite);
+
+        if (missing) {
             const message = chalk.red("Set the following environment variable to continue");
             console.log(`${message}\n${missing}`);
 

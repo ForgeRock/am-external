@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2020 ForgeRock AS.
+ * Copyright 2013-2024 ForgeRock AS.
  */
 package com.sun.identity.saml.xmlsig;
 
@@ -162,7 +162,7 @@ public class AMSignatureProviderTest {
         CertificateValidity interval = new CertificateValidity(from, to);
         BigInteger serialNumber = new BigInteger(64, new SecureRandom());
         X500Name owner = new X500Name("cn=self signed");
-        AlgorithmId sigAlgId = new AlgorithmId(AlgorithmId.sha256WithRSAEncryption_oid);
+        AlgorithmId sigAlgId = AlgorithmId.get("SHA256withRSA");
 
         info.set(X509CertInfo.VALIDITY, interval);
         info.set(X509CertInfo.SERIAL_NUMBER, new CertificateSerialNumber(serialNumber));

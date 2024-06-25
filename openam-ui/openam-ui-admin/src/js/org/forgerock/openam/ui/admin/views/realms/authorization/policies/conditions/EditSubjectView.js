@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2019 ForgeRock AS.
+ * Copyright 2014-2024 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -22,6 +22,7 @@ import ArrayAttr from "./ConditionAttrArrayView";
 import EditSubjectTemplate from "templates/admin/views/realms/authorization/policies/conditions/EditSubjectTemplate";
 import ListItemTemplate from "templates/admin/views/realms/authorization/policies/conditions/ListItem";
 import StringAttr from "./ConditionAttrStringView";
+import PoliciesService from "org/forgerock/openam/ui/admin/services/realm/PoliciesService";
 
 export default AbstractView.extend({
     template: EditSubjectTemplate,
@@ -54,18 +55,43 @@ export default AbstractView.extend({
 
         self.setElement(`#subject_${itemID}`);
 
+        // Set loaded variable in case we need to wait for an api call later
+        let dataLoaded = true;
+
         if (itemData) {
             if (itemData.type === self.IDENTITY_RESOURCE) { // client side fix for 'Identity'
-                self.$el.data("hiddenData", self.getUIDsFromUniversalValues(itemData.subjectValues));
-            }
+                // api call is needed so set loaded to false
+                dataLoaded = false;
+                self.getUIDsFromUniversalValues(itemData.subjectValues).then((data) => {
+                    self.$el.data("hiddenData", data);
+                    self.$el.data("itemData", itemData);
+                    self.$el.find("select.type-selection:first").val(itemData.type).trigger("change");
+                    self.createListItem(schema, self.$el);
 
-            self.$el.data("itemData", itemData);
-            self.$el.find("select.type-selection:first").val(itemData.type).trigger("change");
+                    if (callback) {
+                        callback();
+                    }
+                    // data finished loading from api
+                    dataLoaded = true;
+                }).catch((error) => {
+                    console.error("error", error);
+                    // data failed to load but we still want to continue
+                    dataLoaded = true;
+                    if (callback) {
+                        callback();
+                    }
+                });
+            } else {
+                self.$el.data("itemData", itemData);
+                self.$el.find("select.type-selection:first").val(itemData.type).trigger("change");
+                self.createListItem(schema, self.$el);
+            }
         }
 
         self.$el.find("select.type-selection:first").focus();
 
-        if (callback) {
+        // Only call callback if no data was needed from api at this point
+        if (callback && dataLoaded) {
             callback();
         }
     },
@@ -246,16 +272,41 @@ export default AbstractView.extend({
         const returnObj = { users: {}, groups: {} };
         let endIndex = -1;
         const startIndex = String("id=").length;
+        // array for storing api calls to be called at the same time later
+        const promises = [];
 
         _.each(values, (universalid) => {
             endIndex = universalid.indexOf(",ou=");
             if (universalid.indexOf(",ou=user") > -1) {
-                returnObj.users[universalid] = universalid.substring(startIndex, endIndex);
+                // Now we have the uid from the users universal id, we need to
+                // get the users username for display
+                const uid = universalid.substring(startIndex, endIndex);
+                // Add api call to get username to promises array
+                promises.push(
+                    PoliciesService.queryIdentitiesByUID("users", uid)
+                        .then(({ result }) => {
+                            return { universalId: universalid, username: result[0].username };
+                        })
+                );
             } else if (universalid.indexOf(",ou=group") > -1) {
                 returnObj.groups[universalid] = universalid.substring(startIndex, endIndex);
             }
         });
 
-        return returnObj;
+        // If there are promises, now call them
+        if (promises.length) {
+            return Promise.all(promises)
+                .then((values) => {
+                    _.each(values, (user) => {
+                        returnObj.users[user.universalId] = user.username;
+                    });
+                    return returnObj;
+                })
+                .catch((error) => {
+                    console.error("error", error);
+                });
+        } else {
+            return Promise.resolve(returnObj);
+        }
     }
 });

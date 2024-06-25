@@ -24,7 +24,7 @@
  *
  * $Id: AssertionImpl.java,v 1.8 2009/05/09 15:43:59 mallas Exp $
  *
- * Portions Copyrighted 2015-2021 ForgeRock AS.
+ * Portions Copyrighted 2015-2023 ForgeRock AS.
  */
 package com.sun.identity.saml2.assertion.impl;
 
@@ -728,6 +728,11 @@ public class AssertionImpl implements Assertion {
     public DocumentFragment toDocumentFragment(Document document, boolean includeNSPrefix, boolean declareNS)
             throws SAML2Exception {
         DocumentFragment fragment = document.createDocumentFragment();
+        if (!isMutable && isSigned()) {
+            Document parsedDocument = XMLUtils.toDOMDocument(signedXMLString);
+            fragment.appendChild(document.adoptNode(parsedDocument.getDocumentElement()));
+            return fragment;
+        }
         Element assertionElement = XMLUtils.createRootElement(document, ASSERTION_PREFIX, ASSERTION_NAMESPACE_URI,
                 ASSERTION_ELEMENT, includeNSPrefix, declareNS);
         fragment.appendChild(assertionElement);

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -62,6 +62,7 @@ import org.forgerock.oauth.UserInfo;
 import org.forgerock.oauth.clients.oauth2.OAuth2ClientConfiguration;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
@@ -91,6 +92,7 @@ import org.testng.annotations.Test;
 import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.authentication.spi.RedirectCallback;
 import com.sun.identity.common.ShutdownManager;
+import com.sun.identity.idm.IdType;
 
 public class SocialProviderHandlerNodeTest {
     private static final String PROVIDER_REDIRECT = "http://provider/redirect";
@@ -207,6 +209,29 @@ public class SocialProviderHandlerNodeTest {
                 .thenReturn(new CloseableHttpClientHandler(ShutdownManager.getInstance(), Options.defaultOptions()));
         node = new SocialProviderHandlerNode(config, authModuleHelper, providerConfigStore, identityUtils, realm,
                 __ -> scriptEvaluator, sessionServiceProvider, idmIntegrationService);
+    }
+
+    @Test
+    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+        // Given
+        Map<String, String[]> parameters = getStateAndCodeAsParameter();
+        TreeContext context = new TreeContext(json(object(
+                field(SELECTED_IDP, PROVIDER_NAME),
+                field(OBJECT_ATTRIBUTES, object(field("userName", "bob")))
+        )),
+                new ExternalRequestContext.Builder()
+                        .parameters(parameters)
+                        .build(),
+                emptyList(), Optional.empty());
+
+        // When
+        Action result = node.process(context);
+
+        // Then
+        assertThat(result.identifiedIdentity).isPresent();
+        IdentifiedIdentity idid = result.identifiedIdentity.get();
+        assertThat(idid.getUsername()).isEqualTo("bob");
+        assertThat(idid.getIdentityType()).isEqualTo(IdType.USER.getName());
     }
 
     @Test

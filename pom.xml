@@ -24,7 +24,7 @@
 
     <groupId>org.forgerock.am</groupId>
     <artifactId>openam-external</artifactId>
-<version>7.2.1</version>    
+<version>7.2.2</version>    
     <packaging>pom</packaging>
 
     <!-- Child Modules -->
@@ -59,8 +59,8 @@
     <repositories>
         <repository>
             <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 7.2.1</name>
-            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.2.1-dependencies</url>
+            <name>ForgeRock Private Release Repository for AM 7.2.2</name>
+            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.2.2-dependencies</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>

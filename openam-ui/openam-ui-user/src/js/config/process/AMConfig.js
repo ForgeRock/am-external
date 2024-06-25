@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2023 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -34,7 +34,19 @@ export default [{
             replace: true
         };
 
-        if (!Configuration.loggedUser) {
+        const urlParams = new URLSearchParams(window.location.search);
+
+        if (urlParams.get("suspendedId")) {
+            // If url contains a suspendedId query parameter, assume user is
+            // attempting to continue a suspended login tree. Logout the current
+            // user and redirect to login to continue the tree. If no user was
+            // logged in, this would be handled by the first if statement above.
+            const routeToLogin = () => {
+                Router.routeTo(Router.configuration.routes.login, routerParams);
+            };
+
+            logout().then(routeToLogin, routeToLogin);
+        } else if (!Configuration.loggedUser) {
             Router.routeTo(Router.configuration.routes.login, routerParams);
         } else if (_.includes(Configuration.loggedUser.uiroles, "ui-realm-admin")) {
             redirectToAdmin();

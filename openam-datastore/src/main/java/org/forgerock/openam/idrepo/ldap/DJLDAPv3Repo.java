@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2022 ForgeRock AS.
+ * Copyright 2013-2024 ForgeRock AS.
  * Portions Copyright 2016 Nomura Research Institute, Ltd.
  * Portions Copyrighted 2016 Agile Digital Engineering.
  */
@@ -480,7 +480,7 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                 .withLDAPURLs(LDAPUtils.getLdapUrls(ldapServers, isSecure))
                 .withBindDN(username)
                 .withBindPassword(password)
-                .withMinimumConnectionPool(maxPoolSize)
+                .withMinimumConnectionPool(minPoolSize)
                 .withMaximumConnectionPool(maxPoolSize)
                 .withUseSsl(isSecure)
                 .withUseStartTLS(useStartTLS)
@@ -568,6 +568,10 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
         }
         if (userName == null || password == null) {
             throw newIdRepoException(IdRepoErrorCode.UNABLE_TO_AUTHENTICATE, CLASS_NAME);
+        }
+        if (String.valueOf(password).isBlank()) {
+            DEBUG.debug("Blank password for user {} ", userName);
+            throw new InvalidPasswordException(AM_AUTH, "invalidPasswd", null, userName, false, null);
         }
         Dn dn = findDNForAuth(USER, userName);
         BindRequest bindRequest = LDAPRequests.newSimpleBindRequest(dn, password);
@@ -1418,8 +1422,9 @@ public class DJLDAPv3Repo extends IdRepo implements IdentityMovedOrRenamedListen
                         userDN, detail, ere.getMessage());
             }
             if (isProxiedOriginalRequest && proxiedAuthorizationFallbackOnDenied) {
-                if ((ResultCode.AUTHORIZATION_DENIED.equals(resultCode)
-                        || ResultCode.INSUFFICIENT_ACCESS_RIGHTS.equals(resultCode))) {
+                if (ResultCode.AUTHORIZATION_DENIED.equals(resultCode)
+                        || ResultCode.INSUFFICIENT_ACCESS_RIGHTS.equals(resultCode)
+                        || ResultCode.NO_SUCH_OBJECT.equals(resultCode)) {
                     DEBUG.debug("{}.{}: Retrying without proxy-auth on error {}",
                             DEBUG_CLASS_NAME, "updateAsProxiedAuthzIfNeeded", resultCode);
                     conn.modify(origRequest);

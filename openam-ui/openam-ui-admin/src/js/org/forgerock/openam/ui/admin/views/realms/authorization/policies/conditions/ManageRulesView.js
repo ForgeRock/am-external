@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2020 ForgeRock AS.
+ * Copyright 2014-2024 ForgeRock AS.
  */
 
 import "jquery-sortable";
@@ -88,7 +88,6 @@ export default AbstractView.extend({
                         newRule = self.getNewRule();
                         properties = self.getProperties();
                         newRule.render(properties, container, self.idCount, item);
-                        newRule.createListItem(properties, newRule.$el);
                     }
 
                     self.idCount++;
@@ -401,8 +400,6 @@ export default AbstractView.extend({
         } else {
             console.error("This should never be triggered", this.property, operatorData);
         }
-
-        console.log(`\n${this.property}:`, JSON.stringify(this.data.entity[this.property], null, 2));
 
         this.identifyDroppableLogical();
     },

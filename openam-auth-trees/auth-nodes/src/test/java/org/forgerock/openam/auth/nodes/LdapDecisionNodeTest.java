@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -26,6 +26,7 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.HeartbeatTimeUnit.MINUTES;
 import static org.forgerock.openam.auth.nodes.LdapDecisionNode.SearchScope.SUBTREE;
 import static org.forgerock.openam.ldap.ModuleState.SUCCESS;
+import static org.forgerock.openam.ldap.ModuleState.USER_NOT_FOUND;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -40,6 +41,7 @@ import org.assertj.core.api.Assertions;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.identity.idm.IdentityUtils;
@@ -49,6 +51,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+
+import com.sun.identity.idm.IdType;
 
 /**
  * Unit tests for {@link LdapDecisionNode}.
@@ -77,6 +81,41 @@ public class LdapDecisionNodeTest {
         given(coreWrapper.getLDAPAuthUtils(anySet(), anySet(),
                 anyBoolean(), any(), anyString(), any())).willReturn(ldapAuthUtils);
         node = new LdapDecisionNode(config, coreWrapper, identityUtils);
+    }
+
+    @Test
+    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+        //Given
+        JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
+                field("password", "password"),
+                field("realm", "testRealm")));
+        given(ldapAuthUtils.getUserId()).willReturn("testUser");
+        given(ldapAuthUtils.getState()).willReturn(SUCCESS);
+
+        //When
+        Action result = node.process(getContext(sharedState));
+
+        // Then
+        Assertions.assertThat(result.identifiedIdentity).isPresent();
+        IdentifiedIdentity idid = result.identifiedIdentity.get();
+        Assertions.assertThat(idid.getUsername()).isEqualTo("testUser");
+        Assertions.assertThat(idid.getIdentityType()).isEqualTo(IdType.USER.getName());
+    }
+
+    @Test
+    public void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
+        //Given
+        JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
+                field("password", "password"),
+                field("realm", "testRealm")));
+        given(ldapAuthUtils.getUserId()).willReturn("testUser");
+        given(ldapAuthUtils.getState()).willReturn(USER_NOT_FOUND);
+
+        //When
+        Action result = node.process(getContext(sharedState));
+
+        // Then
+        Assertions.assertThat(result.identifiedIdentity).isEmpty();
     }
 
     @Test

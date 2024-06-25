@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2019 ForgeRock AS.
+ * Copyright 2011-2024 ForgeRock AS.
  */
 import $ from "jquery";
 import _ from "lodash";
@@ -26,6 +26,7 @@ import fetchUrl from "api/fetchUrl";
 import Messages from "org/forgerock/commons/ui/common/components/Messages";
 import store from "store";
 import URIUtils from "org/forgerock/commons/ui/common/util/URIUtils";
+import { decodeJwt } from "org/forgerock/openam/ui/common/util/JwtUtils";
 
 const AuthNService = new AbstractDelegate(`${Constants.host}${Constants.context}/json`);
 let requirementList = [];
@@ -57,6 +58,17 @@ function addQueryStringToUrl (url, queryString) {
 
 function addRealmToStore (realm) {
     store.dispatch(addRealm(realm));
+}
+
+/**
+ * Checks whether an authId has a value set for authIndexValue, returns true if
+ * it does, false otherwise
+ * @param {string} authId which needs to be decoded and tested
+ * @returns {boolean} whether the authId has an authIndexValue property
+ */
+function hasAuthIndexValue (authId) {
+    const decoded = decodeJwt(authId);
+    return !!decoded["authIndexValue"];
 }
 
 /**
@@ -133,6 +145,7 @@ AuthNService.handleRequirements = function (requirements) {
 
     if (requirements.hasOwnProperty("authId")) {
         requirementList.push(requirements);
+        Configuration.globalData.auth.isDefaultService = !hasAuthIndexValue(requirements.authId);
         Configuration.globalData.auth.currentStage = requirementList.length;
         if (!get() && _.find(requirements.callbacks, callbackTracking)) {
             set(requirements.authId);
@@ -156,7 +169,9 @@ AuthNService.submitRequirements = function (requirements, options) {
     const goToFailureUrl = (errorBody) => {
         if (errorBody.detail && errorBody.detail.failureUrl) {
             console.log(errorBody.detail.failureUrl);
-            window.location.href = errorBody.detail.failureUrl;
+            // setTimeout is used here as a fix for iOS safari which was not
+            // following redirects when used without
+            setTimeout(() => { window.location.href = errorBody.detail.failureUrl; }, 1);
         }
     };
     const serviceCall = {

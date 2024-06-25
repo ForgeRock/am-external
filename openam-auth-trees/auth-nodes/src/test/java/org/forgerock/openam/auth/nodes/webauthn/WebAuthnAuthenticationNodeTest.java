@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn;
@@ -25,9 +25,12 @@ import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.security.SecureRandom;
@@ -43,8 +46,10 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
+import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.webauthn.data.AuthData;
 import org.forgerock.openam.auth.nodes.webauthn.flows.AuthenticationFlow;
 import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.AuthDataDecoder;
 import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.EncodingUtilities;
@@ -57,7 +62,6 @@ import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
 import org.forgerock.openam.identity.idm.IdentityUtils;
 import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -67,6 +71,7 @@ import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import com.sun.identity.authentication.spi.MetadataCallback;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
+import com.sun.identity.idm.IdType;
 
 /**
  * Test for WebAuthnAuthenticationNode
@@ -87,9 +92,15 @@ public class WebAuthnAuthenticationNodeTest {
 
     ClientScriptUtilities clientScriptUtilities = new ClientScriptUtilities();
 
+    @Mock
+    ClientScriptUtilities mockClientScriptUtilities;
+
     SecureRandom secureRandom = new SecureRandom();
 
     AuthDataDecoder authDataDecoder = new AuthDataDecoder();
+
+    @Mock
+    AuthDataDecoder mockAuthDataDecoder;
 
     @Mock
     IdentityUtils identityUtils;
@@ -119,6 +130,7 @@ public class WebAuthnAuthenticationNodeTest {
         given(amIdentity.isExists()).willReturn(true);
         given(amIdentity.isActive()).willReturn(true);
         given(amIdentity.getName()).willReturn("bob");
+        given(amIdentity.getType()).willReturn(IdType.USER);
 
         given(config.asScript()).willReturn(false);
         given(config.isRecoveryCodeAllowed()).willReturn(false);
@@ -130,12 +142,61 @@ public class WebAuthnAuthenticationNodeTest {
         given(webAuthnDeviceProfileManager.getDeviceProfiles(any(), any())).willReturn(
                 Collections.singletonList(generateDevice()));
 
+        mockNode(clientScriptUtilities, authDataDecoder);
+    }
+
+    private void mockNode(ClientScriptUtilities clientScriptUtilities, AuthDataDecoder authDataDecoder)
+            throws DevicePersistenceException {
         node = new WebAuthnAuthenticationNode(config, realm, authenticationFlow, clientScriptUtilities,
                 webAuthnDeviceProfileManager, secureRandom, authDataDecoder,
                 new RecoveryCodeGenerator(secureRandom), identityUtils, coreWrapper);
 
-        node = Mockito.spy(node);
+        node = spy(node);
         doReturn(Collections.singletonList(generateDevice())).when(node).getDeviceSettingsFromUsername(any(), any());
+    }
+
+    @Test
+    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+        JsonValue transientState = json(object());
+        AuthData authData = mock(AuthData.class);
+
+        HiddenValueCallback hvc = mock(HiddenValueCallback.class);
+        ClientAuthenticationScriptResponse response = mock(ClientAuthenticationScriptResponse.class);
+        given(response.getUserHandle()).willReturn("bob");
+        given((response.getCredentialId())).willReturn(EncodingUtilities.base64UrlEncode("test"));
+
+        given(hvc.getValue()).willReturn("output");
+        given(authenticationFlow.accept(any(), any(), any(AuthData.class), any(), any(), any(), any(), any(), any()))
+                .willReturn(true);
+
+        given(mockClientScriptUtilities.parseClientAuthenticationResponse(anyString(), anyBoolean()))
+                .willReturn(response);
+        given(mockAuthDataDecoder.decode(any())).willReturn(authData);
+        mockNode(mockClientScriptUtilities, mockAuthDataDecoder);
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, List.of(hvc)));
+
+        // Then
+        assertThat(result.identifiedIdentity).isPresent();
+        IdentifiedIdentity idid = result.identifiedIdentity.get();
+        assertThat(idid.getUsername()).isEqualTo("bob");
+        assertThat(idid.getIdentityType()).isEqualTo(IdType.USER.getName());
+    }
+
+    @Test
+    public void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(field(USERNAME, "bob-2"), field(REALM, "root")));
+        JsonValue transientState = json(object());
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        // Then
+        assertThat(result.identifiedIdentity.isEmpty());
     }
 
     @Test

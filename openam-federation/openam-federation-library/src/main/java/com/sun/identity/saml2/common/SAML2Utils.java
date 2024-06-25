@@ -22,7 +22,7 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2021 ForgeRock AS.
+ * Portions Copyrighted 2010-2024 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.common;
@@ -150,7 +150,6 @@ import com.sun.identity.saml2.plugins.DefaultSPAuthnContextMapper;
 import com.sun.identity.saml2.plugins.FedletAdapter;
 import com.sun.identity.saml2.plugins.IDPAccountMapper;
 import com.sun.identity.saml2.plugins.SAML2IDPFinder;
-import com.sun.identity.saml2.plugins.SAML2IdentityProviderAdapter;
 import com.sun.identity.saml2.plugins.SAML2ServiceProviderAdapter;
 import com.sun.identity.saml2.plugins.SPAccountMapper;
 import com.sun.identity.saml2.plugins.SPAttributeMapper;
@@ -605,7 +604,7 @@ public class SAML2Utils extends SAML2SDKUtils {
                     }
                 }
                 if (foundAssertion) {
-                    debug.error("Bearer Assertion is one time use only!");
+                    debug.error("Bearer Assertion is one-time use only!");
                     throw new SAML2Exception(bundle.getString("usedBearAssertion"));
                 }
                 checkAudience(assertion.getConditions(),
@@ -4397,6 +4396,20 @@ public class SAML2Utils extends SAML2SDKUtils {
                 throw new SAML2Exception(SAML2Utils.bundle.getString("invalidRelayStateUrl"));
             }
         }
+    }
+
+    /**
+     * Retrieves the reverse proxy URL configured for the specified IDP.
+     * If no reverse proxy URL is set, an empty string will be returned.
+     *
+     * @param realm         Realm under which the entity resides.
+     * @param idpEntityId   Entity ID of the hosted IDP.
+     * @return The reverse proxy URL.
+     */
+    @Supported
+    public static String getReverseProxyUrl(String realm, String idpEntityId) {
+        String reverseProxyUrl = IDPSSOUtil.getAttributeValueFromIDPSSOConfig(realm, idpEntityId, SAML2Constants.REVERSE_PROXY_URL);
+        return reverseProxyUrl == null ? "" : reverseProxyUrl;
     }
 
     /**

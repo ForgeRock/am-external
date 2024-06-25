@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -76,6 +76,10 @@ public final class Action {
      */
     public final String errorMessage;
     /**
+     * The error message to present to the caller when the user is locked out.
+     */
+    public final String lockoutMessage;
+    /**
      * Callbacks requested by the node when the outcome is null. May be null.
      */
     public final List<Callback> callbacks;
@@ -98,8 +102,14 @@ public final class Action {
     public final SuspensionHandler suspensionHandler;
     /**
      * The universal id of the identity object.
+     * @deprecated use {@link #identifiedIdentity} instead.
      */
-    public final Optional <String> universalId;
+    @Deprecated
+    public final Optional<String> universalId;
+    /**
+     * Optionally the identity confirmed to exist as part of this action.
+     */
+    public final Optional<IdentifiedIdentity> identifiedIdentity;
 
     /**
      * Move on to the next node in the tree that is connected to the given outcome.
@@ -146,20 +156,23 @@ public final class Action {
     }
 
     private Action(JsonValue sharedState, JsonValue transientState, String outcome,
-            Map<String, Object> returnProperties, String errorMessage, List<? extends Callback> callbacks,
-            Map<String, String> sessionProperties, List<JsonValue> sessionHooks, List<String> webhooks,
-            SuspensionHandler suspensionHandler, Optional<String> universalId) {
+            Map<String, Object> returnProperties, String errorMessage, String lockoutMessage,
+            List<? extends Callback> callbacks, Map<String, String> sessionProperties, List<JsonValue> sessionHooks,
+            List<String> webhooks, SuspensionHandler suspensionHandler, Optional<String> universalId,
+            Optional<IdentifiedIdentity> identifiedIdentity) {
         this.sharedState = sharedState;
         this.transientState = transientState;
         this.outcome = outcome;
         this.returnProperties = returnProperties;
         this.errorMessage = errorMessage;
+        this.lockoutMessage = lockoutMessage;
         this.callbacks = Collections.unmodifiableList(callbacks);
         this.sessionProperties = Collections.unmodifiableMap(sessionProperties);
         this.sessionHooks = sessionHooks;
         this.webhooks = webhooks;
         this.suspensionHandler = suspensionHandler;
         this.universalId = universalId;
+        this.identifiedIdentity = identifiedIdentity;
     }
 
     /**
@@ -179,7 +192,9 @@ public final class Action {
         private JsonValue transientState;
         private Map<String, Object> returnProperties;
         private String errorMessage;
+        private String lockoutMessage;
         private String universalId;
+        private IdentifiedIdentity identifiedIdentity;
         private final String outcome;
         private final List<? extends Callback> callbacks;
         private final Map<String, String> sessionProperties = new HashMap<>();
@@ -297,11 +312,26 @@ public final class Action {
         }
 
         /**
+         * Sets the error message to present to the caller when the user is locked out.
+         *
+         * <p>It is up to the caller to apply localisation.</p>
+         *
+         * @param lockoutMessage The lockout message.
+         * @return the same instance of the ActionBuilder.
+         */
+        public ActionBuilder withLockoutMessage(String lockoutMessage) {
+            this.lockoutMessage = lockoutMessage;
+            return this;
+        }
+
+        /**
          * Sets the universal id of the user object.
          *
          * @param universalId The universal id of the user object.
          * @return the same instance of the ActionBuilder.
+         * @deprecated use {@link #withIdentifiedIdentity} instead.
          */
+        @Deprecated
         public ActionBuilder withUniversalId(String universalId) {
             if (isNotEmpty(universalId)) {
                 this.universalId = universalId;
@@ -316,7 +346,9 @@ public final class Action {
          *
          * @param universalId The optional universal id of the user object.
          * @return the same instance of the ActionBuilder.
+         * @deprecated use {@link #withIdentifiedIdentity} instead.
          */
+        @Deprecated
         public ActionBuilder withUniversalId(Optional<String> universalId) {
             universalId.ifPresent(this::withUniversalId);
             return this;
@@ -443,6 +475,20 @@ public final class Action {
         }
 
         /**
+         * Set the identified identity that has been verified to exist in an identity store.
+         * <p>The identity may or may not have been authenticated as part of the tree execution.
+         *
+         * @param username the username of the identified identity.
+         * @param identityType the identity type of the identified identity. Must be one of the identity types
+         *                     defined in com.sun.identity.idm.IdType.
+         * @return this action builder.
+         */
+        public ActionBuilder withIdentifiedIdentity(String username, String identityType) {
+            identifiedIdentity = new IdentifiedIdentity(username, identityType);
+            return this;
+        }
+
+        /**
          * Build the Action.
          *
          * @return an Action.
@@ -450,9 +496,9 @@ public final class Action {
          */
         public Action build() {
             return new Action(this.sharedState, this.transientState, this.outcome, this.returnProperties,
-                    this.errorMessage, this.callbacks, sessionProperties, sessionHooks,
-                    webhooks, suspensionHandler, Optional.ofNullable(this.universalId));
+                    this.errorMessage, this.lockoutMessage, this.callbacks, sessionProperties, sessionHooks,
+                    webhooks, suspensionHandler, Optional.ofNullable(this.universalId),
+                    Optional.ofNullable(identifiedIdentity));
         }
-
     }
 }

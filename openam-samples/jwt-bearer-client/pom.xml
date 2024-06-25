@@ -2,7 +2,7 @@
 <!--
    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
 
-   Copyright (c) 2013-2021 ForgeRock AS. All Rights Reserved
+   Copyright (c) 2013-2023 ForgeRock AS. All Rights Reserved
 
    The contents of this file are subject to the terms
    of the Common Development and Distribution License
@@ -29,7 +29,7 @@
     <parent>
         <groupId>org.forgerock.am.examples</groupId>
         <artifactId>openam-samples</artifactId>
-        <version>7.2.1</version>
+        <version>7.2.2</version>
     </parent>
 
     <artifactId>jwt-bearer-client</artifactId>
