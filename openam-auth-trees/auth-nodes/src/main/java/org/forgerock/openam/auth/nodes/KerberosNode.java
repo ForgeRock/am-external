@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  * Portions Copyrighted 2020 IC Consult.
  */
 
@@ -67,6 +67,7 @@ import com.iplanet.am.util.SystemProperties;
 import com.sun.identity.authentication.spi.HttpCallback;
 import com.sun.identity.authentication.util.DerValue;
 import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.IdType;
 import com.sun.identity.shared.Constants;
 import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.sm.FileExistenceValidator;
@@ -268,13 +269,14 @@ public class KerberosNode extends AbstractDecisionNode {
     }
 
     private Action setUserNameAndReturnTrue(String username, Optional<String> universalId, JsonValue newSharedState) {
+        var action = goTo(true)
+                .withUniversalId(universalId);
         if (username != null) {
             newSharedState.put(SharedStateConstants.USERNAME, username);
+            action.withIdentifiedIdentity(username, IdType.USER);
         }
-        return goTo(true)
-                .replaceSharedState(newSharedState)
-                .withUniversalId(universalId)
-                .build();
+        return action.replaceSharedState(newSharedState)
+                       .build();
     }
 
     private Pair<String, Optional<String>> authenticateToken(final Subject serviceSubject, final byte[] kerberosToken,

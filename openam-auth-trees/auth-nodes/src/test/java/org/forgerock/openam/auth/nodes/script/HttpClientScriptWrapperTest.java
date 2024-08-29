@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -22,6 +22,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import java.util.List;
+import java.util.Map;
 
 import org.forgerock.http.Client;
 import org.forgerock.http.Handler;
@@ -55,6 +56,22 @@ public class HttpClientScriptWrapperTest {
         // then
         assertThat(requestCaptor.getValue()).isNotNull();
         assertPropagatesTransactionId(requestCaptor.getValue());
+    }
+
+    @Test
+    public void shouldNotSendNullBody() throws Exception {
+        // given
+        Client mockHandler = mock(Client.class);
+        ArgumentCaptor<Request> requestCaptor = ArgumentCaptor.forClass(Request.class);
+        given(mockHandler.send(requestCaptor.capture())).willReturn(newResultPromise(responseOK()));
+
+        HttpClientScriptWrapper scriptWrapper = new HttpClientScriptWrapper(mockHandler);
+
+        // when
+        scriptWrapper.send("https://www.example.com", Map.of("method", "POST"));
+
+        // then
+        assertThat(requestCaptor.getValue().getEntity().getString()).isNotEqualTo("null");
     }
 
     private static void resetAuditRequestContext() {

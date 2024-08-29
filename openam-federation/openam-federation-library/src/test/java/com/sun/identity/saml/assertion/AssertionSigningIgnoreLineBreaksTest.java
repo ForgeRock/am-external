@@ -11,24 +11,30 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2018-2023 ForgeRock AS.
  */
 package com.sun.identity.saml.assertion;
 
 import static com.sun.identity.saml.assertion.AssertionTestUtil.getSignedWSFedAssertionXml;
 import static com.sun.identity.saml.common.SAMLConstants.TAG_ASSERTION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-
+import org.forgerock.guice.core.GuiceModules;
+import org.forgerock.guice.core.GuiceTestCase;
+import org.forgerock.openam.audit.AuditEventPublisher;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import com.google.inject.AbstractModule;
 import com.sun.identity.saml.xmlsig.AMSignatureProvider;
 import com.sun.identity.saml.xmlsig.JKSKeyProvider;
+import com.sun.identity.saml.xmlsig.SignatureProvider;
 
-public class AssertionSigningIgnoreLineBreaksTest {
+@GuiceModules(AssertionSigningIgnoreLineBreaksTest.TestGuiceModule.class)
+public class AssertionSigningIgnoreLineBreaksTest extends GuiceTestCase {
 
-    private AMSignatureProvider signatureProvider;
+    private static AMSignatureProvider signatureProvider;
 
     @BeforeClass
     public void setup() {
@@ -43,5 +49,14 @@ public class AssertionSigningIgnoreLineBreaksTest {
 
         assertThat(signatureProvider.verifyXMLSignature(signedXml, TAG_ASSERTION_ID, "defaultkey")).isTrue();
         assertThat(signedXml.contains("\n")).isFalse();
+    }
+
+    public static class TestGuiceModule extends AbstractModule {
+
+        @Override
+        protected void configure() {
+            bind(AuditEventPublisher.class).toInstance(mock(AuditEventPublisher.class));
+            bind(SignatureProvider.class).toInstance(signatureProvider);
+        }
     }
 }

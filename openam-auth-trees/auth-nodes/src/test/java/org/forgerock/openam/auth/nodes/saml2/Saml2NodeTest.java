@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2022 ForgeRock AS.
+ * Copyright 2019-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
@@ -109,6 +109,31 @@ public class Saml2NodeTest {
         given(metaManager.getIDPSSODescriptor(any(), any())).willReturn(idpDescriptor);
         SPSSODescriptorType spDescriptor = new SPSSODescriptorType();
         given(metaManager.getSPSSODescriptor(any(), any())).willReturn(spDescriptor);
+    }
+
+    @Test
+    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+        // Given
+        setupSuccessfulFederation();
+
+        // When
+        Action action = node.process(getContext(Map.of(RESPONSE_KEY, new String[]{"storage-key"})));
+
+        // Then
+        assertThat(action.identifiedIdentity).isPresent();
+    }
+
+    @Test
+    public void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
+        // Given
+        setupSuccessfulFederation(ssoResult("universalId", true));
+        given(identityService.doesIdentityExist("universalId")).willReturn(false);
+
+        // When
+        Action action = node.process(getContext(Map.of(RESPONSE_KEY, new String[]{"storage-key"})));
+
+        // Then
+        assertThat(action.identifiedIdentity).isEmpty();
     }
 
     @Test

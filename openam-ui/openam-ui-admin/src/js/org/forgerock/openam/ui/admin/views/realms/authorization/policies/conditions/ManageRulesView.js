@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2023 ForgeRock AS.
+ * Copyright 2014-2024 ForgeRock AS.
  */
 
 import "jquery-sortable";
@@ -87,13 +87,7 @@ export default AbstractView.extend({
                     } else {
                         newRule = self.getNewRule();
                         properties = self.getProperties();
-                        // createListItem relies on data being set in the
-                        // render function. In order for us to ensure that data
-                        // has been set first we pass it as a callback instead
-                        // of just calling it seperately after
-                        newRule.render(properties, container, self.idCount, item, () => {
-                            newRule.createListItem(properties, newRule.$el);
-                        });
+                        newRule.render(properties, container, self.idCount, item);
                     }
 
                     self.idCount++;

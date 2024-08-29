@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 
 import React, { Component } from "react";
@@ -47,10 +47,10 @@ const withPagination = (WrappedComponent) => {
             });
         };
 
-        handleSortChange = (sortKey, direction) => {
+        handleSortChange = ({ sortField, sortOrder }) => {
             this.setState({
-                sortKey,
-                sortDirection: direction === "asc" ? "+" : "-"
+                sortKey: sortField,
+                sortDirection: sortOrder === "asc" ? "+" : "-"
             });
         };
 
@@ -94,6 +94,12 @@ const withPagination = (WrappedComponent) => {
             this.setState({ dataTotalSize: dataTotalSize - numToRemove });
         };
 
+        handleTableChange = (type, newState) => {
+            if (type === "sort") {
+                this.handleSortChange(newState);
+            }
+        };
+
         render () {
             return (
                 <WrappedComponent
@@ -105,7 +111,7 @@ const withPagination = (WrappedComponent) => {
                         onPageChange: this.handlePageChange,
                         handleSearchChange: this.handleSearchChange,
                         onSizePerPageList: this.handleSizePerPageChange,
-                        onSortChange: this.handleSortChange,
+                        onTableChange: this.handleTableChange,
                         page: this.state.page,
                         pagedResultsOffset: this.state.pagedResultsOffset,
                         pagination: true,
@@ -131,7 +137,7 @@ export const withPaginationPropTypes = PropTypes.shape({
     onDataDelete: PropTypes.func.isRequired,
     onPageChange: PropTypes.func.isRequired,
     onSizePerPageList: PropTypes.func.isRequired,
-    onSortChange: PropTypes.func.isRequired,
+    onTableChange: PropTypes.func.isRequired,
     page: PropTypes.number.isRequired,
     pagedResultsOffset: PropTypes.number.isRequired,
     sizePerPage: PropTypes.number.isRequired,

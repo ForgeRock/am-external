@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2019-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
@@ -28,6 +28,7 @@ import static org.forgerock.openam.auth.nodes.x509.CertificateUserExtractorNode.
 import static org.forgerock.openam.auth.nodes.x509.CertificateUserExtractorNode.CertificateUserExtractorOutcome.EXTRACTED;
 import static org.forgerock.openam.auth.nodes.x509.CertificateUserExtractorNode.CertificateUserExtractorOutcome.NOT_EXTRACTED;
 import static org.forgerock.openam.auth.nodes.x509.CertificateUtils.getX509Certificate;
+import static org.forgerock.opendj.io.Asn1Tag.contextSpecific;
 
 import java.io.IOException;
 import java.security.cert.CertificateParsingException;
@@ -145,6 +146,7 @@ public class CertificateUserExtractorNode extends AbstractDecisionNode {
         String realm = context.sharedState.get(REALM).asString();
         return Action
                 .goTo(EXTRACTED.name())
+                .withIdentifiedIdentity(userTokenId, IdType.USER)
                 .withUniversalId(identityService.getUniversalId(userTokenId, realm, IdType.USER))
                 .build();
     }
@@ -210,7 +212,7 @@ public class CertificateUserExtractorNode extends AbstractDecisionNode {
                 switch ((int) subjectAlternativeName.get(0)) {
                 case 0: // otherName
                     // OtherName ::= SEQUENCE {
-                    //         tyoe-id    OBJECT IDENTIFIER,
+                    //         type-id    OBJECT IDENTIFIER,
                     //         value      [0] EXPLICIT ANY DEFINED BY type-id }
                     if (UPN.equals(subjectAltExtMapper)) {
                         byte[] otherName = (byte[]) subjectAlternativeName.get(1);
@@ -219,6 +221,12 @@ public class CertificateUserExtractorNode extends AbstractDecisionNode {
                             String upnOid = "1.3.6.1.4.1.311.20.2.3";
                             if (oid.equals(upnOid)) {
                                 try (var upn = reader.readExplicitTag()) {
+                                    // Java getSubjectAlternativeNames for otherName may be doubly tagged
+                                    // Despite the cert ASN.1 shows otherwise
+                                    if (upn.hasNextElement() && upn.peekType() == contextSpecific().constructed()
+                                            .number(0)) {
+                                        upn.readExplicitTag();
+                                    }
                                     return upn.readOctetStringAsString();
                                 }
                             }

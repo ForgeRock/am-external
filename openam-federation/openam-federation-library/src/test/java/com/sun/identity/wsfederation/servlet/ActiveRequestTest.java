@@ -20,6 +20,7 @@ import static org.forgerock.openam.utils.CollectionUtils.asList;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -45,6 +46,9 @@ import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.forgerock.guice.core.GuiceModules;
+import org.forgerock.guice.core.GuiceTestCase;
+import org.forgerock.openam.audit.AuditEventPublisher;
 import org.forgerock.openam.federation.testutils.TestCaseConfigurationInstance;
 import org.forgerock.openam.federation.testutils.TestCaseSessionProvider;
 import org.forgerock.openam.utils.CollectionUtils;
@@ -58,18 +62,23 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.AbstractModule;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.cot.COTConstants;
 import com.sun.identity.cot.CircleOfTrustDescriptor;
 import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.saml.assertion.NameIdentifier;
+import com.sun.identity.saml.xmlsig.AMSignatureProvider;
+import com.sun.identity.saml.xmlsig.JKSKeyProvider;
+import com.sun.identity.saml.xmlsig.SignatureProvider;
 import com.sun.identity.shared.Constants;
 import com.sun.identity.wsfederation.common.WSFederationConstants;
 import com.sun.identity.wsfederation.plugins.TestIdpDefaultAccountMapper;
 import com.sun.identity.wsfederation.plugins.TestWsFedAuthenticator;
 
-public class ActiveRequestTest {
+@GuiceModules(ActiveRequestTest.TestGuiceModule.class)
+public class ActiveRequestTest extends GuiceTestCase {
     private CircleOfTrustManager cotManager;
 
     private static final String TEST_SESSION_ID = "TestSSOTokenId";
@@ -95,8 +104,12 @@ public class ActiveRequestTest {
     @Mock
     private SSOToken ssoToken;
 
+    private static AMSignatureProvider signatureProvider;
+
     @BeforeClass
     public void init() throws Exception {
+        signatureProvider = new AMSignatureProvider();
+        signatureProvider.initialize(new JKSKeyProvider());
         cotManager = new CircleOfTrustManager();
     }
 
@@ -241,6 +254,15 @@ public class ActiveRequestTest {
         @Override
         public void setAttribute(String name, Object value) {
             attributes.put(name, value);
+        }
+    }
+
+    public static class TestGuiceModule extends AbstractModule {
+
+        @Override
+        protected void configure() {
+            bind(AuditEventPublisher.class).toInstance(mock(AuditEventPublisher.class));
+            bind(SignatureProvider.class).toInstance(signatureProvider);
         }
     }
 }

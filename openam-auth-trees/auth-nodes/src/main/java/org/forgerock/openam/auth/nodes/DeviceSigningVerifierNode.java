@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -253,6 +253,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
 
                 return Action.goTo(SUCCESS_OUTCOME_ID)
                         .addNodeType(context, "Binding")
+                        .withIdentifiedIdentity(userIdentity.get())
                         .withUniversalId(userIdentity.get().getUniversalId())
                         .build();
 

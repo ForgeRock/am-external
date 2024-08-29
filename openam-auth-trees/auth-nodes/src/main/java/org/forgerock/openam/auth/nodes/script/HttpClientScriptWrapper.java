@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -98,7 +98,9 @@ public class HttpClientScriptWrapper {
         request.setUri(uri);
         request.setMethod((String) requestOptions.getOrDefault("method", "GET"));
         request.putHeaders(extractHeaders(requestOptions));
-        request.setEntity(requestOptions.get("body"));
+        if (requestOptions.containsKey("body")) {
+            request.setEntity(requestOptions.get("body"));
+        }
         return request;
     }
 

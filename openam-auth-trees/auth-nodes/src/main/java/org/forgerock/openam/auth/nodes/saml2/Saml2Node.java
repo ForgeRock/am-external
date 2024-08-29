@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
@@ -360,10 +360,18 @@ public class Saml2Node extends AbstractDecisionNode {
         if (context.request.parameters.containsKey(RELAY_STATE)) {
             relayState = getFirstItem(context.request.parameters.get(RELAY_STATE));
         }
-        ActionBuilder actionBuilder = Action.goTo(doesUserExist(ssoResult.getUniversalId()) ? ACCOUNT_EXISTS.name()
-                : NO_ACCOUNT.name());
+        String username = identityService.getIdentityName(ssoResult.getUniversalId());
+        ActionBuilder actionBuilder;
+        if (doesUserExist(ssoResult.getUniversalId())) {
+            actionBuilder = Action.goTo(ACCOUNT_EXISTS.name());
+            if (username != null) {
+                actionBuilder.withIdentifiedIdentity(username, IdType.USER);
+            }
+        } else {
+            actionBuilder = Action.goTo(NO_ACCOUNT.name());
+        }
         return setSessionProperties(actionBuilder.replaceSharedState(
-                updateSharedState(ssoResult, assertion, sharedState, relayState)), ssoResult.getNameId());
+                updateSharedState(username, ssoResult, assertion, sharedState, relayState)), ssoResult.getNameId());
     }
 
     private boolean doesUserExist(String universalId) throws NodeProcessException {
@@ -374,10 +382,9 @@ public class Saml2Node extends AbstractDecisionNode {
         }
     }
 
-    private JsonValue updateSharedState(Saml2SsoResult ssoResult, Assertion assertion, JsonValue sharedState,
-            String relayState) throws NodeProcessException {
+    private JsonValue updateSharedState(String username, Saml2SsoResult ssoResult, Assertion assertion,
+            JsonValue sharedState, String relayState) throws NodeProcessException {
         Map<String, Set<String>> attributes = new HashMap<>();
-        String username = identityService.getIdentityName(ssoResult.getUniversalId());
         try {
             if (username != null) {
                 sharedState.put(USERNAME, username);

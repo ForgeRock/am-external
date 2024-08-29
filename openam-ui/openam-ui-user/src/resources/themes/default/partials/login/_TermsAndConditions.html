@@ -11,11 +11,11 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2020-2024 ForgeRock AS. All Rights Reserved
 -->
 <div class="terms-and-conditions clearfix">
     <div>
-        <input value="true" type="hidden" name="callback_{{index}}" id="{{id}}" /> <span class="text-muted">{{t "templates.user.LoginTemplate.termsAndConditionsText" index=index}}</span>
+        <input checked="checked" style="display:none; visibility:hidden" value="true" disabled type="checkbox" name="callback_{{index}}" id="{{id}}" /> <span class="text-muted">{{t "templates.user.LoginTemplate.termsAndConditionsText" index=index}}</span>
     </div>
     <div class="modal" id="terms-modal-{{index}}" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">

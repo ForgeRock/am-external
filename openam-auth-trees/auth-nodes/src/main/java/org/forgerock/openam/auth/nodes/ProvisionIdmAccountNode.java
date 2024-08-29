@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -140,6 +140,7 @@ public class ProvisionIdmAccountNode extends SingleOutcomeNode {
         sharedState.remove(IDM_FLOW_INITIATED_KEY);
         return goToNext()
                 .withUniversalId(identityService.getUniversalId(username, realm, USER))
+                .withIdentifiedIdentity(username, USER)
                 .replaceSharedState(sharedState)
                 .build();
     }

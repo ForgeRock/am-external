@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2022 ForgeRock AS.
+ * Copyright 2019-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -36,12 +36,14 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.am.identity.application.LegacyIdentityService;
@@ -51,6 +53,8 @@ import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import com.sun.identity.idm.IdType;
 
 public class IdentifyExistingUserNodeTest {
 
@@ -81,33 +85,33 @@ public class IdentifyExistingUserNodeTest {
                         objectAttributeValues(),
                         TRUE_OUTCOME_ID,
                         json(object(
-                                field("_id", "testId"),
-                                field("idps", null)
+                                        field("_id", "testId"),
+                                        field("idps", null)
                                 )
                         )
                 },
                 // Social User exists
                 {
                         json(object(
-                                field("_id", "testId"),
-                                field("userName", "test2"),
-                                field("mail", "test@test.com"),
-                                field("idps", array(
-                                        object(
-                                                field("_refResourceId", "googleId"),
-                                                field("_refResourceCollection", "managed/google")
-                                        )))
+                                        field("_id", "testId"),
+                                        field("userName", "test2"),
+                                        field("mail", "test@test.com"),
+                                        field("idps", array(
+                                                object(
+                                                        field("_refResourceId", "googleId"),
+                                                        field("_refResourceCollection", "managed/google")
+                                                )))
                                 )
                         ),
                         objectAttributeValues(),
                         TRUE_OUTCOME_ID,
                         json(object(
-                                field("_id", "testId"),
-                                field("idps", array(
-                                        object(
-                                                field("_refResourceId", "googleId"),
-                                                field("_refResourceCollection", "managed/google")
-                                        )))
+                                        field("_id", "testId"),
+                                        field("idps", array(
+                                                object(
+                                                        field("_refResourceId", "googleId"),
+                                                        field("_refResourceCollection", "managed/google")
+                                                )))
                                 )
                         )
                 },
@@ -153,6 +157,38 @@ public class IdentifyExistingUserNodeTest {
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
         when(config.identifier()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
+    }
+
+    @Test(dataProvider = "userData")
+    public void testProcessAddsIdentifiedIdentityOfExistingUser(JsonValue user, JsonValue sharedState,
+            String expectedOutcome, JsonValue expectedSharedState) throws Exception {
+        // Given
+        when(idmIntegrationService.getObject(any(), any(), any(), any(), any(), any())).thenReturn(user);
+
+        // When
+        Action result = identifyExistingUserNode.process(getContext(emptyList(), sharedState));
+
+        // Then
+        assertThat(result.outcome).isEqualTo(expectedOutcome);
+        assertThat(result.identifiedIdentity).isPresent();
+        IdentifiedIdentity idid = result.identifiedIdentity.get();
+        assertThat(idid.getUsername()).isEqualTo(user.get("userName").asString());
+        assertThat(idid.getIdentityType()).isEqualTo(IdType.USER);
+
+    }
+
+    @Test(dataProvider = "userData")
+    public void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser(JsonValue user, JsonValue sharedState,
+            String expectedOutcome, JsonValue expectedSharedState) throws Exception {
+        // Given
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenReturn(Optional.empty());
+        when(idmIntegrationService.getObject(any(), any(), any(), any(), any(), any())).thenReturn(user);
+
+        // When
+        Action result = identifyExistingUserNode.process(getContext(emptyList(), sharedState));
+
+        // Then
+        assertThat(result.identifiedIdentity).isEmpty();
     }
 
     @Test

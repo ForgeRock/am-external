@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -21,6 +21,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -63,6 +64,7 @@ import org.forgerock.json.jose.jws.JwsAlgorithm;
 import org.forgerock.json.jose.jws.handlers.SecretRSASigningHandler;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
+import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.DeviceSigningVerifierCallback;
@@ -135,6 +137,7 @@ public class DeviceSigningVerifierNodeTest {
         given(amIdentity.isActive()).willReturn(true);
         given(amIdentity.getName()).willReturn("bob");
         given(amIdentity.getUniversalId()).willReturn("bob");
+        given(amIdentity.getType()).willReturn(IdType.USER);
 
         given(config.challenge()).willReturn(true);
         given(config.title()).willReturn(Map.of(Locale.ENGLISH, "title"));
@@ -144,6 +147,65 @@ public class DeviceSigningVerifierNodeTest {
         given(config.applicationIds()).willReturn(Set.of(ISS));
         given(config.clientErrorOutcomes()).willReturn(Collections.singletonList("unsupported"));
         when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
+    }
+
+    @Test
+    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
+        JsonValue transientState = json(object());
+
+        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        String kid = UUID.randomUUID().toString();
+        JWK rsaJwk = RsaJWK.builder((RSAPublicKey) keyPair.getPublic())
+                .keyId(kid)
+                .algorithm(JwsAlgorithm.RS256)
+                .build();
+
+        DeviceBindingSettings deviceBindingSettings = new DeviceBindingSettings();
+        deviceBindingSettings.setKey(rsaJwk);
+        given(deviceBindingManager.getDeviceProfiles(anyString(), anyString())).willReturn(
+                asList(deviceBindingSettings));
+        deviceArgumentCaptor = ArgumentCaptor.forClass(DeviceBindingSettings.class);
+        doNothing().when(deviceBindingManager).saveDeviceProfile(any(), any(), deviceArgumentCaptor.capture());
+
+        //Call the process to generate Challenge in the sharedState
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+
+        assertThat(((DeviceSigningVerifierCallback) result.callbacks.get(0)).getChallenge()).isNotNull();
+
+        //given
+        // Client
+        String challenge = ((DeviceSigningVerifierCallback) result.callbacks.get(0)).getChallenge();
+
+
+        DeviceSigningVerifierCallback callback = new DeviceSigningVerifierCallback("challenge",
+                "bob", "title", "subtitle", "description", 60);
+        callback.setJws(buildSignedJwt(keyPair, kid, ISS, "bob", challenge, null));
+
+        //When
+        result = node.process(getContext(sharedState, transientState, singletonList(callback)));
+
+        // Then
+        assertThat(result.identifiedIdentity).isPresent();
+        IdentifiedIdentity idid = result.identifiedIdentity.get();
+        assertThat(idid.getUsername()).isEqualTo("bob");
+        assertThat(idid.getIdentityType()).isEqualTo(IdType.USER);
+    }
+
+    @Test
+    public void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
+        // Given
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
+        JsonValue transientState = json(object());
+
+        given(identityService.getUniversalId(any(), any(), (IdType) any())).willReturn(Optional.empty());
+        given(coreWrapper.getIdentity(anyString())).willReturn(null);
+
+        // When
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Failed to lookup user");
     }
 
     @Test

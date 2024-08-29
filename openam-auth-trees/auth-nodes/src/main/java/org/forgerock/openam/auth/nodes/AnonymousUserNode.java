@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -22,6 +22,7 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
 import javax.inject.Inject;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
@@ -30,7 +31,6 @@ import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.SessionUpgradeVerifier;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.sm.RequiredValueValidator;
@@ -78,6 +78,7 @@ public class AnonymousUserNode extends SingleOutcomeNode {
         return goToNext()
                 .addNodeType(context, SessionUpgradeVerifier.ANONYMOUS_MODULE_TYPE)
                 .withUniversalId(identityService.getUniversalId(username, realm, USER))
+                .withIdentifiedIdentity(username, USER)
                 .replaceSharedState(context.sharedState.put(USERNAME, username))
                 .build();
     }

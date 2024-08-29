@@ -11,22 +11,26 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
+
+import static java.util.Arrays.asList;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.security.auth.callback.Callback;
 
 import org.forgerock.openam.annotations.Supported;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.Reject;
 
-import javax.security.auth.callback.Callback;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static java.util.Arrays.asList;
+import com.sun.identity.idm.IdType;
 
 /**
  * Acts as a wrapper of the Action.Builder class for script bindings.
@@ -39,6 +43,8 @@ public final class ActionWrapper {
     private List<String> removeSessionProperties = new ArrayList<>();
     private String errorMessage;
     private String lockoutMessage;
+    private String username;
+    private IdType identityType;
 
     /**
      * Move on to the next node in the tree that is connected to the given outcome.
@@ -56,7 +62,7 @@ public final class ActionWrapper {
     /**
      * Add a new session property.
      *
-     * @param key the key of the session properties to be added to the session.
+     * @param key   the key of the session properties to be added to the session.
      * @param value the value of the session properties to be added to the session.
      * @return the same instance of the ActionWrapper.
      */
@@ -107,6 +113,32 @@ public final class ActionWrapper {
     }
 
     /**
+     * Sets the username for the identified user identity.
+     *
+     * @param username The user username
+     * @return the same instance of the ActionWrapper.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public ActionWrapper withIdentifiedUser(String username) {
+        this.username = username;
+        this.identityType = IdType.USER;
+        return this;
+    }
+
+    /**
+     * Sets the username for the identified agent identity.
+     *
+     * @param agentName The agent username
+     * @return the same instance of the ActionWrapper.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public ActionWrapper withIdentifiedAgent(String agentName) {
+        this.username = agentName;
+        this.identityType = IdType.AGENT;
+        return this;
+    }
+
+    /**
      * Send the given callbacks to the user for them to interact with.
      *
      * @param callbacks a non-empty list of callbacks.
@@ -126,6 +158,7 @@ public final class ActionWrapper {
 
     /**
      * Build an Action object from the wrapped Action Builder.
+     *
      * @return Action object.
      */
     public Action buildAction() {
@@ -134,11 +167,15 @@ public final class ActionWrapper {
         removeSessionProperties.forEach(actionBuilder::removeSessionProperty);
         actionBuilder.withErrorMessage(errorMessage);
         actionBuilder.withLockoutMessage(lockoutMessage);
+        if (isNotBlank(username) && identityType != null) {
+            actionBuilder.withIdentifiedIdentity(username, identityType);
+        }
         return actionBuilder.build();
     }
 
     /**
      * False if the ActionWrapper state has not changed during script evaluation.
+     *
      * @return True if callback or action required.
      */
     public boolean isEmpty() {

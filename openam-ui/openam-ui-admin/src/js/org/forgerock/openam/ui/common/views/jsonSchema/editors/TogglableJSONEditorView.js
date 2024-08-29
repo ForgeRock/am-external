@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2022 ForgeRock AS.
+ * Copyright 2016-2024 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -21,7 +21,7 @@ import JSONEditorView from "org/forgerock/openam/ui/common/views/jsonSchema/edit
 import JSONSchema from "org/forgerock/openam/ui/common/models/JSONSchema";
 import JSONValues from "org/forgerock/openam/ui/common/models/JSONValues";
 import TogglableJSONEditorTemplate from "templates/common/jsonSchema/editors/TogglableJSONEditorTemplate";
-import containsPlaceholder from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
+import { containsPlaceholder } from "org/forgerock/commons/ui/common/util/PlaceholderUtils";
 
 const TogglableJSONEditorView = Backbone.View.extend({
     className: "jsoneditor-block",

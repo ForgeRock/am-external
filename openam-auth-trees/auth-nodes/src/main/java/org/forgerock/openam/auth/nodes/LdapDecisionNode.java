@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -713,9 +713,13 @@ public class LdapDecisionNode implements Node {
         return password;
     }
 
-    private ActionBuilder processLogin(ModuleState loginState, JsonValue newState, TreeContext context) throws
-            NodeProcessException {
+    private ActionBuilder processLogin(ModuleState loginState, JsonValue newState, TreeContext context)
+            throws NodeProcessException {
         ActionBuilder loginResult = goTo(LdapOutcome.TRUE);
+        String username = newState.get(USERNAME).asString();
+        if (username != null) {
+            loginResult.withIdentifiedIdentity(username, USER);
+        }
         ResourceBundle bundle = context.request.locales
                 .getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
         logger.debug("loginState {}", loginState);

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm;
@@ -27,7 +27,7 @@ public enum TpmAlg {
     TPM_ALG_ERROR(0x0000, null),
     TPM_ALG_RSA(0x0001, CoseAlgorithm.RS1),
     TPM_ALG_TDES(0x0003, null),
-    TPM_ALG_SHA(0x0004, null),
+    TPM_ALG_SHA(0x0004, CoseAlgorithm.RS1),
     TPM_ALG_HMAC(0x0005, null),
     TPM_ALG_AES(0x0006, null),
     TPM_ALG_MGF1(0x0007, null),
@@ -39,11 +39,11 @@ public enum TpmAlg {
     TPM_ALG_NULL(0x0010, null),
     TPM_ALG_SM3_256(0x0012, null),
     TPM_ALG_SM4(0x0013, null),
-    TPM_ALG_RSASSA(0x0014, null),
+    TPM_ALG_RSASSA(0x0014, CoseAlgorithm.RS256),
     TPM_ALG_RSAES(0x0015, null),
     TPM_ALG_RSAPSS(0x0016, null),
     TPM_ALG_OAEP(0x0017, null),
-    TPM_ALG_ECDSA(0x0018, null),
+    TPM_ALG_ECDSA(0x0018, CoseAlgorithm.ES256),
     TPM_ALG_ECDH(0x0019, null),
     TPM_ALG_ECDAA(0x001A, null),
     TPM_ALG_SM2(0x001B, null),

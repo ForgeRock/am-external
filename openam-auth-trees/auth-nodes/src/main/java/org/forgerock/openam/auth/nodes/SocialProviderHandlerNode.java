@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -79,7 +79,6 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper;
 import org.forgerock.openam.auth.nodes.oauth.SharedStateAdaptor;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
-import org.forgerock.openam.social.idp.SocialProviderHandlerNodeBindings;
 import org.forgerock.openam.authentication.callbacks.IdPCallback;
 import org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider;
 import org.forgerock.openam.core.realms.Realm;
@@ -93,6 +92,7 @@ import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
 import org.forgerock.openam.social.idp.OAuthClientConfig;
 import org.forgerock.openam.social.idp.OpenIDConnectClientConfig;
 import org.forgerock.openam.social.idp.SocialIdentityProviders;
+import org.forgerock.openam.social.idp.SocialProviderHandlerNodeBindings;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.mozilla.javascript.NativeJavaObject;
@@ -102,6 +102,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.dpro.session.service.SessionService;
@@ -123,7 +124,7 @@ public class SocialProviderHandlerNode implements Node {
     static final String ALIAS_LIST = "aliasList";
     private static final String BUNDLE = "org.forgerock.openam.auth.nodes.SocialProviderHandlerNode";
     private static final String AM_USER_ALIAS_LIST_ATTRIBUTE_NAME = "iplanet-am-user-alias-list";
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final ObjectMapper MAPPER = new ObjectMapper().registerModule(new Jdk8Module());
     private static final String FORM_POST_ENTRY = "form_post_entry";
 
     static {
@@ -356,9 +357,17 @@ public class SocialProviderHandlerNode implements Node {
 
         Optional<String> universalId = identityService.getUniversalId(resolvedId, realm.asPath(), IdType.USER);
 
-        return goTo(user.isPresent()
-                ? SocialAuthOutcome.ACCOUNT_EXISTS.name()
-                : SocialAuthOutcome.NO_ACCOUNT.name())
+        Action.ActionBuilder actionBuilder;
+        if (user.isPresent()) {
+            actionBuilder = goTo(SocialAuthOutcome.ACCOUNT_EXISTS.name());
+            if (resolvedId != null) {
+                actionBuilder.withIdentifiedIdentity(resolvedId, IdType.USER);
+            }
+        } else {
+            actionBuilder = goTo(SocialAuthOutcome.NO_ACCOUNT.name());
+        }
+
+        return actionBuilder
                 .withUniversalId(universalId)
                 .replaceSharedState(context.sharedState.copy())
                 .replaceTransientState(context.transientState.copy()

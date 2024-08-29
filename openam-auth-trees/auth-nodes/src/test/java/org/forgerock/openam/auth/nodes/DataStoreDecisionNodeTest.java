@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -26,9 +26,9 @@ import static org.forgerock.json.test.assertj.AssertJJsonValueAssert.assertThat;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -39,23 +39,24 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
+import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.am.identity.application.LegacyIdentityService;
-
-import com.google.inject.Provider;
-import com.iplanet.sso.SSOToken;
-import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.IdType;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.google.inject.Provider;
+import com.iplanet.sso.SSOToken;
+import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.IdType;
 
 public class DataStoreDecisionNodeTest {
     @Mock
@@ -89,6 +90,71 @@ public class DataStoreDecisionNodeTest {
         given(identityService.getAmIdentity(any(SSOToken.class), any(String.class), eq(IdType.USER), any()))
                 .willReturn(amIdentity);
         given(adminTokenActionProvider.get()).willReturn(() -> adminToken);
+    }
+
+    @Test
+    public void testProcessAddsIdentifiedIdentityOfUserInStore() throws Exception {
+        // Given
+        given(identityStore.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(true);
+        JsonValue sharedState = json(object(field(USERNAME, "bob")));
+        JsonValue transientState = json(object(field(PASSWORD, "secret")));
+
+        // When
+        Action action = node.process(getContext(sharedState, transientState));
+
+        // Then
+        assertThat(action.identifiedIdentity).isPresent();
+        IdentifiedIdentity idid = action.identifiedIdentity.get();
+        assertThat(idid.getUsername()).isEqualTo("bob");
+        assertThat(idid.getIdentityType()).isEqualTo(IdType.USER);
+    }
+
+    @Test
+    public void givenNoUsernameAssertIdentityNotIdentified() throws Exception {
+        // Given
+        given(identityStore.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(true);
+        JsonValue sharedState = json(object());
+        JsonValue transientState = json(object(field(PASSWORD, "secret")));
+
+        // When
+        Action action = node.process(getContext(sharedState, transientState));
+
+        // Then
+        assertThat(action.identifiedIdentity).isEmpty();
+
+    }
+
+    @Test
+    public void testProcessDoesNotAddIdentifiedIdentityOfUserNotInStore() throws Exception {
+        // Given
+        given(identityStore.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(false);
+        JsonValue sharedState = json(object(field(USERNAME, "bob-2")));
+        JsonValue transientState = json(object(field(PASSWORD, "secret")));
+
+        // When
+        Action action = node.process(getContext(sharedState, transientState));
+
+        // Then
+        assertThat(action.identifiedIdentity).isEmpty();
+    }
+
+    @Test
+    public void shouldFailIfPasswordIsBlank() throws Exception {
+        // Given
+        given(identityStore.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(true);
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
+        JsonValue transientState = json(object(field(PASSWORD, "")));
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState));
+
+        // Then
+        assertThat(result.outcome).isEqualTo("false");
+        assertThat(result.identifiedIdentity).isEmpty();
+        assertThat(result.callbacks).isEmpty();
+        assertThat(result.sharedState).isObject().containsExactly(entry(USERNAME, "bob"), entry(REALM, "/realm"));
+        assertThat(sharedState).isObject().containsExactly(entry(USERNAME, "bob"), entry(REALM, "/realm"));
+        assertThat(transientState).isObject().containsExactly(entry(PASSWORD, ""));
     }
 
     @Test

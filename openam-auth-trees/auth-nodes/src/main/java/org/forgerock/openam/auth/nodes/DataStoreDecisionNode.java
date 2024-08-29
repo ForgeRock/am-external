@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -95,15 +95,23 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
         final String username = context.sharedState.get(USERNAME).asString();
         nameCallback.setName(username);
         PasswordCallback passwordCallback = new PasswordCallback("notused", false);
-        passwordCallback.setPassword(getPassword(context));
+        passwordCallback.setPassword(getPassword(context, username));
         logger.debug("NameCallback and PasswordCallback set");
         Callback[] callbacks = new Callback[]{nameCallback, passwordCallback};
         Action.ActionBuilder action = goTo(true);
+        if (username != null) {
+            action.withIdentifiedIdentity(username, getIdentityType());
+        }
         try {
             logger.debug("authenticating {} ", nameCallback.getName());
-            boolean isAuthenticationFailed = !identityStore.authenticate(getIdentityType(), callbacks);
-            if (isAuthenticationFailed) {
+            if (String.valueOf(passwordCallback.getPassword()).isBlank()) {
+                logger.debug("password is blank outcome is false for user {} ", nameCallback.getName());
                 action = goTo(false);
+            } else {
+                boolean isAuthenticationFailed = !identityStore.authenticate(getIdentityType(), callbacks);
+                if (isAuthenticationFailed) {
+                    action = goTo(false);
+                }
             }
         } catch (InvalidPasswordException e) {
             logger.warn("invalid password error");
@@ -129,10 +137,10 @@ public class DataStoreDecisionNode extends AbstractDecisionNode {
         return USER;
     }
 
-    private char[] getPassword(TreeContext context) throws NodeProcessException {
-        String password =  context.getState(PASSWORD).asString();
+    private char[] getPassword(TreeContext context, String username) throws NodeProcessException {
+        String password = context.getState(PASSWORD).asString();
         if (password == null) {
-            logger.error("Password is null.");
+            logger.error("Password is null for username {} ", username);
             throw new NodeProcessException("Unable to authenticate");
         }
         return password.toCharArray();
