@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2023 ForgeRock AS.
+ * Copyright 2011-2024 ForgeRock AS.
  */
 import $ from "jquery";
 import _ from "lodash";
@@ -169,7 +169,9 @@ AuthNService.submitRequirements = function (requirements, options) {
     const goToFailureUrl = (errorBody) => {
         if (errorBody.detail && errorBody.detail.failureUrl) {
             console.log(errorBody.detail.failureUrl);
-            window.location.href = errorBody.detail.failureUrl;
+            // setTimeout is used here as a fix for iOS safari which was not
+            // following redirects when used without
+            setTimeout(() => { window.location.href = errorBody.detail.failureUrl; }, 1);
         }
     };
     const serviceCall = {

@@ -49,6 +49,7 @@ public interface TreeHook {
 
     /**
      * Main method that will contain the logic that needs to be executed on tree failure.
+     * The response and session cannot be read or modified on failure.
      *
      * @throws TreeHookException if an exception occurs.
      */

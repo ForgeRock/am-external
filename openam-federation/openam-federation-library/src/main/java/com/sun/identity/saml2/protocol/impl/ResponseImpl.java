@@ -24,17 +24,13 @@
  *
  * $Id: ResponseImpl.java,v 1.4 2009/12/16 05:26:39 ericow Exp $
  *
- * Portions Copyrighted 2018-2023 ForgeRock AS.
+ * Portions Copyrighted 2018-2024 ForgeRock AS.
  */
-
-
-
 package com.sun.identity.saml2.protocol.impl;
 
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import org.forgerock.openam.annotations.SupportedAll;
@@ -87,194 +83,6 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
     private List<Assertion> assertions = null;
     private List<EncryptedAssertion> encAssertions = null;
 
-    private void parseElement(Element element)
-        throws SAML2Exception {
-        // make sure that the input xml block is not null
-        if (element == null) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("ResponseImpl.parseElement: "
-                    + "element input is null.");
-            }
-            throw new SAML2Exception(
-                      SAML2SDKUtils.bundle.getString("nullInput"));
-        }
-        // Make sure this is an Response.
-        String tag = null;
-        tag = element.getLocalName();
-        if ((tag == null) || (!tag.equals("Response"))) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("ResponseImpl.parseElement: "
-                    + "not Response.");
-            }
-            throw new SAML2Exception(
-                      SAML2SDKUtils.bundle.getString("wrongInput"));
-        }
-
-        // handle the attributes of <Response> element
-        NamedNodeMap atts = ((Node)element).getAttributes();
-        if (atts != null) {
-            int length = atts.getLength();
-            for (int i = 0; i < length; i++) {
-                Attr attr = (Attr) atts.item(i);
-                String attrName = attr.getName();
-                String attrValue = attr.getValue().trim();
-                if (attrName.equals("ID")) {
-                    responseId = attrValue;
-                } else if (attrName.equals("InResponseTo")) {
-                    inResponseTo = attrValue;
-                } else if (attrName.equals("Version")) {
-                    version = attrValue;
-                } else if (attrName.equals("IssueInstant")) {
-                    try {
-                        issueInstant = DateUtils.stringToDate(attrValue);
-                    } catch (ParseException pe) {
-                        throw new SAML2Exception(pe.getMessage());
-                    }
-                } else if (attrName.equals("Destination")) {
-                    destination = attrValue;
-                } else if (attrName.equals("Consent")) {
-                    consent = attrValue;
-                }
-            }
-        }
-
-        // handle child elements
-        NodeList nl = element.getChildNodes();
-        Node child;
-        String childName;
-        int length = nl.getLength();
-        for (int i = 0; i < length; i++) {
-            child = nl.item(i);
-            if ((childName = child.getLocalName()) != null) {
-                if (childName.equals("Issuer")) {
-                    if (issuer != null) {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("ResponseImpl.parse"
-                                + "Element: included more than one Issuer.");
-                        }
-                        throw new SAML2Exception(
-                            SAML2SDKUtils.bundle.getString("moreElement"));
-                    }
-                    if (signatureString != null ||
-                        extensions != null ||
-                        status != null ||
-			assertions != null ||
-			encAssertions != null)
-                    {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("ResponseImpl.parse"
-                                + "Element:wrong sequence.");
-                        }
-                        throw new SAML2Exception(
-                            SAML2SDKUtils.bundle.getString("schemaViolation"));
-                    }
-                    issuer = AssertionFactory.getInstance().createIssuer(
-                        (Element) child);
-                } else if (childName.equals("Signature")) {
-                    if (signatureString != null) {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("ResponseImpl.parse"
-                                + "Element:included more than one Signature.");
-                        }
-                        throw new SAML2Exception(
-                            SAML2SDKUtils.bundle.getString("moreElement"));
-                    }
-                    if (extensions != null || status != null ||
-			assertions != null || encAssertions != null)
-		    {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("ResponseImpl.parse"
-                                + "Element:wrong sequence.");
-                        }
-                        throw new SAML2Exception(
-                            SAML2SDKUtils.bundle.getString("schemaViolation"));
-                    }
-                    signatureString = XMLUtils.print((Element) child,
-                        "UTF-8");
-                    isSigned = true;
-                } else if (childName.equals("Extensions")) {
-                    if (extensions != null) {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("ResponseImpl.parse"
-                                + "Element:included more than one Extensions.");
-                        }
-                        throw new SAML2Exception(
-                            SAML2SDKUtils.bundle.getString("moreElement"));
-                    }
-                    if (status != null || assertions != null ||
-			encAssertions != null)
-		    {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("ResponseImpl.parse"
-                                + "Element:wrong sequence.");
-                        }
-                        throw new SAML2Exception(
-                            SAML2SDKUtils.bundle.getString("schemaViolation"));
-                    }
-                    extensions = ProtocolFactory.getInstance().createExtensions(
-                        (Element) child);
-                } else if (childName.equals("Status")) {
-                    if (status != null) {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("ResponseImpl.parse"
-                                + "Element: included more than one Status.");
-                        }
-                        throw new SAML2Exception(
-                            SAML2SDKUtils.bundle.getString("moreElement"));
-                    }
-                    if (assertions != null || encAssertions != null)
-		    {
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("ResponseImpl.parse"
-                                + "Element:wrong sequence.");
-                        }
-                        throw new SAML2Exception(
-                            SAML2SDKUtils.bundle.getString("schemaViolation"));
-                    }
-                    status = ProtocolFactory.getInstance().createStatus(
-                        (Element) child);
-                } else if (childName.equals("Assertion")) {
-		    if (assertions == null) {
-			assertions = new ArrayList();
-		    }
-                    Element canoEle = SAMLUtils.getCanonicalElement(child);
-                    if (canoEle == null) {
-                        throw new SAML2Exception(
-                            SAML2SDKUtils.bundle.getString("errorCanonical"));
-                    }
-
-                    assertions.add(AssertionFactory.getInstance().
-                        createAssertion(canoEle));
-                } else if (childName.equals("EncryptedAssertion")) {
-		    if (encAssertions == null) {
-			encAssertions = new ArrayList();
-		    }
-		    encAssertions.add(AssertionFactory.getInstance().
-			createEncryptedAssertion((Element) child));
-                } else {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("ResponseImpl.parse"
-                            + "Element: Invalid element:" + childName);
-                    }
-                    throw new SAML2Exception(
-                        SAML2SDKUtils.bundle.getString("invalidElement"));
-                }
-            }
-        }
-
-        super.validateData();
-	if (assertions != null) {
-	    Iterator iter = assertions.iterator();
-	    while (iter.hasNext()) {
-		((Assertion) iter.next()).makeImmutable();
-	    }
-	    assertions = Collections.unmodifiableList(assertions);
-	}
-	if (encAssertions != null) {
-	    encAssertions = Collections.unmodifiableList(encAssertions);
-	}
-	isMutable = false;
-    }
     /**
      * Class constructor. Caller may need to call setters to populate the
      * object.
@@ -291,14 +99,11 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      * @param element the Document Element.
      * @throws SAML2Exception if there is an error.
      */
-    public ResponseImpl(org.w3c.dom.Element element)
-        throws SAML2Exception {
+    public ResponseImpl(Element element) throws SAML2Exception {
         super(SAML2Constants.RESPONSE);
         parseElement(element);
         if (isSigned) {
-            signedXMLString = XMLUtils.print(element,
-                "UTF-8");
-
+            signedXMLString = XMLUtils.print(element, "UTF-8");
         }
     }
 
@@ -308,13 +113,11 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      * @param xmlString the Response String..
      * @throws SAML2Exception if there is an error.
      */
-    public ResponseImpl(String xmlString)
-        throws SAML2Exception {
+    public ResponseImpl(String xmlString) throws SAML2Exception {
         super(SAML2Constants.RESPONSE);
         Document doc = XMLUtils.toDOMDocument(xmlString);
         if (doc == null) {
-            throw new SAML2Exception(
-                SAML2SDKUtils.bundle.getString("errorObtainingElement"));
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorObtainingElement"));
         }
         parseElement(doc.getDocumentElement());
         if (isSigned) {
@@ -329,7 +132,7 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      * @see #setAssertion(List)
      */
     public List<Assertion> getAssertion() {
-	return assertions;
+        return assertions;
     }
 
     /**
@@ -339,14 +142,11 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAssertion()
      */
-    public void setAssertion(List<Assertion> value)
-	throws SAML2Exception
-    {
-	 if (isMutable) {
+    public void setAssertion(List<Assertion> value) throws SAML2Exception {
+        if (isMutable) {
             this.assertions = value;
         } else {
-            throw new SAML2Exception(
-            SAML2SDKUtils.bundle.getString("objectImmutable"));
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
     }
 
@@ -357,7 +157,7 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      * @see #setEncryptedAssertion(List)
      */
     public List<EncryptedAssertion> getEncryptedAssertion() {
-	return encAssertions;
+        return encAssertions;
     }
 
     /**
@@ -367,14 +167,12 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      * @throws SAML2Exception if the object is immutable.
      * @see #getEncryptedAssertion()
      */
-    public void setEncryptedAssertion(List<EncryptedAssertion> value)
-	throws SAML2Exception
-    {
- 	if (isMutable) {
+    public void setEncryptedAssertion(List<EncryptedAssertion> value) throws SAML2Exception {
+        if (isMutable) {
             this.encAssertions = value;
         } else {
             throw new SAML2Exception(
-            SAML2SDKUtils.bundle.getString("objectImmutable"));
+                    SAML2SDKUtils.bundle.getString("objectImmutable"));
         }
     }
 
@@ -383,17 +181,16 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
      */
     public void makeImmutable() {
         if (isMutable) {
-	    if (assertions != null) {
-		Iterator iter = assertions.iterator();
-		while (iter.hasNext()) {
-		    ((Assertion) iter.next()).makeImmutable();
-		}
-		assertions = Collections.unmodifiableList(assertions);
-	    }
-	    if (encAssertions != null) {
-		encAssertions = Collections.unmodifiableList(encAssertions);
-	    }
-	    super.makeImmutable();
+            if (assertions != null) {
+                for (Assertion assertion : assertions) {
+                    assertion.makeImmutable();
+                }
+                assertions = Collections.unmodifiableList(assertions);
+            }
+            if (encAssertions != null) {
+                encAssertions = Collections.unmodifiableList(encAssertions);
+            }
+            super.makeImmutable();
         }
     }
 
@@ -420,5 +217,175 @@ public class ResponseImpl extends StatusResponseImpl implements Response {
         }
 
         return fragment;
+    }
+
+    private void parseElement(Element element) throws SAML2Exception {
+        verifyElementIsNotNull(element);
+        verifyElementIsResponse(element);
+        handleElementAttributes(element);
+        handleChildElements(element);
+        super.validateData();
+        if (assertions != null) {
+            for (Assertion assertion : assertions) {
+                assertion.makeImmutable();
+            }
+            assertions = Collections.unmodifiableList(assertions);
+        }
+        if (encAssertions != null) {
+            encAssertions = Collections.unmodifiableList(encAssertions);
+        }
+        isMutable = false;
+    }
+
+    private void verifyElementIsNotNull(Element element) throws SAML2Exception {
+        if (element == null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("ResponseImpl.parseElement: element input is null.");
+            }
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("nullInput"));
+        }
+    }
+
+    private void verifyElementIsResponse(Element element) throws SAML2Exception {
+        String tag = element.getLocalName();
+        if ((tag == null) || (!tag.equals("Response"))) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("ResponseImpl.parseElement: "
+                        + "not Response.");
+            }
+            throw new SAML2Exception(SAML2SDKUtils.bundle.getString("wrongInput"));
+        }
+    }
+
+    private void handleElementAttributes(Node element) throws SAML2Exception {
+        NamedNodeMap atts = element.getAttributes();
+        if (atts != null) {
+            for (int i = 0; i < atts.getLength(); i++) {
+                Attr attr = (Attr) atts.item(i);
+                String attrName = attr.getName();
+                String attrValue = attr.getValue().trim();
+                switch (attrName) {
+                case "ID":
+                    responseId = attrValue;
+                    break;
+                case "InResponseTo":
+                    inResponseTo = attrValue;
+                    break;
+                case "Version":
+                    version = attrValue;
+                    break;
+                case "IssueInstant":
+                    try {
+                        issueInstant = DateUtils.stringToDate(attrValue);
+                    } catch (ParseException pe) {
+                        throw new SAML2Exception(pe.getMessage());
+                    }
+                    break;
+                case "Destination":
+                    destination = attrValue;
+                    break;
+                case "Consent":
+                    consent = attrValue;
+                    break;
+                }
+            }
+        }
+    }
+
+    private void handleChildElements(Element element) throws SAML2Exception {
+        NodeList nl = element.getChildNodes();
+        int length = nl.getLength();
+        for (int i = 0; i < length; i++) {
+            Node child = nl.item(i);
+            String childName = child.getLocalName();
+            if (childName != null) {
+                switch (childName) {
+                case "Issuer" -> {
+                    if (issuer != null) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("ResponseImpl.parse Element: included more than one Issuer.");
+                        }
+                        throw new SAML2Exception(SAML2SDKUtils.bundle.getString("moreElement"));
+                    }
+                    if (signatureString != null || extensions != null || status != null || assertions != null ||
+                            encAssertions != null) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("ResponseImpl.parse Element:wrong sequence.");
+                        }
+                        throw new SAML2Exception(SAML2SDKUtils.bundle.getString("schemaViolation"));
+                    }
+                    issuer = AssertionFactory.getInstance().createIssuer((Element) child);
+                }
+                case "Signature" -> {
+                    if (signatureString != null) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("ResponseImpl.parse Element:included more than one Signature.");
+                        }
+                        throw new SAML2Exception(SAML2SDKUtils.bundle.getString("moreElement"));
+                    }
+                    if (extensions != null || status != null || assertions != null || encAssertions != null) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("ResponseImpl.parse Element:wrong sequence.");
+                        }
+                        throw new SAML2Exception(SAML2SDKUtils.bundle.getString("schemaViolation"));
+                    }
+                    signatureString = XMLUtils.print(child,"UTF-8");
+                    isSigned = true;
+                }
+                case "Extensions" -> {
+                    if (extensions != null) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("ResponseImpl.parse Element:included more than one Extensions.");
+                        }
+                        throw new SAML2Exception(SAML2SDKUtils.bundle.getString("moreElement"));
+                    }
+                    if (status != null || assertions != null || encAssertions != null) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("ResponseImpl.parse Element:wrong sequence.");
+                        }
+                        throw new SAML2Exception(SAML2SDKUtils.bundle.getString("schemaViolation"));
+                    }
+                    extensions = ProtocolFactory.getInstance().createExtensions((Element) child);
+                }
+                case "Status" -> {
+                    if (status != null) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("ResponseImpl.parse Element: included more than one Status.");
+                        }
+                        throw new SAML2Exception(SAML2SDKUtils.bundle.getString("moreElement"));
+                    }
+                    if (assertions != null || encAssertions != null) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("ResponseImpl.parse Element:wrong sequence.");
+                        }
+                        throw new SAML2Exception(SAML2SDKUtils.bundle.getString("schemaViolation"));
+                    }
+                    status = ProtocolFactory.getInstance().createStatus((Element) child);
+                }
+                case "Assertion" -> {
+                    if (assertions == null) {
+                        assertions = new ArrayList<>();
+                    }
+                    Element canoEle = SAMLUtils.getCanonicalElement(child);
+                    if (canoEle == null) {
+                        throw new SAML2Exception(SAML2SDKUtils.bundle.getString("errorCanonical"));
+                    }
+                    assertions.add(AssertionFactory.getInstance().createAssertion(canoEle));
+                }
+                case "EncryptedAssertion" -> {
+                    if (encAssertions == null) {
+                        encAssertions = new ArrayList<>();
+                    }
+                    encAssertions.add(AssertionFactory.getInstance().createEncryptedAssertion((Element) child));
+                }
+                default -> {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("ResponseImpl.parse Element: Invalid element:" + childName);
+                    }
+                    throw new SAML2Exception(SAML2SDKUtils.bundle.getString("invalidElement"));
+                }
+                }
+            }
+        }
     }
 }

@@ -17,6 +17,7 @@ package org.forgerock.openam.saml2.plugins;
 
 import static com.sun.identity.saml2.common.SAML2Constants.SECRET_ID_IDENTIFIER;
 import static com.sun.identity.saml2.common.SAML2Utils.getAttributeValueFromSSOConfig;
+import static java.util.Collections.emptySet;
 import static org.forgerock.openam.saml2.Saml2EntityRole.IDP;
 import static org.forgerock.openam.saml2.Saml2EntityRole.SP;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_IDP_ENCRYPTION;
@@ -27,6 +28,7 @@ import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_SP_SIGNIN
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_ENCRYPTION;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_MTLS;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_SIGNING;
+import static org.forgerock.openam.utils.StringUtils.isEmpty;
 import static org.forgerock.secrets.Purpose.purpose;
 import static org.forgerock.util.LambdaExceptionUtils.rethrowFunction;
 
@@ -47,6 +49,7 @@ import org.forgerock.openam.core.realms.Realms;
 import org.forgerock.openam.saml2.Saml2EntityRole;
 import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.secrets.DefaultingPurpose;
+import org.forgerock.openam.secrets.SecretInitialisationException;
 import org.forgerock.openam.secrets.Secrets;
 import org.forgerock.secrets.NoSuchSecretException;
 import org.forgerock.secrets.Purpose;
@@ -69,13 +72,13 @@ public class SecretsSaml2CredentialResolver implements Saml2CredentialResolver {
 
     private static final Logger logger = LoggerFactory.getLogger(SecretsSaml2CredentialResolver.class);
     private static final Map<Saml2EntityRole, Purpose<SigningKey>> SIGNING_PURPOSES = Maps.immutableEnumMap(
-            ImmutableMap.of(IDP, purpose(SAML2_DEFAULT_IDP_SIGNING, SigningKey.class),
-                    SP, purpose(SAML2_DEFAULT_SP_SIGNING, SigningKey.class)));
+        ImmutableMap.of(IDP, purpose(SAML2_DEFAULT_IDP_SIGNING, SigningKey.class),
+            SP, purpose(SAML2_DEFAULT_SP_SIGNING, SigningKey.class)));
     private static final Map<Saml2EntityRole, Purpose<KeyDecryptionKey>> ENCRYPTION_PURPOSES = Maps.immutableEnumMap(
-            ImmutableMap.of(IDP, purpose(SAML2_DEFAULT_IDP_ENCRYPTION, KeyDecryptionKey.class),
-                    SP, purpose(SAML2_DEFAULT_SP_ENCRYPTION, KeyDecryptionKey.class)));
+        ImmutableMap.of(IDP, purpose(SAML2_DEFAULT_IDP_ENCRYPTION, KeyDecryptionKey.class),
+            SP, purpose(SAML2_DEFAULT_SP_ENCRYPTION, KeyDecryptionKey.class)));
     private static final Map<Saml2EntityRole, Purpose<SigningKey>> MTLS_PURPOSES = Maps.immutableEnumMap(
-            ImmutableMap.of(SP, purpose(SAML2_DEFAULT_SP_MTLS, SigningKey.class)));
+        ImmutableMap.of(SP, purpose(SAML2_DEFAULT_SP_MTLS, SigningKey.class)));
     private static final Saml2SigningCredentials NO_SIGNING_DETAILS = new Saml2SigningCredentials(null, null);
     private final Secrets secrets;
     private final KeyStoreSaml2CredentialResolver keyStoreResolver;
@@ -83,9 +86,9 @@ public class SecretsSaml2CredentialResolver implements Saml2CredentialResolver {
     /**
      * Constructor.
      *
-     * @param secrets The secrets backend.
+     * @param secrets          The secrets backend.
      * @param keyStoreResolver The keystore based credential resolver to delegate to for roles that don't support
-     * secrets yet.
+     *                         secrets yet.
      */
     @Inject
     public SecretsSaml2CredentialResolver(Secrets secrets, KeyStoreSaml2CredentialResolver keyStoreResolver) {
@@ -95,7 +98,7 @@ public class SecretsSaml2CredentialResolver implements Saml2CredentialResolver {
 
     @Override
     public Saml2SigningCredentials resolveActiveSigningCredential(String realmName, String entityId,
-            Saml2EntityRole role) throws SAML2Exception {
+        Saml2EntityRole role) throws SAML2Exception {
         if (!SIGNING_PURPOSES.containsKey(role)) {
             return keyStoreResolver.resolveActiveSigningCredential(realmName, entityId, role);
         }
@@ -105,19 +108,27 @@ public class SecretsSaml2CredentialResolver implements Saml2CredentialResolver {
             Realm realm = Realms.of(realmName);
             secretIdIdentifier = getSecretIdIdentifier(realmName, entityId, role);
             logger.debug("secret label identifier is {} for the entity {} with role {}",
-                    secretIdIdentifier, entityId, role.name());
+                secretIdIdentifier, entityId, role.name());
             DefaultingPurpose<SigningKey> purpose = new DefaultingPurpose<>(SIGNING_PURPOSES.get(role),
-                    SAML2_ENTITY_ROLE_SIGNING);
+                SAML2_ENTITY_ROLE_SIGNING);
             SigningKey signingKey = secrets.getRealmSecrets(realm)
-                    .getActiveSecret(purpose, secretIdIdentifier)
-                    .getOrThrowIfInterrupted();
+                .getActiveSecret(purpose, secretIdIdentifier)
+                .getOrThrowIfInterrupted();
             return new Saml2SigningCredentials(getPrivateKey(signingKey), getX509Certificate(signingKey));
         } catch (RealmLookupException ex) {
             throw new SAML2Exception(ex);
         } catch (NoSuchSecretException ex) {
             logger.warn("Secret not found for the entity {} with role {} and secret label identifier {}",
-                    entityId, role, secretIdIdentifier, ex);
+                entityId, role, secretIdIdentifier, ex);
             return NO_SIGNING_DETAILS;
+        } catch (SecretInitialisationException ex) {
+            // Catch and handle exception on flows without a linked secretIdIdentifier
+            if (isEmpty(secretIdIdentifier)) {
+                logger.error("Could not initialise secrets in realm {}", realmName, ex);
+                return NO_SIGNING_DETAILS;
+            } else {
+                throw ex;
+            }
         }
     }
 
@@ -128,19 +139,33 @@ public class SecretsSaml2CredentialResolver implements Saml2CredentialResolver {
             return keyStoreResolver.resolveValidSigningCredentials(realm, entityId, role);
         }
 
-        if (MTLS_PURPOSES.containsKey(role)) {
-            return Stream.concat(resolveValidSecrets(realm, entityId,
-                    new DefaultingPurpose<>(SIGNING_PURPOSES.get(role), SAML2_ENTITY_ROLE_SIGNING), role),
-                    resolveValidSecrets(realm, entityId,
-                    new DefaultingPurpose<>(MTLS_PURPOSES.get(role), SAML2_ENTITY_ROLE_MTLS), role))
+        String secretIdIdentifier = getSecretIdIdentifier(realm, entityId, role);
+        try {
+            if (MTLS_PURPOSES.containsKey(role)) {
+                return Stream.concat(resolveValidSecrets(realm,
+                            new DefaultingPurpose<>(SIGNING_PURPOSES.get(role), SAML2_ENTITY_ROLE_SIGNING),
+                            secretIdIdentifier),
+                        resolveValidSecrets(realm,
+                            new DefaultingPurpose<>(MTLS_PURPOSES.get(role), SAML2_ENTITY_ROLE_MTLS),
+                            secretIdIdentifier))
                     .map(this::getX509Certificate)
                     .collect(Collectors.toCollection(LinkedHashSet::new));
-        }
+            }
 
-        return resolveValidSecrets(realm, entityId,
-                new DefaultingPurpose<>(SIGNING_PURPOSES.get(role), SAML2_ENTITY_ROLE_SIGNING), role)
+            return resolveValidSecrets(realm,
+                new DefaultingPurpose<>(SIGNING_PURPOSES.get(role), SAML2_ENTITY_ROLE_SIGNING),
+                secretIdIdentifier)
                 .map(this::getX509Certificate)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        } catch (SecretInitialisationException e) {
+            // Catch and handle exception on flows without a linked secretIdIdentifier
+            if (isEmpty(secretIdIdentifier)) {
+                logger.error("Could not initialise secrets in realm {}", realm, e);
+                return emptySet();
+            } else {
+                throw e;
+            }
+        }
     }
 
     @Override
@@ -150,10 +175,22 @@ public class SecretsSaml2CredentialResolver implements Saml2CredentialResolver {
             return keyStoreResolver.resolveValidDecryptionCredentials(realm, entityId, role);
         }
 
-        return resolveValidSecrets(realm, entityId,
-                new DefaultingPurpose<>(ENCRYPTION_PURPOSES.get(role), SAML2_ENTITY_ROLE_ENCRYPTION), role)
+        String secretIdIdentifier = getSecretIdIdentifier(realm, entityId, role);
+        try {
+            return resolveValidSecrets(realm,
+                new DefaultingPurpose<>(ENCRYPTION_PURPOSES.get(role), SAML2_ENTITY_ROLE_ENCRYPTION),
+                secretIdIdentifier)
                 .map(rethrowFunction(this::getPrivateKey))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        } catch (SecretInitialisationException e) {
+            // Catch and handle exception on flows without a linked secretIdIdentifier
+            if (isEmpty(secretIdIdentifier)) {
+                logger.error("Could not initialise secrets in realm {}", realm, e);
+                return emptySet();
+            } else {
+                throw e;
+            }
+        }
     }
 
     @Override
@@ -163,19 +200,30 @@ public class SecretsSaml2CredentialResolver implements Saml2CredentialResolver {
             return keyStoreResolver.resolveValidEncryptionCredentials(realm, entityId, role);
         }
 
-        return resolveValidSecrets(realm, entityId,
-                new DefaultingPurpose<>(ENCRYPTION_PURPOSES.get(role), SAML2_ENTITY_ROLE_ENCRYPTION), role)
+        String secretIdIdentifier = getSecretIdIdentifier(realm, entityId, role);
+        try {
+            return resolveValidSecrets(realm,
+                new DefaultingPurpose<>(ENCRYPTION_PURPOSES.get(role), SAML2_ENTITY_ROLE_ENCRYPTION),
+                secretIdIdentifier)
                 .map(this::getX509Certificate)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+        } catch (SecretInitialisationException e) {
+            // Catch and handle exception on flows without a linked secretIdIdentifier
+            if (isEmpty(secretIdIdentifier)) {
+                logger.error("Could not initialise secrets in realm {}", realm, e);
+                return emptySet();
+            } else {
+                throw e;
+            }
+        }
     }
 
-    private <T extends CryptoKey> Stream<T> resolveValidSecrets(String realm, String entityId,
-            DefaultingPurpose<T> purpose, Saml2EntityRole role) throws SAML2Exception {
+    private <T extends CryptoKey> Stream<T> resolveValidSecrets(String realm, DefaultingPurpose<T> purpose,
+        String secretIdIdentifier) throws SAML2Exception {
         try {
-            String secretIdIdentifier = getSecretIdIdentifier(realm, entityId, role);
             return secrets.getRealmSecrets(Realms.of(realm))
-                    .getValidSecrets(purpose, secretIdIdentifier)
-                    .getOrThrowIfInterrupted();
+                .getValidSecrets(purpose, secretIdIdentifier)
+                .getOrThrowIfInterrupted();
         } catch (RealmLookupException ex) {
             throw new SAML2Exception(ex);
         }

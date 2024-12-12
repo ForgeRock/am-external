@@ -53,6 +53,9 @@ public class JwtAssertionScriptWrapper {
 
     private final Logger logger = LoggerFactory.getLogger(JwtAssertionScriptWrapper.class);
 
+    /**
+     * Supported JWT builder types.
+     */
     enum JwtBuilderType {
         SIGNED,
         SIGNED_THEN_ENCRYPTED,

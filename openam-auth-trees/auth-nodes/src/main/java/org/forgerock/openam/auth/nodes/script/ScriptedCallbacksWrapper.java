@@ -353,9 +353,9 @@ public class ScriptedCallbacksWrapper {
      * authentication Json represented as a Map.
      */
     @Supported(scriptingApi = true, javaApi = false)
-    public List<Map<String, Object>> getSelectIdPCallbacks() {
+    public List<String> getSelectIdPCallbacks() {
         return getCallbackByType(SelectIdPCallback.class).stream()
-                .map(c -> c.getProviders().asMap())
+                .map(SelectIdPCallback::getProvider)
                 .collect(Collectors.toList());
     }
 

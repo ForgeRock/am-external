@@ -11,112 +11,225 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
 
-import org.forgerock.cuppa.junit.CuppaRunner;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.core.CoreWrapper;
-
-import org.forgerock.am.identity.application.LegacyIdentityService;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
-
-import org.forgerock.cuppa.Test;
-
-import static org.forgerock.cuppa.Cuppa.beforeEach;
-import static org.forgerock.cuppa.Cuppa.describe;
-import static org.forgerock.cuppa.Cuppa.it;
-import static org.forgerock.cuppa.Cuppa.when;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.RETRY_COUNT;
-
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.newTreeContext;
-
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.core.CoreWrapper;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import com.iplanet.sso.SSOException;
+import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.IdRepoException;
 
 
-@Test
-@RunWith(CuppaRunner.class)
+@RunWith(MockitoJUnitRunner.class)
 public class RetryLimitDecisionNodeTest {
 
     @Mock
-    RetryLimitDecisionNode.Config serviceConfig;
-
+    private RetryLimitDecisionNode.Config serviceConfig;
     @Mock
-    CoreWrapper coreWrapper;
-
+    private CoreWrapper coreWrapper;
     @Mock
-    LegacyIdentityService identityService;
+    private LegacyIdentityService identityService;
+    @Mock
+    private AMIdentity amIdentity;
 
     private RetryLimitDecisionNode node;
-
     private JsonValue sharedState;
-
     private UUID nodeId;
-
     private int configRetryLimit;
 
-    {
-        describe("Retry Limit Decision Node", () -> {
-            beforeEach(() -> {
-                MockitoAnnotations.initMocks(this);
-            });
 
-            when("using shared state to store counter", () -> {
-                beforeEach(() -> {
-                    given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(false);
-                    configRetryLimit = 3;
-                });
-                when("Retry Limit is met", () -> {
-                    it("Returns Reject Outcome", () -> {
-                        nodeId = UUID.randomUUID();
-                        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
-                        sharedState = json(object(field(nodeRetryLimitKey(nodeId), configRetryLimit)));
-                        assertThat(node.process(newTreeContext(sharedState)).outcome).isEqualTo("Reject");
-                    });
-                });
-                when("Retry Limit is not met", () -> {
-                    beforeEach(() -> {
-                        nodeId = UUID.randomUUID();
-                        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
-                        sharedState = json(object(field(nodeRetryLimitKey(nodeId), 0)));
-                        configRetryLimit = 3;
-                        given(serviceConfig.retryLimit()).willReturn(configRetryLimit);
+    @Before
+    public void setup() {
+        nodeId = UUID.randomUUID();
+        configRetryLimit = 3;
+        given(serviceConfig.retryLimit()).willReturn(configRetryLimit);
+    }
 
-                    });
-                    it("Returns Retry Outcome", () -> {
-                        assertThat(node.process(newTreeContext(sharedState)).outcome).isEqualTo("Retry");
-                    });
-                    it("Stores increased config retry limit in shared state", () -> {
-                        Action result = node.process(newTreeContext(sharedState));
-                        assertThat(result.sharedState.get(nodeRetryLimitKey(nodeId)).asInteger()).isEqualTo(1);
-                    });
-                    it("Stores increased retry limit in shared state", () -> {
-                        configRetryLimit = 20;
-                        int currentRetryLimit = 10;
-                        given(serviceConfig.retryLimit()).willReturn(configRetryLimit);
-                        sharedState = json(object(field(nodeRetryLimitKey(nodeId), currentRetryLimit)));
-                        Action result = node.process(newTreeContext(sharedState));
-                        assertThat(
-                                result.sharedState.get(nodeRetryLimitKey(nodeId)).asInteger())
-                                .isEqualTo(currentRetryLimit + 1);
-                    });
-                });
-            });
+    @Test
+    public void testReturnsRejectOutcomeWhenRetryLimitIsMetInSharedState() throws NodeProcessException {
+        // given
+        given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(false);
+        sharedState = json(object(field(nodeRetryLimitKey(nodeId), configRetryLimit)));
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
 
-        });
+        // when
+        Action action = node.process(newTreeContext(sharedState));
+
+        // then
+        assertThat(action.outcome).isEqualTo("Reject");
+    }
+
+    @Test
+    public void testReturnsRetryOutcomeWhenRetryLimitIsNotInSharedState() throws NodeProcessException {
+        // given
+        sharedState = json(object());
+        given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(false);
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+
+        // when
+        var action = node.process(newTreeContext(sharedState));
+
+        // then
+        assertThat(action.outcome).isEqualTo("Retry");
+        assertThat(sharedState.get(nodeRetryLimitKey(nodeId)).asInteger()).isEqualTo(1);
+    }
+
+    @Test
+    public void testReturnsRetryOutcomeWhenRetryLimitIsNotMetInSharedState() throws NodeProcessException {
+        // given
+        int currentRetryLimit = 1;
+        sharedState = json(object(field(nodeRetryLimitKey(nodeId), currentRetryLimit)));
+        given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(false);
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+
+        // when
+        var action = node.process(newTreeContext(sharedState));
+
+        // then
+        assertThat(action.outcome).isEqualTo("Retry");
+        assertThat(sharedState.get(nodeRetryLimitKey(nodeId)).asInteger()).isEqualTo(currentRetryLimit + 1);
+    }
+
+    @Test
+    public void testReturnsRejectOutcomeWhenRetryLimitIsMetInUserProfile() throws NodeProcessException, IdRepoException,
+                                                                                              SSOException {
+        // given
+        given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
+        //noinspection deprecation
+        given(coreWrapper.getIdentity(any())).willReturn(amIdentity);
+        Set<String> retryCounts = new HashSet<>();
+        retryCounts.add(nodeId + "=" + configRetryLimit);
+        given(amIdentity.getAttribute("retryLimitNodeCount")).willReturn(retryCounts);
+        sharedState = json(object());
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+
+        // when
+        var action = node.process(newTreeContext(sharedState));
+
+        // then
+        assertThat(action.outcome).isEqualTo("Reject");
+    }
+
+    @Test
+    public void testReturnsRetryOutcomeWhenRetryLimitIsNotMetInUserProfile()
+            throws NodeProcessException, IdRepoException, SSOException {
+        // given
+        given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
+        //noinspection deprecation
+        given(coreWrapper.getIdentity(any())).willReturn(amIdentity);
+        Set<String> retryCounts = new HashSet<>();
+        given(amIdentity.getAttribute("retryLimitNodeCount")).willReturn(retryCounts);
+        sharedState = json(object());
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+
+        // when
+        var action = node.process(newTreeContext(sharedState));
+
+        // then
+        assertThat(action.outcome).isEqualTo("Retry");
+        verify(amIdentity).setAttributes(Map.of("retryLimitNodeCount", Set.of(nodeId + "=1")));
+        assertThat(sharedState.get(nodeRetryLimitKey(nodeId)).asInteger()).isEqualTo(1);
+    }
+
+    @Test
+    public void testReturnsRetryOutcomeWhenRetryLimitIsNotInUserProfile()
+            throws NodeProcessException, IdRepoException, SSOException {
+        // given
+        int currentRetryLimit = 1;
+        given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
+        //noinspection deprecation
+        given(coreWrapper.getIdentity(any())).willReturn(amIdentity);
+        Set<String> retryCounts = new HashSet<>();
+        retryCounts.add(nodeId + "=" + currentRetryLimit);
+        given(amIdentity.getAttribute("retryLimitNodeCount")).willReturn(retryCounts);
+        sharedState = json(object());
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+
+        // when
+        var action = node.process(newTreeContext(sharedState));
+
+        // then
+        assertThat(action.outcome).isEqualTo("Retry");
+        verify(amIdentity).setAttributes(Map.of("retryLimitNodeCount", Set.of(nodeId + "=" + (currentRetryLimit + 1))));
+        assertThat(sharedState.get(nodeRetryLimitKey(nodeId)).asInteger()).isEqualTo(currentRetryLimit + 1);
+    }
+
+    @Test
+    public void testReturnsRejectOutcomeWhenUserDoesNotExistButLimitIsInSharedState() throws NodeProcessException {
+        // given
+        given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
+        //noinspection deprecation
+        given(coreWrapper.getIdentity(any())).willReturn(null);
+        sharedState = json(object(field(nodeRetryLimitKey(nodeId), configRetryLimit)));
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+
+        // when
+        var action = node.process(newTreeContext(sharedState));
+
+        // then
+        assertThat(action.outcome).isEqualTo("Reject");
+    }
+
+    @Test
+    public void testReturnsRetryOutcomeWhenUserDoesNotExistAndNothingInSharedState() throws NodeProcessException {
+        // given
+        given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
+        //noinspection deprecation
+        given(coreWrapper.getIdentity(any())).willReturn(null);
+        sharedState = json(object());
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+
+        // when
+        var action = node.process(newTreeContext(sharedState));
+
+        // then
+        assertThat(action.outcome).isEqualTo("Retry");
+        assertThat(sharedState.get(nodeRetryLimitKey(nodeId)).asInteger()).isEqualTo(1);
+    }
+
+    @Test
+    public void testReturnsRetryOutcomeWhenUserDoesNotExistAndNotMetInSharedState() throws NodeProcessException {
+        // given
+        int currentRetryLimit = 1;
+        given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
+        //noinspection deprecation
+        given(coreWrapper.getIdentity(any())).willReturn(null);
+        sharedState = json(object(field(nodeRetryLimitKey(nodeId), currentRetryLimit)));
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+
+        // when
+        var action = node.process(newTreeContext(sharedState));
+
+        // then
+        assertThat(action.outcome).isEqualTo("Retry");
+        assertThat(sharedState.get(nodeRetryLimitKey(nodeId)).asInteger()).isEqualTo(currentRetryLimit + 1);
     }
 
     private String nodeRetryLimitKey(UUID nodeId) {

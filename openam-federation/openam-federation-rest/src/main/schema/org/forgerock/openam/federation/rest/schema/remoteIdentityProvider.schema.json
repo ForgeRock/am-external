@@ -111,7 +111,15 @@
             "type": "object",
             "properties": {
               "nameIdFormatList": {
-                "$ref": "definitions.json#/nameIdFormatList"
+                "description": "List of NameID formats. Order list shows the order of preference.",
+                "title": "NameID Format List",
+                "attributePath": {
+                  "value": "/nameIDFormat"
+                },
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             }
           },

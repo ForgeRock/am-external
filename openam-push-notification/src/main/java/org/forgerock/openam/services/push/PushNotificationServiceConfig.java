@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2019-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.services.push;
@@ -46,44 +46,89 @@ public interface PushNotificationServiceConfig extends ServiceComponentConfig,
      */
     @Config(scope = REALM)
     interface Realm {
+        /**
+         * Returns the access key for the Push Notification service.
+         *
+         * @return the access key for the Push Notification service.
+         */
         @Attribute(order = 100, i18nKey = "a010", requiredValue = true)
         @ExampleValue("AKIAIOSFODNN7EXAMPLE")
         String accessKey();
 
+        /**
+         * Returns the secret for the Push Notification service.
+         *
+         * @return the secret for the Push Notification service.
+         */
         @Attribute(order = 200, i18nKey = "a020")
         @Password
         char[] secret();
 
+        /**
+         * Returns the Apple endpoint for the Push Notification service.
+         *
+         * @return the Apple endpoint for the Push Notification service.
+         */
         @Attribute(order = 300, i18nKey = "a030", requiredValue = true)
         @ExampleValue("arn:aws:sns:us-east-1:1234567890:app/APNS/production")
         String appleEndpoint();
 
+        /**
+         * Returns the Google endpoint for the Push Notification service.
+         *
+         * @return the Google endpoint for the Push Notification service.
+         */
         @Attribute(order = 400, i18nKey = "a040", requiredValue = true)
         @ExampleValue("arn:aws:sns:us-east-1:1234567890:app/GCM/production")
         String googleEndpoint();
 
+        /**
+         * Returns the region for the Push Notification service.
+         *
+         * @return the region for the Push Notification service.
+         */
         @Attribute(order = 500, i18nKey = "a045", requiredValue = true, choiceValuesClass = RegionChoiceValues.class)
         default String region() {
             return "us-east-1";
         }
 
+        /**
+         * Returns the delegate factory for the Push Notification service.
+         *
+         * @return the delegate factory for the Push Notification service.
+         */
         @Attribute(order = 600, i18nKey = "a050", requiredValue = true)
         default String delegateFactory() {
             return "org.forgerock.openam.services.push.sns.SnsHttpDelegateFactory";
         }
 
+        /**
+         * Returns the MD duration for the Push Notification service.
+         *
+         * @return the MD duration for the Push Notification service.
+         */
         @Attribute(order = 700, i18nKey = "a060", requiredValue = true)
         @NumberRange
         default Integer mdDuration() {
             return 120;
         }
 
+        /**
+         * Returns the MD concurrency for the Push Notification service.
+         *
+         * @return the MD concurrency for the Push Notification service.
+         */
         @Attribute(order = 800, i18nKey = "a070", requiredValue = true)
         @NumberRange(rangeStart = 1, rangeEnd = 16)
         default Integer mdConcurrency() {
             return 16;
         }
 
+        /**
+         * Returns the MD cache size for the Push Notification service.
+         *
+         * @return the MD cache size for the Push Notification service.
+         */
         @Attribute(order = 900, i18nKey = "a080", requiredValue = true)
         @NumberRange
         default Integer mdCacheSize() {

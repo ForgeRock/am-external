@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm;
@@ -109,11 +109,6 @@ public class TpmVerifier extends TrustableAttestationVerifier {
         if (!attestationObject.attestationStatement.getVer().equals("2.0")) {
             logger.error("attestation statement claims an invalid version of tpm spec, must be 2.0, is {}",
                     attestationObject.attestationStatement.getVer());
-            return VerificationResponse.failure();
-        }
-
-        if (attestationObject.attestationStatement.getAlg() != tpmtPublic.type.getCoseAlg()) {
-            logger.error("attestation statement alg claim does not conform to tpmtPublic type expectation");
             return VerificationResponse.failure();
         }
 

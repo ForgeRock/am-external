@@ -362,7 +362,7 @@ public class CaptchaNode extends AbstractDecisionNode {
         }
     }
 
-    /*
+    /**
      * A config validator for the captcha node.
      *
      * Ensures that all required attributes are present and that either the secret key or secret key purpose is

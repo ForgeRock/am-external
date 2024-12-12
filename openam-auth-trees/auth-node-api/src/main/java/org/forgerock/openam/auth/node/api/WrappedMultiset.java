@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -30,6 +30,12 @@ import org.forgerock.guava.common.collect.Multiset;
 
 import com.google.common.collect.ImmutableMultiset;
 
+/**
+ * A wrapper around a Guava {@link com.google.common.collect.Multiset} to make it compatible with the
+ * {@link Multiset} interface.
+ *
+ * @param <K> the type of elements in the multiset
+ */
 class WrappedMultiset<K> implements Multiset<K> {
     private final com.google.common.collect.Multiset<K> delegate;
 

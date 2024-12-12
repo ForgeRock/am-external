@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -396,6 +396,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
                 if (config.storeAttestationDataInTransientState()) {
                     transientState.put(WEB_AUTHN_STATE_DATA, result.get());
                     transientState.put(WEB_AUTHN_ATTESTATION_TYPE, attestationType.toString());
+                    transientState.put(WEB_AUTHN_AAGUID, registeredAaguid);
                 }
 
                 return generateDevice(outcomeBuilder, response, attestationResponse.getAttestationObject(), username,

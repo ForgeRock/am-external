@@ -729,8 +729,12 @@ public class SPACSUtils {
         }
 
         try {
-            return ProtocolFactory.getInstance().createResponse(
-                    artiResp.getAny());
+            ProtocolFactory protocolFactory = ProtocolFactory.getInstance();
+            if (artiResp.getAnyElement().isPresent()) {
+                return protocolFactory.createResponse(artiResp.getAnyElement().get());
+            } else {
+                return protocolFactory.createResponse(artiResp.getAny());
+            }
         } catch (SAML2Exception se) {
             if (logger.isDebugEnabled()) {
                 logger.debug(method

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2023 ForgeRock AS.
+ * Copyright 2011-2024 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -376,7 +376,9 @@ const LoginView = AbstractView.extend({
                  * If there is a login failure which has occurred without a login form submission, e.g. Zero Page Login
                  * and a failureUrl is set (e.g. Failure URL node), route the user to that.
                  */
-                window.location.href = error.detail.failureUrl;
+                // setTimeout is used here as a fix for iOS safari which was not
+                // following redirects when used without
+                setTimeout(() => { window.location.href = error.detail.failureUrl; }, 1);
             } else {
                 /**
                  * We haven't managed to get a successful response from the server

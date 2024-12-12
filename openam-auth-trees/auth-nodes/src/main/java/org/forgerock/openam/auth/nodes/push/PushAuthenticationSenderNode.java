@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -569,6 +569,9 @@ public class PushAuthenticationSenderNode implements Node {
         }
     }
 
+    /**
+     * The type of failure for push notifications.
+     */
     @VisibleForTesting
     enum FailureReason {
         MISSING_USERNAME("No username specified for push notification sender", "Expected username to be set."),

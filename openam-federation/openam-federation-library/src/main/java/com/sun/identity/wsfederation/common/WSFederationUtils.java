@@ -24,7 +24,7 @@
  *
  * $Id: WSFederationUtils.java,v 1.6 2009/10/28 23:58:58 exu Exp $
  *
- * Portions Copyrighted 2015-2020 ForgeRock AS.
+ * Portions Copyrighted 2015-2024 ForgeRock AS.
  */
 package com.sun.identity.wsfederation.common;
 
@@ -47,11 +47,14 @@ import java.util.logging.Level;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.sun.identity.multiprotocol.SingleLogoutManager;
 import com.sun.identity.plugin.datastore.DataStoreProvider;
 import com.sun.identity.plugin.datastore.DataStoreProviderException;
@@ -103,7 +106,6 @@ public class WSFederationUtils {
     public static DataStoreProvider dsProvider;
     
     public static SessionProvider sessionProvider = null;
-
 
     private static final RedirectUrlValidator<ValidWReplyExtractor.WSFederationEntityInfo> WREPLY_VALIDATOR =
             new RedirectUrlValidator<ValidWReplyExtractor.WSFederationEntityInfo>(new ValidWReplyExtractor());
@@ -371,10 +373,13 @@ public class WSFederationUtils {
         HttpServletResponse response, Object userSession) {
         debug.debug("WSFederationUtils.processMPSingleLogout");
         try {
-            String wreply = (String)
-                request.getAttribute(WSFederationConstants.LOGOUT_WREPLY);
-            String realm = (String)
-                request.getAttribute(WSFederationConstants.REALM_PARAM);
+            String logoutWReply = (String) request.getAttribute(WSFederationConstants.LOGOUT_WREPLY);
+            String realm = request.getParameter(WSFederationConstants.REALM_PARAM);
+            if (!isLogoutUrlValid(logoutWReply, realm, request)) {
+                debug.warn("WSFederationUtils.processMultiProtocolLogout: " +
+                        WSFederationUtils.bundle.getString("invalidLogoutWReplyUrl"));
+                return;
+            }
             String idpEntityId = (String)
                 request.getAttribute(WSFederationConstants.ENTITYID_PARAM);
             Set sessSet = new HashSet();
@@ -387,10 +392,10 @@ public class WSFederationUtils {
             // TODO : find out spEntityID/logout request if any
             int status = manager.doIDPSingleLogout(sessSet, sessUser,
                 request, response, false, true, SingleLogoutManager.WS_FED, 
-                realm, idpEntityId, null, wreply, null, null, 
+                realm, idpEntityId, null, logoutWReply, null, null,
                 SingleLogoutManager.LOGOUT_SUCCEEDED_STATUS);
             if (status != SingleLogoutManager.LOGOUT_REDIRECTED_STATUS) {
-                response.sendRedirect(wreply);
+                response.sendRedirect(logoutWReply);
             }
         } catch (SessionException ex) {
             // ignore;
@@ -563,6 +568,25 @@ public class WSFederationUtils {
                 nameIdentifier, attributes);
     }
 
+    /**
+     * Validates the logout URL and redirects to it if valid.
+     * @param request HttpServletRequest object.
+     * @param response HttpServletResponse object.
+     * @param logoutUrl The URL to validate and redirect to.
+     * @throws IOException If there was an error while redirecting.
+     * @throws WSFederationException If the logout URL is invalid.
+     */
+    public static void validateAndRedirect(HttpServletRequest request, HttpServletResponse response, String logoutUrl)
+            throws IOException, WSFederationException {
+        String realm = request.getParameter(WSFederationConstants.REALM_PARAM);
+        if (!isLogoutUrlValid(logoutUrl, realm, request)) {
+            debug.warn("WSFederationUtils.processMultiProtocolLogout: " +
+                    WSFederationUtils.bundle.getString("invalidLogoutWReplyUrl"));
+            return;
+        }
+        response.sendRedirect(logoutUrl);
+    }
+
     private static IDPAccountMapper getIDPAccountMapper(Map<String, List<String>> attributes)
             throws WSFederationException {
         IDPAccountMapper accountMapper = null;
@@ -596,5 +620,10 @@ public class WSFederationUtils {
             throw new WSFederationException(WSFederationUtils.bundle.getString("failedAttrMapper"));
         }
         return attrMapper;
+    }
+
+    private static boolean isLogoutUrlValid(String url, String realm, HttpServletRequest request) {
+        RedirectUrlValidator<String> validator = InjectorHolder.getInstance(Key.get(new TypeLiteral<>(){}));
+        return validator.isRedirectUrlValid(url, realm, false, request);
     }
 }

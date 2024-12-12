@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -121,6 +121,7 @@ public class DataStoreDecisionNodeTest {
 
         // Then
         assertThat(action.identifiedIdentity).isEmpty();
+
     }
 
     @Test
@@ -135,6 +136,25 @@ public class DataStoreDecisionNodeTest {
 
         // Then
         assertThat(action.identifiedIdentity).isEmpty();
+    }
+
+    @Test
+    public void shouldFailIfPasswordIsBlank() throws Exception {
+        // Given
+        given(identityStore.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(true);
+        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
+        JsonValue transientState = json(object(field(PASSWORD, "")));
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState));
+
+        // Then
+        assertThat(result.outcome).isEqualTo("false");
+        assertThat(result.identifiedIdentity).isEmpty();
+        assertThat(result.callbacks).isEmpty();
+        assertThat(result.sharedState).isObject().containsExactly(entry(USERNAME, "bob"), entry(REALM, "/realm"));
+        assertThat(sharedState).isObject().containsExactly(entry(USERNAME, "bob"), entry(REALM, "/realm"));
+        assertThat(transientState).isObject().containsExactly(entry(PASSWORD, ""));
     }
 
     @Test

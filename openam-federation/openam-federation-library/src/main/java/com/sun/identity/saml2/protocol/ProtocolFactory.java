@@ -24,7 +24,7 @@
  *
  * $Id: ProtocolFactory.java,v 1.5 2008/06/25 05:47:57 qcheng Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2024 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol;
@@ -1413,15 +1413,13 @@ public class ProtocolFactory  {
      * @throws SAML2Exception if error occurs
      *          while processing the <code>Element</code>.
      */
-    public Response createResponse(org.w3c.dom.Element elem)
-    throws SAML2Exception {
-	Object obj = SAML2SDKUtils.getObjectInstance(
-            SAML2SDKUtils.RESPONSE, elem);
-	if (obj == null) {
+    public Response createResponse(Element elem) throws SAML2Exception {
+        Object obj = SAML2SDKUtils.getObjectInstance(SAML2SDKUtils.RESPONSE, elem);
+        if (obj == null) {
             return new ResponseImpl(elem);
-	} else {
+        } else {
             return (Response) obj;
-	}
+        }
     }
     
     /**

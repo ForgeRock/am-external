@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -178,6 +178,9 @@ public class ZeroPageLoginNode implements Node {
         return false;
     }
 
+    /**
+     * Defines the possible outcomes for the ZeroPageLoginNode.
+     */
     static final class OutcomeProvider implements org.forgerock.openam.auth.node.api.StaticOutcomeProvider {
         private static final String BUNDLE = ZeroPageLoginNode.class.getName();
 

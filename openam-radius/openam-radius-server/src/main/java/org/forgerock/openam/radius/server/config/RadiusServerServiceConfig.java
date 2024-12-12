@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.radius.server.config;
@@ -49,6 +49,11 @@ public interface RadiusServerServiceConfig
     @Config(scope = GLOBAL)
     interface Global {
 
+        /**
+         * Returns whether the Radius Listener is enabled.
+         *
+         * @return whether the Radius Listener is enabled.
+         */
         @Attribute(order = 200,
                 name = "radiusListenerEnabled",
                 i18nKey = "a-radius-listener-enabled-label")
@@ -56,6 +61,11 @@ public interface RadiusServerServiceConfig
             return RadiusServerServiceConfig.YesNoChoice.NO;
         }
 
+        /**
+         * Returns the Radius Server Port.
+         *
+         * @return the Radius Server Port.
+         */
         @Attribute(order = 400,
                 name = "radiusServerPort",
                 i18nKey = "b-radius-port")
@@ -64,6 +74,11 @@ public interface RadiusServerServiceConfig
             return 1812;
         }
 
+        /**
+         * Returns the Radius thread pool core size.
+         *
+         *  @return the Radius thread pool core size.
+         */
         @Attribute(order = 600,
                 name = "radiusThreadPoolCoreSize",
                 i18nKey = "c-radius-thread-pool-core-size")
@@ -72,6 +87,11 @@ public interface RadiusServerServiceConfig
             return 1;
         }
 
+        /**
+         * Returns the Radius thread pool max size.
+         *
+         * @return the Radius thread pool max size.
+         */
         @Attribute(order = 800,
                 name = "radiusThreadPoolMaxSize",
                 i18nKey = "d-radius-thread-pool-max-size")
@@ -80,6 +100,11 @@ public interface RadiusServerServiceConfig
             return 10;
         }
 
+        /**
+         * Returns the Radius thread pool keep alive seconds.
+         *
+         * @return the Radius thread pool keep alive seconds.
+         */
         @Attribute(order = 1000,
                 name = "radiusThreadPoolKeepaliveSeconds",
                 i18nKey = "e-radius-thread-pool-keepalive-seconds")
@@ -88,6 +113,11 @@ public interface RadiusServerServiceConfig
             return 10;
         }
 
+        /**
+         * Returns the Radius thread pool queue size.
+         *
+         * @return the Radius thread pool queue size.
+         */
         @Attribute(order = 1100,
                 name = "radiusThreadPoolQueueSize",
                 i18nKey = "f-radius-thread-pool-queue-size")
@@ -96,6 +126,11 @@ public interface RadiusServerServiceConfig
             return 20;
         }
 
+        /**
+         * Returns the Radius client(s).
+         *
+         * @return the Radius client(s).
+         */
         @SubConfig(
                 name = "radiusClient",
                 container = false
@@ -107,6 +142,11 @@ public interface RadiusServerServiceConfig
      * Secondary config interface holding the config for the Radius Server service attributes.
      */
     interface RadiusClient {
+        /**
+         * Returns the Radius client IP address.
+         *
+         * @return the Radius client IP address.
+         */
         @Attribute(
                 order = 100,
                 i18nKey = "a-client-ip-address-label",
@@ -116,6 +156,11 @@ public interface RadiusServerServiceConfig
             return "/127.0.0.1";
         }
 
+        /**
+         * Returns the Radius client secret.
+         *
+         * @return the Radius client secret.
+         */
         @Attribute(
                 order = 300,
                 i18nKey = "b-client-secret-label",
@@ -125,6 +170,11 @@ public interface RadiusServerServiceConfig
         @Password
         char[] clientSecret();
 
+        /**
+         * Returns whether the Radius client packets are logged.
+         *
+         * @return whether the Radius client packets are logged.
+         */
         @Attribute(
                 order = 500,
                 i18nKey = "c-client-log-packets",
@@ -134,6 +184,11 @@ public interface RadiusServerServiceConfig
             return YesNoChoice.NO;
         }
 
+        /**
+         * Returns the Radius client handler class.
+         *
+         * @return the Radius client handler class.
+         */
         @Attribute(
                 order = 700,
                 i18nKey = "d-handler-class",
@@ -143,6 +198,11 @@ public interface RadiusServerServiceConfig
             return "org.forgerock.openam.radius.server.spi.handlers.OpenAMAuthHandler";
         }
 
+        /**
+         * Returns the Radius client handler config.
+         *
+         * @return the Radius client handler config.
+         */
         @Attribute(
                 order = 900,
                 i18nKey = "e-handler-config-params",

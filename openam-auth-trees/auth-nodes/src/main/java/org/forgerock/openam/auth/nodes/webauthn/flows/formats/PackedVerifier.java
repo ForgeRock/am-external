@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats;
 
@@ -113,15 +113,20 @@ public class PackedVerifier extends TrustableAttestationVerifier {
             return VerificationResponse.failure();
         }
         byte[] extensionBytes = cert.getExtensionValue(FIDO_OID);
-        byte[] octetStrings = new byte[]{ 0x04, 0x12, 0x04, 0x10 };
-        if (!MessageDigest.isEqual(octetStrings, Arrays.copyOfRange(extensionBytes, 0, 4))) {
-            logger.warn("octect string wrapping missing");
-            return VerificationResponse.failure();
-        }
-        if (!MessageDigest.isEqual(attestationObject.authData.attestedCredentialData.aaguid,
-                Arrays.copyOfRange(extensionBytes, 4, 20))) {
-            logger.warn("certified aaguid doesn't match");
-            return VerificationResponse.failure();
+        if (extensionBytes != null) {
+            // N.B [https://www.w3.org/TR/webauthn-2/#sctn-packed-attestation-cert-requirements] The spec states that
+            // the "1.3.6.1.4.1.45724.1.1.4" extension is only needed in certain circumstances, but there appears to be
+            // no feasible way to check this. Instead, we should avoid throwing a NPE if not present.
+            byte[] octetStrings = new byte[]{0x04, 0x12, 0x04, 0x10};
+            if (!MessageDigest.isEqual(octetStrings, Arrays.copyOfRange(extensionBytes, 0, 4))) {
+                logger.warn("octect string wrapping missing");
+                return VerificationResponse.failure();
+            }
+            if (!MessageDigest.isEqual(attestationObject.authData.attestedCredentialData.aaguid,
+                    Arrays.copyOfRange(extensionBytes, 4, 20))) {
+                logger.warn("certified aaguid doesn't match");
+                return VerificationResponse.failure();
+            }
         }
 
         boolean isSignatureValid = isSignatureValid(attestationObject, clientDataHash, cert.getPublicKey());

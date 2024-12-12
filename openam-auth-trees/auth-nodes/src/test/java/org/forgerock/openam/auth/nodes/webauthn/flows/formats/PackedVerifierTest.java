@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2021-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats;
@@ -19,9 +19,14 @@ package org.forgerock.openam.auth.nodes.webauthn.flows.formats;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.bouncycastle.jcajce.spec.EdDSAParameterSpec.Ed25519;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -45,6 +50,8 @@ import org.forgerock.openam.auth.nodes.webauthn.data.AttestedCredentialData;
 import org.forgerock.openam.auth.nodes.webauthn.data.AuthData;
 import org.forgerock.openam.auth.nodes.webauthn.flows.AttestationStatement;
 import org.forgerock.openam.auth.nodes.webauthn.flows.FlowUtilities;
+import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
+import org.mockito.Mock;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -60,6 +67,11 @@ import ch.qos.logback.core.read.ListAppender;
  */
 public class PackedVerifierTest {
 
+    @Mock
+    TrustAnchorValidator mockTrustAnchorValidator;
+    @Mock
+    X509Certificate mockCert;
+
     private ListAppender<ILoggingEvent> appender;
 
     private FlowUtilities flowUtilities;
@@ -68,8 +80,9 @@ public class PackedVerifierTest {
 
     @BeforeMethod
     public void setUp() {
+        initMocks(this);
         flowUtilities = new FlowUtilities(null);
-        verifier = new PackedVerifier(flowUtilities, null);
+        verifier = new PackedVerifier(flowUtilities, mockTrustAnchorValidator);
 
         appender = new ListAppender<>();
         appender.start();
@@ -210,6 +223,43 @@ public class PackedVerifierTest {
         // Then
         assertLoggerMessage("webauthn authentication attestation certificates could not be found");
         assertThat(result.isValid()).isFalse();
+    }
+
+    @Test
+    public void shouldAcceptMissingOIDInCertAttestation() throws NoSuchAlgorithmException,
+            InvalidAlgorithmParameterException, SignatureException, InvalidKeyException {
+        // Given
+        Security.addProvider(new BouncyCastleProvider());
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(Ed25519);
+        keyPairGenerator.initialize(new EdDSAParameterSpec(Ed25519));
+        KeyPair ed25519KeyPair = keyPairGenerator.generateKeyPair();
+
+        // mock a certificate with no OID
+        given(mockCert.getVersion()).willReturn(3);
+        given(mockCert.getPublicKey()).willReturn(ed25519KeyPair.getPublic());
+        given(mockCert.getExtensionValue(eq("1.3.6.1.4.1.45724.1.1.4"))).willReturn(null);
+        given(mockTrustAnchorValidator.getAttestationType(any())).willReturn(AttestationType.NONE);
+
+        byte[] rawAuthenticatorData = "rawAuthenticatorData".getBytes(StandardCharsets.UTF_8);
+        byte[] clientDataHash = "clientDataHash".getBytes(StandardCharsets.UTF_8);
+        byte[] signedData = sign(CoseAlgorithm.EDDSA, rawAuthenticatorData,
+                clientDataHash, ed25519KeyPair.getPrivate());
+
+        AttestedCredentialData credentialData = new AttestedCredentialData(null, 0,
+                null, null, null);
+        AuthData authData = new AuthData(null, null, 1, credentialData,
+                rawAuthenticatorData);
+        AttestationStatement statement = new AttestationStatement();
+        statement.setAlg(CoseAlgorithm.EDDSA);
+        statement.setSig(signedData);
+        statement.setAttestnCerts(List.of(mockCert));
+        AttestationObject attestationObject = new AttestationObject(verifier, authData, statement);
+
+        // When
+        VerificationResponse result = verifier.verify(attestationObject, clientDataHash);
+
+        // Then
+        assertThat(result.isValid()).isTrue();
     }
 
     private void assertLoggerMessage(String actualMessage) {

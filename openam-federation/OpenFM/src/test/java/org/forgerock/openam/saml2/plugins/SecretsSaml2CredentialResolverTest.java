@@ -11,8 +11,9 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2024 ForgeRock AS.
  */
+
 package org.forgerock.openam.saml2.plugins;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +21,7 @@ import static org.forgerock.openam.saml2.Saml2EntityRole.IDP;
 import static org.forgerock.openam.saml2.Saml2EntityRole.SP;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 import java.security.PrivateKey;
@@ -31,23 +33,30 @@ import java.util.stream.Stream;
 import org.forgerock.openam.core.realms.RealmTestHelper;
 import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.secrets.DefaultingPurpose;
+import org.forgerock.openam.secrets.SecretInitialisationException;
 import org.forgerock.openam.secrets.Secrets;
 import org.forgerock.openam.secrets.SecretsProviderFacade;
 import org.forgerock.secrets.NoSuchSecretException;
 import org.forgerock.secrets.Secret;
 import org.forgerock.secrets.keys.KeyDecryptionKey;
+import org.forgerock.secrets.keys.KeyEncryptionKey;
 import org.forgerock.secrets.keys.KeyFormatRaw;
 import org.forgerock.secrets.keys.SigningKey;
 import org.forgerock.util.promise.Promise;
 import org.forgerock.util.promise.Promises;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.sun.identity.saml2.common.SAML2Utils;
+
+@ExtendWith(MockitoExtension.class)
 public class SecretsSaml2CredentialResolverTest {
 
     @Mock
@@ -63,36 +72,48 @@ public class SecretsSaml2CredentialResolverTest {
     @Mock
     private PrivateKey privateKey;
     @Mock
+    private KeyEncryptionKey encryptionKey;
+    @Mock
     private KeyDecryptionKey decryptionKey;
     @Mock
     private X509Certificate certificate;
-    private RealmTestHelper realmTestHelper;
-
-    private Saml2CredentialResolver resolver;
     @Captor
     private ArgumentCaptor<DefaultingPurpose<SigningKey>> purposeArgumentCaptor;
 
-    @BeforeMethod
-    public void setup() throws Exception {
-        MockitoAnnotations.initMocks(this);
+    private RealmTestHelper realmTestHelper;
+    private MockedStatic<SAML2Utils> utils;
+    private Saml2CredentialResolver resolver;
+
+    @BeforeEach
+    void setup() {
+        utils = mockStatic(SAML2Utils.class);
+
         resolver = new SecretsSaml2CredentialResolver(secrets, keyStoreResolver);
         realmTestHelper = new RealmTestHelper();
         realmTestHelper.setupRealmClass();
-
-        given(signingKey.export(KeyFormatRaw.INSTANCE)).willReturn(privateKey);
-        given(signingKey.getCertificate(X509Certificate.class)).willReturn(Optional.of(certificate));
-        given(secrets.getRealmSecrets(any())).willReturn(realmSecrets);
-        given(realmSecrets.getActiveSecret(any(), any())).willReturn(activeSecret);
-        given(activeSecret.getOrThrowIfInterrupted()).willReturn(signingKey);
     }
 
-    @AfterMethod
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         realmTestHelper.tearDownRealmClass();
+        utils.close();
     }
 
     @Test
-    public void testGetEntityRoleSigningDetailsForIDP() throws Exception {
+    void testGetEntityRoleSigningDetailsForIDP() throws Exception {
+        // Given
+        utils.when(
+                ()->SAML2Utils.getAttributeValueFromSSOConfig(
+                        any(String.class),any(String.class),any(String.class),any(String.class)
+                )
+        ).thenReturn("secret");
+
+        given(secrets.getRealmSecrets(any())).willReturn(realmSecrets);
+        given(signingKey.export(KeyFormatRaw.INSTANCE)).willReturn(privateKey);
+        given(signingKey.getCertificate(X509Certificate.class)).willReturn(Optional.of(certificate));
+        given(realmSecrets.getActiveSecret(any(), any())).willReturn(activeSecret);
+        given(activeSecret.getOrThrowIfInterrupted()).willReturn(signingKey);
+
         // When
         Saml2SigningCredentials credentials = resolver.resolveActiveSigningCredential("/", "idpEntityID", IDP);
 
@@ -105,7 +126,20 @@ public class SecretsSaml2CredentialResolverTest {
     }
 
     @Test
-    public void testGetEntityRoleSigningDetailsForSP() throws Exception {
+    void testGetEntityRoleSigningDetailsForSP() throws Exception {
+        // Given
+        utils.when(
+                ()->SAML2Utils.getAttributeValueFromSSOConfig(
+                        any(String.class),any(String.class),any(String.class),any(String.class)
+                )
+        ).thenReturn("secret");
+
+        given(secrets.getRealmSecrets(any())).willReturn(realmSecrets);
+        given(signingKey.export(KeyFormatRaw.INSTANCE)).willReturn(privateKey);
+        given(signingKey.getCertificate(X509Certificate.class)).willReturn(Optional.of(certificate));
+        given(realmSecrets.getActiveSecret(any(), any())).willReturn(activeSecret);
+        given(activeSecret.getOrThrowIfInterrupted()).willReturn(signingKey);
+
         // When
         Saml2SigningCredentials credentials = resolver.resolveActiveSigningCredential("/", "spEntityID", SP);
 
@@ -118,7 +152,18 @@ public class SecretsSaml2CredentialResolverTest {
     }
 
     @Test
-    public void testGetEntityRoleSigningDetailsReturnsNullOnNoSecretFound() throws Exception {
+    void testGetEntityRoleSigningDetailsReturnsNullOnNoSecretFound() throws Exception {
+        // Given
+        utils.when(
+                ()->SAML2Utils.getAttributeValueFromSSOConfig(
+                        any(String.class),any(String.class),any(String.class),any(String.class)
+                )
+        ).thenReturn("secret");
+
+        given(secrets.getRealmSecrets(any())).willReturn(realmSecrets);
+        given(realmSecrets.getActiveSecret(any(), any())).willReturn(activeSecret);
+        given(activeSecret.getOrThrowIfInterrupted()).willReturn(signingKey);
+
         // Given
         given(activeSecret.getOrThrowIfInterrupted()).willThrow(NoSuchSecretException.class);
 
@@ -132,8 +177,15 @@ public class SecretsSaml2CredentialResolverTest {
     }
 
     @Test
-    public void shouldReturnValidEncryptionCertificates() throws Exception {
+    void shouldReturnValidEncryptionCertificates() throws Exception {
         // Given
+        utils.when(
+                ()->SAML2Utils.getAttributeValueFromSSOConfig(
+                        any(String.class),any(String.class),any(String.class),any(String.class)
+                )
+        ).thenReturn("secret");
+
+        given(secrets.getRealmSecrets(any())).willReturn(realmSecrets);
         given(realmSecrets.getValidSecrets(any(), any()))
                 .willReturn(Promises.newResultPromise(Stream.of(decryptionKey)));
         given(decryptionKey.getCertificate(any())).willReturn(Optional.of(certificate));
@@ -143,5 +195,62 @@ public class SecretsSaml2CredentialResolverTest {
 
         // Then
         assertThat(certs).containsOnly(certificate);
+    }
+
+    @Test
+    void shouldReturnEmptySetOfEncryptionCertificatesWhenRealmSecretsThrowExceptionAndSecretIDIdentifierIsNull()
+            throws Exception {
+        // Given
+        utils.when(
+                ()->SAML2Utils.getAttributeValueFromSSOConfig(
+                        any(String.class),any(String.class),any(String.class),any(String.class)
+                )
+        ).thenReturn(null);
+        given(secrets.getRealmSecrets(any())).willThrow(SecretInitialisationException.class);
+
+        // When
+        Set<X509Certificate> certs = resolver.resolveValidEncryptionCredentials("/", "entityId", IDP);
+
+        // Then
+        assertThat(certs).isEmpty();
+    }
+
+    @Test
+    void shouldReturnValidDecryptionCertificates() throws Exception {
+        // Given
+        utils.when(
+                ()->SAML2Utils.getAttributeValueFromSSOConfig(
+                        any(String.class),any(String.class),any(String.class),any(String.class)
+                )
+        ).thenReturn("secret");
+
+        given(secrets.getRealmSecrets(any())).willReturn(realmSecrets);
+        given(realmSecrets.getValidSecrets(any(), any()))
+                .willReturn(Promises.newResultPromise(Stream.of(decryptionKey)));
+        given(decryptionKey.export(KeyFormatRaw.INSTANCE)).willReturn(privateKey);
+
+        // When
+        Set<PrivateKey> certs = resolver.resolveValidDecryptionCredentials("/", "entityId", SP);
+
+        // Then
+        assertThat(certs).containsOnly(privateKey);
+    }
+
+    @Test
+    void shouldReturnEmptySetOfDecryptionCertificatesWhenRealmSecretsThrowExceptionAndSecretIDIdentifierIsNull()
+            throws Exception {
+        // Given
+        utils.when(
+                ()->SAML2Utils.getAttributeValueFromSSOConfig(
+                        any(String.class),any(String.class),any(String.class),any(String.class)
+                )
+        ).thenReturn(null);
+        given(secrets.getRealmSecrets(any())).willThrow(SecretInitialisationException.class);
+
+        // When
+        Set<PrivateKey> certs = resolver.resolveValidDecryptionCredentials("/", "entityId", SP);
+
+        // Then
+        assertThat(certs).isEmpty();
     }
 }

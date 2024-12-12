@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2018-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -70,6 +70,11 @@ abstract class AbstractWebAuthnNode extends AbstractDecisionNode {
      * Key to use if storing the webauthn attestation type in shared state.
      */
     static final String WEB_AUTHN_ATTESTATION_TYPE = "webauthnAttestationType";
+
+    /**
+     * Key to use if storing the authenticator AAGUID in shared state.
+     */
+    static final String WEB_AUTHN_AAGUID = "webauthnDeviceAaguid";
 
     /**
      * Key to use if storing the device in shared state.
