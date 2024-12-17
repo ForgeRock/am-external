@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -27,7 +27,6 @@ import static org.forgerock.openam.integration.idm.IdmIntegrationService.SELECTE
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import javax.security.auth.callback.Callback;
 
@@ -35,7 +34,6 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
-import org.mozilla.javascript.Undefined;
 
 /**
  * Script bindings for the SocialProviderHandlerNode script.
@@ -74,7 +72,7 @@ public final class SocialProviderHandlerNodeBindings extends ScriptBindings {
         this.realm = builder.realm;
         this.sharedState = builder.sharedState;
         this.transientState = builder.transientState;
-        this.existingSession = Objects.requireNonNullElse(builder.existingSession, Undefined.instance);
+        this.existingSession = builder.existingSession;
     }
 
     /**
@@ -109,7 +107,7 @@ public final class SocialProviderHandlerNodeBindings extends ScriptBindings {
                 Binding.of(REALM_IDENTIFIER, realm, String.class),
                 Binding.of(QUERY_PARAMETER_IDENTIFIER, queryParameters, Map.class),
                 Binding.of(STATE_IDENTIFIER, nodeState, NodeState.class),
-                Binding.of(EXISTING_SESSION, existingSession, Map.class)
+                Binding.ofMayBeUndefined(EXISTING_SESSION, existingSession, Map.class)
         );
     }
 

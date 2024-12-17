@@ -11,61 +11,76 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.json.JsonValue.field;
-import static org.forgerock.json.JsonValue.json;
 
 import java.util.Collections;
 
 import javax.script.Bindings;
 
-import org.forgerock.json.JsonValue;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
-import org.junit.Test;
+import org.testng.annotations.Test;
 
-import com.sun.identity.shared.debug.Debug;
-
-public class OidcNodeBindingsTest {
+public class ScriptedDecisionNodeBindingsTest {
 
     @Test
     public void testThatParentBindingsAreAccessibleAndExistingSessionNotPresentWhenNull() {
-        JsonValue json = json(field("a", "b"));
-        ScriptBindings scriptBindings = OidcNodeBindings.builder()
-                .withJwtClaims(json)
+
+        ScriptBindings scriptBindings = ScriptedDecisionNodeBindings.builder()
                 .withNodeState(null)
-                .withHeaders(Collections.emptyMap())
+                .withCallbacks(null)
+                .withHeaders(null)
                 .withRealm("realm")
+                .withQueryParameters(Collections.emptyMap())
+                .withHttpClient(null)
+                .withIdentityRepository(null)
+                .withSecrets(null)
+                .withAuditEntryDetail(null)
+                .withResumedFromSuspend(true)
                 .withExistingSession(null)
+                .withSharedState(null)
+                .withTransientState(null)
                 .withLoggerReference("abcd")
+                .withScriptName("heya")
                 .build();
 
         Bindings convert = scriptBindings.convert(EvaluatorVersion.V1_0);
 
-        assertThat(convert).doesNotContainKey("existingSession");
 
-        assertThat(convert.get("jwtClaims")).isEqualTo(json);
-        assertThat(convert.get("logger")).isEqualTo(Debug.getInstance("abcd"));
+        assertThat(convert).doesNotContainKey("existingSession");
+        assertThat(convert).containsKey("requestHeaders");
     }
 
     @Test
-    public void testThatParentBindingsAreAccessibleAndExistingSessionPresentWhenNotNull() {
-        JsonValue json = json(field("a", "b"));
-        ScriptBindings scriptBindings = OidcNodeBindings.builder()
-                .withJwtClaims(json)
+    public void testThatExistingSessionPresentWhenNotNull() {
+
+        ScriptBindings scriptBindings = ScriptedDecisionNodeBindings.builder()
                 .withNodeState(null)
-                .withHeaders(Collections.emptyMap())
+                .withCallbacks(null)
+                .withHeaders(null)
                 .withRealm("realm")
+                .withQueryParameters(Collections.emptyMap())
+                .withHttpClient(null)
+                .withIdentityRepository(null)
+                .withSecrets(null)
+                .withAuditEntryDetail(null)
+                .withResumedFromSuspend(true)
                 .withExistingSession(Collections.emptyMap())
+                .withSharedState(null)
+                .withTransientState(null)
                 .withLoggerReference("abcd")
+                .withScriptName("heya")
                 .build();
 
         Bindings convert = scriptBindings.convert(EvaluatorVersion.V1_0);
 
+
         assertThat(convert).containsKey("existingSession");
+        assertThat(convert).containsKey("requestHeaders");
     }
+
 }

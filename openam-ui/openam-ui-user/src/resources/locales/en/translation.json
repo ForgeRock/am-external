@@ -593,7 +593,8 @@
         "requests": {
             "list": {
                 "title": "Requests",
-                "description": "Pending requests for access to your resources."
+                "description": "Pending requests for access to your resources.",
+                "mixed_script_warning": "Warning: This username contains confusable characters. Make sure this is the correct person before allowing them access."
             },
             "show": {
                 "title": "Request",

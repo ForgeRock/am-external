@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS. All Rights Reserved
+ * Copyright 2015-2024 ForgeRock AS. All Rights Reserved
 -->
 
 # Access Management (AM) UI - Administration <!-- omit in toc -->
@@ -100,7 +100,7 @@ The following environment variables are required to execute the `start` script:
 
 If the required environment variables are not present, the script asks you to provide them.
 
-When values for missing environment variables are provided, the script will output a block of text that you can copy and paste into an `.env` file (at the root of the UI project) or add to your environment.
+When values for all required environment variables are provided, the script will save their values to an `.env` file (at the root of the UI project).
 
 > ***Tip***
 > [dotenv] is used to load environment variables during the development build process. Environment variables are loaded in the following order:
@@ -115,7 +115,7 @@ To start developing with the XUI:
 1. Start an AM server.
    For example, `http://am.example.com:8080/openam`.
 2. Start an XUI development server by using the `yarn start` command.
-   For example, running at `http://xui.example.com:8081`.
+   For example, running at `http://am.example.com:8081`.
 3. In a web browser, navigate to the URL of your **AM instance**, but use the _port number_ of the **XUI development server**.
    For example, `http://am.example.com:8081/openam/XUI/#login`.
 

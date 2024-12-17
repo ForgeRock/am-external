@@ -27,7 +27,7 @@
         "clockpicker": "0.0.7",
         "codemirror": "5.58.3",
         "core-js": "3.2.1",
-        "debug": "3.2.6",
+        "debug": "3.2.7",
         "eonasdan-bootstrap-datetimepicker": "4.17.49",
         "font-awesome": "4.7.0",
         "i18next": "21.6.14",

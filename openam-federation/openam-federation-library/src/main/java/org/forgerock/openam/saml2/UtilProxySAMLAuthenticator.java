@@ -15,6 +15,7 @@
  */
 package org.forgerock.openam.saml2;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static com.sun.identity.saml2.common.SAML2Constants.HTTP_POST;
 import static com.sun.identity.saml2.common.SAML2Constants.HTTP_REDIRECT;
 import static com.sun.identity.saml2.common.SAML2Constants.SAML2_REQUEST_JWT_TYPE;
@@ -27,6 +28,7 @@ import static org.forgerock.openam.utils.StringUtils.isNotEmpty;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URLEncoder;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +43,9 @@ import javax.xml.soap.SOAPMessage;
 
 import com.sun.identity.saml2.profile.CacheObject;
 import org.forgerock.json.JsonValue;
+import org.forgerock.json.jose.exceptions.JwtRuntimeException;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
+import org.forgerock.json.jose.utils.StringOrURI;
 import org.forgerock.openam.jwt.JwtEncryptionHandler;
 import org.forgerock.openam.jwt.JwtEncryptionOptions;
 import org.forgerock.openam.shared.secrets.Labels;
@@ -718,12 +722,21 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
                 fieldIfNotNull("relayState", data.getRelayState())
         ));
         JwtClaimsSet claimsSet = new JwtClaimsSet(requestData.asMap());
-        claimsSet.setIssuer(data.getIdpEntityID());
+        claimsSet.setIssuer(encodeStringURI(data.getIdpEntityID()));
         claimsSet.setExpirationTime(Time.newDate(Time.currentTimeMillis()
                 + TimeUnit.SECONDS.toMillis(SPCache.interval)));
         claimsSet.setType(SAML2_REQUEST_JWT_TYPE);
         return new JwtEncryptionHandler(localStorageJwtEncryptionOptions)
                 .encryptJwt(claimsSet, SAML_2_LOCAL_STORAGE_JWT_ENCRYPTION).build();
+    }
+
+    private String encodeStringURI(String s) {
+        try {
+            StringOrURI.validateStringOrURI(s);
+        } catch (JwtRuntimeException e) {
+            return URLEncoder.encode(s, UTF_8);
+        }
+        return s;
     }
 
     /**

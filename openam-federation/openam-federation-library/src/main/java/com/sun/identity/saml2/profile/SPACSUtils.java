@@ -24,7 +24,7 @@
  *
  * $Id: SPACSUtils.java,v 1.48 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2010-2023 ForgeRock AS.
+ * Portions Copyrighted 2010-2024 ForgeRock AS.
  * Portions Copyrighted 2016 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.saml2.profile;
@@ -728,8 +728,12 @@ public class SPACSUtils {
         }
 
         try {
-            return ProtocolFactory.getInstance().createResponse(
-                    artiResp.getAny());
+            ProtocolFactory protocolFactory = ProtocolFactory.getInstance();
+            if (artiResp.getAnyElement().isPresent()) {
+                return protocolFactory.createResponse(artiResp.getAnyElement().get());
+            } else {
+                return protocolFactory.createResponse(artiResp.getAny());
+            }
         } catch (SAML2Exception se) {
             if (logger.isDebugEnabled()) {
                 logger.debug(method

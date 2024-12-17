@@ -15,12 +15,14 @@
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
+import static com.sun.identity.shared.FeatureEnablementConstants.DISABLE_SAML2_RELAY_STATE_VALIDATION;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.am.saml2.impl.Saml2ClientConstants.AM_LOCATION_COOKIE;
 import static org.forgerock.am.saml2.impl.Saml2ClientConstants.RESPONSE_KEY;
 import static org.forgerock.json.JsonValue.json;
@@ -34,6 +36,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 
 import java.util.Map;
@@ -43,6 +46,7 @@ import javax.security.auth.callback.Callback;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.am.saml2.api.AuthComparison;
 import org.forgerock.am.saml2.api.Saml2Options;
 import org.forgerock.am.saml2.api.Saml2SsoInitiator;
@@ -60,22 +64,25 @@ import org.forgerock.openam.auth.nodes.saml2.Saml2Node.RequestBinding;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.headers.CookieUtilsWrapper;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.util.Options;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.sun.identity.saml2.assertion.NameID;
-import com.sun.identity.saml2.assertion.impl.NameIDImpl;
-import com.sun.identity.saml2.common.SAML2Constants;
-import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
-import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
-import com.sun.identity.saml2.meta.SAML2MetaManager;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.iplanet.am.util.SystemPropertiesWrapper;
+import com.sun.identity.saml2.assertion.NameID;
+import com.sun.identity.saml2.assertion.impl.NameIDImpl;
+import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2Utils;
+import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
+import com.sun.identity.saml2.meta.SAML2MetaManager;
 
 public class Saml2NodeTest {
 
@@ -98,13 +105,16 @@ public class Saml2NodeTest {
     private HttpServletRequest servletRequest;
     @Mock
     private HttpServletResponse servletResponse;
+    @Mock
+    private SystemPropertiesWrapper systemPropertiesWrapper;
 
     @BeforeMethod
     public void setup() throws Exception {
         MockitoAnnotations.initMocks(this);
         given(config.idpEntityId()).willReturn("idp-entity-id");
         given(metaManager.getEntityByMetaAlias(any())).willReturn("sp-entity-id");
-        node = new Saml2Node(config, realm, ssoInitiator, responseUtils, cookieUtils, metaManager, identityService);
+        node = new Saml2Node(config, realm, ssoInitiator, responseUtils, cookieUtils, metaManager, identityService,
+                systemPropertiesWrapper);
         IDPSSODescriptorType idpDescriptor = new IDPSSODescriptorType();
         given(metaManager.getIDPSSODescriptor(any(), any())).willReturn(idpDescriptor);
         SPSSODescriptorType spDescriptor = new SPSSODescriptorType();
@@ -319,6 +329,71 @@ public class Saml2NodeTest {
         assertThat(action.sharedState).hasArray("userInfo/userNames/username").contains("userId");
         assertThat(action.sharedState).hasArray("userInfo/attributes/sun-fm-saml2-nameid-info");
         assertThat(action.sharedState).hasArray("userInfo/attributes/sun-fm-saml2-nameid-infokey");
+    }
+
+    @Test
+    void shouldReturnActionWithCallbackWhenRelayStateIsPresentAndValid() throws Exception {
+        // Given
+        setupSuccessfulFederation();
+        given(servletRequest.getRequestURL()).willReturn(new StringBuffer("http://am.localtest.me:8080/openam"));
+
+        Action action;
+        try (MockedStatic<SAML2Utils> samlUtilsMockedStatic = mockStatic(SAML2Utils.class)) {
+            // stop SAML2Utils.validateRelayStateURL from throwing an exception by mocking it
+
+            // When
+            action = node.process(getContext(Map.of(RESPONSE_KEY, new String[]{"storage-key"},
+                    "RelayState", new String[]{"http://relay-state.com"})));
+        }
+        // Then
+        assertThat(action.callbacks).isEmpty();
+        assertThat(action.outcome).isEqualTo(ACCOUNT_EXISTS.name());
+        assertThat(action.sharedState).stringAt("successUrl")
+                .isEqualTo("http://relay-state.com");
+    }
+
+    @Test
+    void shouldReturnActionWithCallbackWhenRelayStateIsPresentAndInvalidButSystemPropertyEnabled() throws Exception {
+        // Given
+        setupSuccessfulFederation();
+        given(servletRequest.getRequestURL()).willReturn(new StringBuffer("http://am.localtest.me:8080/openam"));
+
+        Action action;
+        try (MockedStatic<SAML2Utils> samlUtilsMockedStatic = mockStatic(SAML2Utils.class)) {
+            given(systemPropertiesWrapper.getAsBoolean(DISABLE_SAML2_RELAY_STATE_VALIDATION, false))
+                    .willReturn(true);
+            samlUtilsMockedStatic.when(() -> SAML2Utils.validateRelayStateURL(any(), any(), any(), any(), any()))
+                    .thenThrow(new SAML2Exception("Invalid RelayState URL"));
+
+            // When
+            action = node.process(getContext(Map.of(RESPONSE_KEY, new String[]{"storage-key"},
+                    "RelayState", new String[]{"http://relay-state.com"})));
+        }
+        // Then
+        assertThat(action.callbacks).isEmpty();
+        assertThat(action.outcome).isEqualTo(ACCOUNT_EXISTS.name());
+        assertThat(action.sharedState).stringAt("successUrl")
+                .isEqualTo("http://relay-state.com");
+    }
+
+    @Test
+    void shouldReturnActionWithCallbackWhenRelayStateIsPresentButInvalid() throws Exception {
+        // Given
+        setupSuccessfulFederation();
+        given(servletRequest.getRequestURL()).willReturn(new StringBuffer("http://am.localtest.me:8080/openam"));
+
+        Action action;
+        try (MockedStatic<SAML2Utils> samlUtilsMockedStatic = mockStatic(SAML2Utils.class)) {
+            samlUtilsMockedStatic.when(() -> SAML2Utils.validateRelayStateURL(any(), any(), any(), any(), any()))
+                    .thenThrow(new SAML2Exception("Invalid RelayState URL"));
+
+            // When / Then
+            assertThatThrownBy(() -> node.process(getContext(Map.of(RESPONSE_KEY, new String[]{"storage-key"},
+                    "RelayState", new String[]{"http://relay-state.com"}))))
+                    .isInstanceOf(NodeProcessException.class)
+                    .hasMessage("Unable to complete SAML2 authentication, the RelayState is invalid");
+        }
+
     }
 
     private Saml2SsoResult ssoResult(String universalId, boolean isTransient) throws Exception {

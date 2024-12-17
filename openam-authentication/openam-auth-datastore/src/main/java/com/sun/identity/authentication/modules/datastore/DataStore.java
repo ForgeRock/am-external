@@ -24,7 +24,7 @@
  *
  * $Id: DataStore.java,v 1.4 2008/06/25 05:41:56 qcheng Exp $
  *
- * Portions Copyrighted 2011-2022 ForgeRock AS.
+ * Portions Copyrighted 2011-2024 ForgeRock AS.
  */
 package com.sun.identity.authentication.modules.datastore;
 
@@ -43,6 +43,7 @@ import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.iplanet.am.util.SystemProperties;
 import com.sun.identity.authentication.spi.AMLoginModule;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.InvalidPasswordException;
@@ -51,10 +52,17 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.am.identity.application.IdRepoErrorCode;
 import com.sun.identity.idm.IdRepoException;
+import com.sun.identity.idm.IdType;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.sm.ServiceConfig;
 
 public class DataStore extends AMLoginModule {
+    /**
+     * The configuration attribute that disables non-user id types from using this module to authenticate.
+     * <p>
+     * In general Agents should use the Agent tree, or the Application module.
+     */
+    private static final String DATASTORE_USER_ONLY = "com.sun.identity.authentication.modules.datastore.user.only";
     // local variables
     ResourceBundle bundle = null;
     protected String validatedUserID;
@@ -140,7 +148,12 @@ public class DataStore extends AMLoginModule {
                         currentConfig, INVALID_CHARS));
 
                 IdentityStore identityStore = getIdentityStore(getRequestOrg());
-                boolean success = identityStore.authenticate(idCallbacks);
+                boolean success;
+                if (SystemProperties.getAsBoolean(DATASTORE_USER_ONLY, true)) {
+                    success = identityStore.authenticate(IdType.USER, idCallbacks);
+                } else {
+                    success = identityStore.authenticate(idCallbacks);
+                }
                 if (success) {
                     retVal=ISAuthConstants.LOGIN_SUCCEED;
                     validatedUserID = userName;

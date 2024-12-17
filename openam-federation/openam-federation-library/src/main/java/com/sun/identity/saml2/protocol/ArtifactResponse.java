@@ -24,14 +24,14 @@
  *
  * $Id: ArtifactResponse.java,v 1.2 2008/06/25 05:47:56 qcheng Exp $
  *
- * Portions Copyrighted 2016-2019 ForgeRock AS.
+ * Portions Copyrighted 2016-2024 ForgeRock AS.
  */
-
-
-
 package com.sun.identity.saml2.protocol;
 
+import java.util.Optional;
+
 import org.forgerock.openam.annotations.SupportedAll;
+import org.w3c.dom.Element;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.sun.identity.saml2.common.SAML2Exception;
@@ -65,7 +65,7 @@ public interface ArtifactResponse extends StatusResponse {
      * @return <code>any</code> element in xml string format.
      * @see #setAny(String)
      */
-    public String getAny();
+    String getAny();
 
     /**
      * Sets the <code>any</code> element of the response.
@@ -74,7 +74,14 @@ public interface ArtifactResponse extends StatusResponse {
      * @throws SAML2Exception if the object is immutable.
      * @see #getAny()
      */
-    public void setAny(String value)
-	throws SAML2Exception;
+    void setAny(String value) throws SAML2Exception;
 
+    /**
+     * Gets the Optional <code>any</code> element of the response.
+     *
+     * @return Optional <code>any</code> element.
+     */
+    default Optional<Element> getAnyElement() {
+        return Optional.empty();
+    }
 }

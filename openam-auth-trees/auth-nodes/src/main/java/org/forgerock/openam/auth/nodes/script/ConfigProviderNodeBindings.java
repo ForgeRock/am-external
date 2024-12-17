@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -26,7 +26,6 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_I
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.openam.auth.node.api.NodeState;
@@ -34,7 +33,6 @@ import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
 import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
-import org.mozilla.javascript.Undefined;
 
 /**
  * Script bindings for the ConfigProviderNode script.
@@ -65,7 +63,7 @@ public final class ConfigProviderNodeBindings extends ScriptBindings {
         httpClient = builder.httpClient;
         realm = builder.realm;
         queryParameters = builder.queryParameters;
-        existingSession = Objects.requireNonNullElse(builder.existingSession, Undefined.instance);
+        existingSession = builder.existingSession;
     }
 
     /**
@@ -87,7 +85,7 @@ public final class ConfigProviderNodeBindings extends ScriptBindings {
                         Binding.of(HEADERS_IDENTIFIER, headers, Map.class),
                         Binding.of(HTTP_CLIENT_IDENTIFIER, httpClient, ChfHttpClient.class),
                         Binding.of(REALM_IDENTIFIER, realm, String.class),
-                        Binding.of(EXISTING_SESSION, existingSession, Map.class),
+                        Binding.ofMayBeUndefined(EXISTING_SESSION, existingSession, Map.class),
                         Binding.of(QUERY_PARAMETER_IDENTIFIER, queryParameters, Map.class)
                 ))
                 .parentBindings(super.getEvaluatorVersionBindings())

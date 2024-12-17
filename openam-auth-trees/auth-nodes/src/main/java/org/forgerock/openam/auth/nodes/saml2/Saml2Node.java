@@ -17,6 +17,7 @@ package org.forgerock.openam.auth.nodes.saml2;
 
 import static com.sun.identity.saml2.common.SAML2Constants.RELAY_STATE;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
+import static com.sun.identity.shared.FeatureEnablementConstants.DISABLE_SAML2_RELAY_STATE_VALIDATION;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toMap;
@@ -52,6 +53,8 @@ import javax.security.auth.callback.Callback;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.forgerock.am.identity.application.IdentityException;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.am.saml2.api.AuthComparison;
 import org.forgerock.am.saml2.api.Saml2Options;
 import org.forgerock.am.saml2.api.Saml2SsoException;
@@ -74,14 +77,13 @@ import org.forgerock.openam.auth.nodes.oauth.AbstractSocialAuthLoginNode;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.headers.CookieUtilsWrapper;
-import org.forgerock.am.identity.application.IdentityException;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.am.util.SystemPropertiesWrapper;
 import com.sun.identity.idm.IdType;
 import com.sun.identity.saml2.assertion.Assertion;
 import com.sun.identity.saml2.assertion.NameID;
@@ -121,6 +123,7 @@ public class Saml2Node extends AbstractDecisionNode {
     private final String idpEntityId;
     private final String metaAlias;
     private final Realm realm;
+    private final SystemPropertiesWrapper systemProperties;
     private ResourceBundle bundle = null;
     private String spEntityId;
     private String storageKey;
@@ -253,11 +256,12 @@ public class Saml2Node extends AbstractDecisionNode {
      * @param cookieUtilsWrapper The cookie utils implementation.
      * @param metaManager The SAML2 meta manager.
      * @param identityService The identity service.
+     * @param systemProperties The system properties wrapper.
      */
     @Inject
     public Saml2Node(@Assisted Config config, @Assisted Realm realm, Saml2SsoInitiator ssoInitiator,
             Saml2SsoResponseUtils responseUtils, CookieUtilsWrapper cookieUtilsWrapper, SAML2MetaManager metaManager,
-            LegacyIdentityService identityService) {
+            LegacyIdentityService identityService, SystemPropertiesWrapper systemProperties) {
         this.config = config;
         this.realm = realm;
         this.ssoInitiator = ssoInitiator;
@@ -265,6 +269,7 @@ public class Saml2Node extends AbstractDecisionNode {
         this.cookieUtilsWrapper = cookieUtilsWrapper;
         this.metaManager = metaManager;
         this.identityService = identityService;
+        this.systemProperties = systemProperties;
 
         idpEntityId = config.idpEntityId();
         metaAlias = config.metaAlias();
@@ -371,7 +376,8 @@ public class Saml2Node extends AbstractDecisionNode {
             actionBuilder = Action.goTo(NO_ACCOUNT.name());
         }
         return setSessionProperties(actionBuilder.replaceSharedState(
-                updateSharedState(username, ssoResult, assertion, sharedState, relayState)), ssoResult.getNameId());
+                updateSharedState(username, ssoResult, assertion, sharedState, relayState, request)),
+                ssoResult.getNameId());
     }
 
     private boolean doesUserExist(String universalId) throws NodeProcessException {
@@ -383,7 +389,7 @@ public class Saml2Node extends AbstractDecisionNode {
     }
 
     private JsonValue updateSharedState(String username, Saml2SsoResult ssoResult, Assertion assertion,
-            JsonValue sharedState, String relayState) throws NodeProcessException {
+            JsonValue sharedState, String relayState, HttpServletRequest request) throws NodeProcessException {
         Map<String, Set<String>> attributes = new HashMap<>();
         try {
             if (username != null) {
@@ -411,7 +417,15 @@ public class Saml2Node extends AbstractDecisionNode {
             logger.debug("Unable to determine email address based on the mapped SAML attributes");
         }
         if (isNotBlank(relayState)) {
-            sharedState.put(SUCCESS_URL, relayState);
+            try {
+                if (!systemProperties.getAsBoolean(DISABLE_SAML2_RELAY_STATE_VALIDATION, false)) {
+                    SAML2Utils.validateRelayStateURL(realm.asPath(), spEntityId, relayState,
+                            SAML2Constants.SP_ROLE, request.getRequestURL().toString());
+                }
+                sharedState.put(SUCCESS_URL, relayState);
+            } catch (SAML2Exception e) {
+                throw new NodeProcessException("Unable to complete SAML2 authentication, the RelayState is invalid", e);
+            }
         }
         return sharedState;
     }

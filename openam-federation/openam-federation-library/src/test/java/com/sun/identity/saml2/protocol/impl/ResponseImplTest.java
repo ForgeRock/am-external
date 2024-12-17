@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2021-2024 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.protocol.impl;
@@ -25,10 +25,21 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.w3c.dom.Document;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.identity.saml2.assertion.Assertion;
+import com.sun.identity.saml2.assertion.Attribute;
+import com.sun.identity.saml2.assertion.AttributeStatement;
+import com.sun.identity.saml2.assertion.AuthnContext;
+import com.sun.identity.saml2.assertion.AuthnStatement;
 import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.assertion.NameID;
 import com.sun.identity.saml2.assertion.impl.AssertionImpl;
+import com.sun.identity.saml2.assertion.impl.AttributeImpl;
+import com.sun.identity.saml2.assertion.impl.AttributeStatementImpl;
+import com.sun.identity.saml2.assertion.impl.AuthnContextImpl;
+import com.sun.identity.saml2.assertion.impl.AuthnStatementImpl;
 import com.sun.identity.saml2.assertion.impl.IssuerImpl;
 import com.sun.identity.saml2.assertion.impl.NameIDImpl;
 import com.sun.identity.saml2.assertion.impl.SubjectImpl;
@@ -128,5 +139,69 @@ public class ResponseImplTest {
 
         // Then
         assertThat(xml).isEqualToIgnoringWhitespace(expectedXml);
+    }
+
+    @Test
+    public void shouldRoundTripAsJson() throws Exception {
+        // Given
+        ResponseImpl response = new ResponseImpl();
+        response.setID("testID");
+        response.setInResponseTo("testInResponseTo");
+        response.setVersion("2.0");
+        response.setIssueInstant(new Date(1000000000000L));
+        Issuer issuer = new IssuerImpl();
+        issuer.setValue("testIssuer");
+        response.setIssuer(issuer);
+        Assertion assertion = new AssertionImpl();
+        assertion.setID("testAssertionID");
+        assertion.setVersion("2.0");
+        assertion.setIssueInstant(response.getIssueInstant());
+        assertion.setIssuer(response.getIssuer());
+        SubjectImpl subject = new SubjectImpl();
+        NameID nameID = new NameIDImpl();
+        nameID.setValue("testName");
+        subject.setNameID(nameID);
+        assertion.setSubject(subject);
+        AuthnStatement authn = new AuthnStatementImpl();
+        authn.setAuthnInstant(new Date());
+        authn.setSessionNotOnOrAfter(new Date());
+        AuthnContext authnCtx = new AuthnContextImpl();
+        authnCtx.setAuthnContextClassRef("AuthnContextClassRef");
+        authn.setAuthnContext(authnCtx);
+        assertion.setAuthnStatements(List.of(authn));
+        AttributeStatement attrStmt = new AttributeStatementImpl();
+        Attribute attribute = new AttributeImpl(
+                "<Attribute Name=\"portal_id\"><AttributeValue type=\"xs:anyType\">060D00000000SHZ</AttributeValue></Attribute>");
+        attrStmt.setAttribute(List.of(attribute));
+        assertion.setAttributeStatements(List.of(attrStmt));
+        response.setAssertion(List.of(assertion));
+        StatusImpl status = new StatusImpl();
+        StatusCodeImpl statusCode = new StatusCodeImpl();
+        statusCode.setValue("testCode");
+        status.setStatusCode(statusCode);
+        response.setStatus(status);
+
+        // Configuration copied from CTSObjectMapperProvider
+        ObjectMapper mapper = new ObjectMapper()
+                .configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true)
+                .configure(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS, true);
+        mapper.setVisibilityChecker(mapper.getSerializationConfig().getDefaultVisibilityChecker()
+                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withIsGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+
+        // When
+        String json = mapper.writeValueAsString(response);
+        System.out.println(json);
+        ResponseImpl result = mapper.readValue(json, ResponseImpl.class);
+        String roundTripJson = mapper.writeValueAsString(result);
+
+        // Then
+        assertThat(result.getID()).isEqualTo(response.getID());
+        assertThat(roundTripJson).isEqualTo(json);
+        assertThat(result.toXMLString(true,true))
+                .isEqualToIgnoringWhitespace(response.toXMLString(true,true));
     }
 }

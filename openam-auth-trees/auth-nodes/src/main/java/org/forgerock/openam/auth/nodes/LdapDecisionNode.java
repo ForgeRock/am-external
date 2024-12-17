@@ -357,7 +357,7 @@ public class LdapDecisionNode implements Node {
                 if (!userStatus.equalsIgnoreCase(STATUS_ACTIVE)) {
                     ldapUtil.setState(ModuleState.ACCOUNT_LOCKED);
                 }
-                action = processLogin(ldapUtil.getState(), newState, context, username);
+                action = processLogin(ldapUtil.getState(), newState, context);
             } else {
                 logger.debug("processing password change");
                 action = processPasswordChange(context, sharedStateSubmittedUsername, userPassword);
@@ -567,9 +567,10 @@ public class LdapDecisionNode implements Node {
         return password;
     }
 
-    private ActionBuilder processLogin(ModuleState loginState, JsonValue newState, TreeContext context, String username)
+    private ActionBuilder processLogin(ModuleState loginState, JsonValue newState, TreeContext context)
             throws NodeProcessException {
         ActionBuilder loginResult = goTo(LdapOutcome.TRUE);
+        String username = newState.get(USERNAME).asString();
         if (username != null) {
             loginResult.withIdentifiedIdentity(username, USER);
         }

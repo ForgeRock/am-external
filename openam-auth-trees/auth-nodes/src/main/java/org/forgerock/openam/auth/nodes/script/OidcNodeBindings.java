@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -22,13 +22,11 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_I
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
-import org.mozilla.javascript.Undefined;
 
 /**
  * Script bindings for the OidcNode script.
@@ -54,7 +52,7 @@ public final class OidcNodeBindings extends ScriptBindings {
         this.nodeState = builder.nodeState;
         this.headers = builder.headers;
         this.realm = builder.realm;
-        this.existingSession = Objects.requireNonNullElse(builder.existingSession, Undefined.instance);
+        this.existingSession = builder.existingSession;
     }
 
     /**
@@ -74,7 +72,7 @@ public final class OidcNodeBindings extends ScriptBindings {
                         Binding.of(HEADERS_IDENTIFIER, headers, Map.class),
                         Binding.of(REALM_IDENTIFIER, realm, String.class),
                         Binding.of(STATE_IDENTIFIER, nodeState, NodeState.class),
-                        Binding.of(EXISTING_SESSION, existingSession, Map.class)
+                        Binding.ofMayBeUndefined(EXISTING_SESSION, existingSession, Map.class)
                 ))
                 .parentBindings(super.getEvaluatorVersionBindings())
                 .build();

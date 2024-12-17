@@ -11,15 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2014-2024 ForgeRock AS.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
-import com.sun.identity.common.HttpURLConnectionManager;
+
+import org.forgerock.http.Client;
+import org.forgerock.http.Handler;
+import org.forgerock.oauth.resolvers.IssuerComparators;
 import org.forgerock.oauth.resolvers.OpenIdResolverFactory;
 
 import javax.inject.Singleton;
@@ -37,7 +43,8 @@ public class OpenIdConnectGuiceModule extends AbstractModule {
      */
     @Provides
     @Singleton
-    OpenIdResolverFactory getResolverFactory() {
-        return new OpenIdResolverFactory(HttpURLConnectionManager.getReadTimeout(), HttpURLConnectionManager.getConnectTimeout());
+    @Inject
+    OpenIdResolverFactory getResolverFactory(@Named("CloseableHttpClientHandler") Handler httpClientHandler) {
+            return new OpenIdResolverFactory(new Client(httpClientHandler), IssuerComparators.DEFAULT);
     }
 }

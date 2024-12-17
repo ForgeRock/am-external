@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -30,7 +30,6 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.TRANSIE
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import javax.security.auth.callback.Callback;
 
@@ -41,7 +40,6 @@ import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
 import org.forgerock.openam.scripting.domain.EvaluatorVersionBindings;
 import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
-import org.mozilla.javascript.Undefined;
 
 /**
  * Script bindings for the ScriptedDecisionNode script.
@@ -79,7 +77,7 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
         this.resumedFromSuspend = builder.resumedFromSuspend;
         this.sharedState = builder.sharedState;
         this.transientState = builder.transientState;
-        this.existingSession = Objects.requireNonNullElse(builder.existingSession, Undefined.instance);
+        this.existingSession = builder.existingSession;
     }
 
     /**
@@ -116,7 +114,7 @@ public final class ScriptedDecisionNodeBindings extends ScriptBindings {
                 Binding.of(SECRETS_IDENTIFIER, secrets, ScriptedSecrets.class),
                 Binding.of(AUDIT_ENTRY_DETAIL, auditEntryDetail, JsonValue.class),
                 Binding.of(RESUMED_FROM_SUSPEND, resumedFromSuspend, Boolean.class),
-                Binding.of(EXISTING_SESSION, existingSession, Map.class)
+                Binding.ofMayBeUndefined(EXISTING_SESSION, existingSession, Map.class)
         );
     }
 
