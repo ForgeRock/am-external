@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -24,7 +32,6 @@ import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD_TIMESTAMP;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -39,31 +46,26 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.TreeContext;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class OneTimePasswordCollectorDecisionNodeTest {
-
-    @Mock
-    private OneTimePasswordCollectorDecisionNode.Config serviceConfig;
-
-    @BeforeMethod
-    public void before() {
-        initMocks(this);
-    }
 
     private static final int FOUR_MINS_IN_SECONDS = 240;
     private static final int FIVE_MINS_IN_SECONDS = 300;
+    @Mock
+    private OneTimePasswordCollectorDecisionNode.Config serviceConfig;
 
     @Test
-    public void processReturnsTrueOutcomeIfOTPIsEqualToInputOTPAndNotExpired() throws Exception {
+    void processReturnsTrueOutcomeIfOTPIsEqualToInputOTPAndNotExpired() throws Exception {
         PasswordCallback callback = new PasswordCallback("prompt", false);
         callback.setPassword("123456".toCharArray());
         TreeContext treeContext = getContext(json(object(
-                field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
-                field(ONE_TIME_PASSWORD, "123456"))),
+                        field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
+                        field(ONE_TIME_PASSWORD, "123456"))),
                 singletonList(callback));
         given(serviceConfig.passwordExpiryTime()).willReturn(5L);
         Node node = new OneTimePasswordCollectorDecisionNode(serviceConfig);
@@ -75,14 +77,13 @@ public class OneTimePasswordCollectorDecisionNodeTest {
     }
 
     @Test
-    public void processReturnsFalseOutcomeIfOTPIsNotEqualToInputOTPAndNotExpired() throws Exception {
+    void processReturnsFalseOutcomeIfOTPIsNotEqualToInputOTPAndNotExpired() throws Exception {
         PasswordCallback callback = new PasswordCallback("prompt", false);
         callback.setPassword("123456".toCharArray());
         TreeContext treeContext = getContext(json(object(
-                field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
-                field(ONE_TIME_PASSWORD, "654321"))),
+                        field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
+                        field(ONE_TIME_PASSWORD, "654321"))),
                 singletonList(callback));
-        given(serviceConfig.passwordExpiryTime()).willReturn(5L);
         Node node = new OneTimePasswordCollectorDecisionNode(serviceConfig);
         Action result = node.process(treeContext);
         assertThat(result.outcome).isEqualTo("false");
@@ -92,12 +93,11 @@ public class OneTimePasswordCollectorDecisionNodeTest {
     }
 
     @Test
-    public void processReturnsNoOutcomeIfCallbacksIsEmpty() throws Exception {
+    void processReturnsNoOutcomeIfCallbacksIsEmpty() throws Exception {
         TreeContext treeContext = getContext(json(object(
-                field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
-                field(ONE_TIME_PASSWORD, "654321"))),
+                        field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
+                        field(ONE_TIME_PASSWORD, "654321"))),
                 Collections.emptyList());
-        given(serviceConfig.passwordExpiryTime()).willReturn(5L);
         Node node = new OneTimePasswordCollectorDecisionNode(serviceConfig);
         Action result = node.process(treeContext);
         assertThat(result.outcome).isEqualTo(null);
@@ -106,14 +106,13 @@ public class OneTimePasswordCollectorDecisionNodeTest {
     }
 
     @Test
-    public void processReturnsFalseOutcomeIfOTPIsEmpty() throws Exception {
+    void processReturnsFalseOutcomeIfOTPIsEmpty() throws Exception {
         PasswordCallback callback = new PasswordCallback("prompt", false);
         callback.setPassword("".toCharArray());
         TreeContext treeContext = getContext(json(object(
-                field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
-                field(ONE_TIME_PASSWORD, "654321"))),
+                        field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
+                        field(ONE_TIME_PASSWORD, "654321"))),
                 singletonList(callback));
-        given(serviceConfig.passwordExpiryTime()).willReturn(5L);
         Node node = new OneTimePasswordCollectorDecisionNode(serviceConfig);
         Action result = node.process(treeContext);
         assertThat(result.outcome).isEqualTo(null);
@@ -122,14 +121,13 @@ public class OneTimePasswordCollectorDecisionNodeTest {
     }
 
     @Test
-    public void processReturnsFalseOutcomeIfOTPIsNull() throws Exception {
+    void processReturnsFalseOutcomeIfOTPIsNull() throws Exception {
         PasswordCallback callback = new PasswordCallback("prompt", false);
         callback.setPassword(null);
         TreeContext treeContext = getContext(json(object(
-                field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
-                field(ONE_TIME_PASSWORD, "654321"))),
+                        field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond()),
+                        field(ONE_TIME_PASSWORD, "654321"))),
                 singletonList(callback));
-        given(serviceConfig.passwordExpiryTime()).willReturn(5L);
         Node node = new OneTimePasswordCollectorDecisionNode(serviceConfig);
         Action result = node.process(treeContext);
         assertThat(result.outcome).isEqualTo(null);
@@ -138,12 +136,12 @@ public class OneTimePasswordCollectorDecisionNodeTest {
     }
 
     @Test
-    public void processReturnsFalseOutcomeIfOTPIsEqualToInputOTPAndExpired() throws Exception {
+    void processReturnsFalseOutcomeIfOTPIsEqualToInputOTPAndExpired() throws Exception {
         PasswordCallback callback = new PasswordCallback("prompt", false);
         callback.setPassword("123456".toCharArray());
         TreeContext treeContext = getContext(json(object(
-                field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond() - (FIVE_MINS_IN_SECONDS)),
-                field(ONE_TIME_PASSWORD, "123456"))),
+                        field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond() - (FIVE_MINS_IN_SECONDS)),
+                        field(ONE_TIME_PASSWORD, "123456"))),
                 singletonList(callback));
         given(serviceConfig.passwordExpiryTime()).willReturn(5L);
         Node node = new OneTimePasswordCollectorDecisionNode(serviceConfig);
@@ -152,12 +150,12 @@ public class OneTimePasswordCollectorDecisionNodeTest {
     }
 
     @Test
-    public void processReturnsTrueOutcomeIfOTPIsEqualToInputOTPAndNotYetExpired() throws Exception {
+    void processReturnsTrueOutcomeIfOTPIsEqualToInputOTPAndNotYetExpired() throws Exception {
         PasswordCallback callback = new PasswordCallback("prompt", false);
         callback.setPassword("123456".toCharArray());
         TreeContext treeContext = getContext(json(object(
-                field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond() - (FOUR_MINS_IN_SECONDS)),
-                field(ONE_TIME_PASSWORD, "123456"))),
+                        field(ONE_TIME_PASSWORD_TIMESTAMP, Instant.now().getEpochSecond() - (FOUR_MINS_IN_SECONDS)),
+                        field(ONE_TIME_PASSWORD, "123456"))),
                 singletonList(callback));
         given(serviceConfig.passwordExpiryTime()).willReturn(5L);
         Node node = new OneTimePasswordCollectorDecisionNode(serviceConfig);

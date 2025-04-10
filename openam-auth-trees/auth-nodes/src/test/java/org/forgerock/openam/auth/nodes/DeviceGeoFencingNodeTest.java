@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -25,7 +25,6 @@ import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.DeviceProfile.DEVICE_PROFILE_CONTEXT_NAME;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.HashSet;
 import java.util.List;
@@ -42,14 +41,17 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.DeviceGeoFencingNode.Config;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.utils.JsonValueBuilder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.IdRepoException;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
+@ExtendWith(MockitoExtension.class)
 public class DeviceGeoFencingNodeTest {
 
     @Mock
@@ -58,15 +60,13 @@ public class DeviceGeoFencingNodeTest {
     @InjectMocks
     DeviceGeoFencingNode node;
 
-    @BeforeMethod
-    public void setup() throws IdRepoException, SSOException, DevicePersistenceException {
-        node = null;
-        initMocks(this);
+    @BeforeEach
+    void setup() throws IdRepoException, SSOException, DevicePersistenceException {
         given(config.distance()).willReturn("100");
     }
 
     @Test
-    public void testProcessContextWithTrustLocation()
+    void testProcessContextWithTrustLocation()
             throws NodeProcessException {
 
         Set<String> locations = new HashSet<>();
@@ -94,7 +94,7 @@ public class DeviceGeoFencingNodeTest {
     }
 
     @Test
-    public void testProcessContextWithNonTrustLocation()
+    void testProcessContextWithNonTrustLocation()
             throws NodeProcessException {
 
         Set<String> locations = new HashSet<>();
@@ -122,7 +122,7 @@ public class DeviceGeoFencingNodeTest {
     }
 
     @Test
-    public void testProcessContextWithOneInRangeOneIsNot()
+    void testProcessContextWithOneInRangeOneIsNot()
             throws NodeProcessException {
 
         Set<String> locations = new HashSet<>();

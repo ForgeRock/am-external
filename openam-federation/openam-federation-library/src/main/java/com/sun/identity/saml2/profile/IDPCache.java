@@ -24,7 +24,7 @@
  *
  * $Id: IDPCache.java,v 1.18 2009/05/14 17:23:45 exu Exp $
  *
- * Portions Copyrighted 2010-2022 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 

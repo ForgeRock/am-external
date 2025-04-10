@@ -24,7 +24,7 @@
  *
  * $Id: BinarySecurityToken.java,v 1.5 2008/08/06 17:28:07 exu Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
 
 

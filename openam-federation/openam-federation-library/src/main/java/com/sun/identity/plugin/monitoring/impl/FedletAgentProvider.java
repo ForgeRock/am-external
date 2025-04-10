@@ -24,7 +24,7 @@
  *
  * $Id: FedletAgentProvider.java,v 1.2 2009/12/23 23:32:49 exu Exp $
  *
- * Portions Copyrighted 2018-2020 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
 package com.sun.identity.plugin.monitoring.impl;
 

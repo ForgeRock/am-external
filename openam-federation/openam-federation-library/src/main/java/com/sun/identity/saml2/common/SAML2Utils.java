@@ -22,7 +22,7 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2024 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.common;
@@ -37,19 +37,19 @@ import static com.sun.identity.saml2.common.SAML2Constants.SP_ADAPTER_CLASS;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ADAPTER_SCRIPT;
 import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
 import static com.sun.identity.saml2.common.SAML2FailoverUtils.isFailoverEnabled;
-import static org.forgerock.openam.saml2.plugins.PluginRegistry.newKey;
-import static com.sun.identity.shared.Constants.EMPTY_SCRIPT_SELECTION;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.saml2.Saml2EntityRole.SP;
+import static org.forgerock.openam.saml2.plugins.PluginRegistry.newKey;
+import static org.forgerock.openam.scripting.domain.DecisionNodeApplicationConstants.SAML_OBJECT_KEY_PARAM;
+import static org.forgerock.openam.transactions.core.TransactionConstants.TRANSACTION_ID;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
+import static org.forgerock.openam.utils.Time.getCalendarInstance;
 import static org.forgerock.openam.utils.Time.newDate;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
@@ -64,9 +64,9 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -76,15 +76,16 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBIntrospector;
 import javax.xml.soap.MimeHeader;
@@ -92,16 +93,24 @@ import javax.xml.soap.MimeHeaders;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.annotations.Supported;
+import org.forgerock.openam.entitlement.EntitlementConditionConstants;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.Saml2EntityRole;
+import org.forgerock.openam.saml2.audit.SAML2EventLogger;
 import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
+import org.forgerock.openam.saml2.plugins.FedletAdapter;
 import org.forgerock.openam.saml2.plugins.IDPFinder;
+import org.forgerock.openam.saml2.plugins.PluginRegistry;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
 import org.forgerock.openam.saml2.plugins.ValidRelayStateExtractor;
 import org.forgerock.openam.saml2.plugins.ValidRelayStateExtractor.SAMLEntityInfo;
 import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;
+import org.forgerock.openam.transactions.core.Transaction;
+import org.forgerock.openam.transactions.core.TransactionService;
+import org.forgerock.openam.transactions.core.exceptions.TransactionException;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.StringUtils;
@@ -128,6 +137,7 @@ import com.sun.identity.plugin.datastore.DataStoreProviderException;
 import com.sun.identity.plugin.datastore.DataStoreProviderManager;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.plugin.session.SessionManager;
+import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.saml.common.SAMLConstants;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml.common.SAMLUtilsCommon;
@@ -162,10 +172,7 @@ import com.sun.identity.saml2.meta.SAML2MetaManager;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.plugins.DefaultSPAuthnContextMapper;
 import com.sun.identity.saml2.plugins.IDPAccountMapper;
-import org.forgerock.openam.saml2.plugins.PluginRegistry;
 import com.sun.identity.saml2.plugins.SPAccountMapper;
-import org.forgerock.openam.saml2.plugins.FedletAdapter;
-import org.forgerock.openam.saml2.plugins.SPAdapter;
 import com.sun.identity.saml2.plugins.SPAttributeMapper;
 import com.sun.identity.saml2.plugins.SPAuthnContextMapper;
 import com.sun.identity.saml2.profile.AuthnRequestInfo;
@@ -212,9 +219,6 @@ public class SAML2Utils extends SAML2SDKUtils {
     private static String sessionCookieName = SystemPropertiesManager.get(
             Constants.AM_COOKIE_NAME);
     private static int intServerPort = 0;
-    private static final String GET_METHOD = "GET";
-    private static final String POST_METHOD = "POST";
-    private static final String LOCATION = "Location";
     private static final char EQUALS = '=';
     private static final char SEMI_COLON = ';';
     private static final char DOUBLE_QUOTE = '"';
@@ -229,6 +233,7 @@ public class SAML2Utils extends SAML2SDKUtils {
     private static boolean checkCAStatus = false;
     private static final RedirectUrlValidator<SAMLEntityInfo> RELAY_STATE_VALIDATOR =
             new RedirectUrlValidator<SAMLEntityInfo>(new ValidRelayStateExtractor());
+    private static SAML2AuthnConfig saml2AuthnConfig;
 
     static {
         if (StringUtils.isBlank(serverPort)) {
@@ -1013,7 +1018,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             smap.put(SAML2Constants.SESSION_INDEX, sessionIndex);
         }
         if (authLevel >= 0) {
-            smap.put(SAML2Constants.AUTH_LEVEL, new Integer(authLevel));
+            smap.put(SAML2Constants.AUTH_LEVEL, authLevel);
         }
         // SessionNotOnOrAfter
         if (sessionNotOnOrAfter != null) {
@@ -1021,7 +1026,7 @@ public class SAML2Utils extends SAML2SDKUtils {
                     currentTimeMillis()) / 60000;
             if (maxSessionTime > 0) {
                 smap.put(SAML2Constants.MAX_SESSION_TIME,
-                        new Long(maxSessionTime));
+                        maxSessionTime);
             }
         }
         if (inRespToResp != null && inRespToResp.length() != 0) {
@@ -1033,7 +1038,7 @@ public class SAML2Utils extends SAML2SDKUtils {
         }
         if (notOnOrAfterTime != null) {
             smap.put(SAML2Constants.NOTONORAFTER,
-                    new Long(notOnOrAfterTime.getTime()));
+                    notOnOrAfterTime.getTime());
         }
         LogUtil.access(Level.INFO,
                 LogUtil.FOUND_AUTHN_ASSERTION,
@@ -1068,29 +1073,6 @@ public class SAML2Utils extends SAML2SDKUtils {
 
 
     /**
-     * Gets List of 'String' assertions from the list of 'Assertion' assertions
-     *
-     * @param assertions A list of Assertions
-     * @return a String printout of the list of Assertions
-     */
-    public static List getStrAssertions(List assertions) {
-        List returnAssertions = new ArrayList();
-        if (assertions != null) {
-            Iterator it = assertions.iterator();
-            while (it.hasNext()) {
-                Assertion assertion = (Assertion) it.next();
-                try {
-                    returnAssertions.add(assertion.toXMLString(true, true));
-                } catch (SAML2Exception e) {
-                    debug.error("Invalid assertion: " + assertion);
-                }
-            }
-        }
-        return returnAssertions;
-    }
-
-
-    /**
      * Checks if it is a persistent request or not.
      *
      * @param nameId Name ID object
@@ -1112,46 +1094,6 @@ public class SAML2Utils extends SAML2SDKUtils {
             debug.debug("SAML2Utils:isPersistent : " + isPersistent);
         }
         return isPersistent;
-    }
-
-    /**
-     * Checks if the federation information for the user exists or not.
-     *
-     * @param userName       user id for which account federation needs to be
-     *                       returned.
-     * @param hostEntityID   <code>EntityID</code> of the hosted entity.
-     * @param remoteEntityId <code>EntityID</code> of the remote entity.
-     * @return true if exists, false otherwise.
-     */
-    public static boolean isFedInfoExists(String userName, String hostEntityID,
-            String remoteEntityId, NameID nameID) {
-        boolean exists = false;
-        if ((userName == null) || (hostEntityID == null) ||
-                (remoteEntityId == null) || (nameID == null)) {
-            return exists;
-        }
-        try {
-            NameIDInfo info = AccountUtils.getAccountFederation(
-                    userName, hostEntityID, remoteEntityId);
-
-            if (info != null &&
-                    info.getNameIDValue().equals(nameID.getValue())) {
-                exists = true;
-            }
-        } catch (SAML2Exception se) {
-            debug.error("Failed to get DataStoreProvider " + se.toString());
-            if (debug.isDebugEnabled()) {
-                debug.debug("SAML2Utils:isFedInfoExists:Stack : ", se);
-            }
-        } catch (Exception e) {
-            debug.debug("SAML2Utils:isFedInfoExists: Exception : ", e);
-        }
-
-        if (debug.isDebugEnabled()) {
-            debug.debug("SAML2Utils:isFedInfoExists : " + exists);
-        }
-
-        return exists;
     }
 
     /**
@@ -1736,24 +1678,6 @@ public class SAML2Utils extends SAML2SDKUtils {
     }
 
     /**
-     * Returns the server id of the local server
-     */
-    public static String getLocalServerID() {
-        String serverId = null;
-
-        try {
-            serverId = SystemConfigurationUtil.getServerID(serverProtocol,
-                    serverHost, intServerPort, serverUri);
-        } catch (Exception ex) {
-            if (debug.isDebugEnabled()) {
-                debug.debug("SAML2Utils.getLocalServerID:", ex);
-            }
-        }
-
-        return serverId;
-    }
-
-    /**
      * Sets mime headers in HTTP servlet response.
      *
      * @param headers  mime headers to be set.
@@ -1942,58 +1866,6 @@ public class SAML2Utils extends SAML2SDKUtils {
     }
 
     /**
-     * Returns true if wantAssertionEncrypted has <code>String</code> true.
-     *
-     * @param realm        realm of hosted entity.
-     * @param hostEntityId name of hosted entity.
-     * @param entityRole   role of hosted entity.
-     * @return true if wantAssertionEncrypted has <code>String</code> true.
-     */
-    public static boolean getWantAssertionEncrypted(String realm,
-            String hostEntityId,
-            String entityRole) {
-        if (debug.isDebugEnabled()) {
-            String method = "getWantAssertionEncrypted : ";
-            debug.debug(method + "realm - " + realm);
-            debug.debug(method + "hostEntityId - " + hostEntityId);
-            debug.debug(method + "entityRole - " + entityRole);
-        }
-        String wantEncrypted = getAttributeValueFromSSOConfig(realm, hostEntityId, entityRole,
-                SAML2Constants.WANT_ASSERTION_ENCRYPTED);
-        if (wantEncrypted == null) {
-            wantEncrypted = "false";
-        }
-
-        return wantEncrypted.equalsIgnoreCase("true") ? true : false;
-    }
-
-    /**
-     * Returns true if wantAttributeEncrypted has <code>String</code> true.
-     *
-     * @param realm        realm of hosted entity.
-     * @param hostEntityId name of hosted entity.
-     * @param entityRole   role of hosted entity.
-     * @return true if wantAttributeEncrypted has <code>String</code> true.
-     */
-    public static boolean getWantAttributeEncrypted(String realm,
-            String hostEntityId,
-            String entityRole) {
-        if (debug.isDebugEnabled()) {
-            String method = "getWantAttributeEncrypted : ";
-            debug.debug(method + "realm - " + realm);
-            debug.debug(method + "hostEntityId - " + hostEntityId);
-            debug.debug(method + "entityRole - " + entityRole);
-        }
-        String wantEncrypted = getAttributeValueFromSSOConfig(realm, hostEntityId, entityRole,
-                SAML2Constants.WANT_ATTRIBUTE_ENCRYPTED);
-        if (wantEncrypted == null) {
-            wantEncrypted = "false";
-        }
-
-        return wantEncrypted.equalsIgnoreCase("true") ? true : false;
-    }
-
-    /**
      * Returns true if wantNameIDEncrypted has <code>String</code> true.
      *
      * @param realm        realm of hosted entity.
@@ -2039,32 +1911,6 @@ public class SAML2Utils extends SAML2SDKUtils {
         }
         String wantSigned = getAttributeValueFromSSOConfig(realm, hostEntityId, entityRole,
                 SAML2Constants.WANT_ARTIFACT_RESOLVE_SIGNED);
-        if (wantSigned == null) {
-            wantSigned = "false";
-        }
-
-        return wantSigned.equalsIgnoreCase("true") ? true : false;
-    }
-
-    /**
-     * Returns true if wantArtifactResponseSigned has <code>String</code> true.
-     *
-     * @param realm        realm of hosted entity.
-     * @param hostEntityId name of hosted entity.
-     * @param entityRole   role of hosted entity.
-     * @return true if wantArtifactResponseSigned has <code>String</code> true.
-     */
-    public static boolean getWantArtifactResponseSigned(String realm,
-            String hostEntityId,
-            String entityRole) {
-        if (debug.isDebugEnabled()) {
-            String method = "getWantArtifactResponseSigned : ";
-            debug.debug(method + "realm - " + realm);
-            debug.debug(method + "hostEntityId - " + hostEntityId);
-            debug.debug(method + "entityRole - " + entityRole);
-        }
-        String wantSigned = getAttributeValueFromSSOConfig(realm, hostEntityId, entityRole,
-                SAML2Constants.WANT_ARTIFACT_RESPONSE_SIGNED);
         if (wantSigned == null) {
             wantSigned = "false";
         }
@@ -2236,23 +2082,15 @@ public class SAML2Utils extends SAML2SDKUtils {
     }
 
     /**
-     * Returns all values of specified attribute from SSOConfig.
+     * Returns all attributes from SSOConfig for specified details.
      *
      * @param realm        realm of hosted entity.
      * @param hostEntityId name of hosted entity.
      * @param entityRole   role of hosted entity.
-     * @param attrName     attribute name for the value.
      * @return value of specified attribute from SSOConfig.
      */
-    public static List<String> getAllAttributeValueFromSSOConfig(String realm, String hostEntityId,
-            String entityRole, String attrName) {
-        if (debug.isDebugEnabled()) {
-            String method = "getAllAttributeValueFromSSOConfig : ";
-            debug.debug(method + "realm - " + realm);
-            debug.debug(method + "hostEntityId - " + hostEntityId);
-            debug.debug(method + "entityRole - " + entityRole);
-            debug.debug(method + "attrName - " + attrName);
-        }
+    public static Map<String, List<String>> getAllAttributesFromSSOConfig(String realm, String hostEntityId,
+            String entityRole) {
         try {
             JAXBElement<BaseConfigType> config = null;
             if (entityRole.equalsIgnoreCase(SP_ROLE)) {
@@ -2274,15 +2112,31 @@ public class SAML2Utils extends SAML2SDKUtils {
             if (config == null) {
                 return null;
             }
-            Map<String, List<String>> attrs = SAML2MetaUtils.getAttributes(config);
-            if (attrs == null) {
-                return null;
-            }
-            return attrs.get(attrName);
+            return SAML2MetaUtils.getAttributes(config);
+
         } catch (SAML2MetaException e) {
             debug.debug("get SSOConfig failed:", e);
         }
         return null;
+    }
+
+    /**
+     * Returns all values of specified attribute from SSOConfig.
+     *
+     * @param realm        realm of hosted entity.
+     * @param hostEntityId name of hosted entity.
+     * @param entityRole   role of hosted entity.
+     * @param attrName     attribute name for the value.
+     * @return value of specified attribute from SSOConfig.
+     */
+    public static List<String> getAllAttributeValueFromSSOConfig(String realm, String hostEntityId,
+            String entityRole, String attrName) {
+        var attributes = getAllAttributesFromSSOConfig(realm, hostEntityId, entityRole);
+        if (attributes == null) {
+            return null;
+        } else {
+            return attributes.get(attrName);
+        }
     }
 
     /**
@@ -2861,7 +2715,7 @@ public class SAML2Utils extends SAML2SDKUtils {
 
     private static boolean isScriptConfigured(String realm, String spEntityID, String scriptAttributeName) {
         String script = getAttributeValueFromSSOConfig(realm, spEntityID, SP_ROLE, scriptAttributeName);
-        if (script == null || EMPTY_SCRIPT_SELECTION.equals(script)) {
+        if (StringUtils.isEmptyOrEmptySelection(script)) {
             return false;
         }
         return true;
@@ -3497,7 +3351,10 @@ public class SAML2Utils extends SAML2SDKUtils {
             SPSSODescriptorType spsso, IDPSSODescriptorType idpsso)
             throws SAML2Exception {
 
-        List spNameIDFormatList = spsso.getNameIDFormat();
+        List spNameIDFormatList = null;
+        if (spsso != null) {
+            spNameIDFormatList = spsso.getNameIDFormat();
+        }
 
         List idpNameIDFormatList = null;
         // idpsso is null for ECP case
@@ -3700,7 +3557,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             if ((appLogoutURL == null) || (appLogoutURL.length() == 0)) {
                 return;
             }
-            // actual application logout URL without the session 
+            // actual application logout URL without the session
             // property query parameter
             String logoutURL = appLogoutURL;
             // name of the session property
@@ -3747,7 +3604,7 @@ public class SAML2Utils extends SAML2SDKUtils {
             conn.setRequestProperty("Content-Type",
                     "application/x-www-form-urlencoded");
 
-            // set header & content 
+            // set header & content
             StringBuffer buffer = new StringBuffer();
             buffer.append("");
             if ((sessProp != null) && (session != null)) {
@@ -4206,119 +4063,6 @@ public class SAML2Utils extends SAML2SDKUtils {
         return reverseProxyUrl == null ? "" : reverseProxyUrl;
     }
 
-    /**
-     * Sends the request to the original Federation server and receives the result
-     * data.
-     *
-     * @param request      HttpServletRequest to be sent
-     * @param response     HttpServletResponse to be received
-     * @param sloServerUrl URL of the original federation server to be
-     *                     connected
-     * @return HashMap of the result data from the original server's response
-     */
-    public static HashMap sendRequestToOrigServer(HttpServletRequest request,
-            HttpServletResponse response, String sloServerUrl) {
-        HashMap origRequestData = new HashMap();
-        String classMethod = "SAML2Utils.sendRequestToOrigServer: ";
-
-        // Print request Headers
-        if (debug.isDebugEnabled()) {
-            for (Enumeration<String> requestHeaders = request.getHeaderNames(); requestHeaders.hasMoreElements(); ) {
-                String name = requestHeaders.nextElement();
-                Enumeration<String> value = request.getHeaders(name);
-                debug.debug(classMethod + "Header name = " + name + " Value = " + value);
-            }
-        }
-
-        // Open URL connection
-        HttpURLConnection conn;
-        String strCookies;
-
-        try {
-            URL sloRoutingURL = new URL(sloServerUrl);
-
-            if (debug.isDebugEnabled()) {
-                debug.debug(classMethod + "Connecting to : " + sloRoutingURL);
-            }
-
-            conn = HttpURLConnectionManager.getConnection(sloRoutingURL);
-            boolean isGET = request.getMethod().equalsIgnoreCase(GET_METHOD);
-            if (isGET) {
-                conn.setRequestMethod(GET_METHOD);
-            } else {
-                conn.setDoOutput(true);
-                conn.setRequestMethod(POST_METHOD);
-            }
-            HttpURLConnection.setFollowRedirects(false);
-            conn.setInstanceFollowRedirects(false);
-
-            // replay cookies
-            strCookies = getCookiesString(request);
-
-            if (strCookies != null) {
-                if (debug.isDebugEnabled()) {
-                    debug.debug(classMethod + "Sending cookies : " + strCookies);
-                }
-                conn.setRequestProperty("Cookie", strCookies);
-            }
-
-            conn.setRequestProperty("Host", request.getHeader("host"));
-            String acceptLanguageHeader = request.getHeader(SAMLConstants.ACCEPT_LANG_HEADER);
-            if (StringUtils.isNotEmpty(acceptLanguageHeader)) {
-                conn.setRequestProperty(SAMLConstants.ACCEPT_LANG_HEADER, acceptLanguageHeader);
-            }
-
-            // do the remote connection
-            if (isGET) {
-                conn.connect();
-            } else {
-                String data = "";
-                Map<String, String[]> params = request.getParameterMap();
-                for (Map.Entry<String, String[]> param : params.entrySet()) {
-                    data = data + param.getKey() + "=" +
-                            URLEncDec.encode(param.getValue()[0]) + "&";
-                }
-                data = data.substring(0, data.length() - 1);
-                if (debug.isDebugEnabled()) {
-                    debug.debug(classMethod + "DATA to be SENT: " + data);
-                }
-                try (OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream())) {
-                    writer.write(data);
-                } catch (IOException ioe) {
-                    debug.error("Could not write to the destination", ioe);
-                }
-            }
-            // Receiving input from Original Federation server...
-            if (debug.isDebugEnabled()) {
-                debug.debug("RECEIVING DATA ... ");
-                debug.debug("Response Code: {}", conn.getResponseCode());
-                debug.debug("Response Message: {}", conn.getResponseMessage());
-                debug.debug("Follow redirect: {}", HttpURLConnection.getFollowRedirects());
-            }
-
-            // Input from Original servlet...
-            origRequestData.put(SAML2Constants.RESPONSE_CODE, Integer.toString(conn.getResponseCode()));
-            InputStream is = conn.getErrorStream() == null ? conn.getInputStream() : conn.getErrorStream();
-            String crossTalkResponse = IOUtils.readStream(is);
-            debug.debug("Received response data:\n{}", crossTalkResponse);
-            origRequestData.put(SAML2Constants.OUTPUT_DATA, crossTalkResponse);
-
-            String redirect_url = conn.getHeaderField(LOCATION);
-
-            if (redirect_url != null) {
-                origRequestData.put(SAML2Constants.AM_REDIRECT_URL, redirect_url);
-            }
-
-            // retrieves cookies from the response
-            Map headers = conn.getHeaderFields();
-            processCookies(headers, request, response);
-        } catch (Exception ex) {
-            debug.error("An error occurred while performing crosstalk.", ex);
-        }
-
-        return origRequestData;
-    }
-
     // parses the cookies from the response header and adds them in
     // the HTTP response.
     // TODO: This is a copy from AuthClientUtils, need to refactor into OpenAM
@@ -4591,5 +4335,173 @@ public class SAML2Utils extends SAML2SDKUtils {
                            .append("]");
         }
         return certInfoBuilder.toString();
+    }
+
+    /**
+     * Returns the service (aka tree, journey) that has been configured on the supplied remote SP.
+     *
+     * @param realm      Realm to find the SP in.
+     * @param spEntityID The remote SP entity ID.
+     * @return           Specified service.  Could also be null, an empty string,
+     * or the "empty dropdown selection" string
+     * {@value Constants#EMPTY_DROPDOWN_SELECTION}
+     */
+    public static String getConfiguredServiceForSP(String realm, String spEntityID) {
+        return getAttributeValueFromSSOConfig(realm, spEntityID, SP_ROLE, SAML2Constants.TREE_NAME);
+    }
+
+    /**
+     * Adds details of a configured service on a remote SP to an audit message. This can then be used to correlate with
+     * audit messages from the auth tree to verify that the configured service was the service used to authenticate.
+     * <p>
+     * NOTE: To avoid confusion for administrators, if there is no configured service for the SP this logs an empty
+     * string (rather than the "empty string selection" of {@value Constants#EMPTY_DROPDOWN_SELECTION}
+     *
+     * @param eventAuditor The auditor to append the details to.
+     * @param realm        Realm of the given SP - used to find a configured service for the SP.
+     * @param spEntityId   Remote SP entity ID
+     * @param idpEntityID  Hosted IDP entity ID.
+     */
+    public static void addConfiguredServiceToAuditMessage(SAML2EventLogger eventAuditor, String realm,
+        String spEntityId, String idpEntityID) {
+        if (StringUtils.isNotEmpty(getConfiguredServiceForSP(realm, spEntityId))) {
+            if (eventAuditor != null) {
+                eventAuditor.setSpEntity(spEntityId);
+                eventAuditor.setIdpEntity(idpEntityID);
+                String configuredServiceForSP = getConfiguredServiceForSP(realm, spEntityId);
+                if (StringUtils.isEmptyOrEmptySelection(configuredServiceForSP)) {
+                    configuredServiceForSP = "";
+                }
+                eventAuditor.setConfiguredService(configuredServiceForSP);
+            }
+        }
+    }
+
+    /**
+     * Converts a Set of Strings with the form "key=value" into a Map with "key => value"
+     * </p>
+     * If 'entries' is null then returns null.  If 'entries' is empty, then returns an empty map.
+     *
+     * @param entries Set of strings to split and convert to map.
+     * @return Map.
+     */
+    public static Map<String,String> setToMap(Set<String> entries) {
+        if (entries == null) return null;
+        if (CollectionUtils.isEmpty(entries)) {
+            return Map.of();
+        }
+        return entries.stream()
+            .map(e -> e.split("=", 2))
+            .filter(e -> e.length == 2)
+            .collect(Collectors.toMap(e -> e[0], e -> e[1]));
+    }
+
+    /**
+     * Validates the status of the transaction specified in the request and deletes it from CTS.
+     *
+     * @param request HttpServletRequest containing the transaction id parameter.
+     * @throws SAML2Exception If there is no 'TxId' param in the request, the transaction is not complete, or there is a
+     * problem validating the transaction.
+     */
+    public static void validateAndDeleteTransaction(HttpServletRequest request) throws SAML2Exception {
+        String transactionId = request.getParameter(TRANSACTION_ID);
+        if (StringUtils.isEmpty(transactionId)) {
+            throw new SAML2Exception("Request did not specify a transaction id");
+        }
+
+        TransactionService transactionService = InjectorHolder.getInstance(TransactionService.class);
+        boolean transactionComplete;
+        try {
+            transactionComplete = transactionService.hasApprovedTransaction(request);
+        } catch (TransactionException e) {
+            debug.error("Error verifying transaction state", e);
+            throw new SAML2Exception(e);
+        }
+
+        try {
+            transactionService.deleteTransaction(transactionId);
+        } catch (TransactionException e) {
+            debug.warn("Error deleting transaction", e);
+        }
+
+        if (!transactionComplete) {
+            throw new SAML2Exception("Transaction not complete");
+        }
+    }
+
+    /**
+     * Creates a {@link Transaction.Type#FLOW} transaction with the given details, and stores it in the transaction
+     * store.
+     *
+     * @param realm           Realm to create the transaction for.
+     * @param session         Existing session object, must not be null.
+     * @param service         The service (i.e. tree or journey) that the user must run.
+     * @param sessionProvider Provider used to obtain properties from the session object.
+     *
+     * @return Transaction ID.
+     *
+     * @throws SAML2Exception If we are unable to obtain required properties from the session, or another unexpected
+     *                        error occurs.
+     */
+    public static String createTransaction(String realm, Object session, String service,
+            SessionProvider sessionProvider) throws SAML2Exception {
+        try {
+            Reject.ifNull(realm, service);
+            String sessionId = null;
+            if (session != null) {
+                String[] property = sessionProvider.getProperty(session, Constants.UNIVERSAL_IDENTIFIER);
+                sessionId = property != null && property.length > 0 ? property[0] : null;
+                if (sessionId == null) {
+                    throw new SAML2Exception("Unable to create transaction because session doesn't" +
+                        " contain required property of " + Constants.UNIVERSAL_IDENTIFIER);
+                }
+            }
+
+            var transactionService = InjectorHolder.getInstance(TransactionService.class);
+            int tokenDuration = getSAML2AuthUtils().getAuthSessionMaxDurationInSecondsForRealm(realm);
+            if (tokenDuration == 0) {
+                debug.debug("Transaction lifetime being determined from transaction authentication service config");
+                tokenDuration = transactionService.getTimeToLive(realm);
+            }
+            Calendar expirationTime = getCalendarInstance();
+            expirationTime.add(Calendar.SECOND, tokenDuration);
+            Transaction transaction = Transaction.builder(Transaction.Type.FLOW)
+                .withExpirationTime(expirationTime.getTimeInMillis())
+                .withSubject(sessionId)
+                .withAuthenticationStrategy(EntitlementConditionConstants.AUTH_TREE_CONDITION_ADVICE)
+                .withStrategySpecifier(service)
+                .withRealm(realm)
+                .build();
+
+            transactionService.createTransaction(transaction);
+
+            return transaction.getId();
+        } catch (TransactionException | SessionException e) {
+            throw new SAML2Exception("Unable to create transaction: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Deletes the SAML2 token (samlObjectKey) from the CTS repository if present in the request.
+     * Any failures to delete the token are logged but no exception is thrown.
+     * @param request The request to get the samlObjectKey from.
+     */
+    public static void deleteSamlObjectToken(HttpServletRequest request) {
+        String ctsApplicationKey = request.getParameter(SAML_OBJECT_KEY_PARAM);
+        if (ctsApplicationKey != null) {
+            try {
+                SAML2FailoverUtils.deleteSAML2Token(ctsApplicationKey);
+            } catch (SAML2TokenRepositoryException e) {
+                // Log and continue, as the token should be cleaned up when the expiry time is reached.
+                debug.info("Error deleting SAML2 token", e);
+            }
+        }
+    }
+
+    private static SAML2AuthnConfig getSAML2AuthUtils() {
+        if (saml2AuthnConfig == null) {
+            saml2AuthnConfig = InjectorHolder.getInstance(SAML2AuthnConfig.class);
+        }
+        return saml2AuthnConfig;
     }
 }

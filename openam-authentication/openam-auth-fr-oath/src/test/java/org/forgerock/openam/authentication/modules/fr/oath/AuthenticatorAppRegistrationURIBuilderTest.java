@@ -11,44 +11,54 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.fr.oath;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.openam.authentication.modules.fr.oath.validators.CodeLengthValidator.*;
+import static org.forgerock.openam.authentication.modules.fr.oath.validators.CodeLengthValidator.MIN_CODE_LENGTH;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import javax.xml.bind.DatatypeConverter;
+import java.util.stream.Stream;
 
-import com.sun.identity.idm.AMIdentity;
+import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.lang.RandomStringUtils;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import com.sun.identity.idm.AMIdentity;
 
 public class AuthenticatorAppRegistrationURIBuilderTest {
 
     private final String issuer = "ForgeRock";
-    private enum OTPType { TOTP, HOTP };
 
-    @DataProvider(name = "data")
-    public Object[][] data() {
-        java.util.List<Object[]> testData = new java.util.LinkedList<>();
+    private static Stream<Arguments> data() {
+        java.util.List<Arguments> testData = new java.util.LinkedList<>();
         for (OTPType otpType : OTPType.values()) {
             for (int i = 0; i < 8; i++) {
-                String secretHex =  DatatypeConverter.printHexBinary(
+                String secretHex = DatatypeConverter.printHexBinary(
                         RandomStringUtils.randomAlphanumeric(MIN_CODE_LENGTH + i).getBytes());
-                testData.add(new Object[] {otpType, secretHex});
+                testData.add(Arguments.of(otpType, secretHex));
             }
         }
-        return testData.toArray(new Object[0][]);
+        return testData.stream();
     }
 
-    @Test(dataProvider = "data")
+    @ParameterizedTest
+    @MethodSource("data")
     public void OTPUrlSecretDoesNotHavePadding(OTPType otpType, String secretHex) throws Exception {
 
         // Given
@@ -60,12 +70,12 @@ public class AuthenticatorAppRegistrationURIBuilderTest {
         AuthenticatorAppRegistrationURIBuilder uriBuilder = new AuthenticatorAppRegistrationURIBuilder(id,
                 secretHex, MIN_CODE_LENGTH, issuer);
         switch (otpType) {
-            case HOTP:
-                uri = uriBuilder.getAuthenticatorAppRegistrationUriForHOTP(0);
-                break;
-            case TOTP:
-            default:
-                uri = uriBuilder.getAuthenticatorAppRegistrationUriForTOTP(0);
+        case HOTP:
+            uri = uriBuilder.getAuthenticatorAppRegistrationUriForHOTP(0);
+            break;
+        case TOTP:
+        default:
+            uri = uriBuilder.getAuthenticatorAppRegistrationUriForTOTP(0);
         }
         String secretParam = uri.substring(uri.indexOf("secret="));
         secretParam = secretParam.substring("secret=".length(), secretParam.indexOf("&"));
@@ -75,5 +85,7 @@ public class AuthenticatorAppRegistrationURIBuilderTest {
         assertThat(secretParam).doesNotContain("=");
         assertThat(DatatypeConverter.printHexBinary(decodedSecret)).isEqualTo(secretHex);
     }
+
+    private enum OTPType {TOTP, HOTP}
 }
 

@@ -24,7 +24,7 @@
  *
  * $Id: AccessAccept.java,v 1.2 2008/06/25 05:42:00 qcheng Exp $
  *
- * Portions Copyrighted 2011-2020 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  * Portions Copyrighted 2015 Intellectual Reserve, Inc (IRI)
  */
 package com.sun.identity.authentication.modules.radius.client;

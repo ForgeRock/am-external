@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright ${copyrightYear} ForgeRock AS.
+ * Copyright ${copyrightYear} Ping Identity Corporation.
 -->
 # ${authNodeName}
 

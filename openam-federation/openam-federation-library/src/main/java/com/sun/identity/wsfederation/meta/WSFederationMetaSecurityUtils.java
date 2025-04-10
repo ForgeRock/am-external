@@ -24,7 +24,7 @@
  *
  * $Id: WSFederationMetaSecurityUtils.java,v 1.6 2009/10/28 23:58:59 exu Exp $
  *
- * Portions Copyrighted 2011-2021 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 package com.sun.identity.wsfederation.meta;
 

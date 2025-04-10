@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -44,23 +52,26 @@ import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.secrets.cache.SecretCache;
 import org.forgerock.openam.secrets.cache.SecretReferenceCache;
-import org.forgerock.openam.test.rules.LoggerRule;
+import org.forgerock.openam.test.extensions.LoggerExtension;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.ValidSecretsReference;
 import org.forgerock.secrets.keys.SigningKey;
 import org.forgerock.secrets.keys.VerificationKey;
 import org.forgerock.util.promise.NeverThrowsException;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.sun.identity.idm.IdType;
 import com.sun.identity.shared.encode.Base64;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class PersistentCookieDecisionNodeTest {
 
     private static final String COOKIE_VALUE = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.payload";
@@ -77,8 +88,8 @@ public class PersistentCookieDecisionNodeTest {
     private PersistentJwtClaimsHandler persistentJwtClaimsHandler;
     @Mock
     private EncryptedThenSignedJwt mockJwt;
-    @Rule
-    public LoggerRule loggerRule = new LoggerRule(PersistentCookieDecisionNode.class);
+    @RegisterExtension
+    public LoggerExtension loggerExtension = new LoggerExtension(PersistentCookieDecisionNode.class);
 
     private PersistentCookieDecisionNode persistentCookieDecisionNode;
     private static final Purpose<SigningKey> NODE_DEFINED_SIGNING_PURPOSE = Purpose.purpose("nodeDefinedPurpose",
@@ -95,8 +106,8 @@ public class PersistentCookieDecisionNodeTest {
     @Mock
     private SecretCache secretCache;
 
-    @Before
-    public void setup() throws InvalidPersistentJwtException {
+    @BeforeEach
+    void setup() throws InvalidPersistentJwtException {
         given(secretReferenceCache.realm(realm)).willReturn(secretCache);
         persistentCookieDecisionNode = new PersistentCookieDecisionNode(config, coreWrapper, identityService,
                 UUID.randomUUID(), realm,
@@ -110,7 +121,7 @@ public class PersistentCookieDecisionNodeTest {
     }
 
     @Test
-    public void givenUsernameFoundInCookieThenUserIsIdentified()
+    void givenUsernameFoundInCookieThenUserIsIdentified()
             throws NodeProcessException, InvalidPersistentJwtException {
         //given
         given(persistentJwtClaimsHandler.getUsername(any(), any())).willReturn("demo");
@@ -127,7 +138,7 @@ public class PersistentCookieDecisionNodeTest {
     }
 
     @Test
-    public void givenASigningKeyPurposeIsProvidedThenUserIsIdentified()
+    void givenASigningKeyPurposeIsProvidedThenUserIsIdentified()
             throws InvalidPersistentJwtException, NodeProcessException {
 
         //given
@@ -146,7 +157,7 @@ public class PersistentCookieDecisionNodeTest {
     }
 
     @Test
-    public void givenNoCookieFoundThenNoUserIsIdentified() throws NodeProcessException {
+    void givenNoCookieFoundThenNoUserIsIdentified() throws NodeProcessException {
         //given
         ExternalRequestContext externalRequestContext = new ExternalRequestContext.Builder()
                                                                 .build();
@@ -161,7 +172,7 @@ public class PersistentCookieDecisionNodeTest {
     }
 
     @Test
-    public void givenKidOnJwtUsesKidToRetrieveKeys() throws InvalidPersistentJwtException, NodeProcessException {
+    void givenKidOnJwtUsesKidToRetrieveKeys() throws InvalidPersistentJwtException, NodeProcessException {
         // Given
         String header = "{\"kid\":\"test-kid\"}";
         String encodedHeader = Base64.encode(header.getBytes(StandardCharsets.UTF_8));

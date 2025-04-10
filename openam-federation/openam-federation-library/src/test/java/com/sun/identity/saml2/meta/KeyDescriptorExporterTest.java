@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.meta;
@@ -36,10 +44,12 @@ import javax.xml.bind.JAXBIntrospector;
 import org.forgerock.openam.federation.util.XmlSecurity;
 import org.forgerock.openam.saml2.Saml2EntityRole;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -52,6 +62,8 @@ import com.sun.identity.saml2.jaxb.xmlenc11.MGFType;
 import com.sun.identity.saml2.jaxb.xmlsig.DigestMethodType;
 import com.sun.identity.saml2.jaxb.xmlsig.X509DataType;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 public class KeyDescriptorExporterTest {
 
     @Mock
@@ -68,9 +80,8 @@ public class KeyDescriptorExporterTest {
     private final byte[] encodedCertificate = "some-certificate".getBytes();
     private KeyDescriptorExporter exporter;
 
-    @BeforeMethod
-    public void setup() throws CertificateEncodingException {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void setup() throws CertificateEncodingException {
         exporter = new KeyDescriptorExporter(saml2CredentialResolver);
 
         given(keyAliasToCertificate.apply("some-key-alias")).willReturn(certificate1);
@@ -84,7 +95,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldReturnSigningKeyDescriptorWhenSigningSecretIsPresent() throws SAML2Exception {
+    void shouldReturnSigningKeyDescriptorWhenSigningSecretIsPresent() throws SAML2Exception {
         // Given
         given(saml2CredentialResolver.resolveValidSigningCredentials("test-realm","test-entity",
                 Saml2EntityRole.SP)).willReturn(Collections.singleton(certificate1));
@@ -110,7 +121,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldReturnSigningKeyDescriptorsWhenMultipleSigningSecretsArePresent() throws SAML2Exception {
+    void shouldReturnSigningKeyDescriptorsWhenMultipleSigningSecretsArePresent() throws SAML2Exception {
         given(saml2CredentialResolver.resolveValidSigningCredentials("test-realm","test-entity",
                 Saml2EntityRole.SP)).willReturn(Set.of(certificate1, certificate2));
 
@@ -132,7 +143,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldReturnKeyDescriptorsWhenPassedValidEncryptionAlgorithms() throws SAML2Exception {
+    void shouldReturnKeyDescriptorsWhenPassedValidEncryptionAlgorithms() throws SAML2Exception {
         // Given
         given(saml2CredentialResolver.resolveValidEncryptionCredentials("test-realm","test-entity",
                 Saml2EntityRole.SP)).willReturn(Collections.singleton(certificate1));
@@ -160,7 +171,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldReturnEqualKeyDescriptorsWhenMultipleSecretsArePresent() throws SAML2Exception {
+    void shouldReturnEqualKeyDescriptorsWhenMultipleSecretsArePresent() throws SAML2Exception {
         // Given
         given(saml2CredentialResolver.resolveValidEncryptionCredentials("test-realm","test-entity",
                 Saml2EntityRole.SP)).willReturn(Set.of(certificate1, certificate2));
@@ -182,7 +193,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldContainKeySizeWhenDataEncryptionAlgorithmIsPresent() throws SAML2Exception {
+    void shouldContainKeySizeWhenDataEncryptionAlgorithmIsPresent() throws SAML2Exception {
         // Given
         given(saml2CredentialResolver.resolveValidEncryptionCredentials("test-realm","test-entity",
                 Saml2EntityRole.SP)).willReturn(Collections.singleton(certificate1));
@@ -208,7 +219,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldContainDigestMethodWhenTransportEncryptionAlgorithmIsPresent() throws SAML2Exception {
+    void shouldContainDigestMethodWhenTransportEncryptionAlgorithmIsPresent() throws SAML2Exception {
         // Given
         given(saml2CredentialResolver.resolveValidEncryptionCredentials("test-realm","test-entity",
                 Saml2EntityRole.SP)).willReturn(Collections.singleton(certificate1));
@@ -234,7 +245,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldIncludeMgfIfNotPresentWhenRsaTransportEncryptionAlgorithmIsPresent() throws SAML2Exception {
+    void shouldIncludeMgfIfNotPresentWhenRsaTransportEncryptionAlgorithmIsPresent() throws SAML2Exception {
         // Given
         given(saml2CredentialResolver.resolveValidEncryptionCredentials("test-realm","test-entity",
                 Saml2EntityRole.SP)).willReturn(Collections.singleton(certificate1));
@@ -266,7 +277,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldReturnDefaultAlgorithmsWhenNoEncryptionOrTransportAlgorithmsArePresent() throws SAML2Exception {
+    void shouldReturnDefaultAlgorithmsWhenNoEncryptionOrTransportAlgorithmsArePresent() throws SAML2Exception {
         // Given
         given(saml2CredentialResolver.resolveValidEncryptionCredentials("test-realm","test-entity",
                 Saml2EntityRole.SP)).willReturn(Collections.singleton(certificate1));
@@ -287,7 +298,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldReturnOnlySigningKeyDescriptorsWhenNoEncryptionSecretsArePresent() throws SAML2Exception {
+    void shouldReturnOnlySigningKeyDescriptorsWhenNoEncryptionSecretsArePresent() throws SAML2Exception {
         // Given
         given(saml2CredentialResolver.resolveValidSigningCredentials("test-realm","test-entity",
                 Saml2EntityRole.SP)).willReturn(Collections.singleton(certificate1));
@@ -303,7 +314,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldReturnOnlyEncryptionKeyDescriptorsWhenNoSigningSecretsArePresent() throws SAML2Exception {
+    void shouldReturnOnlyEncryptionKeyDescriptorsWhenNoSigningSecretsArePresent() throws SAML2Exception {
         // Given
         given(saml2CredentialResolver.resolveValidEncryptionCredentials("test-realm","test-entity",
                 Saml2EntityRole.SP)).willReturn(Collections.singleton(certificate1));
@@ -319,7 +330,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldReturnBothSigningAndEncryptionKeyDescriptorsWhenBothSecretsArePresent() throws SAML2Exception {
+    void shouldReturnBothSigningAndEncryptionKeyDescriptorsWhenBothSecretsArePresent() throws SAML2Exception {
         // Given
         given(saml2CredentialResolver.resolveValidSigningCredentials("test-realm","test-entity",
                 Saml2EntityRole.SP)).willReturn(Collections.singleton(certificate1));
@@ -341,7 +352,7 @@ public class KeyDescriptorExporterTest {
     }
 
     @Test
-    public void shouldReturnNoSigningAndEncryptionKeyDescriptorsWhenBothSecretsAreAbsent() throws SAML2Exception {
+    void shouldReturnNoSigningAndEncryptionKeyDescriptorsWhenBothSecretsAreAbsent() throws SAML2Exception {
         // When
         List<KeyDescriptorElement> keyDescriptors = exporter.createKeyDescriptors(
                 "test-realm","test-entity", Saml2EntityRole.SP, Collections.emptyMap());

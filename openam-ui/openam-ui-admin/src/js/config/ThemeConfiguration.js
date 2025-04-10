@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import BootstrapCustomStyle from "css/bootstrap-3.4.1-custom";
@@ -34,9 +42,9 @@ export default {
                     // The URL of the image.
                     src: LogoHorizontalImage,
                     // The title attribute used on <img> tags.
-                    title: "ForgeRock",
+                    title: "Ping Identity",
                     // The alt attribute used on <img> tags.
-                    alt: "ForgeRock",
+                    alt: "Ping Identity",
                     // The width of the logo as a CSS length.
                     width: "202px"
                 },
@@ -45,13 +53,13 @@ export default {
                     // The URL of the image.
                     src: LoginLogoImage,
                     // The title attribute used on <img> tags.
-                    title: "ForgeRock",
+                    title: "Ping Identity",
                     // The alt attribute used on <img> tags.
-                    alt: "ForgeRock",
+                    alt: "Ping Identity",
                     // The height of the logo as a CSS length.
-                    height: "104px",
+                    height: "120px",
                     // The width of the logo as a CSS length.
-                    width: "210px"
+                    width: "120px"
                 },
                 // The footer is displayed on every page.
                 footer: {

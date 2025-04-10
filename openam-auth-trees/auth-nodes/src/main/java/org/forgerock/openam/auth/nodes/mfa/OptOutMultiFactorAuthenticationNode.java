@@ -11,14 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
 
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.MFA_METHOD;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.OATH_METHOD;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.PUSH_METHOD;
@@ -36,7 +43,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SharedStateConstants;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.DeviceSettings;
 import org.forgerock.openam.core.rest.devices.oath.UserOathDeviceProfileManager;
@@ -46,7 +53,6 @@ import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathSer
 import org.forgerock.openam.core.rest.devices.services.push.AuthenticatorPushService;
 import org.forgerock.openam.core.rest.devices.services.webauthn.AuthenticatorWebAuthnService;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.annotations.VisibleForTesting;
@@ -67,22 +73,18 @@ public class OptOutMultiFactorAuthenticationNode extends SingleOutcomeNode {
 
     private static final Logger logger = LoggerFactory.getLogger(OptOutMultiFactorAuthenticationNode.class);
 
-    private final CoreWrapper coreWrapper;
-    private final LegacyIdentityService identityService;
+    private final NodeUserIdentityProvider identityProvider;
 
     private MultiFactorNodeDelegate<?> multiFactorNodeDelegate;
 
     /**
      * The node constructor.
      *
-     * @param coreWrapper used to recover the users username.
-     * @param identityService an instance of the IdentityService.
+     * @param identityProvider the identity provider.
      */
     @Inject
-    public OptOutMultiFactorAuthenticationNode(CoreWrapper coreWrapper,
-            LegacyIdentityService identityService) {
-        this.coreWrapper = coreWrapper;
-        this.identityService = identityService;
+    public OptOutMultiFactorAuthenticationNode(NodeUserIdentityProvider identityProvider) {
+        this.identityProvider = identityProvider;
     }
 
     @Override
@@ -167,8 +169,8 @@ public class OptOutMultiFactorAuthenticationNode extends SingleOutcomeNode {
      */
     @VisibleForTesting
     AMIdentity getIdentityFromIdentifier(TreeContext context) throws NodeProcessException {
-        Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
-                identityService, coreWrapper);
+        Optional<AMIdentity> userIdentity = identityProvider.getAMIdentity(context.universalId,
+                context.getStateFor(this));
         if (userIdentity.isEmpty()) {
             throw new NodeProcessException("Failed to get the identity object");
         }

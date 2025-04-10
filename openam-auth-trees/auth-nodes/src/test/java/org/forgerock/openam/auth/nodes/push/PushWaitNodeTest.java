@@ -11,32 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.push;
-
-import com.sun.identity.authentication.callbacks.HiddenValueCallback;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
-import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.auth.nodes.helpers.LocalizationHelper;
-import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
-import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.ConfirmationCallback;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,19 +39,39 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.MockitoAnnotations.initMocks;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.ConfirmationCallback;
+
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+
+import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 
 /**
  * Test the Push Wait node.
  */
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class PushWaitNodeTest {
-
-    @Mock
-    PushWaitNode.Config config;
-    @Mock
-    private LocalizationHelper localizationHelper;
-
-    PushWaitNode node;
 
     private static final String DEFAULT_CHALLENGE_MESSAGE = "CHALLENGE MESSAGE";
     private static final String DEFAULT_EXIT_MESSAGE = "EXIT MESSAGE";
@@ -82,23 +88,26 @@ public class PushWaitNodeTest {
         put(Locale.CANADA, DEFAULT_EXIT_MESSAGE);
     }};
     private static final Locale DEFAULT_LOCALE = Locale.CANADA;
-
+    @Mock
+    PushWaitNode.Config config;
+    PushWaitNode node;
+    @Mock
+    private LocalizedMessageProvider localizationHelper;
     private UUID uuid;
     private TreeContext context;
 
-    @BeforeMethod
-    public void setup() throws NodeProcessException {
-        initMocks(this);
+    @BeforeEach
+    void setup() throws NodeProcessException {
         uuid = UUID.randomUUID();
     }
 
     @Test
-    public void processNoException() throws Exception {
+    void processNoException() throws Exception {
         // Given
         whenNodeConfigHasDefaultValues();
         context = getContext();
 
-        PushWaitNode node = new PushWaitNode(config, uuid, localizationHelper);
+        PushWaitNode node = new PushWaitNode(config, uuid, null, realm -> localizationHelper);
 
         // When
         node.process(context);
@@ -108,7 +117,7 @@ public class PushWaitNodeTest {
     }
 
     @Test
-    public void processShouldReturnCorrectWaitTime() throws Exception {
+    void processShouldReturnCorrectWaitTime() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -132,7 +141,7 @@ public class PushWaitNodeTest {
     }
 
     @Test
-    public void processShouldReturnCorrectCallbacksForDefaultPushType() throws Exception {
+    void processShouldReturnCorrectCallbacksForDefaultPushType() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -154,7 +163,7 @@ public class PushWaitNodeTest {
     }
 
     @Test
-    public void processShouldReturnCorrectCallbacksForChallengePushType() throws Exception {
+    void processShouldReturnCorrectCallbacksForChallengePushType() throws Exception {
         // Given
         JsonValue sharedState = json(object(field(PUSH_NUMBER_CHALLENGE_KEY, NUMBER_CHALLENGE)));
         JsonValue transientState = json(object());
@@ -175,7 +184,7 @@ public class PushWaitNodeTest {
     }
 
     @Test
-    public void shouldDisplayCorrectDefaultWaitAndExitMessages() throws Exception {
+    void shouldDisplayCorrectDefaultWaitAndExitMessages() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -197,7 +206,7 @@ public class PushWaitNodeTest {
     }
 
     @Test
-    public void shouldDisplayCorrectCustomWaitMessage() throws Exception {
+    void shouldDisplayCorrectCustomWaitMessage() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -224,7 +233,7 @@ public class PushWaitNodeTest {
     }
 
     @Test
-    public void shouldDisplayCorrectDefaultChallengeMessage() throws Exception {
+    void shouldDisplayCorrectDefaultChallengeMessage() throws Exception {
         // Given
         JsonValue sharedState = json(object(field(PUSH_NUMBER_CHALLENGE_KEY, NUMBER_CHALLENGE)));
         JsonValue transientState = json(object());
@@ -245,7 +254,7 @@ public class PushWaitNodeTest {
     }
 
     @Test
-    public void shouldDisplayCorrectCustomChallengeMessage() throws Exception {
+    void shouldDisplayCorrectCustomChallengeMessage() throws Exception {
         // Given
         JsonValue sharedState = json(object(field(PUSH_NUMBER_CHALLENGE_KEY, NUMBER_CHALLENGE)));
         JsonValue transientState = json(object());
@@ -275,7 +284,7 @@ public class PushWaitNodeTest {
     }
 
     @Test
-    public void shouldDisplayCorrectExitMessage() throws Exception {
+    void shouldDisplayCorrectExitMessage() throws Exception {
         // Given
         JsonValue sharedState = json(object(field(PUSH_NUMBER_CHALLENGE_KEY, NUMBER_CHALLENGE)));
         JsonValue transientState = json(object());
@@ -306,21 +315,21 @@ public class PushWaitNodeTest {
 
     private TreeContext getContext() {
         return new TreeContext(JsonValue.json(object()),
-                        new ExternalRequestContext.Builder().build(),
-                        emptyList(),
-                        Optional.empty()
-                );
+                new ExternalRequestContext.Builder().build(),
+                emptyList(),
+                Optional.empty()
+        );
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
             List<? extends Callback> callbacks) {
         return new TreeContext(
-                        sharedState,
-                        transientState,
-                        new ExternalRequestContext.Builder().build(),
-                        callbacks,
-                        Optional.empty()
-                );
+                sharedState,
+                transientState,
+                new ExternalRequestContext.Builder().build(),
+                callbacks,
+                Optional.empty()
+        );
     }
 
     private void whenNodeConfigHasDefaultValues() {
@@ -344,7 +353,7 @@ public class PushWaitNodeTest {
         given(config.challengeMessage()).willReturn(challengeMessage);
         given(config.exitMessage()).willReturn(exitMessage);
 
-        localizationHelper = mock(LocalizationHelper.class);
+        localizationHelper = mock(LocalizedMessageProvider.class);
         given(localizationHelper.getLocalizedMessage(any(), any(), any(), eq(DEFAULT_WAITING_MESSAGE_KEY)))
                 .willReturn(waitingMessage.get(DEFAULT_LOCALE));
         given(localizationHelper.getLocalizedMessage(any(), any(), any(), eq(DEFAULT_CHALLENGE_MESSAGE_KEY)))
@@ -355,8 +364,8 @@ public class PushWaitNodeTest {
         node = spy(
                 new PushWaitNode(
                         config,
-                        uuid,
-                        localizationHelper
+                        uuid, null,
+                        realm -> localizationHelper
                 )
         );
     }

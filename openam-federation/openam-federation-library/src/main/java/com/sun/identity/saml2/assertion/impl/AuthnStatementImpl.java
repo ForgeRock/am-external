@@ -24,7 +24,7 @@
  *
  * $Id: AuthnStatementImpl.java,v 1.2 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2019-2023 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 
@@ -38,7 +38,6 @@ import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 import java.text.ParseException;
 import java.util.Date;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -88,7 +87,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  * &lt;/complexType&gt;
  * </pre>
  */
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class AuthnStatementImpl implements AuthnStatement {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthnStatementImpl.class);

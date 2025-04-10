@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins.scripted;
 
@@ -30,14 +38,14 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.scripting.application.ScriptEvaluationHelper;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.ScriptStore;
 import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -62,9 +70,9 @@ public class ScriptExecutorTest {
     @Mock
     private ScriptStore scriptStore;
     @Mock
-    private ScriptEvaluationHelper scriptEvaluationHelper;
+    private ScriptEvaluationHelper<LegacyScriptBindings> scriptEvaluationHelper;
     @Mock
-    private ScriptEvaluator scriptEvaluator;
+    private ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
     @Mock
     private Script script;
 
@@ -73,10 +81,10 @@ public class ScriptExecutorTest {
     // Class under test
     private ScriptExecutor executor;
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         MockitoAnnotations.openMocks(this).close();
-        executor = new ScriptExecutor(scriptStoreFactory, realmLookup, scriptEvaluationHelper);
+        executor = new ScriptExecutor(scriptStoreFactory, realmLookup);
         saml2UtilsMockedStatic = mockStatic(SAML2Utils.class);
         Realm mockRealm = mock(Realm.class);
         // Given
@@ -85,42 +93,43 @@ public class ScriptExecutorTest {
                 .thenReturn(scriptAttributeValue);
         when(scriptStoreFactory.create(mockRealm)).thenReturn(scriptStore);
         when(scriptStore.get(scriptAttributeValue)).thenReturn(scriptConfiguration(scriptId.toString()));
+        when(scriptEvaluator.getScriptEvaluationHelper()).thenReturn(scriptEvaluationHelper);
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         saml2UtilsMockedStatic.close();
     }
 
     @Test
-    public void testEvaluateVoidScriptFunction() throws Exception {
-        ScriptBindings bindings = mock(ScriptBindings.class);
+    void testEvaluateVoidScriptFunction() throws Exception {
+        LegacyScriptBindings bindings = mock(LegacyScriptBindings.class);
         executor.evaluateVoidScriptFunction(scriptEvaluator, script, realm, bindings, function);
 
         verifyScriptEvaluation(bindings, null);
     }
 
     @Test
-    public void testEvaluateScriptFunction() throws Exception {
-        ScriptBindings bindings = mock(ScriptBindings.class);
+    void testEvaluateScriptFunction() throws Exception {
+        LegacyScriptBindings bindings = mock(LegacyScriptBindings.class);
         executor.evaluateScriptFunction(scriptEvaluator, script, realm, bindings, function);
 
         verifyScriptEvaluation(bindings, Boolean.class);
     }
 
     @Test
-    public void testGetScriptConfiguration() throws Exception {
+    void testGetScriptConfiguration() throws Exception {
         Script script = executor.getScriptConfiguration(realm, hostedEntityId, role, scriptAttribute);
         assertThat(script.getScript()).isEqualTo(exampleScript);
         assertThat(script.getName()).isEqualTo(scriptName);
     }
 
-    private void verifyScriptEvaluation(ScriptBindings bindings, Class returnType) throws Exception {
+    private void verifyScriptEvaluation(LegacyScriptBindings bindings, Class returnType) throws Exception {
         if (returnType == null) {
-            verify(scriptEvaluationHelper, times(1)).evaluateFunction(eq(scriptEvaluator), eq(script), eq(bindings),
+            verify(scriptEvaluationHelper, times(1)).evaluateFunction(eq(script), eq(bindings),
                     eq(function), any(Realm.class));
         } else {
-            verify(scriptEvaluationHelper, times(1)).evaluateFunction(eq(scriptEvaluator), eq(script), eq(bindings),
+            verify(scriptEvaluationHelper, times(1)).evaluateFunction(eq(script), eq(bindings),
                     eq(returnType), eq(function), any(Realm.class));
         }
     }

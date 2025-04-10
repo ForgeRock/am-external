@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -23,10 +31,8 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.EMAIL_ADDR
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.auth.nodes.TreeContextFactory.TEST_UNIVERSAL_ID;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.newTreeContext;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.BDDMockito.given;
@@ -38,19 +44,21 @@ import static org.mockito.Mockito.reset;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.modules.hotp.SMSGateway;
@@ -59,7 +67,8 @@ import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class OneTimePasswordSmtpSenderNodeTest {
 
     private static final String TEST_REALM = "testRealm";
@@ -68,9 +77,7 @@ public class OneTimePasswordSmtpSenderNodeTest {
     private static final String TEST_ONE_TIME_PASSWORD = "978413";
 
     @Mock
-    private CoreWrapper coreWrapper;
-    @Mock
-    private LegacyIdentityService identityService;
+    private NodeUserIdentityProvider identityProvider;
     @Mock
     private LocaleSelector localeSelector;
     @Mock
@@ -89,11 +96,11 @@ public class OneTimePasswordSmtpSenderNodeTest {
     @Mock
     private OtpNodeConnectionConfigMapper connectionConfigMapper;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         reset(MockSMSGateway.smsGateway);
         initConfig();
-        given(coreWrapper.getIdentity(eq(TEST_UNIVERSAL_ID))).willReturn(amIdentity);
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
         given(amIdentity.getAttribute(serviceConfig.emailAttribute()))
                 .willReturn(Collections.singleton(TO_EMAIL_ADDRESS));
         sharedState = json(object(field(USERNAME, TEST_USERNAME),
@@ -105,14 +112,14 @@ public class OneTimePasswordSmtpSenderNodeTest {
 
 
     @Test
-    public void shouldSendEmailWhenConfigurationAndSharedStateEmailAddressAreValid()
+    void shouldSendEmailWhenConfigurationAndSharedStateEmailAddressAreValid()
             throws NodeProcessException, AuthLoginException {
 
         Map<String, Set<String>> map = Map.of("key", Set.of("value"));
         given(connectionConfigMapper.asConfigMap(any(), any())).willReturn(map);
 
         //when
-        new OneTimePasswordSmtpSenderNode(connectionConfigMapper, serviceConfig, realm, coreWrapper, identityService,
+        new OneTimePasswordSmtpSenderNode(connectionConfigMapper, serviceConfig, realm, identityProvider,
                 idmIntegrationService, localeSelector, smsGatewayLookup)
                 .process(newTreeContext(sharedState, secureState));
 
@@ -121,65 +128,65 @@ public class OneTimePasswordSmtpSenderNodeTest {
     }
 
     @Test
-    public void shouldNotGetAMIdentityIfEmailIsInSharedState()
+    void shouldNotGetAMIdentityIfEmailIsInSharedState()
             throws NodeProcessException {
 
         JsonValue state = sharedState.copy().add(EMAIL_ADDRESS, TO_EMAIL_ADDRESS);
 
         //when
-        new OneTimePasswordSmtpSenderNode(connectionConfigMapper, serviceConfig, realm, coreWrapper, identityService,
+        new OneTimePasswordSmtpSenderNode(connectionConfigMapper, serviceConfig, realm, identityProvider,
                 idmIntegrationService, localeSelector, smsGatewayLookup).process(newTreeContext(state, secureState));
 
-        then(coreWrapper).shouldHaveNoInteractions();
+        then(identityProvider).shouldHaveNoInteractions();
     }
 
     @Test
-    public void throwsNodeProcessExceptionWhenEmailSendFails() throws AuthLoginException {
+    void throwsNodeProcessExceptionWhenEmailSendFails() throws AuthLoginException {
         willThrow(AuthLoginException.class).given(MockSMSGateway.smsGateway)
                 .sendEmail(any(), any(), any(), any(), any(), any());
         assertThatThrownBy(() -> new OneTimePasswordSmtpSenderNode(connectionConfigMapper, serviceConfig, realm,
-                coreWrapper, identityService, idmIntegrationService, localeSelector, smsGatewayLookup)
+                identityProvider, idmIntegrationService, localeSelector, smsGatewayLookup)
                 .process(newTreeContext(sharedState, secureState)))
                 .isInstanceOf(NodeProcessException.class);
     }
 
     @Test
-    public void throwsNodeProcessExceptionWhenIdentityProviderFails() {
-        given(coreWrapper.getIdentity(anyString())).willReturn(null);
+    void throwsNodeProcessExceptionWhenIdentityProviderFails() {
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.empty());
         assertThatThrownBy(() -> new OneTimePasswordSmtpSenderNode(connectionConfigMapper, serviceConfig, realm,
-                coreWrapper, identityService, idmIntegrationService, localeSelector, smsGatewayLookup)
+                identityProvider, idmIntegrationService, localeSelector, smsGatewayLookup)
                 .process(newTreeContext(sharedState, secureState)))
                 .isInstanceOf(NodeProcessException.class);
     }
 
     @Test
-    public void throwsNodeProcessExceptionWhenIdentityProviderGetsEmailFails() throws IdRepoException, SSOException {
+    void throwsNodeProcessExceptionWhenIdentityProviderGetsEmailFails() throws IdRepoException, SSOException {
         given(amIdentity.getAttribute(serviceConfig.emailAttribute())).willThrow(IdRepoException.class);
 
         assertThatThrownBy(() -> new OneTimePasswordSmtpSenderNode(connectionConfigMapper, serviceConfig, realm,
-                coreWrapper, identityService, idmIntegrationService, localeSelector, smsGatewayLookup)
+                identityProvider, idmIntegrationService, localeSelector, smsGatewayLookup)
                 .process(newTreeContext(sharedState, secureState)))
                 .isInstanceOf(NodeProcessException.class);
     }
 
     @Test
-    public void throwsNodeProcessExceptionWhenEmailNotFound() throws IdRepoException, SSOException {
+    void throwsNodeProcessExceptionWhenEmailNotFound() throws IdRepoException, SSOException {
         given(amIdentity.getAttribute(serviceConfig.emailAttribute())).willReturn(null);
 
         assertThatThrownBy(() -> new OneTimePasswordSmtpSenderNode(connectionConfigMapper, serviceConfig, realm,
-                coreWrapper, identityService, idmIntegrationService, localeSelector, smsGatewayLookup)
+                identityProvider, idmIntegrationService, localeSelector, smsGatewayLookup)
                 .process(newTreeContext(sharedState, secureState)))
                 .isInstanceOf(NodeProcessException.class);
     }
 
     @Test
-    public void shouldFindSMSGatewayInMap()
+    void shouldFindSMSGatewayInMap()
             throws NodeProcessException, AuthLoginException {
         given(serviceConfig.smsGatewayImplementationClass()).willReturn(StubGuiceSMSGateway.class.getName());
         StubGuiceSMSGateway stubGuiceSMSGateway = new StubGuiceSMSGateway(mock(SMSGateway.class));
         smsGatewayMap.put(StubGuiceSMSGateway.class.getName(), stubGuiceSMSGateway);
         //when
-        new OneTimePasswordSmtpSenderNode(connectionConfigMapper, serviceConfig, realm, coreWrapper, identityService,
+        new OneTimePasswordSmtpSenderNode(connectionConfigMapper, serviceConfig, realm, identityProvider,
                 idmIntegrationService, localeSelector, smsGatewayLookup)
                 .process(newTreeContext(sharedState, secureState));
 

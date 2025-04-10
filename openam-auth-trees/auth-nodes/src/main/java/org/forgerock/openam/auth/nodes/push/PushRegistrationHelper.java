@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -60,10 +68,11 @@ import org.forgerock.am.cts.exceptions.CoreTokenException;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.LocalizedMessageProvider.LocalizedMessageProviderFactory;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.auth.nodes.helpers.LocalizationHelper;
+import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationUtilities;
 import org.forgerock.openam.core.realms.Realm;
@@ -103,7 +112,7 @@ public class PushRegistrationHelper {
     private final MessageIdFactory messageIdFactory;
     private final PushDeviceProfileHelper deviceProfileHelper;
     private final MultiFactorNodeDelegate<AuthenticatorPushService> multiFactorNodeDelegate;
-    private final LocalizationHelper localizationHelper;
+    private final LocalizedMessageProvider localizationHelper;
     private final MultiFactorRegistrationUtilities multiFactorRegistrationUtilities;
 
 
@@ -116,7 +125,7 @@ public class PushRegistrationHelper {
      * @param messageIdFactory                 handles push messages.
      * @param deviceProfileHelper              stores device profiles.
      * @param multiFactorNodeDelegate          shared utilities common to second factor implementations.
-     * @param localizationHelper               the localization helper class.
+     * @param localizationHelperFactory        the localization helper factory.
      * @param multiFactorRegistrationUtilities shared utilities for mfa registration operations.
      */
     @Inject
@@ -126,7 +135,7 @@ public class PushRegistrationHelper {
                                   MessageIdFactory messageIdFactory,
                                   PushDeviceProfileHelper deviceProfileHelper,
                                   MultiFactorNodeDelegate<AuthenticatorPushService> multiFactorNodeDelegate,
-                                  LocalizationHelper localizationHelper,
+                                  LocalizedMessageProviderFactory localizationHelperFactory,
                                   MultiFactorRegistrationUtilities multiFactorRegistrationUtilities) {
         this.realm = realm;
         this.pushNotificationService = pushNotificationService;
@@ -134,7 +143,7 @@ public class PushRegistrationHelper {
         this.messageIdFactory = messageIdFactory;
         this.deviceProfileHelper = deviceProfileHelper;
         this.multiFactorNodeDelegate = multiFactorNodeDelegate;
-        this.localizationHelper = localizationHelper;
+        this.localizationHelper = localizationHelperFactory.create(realm);
         this.multiFactorRegistrationUtilities = multiFactorRegistrationUtilities;
     }
 

@@ -11,13 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -53,10 +62,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.TextOutputCallback;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,19 +71,17 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.sun.identity.authentication.callbacks.HiddenValueCallback;
-import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
-import com.sun.identity.idm.AMIdentity;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.TextOutputCallback;
+
 import org.forgerock.am.cts.exceptions.CoreTokenException;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.auth.nodes.helpers.LocalizationHelper;
 import org.forgerock.openam.auth.nodes.oath.HashAlgorithm;
 import org.forgerock.openam.auth.nodes.oath.NumberOfDigits;
 import org.forgerock.openam.auth.nodes.oath.OathAlgorithm;
@@ -86,7 +90,6 @@ import org.forgerock.openam.auth.nodes.oath.OathRegistrationHelper;
 import org.forgerock.openam.auth.nodes.push.PushDeviceProfileHelper;
 import org.forgerock.openam.auth.nodes.push.PushRegistrationHelper;
 import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
@@ -99,18 +102,35 @@ import org.forgerock.openam.services.push.PushNotificationException;
 import org.forgerock.openam.services.push.PushNotificationService;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
 import org.forgerock.openam.session.SessionCookies;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.sun.identity.authentication.callbacks.HiddenValueCallback;
+import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
+import com.sun.identity.idm.AMIdentity;
+
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith({MockitoExtension.class})
 public class CombinedMultiFactorRegistrationNodeTest {
 
+    static final String MESSAGE = "Scan the QR code image below with the ForgeRock Authenticator app to "
+            + "register your device with your login";
+    static final String POLICIES_JSON = "{\"biometricAvailable\": { },\"deviceTampering\": {\"score\": 0.8}}";
+    static final Map<Locale, String> MAP_SCAN_MESSAGE = new HashMap<>() {
+        {
+            put(Locale.CANADA, MESSAGE);
+        }
+    };
     @Mock
-    CombinedMultiFactorRegistrationNode.Config config;
+    private CombinedMultiFactorRegistrationNode.Config config;
     @Mock
     private Realm realm;
-    @Mock
-    private CoreWrapper coreWrapper;
     @Mock
     private PushNotificationService pushNotificationService;
     @Mock
@@ -126,40 +146,25 @@ public class CombinedMultiFactorRegistrationNodeTest {
     @Mock
     private ClusterMessageHandler messageHandler;
     @Mock
-    AMIdentity userIdentity;
+    private AMIdentity userIdentity;
     @Mock
-    LegacyIdentityService identityService;
+    private LocalizedMessageProvider localizationHelper;
     @Mock
-    private LocalizationHelper localizationHelper;
+    private NodeUserIdentityProvider identityProvider;
+    private PushRegistrationHelper pushRegistrationHelper;
+    private OathRegistrationHelper oathRegistrationHelper;
+    private CombinedMultiFactorRegistrationNode node;
 
-    PushRegistrationHelper pushRegistrationHelper;
-    OathRegistrationHelper oathRegistrationHelper;
-    CombinedMultiFactorRegistrationNode node;
-
-    static final String MESSAGE = "Scan the QR code image below with the ForgeRock Authenticator app to "
-            + "register your device with your login";
-    static final String POLICIES_JSON = "{\"biometricAvailable\": { },\"deviceTampering\": {\"score\": 0.8}}";
-
-    static final Map<Locale, String> MAP_SCAN_MESSAGE = new HashMap<>() {
-        {
-            put(Locale.CANADA, MESSAGE);
-        }
-    };
-
-    @BeforeMethod
-    public void setup() {
-        initMocks(this);
-
+    @BeforeEach
+    void setup() {
         when(realm.asPath()).thenReturn("/");
         when(sessionCookies.getLBCookie()).thenReturn("amlbcookie01");
         when(pushDeviceProfileHelper.isDeviceSettingsStored(any())).thenReturn(false);
         when(oathDeviceProfileHelper.isDeviceSettingsStored(any())).thenReturn(false);
-        when(coreWrapper.getIdentityOrElseSearchUsingAuthNUserAlias(anyString(), (Realm) any()))
-                .thenReturn(userIdentity);
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void processThrowExceptionIfUserNameNotPresentInSharedState() throws Exception {
+    @Test
+    void processThrowExceptionIfUserNameNotPresentInSharedState() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -167,14 +172,14 @@ public class CombinedMultiFactorRegistrationNodeTest {
         whenNodeConfigHasDefaultValues();
 
         // When
-        node.process(getContext(sharedState, transientState, emptyList()));
-
-        // Then
-        // throw exception
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Expected username to be set.");
     }
 
     @Test
-    public void processShouldStartRegistration() throws Exception {
+    void processShouldStartRegistration() throws Exception {
         // Given
         whenNodeConfigHasDefaultValues();
 
@@ -239,7 +244,7 @@ public class CombinedMultiFactorRegistrationNodeTest {
     }
 
     @Test
-    public void processWhenStateIsNullReturnTimeoutOutcome()
+    void processWhenStateIsNullReturnTimeoutOutcome()
             throws NodeProcessException, PushNotificationException, CoreTokenException {
         // Given
         whenNodeConfigHasDefaultValues();
@@ -257,7 +262,7 @@ public class CombinedMultiFactorRegistrationNodeTest {
 
         // When
         Action result = node.process(getContext(ImmutableList.of(mock(PollingWaitCallback.class)),
-                        getRegistrationEntriesFromSharedState(false))
+                getRegistrationEntriesFromSharedState(false))
         );
 
         // Then
@@ -269,7 +274,7 @@ public class CombinedMultiFactorRegistrationNodeTest {
     }
 
     @Test
-    public void processWhenStateSuccessReturnSuccessOutcome()
+    void processWhenStateSuccessReturnSuccessOutcome()
             throws CoreTokenException, NodeProcessException, PushNotificationException {
         // Given
         whenNodeConfigHasDefaultValues(true);
@@ -300,7 +305,7 @@ public class CombinedMultiFactorRegistrationNodeTest {
     }
 
     @Test
-    public void processWhenStateSuccessReturnSuccessOutcomeAndRecoveryCodes()
+    void processWhenStateSuccessReturnSuccessOutcomeAndRecoveryCodes()
             throws CoreTokenException, NodeProcessException, PushNotificationException {
         // Given
         whenNodeConfigHasDefaultValues(true);
@@ -309,8 +314,8 @@ public class CombinedMultiFactorRegistrationNodeTest {
                 .willReturn(getPushDeviceSettings());
         given(oathDeviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
                 .willReturn(getOathDeviceSettings());
-        given(oathDeviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(true)))
-                .willReturn(Arrays.asList("z0WKEw0Wc8", "Ios4LnA2Qn"));
+        doReturn(Arrays.asList("z0WKEw0Wc8", "Ios4LnA2Qn")).when(oathDeviceProfileHelper)
+                .saveDeviceSettings(any(), any(), any(), eq(true));
         doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
         doReturn(MessageState.SUCCESS).when(pushRegistrationHelper).getMessageState(any());
         doReturn(json(object())).when(pushRegistrationHelper).deleteMessage(any());
@@ -338,7 +343,7 @@ public class CombinedMultiFactorRegistrationNodeTest {
     }
 
     @Test
-    public void processWhenStateDeniedReturnFailureOutcome()
+    void processWhenStateDeniedReturnFailureOutcome()
             throws CoreTokenException, NodeProcessException, PushNotificationException {
         // Given
         whenNodeConfigHasDefaultValues();
@@ -367,7 +372,7 @@ public class CombinedMultiFactorRegistrationNodeTest {
     }
 
     @Test
-    public void processWhenStateUnknownReturnCallbacks()
+    void processWhenStateUnknownReturnCallbacks()
             throws CoreTokenException, NodeProcessException, PushNotificationException {
         // Given
         whenNodeConfigHasDefaultValues();
@@ -452,7 +457,7 @@ public class CombinedMultiFactorRegistrationNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
-                                   List<? extends Callback> callbacks) {
+            List<? extends Callback> callbacks) {
         return new TreeContext(
                 sharedState, transientState, new ExternalRequestContext.Builder().build(),
                 callbacks, Optional.empty()
@@ -480,11 +485,11 @@ public class CombinedMultiFactorRegistrationNodeTest {
     }
 
     private void whenNodeConfigHasDefaultValues(String issuer,
-                                                AbstractMultiFactorNode.UserAttributeToAccountNameMapping accountName,
-                                                int timeout,
-                                                String bgColor,
-                                                String imgUrl,
-                                                boolean generateRecoveryCodes) {
+            AbstractMultiFactorNode.UserAttributeToAccountNameMapping accountName,
+            int timeout,
+            String bgColor,
+            String imgUrl,
+            boolean generateRecoveryCodes) {
         config = mock(CombinedMultiFactorRegistrationNode.Config.class);
         given(config.issuer()).willReturn(issuer);
         given(config.accountName()).willReturn(accountName);
@@ -503,7 +508,7 @@ public class CombinedMultiFactorRegistrationNodeTest {
         given(config.policiesJson()).willReturn(POLICIES_JSON);
         given(config.postponeDeviceProfileStorage()).willReturn(false);
 
-        localizationHelper = mock(LocalizationHelper.class);
+        localizationHelper = mock(LocalizedMessageProvider.class);
         given(localizationHelper.getLocalizedMessage(any(), any(), any(), anyString())).willReturn(MESSAGE);
 
         MultiFactorNodeDelegate multiFactorNodeDelegate = new MultiFactorNodeDelegate(
@@ -519,7 +524,7 @@ public class CombinedMultiFactorRegistrationNodeTest {
                         realm,
                         oathDeviceProfileHelper,
                         multiFactorNodeDelegate,
-                        localizationHelper,
+                        r -> localizationHelper,
                         multiFactorRegistrationUtilities)
         );
 
@@ -531,20 +536,17 @@ public class CombinedMultiFactorRegistrationNodeTest {
                         messageIdFactory,
                         pushDeviceProfileHelper,
                         multiFactorNodeDelegate,
-                        localizationHelper,
+                        r -> localizationHelper,
                         multiFactorRegistrationUtilities)
         );
 
         node = spy(
                 new CombinedMultiFactorRegistrationNode(
                         config,
-                        realm,
-                        coreWrapper,
                         multiFactorNodeDelegate,
-                        identityService,
                         multiFactorRegistrationUtilities,
                         pushRegistrationHelper,
-                        oathRegistrationHelper
+                        oathRegistrationHelper, identityProvider
                 )
         );
 

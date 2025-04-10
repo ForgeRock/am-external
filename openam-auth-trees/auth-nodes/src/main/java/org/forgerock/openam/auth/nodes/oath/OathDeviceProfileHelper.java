@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
@@ -85,7 +93,7 @@ public class OathDeviceProfileHelper extends MultiFactorDeviceProfileHelper<Oath
                 deviceSettings.setRecoveryCodes(recoveryCodes);
             }
 
-            deviceProfileManager.saveDeviceProfile(identity.getName(), realm.toString(), deviceSettings);
+            deviceProfileManager.saveDeviceProfile(identity.getName(), realm.asPath(), deviceSettings);
             return recoveryCodes;
         } catch (NullPointerException e) {
             throw new NodeProcessException("Blank value for necessary data from device response", e);
@@ -107,7 +115,7 @@ public class OathDeviceProfileHelper extends MultiFactorDeviceProfileHelper<Oath
                                    List<String> recoveryCodes) throws NodeProcessException {
         try {
             deviceSettings.setRecoveryCodes(recoveryCodes);
-            deviceProfileManager.saveDeviceProfile(identity.getName(), realm.toString(), deviceSettings);
+            deviceProfileManager.saveDeviceProfile(identity.getName(), realm.asPath(), deviceSettings);
         } catch (DevicePersistenceException e) {
             throw new NodeProcessException("Unable to store device profile", e);
         }
@@ -122,7 +130,11 @@ public class OathDeviceProfileHelper extends MultiFactorDeviceProfileHelper<Oath
      * @throws DevicePersistenceException if unable to save device profile .
      */
     public void saveDeviceSettings(String realm, String username, OathDeviceSettings deviceSettings)
-            throws DevicePersistenceException {
-        userOathDeviceProfileManager.saveDeviceProfile(username, realm, deviceSettings);
+            throws NodeProcessException {
+        try {
+            userOathDeviceProfileManager.saveDeviceProfile(username, realm, deviceSettings);
+        } catch (DevicePersistenceException e) {
+            throw new NodeProcessException("Unable to store device profile", e);
+        }
     }
 }

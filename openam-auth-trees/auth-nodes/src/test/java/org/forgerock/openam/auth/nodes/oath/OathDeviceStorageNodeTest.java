@@ -11,29 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
-
-import com.sun.identity.idm.AMIdentity;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.Action;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
-import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
-import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
-import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
-import org.forgerock.am.identity.application.LegacyIdentityService;
-import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import java.util.Arrays;
-import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,32 +46,45 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
+import java.util.Arrays;
+import java.util.Optional;
+
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
+import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+
+import com.sun.identity.idm.AMIdentity;
+
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class OathDeviceStorageNodeTest {
 
     @Mock
     private Realm realm;
     @Mock
-    private CoreWrapper coreWrapper;
-    @Mock
     private OathDeviceProfileHelper deviceProfileHelper;
     @Mock
-    AMIdentity userIdentity;
+    private AMIdentity userIdentity;
+
+    private OathDeviceStorageNode node;
     @Mock
-    LegacyIdentityService identityService;
-
-    OathDeviceStorageNode node;
-
-    @BeforeMethod
-    public void setup() {
-        initMocks(this);
-
-        when(deviceProfileHelper.isDeviceSettingsStored(any())).thenReturn(false);
-    }
+    private NodeUserIdentityProvider identityProvider;
 
     @Test
-    public void processReturnFailureOutcomeIfDeviceDataNotPresentInSharedState() throws Exception {
+    void processReturnFailureOutcomeIfDeviceDataNotPresentInSharedState() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -97,7 +99,7 @@ public class OathDeviceStorageNodeTest {
     }
 
     @Test
-    public void processSaveDeviceReturnSuccessOutcomeAndRecoveryCodes()
+    void processSaveDeviceReturnSuccessOutcomeAndRecoveryCodes()
             throws NodeProcessException {
         // Given
         initNode();
@@ -124,11 +126,12 @@ public class OathDeviceStorageNodeTest {
     }
 
     @Test
-    public void processSuccessfulRegistrationWhenRecoveryCodesDisabled()
+    void processSuccessfulRegistrationWhenRecoveryCodesDisabled()
             throws NodeProcessException {
         // Given
         initNode();
 
+        when(deviceProfileHelper.isDeviceSettingsStored(any())).thenReturn(false);
         given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
                 .willReturn(getDeviceSettings());
         given(deviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(true)))
@@ -187,8 +190,7 @@ public class OathDeviceStorageNodeTest {
                         realm,
                         deviceProfileHelper,
                         new MultiFactorNodeDelegate(mock(AuthenticatorDeviceServiceFactory.class)),
-                        identityService,
-                        coreWrapper
+                        identityProvider
                 )
         );
     }

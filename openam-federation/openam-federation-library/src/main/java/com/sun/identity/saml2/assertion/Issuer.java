@@ -24,7 +24,7 @@
  *
  * $Id: Issuer.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
- * Ports Copyrighted 2015-2019 ForgeRock AS.
+ * Ports Copyrighted 2015-2025 Ping Identity Corporation.
  */
 
 

@@ -11,12 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.openam.utils.CollectionUtils.asOrderedSet;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
 
@@ -24,16 +33,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 
 public class OpenIdConnectConfigTest {
-    private Map<String, Set<String>> configState;
-    private static final String PRINCIPAL_MAPPER  =
+    private final String PRINCIPAL_MAPPER =
             "org.forgerock.openam.authentication.modules.oidc.DefaultPrincipalMapper";
+    private Map<String, Set<String>> configState;
 
-    @BeforeTest
+    @BeforeEach
     void initalize() {
         configState = new HashMap<String, Set<String>>();
         configState.put(OpenIdConnectConfig.HEADER_NAME_KEY, asSet("header_name"));
@@ -47,13 +56,13 @@ public class OpenIdConnectConfigTest {
     }
 
     @Test
-    public void testAttributeConversion() {
+    void testAttributeConversion() {
         OpenIdConnectConfig config = new OpenIdConnectConfig(configState);
         assertThat(config.getJwkToLocalAttributeMappings().get("id")).isEqualTo("sub");
     }
 
     @Test
-    public void testDuplicateMappingEntries() {
+    void testDuplicateMappingEntries() {
         configState.get(OpenIdConnectConfig.JWK_TO_LOCAL_ATTRIBUTE_MAPPINGS_KEY).add("id=bobo");
         OpenIdConnectConfig config = new OpenIdConnectConfig(configState);
         assertThat(config.getJwkToLocalAttributeMappings()).isNotNull().hasSize(1);
@@ -61,32 +70,36 @@ public class OpenIdConnectConfigTest {
     }
 
     @Test
-    public void testBasicAttributeLookup() {
+    void testBasicAttributeLookup() {
         OpenIdConnectConfig config = new OpenIdConnectConfig(configState);
         assertThat(config.getPrincipalMapperClass()).isEqualTo(PRINCIPAL_MAPPER);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testInvalidCryptoContext() {
+    @Test
+    void testInvalidCryptoContext() {
         configState.remove(OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_KEY);
         configState.put(OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_KEY, asSet("bogus_type"));
-        new OpenIdConnectConfig(configState);
+        assertThatThrownBy(() -> new OpenIdConnectConfig(configState))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testInvalidUrl() {
+    @Test
+    void testInvalidUrl() {
         configState.remove(OpenIdConnectConfig.CRYPTO_CONTEXT_VALUE_KEY);
         configState.put(OpenIdConnectConfig.CRYPTO_CONTEXT_VALUE_KEY, asSet("bogus_url"));
-        new OpenIdConnectConfig(configState);
+        assertThatThrownBy(() -> new OpenIdConnectConfig(configState))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void testInvalidCryptoContextNullValue() {
+    @Test
+    void testInvalidCryptoContextNullValue() {
         configState.remove(OpenIdConnectConfig.CRYPTO_CONTEXT_VALUE_KEY);
-        new OpenIdConnectConfig(configState);
+        assertThatThrownBy(() -> new OpenIdConnectConfig(configState))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
-    public void testCryptoContextClientSecretIgnoresContextValue() {
+    @Test
+    void testCryptoContextClientSecretIgnoresContextValue() {
         configState.remove(OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_KEY);
         configState.put(OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_KEY, asSet(
                 OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_CLIENT_SECRET));

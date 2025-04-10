@@ -11,12 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.jwtpop;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -44,8 +53,8 @@ import org.forgerock.json.jose.jws.handlers.SigningHandler;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.json.jose.utils.Utils;
 import org.forgerock.util.encode.Base64url;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.HttpCallback;
@@ -53,6 +62,7 @@ import com.sun.identity.authentication.spi.HttpCallback;
 public class ChallengeResponseVerifierTest {
     private static final byte[] RPN = new byte[16];
     private static final byte[] RVN = new byte[16];
+
     static {
         Arrays.fill(RVN, (byte) 42);
         Arrays.fill(RPN, (byte) 1);
@@ -68,8 +78,8 @@ public class ChallengeResponseVerifierTest {
 
     private ChallengeResponseVerifier verifier;
 
-    @BeforeMethod
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         responseDecryptionKey = OctJWK.parse(json(object(
                 field("kty", "oct"),
                 field("use", "enc"),
@@ -123,19 +133,20 @@ public class ChallengeResponseVerifierTest {
         verifier = new ChallengeResponseVerifier(responseDecryptionKey, confirmationKey, challenge);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void shouldRejectNonSignatureConfirmationKeys() throws Exception {
+    @Test
+    void shouldRejectNonSignatureConfirmationKeys() throws Exception {
         // Given
         EcJWK cnf = new EcJWK(confirmationKey.toECPublicKey(), KeyUseConstants.ENC, null);
 
         // When
-        new ChallengeResponseVerifier(responseDecryptionKey, cnf, challenge);
-
-        // Then - exception
+        assertThatThrownBy(() -> new ChallengeResponseVerifier(responseDecryptionKey, cnf, challenge))
+                // Then
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("verification key is not for signatures");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class, expectedExceptionsMessageRegExp = "challenge has expired")
-    public void shouldRejectIfChallengeHasExpired() throws Exception {
+    @Test
+    void shouldRejectIfChallengeHasExpired() throws Exception {
         // Given
         challenge = Challenge.builder()
                 .responseEncryptionKey(responseDecryptionKey)
@@ -149,39 +160,49 @@ public class ChallengeResponseVerifierTest {
         callback.setAuthorization("some authorization response");
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("challenge has expired");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "invalid authorization header")
-    public void shouldRejectInvalidAuthSchemeInResponse() throws Exception {
+    @Test
+    void shouldRejectInvalidAuthSchemeInResponse() throws Exception {
         // Given
         callback.setAuthorization("invalid response");
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("invalid authorization header");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class)
-    public void shouldRejectInvalidJwtInResponse() throws Exception {
+    @Test
+    void shouldRejectInvalidJwtInResponse() throws Exception {
         callback.setAuthorization("JWT-PoP not-a-jwt");
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("invalid authorization header\n" +
+                        "not right number of dots, 1");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "response is not encrypted.*")
-    public void shouldRejectNonEncryptedResponse() throws Exception {
+    @Test
+    void shouldRejectNonEncryptedResponse() throws Exception {
         // Given
         final String responseJwt = buildResponse(null, confirmationKey, new Date(Long.MAX_VALUE), new Date(),
                 challenge.getAudience(), challenge.getOrganisationDn(), challenge.getChallengeNonce());
         callback.setAuthorization("JWT-PoP " + responseJwt);
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("response is not encrypted");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class, expectedExceptionsMessageRegExp = "response decryption failed")
-    public void shouldRejectIncorrectlyEncryptedResponse() throws Exception {
+    @Test
+    void shouldRejectIncorrectlyEncryptedResponse() throws Exception {
         // Given
         final String responseJwt = buildResponse(new SecretKeySpec("incorrect key123".getBytes(), "AES"),
                 confirmationKey, challenge.getExpiresAt(), new Date(), challenge.getAudience(),
@@ -189,11 +210,14 @@ public class ChallengeResponseVerifierTest {
         callback.setAuthorization("JWT-PoP " + responseJwt);
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("response decryption failed");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class)
-    public void shouldRejectIncorrectlySignedResponse() throws Exception {
+    @Test
+    void shouldRejectIncorrectlySignedResponse() throws Exception {
         // Given
         // Attempt to trick AM into accepting a JWT signed using the public key but with a symmetric algorithm,
         // that would not prove possession of the private key
@@ -203,16 +227,18 @@ public class ChallengeResponseVerifierTest {
                 field("alg", "HS256")
         )));
         final String responseJwt = buildResponse(responseEncryptionKey, signingKey, challenge.getExpiresAt(),
-                 new Date(), challenge.getAudience(), challenge.getOrganisationDn(), challenge.getChallengeNonce());
+                new Date(), challenge.getAudience(), challenge.getOrganisationDn(), challenge.getChallengeNonce());
         callback.setAuthorization("JWT-PoP " + responseJwt);
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("signature verification failed");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "signature verification failed")
-    public void shouldRejectInvalidSignature() throws Exception {
+    @Test
+    void shouldRejectInvalidSignature() throws Exception {
         // Given
         confirmationKey = EcJWK.parse(json(object(
                 field("kty", "EC"),
@@ -229,12 +255,14 @@ public class ChallengeResponseVerifierTest {
         callback.setAuthorization("JWT-PoP " + responseJwt);
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("signature verification failed");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "response was issued before challenge")
-    public void shouldRejectResponsesIssuedBeforeChallenge() throws Exception {
+    @Test
+    void shouldRejectResponsesIssuedBeforeChallenge() throws Exception {
         // Given
         final String responseJwt = buildResponse(responseEncryptionKey, confirmationKey, challenge.getExpiresAt(),
                 new Date(Long.MIN_VALUE), challenge.getAudience(), challenge.getOrganisationDn(),
@@ -242,12 +270,14 @@ public class ChallengeResponseVerifierTest {
         callback.setAuthorization("JWT-PoP " + responseJwt);
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("response was issued before challenge");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "response issued in the future")
-    public void shouldRejectResponsesIssuedInTheFuture() throws Exception {
+    @Test
+    void shouldRejectResponsesIssuedInTheFuture() throws Exception {
         // Given
         final String responseJwt = buildResponse(responseEncryptionKey, confirmationKey, challenge.getExpiresAt(),
                 new Date(Long.MAX_VALUE), challenge.getAudience(), challenge.getOrganisationDn(),
@@ -255,48 +285,56 @@ public class ChallengeResponseVerifierTest {
         callback.setAuthorization("JWT-PoP " + responseJwt);
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("response issued in the future");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "response has expired")
-    public void shouldRejectResponseThatHasExpired() throws Exception {
+    @Test
+    void shouldRejectResponseThatHasExpired() throws Exception {
         // Given
         final String responseJwt = buildResponse(responseEncryptionKey, confirmationKey, new Date(Long.MIN_VALUE),
                 new Date(), challenge.getAudience(), challenge.getOrganisationDn(), challenge.getChallengeNonce());
         callback.setAuthorization("JWT-PoP " + responseJwt);
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("response has expired");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "incorrect issuer")
-    public void shouldRejectResponseNotIssuedBySubject() throws Exception {
+    @Test
+    void shouldRejectResponseNotIssuedBySubject() throws Exception {
         // Given
         final String responseJwt = buildResponse(responseEncryptionKey, confirmationKey, new Date(Long.MAX_VALUE),
                 new Date(), "incorrect subject", challenge.getOrganisationDn(), challenge.getChallengeNonce());
         callback.setAuthorization("JWT-PoP " + responseJwt);
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("incorrect issuer");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "incorrect audience")
-    public void shouldRejectResponseNotMeantForUs() throws Exception {
+    @Test
+    void shouldRejectResponseNotMeantForUs() throws Exception {
         // Given
         final String responseJwt = buildResponse(responseEncryptionKey, confirmationKey, new Date(Long.MAX_VALUE),
                 new Date(), challenge.getAudience(), "incorrect audience", challenge.getChallengeNonce());
         callback.setAuthorization("JWT-PoP " + responseJwt);
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("incorrect audience");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "signature verification failed")
-    public void shouldRejectIncorrectChallengeResponse() throws Exception {
+    @Test
+    void shouldRejectIncorrectChallengeResponse() throws Exception {
         // Given
         final String responseJwt = buildResponse(responseEncryptionKey, confirmationKey, new Date(Long.MAX_VALUE),
                 new Date(), challenge.getAudience(), challenge.getOrganisationDn(),
@@ -304,35 +342,41 @@ public class ChallengeResponseVerifierTest {
         callback.setAuthorization("JWT-PoP " + responseJwt);
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("signature verification failed");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "apu is incorrect")
-    public void shouldRejectIfRpnDoesNotMatchEncryptionValue() throws Exception {
+    @Test
+    void shouldRejectIfRpnDoesNotMatchEncryptionValue() throws Exception {
         // Given
         final byte[] wrongRpn = new byte[16];
         callback.setAuthorization("JWT-PoP " + buildEcdheResponse("apu", "apv", Base64url.encode(wrongRpn)));
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("apu is incorrect");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "apu is incorrect")
-    public void shouldRejectIncorrectlyFormedApuClaims() throws Exception {
+    @Test
+    void shouldRejectIncorrectlyFormedApuClaims() throws Exception {
         // Given
         final String apu = Utils.base64urlEncode("apu");
         final byte[] apv = thumbprint("SHA-256", serverEphemeralKey, challenge.getChallengeSignatureKey());
         callback.setAuthorization("JWT-PoP " + buildEcdheResponse(apu, Base64url.encode(apv), Base64url.encode(RPN)));
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("apu is incorrect");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class,
-            expectedExceptionsMessageRegExp = "apv is incorrect")
-    public void shouldRejectIncorrectlyFormedApvClaims() throws Exception {
+    @Test
+    void shouldRejectIncorrectlyFormedApvClaims() throws Exception {
         // Given
         final byte[] apu = binaryConcat(thumbprint("SHA-256", confirmationKey),
                 Base64url.decode(clientEphemeralKey.getX()), Base64url.decode(clientEphemeralKey.getY()), RPN);
@@ -340,11 +384,14 @@ public class ChallengeResponseVerifierTest {
         callback.setAuthorization("JWT-PoP " + buildEcdheResponse(Base64url.encode(apu), apv, Base64url.encode(RPN)));
 
         // When
-        verifier.verify(callback);
+        assertThatThrownBy(() -> verifier.verify(callback))
+                // Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessageContaining("apv is incorrect");
     }
 
     @Test
-    public void shouldAcceptCorrectlyEncryptedAndSignedResponse() throws Exception {
+    void shouldAcceptCorrectlyEncryptedAndSignedResponse() throws Exception {
         // Given
         final byte[] apu = binaryConcat(thumbprint("SHA-256", confirmationKey),
                 Base64url.decode(clientEphemeralKey.getX()), Base64url.decode(clientEphemeralKey.getY()), RPN);
@@ -387,18 +434,18 @@ public class ChallengeResponseVerifierTest {
 
         return jbf.jwe(serverEphemeralKey.toECPublicKey())
                 .headers()
-                    .alg(JweAlgorithm.ECDH_ES)
-                    .enc(EncryptionMethod.A128GCM)
-                    .epk(clientEphemeralKey)
-                    .apu(apu)
-                    .apv(apv)
+                .alg(JweAlgorithm.ECDH_ES)
+                .enc(EncryptionMethod.A128GCM)
+                .epk(clientEphemeralKey)
+                .apu(apu)
+                .apv(apv)
                 .done()
                 .claims(claims)
                 .build();
     }
 
     private String buildResponse(Key encryptionKey, JWK signingKey, Date expiry, Date issuedAt,
-                                 String issuer, String audience, String nonce) throws Exception {
+            String issuer, String audience, String nonce) throws Exception {
         final JwtBuilderFactory jbf = new JwtBuilderFactory();
         final SigningManager signingManager = new SigningManager();
 
@@ -423,15 +470,15 @@ public class ChallengeResponseVerifierTest {
         if (encryptionKey != null) {
             return jbf.jwe(encryptionKey)
                     .headers()
-                        .alg(JweAlgorithm.DIRECT)
-                        .enc(EncryptionMethod.A128GCM)
+                    .alg(JweAlgorithm.DIRECT)
+                    .enc(EncryptionMethod.A128GCM)
                     .done()
                     .claims(claims)
                     .build();
         } else {
             return jbf.jws(new NOPSigningHandler())
                     .headers()
-                        .alg(JwsAlgorithm.NONE)
+                    .alg(JwsAlgorithm.NONE)
                     .done()
                     .claims(claims)
                     .build();

@@ -11,10 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.script;
 
+import static org.forgerock.openam.auth.node.api.AuthScriptUtilities.OAUTH_APPLICATION;
+import static org.forgerock.openam.auth.node.api.AuthScriptUtilities.SAML_APPLICATION;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.CALLBACKS_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.EXISTING_SESSION;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.HEADERS_IDENTIFIER;
@@ -27,26 +37,44 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_I
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.TRANSIENT_STATE_IDENTIFIER;
 
 import org.forgerock.http.client.ChfHttpClient;
+import org.forgerock.openam.scripting.api.secrets.IScriptedSecrets;
 import org.forgerock.openam.scripting.domain.BindingsMap;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
+import org.forgerock.openam.scripting.domain.OAuthScriptedBindingObject;
+import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 
 /**
  * Script bindings for the ScriptedDecisionNode script.
  */
-public final class ScriptedDecisionNodeBindings extends AbstractScriptedDecisionNodeBindings {
+public final class ScriptedDecisionNodeBindings extends BaseScriptedDecisionNodeBindings
+        implements LegacyScriptBindings {
 
     private final Object sharedState;
     private final Object transientState;
     private final ChfHttpClient httpClient;
+    private final IScriptedSecrets secrets;
     private final ScriptIdentityRepository scriptIdentityRepository;
-
+    /**
+     *  When the scripted decision node is executed as part of a SAML flow, this provides information to the script
+     *  about the SAML application and incoming authentication request.
+     */
+    private final SAMLScriptedBindingObject samlApplication;
+    /**
+     *  When the scripted decision node is executed as part of an OAuth flow, this provides information to the script
+     *  about the OAuth request and the client.
+     */
+    private final OAuthScriptedBindingObject oauthApplication;
 
     private ScriptedDecisionNodeBindings(Builder builder) {
         super(builder);
         this.sharedState = builder.sharedState;
         this.transientState = builder.transientState;
         this.httpClient = builder.httpClient;
+        this.secrets = builder.secrets;
         this.scriptIdentityRepository = builder.scriptIdentityRepository;
+        this.samlApplication = builder.samlApplication;
+        this.oauthApplication = builder.oauthApplication;
     }
 
     /**
@@ -77,7 +105,10 @@ public final class ScriptedDecisionNodeBindings extends AbstractScriptedDecision
 
     @Override
     public BindingsMap nextGenBindings() {
-        return commonNextGenBindings();
+        BindingsMap bindingsMap = commonNextGenBindings();
+        bindingsMap.put(SAML_APPLICATION, samlApplication);
+        bindingsMap.put(OAUTH_APPLICATION, oauthApplication);
+        return bindingsMap;
     }
 
     /**
@@ -107,7 +138,7 @@ public final class ScriptedDecisionNodeBindings extends AbstractScriptedDecision
     }
 
     /**
-     * Step 6 of the builder.
+     * Step 3 of the builder.
      */
     public interface ScriptedDecisionNodeBindingsStep3 {
         /**
@@ -120,31 +151,77 @@ public final class ScriptedDecisionNodeBindings extends AbstractScriptedDecision
     }
 
     /**
-     * Step 7 of the builder.
+     * Step 4 of the builder.
      */
     public interface ScriptedDecisionNodeBindingsStep4 {
+        /**
+         * Sets the {@link IScriptedSecrets}.
+         *
+         * @param secrets the {@link IScriptedSecrets}
+         * @return the next step of the {@link Builder}
+         */
+        ScriptedDecisionNodeBindingsStep5 withSecrets(IScriptedSecrets secrets);
+    }
+
+    /**
+     * Step 5 of the builder.
+     */
+    public interface ScriptedDecisionNodeBindingsStep5 {
         /**
          * Sets the script identity repository.
          *
          * @param scriptIdentityRepository the script identity repository
          * @return the next step of the {@link Builder}
          */
-        AbstractScriptedDecisionNodeBindingsStep0 withScriptIdentityRepository(
+        ScriptedDecisionNodeBindingsStep6 withScriptIdentityRepository(
                 ScriptIdentityRepository scriptIdentityRepository);
     }
 
+    /**
+     * Step 6 of the builder.
+     */
+    public interface ScriptedDecisionNodeBindingsStep6 {
+        /**
+         * Sets the saml application binding.
+         *
+         * @param samlApplication the saml application binding
+         * @return the next step of the {@link Builder}
+         */
+        ScriptedDecisionNodeBindingsStep7 withSamlApplication(
+                SAMLScriptedBindingObject samlApplication);
+    }
+
+    /**
+     * Step 7 of the builder.
+     */
+    public interface ScriptedDecisionNodeBindingsStep7 {
+        /**
+         * Sets the oauth application binding.
+         *
+         * @param oauthApplication the oauth application binding
+         * @return the next step of the {@link Builder}
+         */
+        BaseScriptedDecisionNodeBindingsStep1<ScriptedDecisionNodeBindings> withOauthApplication(
+                OAuthScriptedBindingObject oauthApplication);
+    }
 
     /**
      * Builder object to construct a {@link ScriptedDecisionNodeBindings}.
+     * Before modifying this builder, or creating a new one, please read
+     * service-component-api/scripting-api/src/main/java/org/forgerock/openam/scripting/domain/README.md
      */
-    public static final class Builder extends AbstractScriptedDecisionNodeBindings.Builder<Builder>
+    private static final class Builder extends BaseScriptedDecisionNodeBindings.Builder<ScriptedDecisionNodeBindings>
             implements ScriptedDecisionNodeBindingsStep1, ScriptedDecisionNodeBindingsStep2,
-                               ScriptedDecisionNodeBindingsStep3, ScriptedDecisionNodeBindingsStep4 {
+            ScriptedDecisionNodeBindingsStep3, ScriptedDecisionNodeBindingsStep4, ScriptedDecisionNodeBindingsStep5,
+            ScriptedDecisionNodeBindingsStep6, ScriptedDecisionNodeBindingsStep7 {
 
         private Object sharedState;
         private Object transientState;
-        private ScriptIdentityRepository scriptIdentityRepository;
         private ChfHttpClient httpClient;
+        private IScriptedSecrets secrets;
+        private ScriptIdentityRepository scriptIdentityRepository;
+        private SAMLScriptedBindingObject samlApplication;
+        private OAuthScriptedBindingObject oauthApplication;
 
         /**
          * Builds the {@link ScriptedDecisionNodeBindings}.
@@ -193,18 +270,54 @@ public final class ScriptedDecisionNodeBindings extends AbstractScriptedDecision
         }
 
         /**
+         * Set the secrets for the builder.
+         *
+         * @param secrets The {@link IScriptedSecrets}.
+         * @return The next step of the Builder.
+         */
+        @Override
+        public ScriptedDecisionNodeBindingsStep5 withSecrets(IScriptedSecrets secrets) {
+            this.secrets = secrets;
+            return this;
+        }
+
+        /**
          * Set the scriptIdentityRepository for the builder.
          *
          * @param scriptIdentityRepository The {@link ScriptIdentityRepository}.
          * @return The next step of the Builder.
          */
         @Override
-        public AbstractScriptedDecisionNodeBindingsStep0 withScriptIdentityRepository(
+        public ScriptedDecisionNodeBindingsStep6 withScriptIdentityRepository(
                 ScriptIdentityRepository scriptIdentityRepository) {
             this.scriptIdentityRepository = scriptIdentityRepository;
             return this;
         }
 
+        /**
+         * Set the saml application binding for the builder.
+         *
+         * @param samlApplication the saml application binding.
+         * @return the next step of the Builder.
+         */
+        @Override
+        public ScriptedDecisionNodeBindingsStep7 withSamlApplication(
+                SAMLScriptedBindingObject samlApplication) {
+            this.samlApplication = samlApplication;
+            return this;
+        }
 
+        /**
+         * Set the oauth application binding for the builder.
+         *
+         * @param oauthApplication the oauth application binding.
+         * @return the next step of the Builder.
+         */
+        @Override
+        public BaseScriptedDecisionNodeBindingsStep1<ScriptedDecisionNodeBindings> withOauthApplication(
+                OAuthScriptedBindingObject oauthApplication) {
+            this.oauthApplication = oauthApplication;
+            return this;
+        }
     }
 }

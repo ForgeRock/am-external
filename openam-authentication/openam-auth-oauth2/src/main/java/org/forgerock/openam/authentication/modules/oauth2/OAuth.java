@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2022 ForgeRock AS.
+ * Copyright 2011-2025 Ping Identity Corporation.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms
@@ -24,7 +24,7 @@
  *
  * Portions Copyrighted 2015 Nomura Research Institute, Ltd.
  *
- * Portions Copyrighted 2022 Forgerock AS.
+ * Portions Copyrighted 2022-2025 Ping Identity Corporation
  */
 package org.forgerock.openam.authentication.modules.oauth2;
 
@@ -75,8 +75,8 @@ import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.LoginException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;

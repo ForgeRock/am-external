@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2.soap;
 
@@ -80,7 +88,7 @@ class SamlMtlsHandlerFactoryTest {
     private final String secretLabel = "am.applications.federation.entity.providers.saml2.test.mtls";
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockedStatic<CacheBuilder> mockMessageFactory = mockStatic(CacheBuilder.class);
         mockMessageFactory.when(CacheBuilder::newBuilder).thenReturn(cacheBuilder);
         given(cacheBuilder.maximumSize(any(long.class)).build(any())).willReturn(cache);
@@ -89,11 +97,11 @@ class SamlMtlsHandlerFactoryTest {
     }
 
     @AfterEach
-    public void tearDown() {
+    void tearDown() {
     }
 
     @Test
-    public void testHandlerIsFromCustomLabel () throws Exception {
+    void testHandlerIsFromCustomLabel () throws Exception {
         // given
         given(secrets.getRealmSecrets(realm)).willReturn(secretsProviderFacade);
         given(secretsProviderFacade.getActiveSecret(notNull()).getOrThrowIfInterrupted()).willReturn(secret);
@@ -109,7 +117,7 @@ class SamlMtlsHandlerFactoryTest {
     }
 
     @Test
-    public void testHandlerIsFromDefaultLabel () throws Exception {
+    void testHandlerIsFromDefaultLabel () throws Exception {
         // given
         given(secrets.getRealmSecrets(realm)).willReturn(secretsProviderFacade);
         given(secretsProviderFacade.getActiveSecret(notNull()).getOrThrowIfInterrupted())
@@ -126,7 +134,7 @@ class SamlMtlsHandlerFactoryTest {
     }
 
     @Test
-    public void testRealmStoreChangeExpiresAllCachesForRealm() throws RealmLookupException {
+    void testRealmStoreChangeExpiresAllCachesForRealm() throws RealmLookupException {
         // given
         given(realmLookup.lookup("alpha")).willReturn(realm);
         given(cache.asMap()).willReturn(map);
@@ -139,7 +147,7 @@ class SamlMtlsHandlerFactoryTest {
     }
 
     @Test
-    public void testGlobalStoreChangeExpiresAllCaches() {
+    void testGlobalStoreChangeExpiresAllCaches() {
         // when
         samlMtlsHandlerFactory.secretStoreHasChanged(null, null, 1);
 
@@ -148,7 +156,7 @@ class SamlMtlsHandlerFactoryTest {
     }
 
     @Test
-    public void testRealmLookupFailedChangeExpiresAllCaches() throws RealmLookupException {
+    void testRealmLookupFailedChangeExpiresAllCaches() throws RealmLookupException {
         given(realmLookup.lookup("alpha")).willThrow(RealmLookupException.class);
 
         // when
@@ -159,7 +167,7 @@ class SamlMtlsHandlerFactoryTest {
     }
 
     @Test
-    public void testPurposeMappingChangeExpiresCachesForLabel() throws RealmLookupException {
+    void testPurposeMappingChangeExpiresCachesForLabel() throws RealmLookupException {
         // given
         given(realmLookup.lookup("alpha")).willReturn(realm);
         PurposeMapping purposeMapping = new TestPurposeMapping(secretLabel);
@@ -172,7 +180,7 @@ class SamlMtlsHandlerFactoryTest {
     }
 
     @Test
-    public void testDefaultPurposeMappingChangeExpiresCachesForLabel() throws RealmLookupException {
+    void testDefaultPurposeMappingChangeExpiresCachesForLabel() throws RealmLookupException {
         // given
         given(realmLookup.lookup("alpha")).willReturn(realm);
         PurposeMapping purposeMapping = new TestPurposeMapping(SAML2_DEFAULT_SP_MTLS);

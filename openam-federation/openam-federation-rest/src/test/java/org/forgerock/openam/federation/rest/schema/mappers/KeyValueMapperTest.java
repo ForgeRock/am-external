@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -22,14 +30,14 @@ import static org.forgerock.openam.objectenricher.EnricherContext.ROOT;
 import java.util.List;
 
 import org.forgerock.openam.federation.rest.schema.hosted.service.KeyValue;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class KeyValueMapperTest {
 
     private KeyValueMapper mapper = new KeyValueMapper();
 
     @Test
-    public void shouldIgnoreInvalidInput() {
+    void shouldIgnoreInvalidInput() {
         List<KeyValue> keyValues = mapper.map(asList(
                 "invalid=value=provided",
                 "bogus",
@@ -38,7 +46,7 @@ public class KeyValueMapperTest {
     }
 
     @Test
-    public void shouldMapValidInputsCorrectly() {
+    void shouldMapValidInputsCorrectly() {
         List<KeyValue> keyValues = mapper.map(asList(
                 "valid=value",
                 "badger=weasel"), ROOT);
@@ -47,7 +55,7 @@ public class KeyValueMapperTest {
     }
 
     @Test
-    public void shouldSerialiseCorrectly() {
+    void shouldSerialiseCorrectly() {
         List<String> strings = mapper.inverse(asList(
                 new KeyValue("badger", "weasel"),
                 new KeyValue("foo", "bar")),

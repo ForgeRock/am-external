@@ -24,7 +24,7 @@
  *
  * $Id: NameIDPolicyImpl.java,v 1.5 2008/08/31 05:49:48 bina Exp $
  *
- * Portions Copyrighted 2016-2023 ForgeRock AS.
+ * Portions Copyrighted 2016-2025 Ping Identity Corporation.
  */
 
 
@@ -35,7 +35,6 @@ import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
 import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
 import static org.forgerock.openam.utils.StringUtils.isNotEmpty;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -50,7 +49,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  * properties.
  */
 
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class NameIDPolicyImpl implements NameIDPolicy {
     
     static private final String FORMAT="Format";

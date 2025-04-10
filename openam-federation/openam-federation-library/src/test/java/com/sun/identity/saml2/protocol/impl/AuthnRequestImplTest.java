@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.protocol.impl;
@@ -25,9 +33,9 @@ import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 
-import org.testng.annotations.Test;
-
 import com.sun.identity.saml2.assertion.AudienceRestriction;
+
+import org.junit.jupiter.api.Test;
 import com.sun.identity.saml2.assertion.BaseID;
 import com.sun.identity.saml2.assertion.Conditions;
 import com.sun.identity.saml2.assertion.Issuer;
@@ -54,7 +62,7 @@ public class AuthnRequestImplTest {
     private static final String ACS_URL = "https://acs.example.com/foo";
 
     @Test
-    public void shouldProduceCorrectXml() throws Exception {
+    void shouldProduceCorrectXml() throws Exception {
         // Given
         final long referenceTimestamp = 1622626177000L; // Wed Jun 02 10:29:37 BST 2021
 
@@ -140,7 +148,7 @@ public class AuthnRequestImplTest {
         // Then
         Path path = findPathToResource(this.getClass(), "/saml2/example-authnrequest.xml");
         // Skip copyright header:
-        String expected = Files.readAllLines(path).stream().skip(7).collect(joining("\n"));
+        String expected = Files.readAllLines(path).stream().skip(8).collect(joining("\n"));
         assertThat(xml).isEqualToIgnoringWhitespace(expected);
     }
 }

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.assertion.impl;
@@ -35,8 +43,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.Element;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -104,8 +113,7 @@ public class AssertionImplTest {
             "LT9LYFyQqsvUyCagBb4aLs009kbW6inN8zA6\n" +
             "-----END CERTIFICATE-----\n";
 
-    @DataProvider
-    public Object[][] xmlTestCases() {
+    public static Object[][] xmlTestCases() {
         return new Object[][] {
                 { true, true, "<saml:Assertion xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\" " +
                         "ID=\"testId\" " +
@@ -193,7 +201,8 @@ public class AssertionImplTest {
         };
     }
 
-    @Test(dataProvider = "xmlTestCases")
+    @ParameterizedTest
+    @MethodSource("xmlTestCases")
     public void testToXmlString(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
         // Given
         AssertionImpl assertion = assertion();
@@ -206,7 +215,7 @@ public class AssertionImplTest {
     }
 
     @Test
-    public void testSignedToXmlString() throws Exception {
+    void testSignedToXmlString() throws Exception {
         // Given
         String id = "_d71a3a8e9fcc45c9e9d248ef7049393fc8f04e5f75";
         String origXml =
@@ -270,7 +279,7 @@ public class AssertionImplTest {
     }
 
     @Test
-    public void shouldRoundTripAsJson() throws Exception {
+    void shouldRoundTripAsJson() throws Exception {
         // Given
         Assertion assertion = assertion();
         // Sign the assertion to reflect most common scenario

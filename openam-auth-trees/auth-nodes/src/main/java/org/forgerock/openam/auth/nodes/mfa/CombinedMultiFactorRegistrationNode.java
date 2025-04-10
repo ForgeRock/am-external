@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
@@ -30,8 +38,6 @@ import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.TOTP_URI_HO
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_CHALLENGE_KEY;
 
-import javax.inject.Inject;
-import javax.security.auth.callback.Callback;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,17 +45,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.net.UrlEscapers;
-import com.google.inject.assistedinject.Assisted;
-import com.sun.identity.idm.AMIdentity;
+import javax.inject.Inject;
+import javax.security.auth.callback.Callback;
+
 import org.forgerock.am.cts.exceptions.CoreTokenException;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.nodes.oath.HashAlgorithm;
 import org.forgerock.openam.auth.nodes.oath.NumberOfDigits;
 import org.forgerock.openam.auth.nodes.oath.OathAlgorithm;
@@ -59,8 +64,6 @@ import org.forgerock.openam.auth.nodes.push.PushRegistrationConfig;
 import org.forgerock.openam.auth.nodes.push.PushRegistrationHelper;
 import org.forgerock.openam.auth.nodes.validators.JsonValidator;
 import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
-import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.push.AuthenticatorPushService;
@@ -72,6 +75,11 @@ import org.forgerock.util.encode.Base64url;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.net.UrlEscapers;
+import com.google.inject.assistedinject.Assisted;
+import com.sun.identity.idm.AMIdentity;
 
 /**
  * The Combined Multi-Factor Registration node is a registration node that does not authenticate a user but
@@ -165,24 +173,20 @@ public class CombinedMultiFactorRegistrationNode extends AbstractMultiFactorNode
      * The MFA registration node constructor.
      *
      * @param config the node configuration.
-     * @param realm the realm.
-     * @param coreWrapper the {@code CoreWrapper} instance.
      * @param mfaNodeDelegate shared utilities common to push implementations.
-     * @param identityService an instance of the IdentityService.
      * @param multiFactorRegistrationUtilities shared utilities for mfa registration operations.
      * @param pushRegistrationHelper the push registration helper class.
      * @param oathRegistrationHelper the oath registration helper class.
+     * @param identityProvider the identity provider.
      */
     @Inject
     public CombinedMultiFactorRegistrationNode(@Assisted CombinedMultiFactorRegistrationNode.Config config,
-                                               @Assisted Realm realm,
-                                               CoreWrapper coreWrapper,
                                                MultiFactorNodeDelegate<AuthenticatorPushService> mfaNodeDelegate,
-                                               LegacyIdentityService identityService,
                                                MultiFactorRegistrationUtilities multiFactorRegistrationUtilities,
                                                PushRegistrationHelper pushRegistrationHelper,
-                                               OathRegistrationHelper oathRegistrationHelper) {
-        super(realm, coreWrapper, mfaNodeDelegate, identityService);
+                                               OathRegistrationHelper oathRegistrationHelper,
+                                               NodeUserIdentityProvider identityProvider) {
+        super(mfaNodeDelegate, identityProvider);
         this.config = config;
         this.multiFactorRegistrationUtilities = multiFactorRegistrationUtilities;
         this.pushRegistrationHelper = pushRegistrationHelper;

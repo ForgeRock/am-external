@@ -11,11 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
 import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
@@ -30,41 +39,45 @@ import org.forgerock.am.saml2.impl.Saml2SsoResponseUtils;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
-
-import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class WriteFederationInformationNodeTest {
 
     private Node node;
     @Mock
     private Saml2SsoResponseUtils responseUtils;
     @Mock
-    private LegacyIdentityService identityService;
+    private NodeUserIdentityProvider identityProvider;
 
-    @BeforeMethod
-    public void setup() {
-        MockitoAnnotations.initMocks(this);
-        node = new WriteFederationInformationNode(responseUtils, identityService);
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class, expectedExceptionsMessageRegExp = "No user information.*")
-    public void shouldFailIfAttributesAreMissing() throws Exception {
-        node.process(context(object()));
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class,
-            expectedExceptionsMessageRegExp = "sun-fm-saml2-nameid-info.*")
-    public void shouldFailIfNameIdInfoIsMissing() throws Exception {
-        node.process(context(object(field("userInfo", object(field("attributes", object()))))));
+    @BeforeEach
+    void setup() {
+        node = new WriteFederationInformationNode(responseUtils, identityProvider);
     }
 
     @Test
-    public void shouldLinkAccountsUsingNameIdInfo() throws Exception {
+    void shouldFailIfAttributesAreMissing() {
+        assertThatThrownBy(() -> node.process(context(object())))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("No user information");
+    }
+
+    @Test
+    void shouldFailIfNameIdInfoIsMissing() {
+        assertThatThrownBy(
+            () -> node.process(context(object(field("userInfo", object(field("attributes", object())))))))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("sun-fm-saml2-nameid-info");
+    }
+
+    @Test
+    void shouldLinkAccountsUsingNameIdInfo() throws Exception {
         node.process(context(object(
                 field("username", "username"),
                 field("userInfo",

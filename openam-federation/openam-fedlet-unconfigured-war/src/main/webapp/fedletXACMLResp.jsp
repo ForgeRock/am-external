@@ -20,7 +20,7 @@
 
   Copyright 2009 Sun Microsystems Inc. All Rights Reserved
 
-   Portions Copyrighted 2013-2019 ForgeRock AS.
+   Portions Copyrighted 2013-2025 Ping Identity Corporation
 --%>
 
 
@@ -73,7 +73,7 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
 <%
     try {
         String idpEntityID = request.getParameter("idpEntityID");
-	if ((idpEntityID == null) || 
+	if ((idpEntityID == null) ||
             (idpEntityID.length() == 0)) {
            response.sendError(response.SC_BAD_REQUEST,
 			   SAML2Utils.bundle.getString("nullIDPEntityID"));
@@ -81,7 +81,7 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
 	}
 
         String spEntityID = request.getParameter("spEntityID");
-	if ((spEntityID == null) || 
+	if ((spEntityID == null) ||
             (spEntityID.length() == 0)) {
            response.sendError(response.SC_BAD_REQUEST,
 			   SAML2Utils.bundle.getString("nullSPEntityID"));
@@ -107,7 +107,7 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
                                         serviceName,
 					resource,
                                         action);
-                                         
+
 %>
 <h2> Fedlet XACML Query Response </h2>
 <table border="2" cellspacing="0" cellpadding="7">
@@ -118,12 +118,12 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
 <%
        resource = ESAPI.encoder().encodeForHTML(resource);
        out.println("<tr>");
-       out.println("<td>"); 
+       out.println("<td>");
        out.println(resource);
-       out.println("</td>"); 
-       out.println("<td>"); 
+       out.println("</td>");
+       out.println("<td>");
        out.println(ESAPI.encoder().encodeForHTML(policy_decision));
-       out.println("</td>"); 
+       out.println("</td>");
 %>
 </table>
 <%

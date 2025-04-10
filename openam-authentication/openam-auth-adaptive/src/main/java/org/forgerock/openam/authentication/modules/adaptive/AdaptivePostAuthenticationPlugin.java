@@ -11,21 +11,28 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2011-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.adaptive;
 
 import static org.forgerock.openam.authentication.modules.adaptive.Adaptive.stringToMap;
 
-import java.security.AccessController;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +76,7 @@ public class AdaptivePostAuthenticationPlugin implements AMPostAuthProcessInterf
                         // Now we save the attribs, since we can do it in one shot
                         try {
                             AMIdentity id = new AMIdentity(
-                                    AccessController.doPrivileged(AdminTokenAction.getInstance()),
+                                    AdminTokenAction.getInstance().run(),
                                     token.getProperty(Constants.UNIVERSAL_IDENTIFIER));
                             id.setAttributes(Collections.singletonMap(name, Collections.singleton(value)));
                             id.store();

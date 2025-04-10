@@ -11,27 +11,37 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
 
+import static com.sun.identity.shared.datastruct.CollectionHelper.getMapAttr;
 import static org.forgerock.openam.auth.nodes.x509.CertificateCollectorNode.CertificateCollectionMethod.EITHER;
 import static org.forgerock.openam.auth.nodes.x509.CertificateCollectorNode.CertificateCollectionMethod.HEADER;
 import static org.forgerock.openam.auth.nodes.x509.CertificateCollectorNode.CertificateCollectorOutcome.COLLECTED;
 import static org.forgerock.openam.auth.nodes.x509.CertificateCollectorNode.CertificateCollectorOutcome.NOT_COLLECTED;
 
-import java.io.ByteArrayInputStream;
-import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -44,19 +54,25 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.security.X509Decoder;
+import org.forgerock.openam.sm.ServiceConfigException;
+import org.forgerock.openam.sm.ServiceConfigValidator;
+import org.forgerock.openam.sm.ServiceErrorException;
+import org.forgerock.util.Reject;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
-import com.sun.identity.shared.encode.Base64;
 
 /**
  * Certificate Collector Node.
  */
 @Node.Metadata(outcomeProvider = CertificateCollectorNode.CertificateCollectorProvider.class,
         configClass = CertificateCollectorNode.Config.class,
+        configValidator = CertificateCollectorNode.CertificateCollectorNodeValidator.class,
         tags = {"contextual"},
         namespace = Namespace.PRODUCT)
 public class CertificateCollectorNode implements Node {
@@ -64,6 +80,32 @@ public class CertificateCollectorNode implements Node {
     private static final String BUNDLE = "org/forgerock/openam/auth/nodes/x509/CertificateCollectorNode";
     private static final Logger logger = LoggerFactory.getLogger(CertificateCollectorNode.class);
     private final Config config;
+    private final X509Decoder certificateDecoder;
+
+    /**
+     * Validates the certificate collector node.
+     */
+    public static class CertificateCollectorNodeValidator implements ServiceConfigValidator {
+
+        private static final Logger logger =
+                LoggerFactory.getLogger(CertificateCollectorNode.CertificateCollectorNodeValidator.class);
+
+        @Override
+        public void validate(Realm realm, List<String> configPath, Map<String, Set<String>> attributes)
+                throws ServiceConfigException, ServiceErrorException {
+            Reject.ifNull(attributes, "Attributes are required for validation");
+
+            String clientCertificateHttpHeaderName = getMapAttr(attributes, "clientCertificateHttpHeaderName", "");
+            String certificateCollectionMethod = getMapAttr(attributes, "certificateCollectionMethod", "");
+
+            if (clientCertificateHttpHeaderName.isEmpty() && Stream.of(HEADER, EITHER).map(Enum::name)
+                    .anyMatch(method -> method.equals(certificateCollectionMethod))) {
+                logger.error("HTTP Header Name for Client Certificate is required for this collection method.");
+                throw new ServiceConfigException("HTTP Header Name for Client Certificate "
+                        + "is required for this collection method.");
+            }
+        }
+    }
 
     /**
      * Configuration for the node.
@@ -103,10 +145,12 @@ public class CertificateCollectorNode implements Node {
      * The constructor.
      *
      * @param config node config.
+     * @param certificateDecoder the X.509 decoder used for decoding the certificate
      */
     @Inject
-    public CertificateCollectorNode(@Assisted Config config) {
+    public CertificateCollectorNode(@Assisted Config config, X509Decoder certificateDecoder) {
         this.config = config;
+        this.certificateDecoder = certificateDecoder;
     }
 
     @Override
@@ -157,7 +201,7 @@ public class CertificateCollectorNode implements Node {
 
     private X509Certificate[] getCertificatesFromRequest(TreeContext context) {
         X509Certificate[] allCerts = (X509Certificate[]) context.request.servletRequest
-                .getAttribute("javax.servlet.request.X509Certificate");
+                .getAttribute("jakarta.servlet.request.X509Certificate");
         if (allCerts != null && allCerts.length != 0) {
             X509Certificate userCert = allCerts[0];
             logger.debug("X509Certificate: principal is: {}\nissuer DN:{}\nserial number:{}\nsubject dn:{}",
@@ -170,7 +214,6 @@ public class CertificateCollectorNode implements Node {
 
     private X509Certificate[] getPortalStyleCert(ListMultimap<String, String> headers,
             String clientCertificateHttpHeaderName) throws NodeProcessException {
-        String cert = null;
         if (clientCertificateHttpHeaderName != null && clientCertificateHttpHeaderName.length() > 0) {
             logger.debug("Checking cert in HTTP header");
             StringTokenizer tok = new StringTokenizer(clientCertificateHttpHeaderName, ",");
@@ -179,46 +222,22 @@ public class CertificateCollectorNode implements Node {
                 if (!headers.containsKey(key)) {
                     continue;
                 }
-                cert = headers.get(key).get(0);
-                cert = cert.trim();
-                String beginCert = "-----BEGIN CERTIFICATE-----";
-                String endCert = "-----END CERTIFICATE-----";
-                int idx = cert.indexOf(endCert);
-                if (idx != -1) {
-                    cert = cert.substring(beginCert.length(), idx);
-                    cert = cert.trim();
+                String certHeader = headers.get(key).get(0).trim();
+
+                try {
+                    X509Certificate userCert = certificateDecoder.decodeCertificate(certHeader);
+                    logger.debug("X509Certificate: principal is: {}\nissuer DN:{}\nserial number:{}\nsubject dn:{}",
+                            userCert.getSubjectDN().getName(), userCert.getIssuerDN().getName(),
+                            userCert.getSerialNumber(), userCert.getSubjectDN().getName());
+                    return new X509Certificate[]{userCert};
+                } catch (CertificateException e) {
+                    throw new NodeProcessException("CertificateFromParameter(X509Cert)", e);
                 }
             }
         }
-        logger.debug("Validate cert: {}", cert);
-        if (cert == null || cert.isEmpty()) {
-            return null;
-        }
-
-        byte[] decoded = Base64.decode(cert);
-        if (decoded == null) {
-            throw new NodeProcessException("CertificateFromParameter decode failed, possibly invalid Base64 input");
-        }
-
-        logger.debug("CertificateFactory.getInstance.");
-        CertificateFactory cf;
-        X509Certificate userCert;
-        try {
-            cf = CertificateFactory.getInstance("X.509");
-            userCert = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(decoded));
-        } catch (Exception e) {
-            throw new NodeProcessException("CertificateFromParameter(X509Cert)", e);
-        }
-
-        if (userCert == null) {
-            throw new NodeProcessException("Certificate is null");
-        }
-
-        logger.debug("X509Certificate: principal is: {}\nissuer DN:{}\nserial number:{}\nsubject dn:{}",
-                userCert.getSubjectDN().getName(), userCert.getIssuerDN().getName(), userCert.getSerialNumber(),
-                userCert.getSubjectDN().getName());
-        return new X509Certificate[]{userCert};
+        return null;
     }
+
 
     /**
      * Possible Certificate collection methods.

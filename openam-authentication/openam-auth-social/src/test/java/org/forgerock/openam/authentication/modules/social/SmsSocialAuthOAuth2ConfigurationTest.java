@@ -11,37 +11,46 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.social;
 
 
-import static org.assertj.core.api.Java6Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import java.net.URI;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.forgerock.oauth.clients.oauth2.OAuth2ClientConfiguration;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test class for SmsSocialAuthOAuth2Configuration.
  */
 public class SmsSocialAuthOAuth2ConfigurationTest {
 
-    private Map<String, Set<String>> options = mock(Map.class);
+    private final Map<String, Set<String>> options = mock(Map.class);
 
     private SmsSocialAuthOAuth2Configuration configuration;
 
-    @BeforeMethod
-    public void setup() {
+    @BeforeEach
+    void setup() {
         given(options.get("clientId")).willReturn(Collections.singleton("client"));
         given(options.get("clientSecret")).willReturn(Collections.singleton("secret"));
         given(options.get("authorizeEndpoint")).willReturn(Collections.singleton("http://authz/endpoint"));
@@ -58,7 +67,7 @@ public class SmsSocialAuthOAuth2ConfigurationTest {
     }
 
     @Test
-    public void shouldBuildTheClientConfiguration() throws Exception {
+    void shouldBuildTheClientConfiguration() throws Exception {
         //when
         configuration = new SmsSocialAuthOAuth2Configuration(options);
         OAuth2ClientConfiguration config = (OAuth2ClientConfiguration) configuration.getOAuthClientConfiguration();
@@ -69,86 +78,101 @@ public class SmsSocialAuthOAuth2ConfigurationTest {
         assertThat(config.getAuthorizationEndpoint()).isEqualTo(new URI("http://authz/endpoint"));
         assertThat(config.getTokenEndpoint()).isEqualTo(URI.create("http://token/endpoint"));
         assertThat(config.getUserInfoEndpoint()).isEqualTo(URI.create("http://userinfo/endpoint"));
-        assertThat(config.getScope()).isEqualTo(Arrays.asList("email"));
+        assertThat(config.getScope()).isEqualTo(List.of("email"));
         assertThat(config.getScopeDelimiter()).isEqualTo(":");
         assertThat(config.getProvider()).isEqualTo("provider");
         assertThat(config.getAuthenticationFilter()).isInstanceOf(
                 Class.forName("org.forgerock.http.filter.Filters$HttpBasicAuthClientFilter"));
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void shouldFailWhenProviderNotSpecified() {
+    @Test
+    void shouldFailWhenProviderNotSpecified() {
         //given
         given(options.get("provider")).willReturn(null);
         configuration = new SmsSocialAuthOAuth2Configuration(options);
 
         //when
-        configuration.getOAuthClientConfiguration();
+        assertThatThrownBy(() -> configuration.getOAuthClientConfiguration())
+                //then
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("No value found for key 'provider'.");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp="No value found for key 'clientId'.")
-    public void shouldFailWhenClientIdNotSpecified() {
+    @Test
+    void shouldFailWhenClientIdNotSpecified() {
         //given
         given(options.get("clientId")).willReturn(null);
         configuration = new SmsSocialAuthOAuth2Configuration(options);
 
         //when
-        configuration.getOAuthClientConfiguration();
+        assertThatThrownBy(() -> configuration.getOAuthClientConfiguration())
+                //then
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("No value found for key 'clientId'.");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp="No value found for key 'clientSecret'.")
-    public void shouldFailWhenClientSecretNotSpecified() {
+    @Test
+    void shouldFailWhenClientSecretNotSpecified() {
         //given
         given(options.get("clientSecret")).willReturn(null);
         configuration = new SmsSocialAuthOAuth2Configuration(options);
 
         //when
-        configuration.getOAuthClientConfiguration();
+        assertThatThrownBy(() -> configuration.getOAuthClientConfiguration())
+                //then
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("No value found for key 'clientSecret'.");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp="Expecting authorizationEndpoint to be absolute.")
-    public void shouldFailWhenAuthzEndpointNotValid() {
+    @Test
+    void shouldFailWhenAuthzEndpointNotValid() {
         //given
         given(options.get("authorizeEndpoint")).willReturn(Collections.singleton("authz/endpoint"));
         configuration = new SmsSocialAuthOAuth2Configuration(options);
 
         //when
-        configuration.getOAuthClientConfiguration();
+        assertThatThrownBy(() -> configuration.getOAuthClientConfiguration())
+                //then
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Expecting authorizationEndpoint to be absolute.");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp="Expecting tokenEndpoint to be absolute.")
-    public void shouldFailWhenTokenEndpointNotValid() {
+    @Test
+    void shouldFailWhenTokenEndpointNotValid() {
         //given
         given(options.get("tokenEndpoint")).willReturn(Collections.singleton("token/endpoint"));
         configuration = new SmsSocialAuthOAuth2Configuration(options);
 
         //when
-        configuration.getOAuthClientConfiguration();
+        assertThatThrownBy(() -> configuration.getOAuthClientConfiguration())
+                //then
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Expecting tokenEndpoint to be absolute.");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp="Expecting userInfoEndpoint to be absolute.")
-    public void shouldFailWhenUserInfoEndpointNotValid() {
+    @Test
+    void shouldFailWhenUserInfoEndpointNotValid() {
         //given
         given(options.get("userInfoEndpoint")).willReturn(Collections.singleton("userinfo/endpoint"));
         configuration = new SmsSocialAuthOAuth2Configuration(options);
 
         //when
-        configuration.getOAuthClientConfiguration();
+        assertThatThrownBy(() -> configuration.getOAuthClientConfiguration())
+                //then
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Expecting userInfoEndpoint to be absolute.");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp="Expecting redirectUri to be absolute.")
-    public void shouldFailWhenredirectUrlNotValid() {
+    @Test
+    void shouldFailWhenredirectUrlNotValid() {
         //given
         given(options.get("ssoProxyUrl")).willReturn(Collections.singleton("sso/proxy"));
         configuration = new SmsSocialAuthOAuth2Configuration(options);
 
         //when
-        configuration.getOAuthClientConfiguration();
+        assertThatThrownBy(() -> configuration.getOAuthClientConfiguration())
+                //then
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Expecting redirectUri to be absolute.");
     }
 }

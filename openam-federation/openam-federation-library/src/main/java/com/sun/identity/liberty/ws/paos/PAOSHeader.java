@@ -24,7 +24,7 @@
  *
  * $Id: PAOSHeader.java,v 1.4 2008/06/25 05:47:20 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 
@@ -36,7 +36,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.StringTokenizer;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;

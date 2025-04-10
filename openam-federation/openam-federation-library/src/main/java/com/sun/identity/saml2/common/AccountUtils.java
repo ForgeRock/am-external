@@ -24,7 +24,7 @@
  *
  * $Id: AccountUtils.java,v 1.2 2008/06/25 05:47:45 qcheng Exp $
  *
- * Portions Copyrighted 2016-2020 ForgeRock AS.
+ * Portions Copyrighted 2016-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.common;
 

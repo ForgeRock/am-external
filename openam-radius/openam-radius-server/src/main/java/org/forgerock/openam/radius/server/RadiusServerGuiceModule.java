@@ -12,11 +12,10 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server;
 
-import java.security.AccessController;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -81,7 +80,7 @@ public class RadiusServerGuiceModule extends AbstractModule {
         ServiceConfigManager mgr = null;
         // get a ServiceConfigManager for our service
         try {
-            final SSOToken admTk = AccessController.doPrivileged(AdminTokenAction.getInstance());
+            final SSOToken admTk = AdminTokenAction.getInstance().run();
             mgr = new ServiceConfigManager(RadiusServerConstants.RADIUS_SERVICE_NAME, admTk);
         } catch (final Exception e) {
             throw new RadiusLifecycleException("Could not obtain ServiceConfigManger for the RADIUS service.", e);

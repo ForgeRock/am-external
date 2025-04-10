@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins.scripted;
@@ -29,9 +37,9 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
 import com.sun.identity.saml2.common.SAML2Utils;
@@ -47,18 +55,18 @@ public class SpAdapterScriptHelperTest {
     // Class under test
     SpAdapterScriptHelper scriptHelper = new SpAdapterScriptHelper();
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         saml2UtilsMockedStatic = mockStatic(SAML2Utils.class);
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         saml2UtilsMockedStatic.close();
     }
 
     @Test
-    public void shouldReturnEnvEntriesWhenSpAdapterEnvIsSet() {
+    void shouldReturnEnvEntriesWhenSpAdapterEnvIsSet() {
         // When
         when(SAML2Utils.getAllAttributeValueFromSSOConfig(realm, spEntityId, SP_ROLE, SP_ADAPTER_ENV))
                 .thenReturn(SpAdapterEnvList);
@@ -73,7 +81,7 @@ public class SpAdapterScriptHelperTest {
     }
 
     @Test
-    public void shouldReturnDefaultsOnlyWhenSpAdapterEnvIsNotSet() {
+    void shouldReturnDefaultsOnlyWhenSpAdapterEnvIsNotSet() {
         // When
         when(SAML2Utils.getAllAttributeValueFromSSOConfig(realm, spEntityId, SP_ROLE, SP_ADAPTER_ENV))
                 .thenReturn(emptyList());

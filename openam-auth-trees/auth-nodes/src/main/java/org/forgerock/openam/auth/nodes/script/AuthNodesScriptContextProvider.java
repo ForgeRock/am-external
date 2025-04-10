@@ -11,75 +11,57 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.script;
 
-import static org.forgerock.openam.auth.nodes.script.AuthNodesGlobalScript.CONFIG_PROVIDER_NODE_SCRIPT;
 import static org.forgerock.openam.auth.nodes.script.AuthNodesGlobalScript.DECISION_NODE_SCRIPT;
 import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
-import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.CONFIG_PROVIDER_NODE;
 
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.MGF1ParameterSpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.TreeSet;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.OAEPParameterSpec;
-import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.PSource;
-
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.openam.scripting.domain.EvaluatorVersionAllowList;
+import org.forgerock.openam.scripting.domain.LegacyScriptContextDetails;
 import org.forgerock.openam.scripting.domain.ScriptContextDetails;
 import org.forgerock.openam.scripting.persistence.config.defaults.AnnotatedServiceRegistryScriptContextDetailsProvider;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
-import org.forgerock.util.promise.NeverThrowsException;
-import org.forgerock.util.promise.Promise;
-import org.forgerock.util.promise.PromiseImpl;
-import org.forgerock.util.promise.Promises;
-import org.mozilla.javascript.ConsString;
-import org.mozilla.javascript.JavaScriptException;
 
 import com.google.inject.Inject;
-
-import ch.qos.logback.classic.Logger;
 
 /**
  * Responsible for providing the auth node script contexts.
  */
 public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScriptContextDetailsProvider {
 
+    private final ScriptedDecisionNodeContext scriptedDecisionNodeContext;
+    private final DeviceMatchNodeScriptContext deviceMatchNodeScriptContext;
+
     /**
      * Construct a new {@code AuthNodesScriptContextProvider}.
      *
      * @param annotatedServiceRegistry the annotated service registry.
+     * @param scriptedDecisionNodeContext the next-gen scripted decision node context.
+     * @param deviceMatchNodeScriptContext the device match node script context.
      */
     @Inject
-    protected AuthNodesScriptContextProvider(AnnotatedServiceRegistry annotatedServiceRegistry) {
+    protected AuthNodesScriptContextProvider(AnnotatedServiceRegistry annotatedServiceRegistry,
+            ScriptedDecisionNodeContext scriptedDecisionNodeContext, DeviceMatchNodeScriptContext
+            deviceMatchNodeScriptContext) {
         super(annotatedServiceRegistry);
+        this.scriptedDecisionNodeContext = scriptedDecisionNodeContext;
+        this.deviceMatchNodeScriptContext = deviceMatchNodeScriptContext;
     }
 
-    private List<String> whiteListV1() {
+    private List<String> whitelist() {
         return List.of(
                 "java.lang.Boolean", "java.lang.Byte", "java.lang.Character",
                 "java.lang.Character$Subset", "java.lang.Character$UnicodeBlock", "java.lang.Double",
@@ -152,7 +134,8 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
                 "org.forgerock.openam.authentication.callbacks.NumberAttributeInputCallback",
                 "org.forgerock.openam.authentication.callbacks.StringAttributeInputCallback",
                 "org.forgerock.opendj.ldap.Rdn",
-                "org.forgerock.opendj.ldap.Dn"
+                "org.forgerock.opendj.ldap.Dn",
+                "org.forgerock.openam.auth.nodes.VerifyTransactionsHelper"
         );
     }
 
@@ -162,103 +145,24 @@ public class AuthNodesScriptContextProvider extends AnnotatedServiceRegistryScri
      * @return the allow list for scripting version 2.
      */
     protected List<String> whiteListV2() {
-        return List.of(
-                Boolean.class.getName(),
-                Byte.class.getName(),
-                Character.class.getName(),
-                Character.Subset.class.getName(),
-                Character.UnicodeBlock.class.getName(),
-                Double.class.getName(),
-                Float.class.getName(),
-                Integer.class.getName(),
-                Long.class.getName(),
-                Math.class.getName(),
-                Number.class.getName(),
-                Object.class.getName(),
-                Short.class.getName(),
-                StrictMath.class.getName(),
-                String.class.getName(),
-                Void.class.getName(),
-                anyInnerClassOf(AbstractMap.class),
-                ArrayList.class.getName(),
-                Collections.class.getName(),
-                TimeUnit.class.getName(),
-                anyInnerClassOf(Collections.class),
-                HashSet.class.getName(),
-                privateInnerClass(HashMap.class, "KeyIterator"),
-                LinkedHashSet.class.getName(),
-                LinkedList.class.getName(),
-                TreeSet.class.getName(),
-                KeyPair.class.getName(),
-                KeyPairGenerator.class.getName(),
-                anyInnerClassOf(KeyPairGenerator.class),
-                PrivateKey.class.getName(),
-                PublicKey.class.getName(),
-                X509EncodedKeySpec.class.getName(),
-                MGF1ParameterSpec.class.getName(),
-                SecretKeyFactory.class.getName(),
-                OAEPParameterSpec.class.getName(),
-                PBEKeySpec.class.getName(),
-                PSource.class.getName(),
-                anyInnerClassOf(PSource.class),
-                JsonValue.class.getName(),
-                NeverThrowsException.class.getName(),
-                Promise.class.getName(),
-                ExecutionException.class.getName(),
-                TimeoutException.class.getName(),
-                PromiseImpl.class.getName(),
-                // Using a code reference to the callbackhandlers package creates a circular dependency
-                "org.forgerock.openam.core.rest.authn.callbackhandlers.*",
-                "com.sun.crypto.provider.PBKDF2KeyImpl", // Cannot access internal JDK classes by name
-                DeviceProfilesDao.class.getName(),
-                "org.forgerock.openam.scripting.api.PrefixedScriptPropertyResolver", // located in openam-scripting
-                List.class.getName(),
-                ConsString.class.getName(),
-                privateInnerClass(Collections.class, "UnmodifiableRandomAccessList"),
-                privateInnerClass(Collections.class, "UnmodifiableCollection$1"),
-                JavaScriptException.class.getName(),
-                "sun.security.ec.ECPrivateKeyImpl", // This module isn't exported from the JDK
-                Logger.class.getName(),
-                anyInnerClassOf(Promises.class),
-                "com.sun.proxy.$*",
-                Date.class.getName(),
-                InvalidKeySpecException.class.getName()
-        );
+        return List.of();
     }
 
     @Override
     public List<ScriptContextDetails> get() {
         List<ScriptContextDetails> scriptContexts = new ArrayList<>();
 
-        scriptContexts.add(ScriptContextDetails.builder()
+        scriptContexts.add(LegacyScriptContextDetails.builder()
                 .withContextReference(AUTHENTICATION_TREE_DECISION_NODE)
                 .withI18NKey("script-type-05")
                 .withDefaultScript(DECISION_NODE_SCRIPT.getId())
-                .withWhiteList(EvaluatorVersionAllowList.builder()
-                        .v1AllowList(whiteListV1())
-                        .v2AllowList(whiteListV2())
-                        .build())
-                .withNextGenEnabled(true)
+                .overrideDefaultWhiteList(whitelist().toArray(new String[0]))
                 .build());
 
-        scriptContexts.add(ScriptContextDetails.builder()
-                .withContextReference(CONFIG_PROVIDER_NODE)
-                .withI18NKey("script-type-14")
-                .withDefaultScript(CONFIG_PROVIDER_NODE_SCRIPT.getId())
-                .overrideDefaultWhiteList(whiteListV1().toArray(new String[0])).build());
+        scriptContexts.add(scriptedDecisionNodeContext);
+        scriptContexts.add(deviceMatchNodeScriptContext);
 
         return scriptContexts;
     }
 
-    private String anyInnerClassOf(Class clazz) {
-        return clazz.getName() + "$*";
-    }
-
-    private String anyClassFromPackageContaining(Class clazz) {
-        return clazz.getPackageName() + ".*";
-    }
-
-    private String privateInnerClass(Class clazz, String innerClassName) {
-        return clazz.getName() + "$" + innerClassName;
-    }
 }

@@ -11,19 +11,28 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2.soap;
 
-import static org.forgerock.http.handler.HttpClientHandler.OPTION_KEY_MANAGERS;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_DEFAULT_SP_MTLS;
 import static org.forgerock.openam.shared.secrets.Labels.SAML2_ENTITY_ROLE_MTLS;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 import static org.forgerock.openam.utils.StringUtils.isNotEmpty;
+import static org.forgerock.openam.utils.Time.currentTimeMillis;
 import static org.forgerock.secrets.Purpose.purpose;
 
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -35,6 +44,7 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.core.realms.RealmLookupException;
 import org.forgerock.openam.http.CloseableHttpClientHandlerFactory;
+import org.forgerock.openam.http.OptionsBuilder;
 import org.forgerock.openam.secrets.DefaultingPurpose;
 import org.forgerock.openam.secrets.SecretStoreWithMappings;
 import org.forgerock.openam.secrets.Secrets;
@@ -44,13 +54,14 @@ import org.forgerock.openam.secrets.config.SecretStoreConfigChangeListener;
 import org.forgerock.secrets.NoSuchSecretException;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.keys.SigningKey;
-import org.forgerock.util.Options;
+import org.forgerock.util.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.sun.identity.shared.configuration.SystemPropertiesManager;
-import org.forgerock.util.annotations.VisibleForTesting;
 
 @Singleton
 public class SamlMtlsHandlerFactory implements SecretStoreConfigChangeListener {
@@ -59,6 +70,7 @@ public class SamlMtlsHandlerFactory implements SecretStoreConfigChangeListener {
     private final CloseableHttpClientHandlerFactory factory;
     private final LoadingCache<CacheKey, Handler> cache;
     private final RealmLookup realmLookup;
+    private final int handlerCacheMaxSize;
 
     private static final DefaultingPurpose<SigningKey> purpose =
             new DefaultingPurpose<>(purpose(SAML2_DEFAULT_SP_MTLS, SigningKey.class), SAML2_ENTITY_ROLE_MTLS);
@@ -70,12 +82,24 @@ public class SamlMtlsHandlerFactory implements SecretStoreConfigChangeListener {
     private static final String SAML2_TLS_HANDLER_CACHE_SIZE_KEY = "org.forgerock.openam.saml2.tls.handler.cache.size";
     private static final int SAML2_TLS_HANDLER_CACHE_SIZE_DEFAULT = 50;
 
+    private final Logger logger = LoggerFactory.getLogger(SamlMtlsHandlerFactory.class);
+
+    private final Runnable cacheFullLogger;
+
     @Inject
     public SamlMtlsHandlerFactory(CloseableHttpClientHandlerFactory factory, Secrets secrets, RealmLookup realmLookup) {
         this.factory = factory;
         this.secrets = secrets;
         this.realmLookup = realmLookup;
+        this.handlerCacheMaxSize = SystemPropertiesManager.getAsInt(SAML2_TLS_HANDLER_CACHE_SIZE_KEY,
+                SAML2_TLS_HANDLER_CACHE_SIZE_DEFAULT);
         this.cache = initCache();
+
+        this.cacheFullLogger = throttled(() -> logger.warn("The SAML mtls handler cache is full."+
+                        " This could result in degraded performance." +
+                        " Consider increasing the cache size by setting the advanced server property '{}'" +
+                        " to a number higher than {}.", SAML2_TLS_HANDLER_CACHE_SIZE_KEY,
+                handlerCacheMaxSize), 1, TimeUnit.MINUTES);
     }
 
     public Handler getHandler(Realm realm, String secretLabel) {
@@ -87,16 +111,19 @@ public class SamlMtlsHandlerFactory implements SecretStoreConfigChangeListener {
     }
 
     private Handler createHandler(CacheKey cacheKey) {
-        Options extraOptions = Options.defaultOptions();
+        if (cache.size() == handlerCacheMaxSize) {
+            cacheFullLogger.run();
+        }
+        OptionsBuilder extraOptions = OptionsBuilder.builder();
         KeyManager km = secrets.getRealmSecrets(cacheKey.realm)
                 .getKeyManager(Purpose.purpose(cacheKey.secretLabel, SigningKey.class));
-        extraOptions.set(OPTION_KEY_MANAGERS, new KeyManager[]{km});
+        extraOptions.withKeyManagers(new KeyManager[]{km});
         return factory.create(extraOptions);
     }
 
     private LoadingCache<CacheKey, Handler> initCache() {
         return CacheBuilder.newBuilder()
-                .maximumSize(SystemPropertiesManager.getAsInt(SAML2_TLS_HANDLER_CACHE_SIZE_KEY, SAML2_TLS_HANDLER_CACHE_SIZE_DEFAULT))
+                .maximumSize(handlerCacheMaxSize)
                 .build(new CacheLoader<>() {
                     @Override
                     public Handler load(CacheKey cacheKey) {
@@ -170,6 +197,20 @@ public class SamlMtlsHandlerFactory implements SecretStoreConfigChangeListener {
             }
         }
         return purpose.getDefaultPurpose().getLabel();
+    }
+
+    private static Runnable throttled(final Runnable runnable, final long period, final TimeUnit periodUnit) {
+        return new Runnable() {
+            private long lastRun = 0;
+
+            @Override
+            public void run() {
+                if (currentTimeMillis() >= lastRun + periodUnit.toMillis(period)) {
+                    lastRun = currentTimeMillis();
+                    runnable.run();
+                }
+            }
+        };
     }
 
     static final class CacheKey {

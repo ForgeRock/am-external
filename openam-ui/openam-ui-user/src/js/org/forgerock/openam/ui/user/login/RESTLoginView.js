@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2011-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import _ from "lodash";
@@ -46,6 +54,7 @@ import SessionValidator from "org/forgerock/openam/ui/common/sessions/SessionVal
 import URIUtils from "org/forgerock/commons/ui/common/util/URIUtils";
 import defaultAppIcon from "../../../../../../../resources/images/default-app.svg";
 import { sanitize } from "org/forgerock/openam/ui/common/util/Sanitizer";
+import EventManager from "org/forgerock/commons/ui/common/main/EventManager";
 
 function hasSsoRedirectOrPost (goto) {
     let decodedGoto;
@@ -123,7 +132,7 @@ const LoginView = AbstractView.extend({
                 if (Configuration.globalData.xuiUserSessionValidationEnabled) {
                     SessionValidator.start(MaxIdleTimeLeftStrategy, remainingSessionTime);
                 }
-                Router.navigate("", { trigger: true });
+                EventManager.sendEvent(Constants.EVENT_HANDLE_DEFAULT_ROUTE);
             }
         }, () => {
             logout();

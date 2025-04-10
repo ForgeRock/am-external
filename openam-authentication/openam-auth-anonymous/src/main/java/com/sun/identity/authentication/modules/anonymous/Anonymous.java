@@ -24,7 +24,7 @@
  *
  * $Id: Anonymous.java,v 1.4 2009/06/17 21:53:19 ericow Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  *
  */
 

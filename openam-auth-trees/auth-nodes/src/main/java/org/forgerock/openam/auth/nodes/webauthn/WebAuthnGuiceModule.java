@@ -11,22 +11,33 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertPathValidator;
-import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 
+import org.forgerock.openam.auth.nodes.webauthn.flows.RegisterFlowFactory;
+import org.forgerock.openam.auth.nodes.webauthn.metadata.DefaultMetadataServiceFactory;
+import org.forgerock.openam.auth.nodes.webauthn.metadata.MetadataServiceFactory;
 import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
+import org.forgerock.openam.auth.nodes.x509.CertificateUtils;
 
 import com.google.auto.service.AutoService;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
+import com.google.inject.multibindings.OptionalBinder;
 import com.google.inject.name.Named;
 
 /**
@@ -39,6 +50,14 @@ public class WebAuthnGuiceModule extends AbstractModule {
     protected void configure() {
         install(new FactoryModuleBuilder()
                     .build(TrustAnchorValidator.Factory.class));
+
+        install(new FactoryModuleBuilder()
+                .build(RegisterFlowFactory.class));
+
+        // Set the DefaultMetadataServiceFactory as the default MetadataServiceFactory allowing it to be overridden
+        // by other modules if required.
+        OptionalBinder.newOptionalBinder(binder(), MetadataServiceFactory.class)
+                .setDefault().to(DefaultMetadataServiceFactory.class);
     }
 
     /**
@@ -49,13 +68,7 @@ public class WebAuthnGuiceModule extends AbstractModule {
     @Provides
     @Named("X.509")
     public CertificateFactory getCertificateFactory() {
-        try {
-            return CertificateFactory.getInstance("X.509");
-        } catch (CertificateException e) {
-            //never thrown, X.509 always supported on Java
-        }
-
-        return null;
+        return CertificateUtils.getX509Factory();
     }
 
 
@@ -67,12 +80,6 @@ public class WebAuthnGuiceModule extends AbstractModule {
     @Provides
     @Named("PKIX")
     public CertPathValidator getCertPathValidator() {
-        try {
-            return CertPathValidator.getInstance("PKIX");
-        } catch (NoSuchAlgorithmException e) {
-            //never thrown, PKIX always supported on Java
-        }
-
-        return null;
+        return CertificateUtils.getCertPathValidator();
     }
 }

@@ -11,13 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import "codemirror/mode/groovy/groovy";
 import "codemirror/mode/javascript/javascript";
 import "codemirror/addon/display/fullscreen";
 import "selectize";
+import "popoverclickaway";
 
 import { t } from "i18next";
 import _ from "lodash";
@@ -26,6 +35,7 @@ import CodeMirror from "codemirror/lib/codemirror";
 import Handlebars from "handlebars-template-loader/runtime";
 
 import { validate } from "org/forgerock/openam/ui/admin/services/realm/ScriptsService";
+import { collapseContexts, lookupContext } from "org/forgerock/openam/ui/admin/utils/scripts/ScriptContextsHelper";
 import AbstractView from "org/forgerock/commons/ui/common/main/AbstractView";
 import AlertPartial from "partials/alerts/_Alert";
 import Base64 from "org/forgerock/commons/ui/common/util/Base64";
@@ -144,6 +154,7 @@ export default AbstractView.extend({
                 self.data.contexts = contexts.result;
                 self.data.defaultContext = defaultContext.defaultContext;
                 self.addContextNames(self.data.contexts, contextSchema);
+                self.data.scriptTypes = collapseContexts(self.data.contexts);
                 self.langSchema = languageSchema;
                 self.renderScript();
             });
@@ -169,7 +180,7 @@ export default AbstractView.extend({
         if (this.model.id) {
             context = this.getContext(self);
             this.data.contextName = context.name;
-            this.data.evaluatorVersions = this.data.context.evaluatorVersions[this.data.entity.language];
+            this.data.evaluatorVersions = this.getEvaluatorVersions(context, this.data.entity.language);
             this.data.languages = this.addLanguageNames(context.languages.filter((lang) =>
                 this.data.entity.evaluatorVersion === "1.0" || lang === "JAVASCRIPT"));
         } else {
@@ -178,7 +189,9 @@ export default AbstractView.extend({
 
         this.parentRender(function () {
             if (this.newEntity) {
-                this.$el.find("#context").selectize();
+                this.$el.find("#context").selectize({
+                    sortField: "text"
+                });
             } else {
                 this.changesPendingWidget = ChangesPending.watchChanges({
                     element: this.$el.find(".script-changes-pending"),
@@ -243,13 +256,19 @@ export default AbstractView.extend({
             }
         });
 
+        const subTypes = lookupContext(this.data.entity.context);
+        if (subTypes) {
+            app.context = app.evaluatorVersion === "1.0" ? subTypes.legacyContext : subTypes.nextGenContext;
+        }
+
         if (this.newEntity) {
-            if (previousContext !== app.context) {
+            if (previousContext !== app.context || subTypes) {
                 self.toggleSaveButton(false);
 
                 this.updateContextModel(app.context)
                     .then(_.bind(self.changeContext, self))
                     .then(_.bind(self.disableVersionButtons, self))
+                    .then(_.bind(self.updateInfoButton, self))
                     .then(_.bind(self.ensureVersionValid, self))
                     .then(() => {
                         self.toggleSaveButton(self.checkRequiredFields());
@@ -271,6 +290,30 @@ export default AbstractView.extend({
         $("label[for=radio-legacy]").toggleClass("disabled", !evs.includes("1.0"));
         $("#radio-nextgen").prop("disabled", !evs.includes("2.0"));
         $("label[for=radio-nextgen]").toggleClass("disabled", !evs.includes("2.0"));
+    },
+
+    updateInfoButton () {
+        const scriptTypeName = $("#context").text().trim();
+        const scriptType = this.data.scriptTypes.find((type) => type.name === scriptTypeName);
+        const subTypes = lookupContext(scriptType._id);
+        const infoButton = $("#evaluatorVersionInfo");
+        if (subTypes) {
+            infoButton.removeClass("hidden");
+            infoButton.popoverclickaway({
+                container: "#content",
+                html: true,
+                placement: "right",
+                update: true,
+                content: `<p>${t("console.scripts.edit.scriptType")} will differ based on selected 
+${t("console.scripts.edit.evaluatorVersion")}</p>
+<ul>
+<li>${t("console.scripts.edit.version.1.0")}: <code>${this.getContextById(subTypes.legacyContext).name}</code></li>
+<li>${t("console.scripts.edit.version.2.0")}: <code>${this.getContextById(subTypes.nextGenContext).name}</code></li>
+</ul>`
+            });
+        } else {
+            infoButton.addClass("hidden");
+        }
     },
 
     ensureVersionValid () {
@@ -416,9 +459,20 @@ export default AbstractView.extend({
     },
 
     getContext (self) {
+        return this.getContextById(self.data.entity.context);
+    },
+
+    getContextById (id) {
         return _.find(this.data.contexts, (context) => {
-            return context._id === self.data.entity.context;
+            return context._id === id;
         });
+    },
+
+    getEvaluatorVersions (context, language) {
+        if (lookupContext(context._id)) {
+            return ["1.0", "2.0"];
+        }
+        return this.data.context.evaluatorVersions[language];
     },
 
     changeContext () {
@@ -432,7 +486,7 @@ export default AbstractView.extend({
         if (!selectedContext.defaultScript || selectedContext.defaultScript === "[Empty]") {
             this.data.entity.script = "";
             this.data.entity.language = this.data.languages[0].id;
-            this.data.evaluatorVersions = this.data.context.evaluatorVersions[this.data.entity.language];
+            this.data.evaluatorVersions = this.getEvaluatorVersions(selectedContext, this.data.entity.language);
             promise.resolve();
         } else {
             defaultScript = new Script({ _id: selectedContext.defaultScript });
@@ -442,7 +496,7 @@ export default AbstractView.extend({
                 } else {
                     self.data.entity.language = model.attributes.language;
                 }
-                self.data.evaluatorVersions = this.data.context.evaluatorVersions[self.data.entity.language];
+                self.data.evaluatorVersions = this.getEvaluatorVersions(selectedContext, self.data.entity.language);
                 self.data.entity.script = model.attributes.script;
                 promise.resolve();
             });

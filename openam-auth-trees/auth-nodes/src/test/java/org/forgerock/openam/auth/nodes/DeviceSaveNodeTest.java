@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2020-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -20,18 +20,17 @@ package org.forgerock.openam.auth.nodes;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.DeviceProfile.DEVICE_PROFILE_CONTEXT_NAME;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.List;
 import java.util.Optional;
@@ -42,28 +41,28 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.DeviceProfileCallback;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.JsonValueBuilder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
+@ExtendWith(MockitoExtension.class)
 public class DeviceSaveNodeTest {
 
-    @Mock
-    CoreWrapper coreWrapper;
 
     @Mock
     AMIdentity amIdentity;
@@ -78,7 +77,7 @@ public class DeviceSaveNodeTest {
     DeviceProfilesDao deviceProfilesDao;
 
     @Mock
-    LegacyIdentityService identityService;
+    NodeUserIdentityProvider identityProvider;
 
     @InjectMocks
     DeviceSaveNode node;
@@ -86,18 +85,9 @@ public class DeviceSaveNodeTest {
     JsonValue location;
     JsonValue metadata;
 
-    @BeforeMethod
-    public void setup() throws Exception {
-        node = null;
-        initMocks(this);
-        given(config.saveDeviceMetadata()).willReturn(true);
-        given(config.saveDeviceLocation()).willReturn(true);
-        given(config.maxSavedProfiles()).willReturn(5);
-        given(realm.asPath()).willReturn("/");
-        given(coreWrapper.getIdentity(anyString())).willReturn(amIdentity);
-        given(amIdentity.isExists()).willReturn(true);
-        given(amIdentity.isActive()).willReturn(true);
-        given(amIdentity.getName()).willReturn("bob");
+    @BeforeEach
+    void setup() throws Exception {
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
 
         location = JsonValueBuilder.jsonValue().put("latitude", 123).put("longitude", 456)
                 .build();
@@ -106,29 +96,47 @@ public class DeviceSaveNodeTest {
                 .build();
     }
 
-    @Test(expectedExceptions = NodeProcessException.class,
-            expectedExceptionsMessageRegExp = "User does not exist or inactive")
-    public void testProcessWithNoUsername() throws NodeProcessException {
-        JsonValue sharedState = json(object());
-        JsonValue transientState = json(object());
-
-        node.process(getContext(sharedState, transientState, emptyList(), Optional.empty()));
+    private void commonStubbings() {
+        given(config.saveDeviceMetadata()).willReturn(true);
+        given(config.saveDeviceLocation()).willReturn(true);
+        given(config.maxSavedProfiles()).willReturn(5);
+        given(realm.asPath()).willReturn("/");
+        given(amIdentity.getName()).willReturn("bob");
     }
 
-    @Test(expectedExceptions = NodeProcessException.class,
-            expectedExceptionsMessageRegExp = "User does not exist or inactive")
-    public void testProcessWithUserNotActive()
-            throws NodeProcessException, IdRepoException, SSOException {
+    @Test
+    void testProcessWithNoUsername() {
+        JsonValue sharedState = json(object());
+        JsonValue transientState = json(object());
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.empty());
+        // When
+        assertThatThrownBy(
+                () -> node.process(getContext(sharedState, transientState, emptyList(), Optional.empty())))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("User does not exist or inactive");
+    }
+
+    @Test
+    void testProcessWithUserNotActive() throws Exception {
+        given(amIdentity.isExists()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(true);
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
         given(amIdentity.isActive()).willReturn(false);
 
-        node.process(getContext(sharedState, transientState, emptyList()));
+        // When
+        assertThatThrownBy(
+                () -> node.process(getContext(sharedState, transientState, emptyList())))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("User does not exist or inactive");
     }
 
-    @Test(description = "No Identifier", expectedExceptions = NodeProcessException.class)
-    public void testProcessWithoutIdentifier()
-            throws NodeProcessException, IdRepoException, SSOException {
+    @Test
+    void testProcessWithoutIdentifier() throws Exception {
+        given(amIdentity.isExists()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(true);
         JsonValue deviceProfile = JsonValueBuilder.jsonValue().build();
         deviceProfile.put("metadata", metadata);
         deviceProfile.put("location", location);
@@ -142,13 +150,19 @@ public class DeviceSaveNodeTest {
         callback.setValue(deviceProfile.toString());
 
         // When
-        node.process(getContext(sharedState, transientState, singletonList(callback)));
+        assertThatThrownBy(
+                () -> node.process(getContext(sharedState, transientState, singletonList(callback))))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Device Profile Collector Node to collect device attribute is required: identifier");
 
     }
 
-    @Test(description = "Value not exists in TreeContext")
-    public void testProcessWithNotExistsInTreeContext()
-            throws NodeProcessException, IdRepoException, SSOException, DevicePersistenceException {
+    @Test
+    void testProcessWithNotExistsInTreeContext() throws Exception {
+        given(amIdentity.isExists()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(true);
+        commonStubbings();
         JsonValue deviceProfile = JsonValueBuilder.jsonValue().build();
         deviceProfile.put("identifier", "testIdentifier");
         deviceProfile.put("metadata", metadata);
@@ -179,9 +193,11 @@ public class DeviceSaveNodeTest {
 
     }
 
-    @Test(description = "Update existing device attributes")
-    public void testProcessWithCallbackWithUpdate()
-            throws NodeProcessException, DevicePersistenceException {
+    @Test
+    void testProcessWithCallbackWithUpdate() throws Exception {
+        given(amIdentity.isExists()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(true);
+        commonStubbings();
         JsonValue deviceProfile = JsonValueBuilder.jsonValue().build();
         deviceProfile.put("identifier", "testIdentifier");
         deviceProfile.put("metadata", metadata);
@@ -217,10 +233,12 @@ public class DeviceSaveNodeTest {
 
     }
 
-    @Test(description = "Partially Update existing device attributes")
-    public void testProcessPartiallyUpdateExistingDeviceAttributes()
-            throws NodeProcessException, DevicePersistenceException {
+    @Test
+    void testProcessPartiallyUpdateExistingDeviceAttributes() throws Exception {
 
+        given(amIdentity.isExists()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(true);
+        commonStubbings();
         JsonValue newAttributes = JsonValueBuilder.jsonValue().build();
         newAttributes.put("identifier", "testIdentifier");
         newAttributes.put("location", location);
@@ -260,9 +278,12 @@ public class DeviceSaveNodeTest {
 
     }
 
-    @Test(description = "Keep the existing profile and create new profile")
-    public void testProcessWithCallbackWithCreate()
-            throws NodeProcessException, IdRepoException, SSOException, DevicePersistenceException {
+    @Test
+    void testProcessWithCallbackWithCreate() throws Exception {
+
+        given(amIdentity.isExists()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(true);
+        commonStubbings();
         JsonValue collected = JsonValueBuilder.jsonValue().build();
         collected.put("identifier", "testIdentifier");
         collected.put("metadata", metadata);
@@ -298,9 +319,11 @@ public class DeviceSaveNodeTest {
 
     }
 
-    @Test(description = "Test with Max profile")
-    public void testProcessMaxProfile()
-            throws NodeProcessException, IdRepoException, SSOException, DevicePersistenceException {
+    @Test
+    void testProcessMaxProfile() throws Exception {
+        given(amIdentity.isExists()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(true);
+        commonStubbings();
         given(config.maxSavedProfiles()).willReturn(1);
         JsonValue collected = JsonValueBuilder.jsonValue().build();
         collected.put("identifier", "testIdentifier");
@@ -337,9 +360,12 @@ public class DeviceSaveNodeTest {
 
     }
 
-    @Test(description = "Save Failed", expectedExceptions = NodeProcessException.class)
-    public void testProcessWithSaveFailed()
-            throws NodeProcessException, IdRepoException, SSOException, DevicePersistenceException {
+    @Test
+    void testProcessWithSaveFailed()
+            throws IdRepoException, SSOException, DevicePersistenceException {
+        given(amIdentity.isExists()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(true);
+        commonStubbings();
         JsonValue deviceAttributes = JsonValueBuilder.jsonValue().build();
         deviceAttributes.put("identifier", "testIdentifier");
         deviceAttributes.put("profile", JsonValueBuilder.toJsonValue("{\"test\":\"value\"}"));
@@ -357,13 +383,18 @@ public class DeviceSaveNodeTest {
         given(amIdentity.isActive()).willReturn(true);
         doThrow(new DevicePersistenceException("")).when(deviceProfilesDao).saveDeviceProfiles(any(), any(), any());
         when(deviceProfilesDao.getDeviceProfiles(any(), any())).thenReturn(emptyList());
-        node.process(getContext(sharedState, transientState, singletonList(callback)));
+        assertThatThrownBy(
+                () -> node.process(getContext(sharedState, transientState, singletonList(callback))))
+                // Then
+                .isInstanceOf(NodeProcessException.class);
 
     }
 
-    @Test(description = "Test with Alias from metadata")
-    public void testProcessWithUpdateAliasFromMetadata()
-            throws NodeProcessException, DevicePersistenceException {
+    @Test
+    void testProcessWithUpdateAliasFromMetadata() throws Exception {
+        given(amIdentity.isExists()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(true);
+        commonStubbings();
         JsonValue collected = JsonValueBuilder.jsonValue().build();
 
         JsonValue platform = JsonValueBuilder.jsonValue().put("deviceName", "My Device Name").build();
@@ -396,9 +427,11 @@ public class DeviceSaveNodeTest {
 
     }
 
-    @Test(description = "Test with Alias from context variable")
-    public void testProcessWithUpdateAliasFromContextVariable()
-            throws NodeProcessException, DevicePersistenceException {
+    @Test
+    void testProcessWithUpdateAliasFromContextVariable() throws Exception {
+        given(amIdentity.isExists()).willReturn(true);
+        given(amIdentity.isActive()).willReturn(true);
+        commonStubbings();
         JsonValue collected = JsonValueBuilder.jsonValue().build();
 
         JsonValue platform = JsonValueBuilder.jsonValue().put("deviceName", "My Device Name").build();

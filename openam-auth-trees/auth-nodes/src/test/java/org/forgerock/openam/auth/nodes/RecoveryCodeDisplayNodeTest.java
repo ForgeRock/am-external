@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -37,13 +45,13 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.webauthn.ClientScriptUtilities;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class RecoveryCodeDisplayNodeTest {
 
     RecoveryCodeDisplayNode recoveryCodeDisplayNode;
@@ -51,13 +59,13 @@ public class RecoveryCodeDisplayNodeTest {
     @Mock
     ClientScriptUtilities clientScriptUtilities;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         recoveryCodeDisplayNode = new RecoveryCodeDisplayNode(clientScriptUtilities);
     }
 
     @Test
-    public void assertThatRecoveryCodesAreReturnedIfTheyAreInTheTransientState() throws NodeProcessException {
+    void assertThatRecoveryCodesAreReturnedIfTheyAreInTheTransientState() throws NodeProcessException {
         JsonValue sharedState = json(object());
         JsonValue secureState = json(object());
         JsonValue transientState = json(object(
@@ -81,7 +89,7 @@ public class RecoveryCodeDisplayNodeTest {
     }
 
     @Test
-    public void assertThatThereAreNoCallBacksIfThereAreNoRecoveryCodes() throws NodeProcessException {
+    void assertThatThereAreNoCallBacksIfThereAreNoRecoveryCodes() throws NodeProcessException {
         JsonValue transientState = json(object());
         JsonValue secureState = json(object());
         JsonValue sharedState = json(object());
@@ -93,7 +101,7 @@ public class RecoveryCodeDisplayNodeTest {
     }
 
     @Test
-    public void assertThatThereAreNoCallbacksAfterRecoveryCodesHaveBeenDisplayedOnce() throws NodeProcessException {
+    void assertThatThereAreNoCallbacksAfterRecoveryCodesHaveBeenDisplayedOnce() throws NodeProcessException {
         JsonValue transientState = json(object());
         JsonValue secureState = json(object());
         JsonValue sharedState = json(object(
@@ -114,7 +122,7 @@ public class RecoveryCodeDisplayNodeTest {
     }
 
     @Test
-    public void assertThatRecoveryCodesAreDisplayedIfTheyAreInTheSecureState() throws NodeProcessException {
+    void assertThatRecoveryCodesAreDisplayedIfTheyAreInTheSecureState() throws NodeProcessException {
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
         JsonValue secureState = json(object(

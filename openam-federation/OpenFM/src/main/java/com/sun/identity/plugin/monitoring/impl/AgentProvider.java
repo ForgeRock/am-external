@@ -24,7 +24,7 @@
  *
  * $Id: AgentProvider.java,v 1.1 2009/06/19 02:43:57 bigfatrat Exp $
  *
- * Portions Copyrighted 2011-2022 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 package com.sun.identity.plugin.monitoring.impl;
 

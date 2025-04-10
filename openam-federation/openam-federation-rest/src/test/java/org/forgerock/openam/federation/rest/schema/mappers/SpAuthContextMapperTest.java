@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -24,11 +32,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.forgerock.openam.federation.rest.schema.hosted.service.AuthContextItem;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class SpAuthContextMapperTest {
 
     private SpAuthContextMapper mapper = new SpAuthContextMapper();
@@ -36,13 +45,9 @@ public class SpAuthContextMapperTest {
     @Mock
     private AuthContextItem authContextItem;
 
-    @BeforeMethod
-    public void setup() {
-        MockitoAnnotations.initMocks(this);
-    }
 
     @Test
-    public void shouldConvertSimpleEntry() {
+    void shouldConvertSimpleEntry() {
         List<AuthContextItem> converted = mapper.map(
                 singletonList("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport|3|"), ROOT);
         assertThat(converted).hasSize(1);
@@ -54,7 +59,7 @@ public class SpAuthContextMapperTest {
     }
 
     @Test
-    public void shouldConvertEntryWithoutLevel() {
+    void shouldConvertEntryWithoutLevel() {
         List<AuthContextItem> converted = mapper.map(
                 singletonList("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport||"), ROOT);
         assertThat(converted).hasSize(1);
@@ -66,7 +71,7 @@ public class SpAuthContextMapperTest {
     }
 
     @Test
-    public void shouldConvertEntryWithAllFieldsCompleted() {
+    void shouldConvertEntryWithAllFieldsCompleted() {
         List<AuthContextItem> converted = mapper.map(
                 singletonList("urn:oasis:names:tc:SAML:2.0:ac:classes:Password|10|default"), ROOT);
         assertThat(converted).hasSize(1);
@@ -78,7 +83,7 @@ public class SpAuthContextMapperTest {
     }
 
     @Test
-    public void shouldInverseMappedValue() {
+    void shouldInverseMappedValue() {
         // Given
         given(authContextItem.getContextReference())
                 .willReturn("urn:oasis:names:tc:SAML:2.0:ac:classes:Password");
@@ -95,7 +100,7 @@ public class SpAuthContextMapperTest {
     }
 
     @Test
-    public void shouldInverseMappedValueNonDefaultAndWithoutLevel() {
+    void shouldInverseMappedValueNonDefaultAndWithoutLevel() {
         // Given
         given(authContextItem.getContextReference())
                 .willReturn("urn:oasis:names:tc:SAML:2.0:ac:classes:Password");

@@ -11,13 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
-import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -31,9 +37,8 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.core.realms.RealmLookupException;
-import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.forgerock.openam.core.realms.Realm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,11 +55,11 @@ import com.sun.identity.idm.AMIdentity;
 public class AccountLockoutNode extends SingleOutcomeNode {
 
     private final Logger logger = LoggerFactory.getLogger(AccountLockoutNode.class);
-    private final CoreWrapper coreWrapper;
     private final AMAccountLockout.Factory amAccountLockoutFactory;
     private static final String BUNDLE = AccountLockoutNode.class.getName();
-    private final LegacyIdentityService identityService;
     private final Config config;
+    private final NodeUserIdentityProvider identityProvider;
+    private final Realm realm;
 
     /**
      * Configuration for the node.
@@ -73,18 +78,18 @@ public class AccountLockoutNode extends SingleOutcomeNode {
     /**
      * Guice constructor.
      *
-     * @param coreWrapper A core wrapper instance.
-     * @param identityService An instance of the IdentityService.
+     * @param identityProvider The NodeUserIdentityProvider.
      * @param amAccountLockoutFactory factory for generating account lockout objects.
      * @param config The config for this instance.
+     * @param realm The realm.
      */
     @Inject
-    public AccountLockoutNode(CoreWrapper coreWrapper, LegacyIdentityService identityService,
-            AMAccountLockout.Factory amAccountLockoutFactory, @Assisted Config config) {
-        this.coreWrapper = coreWrapper;
-        this.identityService = identityService;
+    public AccountLockoutNode(AMAccountLockout.Factory amAccountLockoutFactory, @Assisted Config config,
+            NodeUserIdentityProvider identityProvider, @Assisted Realm realm) {
+        this.identityProvider = identityProvider;
         this.config = config;
         this.amAccountLockoutFactory = amAccountLockoutFactory;
+        this.realm = realm;
     }
 
     @Override
@@ -110,31 +115,20 @@ public class AccountLockoutNode extends SingleOutcomeNode {
             logger.debug("no username specified for lockout");
             throw new NodeProcessException(bundle.getString("context.noname"));
         }
-        String realm = context.sharedState.get(REALM).asString();
-        if (realm == null || realm.isEmpty()) {
-            logger.debug("no realm specified");
-            throw new NodeProcessException(bundle.getString("context.norealm"));
-        }
         logger.debug("username to lockout {}", username);
-        logger.debug("realm {}", realm);
 
         Optional<AMIdentity> userIdentity =
-                getAMIdentity(context.universalId, nodeState, identityService, coreWrapper);
+                identityProvider.getAMIdentity(context.universalId, nodeState);
         if (userIdentity.isEmpty()) {
             logger.debug("Could not find the identity with username {} in the realm {}", username, realm);
             throw new NodeProcessException(bundle.getString("identity.not.found"));
         }
         logger.debug("AMIdentity created: {}", userIdentity.get().getUniversalId());
 
-        try {
-            AMAccountLockout lockout = amAccountLockoutFactory.create(coreWrapper.realmOf(realm));
-            boolean isActive = config.lockAction().isActive();
-            logger.debug("Setting user {} as isActive={}", username, isActive);
-            lockout.setUserAccountActiveStatus(userIdentity.get(), isActive);
-        } catch (RealmLookupException e) {
-            logger.warn("failed to set the user status inactive");
-            throw new NodeProcessException(bundle.getString("identity.setstatus.failure"), e);
-        }
+        AMAccountLockout lockout = amAccountLockoutFactory.create(realm);
+        boolean isActive = config.lockAction().isActive();
+        logger.debug("Setting user {} as isActive={}", username, isActive);
+        lockout.setUserAccountActiveStatus(userIdentity.get(), isActive);
     }
 
     /**

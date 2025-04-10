@@ -11,13 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -30,7 +39,6 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.List;
 import java.util.Optional;
@@ -41,36 +49,30 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.rest.devices.DeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
-import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.idm.AMIdentity;
 
+@ExtendWith(MockitoExtension.class)
 public class OptOutMultiFactorAuthenticationNodeTest {
 
     @Mock
-    OptOutMultiFactorAuthenticationNode.Config config;
+    private OptOutMultiFactorAuthenticationNode.Config config;
     @Mock
-    private CoreWrapper coreWrapper;
-    @Mock
-    private LegacyIdentityService identityService;
+    private NodeUserIdentityProvider identityProvider;
+    private OptOutMultiFactorAuthenticationNode node;
 
-    OptOutMultiFactorAuthenticationNode node;
 
-    @BeforeMethod
-    public void setup() throws NodeProcessException {
-        initMocks(this);
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void processThrowExceptionIfUserNameNotPresentInSharedState() throws Exception {
+    @Test
+    void processThrowExceptionIfUserNameNotPresentInSharedState() {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -78,14 +80,14 @@ public class OptOutMultiFactorAuthenticationNodeTest {
         whenNodeConfigHasDefaultValues();
 
         // When
-        node.process(getContext(sharedState, transientState, emptyList()));
-
-        // Then
-        // throw exception
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Expected username to be set.");
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void processThrowExceptionIfMFAMethodNotPresentInSharedState() throws Exception {
+    @Test
+    void processThrowExceptionIfMFAMethodNotPresentInSharedState() {
         // Given
         JsonValue sharedState = json(object(field(USERNAME, "rod")));
         JsonValue transientState = json(object());
@@ -93,14 +95,14 @@ public class OptOutMultiFactorAuthenticationNodeTest {
         whenNodeConfigHasDefaultValues();
 
         // When
-        node.process(getContext(sharedState, transientState, emptyList()));
-
-        // Then
-        // throw exception
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Expected MFA method to be set.");
     }
 
     @Test
-    public void processShouldSkipIfUserAttributeIsSetAsSkippable() throws Exception {
+    void processShouldSkipIfUserAttributeIsSetAsSkippable() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -144,7 +146,7 @@ public class OptOutMultiFactorAuthenticationNodeTest {
 
     private void whenNodeConfigHasDefaultValues() {
         config = mock(OptOutMultiFactorAuthenticationNode.Config.class);
-        node = spy(new OptOutMultiFactorAuthenticationNode(coreWrapper, identityService));
+        node = spy(new OptOutMultiFactorAuthenticationNode(identityProvider));
     }
 
 }

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -23,21 +31,21 @@ import static org.forgerock.json.JsonValue.object;
 
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.idm.IdType;
 
 public class IdentifiedIdentityTest {
 
     @Test
-    public void testToJson() {
+    void testToJson() {
         IdentifiedIdentity identifiedIdentity = new IdentifiedIdentity("test_name", IdType.USER);
         assertThat(identifiedIdentity.toJson().asMap())
                 .containsExactlyInAnyOrderEntriesOf(Map.of("name", "test_name", "type", IdType.USER.getName()));
     }
 
     @Test
-    public void testFromJson() {
+    void testFromJson() {
         IdentifiedIdentity identifiedIdentity = IdentifiedIdentity.fromJson(json(object(
                 field("name", "test_name"),
                 field("type", IdType.USER.getName()))));

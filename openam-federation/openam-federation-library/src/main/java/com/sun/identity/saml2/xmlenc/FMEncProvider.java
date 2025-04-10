@@ -24,7 +24,7 @@
  *
  * $Id: FMEncProvider.java,v 1.5 2008/06/25 05:48:03 qcheng Exp $
  *
- * Portions Copyrighted 2014-2022 ForgeRock AS.
+ * Portions Copyrighted 2014-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.xmlenc;
 
@@ -214,11 +214,14 @@ public final class FMEncProvider implements EncProvider {
             if (XMLCipher.RSA_OAEP.equalsIgnoreCase(keyTransportAlgorithm) || !rsaOaepConfig.isPresent()) {
                 encryptedKey = cipher.encryptKey(doc, secretKey);
             } else {
-                String maskGenerationFunction = rsaOaepConfig.map(RsaOaepConfig::getMaskGenerationFunction)
-                        .filter(mgf -> !EncryptionConstants.ENC_KEY_ENC_METHOD_MGF_MGF1_SHA1.equals(mgf))
-                        .orElse(null);
-                encryptedKey = cipher.encryptKey(doc, secretKey, maskGenerationFunction,
-                        rsaOaepConfig.map(RsaOaepConfig::getOaepParams).orElse(null));
+                String maskGenerationFunction = rsaOaepConfig.map(
+                        RsaOaepConfig::getMaskGenerationFunction).orElse(null);
+                byte[] oaepParams = rsaOaepConfig.map(RsaOaepConfig::getOaepParams).orElse(null);
+                encryptedKey = cipher.encryptKey(doc, secretKey, maskGenerationFunction, oaepParams);
+                if (oaepParams == null && EncryptionConstants.ENC_KEY_ENC_METHOD_MGF_MGF1_SHA1.equals(
+                        encryptedKey.getEncryptionMethod().getMGFAlgorithm())) {
+                    encryptedKey.getEncryptionMethod().setMGFAlgorithm(null);
+                }
             }
         } catch (XMLEncryptionException xe3) {
             logger.error("Failed to encrypt secret key with public key", xe3);
@@ -378,11 +381,11 @@ public final class FMEncProvider implements EncProvider {
         }
         if (StringUtils.isEmpty(xmlString)) {
             logger.error(classMethod + "The xmlString to decrypt was empty.");
-            throw new SAML2Exception(SAML2SDKUtils.BUNDLE_NAME, "emptyInputMessage", new String[]{"xmlString"});
+            throw new SAML2Exception(SAML2SDKUtils.BUNDLE_NAME, "emptyInputMessage", "xmlString");
         }
         if (CollectionUtils.isEmpty(privateKeys)) {
             logger.error(classMethod + "The set of private keys for decryption was empty.");
-            throw new SAML2Exception(SAML2SDKUtils.BUNDLE_NAME, "emptyInputMessage", new String[]{"private key set"});
+            throw new SAML2Exception(SAML2SDKUtils.BUNDLE_NAME, "emptyInputMessage", "private key set");
         }
         Document doc = XMLUtils.toDOMDocument(xmlString);
         if (doc == null) {

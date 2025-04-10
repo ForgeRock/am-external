@@ -24,7 +24,7 @@
  *
  * $Id: AttributeQueryUtil.java,v 1.11 2009/07/24 22:51:48 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2022 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 
@@ -44,8 +44,8 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.crypto.SecretKey;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
@@ -1059,8 +1059,9 @@ public class AttributeQueryUtil {
         }
         
         SOAPMessage resMsg = null;
+        SOAPCommunicator soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
         try {
-            resMsg = SOAPCommunicator.getInstance().sendSOAPMessage(attrQueryXMLString,
+            resMsg = soapCommunicator.sendSOAPMessage(attrQueryXMLString,
                     attributeServiceURL, true);
         } catch (SOAPException se) {
             logger.error(
@@ -1069,7 +1070,7 @@ public class AttributeQueryUtil {
                 SAML2Utils.bundle.getString("errorSendingAttributeQuery"));
         }
         
-        Element respElem = SOAPCommunicator.getInstance().getSamlpElement(resMsg, "Response");
+        Element respElem = soapCommunicator.getSamlpElement(resMsg, "Response");
         Response response =
             ProtocolFactory.getInstance().createResponse(respElem);
 

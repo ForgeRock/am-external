@@ -11,12 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.push;
 
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.MFA_METHOD;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.PUSH_METHOD;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.CHALLENGE_KEY;
@@ -26,6 +33,7 @@ import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.LOADBALANCE
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MECHANISM_ID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.NOTIFICATION_MESSAGE_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_MECHANISM_UID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_TYPE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.TIME_INTERVAL_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.TIME_TO_LIVE_KEY;
@@ -34,8 +42,6 @@ import static org.forgerock.openam.services.push.PushNotificationConstants.JWT;
 import static org.forgerock.openam.utils.Time.getCalendarInstance;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashSet;
@@ -57,20 +63,19 @@ import org.forgerock.json.jose.jws.SigningManager;
 import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.SharedStateConstants;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.LocaleSelector;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.core.rest.devices.push.UserPushDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
 import org.forgerock.openam.core.rest.devices.services.push.AuthenticatorPushService;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.services.push.DefaultMessageTypes;
 import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.MessageIdFactory;
@@ -131,40 +136,37 @@ public class PushAuthenticationSenderNode implements Node {
     private final Config config;
     private final UserPushDeviceProfileManager userPushDeviceProfileManager;
     private final PushNotificationService pushNotificationService;
-    private final CoreWrapper coreWrapper;
     private final SessionCookies sessionCookies;
     private final MultiFactorNodeDelegate<AuthenticatorPushService> multiFactorNodeDelegate;
     private final LocaleSelector localeSelector;
     private final MessageIdFactory messageIdFactory;
-    private final LegacyIdentityService identityService;
+    private final NodeUserIdentityProvider identityProvider;
 
     /**
      * Constructor.
      * @param config The node config.
      * @param userPushDeviceProfileManager Used to get the user push settings.
      * @param pushNotificationService Used to send push notifications.
-     * @param coreWrapper Used to recover the users username.
      * @param sessionCookies Used to get the current servers lb cookie.
      * @param multiFactorNodeDelegate Shared utilities common to second factor implementations.
      * @param localeSelector Shared utilities to allow for overriding localisations.
      * @param messageIdFactory Used to create new MessageKeys for push messages.
-     * @param identityService an instance of the IdentityService.
+     * @param identityProvider Used to get the user identity.
      */
     @Inject
     public PushAuthenticationSenderNode(@Assisted Config config,
             UserPushDeviceProfileManager userPushDeviceProfileManager, PushNotificationService pushNotificationService,
-            CoreWrapper coreWrapper, SessionCookies sessionCookies,
-            MultiFactorNodeDelegate <AuthenticatorPushService> multiFactorNodeDelegate,
-            LocaleSelector localeSelector, MessageIdFactory messageIdFactory, LegacyIdentityService identityService) {
+            SessionCookies sessionCookies, MultiFactorNodeDelegate <AuthenticatorPushService> multiFactorNodeDelegate,
+            LocaleSelector localeSelector, MessageIdFactory messageIdFactory,
+            NodeUserIdentityProvider identityProvider) {
         this.config = config;
         this.userPushDeviceProfileManager = userPushDeviceProfileManager;
         this.pushNotificationService = pushNotificationService;
-        this.coreWrapper = coreWrapper;
         this.sessionCookies = sessionCookies;
         this.multiFactorNodeDelegate = multiFactorNodeDelegate;
         this.localeSelector = localeSelector;
         this.messageIdFactory = messageIdFactory;
-        this.identityService = identityService;
+        this.identityProvider = identityProvider;
     }
 
     @Override
@@ -203,6 +205,7 @@ public class PushAuthenticationSenderNode implements Node {
                     .replaceSharedState(context.sharedState.copy()
                             .put(MESSAGE_ID_KEY, messageId.toString())
                             .put(TIME_TO_LIVE_KEY, config.messageTimeout())
+                            .put(PUSH_MECHANISM_UID_KEY, device.getDeviceMechanismUID())
                     ).build();
         } catch (CoreTokenException e) {
             return handleFailure(context, FailureReason.CTS_ERROR, e);
@@ -291,8 +294,8 @@ public class PushAuthenticationSenderNode implements Node {
      */
     @VisibleForTesting
     AMIdentity getIdentityFromIdentifier(TreeContext context) throws NodeProcessException {
-        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityService,
-                coreWrapper);
+        Optional<AMIdentity> identity = identityProvider.getAMIdentity(context.universalId,
+                context.getStateFor(this));
         if (identity.isEmpty()) {
             throw new NodeProcessException("Failed to fetch identity.");
         }
@@ -509,7 +512,8 @@ public class PushAuthenticationSenderNode implements Node {
     /**
      * Provides the outcomes for the push authentication sender node.
      */
-    public static class PushAuthenticationOutcomeProvider implements OutcomeProvider {
+    public static class PushAuthenticationOutcomeProvider implements BoundedOutcomeProvider {
+
         /**
          * The possible outcomes for the PushAuthenticationSenderNode.
          */
@@ -548,24 +552,26 @@ public class PushAuthenticationSenderNode implements Node {
 
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+            return getAllOutcomes(locales).stream()
+                           .filter(outcome -> {
+                               if (PushAuthNOutcome.SKIPPED.name().equals(outcome.id)) {
+                                   return nodeAttributes.isNull()
+                                                  || !nodeAttributes.get("mandatory").required().asBoolean();
+                               }
+                               if (PushAuthNOutcome.FAILURE.name().equals(outcome.id)) {
+                                   return nodeAttributes.isNotNull()
+                                                  && nodeAttributes.get("captureFailure").required().asBoolean();
+                               }
+                               return true;
+                           }).toList();
+        }
 
-            List<Outcome> results = new ArrayList<>(
-                    Arrays.asList(PushAuthNOutcome.SENT.getOutcome(),
-                    PushAuthNOutcome.NOT_REGISTERED.getOutcome()));
-
-            if (nodeAttributes.isNotNull()) {
-                // nodeAttributes is null when the node is created
-                if (!nodeAttributes.get("mandatory").required().asBoolean()) {
-                    results.add(PushAuthNOutcome.SKIPPED.getOutcome());
-                }
-                if (nodeAttributes.get("captureFailure").required().asBoolean()) {
-                    results.add(PushAuthNOutcome.FAILURE.getOutcome());
-                }
-            } else {
-                results.add(PushAuthNOutcome.SKIPPED.getOutcome());
-            }
-
-            return Collections.unmodifiableList(results);
+        @Override
+        public List<Outcome> getAllOutcomes(PreferredLocales locales) {
+            return List.of(PushAuthNOutcome.SENT.getOutcome(),
+                    PushAuthNOutcome.NOT_REGISTERED.getOutcome(),
+                    PushAuthNOutcome.SKIPPED.getOutcome(),
+                    PushAuthNOutcome.FAILURE.getOutcome());
         }
     }
 

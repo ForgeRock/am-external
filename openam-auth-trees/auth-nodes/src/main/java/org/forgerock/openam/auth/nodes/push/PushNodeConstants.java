@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -88,6 +96,8 @@ public final class PushNodeConstants {
     public static final String PUSH_NUMBER_CHALLENGE_KEY = "pushNumberChallengeKey";
     /** The key for the message expiration. */
     public static final String PUSH_MESSAGE_EXPIRATION = "pushMessageExpiration";
+    /** The key for the mechanismUid. */
+    public static final String PUSH_MECHANISM_UID_KEY = "pushMechanismUid";
 
     /**
      * The name of the JSON field which holds the push response's content inside the authentication shared state.

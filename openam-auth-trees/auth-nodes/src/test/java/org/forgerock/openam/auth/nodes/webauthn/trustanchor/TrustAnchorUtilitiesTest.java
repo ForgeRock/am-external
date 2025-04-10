@@ -11,14 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.trustanchor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.util.promise.Promises.newResultPromise;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
@@ -26,15 +33,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.forgerock.secrets.keys.CertificateVerificationKey;
-import org.forgerock.util.promise.NeverThrowsException;
-import org.forgerock.util.promise.Promise;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class TrustAnchorUtilitiesTest {
 
     @Mock
@@ -44,19 +51,17 @@ public class TrustAnchorUtilitiesTest {
 
     TrustAnchorUtilities utilities;
 
-    @BeforeTest
-    public void theSetup() {
-        initMocks(this);
+    @BeforeEach
+    void theSetup() {
         utilities = new TrustAnchorUtilities();
     }
 
     @Test
-    public void testTrustAnchorCreation() {
+    void testTrustAnchorCreation() throws Exception {
         //given
         List<CertificateVerificationKey> keys = new ArrayList<>();
         keys.add(mockVerificationKey);
-        Promise<Stream<CertificateVerificationKey>, NeverThrowsException> secretSource = newResultPromise(
-                keys.stream());
+        List<CertificateVerificationKey> secretSource = newResultPromise(keys.stream()).get().toList();
 
         given(mockVerificationKey.getCertificate(X509Certificate.class)).willReturn(Optional.of(mockCertificate));
 
@@ -64,7 +69,7 @@ public class TrustAnchorUtilitiesTest {
         Set<TrustAnchor> result = utilities.trustAnchorsFromSecrets(secretSource);
 
         //then
-        assertThat(result.size()).isEqualTo(1);
+        assertThat(result).hasSize(1);
         assertThat(result.iterator().next().getTrustedCert()).isEqualTo(mockCertificate);
     }
 

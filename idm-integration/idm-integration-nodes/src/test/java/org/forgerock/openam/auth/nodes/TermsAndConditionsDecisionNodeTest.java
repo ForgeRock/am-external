@@ -11,26 +11,35 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.AbstractDecisionNode.FALSE_OUTCOME_ID;
 import static org.forgerock.openam.auth.node.api.AbstractDecisionNode.TRUE_OUTCOME_ID;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.BadRequestException;
@@ -41,12 +50,16 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.integration.idm.TermsAndConditionsConfig;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class TermsAndConditionsDecisionNodeTest {
 
     @Mock
@@ -64,34 +77,29 @@ public class TermsAndConditionsDecisionNodeTest {
     private TermsAndConditionsDecisionNode node;
     private TreeContext context;
 
-    @DataProvider
-    public Object[][] termsAndConditionsDecisionData() {
-        return new Object[][] {
-                {json(object(field("termsAccepted", object(field("termsVersion", "1.0"))))), "1.0",
-                        TRUE_OUTCOME_ID},
-                {json(object(field("termsAccepted", object(field("termsVersion", "1.0"))))), "2.0",
-                        FALSE_OUTCOME_ID},
-                {json(object(field("termsAccepted", null))), "2.0", FALSE_OUTCOME_ID}
-        };
+    public static Stream<Arguments> termsAndConditionsDecisionData() {
+        return Stream.of(
+                Arguments.of(json(object(field("termsAccepted", object(field("termsVersion", "1.0"))))), "1.0", TRUE_OUTCOME_ID),
+                Arguments.of(json(object(field("termsAccepted", object(field("termsVersion", "1.0"))))), "2.0", FALSE_OUTCOME_ID),
+                Arguments.of(json(object(field("termsAccepted", null))), "2.0", FALSE_OUTCOME_ID)
+        );
     }
 
-    @BeforeMethod
-    public void before() throws Exception {
-        initMocks(this);
-
-        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+    @BeforeEach
+    void before() throws Exception {
         when(idmIntegrationService.getActiveTerms(any(), any())).thenReturn(termsConfig);
-        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
-        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
 
         node = new TermsAndConditionsDecisionNode(config, realm, idmIntegrationService);
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveSharedState(), json(object()),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
     }
 
-    @Test(dataProvider = "termsAndConditionsDecisionData")
+    @ParameterizedTest
+    @MethodSource("termsAndConditionsDecisionData")
     public void shouldReturnExpectedOutcome(JsonValue termsAccepted, String activeVersion, String expected)
             throws Exception {
+        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(idmIntegrationService.getAcceptedTerms(any(), any(), any(), any(), any())).thenReturn(termsAccepted);
         when(termsConfig.getVersion()).thenReturn(activeVersion);
 
@@ -99,9 +107,13 @@ public class TermsAndConditionsDecisionNodeTest {
     }
 
 
-    @Test(dataProvider = "termsAndConditionsDecisionData")
+    @ParameterizedTest
+    @MethodSource("termsAndConditionsDecisionData")
     public void shouldReturnExpectedOutcomeWithUsernameAsIdentity(JsonValue termsAccepted, String activeVersion,
             String expected) throws Exception {
+        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
+        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveUsernameSharedState(),
                 json(object()), new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
 
@@ -112,37 +124,48 @@ public class TermsAndConditionsDecisionNodeTest {
 
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowNodeProcessExceptionIfNoIdentity() throws Exception {
-
+    @Test
+    void shouldThrowNodeProcessExceptionIfNoIdentity() throws Exception {
+        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
+        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, json(object()),
                 json(object()), new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
 
-        node.process(context);
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowNodeProcessExceptionIfGetAcceptedTermsFails() throws Exception {
-        when(termsConfig.getVersion()).thenReturn("1");
-        when(idmIntegrationService.getAcceptedTerms(any(), any(), any(), any(), any()))
-                .thenThrow(new BadRequestException());
-
-        node.process(context);
+        assertThatThrownBy(() -> node.process(context))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("userName not present in state");
     }
 
     @Test
-    public void shouldReturnTrueOutcomeIfTermsConfigCannotBeFound() throws Exception {
+    void shouldThrowNodeProcessExceptionIfGetAcceptedTermsFails() throws Exception {
+        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
+        when(idmIntegrationService.getAcceptedTerms(any(), any(), any(), any(), any()))
+                .thenThrow(new BadRequestException());
+
+        assertThatThrownBy(() -> node.process(context))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("org.forgerock.json.resource.BadRequestException: Bad Request");
+    }
+
+    @Test
+    void shouldReturnTrueOutcomeIfTermsConfigCannotBeFound() throws Exception {
+        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(idmIntegrationService.getActiveTerms(any(), any())).thenThrow(new NotFoundException());
         when(idmIntegrationService.getAcceptedTerms(any(), any(), any(), any(), any())).thenReturn(json(object()));
 
         assertThat(node.process(context).outcome).isEqualTo(TRUE_OUTCOME_ID);
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowNodeProcessExceptionIfGetTermsConfigCallFails() throws Exception {
+    @Test
+    void shouldThrowNodeProcessExceptionIfGetTermsConfigCallFails() throws Exception {
         when(idmIntegrationService.getActiveTerms(any(), any())).thenThrow(new BadRequestException());
 
-        node.process(context);
+        assertThatThrownBy(() -> node.process(context))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("org.forgerock.json.resource.BadRequestException: Bad Request");
     }
 
     private JsonValue retrieveSharedState() {

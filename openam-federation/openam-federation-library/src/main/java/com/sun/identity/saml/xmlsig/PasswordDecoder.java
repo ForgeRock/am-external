@@ -24,7 +24,7 @@
  *
  * $Id: PasswordDecoder.java,v 1.3 2009/11/24 22:45:28 exu Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml.xmlsig;
 

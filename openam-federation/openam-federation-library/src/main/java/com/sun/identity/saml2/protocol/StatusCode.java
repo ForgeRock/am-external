@@ -24,7 +24,7 @@
  *
  * $Id: StatusCode.java,v 1.2 2008/06/25 05:47:58 qcheng Exp $
  *
- * Portions Copyrighted 2016-2021 ForgeRock AS.
+ * Portions Copyrighted 2016-2025 Ping Identity Corporation.
  */
 
 

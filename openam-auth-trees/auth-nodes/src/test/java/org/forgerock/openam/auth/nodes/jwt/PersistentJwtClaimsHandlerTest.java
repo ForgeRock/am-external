@@ -11,34 +11,47 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.jwt;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.stream.Stream;
 
 import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.core.realms.RealmTestHelper;
-import org.junit.AfterClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.IdRepoException;
 
+@ExtendWith(MockitoExtension.class)
 public class PersistentJwtClaimsHandlerTest {
     private static final String ID_ATTRIBUTE = "id";
     private static final String OPENAM_USER_CLAIM_KEY = "openam.usr";
@@ -62,20 +75,19 @@ public class PersistentJwtClaimsHandlerTest {
     private String service;
     private String clientIp;
 
-    @BeforeClass
-    public void setupClass() {
+    @BeforeAll
+    static void setupClass() {
         realmHelper = new RealmTestHelper();
         realmHelper.setupRealmClass();
     }
 
-    @AfterClass
-    public static void tearDownClass() {
+    @AfterAll
+    static void tearDownClass() {
         realmHelper.tearDownRealmClass();
     }
 
-    @BeforeMethod
-    public void before() throws IdRepoException, SSOException {
-        initMocks(this);
+    @BeforeEach
+    void before() throws IdRepoException, SSOException {
         orgName = "orgname";
         clientId = "clientId";
         service = "service";
@@ -110,7 +122,7 @@ public class PersistentJwtClaimsHandlerTest {
     }
 
     @Test
-    public void testCreateJwtAuthContextNullPointers() throws Exception {
+    void testCreateJwtAuthContextNullPointers() throws Exception {
         Map<String, String> authContext = persistentJwtClaimsHandler.createJwtAuthContext(null, clientId, service,
                 clientIp);
         assertThat(authContext.get(RLM_CLAIM_KEY)).isNull();
@@ -122,68 +134,93 @@ public class PersistentJwtClaimsHandlerTest {
         assertThat(authContext.get(CLIENTIP_CLAIM_KEY)).isNull();
     }
 
-    @Test(expectedExceptions = InvalidPersistentJwtException.class)
-    public void testGetClaimsSetContextNullClaims() throws Exception {
+    @Test
+    void testGetClaimsSetContextNullClaims() throws Exception {
+        // given
         given(jwt.getClaimsSet()).willReturn(jwtClaimsSet);
-        given(jwtClaimsSet.getClaim(any())).willReturn(null);
-        persistentJwtClaimsHandler.getClaimsSetContext(jwt, resourceBundle);
+        // when
+        assertThatThrownBy(() ->
+                persistentJwtClaimsHandler.getClaimsSetContext(jwt, resourceBundle))
+        // then
+                .isInstanceOf(InvalidPersistentJwtException.class)
+                .hasMessage("Claims context not found");
     }
 
     @Test
-    public void testValidateClaimsPositive() throws Exception {
+    void testValidateClaimsPositive() throws Exception {
         Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, service,
                 clientIp);
         persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, clientIp, true);
     }
 
-    @Test(expectedExceptions = InvalidPersistentJwtException.class)
-    public void testValidateClaimsWrongRequestOrg() throws Exception {
+    @Test
+    void testValidateClaimsWrongRequestOrg() {
+        // given
         Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext("Wrong", clientId, service,
                 clientIp);
-        persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, clientIp, true);
+        // when
+        assertThatThrownBy(() ->
+                persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, clientIp, true))
+        // then
+                .isInstanceOf(InvalidPersistentJwtException.class)
+                .hasMessage("Wrong Realm");
     }
 
     @Test
-    public void testValidateClaimsWrongIpNotEnforced() throws Exception {
+    void testValidateClaimsWrongIpNotEnforced() throws Exception {
         Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, service,
                 clientIp);
         persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, "WrongIp", false);
     }
 
-    @Test(expectedExceptions = InvalidPersistentJwtException.class)
-    public void testValidateClaimsWrongIpEnforced() throws Exception {
+    @Test
+    void testValidateClaimsWrongIpEnforced() {
+        // given
         Map<String, String> claims = persistentJwtClaimsHandler.createJwtAuthContext(orgName, clientId, service,
                 clientIp);
-        persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, "WrongIp", true);
+        // when
+        assertThatThrownBy(() ->
+                persistentJwtClaimsHandler.validateClaims(claims, resourceBundle, orgName, "WrongIp", true))
+        // then
+                .isInstanceOf(InvalidPersistentJwtException.class)
+                .hasMessage("Authentication failed. Client IP is different.");
     }
 
-    @Test(expectedExceptions = InvalidPersistentJwtException.class)
-    public void getUsernameNullClaims() throws Exception {
-        persistentJwtClaimsHandler.getUsername(null, resourceBundle);
+    @Test
+    void getUsernameNullClaims() {
+        assertThatThrownBy(() ->
+                persistentJwtClaimsHandler.getUsername(null, resourceBundle))
+                .isInstanceOf(InvalidPersistentJwtException.class)
+                .hasMessage("Authentication failed. Cannot read the user from null claims.");
     }
 
-    @Test(expectedExceptions = InvalidPersistentJwtException.class)
-    public void getUsernameEmptyClaims() throws Exception {
+    @Test
+    void getUsernameEmptyClaims() {
         Map<String, String> userMap = new HashMap<>();
-        persistentJwtClaimsHandler.getUsername(userMap, resourceBundle);
+        assertThatThrownBy(() ->
+                persistentJwtClaimsHandler.getUsername(userMap, resourceBundle))
+                .isInstanceOf(InvalidPersistentJwtException.class)
+                .hasMessage("Authentication failed. Cannot read the user from empty claims.");
     }
 
-    @DataProvider
-    private Object[][] usernamesFromUniversalIds() {
-        return new Object[][]{
-                {"demo", "id=demo,ou=user,dc=openam,dc=example,dc=com"},
-                {"demo=bad", "id=demo=bad,ou=user,dc=openam,dc=example,dc=com"},
-                {"bad=demo", "id=bad=demo,ou=user,dc=openam,dc=example,dc=com"},
-                {"demo=bad,blah=blah", "id=demo=bad\\,blah=blah,ou=user,dc=openam,dc=example,dc=com"},
-                {"bad=demo,blah=blah", "id=bad=demo\\,blah=blah,ou=user,dc=openam,dc=example,dc=com"},
-                {"demo=bad", "id=demo=bad,ou=user,dc=openam,o=sub,ou=services,dc=openam,dc=example,dc=com"},
-                {"bad=demo", "id=bad=demo,ou=user,dc=openam,o=sub,ou=services,dc=openam,dc=example,dc=com"},
-                {"demo=bad,blah=blah", "id=demo=bad\\,blah=blah,ou=user,o=sub,ou=services,dc=openam,dc=example,dc=com"},
-                {"bad=demo,blah=blah", "id=bad=demo\\,blah=blah,ou=user,o=sub,ou=services,dc=openam,dc=example,dc=com"}
-        };
+    private static Stream<Arguments> usernamesFromUniversalIds() {
+        return Stream.of(
+                Arguments.of("demo", "id=demo,ou=user,dc=openam,dc=example,dc=com"),
+                Arguments.of("demo=bad", "id=demo=bad,ou=user,dc=openam,dc=example,dc=com"),
+                Arguments.of("bad=demo", "id=bad=demo,ou=user,dc=openam,dc=example,dc=com"),
+                Arguments.of("demo=bad,blah=blah", "id=demo=bad\\,blah=blah,ou=user,dc=openam,dc=example,dc=com"),
+                Arguments.of("bad=demo,blah=blah", "id=bad=demo\\,blah=blah,ou=user,dc=openam,dc=example,dc=com"),
+                Arguments.of("demo=bad", "id=demo=bad,ou=user,dc=openam,o=sub,ou=services,dc=openam,dc=example,dc=com"),
+                Arguments.of("bad=demo", "id=bad=demo,ou=user,dc=openam,o=sub,ou=services,dc=openam,dc=example,dc=com"),
+                Arguments.of(
+                "demo=bad,blah=blah", "id=demo=bad\\,blah=blah,ou=user,o=sub,ou=services,dc=openam,dc=example,dc=com"),
+                Arguments.of(
+                "bad=demo,blah=blah", "id=bad=demo\\,blah=blah,ou=user,o=sub,ou=services,dc=openam,dc=example,dc=com")
+        );
     }
 
-    @Test(dataProvider = "usernamesFromUniversalIds")
+    @ParameterizedTest
+    @MethodSource("usernamesFromUniversalIds")
     public void ensureCorrectUsernameFromUniversalId(String expectedUsername, String universalId) throws Exception {
         Map<String, String> userMap = Map.of(OPENAM_USER_CLAIM_KEY, universalId);
         String username = persistentJwtClaimsHandler.getUsername(userMap, resourceBundle);

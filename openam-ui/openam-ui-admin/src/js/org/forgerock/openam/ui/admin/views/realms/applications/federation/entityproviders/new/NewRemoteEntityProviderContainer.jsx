@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 import { map } from "lodash";
 import { Panel } from "react-bootstrap";
@@ -59,6 +67,12 @@ const createSchema = (cotIDs) => {
                     },
                     type: "array"
                 }
+            },
+            updateType: {
+                propertyOrder: 2,
+                title: t("console.applications.federation.entityProviders.new.remote.updateType"),
+                type: "string",
+                "enum": ["CREATE", "UPDATE_CERTIFICATES"]
             }
         },
         required: ["importFile"]
@@ -95,7 +109,7 @@ class NewRemoteEntityProviderContainer extends Component {
         /* eslint-enable react/no-did-mount-set-state */
     }
 
-    handleSave = ({ importFile, cot }) => {
+    handleSave = ({ importFile, cot, updateType }) => {
         const location = "remote";
         const [realm] = this.props.router.params;
         const standardMetadata = importFile;
@@ -103,7 +117,7 @@ class NewRemoteEntityProviderContainer extends Component {
         this.setState({ isSaving: true }, async () => {
             try {
                 // request - response
-                const response = await create(realm, location, { standardMetadata });
+                const response = await create(realm, location, { standardMetadata, updateType });
 
                 if (Array.isArray(cot) && cot.length) {
                     await this.updateCirclesOfTrusts(realm, response.importedEntities, cot);

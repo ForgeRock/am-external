@@ -24,7 +24,7 @@
  *
  * $Id: DefaultLibraryIDPAttributeMapper.java,v 1.3 2009/11/30 21:11:08 exu Exp $
  *
- * Portions Copyrighted 2013-2021 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins;

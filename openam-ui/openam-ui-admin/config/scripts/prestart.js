@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 require("dotenv").config();
@@ -36,9 +44,14 @@ const questions = [{
     message: `Enter the ${info("path")} of the target AM instance`,
     name: "AM_PATH"
 }, {
+    "default": "n",
+    message: "Have you installed and trusted the SSL certificate locally? (y/n)",
+    name: "AM_SSL_CERT_TRUSTED",
+    when: (answers) => answers.AM_HOSTNAME && answers.AM_HOSTNAME.startsWith("https:")
+}, {
     message: `Enter the absolute ${info("path")} of the SSL private key`,
     name: "AM_SSL_KEY",
-    when: (answers) => answers.AM_HOSTNAME && answers.AM_HOSTNAME.startsWith("https:")
+    when: (answers) => answers.AM_SSL_CERT_TRUSTED && answers.AM_SSL_CERT_TRUSTED.toLowerCase().startsWith("n")
 }, {
     message: `Enter the absolute ${info("path")} of the SSL public certificate`,
     name: "AM_SSL_CERT",
@@ -73,6 +86,15 @@ if (hasQuestions) {
         let envsToWrite = "";
         
         forOwn(answers, (answer, key) => {
+          // AM_SSL_CERT_TRUSTED param should get answered with y for yes, or
+          // n for no. Convert this to the boolean equivalent for use later
+          if (key === "AM_SSL_CERT_TRUSTED") {
+            if (answer.toLowerCase().startsWith("y")) {
+              answer = true;
+            } else {
+              answer = false;
+            }
+          }
           envsToWrite = `${envsToWrite}${key}=${answer}\n`;
           delete answers[key];
         });

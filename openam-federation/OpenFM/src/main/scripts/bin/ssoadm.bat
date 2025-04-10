@@ -26,7 +26,7 @@
 : $Id: ssoadm.bat,v 1.19 2010/01/28 00:49:05 bigfatrat Exp $
 :
 
-: Portions Copyrighted 2010-2016 ForgeRock AS.
+: Portions Copyrighted 2010-2025 Ping Identity Corporation.
 
 setlocal enabledelayedexpansion
 

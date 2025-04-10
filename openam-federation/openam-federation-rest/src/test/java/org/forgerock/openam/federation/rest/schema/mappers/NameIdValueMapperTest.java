@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.federation.rest.schema.mappers;
@@ -23,14 +31,14 @@ import static org.forgerock.openam.objectenricher.EnricherContext.ROOT;
 import java.util.List;
 
 import org.forgerock.openam.federation.rest.schema.shared.NameIdValueMap;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class NameIdValueMapperTest {
 
     private NameIdValueMapper mapper = new NameIdValueMapper();
 
     @Test
-    public void shouldMapNonBinaryMappings() {
+    void shouldMapNonBinaryMappings() {
         List<NameIdValueMap> mapped = mapper.map(singletonList("urn:hello:world=badger"), ROOT);
 
         assertThat(mapped).isNotNull().hasSize(1);
@@ -41,7 +49,7 @@ public class NameIdValueMapperTest {
     }
 
     @Test
-    public void shouldMapBinaryMappings() {
+    void shouldMapBinaryMappings() {
         List<NameIdValueMap> mapped = mapper.map(singletonList("urn:hello:world=badger;binary"), ROOT);
 
         assertThat(mapped).isNotNull().hasSize(1);
@@ -52,7 +60,7 @@ public class NameIdValueMapperTest {
     }
 
     @Test
-    public void shouldInvertNonBinaryEntries() {
+    void shouldInvertNonBinaryEntries() {
         List<String> inverted = mapper.inverse(
                 singletonList(new NameIdValueMap("urn:hello:world", "badger", false)), ROOT);
 
@@ -63,7 +71,7 @@ public class NameIdValueMapperTest {
     }
 
     @Test
-    public void shouldInvertBinaryEntries() {
+    void shouldInvertBinaryEntries() {
         List<String> inverted = mapper.inverse(
                 singletonList(new NameIdValueMap("urn:hello:world", "badger", true)), ROOT);
 

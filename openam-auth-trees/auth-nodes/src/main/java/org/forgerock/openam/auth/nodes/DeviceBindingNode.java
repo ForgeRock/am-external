@@ -11,14 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptySet;
 import static org.forgerock.openam.auth.node.api.Action.send;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getLocalisedMessage;
 import static org.forgerock.openam.utils.CollectionUtils.getFirstItem;
 
@@ -38,7 +45,6 @@ import java.util.Set;
 import javax.inject.Inject;
 
 import org.apache.commons.lang.StringUtils;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.jwk.JWK;
@@ -50,9 +56,9 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.nodes.x509.CertificateUtils;
 import org.forgerock.openam.authentication.callbacks.DeviceBindingCallback;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.DeviceSettings;
@@ -94,8 +100,7 @@ public class DeviceBindingNode implements Node, DeviceBinding {
     static final String PLATFORM = "platform";
     static final String IOS = "ios";
     private final Config config;
-    private final LegacyIdentityService identityService;
-    private final CoreWrapper coreWrapper;
+    private final NodeUserIdentityProvider identityProvider;
     private final DeviceBindingManager deviceBindingManager;
     private final DeviceBindingJsonUtils deviceBindingJsonUtils;
     private final LocaleSelector localeSelector;
@@ -219,8 +224,7 @@ public class DeviceBindingNode implements Node, DeviceBinding {
      *
      * @param config The Node configuration
      * @param realm The current realm
-     * @param identityService Identity Service to access the user identity
-     * @param coreWrapper Instance of CoreWrapper
+     * @param identityProvider The NodeUserIdentityProvider
      * @param androidKeyAttestationService Key Attestation Service to perform Android Key Attestation
      * @param deviceBindingManager Instance of DeviceBindingManager
      * @param deviceBindingJsonUtils Instance of the utils to help convert device to json
@@ -228,19 +232,18 @@ public class DeviceBindingNode implements Node, DeviceBinding {
      */
     @Inject
     public DeviceBindingNode(@Assisted Config config, @Assisted Realm realm,
-            LegacyIdentityService identityService, CoreWrapper coreWrapper,
+            NodeUserIdentityProvider identityProvider,
             AndroidKeyAttestationService androidKeyAttestationService,
             DeviceBindingManager deviceBindingManager,
             DeviceBindingJsonUtils deviceBindingJsonUtils,
             LocaleSelector localeSelector) {
         this.config = config;
         this.realm = realm;
-        this.identityService = identityService;
-        this.coreWrapper = coreWrapper;
         this.androidKeyAttestationService = androidKeyAttestationService;
         this.deviceBindingManager = deviceBindingManager;
         this.deviceBindingJsonUtils = deviceBindingJsonUtils;
         this.localeSelector = localeSelector;
+        this.identityProvider = identityProvider;
     }
 
     @Override
@@ -251,8 +254,8 @@ public class DeviceBindingNode implements Node, DeviceBinding {
         NodeState nodeState = context.getStateFor(this);
 
         //Make sure we have a valid user in the context.
-        Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
-                identityService, coreWrapper);
+        Optional<AMIdentity> userIdentity = identityProvider.getAMIdentity(context.universalId,
+                context.getStateFor(this));
         try {
             if (userIdentity.isEmpty()
                     || !userIdentity.get().isExists()

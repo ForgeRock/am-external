@@ -24,12 +24,12 @@
  *
  * $Id: IDPECPSessionMapper.java,v 1.3 2008/12/03 00:34:10 hengming Exp $
  *
- * Portions Copyrighted 2019-2022 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.annotations.SupportedAll;
 import org.forgerock.openam.saml2.plugins.SAMLPlugin;

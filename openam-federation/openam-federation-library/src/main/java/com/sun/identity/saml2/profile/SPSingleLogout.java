@@ -24,7 +24,7 @@
  *
  * $Id: SPSingleLogout.java,v 1.29 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2013-2022 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.profile;
@@ -43,10 +43,10 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBElement;
 import javax.xml.soap.SOAPMessage;
 
@@ -699,7 +699,7 @@ public class SPSingleLogout {
                 postSingleLogoutSuccess(spEntityID, realm, request, response,
                         userId, logoutReq, logoutRes, binding);
             } else {
-                throw new SAML2Exception(SAML2Utils.BUNDLE_NAME, "sloFailed", null);
+                throw new SAML2Exception(SAML2Utils.BUNDLE_NAME, "sloFailed");
             }
         } else {
             // obtain fedlet adapter
@@ -712,7 +712,7 @@ public class SPSingleLogout {
                     adapter.onFedletSLOFailure(
                             request, response, logoutReq, logoutRes,
                             spEntityID, idpEntityID, binding);
-                    throw new SAML2Exception(SAML2Utils.BUNDLE_NAME, "sloFailed", null);
+                    throw new SAML2Exception(SAML2Utils.BUNDLE_NAME, "sloFailed");
                 }
             }
         }

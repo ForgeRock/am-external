@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -104,6 +112,34 @@ public abstract class AbstractNodeAmPlugin implements AmPlugin {
 
     private boolean isNewerVersion(String pluginVersion, String fromVersion) {
         return VersionComparison.compareVersionStrings(fromVersion, pluginVersion) > 0;
+    }
+
+    /**
+     * Checks if the current version is in the range of minVersion and maxVersion.
+     *
+     * @param minVersion The minimum version to compare against.
+     * @param version The current version to compare.
+     * @param maxVersion The maximum version to compare against.
+     * @return  {@code true} if the current version is in the range of minVersion and maxVersion,
+     * {@code false} otherwise.
+     */
+    protected boolean inRange(String minVersion, String version, String maxVersion) {
+        return VersionComparison.compareVersionStrings(minVersion, version) >= 0
+                && VersionComparison.compareVersionStrings(maxVersion, version) <= 0;
+    }
+
+    /**
+     * Checks if the current version is minVersion or above and is less than the maxVersion.
+     *
+     * @param minVersion The minimum version to compare against.
+     * @param version The current version to compare.
+     * @param maxVersion The maximum version to compare against.
+     * @return  {@code true} if the current version is minVersion or above and is less than the maxVersion,
+     * {@code false} otherwise.
+     */
+    protected boolean inRangeLess(String minVersion, String version, String maxVersion) {
+        return VersionComparison.compareVersionStrings(minVersion, version) >= 0
+                && VersionComparison.compareVersionStrings(maxVersion, version) < 0;
     }
 
     /**

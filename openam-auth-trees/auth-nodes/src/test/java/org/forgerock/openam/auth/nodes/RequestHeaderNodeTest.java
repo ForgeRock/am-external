@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -36,16 +44,16 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.ServiceConfigException;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class RequestHeaderNodeTest {
 
     @Mock
@@ -57,7 +65,7 @@ public class RequestHeaderNodeTest {
     private TreeContext context;
 
     @Test
-    public void shouldProcessAllowedHeaders() throws Exception {
+    void shouldProcessAllowedHeaders() throws Exception {
 
         // Given
         given(config.allowedHeaders()).willReturn(Map.of(
@@ -85,7 +93,7 @@ public class RequestHeaderNodeTest {
     }
 
     @Test
-    public void shouldProcessAllowedAndDelimitedHeaders() throws Exception {
+    void shouldProcessAllowedAndDelimitedHeaders() throws Exception {
 
         // Given
         given(config.allowedHeaders()).willReturn(Map.of(
@@ -112,7 +120,7 @@ public class RequestHeaderNodeTest {
     }
 
     @Test
-    public void shouldProcessGivenNonAllowedHeader() throws Exception {
+    void shouldProcessGivenNonAllowedHeader() throws Exception {
 
         // Given
         given(config.allowedHeaders()).willReturn(Map.of("brand-color", "sharedStateBrandColor"));
@@ -133,7 +141,7 @@ public class RequestHeaderNodeTest {
     }
 
     @Test
-    public void shouldProcessGivenEmptyHeaders() throws Exception {
+    void shouldProcessGivenEmptyHeaders() throws Exception {
 
         // Given
         given(config.allowedHeaders()).willReturn(Map.of("brand-color", "sharedStateBrandColor"));
@@ -152,7 +160,7 @@ public class RequestHeaderNodeTest {
     }
 
     @Test
-    public void shouldFailToValidateGivenEmptyConfig() {
+    void shouldFailToValidateGivenEmptyConfig() {
 
         // Given
         Map<String, Set<String>> config = Map.of(
@@ -171,7 +179,7 @@ public class RequestHeaderNodeTest {
     }
 
     @Test
-    public void shouldFailToValidateGivenIncorrectlyConfiguredHeaderDoDelimit() {
+    void shouldFailToValidateGivenIncorrectlyConfiguredHeaderDoDelimit() {
 
         // Given
         Map<String, Set<String>> config = Map.of(

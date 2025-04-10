@@ -11,17 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
@@ -32,7 +39,11 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
@@ -48,21 +59,23 @@ import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
 import org.bouncycastle.operator.DefaultSignatureAlgorithmIdentifierFinder;
 import org.bouncycastle.operator.bc.BcRSAContentSignerBuilder;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
-import org.forgerock.openam.auth.nodes.webauthn.flows.FlowUtilities;
 import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.AttestationDecoder;
 import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.AuthDataDecoder;
-import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.DecodingException;
 import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.EncodingUtilities;
-import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorUtilities;
-import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
-import org.forgerock.openam.oauth2.OAuth2ClientOriginSearcher;
+import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmManufacturer;
+import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmManufacturerId;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.slf4j.Logger;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
 import com.sun.identity.shared.encode.Base64;
 
@@ -70,92 +83,31 @@ import co.nstant.in.cbor.CborBuilder;
 import co.nstant.in.cbor.CborEncoder;
 import co.nstant.in.cbor.CborException;
 
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class AndroidSafetyNetVerifierTest {
-
+    private static final String FORMAT = "android-safetynet";
     @Mock
-    OAuth2ClientOriginSearcher mockClientOriginHelper;
-    @Mock
-    TrustAnchorValidator.Factory factory;
-    @Mock
-    TrustAnchorUtilities trustUtilities;
+    Logger logger;
 
     private AttestationDecoder decoder;
-    private Logger logger;
 
-    @BeforeMethod
-    public void theSetUp() {
-        initMocks(this);
-        decoder = new AttestationDecoder(trustUtilities, factory, new AuthDataDecoder(),
-                new FlowUtilities(mockClientOriginHelper), new NoneVerifier());
-        logger = mock(Logger.class);
-    }
-
-    @DataProvider
-    public static Object[][] data() throws CborException {
-        return new Object[][]{
-                {"Missing Version", getDeviceAttestationDataMissingVersion(), getEmulatorClientDataHash(), false},
-                {"Failed to parse the attestation statement response as a valid JWS",
-                        getDeviceAttestationDataInvalidJWS(), getEmulatorClientDataHash(), false},
-                {"Failed to verify JWS signature", getDeviceAttestationDataDummyJWS(),
-                        getEmulatorClientDataHash(), true},
-                {"Android SafetyNet attestation - The response is not identical to the Base64 "
+    public static Stream<Arguments> data() throws CborException {
+        return Stream.of(
+                arguments(
+                    "Missing Version", getDeviceAttestationDataMissingVersion(), getEmulatorClientDataHash(), false),
+                arguments("Failed to parse the attestation statement response as a valid JWS",
+                    getDeviceAttestationDataInvalidJWS(), getEmulatorClientDataHash(), false),
+                arguments("Failed to verify JWS signature", getDeviceAttestationDataDummyJWS(),
+                    getEmulatorClientDataHash(), true),
+                arguments(
+                    "Android SafetyNet attestation - The response is not identical to the Base64 "
                         + "encoding of the SHA-256 hash of the concatenation of authenticatorData and clientDataHash.",
-                        getRealDeviceAttestationData(), getDeviceClientDataHashWithInvalidData(), false},
-                {"Android SafetyNet attestation - ctsProfileMatch is False", getEmulatorAttestationData(),
-                        getEmulatorClientDataHash(), false},
-                {null, getRealDeviceAttestationData(), getRealDeviceClientDataHash(), false},
-        };
-    }
-
-
-    @Test(dataProvider = "data")
-    public void test(String expectLogMessage, byte[] attestationData, byte[] clientDataHash, boolean verifySignature)
-            throws DecodingException, CertificateException, NoSuchAlgorithmException {
-        AttestationObject attestationObject = decoder.decode(attestationData, null,
-                null, false);
-        assertThat(attestationObject.attestationVerifier).isInstanceOf(AndroidSafetyNetVerifier.class);
-
-        AndroidSafetyNetVerifier androidSafetyNetVerifier = new AndroidSafetyNetVerifier(logger);
-
-        if (!verifySignature) {
-            androidSafetyNetVerifier = Mockito.spy(androidSafetyNetVerifier);
-            doReturn(generateCertificate()).when(androidSafetyNetVerifier).verifySignature(any());
-        }
-
-        VerificationResponse response = androidSafetyNetVerifier.verify(attestationObject, clientDataHash);
-        assertThat(response.getAttestationType()).isEqualTo(AttestationType.BASIC);
-
-        if (expectLogMessage != null) {
-            ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
-            verify(logger, times(1)).error(stringCaptor.capture(), (Throwable) any());
-            assertThat(stringCaptor.getValue()).isEqualTo(expectLogMessage);
-            assertThat(response.isValid()).isFalse();
-        } else {
-            assertThat(response.isValid()).isTrue();
-            assertThat(response.getCertificate()).isInstanceOf(X509Certificate.class);
-        }
-    }
-
-    @Test
-    public void testInvalidHost() throws DecodingException, CertificateException, NoSuchAlgorithmException {
-        byte[] attestationData = getRealDeviceAttestationData();
-        byte[] clientDataHash = getRealDeviceClientDataHash();
-        AttestationObject attestationObject = decoder.decode(attestationData, null,
-                null, false);
-        assertThat(attestationObject.attestationVerifier).isInstanceOf(AndroidSafetyNetVerifier.class);
-
-        AndroidSafetyNetVerifier androidSafetyNetVerifier = new AndroidSafetyNetVerifier(logger);
-
-        androidSafetyNetVerifier = Mockito.spy(androidSafetyNetVerifier);
-        doReturn(generateCertificate("CN=dummy")).when(androidSafetyNetVerifier).verifySignature(any());
-
-        VerificationResponse response = androidSafetyNetVerifier.verify(attestationObject, clientDataHash);
-        assertThat(response.getAttestationType()).isEqualTo(AttestationType.BASIC);
-
-        ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
-        verify(logger, times(1)).error(stringCaptor.capture(), (Throwable) any());
-        assertThat(stringCaptor.getValue()).isEqualTo("Host verification failed");
-        assertThat(response.isValid()).isFalse();
+                    getRealDeviceAttestationData(), getDeviceClientDataHashWithInvalidData(), false),
+                arguments("Android SafetyNet attestation - ctsProfileMatch is False", getEmulatorAttestationData(),
+                        getEmulatorClientDataHash(), false),
+                arguments(null, getRealDeviceAttestationData(), getRealDeviceClientDataHash(), false)
+        );
     }
 
     //Android Emulator generated attestation Data
@@ -365,7 +317,7 @@ public class AndroidSafetyNetVerifierTest {
     //Invalid JWS
     private static byte[] getDeviceAttestationDataInvalidJWS() throws CborException {
         CborBuilder cborBuilder = new CborBuilder();
-        cborBuilder.addMap().put("fmt", "android-safetynet")
+        cborBuilder.addMap().put("fmt", FORMAT)
                 .putMap("attStmt").put("ver", "1234").put("response", new byte[]{1, 2, 3});
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -377,7 +329,7 @@ public class AndroidSafetyNetVerifierTest {
 
     private static Object getDeviceAttestationDataMissingVersion() throws CborException {
         CborBuilder cborBuilder = new CborBuilder();
-        cborBuilder.addMap().put("fmt", "android-safetynet")
+        cborBuilder.addMap().put("fmt", FORMAT)
                 .putMap("attStmt").put("response", new byte[]{1, 2, 3});
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -389,7 +341,7 @@ public class AndroidSafetyNetVerifierTest {
 
     private static Object getDeviceAttestationDataDummyJWS() throws CborException {
         CborBuilder cborBuilder = new CborBuilder();
-        cborBuilder.addMap().put("fmt", "android-safetynet")
+        cborBuilder.addMap().put("fmt", FORMAT)
                 .putMap("attStmt")
                 .put("ver", "1234")
                 .put("response", ("eyJraWQiOiI0YzQ2YzVlZi0zYWI0LTQyYWYtYTY0Yi04MzgwZjBlM2JiNmEiLCJhbGciOiJSUzI1NiJ9."
@@ -402,6 +354,62 @@ public class AndroidSafetyNetVerifierTest {
         cborEncoder.encode(cborBuilder.build());
 
         return baos.toByteArray();
+    }
+
+    @BeforeEach
+    void theSetUp() {
+        Set<TpmManufacturer> tpmManufacturers = new HashSet<>();
+        tpmManufacturers.addAll(Arrays.asList(TpmManufacturerId.values()));
+        decoder = new AttestationDecoder(new AuthDataDecoder());
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void test(String expectLogMessage, byte[] attestationData, byte[] clientDataHash, boolean verifySignature)
+            throws Exception {
+        AttestationObject attestationObject = decoder.decode(attestationData);
+        assertThat(attestationObject.format).isEqualTo(FORMAT);
+
+        AndroidSafetyNetVerifier androidSafetyNetVerifier = new AndroidSafetyNetVerifier(logger);
+
+        if (!verifySignature) {
+            androidSafetyNetVerifier = Mockito.spy(androidSafetyNetVerifier);
+            doReturn(generateCertificate()).when(androidSafetyNetVerifier).verifySignature(any());
+        }
+
+        VerificationResponse response = androidSafetyNetVerifier.verify(attestationObject, clientDataHash);
+        assertThat(response.getAttestationType()).isEqualTo(AttestationType.BASIC);
+
+        if (expectLogMessage != null) {
+            ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
+            verify(logger, times(1)).error(stringCaptor.capture(), (Throwable) any());
+            assertThat(stringCaptor.getValue()).isEqualTo(expectLogMessage);
+            assertThat(response.isValid()).isFalse();
+        } else {
+            assertThat(response.isValid()).isTrue();
+            assertThat(response.getCertificate()).isInstanceOf(X509Certificate.class);
+        }
+    }
+
+    @Test
+    void testInvalidHost() throws Exception {
+        byte[] attestationData = getRealDeviceAttestationData();
+        byte[] clientDataHash = getRealDeviceClientDataHash();
+        AttestationObject attestationObject = decoder.decode(attestationData);
+        assertThat(attestationObject.format).isEqualTo(FORMAT);
+
+        AndroidSafetyNetVerifier androidSafetyNetVerifier = new AndroidSafetyNetVerifier(logger);
+
+        androidSafetyNetVerifier = Mockito.spy(androidSafetyNetVerifier);
+        doReturn(generateCertificate("CN=dummy")).when(androidSafetyNetVerifier).verifySignature(any());
+
+        VerificationResponse response = androidSafetyNetVerifier.verify(attestationObject, clientDataHash);
+        assertThat(response.getAttestationType()).isEqualTo(AttestationType.BASIC);
+
+        ArgumentCaptor<String> stringCaptor = ArgumentCaptor.forClass(String.class);
+        verify(logger, times(1)).error(stringCaptor.capture(), (Throwable) any());
+        assertThat(stringCaptor.getValue()).isEqualTo("Host verification failed");
+        assertThat(response.isValid()).isFalse();
     }
 
     private X509Certificate generateCertificate(String cn) throws NoSuchAlgorithmException, CertificateException {

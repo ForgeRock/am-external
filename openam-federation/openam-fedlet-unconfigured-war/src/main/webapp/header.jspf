@@ -26,7 +26,7 @@
 
    $Id: header.jspf,v 1.1 2009/06/09 20:28:30 exu Exp $
 
-   Portions Copyrighted 2013-2019 ForgeRock AS.
+   Portions Copyrighted 2013-2025 Ping Identity Corporation
 -->
 <%@ page import="com.sun.identity.saml2.jaxb.metadata.IndexedEndpointType,
 com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType,

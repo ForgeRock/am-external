@@ -24,7 +24,7 @@
  *
  * $Id: SAMLUtilsCommon.java,v 1.4 2008/11/10 22:57:00 veiming Exp $
  *
- * Portions Copyrighted 2019-2020 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml.common;
 

@@ -24,7 +24,7 @@
  *
  * $Id: SignatureProvider.java,v 1.10 2009/08/29 03:06:47 mallas Exp $
  *
- * Portions Copyrighted 2013-2020 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml.xmlsig;

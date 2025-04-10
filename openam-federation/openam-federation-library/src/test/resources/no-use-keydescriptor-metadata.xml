@@ -11,8 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2025 ForgeRock AS.
  * 
+-->
+<!--
+  Copyright 2013-2025 Ping Identity Corporation. All Rights Reserved
+ 
+ ! This code is to be used exclusively in connection with Ping Identity
+ ! Corporation software or services. Ping Identity Corporation only offers
+ ! such software or services to legal entities who have entered into a
+ ! binding license agreement with Ping Identity Corporation.
 -->
 <EntityDescriptor entityID="https://login.example.com/idp/shibboleth" xmlns="urn:oasis:names:tc:SAML:2.0:metadata">
     <IDPSSODescriptor protocolSupportEnumeration="urn:mace:shibboleth:1.0 urn:oasis:names:tc:SAML:1.1:protocol urn:oasis:names:tc:SAML:2.0:protocol">

@@ -11,12 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.am.saml2.impl;
 
 import static com.sun.identity.saml2.common.SAML2Constants.RELAY_STATE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.am.saml2.impl.Saml2ClientConstants.AM_LOCATION_COOKIE;
 import static org.forgerock.am.saml2.impl.Saml2ClientConstants.ERROR_CODE_PARAM_KEY;
 import static org.forgerock.am.saml2.impl.Saml2ClientConstants.ERROR_MESSAGE_PARAM_KEY;
@@ -34,14 +43,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.forgerock.util.encode.Base64url;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.saml2.common.SAML2Constants;
 
@@ -59,14 +68,14 @@ public class Saml2ProxyTest {
     private Cookie[] validCookies;
     private static final Optional<String> LOCAL_AUTH_URL = Optional.ofNullable(null);
 
-    @BeforeTest
+    @BeforeEach
     void setUp() {
         validCookies = new Cookie[1];
         validCookies[0] = new Cookie(AM_LOCATION_COOKIE, Base64url.encode(COOKIE_LOCATION));
     }
 
     @Test
-    public void shouldCreateValidUrlFromDataViaPOST() {
+    void shouldCreateValidUrlFromDataViaPOST() {
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         given(mockRequest.getCookies()).willReturn(validCookies);
@@ -83,7 +92,7 @@ public class Saml2ProxyTest {
     }
 
     @Test
-    public void shouldAddQueryParamsToLocalAuthUrl() {
+    void shouldAddQueryParamsToLocalAuthUrl() {
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         given(mockRequest.getCookies()).willReturn(validCookies);
@@ -101,7 +110,7 @@ public class Saml2ProxyTest {
     }
 
     @Test
-    public void shouldCorrectlyAppendQueryParamsToLocalAuthUrlWithParams() throws MalformedURLException,
+    void shouldCorrectlyAppendQueryParamsToLocalAuthUrlWithParams() throws MalformedURLException,
             URISyntaxException {
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
@@ -125,7 +134,7 @@ public class Saml2ProxyTest {
     }
 
     @Test
-    public void shouldNotAddQueryParamsToLocalAuthUrlIfNoParams() throws MalformedURLException, URISyntaxException {
+    void shouldNotAddQueryParamsToLocalAuthUrlIfNoParams() throws MalformedURLException, URISyntaxException {
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         String urlNoParams = "/am/XUI/#test";
@@ -145,7 +154,7 @@ public class Saml2ProxyTest {
     }
 
     @Test
-    public void shouldCreateValidUrlFromDataViaGET() {
+    void shouldCreateValidUrlFromDataViaGET() {
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         given(mockRequest.getCookies()).willReturn(validCookies);
@@ -161,29 +170,31 @@ public class Saml2ProxyTest {
         assertThat(result).contains(RELAY_STATE + "=" + RELAY_STATE_VALUE);
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
-    public void shouldErrorDueToEmptyAuthenticationStepCookiePOST() {
+    @Test
+    void shouldErrorDueToEmptyAuthenticationStepCookiePOST() {
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         given(mockRequest.getMethod()).willReturn("POST");
 
-        //when
-        Saml2Proxy.getUrlWithKey(mockRequest, KEY, null, LOCAL_AUTH_URL);
+        //when - then
+        assertThatThrownBy(() -> Saml2Proxy.getUrlWithKey(mockRequest, KEY, null, LOCAL_AUTH_URL))
+                .isInstanceOf(IllegalStateException.class);
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
-    public void shouldErrorDueToEmptyAuthenticationStepCookieGET() {
+    @Test
+    void shouldErrorDueToEmptyAuthenticationStepCookieGET() {
 
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         given(mockRequest.getMethod()).willReturn("GET");
 
-        //when
-        Saml2Proxy.getUrlWithKey(mockRequest, KEY, null, LOCAL_AUTH_URL);
+        //when - then
+        assertThatThrownBy(() -> Saml2Proxy.getUrlWithKey(mockRequest, KEY, null, LOCAL_AUTH_URL))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
-    public void shouldCreateDefaultErrorHTMLPostFromDataViaPOST() {
+    void shouldCreateDefaultErrorHTMLPostFromDataViaPOST() {
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         given(mockRequest.getCookies()).willReturn(validCookies);
@@ -198,7 +209,7 @@ public class Saml2ProxyTest {
     }
 
     @Test
-    public void shouldCreateDefaultErrorHTMLPostFromDataViaGET() {
+    void shouldCreateDefaultErrorHTMLPostFromDataViaGET() {
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         given(mockRequest.getCookies()).willReturn(validCookies);
@@ -213,7 +224,7 @@ public class Saml2ProxyTest {
     }
 
     @Test
-    public void shouldCreateErrorHTMLPostFromDataViaPOST() {
+    void shouldCreateErrorHTMLPostFromDataViaPOST() {
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         given(mockRequest.getCookies()).willReturn(validCookies);
@@ -232,7 +243,7 @@ public class Saml2ProxyTest {
     }
 
     @Test
-    public void shouldCreateErrorHTMLPostFromDataViaGET() {
+    void shouldCreateErrorHTMLPostFromDataViaGET() {
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
         given(mockRequest.getCookies()).willReturn(validCookies);
@@ -250,7 +261,7 @@ public class Saml2ProxyTest {
     }
 
     @Test
-    public void shouldCreateErrorHTMLPostFromDataWithMessage() {
+    void shouldCreateErrorHTMLPostFromDataWithMessage() {
 
         //given
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);

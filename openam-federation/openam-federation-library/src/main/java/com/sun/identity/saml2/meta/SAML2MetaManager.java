@@ -24,11 +24,12 @@
  *
  * $Id: SAML2MetaManager.java,v 1.18 2009/10/28 23:58:58 exu Exp $
  *
- * Portions Copyrighted 2010-2024 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.meta;
 
+import static com.sun.identity.saml2.meta.SAML2MetaUtils.MetadataUpdateType;
 import static java.util.stream.Collectors.toList;
 import static org.forgerock.util.LambdaExceptionUtils.rethrowFunction;
 
@@ -38,6 +39,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 
@@ -75,6 +77,7 @@ import com.sun.identity.saml2.jaxb.metadata.AttributeAuthorityDescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.AuthnAuthorityDescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
+import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.RoleDescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.XACMLAuthzDecisionQueryDescriptorType;
@@ -448,28 +451,30 @@ public class SAML2MetaManager {
 
     /**
      * Creates the standard metadata entity descriptor under the realm.
+     * @param metadataUpdateType How to import the metadata.
      * @param realm The realm under which the entity descriptor will be
      *        created.
-     * @param descriptor The standard entity descriptor object to be created. 
+     * @param descriptor The standard entity descriptor object to be created.
      * @throws SAML2MetaException if unable to create the entity descriptor.
      */
     public void createEntityDescriptor(
-        String realm,
-        EntityDescriptorElement descriptor
+            MetadataUpdateType metadataUpdateType, String realm,  EntityDescriptorElement descriptor
     ) throws SAML2MetaException {
         debug.debug("SAML2MetaManager.createEntityDescriptor: called.");
-        createEntity(realm, descriptor, null);
+        createEntity(metadataUpdateType, realm, descriptor, null);
     }
 
     /**
      * Creates the standard and extended metadata under the realm.
-     * @param realm The realm under which the entity descriptor will be
-     *        created.
-     * @param descriptor The standard entity descriptor object to be created. 
-     * @param config The extended entity config object to be created.
+     *
+     * @param metadataUpdateType How to import the metadata.
+     * @param realm              The realm under which the entity descriptor will be created.
+     * @param descriptor         The standard entity descriptor object to be created.
+     * @param config             The extended entity config object to be created.
      * @throws SAML2MetaException if unable to create the entity.
      */
     public void createEntity(
+        MetadataUpdateType metadataUpdateType,
         String realm,
         EntityDescriptorElement descriptor,
         EntityConfigElement config
@@ -549,20 +554,31 @@ public class SAML2MetaManager {
                     List<RoleDescriptorType> newRoles = descriptor.getValue().
                         getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor();
                     for (RoleDescriptorType role : newRoles) {
-                        if (currentRolesTypes.contains(
-                                role.getClass().getName())) {
-                            debug.error("SAML2MetaManager.createEntity: current"
-                                    + " descriptor contains role "
-                                    + role.getClass().getName()
-                                    + " already");
-                            String[] data = {entityId, realm};
-                            LogUtil.error(Level.INFO,
-                                    LogUtil.SET_ENTITY_DESCRIPTOR, data, null);
-                            String[] param = {entityId};
-                            throw new SAML2MetaException("role_already_exists",
-                                    param);
+                        if (currentRolesTypes.contains(role.getClass().getName())) {
+                            switch (metadataUpdateType) {
+                                case CREATE:
+                                debug.error("SAML2MetaManager.createEntity: current"
+                                        + " descriptor contains role "
+                                        + role.getClass().getName()
+                                        + " already");
+                                String[] data = {entityId, realm};
+                                LogUtil.error(Level.INFO,
+                                        LogUtil.SET_ENTITY_DESCRIPTOR, data, null);
+                                String[] param = {entityId};
+                                throw new SAML2MetaException("role_already_exists",
+                                        param);
+                                case UPDATE_CERTIFICATES:
+                                    // These Lists are never null - the getters on the JAXB classes create and return an
+                                    // empty list rather than null if needed.
+                                    List<KeyDescriptorElement> oldKeyDescriptor = extractKeyDescriptors(oldDescriptor, role);
+                                    List<KeyDescriptorElement> newKeyDescriptor = extractKeyDescriptors(descriptor, role);
+                                    oldKeyDescriptor.clear();
+                                    oldKeyDescriptor.addAll(newKeyDescriptor);
+                                    break;
+                            }
+                        } else {
+                            currentRoles.add(role);
                         }
-                        currentRoles.add(role);
                     }
                     Map attrs = SAML2MetaUtils.convertJAXBToAttrMap(
                         ATTR_METADATA, oldDescriptor);
@@ -571,8 +587,14 @@ public class SAML2MetaManager {
                 }
             } else {
                 if (descriptor != null) {
-                    newAttrs = SAML2MetaUtils.convertJAXBToAttrMap(
-                        ATTR_METADATA, descriptor);
+                    newAttrs = switch (metadataUpdateType) {
+                        case CREATE -> SAML2MetaUtils.convertJAXBToAttrMap(ATTR_METADATA, descriptor);
+                        case UPDATE_CERTIFICATES -> {
+                            debug.error("SAML2MetaManager.createEntity: attempt to update non-existing entity {}",
+                                    entityId);
+                            throw new SAML2MetaException("entity_descriptor_not_exist", objs);
+                        }
+                    };
                 }
             }
 
@@ -676,6 +698,30 @@ public class SAML2MetaManager {
             throw new SAML2MetaException("invalid_descriptor", objs);
         }
     } 
+
+    /**
+     * Extracts the KeyDescriptors from the specified role descriptor.
+     *
+     * @param descriptorElement
+     * @return List of KeyDescriptorElement.
+     * @throws SAML2MetaException If multiple SPSSODescriptorType are found.
+     */
+    private static List<KeyDescriptorElement> extractKeyDescriptors(EntityDescriptorElement descriptorElement,
+            RoleDescriptorType roleDescriptorType) throws SAML2MetaException {
+        List<RoleDescriptorType> list = descriptorElement
+                .getValue()
+                .getRoleDescriptorOrIDPSSODescriptorOrSPSSODescriptor()
+                .stream().filter(descriptorType -> descriptorType.getClass().equals(roleDescriptorType.getClass()))
+                .toList();
+        if (list.isEmpty()) {
+            return new ArrayList<>();
+        }
+        if (list.size() > 1) {
+            throw new SAML2MetaException("Expected exactly 1 descriptor of type "
+                    + roleDescriptorType.getClass().getName() + " but found " + list.size());
+        }
+        return list.get(0).getKeyDescriptor();
+    }
 
     private static Set<String> getEntityRolesTypes(Collection<?> roles) {
         Set<String> types = new HashSet<>();
@@ -1106,7 +1152,7 @@ public class SAML2MetaManager {
         if (debug.isDebugEnabled()) {
             debug.debug("SAML2MetaManager.creatEntityConfig: called.");
         }
-        createEntity(realm, null, config);
+        createEntity(MetadataUpdateType.CREATE, realm, null, config);
     }
     
     private void addToCircleOfTrust(
@@ -1272,6 +1318,7 @@ public class SAML2MetaManager {
         return getAllEntities(realm)
                 .stream()
                 .map(rethrowFunction(entityId -> getEntityConfig(realm, entityId)))
+                .filter(Objects::nonNull)
                 .collect(toList());
     }
 
@@ -1285,6 +1332,7 @@ public class SAML2MetaManager {
         return getAllHostedEntities(realm)
                 .stream()
                 .map(rethrowFunction(entityId -> getEntityConfig(realm, entityId)))
+                .filter(Objects::nonNull)
                 .collect(toList());
     }
 
@@ -1298,6 +1346,7 @@ public class SAML2MetaManager {
         return getAllRemoteEntities(realm)
                 .stream()
                 .map(rethrowFunction(entityId -> getEntityConfig(realm, entityId)))
+                .filter(Objects::nonNull)
                 .collect(toList());
     }
 

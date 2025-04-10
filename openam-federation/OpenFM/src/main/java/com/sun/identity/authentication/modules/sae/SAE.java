@@ -24,7 +24,7 @@
  *
  * $Id: SAE.java,v 1.5 2009/02/26 23:58:10 exu Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.authentication.modules.sae;
@@ -35,7 +35,7 @@ import java.util.Properties;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -11,12 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.services.push.sns;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.object;
 import static org.mockito.BDDMockito.given;
@@ -52,9 +61,9 @@ import org.forgerock.openam.services.push.dispatch.MessageDispatcher;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
 import org.forgerock.openam.services.push.dispatch.predicates.PredicateNotMetException;
 import org.forgerock.util.promise.Promise;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class PushMessageResourceTest {
 
@@ -67,8 +76,8 @@ public class PushMessageResourceTest {
     private MessageIdFactory mockMessageIdFactory;
     private MessageId mockMessageId;
 
-    @BeforeMethod
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         mockService = mock(PushNotificationService.class);
         mockDispatcher = mock(MessageDispatcher.class);
         mockMessageHandler = mock(ClusterMessageHandler.class);
@@ -85,13 +94,13 @@ public class PushMessageResourceTest {
         messageResource = new PushMessageResource(mockService, mockMessageIdFactory);
     }
 
-    @AfterMethod
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         realmTestHelper.tearDownRealmClass();
     }
 
     @Test
-    public void shouldHandle() throws Exception {
+    void shouldHandle() throws Exception {
         //given
         Realm realm = realmTestHelper.mockRealm("realm");
         RealmContext realmContext = mockRealmContext(realm);
@@ -110,7 +119,7 @@ public class PushMessageResourceTest {
     }
 
     @Test
-    public void handleShouldInvokeMessageDispatcher() throws Exception {
+    void handleShouldInvokeMessageDispatcher() throws Exception {
         //given
         Realm realm = realmTestHelper.mockRealm("realm");
 
@@ -130,8 +139,8 @@ public class PushMessageResourceTest {
         verify(mockDispatcher, times(1)).handle(mockMessageId, content, mockMessageHandler);
     }
 
-    @Test(expectedExceptions = BadRequestException.class)
-    public void shouldFailWhenNoMessageId() throws Exception {
+    @Test
+    void shouldFailWhenNoMessageId() {
 
         //given
         Realm realm = realmTestHelper.mockRealm("realm");
@@ -146,11 +155,13 @@ public class PushMessageResourceTest {
         Promise<ActionResponse, ResourceException> result = messageResource.handle(realmContext, request);
 
         //then
-        result.getOrThrow();
+        assertThatThrownBy(result::getOrThrow)
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Bad request.");
     }
 
-    @Test(expectedExceptions = BadRequestException.class)
-    public void shouldFailWhenPredicateNotMet() throws Exception {
+    @Test
+    void shouldFailWhenPredicateNotMet() throws Exception {
         //given
         Realm realm = realmTestHelper.mockRealm("realm");
         RealmContext realmContext = mockRealmContext(realm);
@@ -169,11 +180,13 @@ public class PushMessageResourceTest {
         Promise<ActionResponse, ResourceException> result = messageResource.handle(realmContext, request);
 
         //then
-        result.getOrThrow();
+        assertThatThrownBy(result::getOrThrow)
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Bad request.");
     }
 
-    @Test(expectedExceptions = BadRequestException.class)
-    public void shouldFailWhenLocalAndCTSReadsFail() throws Exception {
+    @Test
+    void shouldFailWhenLocalAndCTSReadsFail() throws Exception {
         //given
         Realm realm = realmTestHelper.mockRealm("realm");
         RealmContext realmContext = mockRealmContext(realm);
@@ -191,7 +204,9 @@ public class PushMessageResourceTest {
 
         //then
         verify(mockDispatcher, times(1)).handle(mockMessageId, request.getContent(), mockMessageHandler);
-        result.getOrThrow();
+        assertThatThrownBy(result::getOrThrow)
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Bad request.");
     }
 
     private RealmContext mockRealmContext(Realm realm) {

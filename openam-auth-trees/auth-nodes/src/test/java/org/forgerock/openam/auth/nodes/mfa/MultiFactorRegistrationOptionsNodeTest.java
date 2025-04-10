@@ -11,13 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -34,11 +43,11 @@ import static org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationOptions
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationOptionsNode.DEFAULT_SKIP_STEP_OPTION_KEY;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationOptionsNode.OutcomeProvider.GET_APP_OUTCOME;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationOptionsNode.OutcomeProvider.OPT_OUT_OUTCOME;
+import static org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationOptionsNode.OutcomeProvider.REGISTER_OUTCOME;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationOptionsNode.OutcomeProvider.SKIP_OUTCOME;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,6 +55,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
@@ -53,15 +63,24 @@ import javax.security.auth.callback.TextOutputCallback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.LocaleSelector;
+import org.forgerock.util.i18n.PreferredLocales;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith({MockitoExtension.class})
 public class MultiFactorRegistrationOptionsNodeTest {
 
     static final int DEFAULT_CHOICE_INDEX = 0;
@@ -82,65 +101,58 @@ public class MultiFactorRegistrationOptionsNodeTest {
         put(Locale.CANADA, DEFAULT_OPT_OUT_OPTION_KEY);
     }};
 
-    MultiFactorRegistrationOptionsNode node;
+    private MultiFactorRegistrationOptionsNode node;
 
     @Mock
     private MultiFactorRegistrationOptionsNode.Config config;
     @Mock
     private LocaleSelector localeSelector;
 
-    @DataProvider(name = "confirmations")
-    public Object[][] confirmations() {
-        return new Object[][]{
-                {1, GET_APP_OUTCOME},
-                {2, SKIP_OUTCOME},
-                {3, OPT_OUT_OUTCOME}
-        };
+    private static Stream<Arguments> confirmations() {
+        return Stream.of(
+                Arguments.of(1, GET_APP_OUTCOME),
+                Arguments.of(2, SKIP_OUTCOME),
+                Arguments.of(3, OPT_OUT_OUTCOME)
+        );
     }
 
-    @DataProvider(name = "confirmationsWithoutGetApp")
-    public Object[][] confirmationsWithoutGetApp() {
-        return new Object[][]{
-                {1, SKIP_OUTCOME},
-                {2, OPT_OUT_OUTCOME}
-        };
+    private static Stream<Arguments> confirmationsWithoutGetApp() {
+        return Stream.of(
+                Arguments.of(1, SKIP_OUTCOME),
+                Arguments.of(2, OPT_OUT_OUTCOME)
+        );
     }
 
-    @BeforeMethod
-    public void setup() {
-        initMocks(this);
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void processThrowExceptionIfUserNameNotPresentInSharedState() throws Exception {
+    @Test
+    void processThrowExceptionIfUserNameNotPresentInSharedState() throws Exception {
         // Given
         JsonValue sharedState = json(object());
 
         whenNodeConfigHasDefaultValues();
 
         // When
-        node.process(getContext(sharedState));
-
-        // Then
-        // throw exception
+        assertThatThrownBy(() -> node.process(getContext(sharedState)))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Expected username to be set.");
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void processThrowExceptionIfMFAMethodNotPresentInSharedState() throws Exception {
+    @Test
+    void processThrowExceptionIfMFAMethodNotPresentInSharedState() throws Exception {
         // Given
         JsonValue sharedState = json(object(field(USERNAME, "rod")));
 
         whenNodeConfigHasDefaultValues();
 
         // When
-        node.process(getContext(sharedState));
-
-        // Then
-        // throw exception
+        assertThatThrownBy(() -> node.process(getContext(sharedState)))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Expected multi-factor authentication method to be set.");
     }
 
     @Test
-    public void processShouldReturnCorrectCallbacksDuringFirstPass() throws Exception {
+    void processShouldReturnCorrectCallbacksDuringFirstPass() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -160,7 +172,7 @@ public class MultiFactorRegistrationOptionsNodeTest {
     }
 
     @Test
-    public void shouldDisplayAllRegistrationOptions() throws Exception {
+    void shouldDisplayAllRegistrationOptions() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -185,7 +197,7 @@ public class MultiFactorRegistrationOptionsNodeTest {
     }
 
     @Test
-    public void shouldNotDisplaySkipAndOptOutOptions() throws Exception {
+    void shouldNotDisplaySkipAndOptOutOptions() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -208,7 +220,7 @@ public class MultiFactorRegistrationOptionsNodeTest {
     }
 
     @Test
-    public void shouldNotDisplayGetAppOption() throws Exception {
+    void shouldNotDisplayGetAppOption() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -232,7 +244,7 @@ public class MultiFactorRegistrationOptionsNodeTest {
     }
 
     @Test
-    public void shouldOnlyDisplayRegisterOption() throws Exception {
+    void shouldOnlyDisplayRegisterOption() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -254,7 +266,8 @@ public class MultiFactorRegistrationOptionsNodeTest {
         assertThat(callback.getOptions()).isEqualTo(deviceOptions);
     }
 
-    @Test(dataProvider = "confirmations")
+    @ParameterizedTest
+    @MethodSource("confirmations")
     public void shouldGetCorrectOutcomeForChoiceIndex(int index, String response) throws Exception {
         // Given
         JsonValue sharedState = json(object(
@@ -293,7 +306,8 @@ public class MultiFactorRegistrationOptionsNodeTest {
         assertThat(action.outcome).isEqualTo(response);
     }
 
-    @Test(dataProvider = "confirmationsWithoutGetApp")
+    @ParameterizedTest
+    @MethodSource("confirmationsWithoutGetApp")
     public void shouldGetCorrectOutcomeForChoiceIndexWithoutGetApp(int index, String response) throws Exception {
         // Given
         JsonValue sharedState = json(object(
@@ -384,4 +398,75 @@ public class MultiFactorRegistrationOptionsNodeTest {
 
         node = spy(new MultiFactorRegistrationOptionsNode(config, localeSelector));
     }
+
+    @Test
+    void shouldReturnAllOutcomesWhenGetAllOutcomes() throws NodeProcessException {
+        // Given
+        BoundedOutcomeProvider outcomeProvider = new MultiFactorRegistrationOptionsNode.OutcomeProvider();
+
+        // When
+        var outcomes = outcomeProvider.getAllOutcomes(new PreferredLocales());
+
+        // Then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly(REGISTER_OUTCOME, GET_APP_OUTCOME, SKIP_OUTCOME, OPT_OUT_OUTCOME);
+    }
+
+    @Test
+    void shouldReturnAllOutcomesWhenJsonIsNull() throws NodeProcessException {
+        // Given
+        OutcomeProvider outcomeProvider = new MultiFactorRegistrationOptionsNode.OutcomeProvider();
+        var attributes = json(null);
+
+        // When
+        var outcomes = outcomeProvider.getOutcomes(new PreferredLocales(), attributes);
+
+        // Then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly(REGISTER_OUTCOME, GET_APP_OUTCOME, SKIP_OUTCOME, OPT_OUT_OUTCOME);
+    }
+
+    @Test
+    void shouldReturnAllOutcomesWhenGetAppIsTrueAndMandatoryIsFalse() throws NodeProcessException {
+        // Given
+        OutcomeProvider outcomeProvider = new MultiFactorRegistrationOptionsNode.OutcomeProvider();
+        var attributes = json(object(field("getApp", true), field("mandatory", false)));
+
+        // When
+        var outcomes = outcomeProvider.getOutcomes(new PreferredLocales(), attributes);
+
+        // Then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly(REGISTER_OUTCOME, GET_APP_OUTCOME, SKIP_OUTCOME, OPT_OUT_OUTCOME);
+    }
+
+    @Test
+    void shouldNotReturnGetAppOutcomeWhenGetAppIsFalse() throws NodeProcessException {
+        // Given
+        OutcomeProvider outcomeProvider = new MultiFactorRegistrationOptionsNode.OutcomeProvider();
+        var attributes = json(object(field("getApp", false), field("mandatory", false)));
+
+        // When
+        var outcomes = outcomeProvider.getOutcomes(new PreferredLocales(), attributes);
+
+        // Then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly(REGISTER_OUTCOME, SKIP_OUTCOME, OPT_OUT_OUTCOME);
+    }
+
+    @Test
+    void shouldNotReturnSkipOrOutOptOutcomeWhenMandatoryIsTrue() throws NodeProcessException {
+        // Given
+        OutcomeProvider outcomeProvider = new MultiFactorRegistrationOptionsNode.OutcomeProvider();
+        var attributes = json(object(field("getApp", true), field("mandatory", true)));
+
+        // When
+        var outcomes = outcomeProvider.getOutcomes(new PreferredLocales(), attributes);
+
+        // Then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly(REGISTER_OUTCOME, GET_APP_OUTCOME);
+    }
+
+
 }

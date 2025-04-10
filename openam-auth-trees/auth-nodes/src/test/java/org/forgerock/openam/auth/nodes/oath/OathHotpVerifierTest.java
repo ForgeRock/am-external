@@ -11,35 +11,66 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mockStatic;
 
+import org.forgerock.openam.core.rest.devices.RecoveryCodeStorage;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class OathHotpVerifierTest {
 
+    @Mock
+    private static RecoveryCodeStorage recoveryCodeStorage;
+    private static MockedStatic<RecoveryCodeStorage> recoveryCodeStorageMockedStatic;
     private final OathDeviceSettings settings = new OathDeviceSettings();
-
     private final OathTokenVerifierNode.Config config = new OathTokenVerifierNode.Config() {
         @Override
         public HashAlgorithm totpHashAlgorithm() {
             return HashAlgorithm.HMAC_SHA1;
         }
+
         @Override
         public int hotpWindowSize() {
             return 2;
         }
     };
-
     private final OathHotpVerifier hotpVerifier = new OathHotpVerifier(config, settings);
 
+    @BeforeAll
+    static void setUp() {
+        recoveryCodeStorageMockedStatic = mockStatic(RecoveryCodeStorage.class);
+        recoveryCodeStorageMockedStatic.when(RecoveryCodeStorage::getSystemStorage).thenReturn(recoveryCodeStorage);
+    }
+
+    @AfterAll
+    static void tearDown() {
+        recoveryCodeStorageMockedStatic.close();
+    }
+
     @Test
-    public void verifyFirstValidHotpThenSucceed() throws Exception {
+    void verifyFirstValidHotpThenSucceed() throws Exception {
         // Given
         settings.setSharedSecret("abcd");
 
@@ -51,7 +82,7 @@ public class OathHotpVerifierTest {
     }
 
     @Test
-    public void verifySecondValidHotpThenSucceed() throws Exception {
+    void verifySecondValidHotpThenSucceed() throws Exception {
         // Given
         settings.setSharedSecret("abcd");
 
@@ -63,7 +94,7 @@ public class OathHotpVerifierTest {
     }
 
     @Test
-    public void verifyThirdValidHotpThenSucceed() throws Exception {
+    void verifyThirdValidHotpThenSucceed() throws Exception {
         // Given
         settings.setSharedSecret("abcd");
         settings.setCounter(2);
@@ -75,41 +106,34 @@ public class OathHotpVerifierTest {
         assertThat(settings.getCounter()).isEqualTo(3);
     }
 
-    @Test(expectedExceptions = OathVerificationException.class)
-    public void verifySameValidHotpThenFail() throws Exception {
+    @Test
+    void verifySameValidHotpThenFail() {
         // Given
         settings.setSharedSecret("abcd");
         settings.setCounter(1);
 
-        // When
-        hotpVerifier.verify("564491");
-
-        // Then
-        // throw exception
+        // When / Then
+        assertThatThrownBy(() -> hotpVerifier.verify("564491"))
+                .isInstanceOf(OathVerificationException.class);
     }
 
-    @Test(expectedExceptions = OathVerificationException.class)
-    public void verifyWhenInvalidHotpThenFail() throws OathVerificationException {
+    @Test
+    void verifyWhenInvalidHotpThenFail() {
         // Given
         settings.setSharedSecret("abcd");
-
-        // When
-        hotpVerifier.verify("000000");
-
-        // Then
-        // throw exception
+        // When / Then
+        assertThatThrownBy(() -> hotpVerifier.verify("000000"))
+                .isInstanceOf(OathVerificationException.class);
     }
 
-    @Test(expectedExceptions = OathVerificationException.class)
-    public void verifyWhenExceedMaximumWindowSizeThenFail() throws Exception {
+    @Test
+    void verifyWhenExceedMaximumWindowSizeThenFail() {
         // Given
         settings.setSharedSecret("abcd");
         settings.setCounter(0);
 
-        // When
-        hotpVerifier.verify("301128");
-
-        // Then
-        // throw exception
+        // When / Then
+        assertThatThrownBy(() -> hotpVerifier.verify("301128"))
+                .isInstanceOf(OathVerificationException.class);
     }
 }

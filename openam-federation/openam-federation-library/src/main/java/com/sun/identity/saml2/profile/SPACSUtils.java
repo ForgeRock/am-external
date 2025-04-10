@@ -24,7 +24,7 @@
  *
  * $Id: SPACSUtils.java,v 1.48 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2010-2024 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  * Portions Copyrighted 2016 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.saml2.profile;
@@ -51,9 +51,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPConnection;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
@@ -140,7 +140,7 @@ import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.xml.XMLUtils;
 
 /**
- * This class is used by a service provider (SP) to process the response from  
+ * This class is used by a service provider (SP) to process the response from
  * an identity provider for the SP's Assertion Consumer Service.
  *
  */
@@ -150,6 +150,8 @@ public class SPACSUtils {
     private static final Logger logger = LoggerFactory.getLogger(SPACSUtils.class);
     private static FedMonAgent agent = MonitorManager.getAgent();
     private static FedMonSAML2Svc saml2Svc = MonitorManager.getSAML2Svc();
+
+    private static SOAPCommunicator soapCommunicator;
 
     private SPACSUtils() {}
 
@@ -256,10 +258,10 @@ public class SPACSUtils {
     }
 
     /**
-     * Retrieves <code>SAML Response</code> from http Get. 
+     * Retrieves <code>SAML Response</code> from http Get.
      * It first uses parameter resID to retrieve <code>Response</code>. This is
      * the case after local login;
-     * If resID is not defined, it then uses <code>SAMLart</code> http 
+     * If resID is not defined, it then uses <code>SAMLart</code> http
      * parameter to retrieve <code>Response</code>.
      */
     private static ResponseInfo getResponseFromGet(
@@ -405,7 +407,7 @@ public class SPACSUtils {
                         + "ArtifactResolve=" + resolveString);
             }
 
-            SOAPMessage msg = SOAPCommunicator.getInstance().createSOAPMessage(resolveString, true);
+            SOAPMessage msg = getSoapCommunicator().createSOAPMessage(resolveString, true);
             IDPSSOConfigElement idpssoConfig = sm.getIDPSSOConfig(realm, idpEntityID);
             location = SAML2Utils.fillInBasicAuthInfo(idpssoConfig, location, realm);
 
@@ -586,7 +588,7 @@ public class SPACSUtils {
         String method = "SPACSUtils.getResponseFromSOAP:";
         Element resElem = null;
         try {
-            resElem = SOAPCommunicator.getInstance().getSamlpElement(resMsg, "ArtifactResponse");
+            resElem = getSoapCommunicator().getSamlpElement(resMsg, "ArtifactResponse");
         } catch (SAML2Exception se) {
             String[] data = {idpEntityID};
             LogUtil.error(Level.INFO,
@@ -763,7 +765,7 @@ public class SPACSUtils {
     {
         Message message = null;
         try {
-            message = new Message(SOAPCommunicator.getInstance().getSOAPMessage(request));
+            message = new Message(getSoapCommunicator().getSOAPMessage(request));
         } catch (SOAPException soapex) {
             String[] data = { hostEntityId } ;
             LogUtil.error(Level.INFO,
@@ -1831,21 +1833,21 @@ public class SPACSUtils {
      * result will be returned. <br>
      * Here is a list of keys and values for the returned map: <br>
      * SAML2Constants.ATTRIBUTE_MAP -- Attribute map containing all attributes
-     *                                 passed down from IDP inside the 
-     *                                 Assertion. The value is a 
-     *                                 <code>java.util.Map</code> whose keys 
-     *                                 are attribute names and values are 
-     *                                 <code>java.util.Set</code> of string 
+     *                                 passed down from IDP inside the
+     *                                 Assertion. The value is a
+     *                                 <code>java.util.Map</code> whose keys
+     *                                 are attribute names and values are
+     *                                 <code>java.util.Set</code> of string
      *                                 values for the attributes. <br>
      * SAML2Constants.RELAY_STATE -- Relay state, value is a string <br>
      * SAML2Constants.IDPENTITYID -- IDP entity ID, value is a string<br>
-     * SAML2Constants.RESPONSE    -- Response object, value is an instance of 
+     * SAML2Constants.RESPONSE    -- Response object, value is an instance of
      *                               com.sun.identity.saml2.protocol.Response
-     * SAML2Constants.ASSERTION   -- Assertion object, value is an instance of 
+     * SAML2Constants.ASSERTION   -- Assertion object, value is an instance of
      *                               com.sun.identity.saml2.assertion.Assertion
-     * SAML2Constants.SUBJECT     -- Subject object, value is an instance of 
+     * SAML2Constants.SUBJECT     -- Subject object, value is an instance of
      *                               com.sun.identity.saml2.assertion.Subject
-     * SAML2Constants.NAMEID      -- NameID object, value is an instance of 
+     * SAML2Constants.NAMEID      -- NameID object, value is an instance of
      *                               com.sun.identity.saml2.assertion.NameID
      *
      * @param request HTTP Servlet request
@@ -1865,13 +1867,13 @@ public class SPACSUtils {
             SessionException, ServletException {
         if (request == null) {
             String message =
-                    MessageFormat.format(SAML2SDKUtils.bundle.getString("nullInputMessage"), new String[]{"request"});
+                    MessageFormat.format(SAML2SDKUtils.bundle.getString("nullInputMessage"), "request");
             logger.error("SPACSUtils.processResponseForFedlet: " + message);
             throw new ServletException(message);
         }
         if (response == null) {
             String message =
-                    MessageFormat.format(SAML2SDKUtils.bundle.getString("nullInputMessage"), new String[]{"response"});
+                    MessageFormat.format(SAML2SDKUtils.bundle.getString("nullInputMessage"), "response");
             logger.error("SPACSUtils.processResponseForFedlet: " + message);
             throw new ServletException(message);
         }
@@ -2147,21 +2149,27 @@ public class SPACSUtils {
                 SAML2Constants.IDP_ROLE,
                 SAML2Constants.WANT_ARTIFACT_RESOLVE_MTLS);
 
-        SOAPCommunicator soapCommunicator = SOAPCommunicator.getInstance();
         SOAPConnection soapConnection;
         if (mTLSEnabled) {
             try {
                 logger.debug("mTLS required for connection, using mTLS-enabled handler");
                 soapConnection = InjectorHolder.getInstance(SOAPConnectionFactory.class)
-                        .create(Realms.of(realm), soapCommunicator, hostEntityId, SP);
+                        .create(Realms.of(realm), getSoapCommunicator(), hostEntityId, SP);
             } catch (RealmLookupException rle) {
                 logger.error("SPACSUtils.getResponseFromArtifact: "
                         + "couldn't get ArtifactResponse. Realm lookup error:", rle);
                 throw new SOAPException(rle);
             }
         } else {
-            soapConnection = soapCommunicator.openSOAPConnection();
+            soapConnection = getSoapCommunicator().openSOAPConnection();
         }
         return soapConnection;
+    }
+
+    private static SOAPCommunicator getSoapCommunicator() {
+        if (soapCommunicator == null) {
+            soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        }
+        return soapCommunicator;
     }
 }

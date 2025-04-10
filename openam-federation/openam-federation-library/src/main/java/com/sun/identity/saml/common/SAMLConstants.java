@@ -24,7 +24,7 @@
  *
  * $Id: SAMLConstants.java,v 1.17 2009/06/12 22:21:39 mallas Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml.common;
 

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.federation.rest.secret.manager;
@@ -19,19 +27,18 @@ package org.forgerock.openam.federation.rest.secret.manager;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Set;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-import junitparams.naming.TestCaseName;
-
-@RunWith(JUnitParamsRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class SecretMappingManagerHelperTest {
 
     private SecretMappingManagerHelper helper;
@@ -39,7 +46,7 @@ public class SecretMappingManagerHelperTest {
     private static final String SIGNING_MAPPING = "am.applications.federation.entity.providers.saml2.%s.signing";
     private static final String BASIC_AUTH_MAPPING = "am.applications.federation.entity.providers.saml2.%s.basicauth";
 
-    private Object[] similarSecretIdProvider() {
+    private static Object[] similarSecretIdProvider() {
         return new Object[][] {
                 { "asecretbutdifferent", singleton("asecret") },
                 { "a.secret.but.different", singleton("secret") },
@@ -47,14 +54,13 @@ public class SecretMappingManagerHelperTest {
         };
     }
 
-    @Before
-    public void setup() {
-        openMocks(this);
+    @BeforeEach
+    void setup() {
         helper = new SecretMappingManagerHelper(null);
     }
 
     @Test
-    public void shouldReturnFalseWhenNonSaml2MappingId() {
+    void shouldReturnFalseWhenNonSaml2MappingId() {
         //given
         String mappingId = "non.saml2.mapping.id";
 
@@ -67,9 +73,8 @@ public class SecretMappingManagerHelperTest {
         assertThat(isUnusedRemote).isFalse();
     }
 
-    @Test
-    @TestCaseName("{method}: {0}")
-    @Parameters({
+    @ParameterizedTest(name = "{index}: {0}")
+    @ValueSource(strings = {
             "am.applications.federation.entity.providers.saml2.secret.signing",
             "am.applications.federation.entity.providers.saml2.secret.encryption"})
     public void shouldReturnUnusedWhenSaml2MappingIdAndNoHostedEntitiesAvailable(String mappingId) {
@@ -81,7 +86,7 @@ public class SecretMappingManagerHelperTest {
     }
 
     @Test
-    public void shouldReturnUnusedWhenSaml2MappingIdAndNoRemoteEntitiesAvailable() {
+    void shouldReturnUnusedWhenSaml2MappingIdAndNoRemoteEntitiesAvailable() {
         //given
         String mappingId = "am.applications.federation.entity.providers.saml2.secret.basicauth";
 
@@ -93,7 +98,7 @@ public class SecretMappingManagerHelperTest {
     }
 
     @Test
-    public void shouldReturnUnusedWhenSaml2MappingIdAndNoHostedIdentifiersMatch() {
+    void shouldReturnUnusedWhenSaml2MappingIdAndNoHostedIdentifiersMatch() {
         //given
         String mappingId = "am.applications.federation.entity.providers.saml2.old.secret.signing";
         Set<String> identifiers = singleton("new.secret");
@@ -106,7 +111,7 @@ public class SecretMappingManagerHelperTest {
     }
 
     @Test
-    public void shouldReturnUnusedWhenSaml2MappingIdAndNoRemoteIdentifiersMatch() {
+    void shouldReturnUnusedWhenSaml2MappingIdAndNoRemoteIdentifiersMatch() {
         //given
         String mappingId = "am.applications.federation.entity.providers.saml2.old.secret.basicauth";
         Set<String> identifiers = singleton("new.secret");
@@ -119,7 +124,7 @@ public class SecretMappingManagerHelperTest {
     }
 
     @Test
-    public void shouldReturnInUseWhenSaml2MappingIdAndHostedIdentifiersMatch() {
+    void shouldReturnInUseWhenSaml2MappingIdAndHostedIdentifiersMatch() {
         //given
         String mappingId = "am.applications.federation.entity.providers.saml2.secret.still.in.use.signing";
         Set<String> identifiers = singleton("secret.still.in.use");
@@ -132,7 +137,7 @@ public class SecretMappingManagerHelperTest {
     }
 
     @Test
-    public void shouldReturnInUseWhenSaml2MappingIdAndRemoteIdentifiersMatch() {
+    void shouldReturnInUseWhenSaml2MappingIdAndRemoteIdentifiersMatch() {
         //given
         String mappingId = "am.applications.federation.entity.providers.saml2.secret.still.in.use.signing";
         Set<String> identifiers = singleton("secret.still.in.use");
@@ -144,8 +149,8 @@ public class SecretMappingManagerHelperTest {
         assertThat(isUnused).isFalse();
     }
 
-    @Test
-    @Parameters(method = "similarSecretIdProvider")
+    @ParameterizedTest
+    @MethodSource("similarSecretIdProvider")
     public void shouldReturnRemoteMappingNotInUseWhenSimilarSecretIdExists(String mappingIdSecret,
             Set<String> identifiers) {
         // given
@@ -158,8 +163,8 @@ public class SecretMappingManagerHelperTest {
         assertThat(isUnused).isTrue();
     }
 
-    @Test
-    @Parameters(method = "similarSecretIdProvider")
+    @ParameterizedTest
+    @MethodSource("similarSecretIdProvider")
     public void shouldReturnHostedMappingNotInUseWhenSimilarSecretIdExists(String mappingIdSecret,
             Set<String> identifiers) {
         // given

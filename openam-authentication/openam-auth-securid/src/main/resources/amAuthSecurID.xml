@@ -12,7 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
  * 
 -->
 
@@ -21,7 +21,7 @@
     Use is subject to license terms.
 -->
 <!--
-	Portions Copyright 2015-2020 ForgeRock AS.
+	Portions Copyright 2015-2025 Ping Identity Corporation.
 -->
 
 <!DOCTYPE ServicesConfiguration

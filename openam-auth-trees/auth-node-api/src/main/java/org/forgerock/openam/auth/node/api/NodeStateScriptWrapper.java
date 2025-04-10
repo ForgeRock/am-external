@@ -11,10 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.forgerock.json.JsonValue;
@@ -127,6 +136,43 @@ public final class NodeStateScriptWrapper {
         nodeState.putTransient(key, value);
         return this;
     }
+
+    /**
+     * Puts the given object into the shared state.
+     *
+     * <p>If any of the keys exist already in any state they will be overwritten.
+     * <p>The shared state should only be used for non-sensitive information that will be signed
+     * on round trips to the client.
+     * <p>If any keys in the input object match the shared state keys, the new values will be used.
+     * <p>The object must not contain any nested objects unless they are registered state containers,
+     * for example objectAttributes.
+     *
+     * @param object The object to merge into the shared state.
+     * @return This modified {@code NodeStateScriptWrapper} instance.
+     */
+    public NodeStateScriptWrapper mergeShared(Map<String, Object> object) {
+        nodeState.mergeShared(object);
+        return this;
+    }
+
+    /**
+     * Puts the given object into the shared state.
+     *
+     * <p>If any of the keys exist already in any state they will be overwritten.
+     * <p>The transient state should only be used for sensitive information that will be encrypted
+     * on round trips to the client.
+     * <p>If any keys in the input object match the shared state keys, the new values will be used.
+     * <p>The object must not contain any nested objects unless they are registered state containers,
+     * for example objectAttributes.
+     *
+     * @param object The object to merge into the shared state.
+     * @return This modified {@code NodeState} instance.
+     */
+    public NodeStateScriptWrapper mergeTransient(Map<String, Object> object) {
+        nodeState.mergeTransient(object);
+        return this;
+    }
+
 
     /**
      * Removes the given {@literal key} from all states.

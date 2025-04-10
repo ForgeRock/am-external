@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -32,6 +40,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
 
@@ -43,25 +52,35 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.ldap.ConnectionFactoryAuditWrapperFactory;
 import org.forgerock.openam.ldap.LDAPAuthUtils;
+import org.forgerock.openam.ldap.LDAPUtilException;
 import org.forgerock.openam.secrets.Secrets;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.forgerock.openam.test.extensions.LoggerExtension;
+import org.forgerock.opendj.ldap.ResultCode;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.idm.IdType;
+
+import ch.qos.logback.classic.spi.ILoggingEvent;
 
 /**
  * Unit tests for {@link LdapDecisionNode}.
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class LdapDecisionNodeTest {
+
+    @RegisterExtension
+    LoggerExtension loggerExtension = new LoggerExtension(LdapDecisionNode.class);
 
     @Mock
     private LdapDecisionNode.Config config;
@@ -84,8 +103,8 @@ public class LdapDecisionNodeTest {
     private ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory;
     private LdapDecisionNode node;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         given(config.searchScope()).willReturn(SUBTREE);
         given(config.heartbeatTimeUnit()).willReturn(MINUTES);
         given(coreWrapper.getLDAPAuthUtils(anySet(), anySet(),
@@ -95,7 +114,7 @@ public class LdapDecisionNodeTest {
     }
 
     @Test
-    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+    void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
         //Given
         JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
                 field("password", "password"),
@@ -114,7 +133,7 @@ public class LdapDecisionNodeTest {
     }
 
     @Test
-    public void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
+    void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
         //Given
         JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
                 field("password", "password"),
@@ -130,7 +149,7 @@ public class LdapDecisionNodeTest {
     }
 
     @Test
-    public void shouldUpdateSharedStateWithCorrectUsername() throws Exception {
+    void shouldUpdateSharedStateWithCorrectUsername() throws Exception {
 
         //Given
         JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
@@ -149,7 +168,7 @@ public class LdapDecisionNodeTest {
     }
 
     @Test
-    public void shouldSetCorrectUniversalIdOnAction() throws Exception {
+    void shouldSetCorrectUniversalIdOnAction() throws Exception {
 
         //Given
         JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
@@ -167,6 +186,31 @@ public class LdapDecisionNodeTest {
         verify(ldapAuthUtils).setConnectionFactoryAuditWrapperFactory(connectionFactoryAuditWrapperFactory);
         Assertions.assertThat(result.universalId.get())
                 .isEqualTo("uid=testUsername@example.com,ou=people,dc=openam,dc=forgerock,dc=org");
+    }
+
+    @Test
+    void shouldLogErrorWhenLdapUtilThrows() throws NodeProcessException, LDAPUtilException {
+        // given
+        doThrow(new LDAPUtilException("test LDAP utils exception", ResultCode.INVALID_CREDENTIALS))
+                .when(ldapAuthUtils).authenticateUser(any(), any());
+        JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
+                field("password", "password"),
+                field("realm", "testRealm")));
+
+        // when
+        node.process(getContext(sharedState));
+
+        // then
+        Assertions.assertThat(loggerExtension.getErrors(ILoggingEvent::getFormattedMessage))
+                .contains("LDAPUtilException: test LDAP utils exception");
+        Assertions.assertThat(loggerExtension.getDebug(e -> {
+                    if (e.getThrowableProxy() != null) {
+                        return e.getThrowableProxy().getMessage();
+                    } else {
+                        return null;
+                    }
+                }))
+                .contains("test LDAP utils exception");
     }
 
     private TreeContext getContext(JsonValue sharedState) {

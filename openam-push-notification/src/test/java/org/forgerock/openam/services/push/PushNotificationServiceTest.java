@@ -11,10 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.services.push;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.times;
 import static org.mockito.BDDMockito.verify;
@@ -28,8 +37,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.forgerock.openam.secrets.rotation.SecretLabelListener;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcher;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcherFactory;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.sm.SMSException;
@@ -51,8 +60,8 @@ public class PushNotificationServiceTest {
 
     private PushNotificationService notificationService;
 
-    @BeforeMethod
-    public void theSetUp() throws SMSException, SSOException {
+    @BeforeEach
+    void theSetUp() throws SMSException, SSOException {
         this.mockHelperFactory = mock(PushNotificationServiceConfigHelperFactory.class);
         this.mockHelper = mock(PushNotificationServiceConfigHelper.class);
         this.realmConfig = new PushNotificationServiceConfig.Realm() {
@@ -110,7 +119,7 @@ public class PushNotificationServiceTest {
     }
 
     @Test
-    public void shouldSendMessage() throws PushNotificationException {
+    void shouldSendMessage() throws PushNotificationException {
         //given
         PushMessage pushMessage = new PushMessage("identity", "message", "subject", mockMessageId);
 
@@ -121,21 +130,21 @@ public class PushNotificationServiceTest {
         verify(mockDelegate, times(1)).send(pushMessage);
     }
 
-    @Test (expectedExceptions = PushNotificationException.class)
-    public void shouldErrorIfRealmNotInitiated() throws PushNotificationException {
+    @Test
+    void shouldErrorIfRealmNotInitiated() {
         //given
         PushMessage pushMessage = new PushMessage("identity", "message", "subject", mockMessageId);
         given(mockHelper.getFactoryClass())
                 .willReturn("org.forgerock.openam.services.push.PushNotificationServiceTest$TestDelegateFactory");
 
-        //when
-        notificationService.send(pushMessage, "realm2");
-
-        //then
+        //when - then
+        assertThatThrownBy(() -> notificationService.send(pushMessage, "realm2"))
+                .isInstanceOf(PushNotificationException.class)
+                .hasMessage("No delegate for supplied realm. Check service exists and init has been called.");
     }
 
     @Test
-    public void shouldLoadDelegateAndSendMessage() throws PushNotificationException {
+    void shouldLoadDelegateAndSendMessage() throws PushNotificationException {
         //given
         PushMessage pushMessage = new PushMessage("identity", "message", "subject", mockMessageId);
         given(mockHelper.getFactoryClass())
@@ -151,40 +160,40 @@ public class PushNotificationServiceTest {
         verifyNoMoreInteractions(mockTestDelegate);
     }
 
-    @Test (expectedExceptions = PushNotificationException.class)
-    public void shouldFailWhenDelegateCannotLoad() throws PushNotificationException {
+    @Test
+    void shouldFailWhenDelegateCannotLoad() {
         //given
         PushMessage pushMessage = new PushMessage("identity", "message", "subject", mockMessageId);
         given(mockHelper.getFactoryClass()).willReturn("invalid factory");
 
-        //when
-        notificationService.send(pushMessage, "realm2");
-
-        //then
+        //when - then
+        assertThatThrownBy(() -> notificationService.send(pushMessage, "realm2"))
+                .isInstanceOf(PushNotificationException.class)
+                .hasMessage("No delegate for supplied realm. Check service exists and init has been called.");
     }
 
-    @Test (expectedExceptions = PushNotificationException.class)
-    public void shouldFailWhenConfigNotFound() throws PushNotificationException {
+    @Test
+    void shouldFailWhenConfigNotFound() {
         //given
         PushMessage pushMessage = new PushMessage("identity", "message", "subject", mockMessageId);
 
-        //when
-        notificationService.send(pushMessage, "realm4");
-
-        //then
+        //when - then
+        assertThatThrownBy(() -> notificationService.send(pushMessage, "realm4"))
+                .isInstanceOf(PushNotificationException.class)
+                .hasMessage("No delegate for supplied realm. Check service exists and init has been called.");
     }
 
-    @Test (expectedExceptions = PushNotificationException.class)
-    public void shouldFailWhenDelegateFactoryIsBroken() throws PushNotificationException {
+    @Test
+    void shouldFailWhenDelegateFactoryIsBroken() {
         //given
         PushMessage pushMessage = new PushMessage("identity", "message", "subject", mockMessageId);
         given(mockHelper.getFactoryClass())
                 .willReturn("org.forgerock.openam.services.push.PushNotificationServiceTest$TestBrokenDelegateFactory");
 
-        //when
-        notificationService.send(pushMessage, "realm2");
-
-        //then
+        //when - then
+        assertThatThrownBy(() -> notificationService.send(pushMessage, "realm2"))
+                .isInstanceOf(PushNotificationException.class)
+                .hasMessage("No delegate for supplied realm. Check service exists and init has been called.");
     }
 
     /**
@@ -212,7 +221,7 @@ public class PushNotificationServiceTest {
      */
 
     @Test
-    public void shouldKeepExistingDelegate() throws PushNotificationException {
+    void shouldKeepExistingDelegate() throws PushNotificationException {
         //given
         given(mockOldDelegate.isRequireNewDelegate(realmConfig)).willReturn(false);
 
@@ -227,7 +236,7 @@ public class PushNotificationServiceTest {
     }
 
     @Test
-    public void shouldCloseAndReplaceOldDelegate() throws PushNotificationException, IOException {
+    void shouldCloseAndReplaceOldDelegate() throws PushNotificationException, IOException {
         //given
         given(mockOldDelegate.isRequireNewDelegate(realmConfig)).willReturn(true);
 

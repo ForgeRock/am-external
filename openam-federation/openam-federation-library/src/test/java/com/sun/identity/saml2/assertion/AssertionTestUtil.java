@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.assertion;
 
@@ -22,8 +30,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -46,8 +55,8 @@ public class AssertionTestUtil {
     private ObjectMapper mapper;
     private ObjectMapper plainmapper;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
 
         assertionFactory = AssertionFactory.getInstance();
         defaultIssuer = assertionFactory.createIssuer();
@@ -80,7 +89,7 @@ public class AssertionTestUtil {
     }
 
     @Test
-    public void testAssertionShouldSerialize() throws Exception {
+    void testAssertionShouldSerialize() throws Exception {
 
         // given
         Assertion assertion = createTestAssertion("assertion-01", defaultIssuer);
@@ -99,7 +108,7 @@ public class AssertionTestUtil {
     }
 
     @Test
-    public void testAssertionSubjectLocalityShouldSerialize() throws Exception {
+    void testAssertionSubjectLocalityShouldSerialize() throws Exception {
 
         Assertion assertion = createTestAssertion("assertion-01", defaultIssuer);
         AuthnStatement authn = createTestAuthnStatement();
@@ -123,7 +132,7 @@ public class AssertionTestUtil {
     }
 
     @Test
-    public void testAssertionAdviceShouldSerialize() throws Exception {
+    void testAssertionAdviceShouldSerialize() throws Exception {
 
         Assertion assertion = createTestAssertion("assertion-01", defaultIssuer);
         AuthnStatement authn = createTestAuthnStatement();
@@ -156,7 +165,8 @@ public class AssertionTestUtil {
     }
 
     // Disabled: Authz/Evidence not implemented in AssertionFactory
-    @Test(enabled = false)
+    @Test
+    @Disabled
     public void testAssertionAuthzDecisionStmtAndEvidence() throws Exception {
 
         Assertion assertion = createTestAssertion("assertion-01", defaultIssuer);
@@ -191,7 +201,7 @@ public class AssertionTestUtil {
     }
 
     @Test
-    public void testAssertionSubjectConfirmationShouldSerialize() throws Exception {
+    void testAssertionSubjectConfirmationShouldSerialize() throws Exception {
 
         // SubjectConfirmation
         SubjectConfirmation subjconf = assertionFactory.createSubjectConfirmation();
@@ -236,7 +246,7 @@ public class AssertionTestUtil {
     }
 
     @Test
-    public void testEncryptedAssertionShouldSerialize() throws Exception {
+    void testEncryptedAssertionShouldSerialize() throws Exception {
 
         EncryptedAssertion encAssertion = createTestEncryptedAssertion();
         String tmpencJson = mapper.writeValueAsString(encAssertion);
@@ -246,7 +256,7 @@ public class AssertionTestUtil {
     }
 
     @Test
-    public void testEncryptedIDShouldSerialize() throws Exception {
+    void testEncryptedIDShouldSerialize() throws Exception {
 
         String encIDXML = "<saml:EncryptedID xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\" xmlns:xenc='http://www.w3.org/2001/04/xmlenc#' xmlns:ds='http://www.w3.org/2000/09/xmldsig#'>  <xenc:EncryptedData>"
                 + "<xenc:EncryptionMethod Algorithm=\"http://www.example.com/\">Any text, intermingled with:    <xenc:KeySize>1</xenc:KeySize>    <xenc:OAEPparams>GpM7</xenc:OAEPparams>    <!--any element-->   </xenc:EncryptionMethod>   <ds:KeyInfo xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\">Any text, intermingled with:    <ds:KeyName>string</ds:KeyName>   </ds:KeyInfo>   <xenc:CipherData>    <xenc:CipherValue>GpM7</xenc:CipherValue> "
@@ -279,7 +289,7 @@ public class AssertionTestUtil {
     }
 
     @Test
-    public void protocolResponseShouldSerialize() throws Exception {
+    void protocolResponseShouldSerialize() throws Exception {
 
         Assertion assertion = assertionFactory.createAssertion();
         assertion.setID("assertion-01");
@@ -324,7 +334,7 @@ public class AssertionTestUtil {
     }
 
     @Test
-    public void protocolResponseEncryptedAssertionShouldSerialize() throws Exception {
+    void protocolResponseEncryptedAssertionShouldSerialize() throws Exception {
 
         EncryptedAssertion encAssertion = createTestEncryptedAssertion();
         Assertion assertion = createTestAssertion("assertion-1", defaultIssuer);
@@ -351,7 +361,7 @@ public class AssertionTestUtil {
     }
 
     @Test
-    public void protocolArtifactResponseShouldSerialize() throws Exception {
+    void protocolArtifactResponseShouldSerialize() throws Exception {
 
         // Protocol ArtifactResponse
         ProtocolFactory protocolFactory = ProtocolFactory.getInstance();
@@ -373,7 +383,8 @@ public class AssertionTestUtil {
                 .isXmlEqualTo(response.toXMLString(true, true));
     }
 
-    @Test(enabled = false)
+    @Test
+    @Disabled
     public void testAuthzDecisionStatementCanCreate() throws Exception {
 
         // AuthzDecisionStatement not yet implemented
@@ -387,7 +398,7 @@ public class AssertionTestUtil {
     }
 
     @Test
-    public void testAssertionSubjectConfirmationDataContentListShouldSerialize() throws Exception {
+    void testAssertionSubjectConfirmationDataContentListShouldSerialize() throws Exception {
 
         SubjectConfirmation subjconf = assertionFactory.createSubjectConfirmation();
         subjconf.setNameID(defaultNameId);

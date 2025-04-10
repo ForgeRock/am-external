@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -24,16 +32,15 @@ import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.resource.ResourceException.BAD_REQUEST;
 import static org.forgerock.json.resource.ResourceException.newResourceException;
 import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.nodes.AcceptTermsAndConditionsNode.ACCEPT_DATE;
 import static org.forgerock.openam.auth.nodes.AcceptTermsAndConditionsNode.TERMS_ACCEPTED;
 import static org.forgerock.openam.auth.nodes.AcceptTermsAndConditionsNode.TERMS_VERSION;
 import static org.forgerock.openam.auth.nodes.utils.IdmIntegrationNodeUtils.OBJECT_MAPPER;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -46,12 +53,15 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class CreateObjectNodeTest {
 
     @Mock
@@ -73,17 +83,12 @@ public class CreateObjectNodeTest {
     private TreeContext context;
     private JsonValue schema;
 
-    @BeforeMethod
-    public void before() throws Exception {
-        openMocks(this);
-
+    @BeforeEach
+    void before() throws Exception {
         schema = json(OBJECT_MAPPER.readValue(getClass().getResource("/CreateObjectNode/idmSchema.json"), Map.class));
 
         when(config.identityResource()).thenReturn("managed/user");
-        when(realm.asPath()).thenReturn("/");
-
         when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(schema);
-        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
 
         node = new CreateObjectNode(config, realm, idmIntegrationService);
 
@@ -92,7 +97,7 @@ public class CreateObjectNodeTest {
     }
 
     @Test
-    public void shouldReturnPropertiesAsInputStates() {
+    void shouldReturnPropertiesAsInputStates() {
         assertThat(Arrays.stream(node.getInputs())
                 .filter(input -> !input.name.equals(TERMS_ACCEPTED))
                 .allMatch(input -> schema.get(convertAttributeNameToSchemaPointer(input.name)) != null))
@@ -100,13 +105,14 @@ public class CreateObjectNodeTest {
     }
 
     @Test
-    public void shouldReturnCreatedIfUserObjectSuccessfullyCreated() throws Exception {
+    void shouldReturnCreatedIfUserObjectSuccessfullyCreated() throws Exception {
+        // given
         JsonValue expectedValue = json(object(
-            field("userName", "test"),
-            field("sn", "foo"),
-            field("givenName", "bar"),
-            field("mail", "test@gmail.com"),
-            field("preferences", object(field("updates", true)))));
+                field("userName", "test"),
+                field("sn", "foo"),
+                field("givenName", "bar"),
+                field("mail", "test@gmail.com"),
+                field("preferences", object(field("updates", true)))));
         when(idmIntegrationService.createObject(any(), any(), any(), newObjectCaptor.capture()))
                 .thenReturn(json(object(field(FIELD_CONTENT_ID, "1"))));
         assertThat(node.process(context).outcome).isEqualTo(CreateObjectNode.CreateObjectOutcome.CREATED.toString());
@@ -114,20 +120,22 @@ public class CreateObjectNodeTest {
     }
 
     @Test
-    public void shouldReturnFailureOnCreationIfMissingRequiredFields() throws Exception {
+    void shouldReturnFailureOnCreationIfMissingRequiredFields() throws Exception {
+        // given
         // OBJECT_ATTRIBUTE in sharedState missing "mail" required field
         context.sharedState.get(OBJECT_ATTRIBUTES).remove("mail");
 
+        // when & then
         assertThat(node.process(context).outcome).isEqualTo(CreateObjectNode.CreateObjectOutcome.FAILURE.toString());
     }
 
     @Test
-    public void shouldUpdateTermsIfPresentInSharedState() throws Exception {
-
+    void shouldUpdateTermsIfPresentInSharedState() throws Exception {
+        // given
         JsonValue sharedState = retrieveSharedState();
         sharedState.add(TERMS_ACCEPTED, object(
-                        field(TERMS_VERSION, "1"),
-                        field(ACCEPT_DATE, "today")));
+                field(TERMS_VERSION, "1"),
+                field(ACCEPT_DATE, "today")));
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, json(object()),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
 
@@ -135,16 +143,20 @@ public class CreateObjectNodeTest {
                 .thenReturn(json(object(field(FIELD_CONTENT_ID, "1"))));
         doNothing().when(idmIntegrationService).updateTermsAccepted(any(), any(), any(), any(), termsCaptor.capture());
 
+        // when
         node.process(context);
 
+        // then
         assertThat(termsCaptor.getValue().isEqualTo(sharedState.get(TERMS_ACCEPTED))).isTrue();
     }
 
     @Test
-    public void shouldReturnFailureIfCreationFailed() throws Exception {
+    void shouldReturnFailureIfCreationFailed() throws Exception {
+        // given
         doThrow(newResourceException(BAD_REQUEST, "Failed Policy"))
                 .when(idmIntegrationService).createObject(any(), any(), any(), any());
 
+        // when & then
         assertThat(node.process(context).outcome).isEqualTo(CreateObjectNode.CreateObjectOutcome.FAILURE.toString());
         assertThat(node.process(context).errorMessage).isEqualTo("Failed Policy");
     }

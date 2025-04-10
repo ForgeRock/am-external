@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.wsfederation.servlet;
 
@@ -22,10 +30,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPConstants;
@@ -39,7 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.NodeList;
 
-import com.sun.identity.saml2.common.SOAPCommunicator;
+import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.wsfederation.common.WSFederationConstants;
 import com.sun.identity.wsfederation.common.WSFederationException;
 import com.sun.identity.wsfederation.common.WSFederationUtils;
@@ -54,6 +62,8 @@ import com.sun.identity.wsfederation.meta.WSFederationMetaUtils;
 public class MexRequest extends WSFederationAction {
 
     private static final Logger DEBUG = LoggerFactory.getLogger(MexRequest.class);
+
+    private static MessageFactory messageFactory;
 
     public MexRequest(HttpServletRequest request, HttpServletResponse response) {
         super(request, response);
@@ -113,9 +123,8 @@ public class MexRequest extends WSFederationAction {
         // message. If the request was made using GET, then we should just return the WSDL.
         if ("POST".equals(request.getMethod())) {
             try (InputStream is = request.getInputStream()) {
-                MimeHeaders headers = SOAPCommunicator.getInstance().getHeaders(request);
-                SOAPMessage soapMessage = MessageFactory.newInstance(SOAPConstants.SOAP_1_2_PROTOCOL)
-                        .createMessage(headers, is);
+                MimeHeaders headers = SAMLUtils.getMimeHeaders(request);
+                SOAPMessage soapMessage = getMessageFactory().createMessage(headers, is);
                 if (DEBUG.isDebugEnabled()) {
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     soapMessage.writeTo(baos);
@@ -136,5 +145,12 @@ public class MexRequest extends WSFederationAction {
         }
 
         requestDispatcher.forward(request, response);
+    }
+
+    private MessageFactory getMessageFactory() throws SOAPException {
+        if (messageFactory == null) {
+            messageFactory = MessageFactory.newInstance(SOAPConstants.SOAP_1_2_PROTOCOL);
+        }
+        return messageFactory;
     }
 }

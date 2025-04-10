@@ -24,7 +24,7 @@
  *
  * $Id: SAML2IDPProxyImpl.java,v 1.5 2009/03/12 20:33:40 huacui Exp $
  *
- * Portions Copyrighted 2018-2022 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins;
@@ -34,8 +34,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.saml2.plugins.IDPFinder;
 import org.slf4j.Logger;

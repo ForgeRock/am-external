@@ -24,7 +24,7 @@
  *
  * $Id: JDBC.java,v 1.5 2008/08/28 21:56:45 madan_ranganath Exp $
  *
- * Portions Copyrighted 2011-2023 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  * Portions Copyrighted 2012 Open Source Solution Technology Corporation
  */
 

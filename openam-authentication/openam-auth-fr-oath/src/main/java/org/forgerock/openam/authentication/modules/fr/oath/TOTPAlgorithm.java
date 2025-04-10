@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
  */
 /**
  Copyright (c) 2011 IETF Trust and the persons identified as
@@ -24,7 +24,7 @@
  (http://trustee.ietf.org/license-info).
  */
 /**
- * Portions Copyrighted 2012-2015 ForgeRock AS.
+ * Portions Copyrighted 2012-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.fr.oath;

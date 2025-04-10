@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -24,14 +32,14 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.AUTH_LEVEL;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.TARGET_AUTH_LEVEL;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ChoiceCallback;
@@ -39,50 +47,38 @@ import javax.security.auth.callback.ChoiceCallback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
-import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.node.api.TreeMetaData;
 import org.forgerock.openam.auth.nodes.ChoiceCollectorNode.Config;
-import org.forgerock.openam.authentication.NodeRegistry;
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.core.realms.RealmTestHelper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@Listeners(RealmTestHelper.RealmFixture.class)
+@ExtendWith(MockitoExtension.class)
 public class ChoiceCollectorNodeTest {
 
     private static final int DEFAULT_CHOICE_INDEX = 1;
+    @Mock
     Config config;
-
-    @Mock
-    TreeMetaData metaData;
-    @Mock
-    NodeRegistry nodeRegistry;
-    @RealmTestHelper.RealmHelper
-    static Realm realm;
-
     ChoiceCollectorNode choiceCollectorNode;
+    @Mock
+    private TreeMetaData metaData;
 
-    @BeforeMethod
-    public void before() throws NodeProcessException {
-        openMocks(this);
-        config = whenNodeConfigHasAttributes(2);
+    public static Stream<Arguments> choices() {
+        return Stream.of(
+                arguments(0, "choice0"),
+                arguments(1, "choice1")
+        );
     }
 
-    @DataProvider(name = "choices")
-    public Object[][] choices() {
-        return new Object[][] {
-            { 0, "choice0" },
-            { 1, "choice1" }
-        };
-    }
-
-    @Test(dataProvider = "choices")
+    @ParameterizedTest
+    @MethodSource("choices")
     public void shouldGetCorrectOutcomeForChoiceIndex(int index, String choice) throws Exception {
+        whenNodeHasAttributesNoDefaultOrPrompt(2);
         ChoiceCallback choiceCallback = new ChoiceCallback("prompt", new String[]{"choice0", "choice1"},
                 DEFAULT_CHOICE_INDEX, false);
         choiceCallback.setSelectedIndex(index);
@@ -94,7 +90,8 @@ public class ChoiceCollectorNodeTest {
     }
 
     @Test
-    public void testProcessWithChoiceCallbackNotSelectedIndexReturnsInitialCallback() throws Exception {
+    void testProcessWithChoiceCallbackNotSelectedIndexReturnsInitialCallback() throws Exception {
+        whenNodeConfigHasAttributes(2);
         ChoiceCallback choiceCallback = new ChoiceCallback("prompt", new String[]{"choice0", "choice1"},
                 DEFAULT_CHOICE_INDEX, false);
 
@@ -115,7 +112,8 @@ public class ChoiceCollectorNodeTest {
     }
 
     @Test
-    public void testProcessWithNoCallbacksReturnsInitialCallback() throws Exception {
+    void testProcessWithNoCallbacksReturnsInitialCallback() throws Exception {
+        whenNodeConfigHasAttributes(2);
         choiceCollectorNode = new ChoiceCollectorNode(config, null, null);
         Action action = choiceCollectorNode.process(getContext(emptyList()));
         ChoiceCallback expectedCallback = new ChoiceCallback("prompt", new String[]{"choice0", "choice1"},
@@ -133,11 +131,11 @@ public class ChoiceCollectorNodeTest {
     }
 
     @Test
-    public void testOutcomesInCallbackFilteredByAuthLevel() throws Exception {
+    void testOutcomesInCallbackFilteredByAuthLevel() throws Exception {
         // given
         UUID choiceCollectorNodeId = UUID.randomUUID();
 
-        Config config = whenNodeConfigHasAttributes(3);
+        whenNodeConfigHasAttributes(3);
         given(metaData.getMaxAuthLevel(choiceCollectorNodeId, "choice0")).willReturn(Optional.of(4));
         given(metaData.getMaxAuthLevel(choiceCollectorNodeId, "choice1")).willReturn(Optional.of(5));
         given(metaData.getMaxAuthLevel(choiceCollectorNodeId, "choice2")).willReturn(Optional.of(10));
@@ -156,11 +154,11 @@ public class ChoiceCollectorNodeTest {
     }
 
     @Test
-    public void testOutcomesInCallbackFilteredByLeafNode() throws Exception {
+    void testOutcomesInCallbackFilteredByLeafNode() throws Exception {
         // given
         UUID choiceCollectorNodeId = UUID.randomUUID();
 
-        Config config = whenNodeConfigHasAttributes(3);
+        whenNodeConfigHasAttributes(3);
         given(metaData.getMaxAuthLevel(choiceCollectorNodeId, "choice0")).willReturn(Optional.empty());
         given(metaData.getMaxAuthLevel(choiceCollectorNodeId, "choice1")).willReturn(Optional.of(2));
         given(metaData.getMaxAuthLevel(choiceCollectorNodeId, "choice2")).willReturn(Optional.of(3));
@@ -179,8 +177,9 @@ public class ChoiceCollectorNodeTest {
     }
 
     @Test
-    public void testOnlyOneOutcomeLeftIsImmediatelyReturnedWithoutCallback() throws Exception {
+    void testOnlyOneOutcomeLeftIsImmediatelyReturnedWithoutCallback() throws Exception {
         //given
+        whenNodeHasAttributesNoDefaultOrPrompt(2);
         UUID choiceCollectorNodeId = UUID.randomUUID();
 
         choiceCollectorNode = new ChoiceCollectorNode(config, metaData, choiceCollectorNodeId);
@@ -198,12 +197,12 @@ public class ChoiceCollectorNodeTest {
     }
 
     @Test
-    public void testReturnedOutcomeFilteredByAuthLevel() throws Exception {
+    void testReturnedOutcomeFilteredByAuthLevel() throws Exception {
         //when
         UUID choiceCollectorNodeId = UUID.randomUUID();
 
 
-        Config config = whenNodeConfigHasAttributes(3);
+        whenNodeHasAttributesNoDefaultOrPrompt(3);
 
         choiceCollectorNode = new ChoiceCollectorNode(config, metaData, choiceCollectorNodeId);
         given(metaData.getMaxAuthLevel(choiceCollectorNodeId, "choice0")).willReturn(Optional.of(4));
@@ -222,16 +221,22 @@ public class ChoiceCollectorNodeTest {
         assertThat(action.outcome).isEqualTo("choice1");
     }
 
-    private Config whenNodeConfigHasAttributes(int numberOfChoices) {
+    private void whenNodeConfigHasAttributes(int numberOfChoices) {
         List<String> choices = new ArrayList<>();
         for (int i = 0; i < numberOfChoices; i++) {
             choices.add("choice" + i);
         }
-        config = mock(Config.class);
         given(config.choices()).willReturn(choices);
         given(config.defaultChoice()).willReturn("choice1");
         given(config.prompt()).willReturn("prompt");
-        return config;
+    }
+
+    private void whenNodeHasAttributesNoDefaultOrPrompt(int numberOfChoices) {
+        List<String> choices = new ArrayList<>();
+        for (int i = 0; i < numberOfChoices; i++) {
+            choices.add("choice" + i);
+        }
+        given(config.choices()).willReturn(choices);
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks) {

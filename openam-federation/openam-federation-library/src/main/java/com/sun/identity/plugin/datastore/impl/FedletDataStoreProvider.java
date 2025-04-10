@@ -24,7 +24,7 @@
  *
  * $Id: FedletDataStoreProvider.java,v 1.3 2008/08/06 17:28:14 exu Exp $
  *
- * Portions Copyrighted 2013-2019 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.plugin.datastore.impl;

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2.service;
 
@@ -23,24 +31,24 @@ import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_SP_ADAP
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.domain.Script;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.forgerock.openam.scripting.domain.ScriptException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Tests for {@link Saml2GlobalScriptsProvider}.
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class Saml2GlobalScriptsProviderTest {
 
     @InjectMocks
     private Saml2GlobalScriptsProvider provider;
 
     @Test
-    public void shouldReturnSaml2GlobalScripts() throws ScriptException {
+    void shouldReturnSaml2GlobalScripts() throws ScriptException {
         // When
         List<String> globalScriptIds = provider.get().stream().map(Script::getId).collect(Collectors.toList());
 

@@ -24,7 +24,7 @@
  *
  * $Id: DefaultIDPAuthnContextMapper.java,v 1.9 2008/11/10 22:57:02 veiming Exp $
  *
- * Portions Copyrighted 2011-2019 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins;
@@ -41,6 +41,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 
+import org.forgerock.am.trees.api.Tree;
+import org.forgerock.am.trees.api.TreeProvider;
+import org.forgerock.guice.core.InjectorHolder;
+import org.forgerock.openam.core.realms.RealmLookupException;
+import org.forgerock.openam.core.realms.Realms;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
@@ -48,6 +53,7 @@ import org.slf4j.LoggerFactory;
 
 import com.sun.identity.saml2.assertion.AssertionFactory;
 import com.sun.identity.saml2.assertion.AuthnContext;
+import com.sun.identity.saml2.common.SAML2AuthnConfig;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2Utils;
@@ -56,35 +62,41 @@ import com.sun.identity.saml2.profile.IDPCache;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.RequestedAuthnContext;
 
-/** 
+/**
  * This class is an out of the box default implementation of interface
  * <code>IDPAuthnContextMapper</code>.
- */ 
+ */
 
-public class DefaultIDPAuthnContextMapper 
+public class DefaultIDPAuthnContextMapper
     implements IDPAuthnContextMapper {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultIDPAuthnContextMapper.class);
+
+    private final SAML2AuthnConfig saml2AuthnConfig;
 
     public static SAML2MetaManager metaManager =
                                        SAML2Utils.getSAML2MetaManager();
 
     private static String DEFAULT = "default";
- 
+
+    private final TreeProvider treeProvider;
+
    /**
     * Constructor
     */
     public DefaultIDPAuthnContextMapper() {
+        this.treeProvider = InjectorHolder.getInstance(TreeProvider.class);
+        this.saml2AuthnConfig = InjectorHolder.getInstance(SAML2AuthnConfig.class);
     }
 
-   /** 
+   /**
     * Returns an <code>IDPAuthnContextInfo</code> object.
     *
-    * @param authnRequest the <code>AuthnRequest</code> from the 
+    * @param authnRequest the <code>AuthnRequest</code> from the
     * Service Provider
-    * @param idpEntityID the Entity ID of the Identity Provider    
+    * @param idpEntityID the Entity ID of the Identity Provider
     * @param realm the realm to which the Identity Provider belongs
-    * 
+    *
     * @return an <code>IDPAuthnContextInfo</code> object
     * @throws SAML2Exception if an error occurs.
     */
@@ -116,7 +128,7 @@ public class DefaultIDPAuthnContextMapper
                 classRefLevelMap = new LinkedHashMap<>();
             }
         }
-        
+
         // Look now for the Authn Class Ref that fulfills the request
         String classRef = null;
         Set<String> authTypeAndValues = null;
@@ -173,21 +185,22 @@ public class DefaultIDPAuthnContextMapper
 
         AuthnContext authnContext = AssertionFactory.getInstance().createAuthnContext();
         authnContext.setAuthnContextClassRef(classRef);
-        IDPAuthnContextInfo info = new IDPAuthnContextInfo(authnContext, authTypeAndValues, authnLevel);
+
         if (logger.isDebugEnabled()) {
             logger.debug(classMethod +
                 "\nreturned AuthnContextClassRef=" + classRef +
                 "\nauthTypeAndValues=" + authTypeAndValues +
                 "\nauthnLevel=" + authnLevel);
         }
-        return info;
-    } 
+
+        return generateAuthnContextInfo(authTypeAndValues, realm, authnContext, authnLevel);
+    }
 
     /**
      * Returns <code>AuthnContext</code> that matches the authenticated level.
      * @param authLevel user authenticated level
      * @param realm the realm to which the Identity Provider belongs
-     * @param idpEntityID the Entity ID of the Identity Provider    
+     * @param idpEntityID the Entity ID of the Identity Provider
      *
      * @return <code>AuthnContext</code> object that matches authenticated
      *  level. Return default AuthnContext if authLevel is <code>null</code>.
@@ -198,7 +211,7 @@ public class DefaultIDPAuthnContextMapper
         throws SAML2Exception
     {
         String classRef = null;
-        
+
         Map classRefLevelMap = null;
         if (IDPCache.classRefLevelHash != null) {
             classRefLevelMap = (Map) IDPCache.classRefLevelHash.get(
@@ -246,13 +259,13 @@ public class DefaultIDPAuthnContextMapper
                 authLevel + ", classRef=" + classRef +
                 ", classRefLevelMap=" + classRefLevelMap);
         }
-        AuthnContext result = 
+        AuthnContext result =
             AssertionFactory.getInstance().createAuthnContext();
         result.setAuthnContextClassRef(classRef);
         return result;
     }
 
-   /** 
+   /**
     * Returns true if the specified AuthnContextClassRef matches a list of
     * requested AuthnContextClassRef.
     *
@@ -260,8 +273,8 @@ public class DefaultIDPAuthnContextMapper
     * @param acClassRef AuthnContextClassRef
     * @param comparison the type of comparison
     * @param realm the realm to which the Identity Provider belongs
-    * @param idpEntityID the Entity ID of the Identity Provider    
-    * 
+    * @param idpEntityID the Entity ID of the Identity Provider
+    *
     * @return true if the specified AuthnContextClassRef matches a list of
     *     requested AuthnContextClassRef
     */
@@ -305,7 +318,7 @@ public class DefaultIDPAuthnContextMapper
                     value = value.substring(0, value.length()-DEFAULT.length());
                     isDefault = true;
                 }
- 
+
                 StringTokenizer st = new StringTokenizer(value, "|");
 
                 if (st.hasMoreTokens()) {
@@ -315,10 +328,10 @@ public class DefaultIDPAuthnContextMapper
                         String level = st.nextToken();
                         if (level.indexOf("=") == -1) {
                             try {
-                                Integer authLevel = new Integer(level);
+                                Integer authLevel = Integer.valueOf(level);
                                 classRefLevelMap.put(classRef, authLevel);
-                                if (isDefault && 
-                                    !classRefLevelMap.containsKey(DEFAULT)) 
+                                if (isDefault &&
+                                    !classRefLevelMap.containsKey(DEFAULT))
                                 {
                                     classRefLevelMap.put(DEFAULT, authLevel);
                                     defaultClassRef = classRef;
@@ -361,6 +374,28 @@ public class DefaultIDPAuthnContextMapper
         }
         if (defaultClassRef != null) {
             IDPCache.defaultClassRefHash.put(key, defaultClassRef);
+        }
+    }
+
+    private IDPAuthnContextInfo generateAuthnContextInfo(Set<String> authnTypeAndValues, String realm,
+            AuthnContext authnContext, Integer authnLevel) throws SAML2Exception {
+
+        boolean requireRedirectToAuth = false;
+        if (CollectionUtils.isNotEmpty(authnTypeAndValues)) {
+            String serviceFromConfig = SAML2Utils.setToMap(authnTypeAndValues).get("service");
+            if (serviceFromConfig != null && serviceRequiresAuthRedirect(serviceFromConfig, realm)) {
+                requireRedirectToAuth = true;
+            }
+        }
+
+        return new IDPAuthnContextInfo(authnContext, authnTypeAndValues, authnLevel, requireRedirectToAuth);
+    }
+
+    private boolean serviceRequiresAuthRedirect(String service, String realm) throws SAML2Exception {
+        try {
+            return treeProvider.getTree(Realms.of(realm), service).map(Tree::mustRun).orElse(false);
+        } catch (RealmLookupException e) {
+            throw new SAML2Exception(e);
         }
     }
 }

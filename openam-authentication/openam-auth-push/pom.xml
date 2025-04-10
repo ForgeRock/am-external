@@ -12,14 +12,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2022 ForgeRock AS. All Rights Reserved
+ * Copyright 2025 ForgeRock AS.
  * 
+-->
+<!--
+  Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ 
+ ! This code is to be used exclusively in connection with Ping Identity
+ ! Corporation software or services. Ping Identity Corporation only offers
+ ! such software or services to legal entities who have entered into a
+ ! binding license agreement with Ping Identity Corporation.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>openam-authentication</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>7.5.1</version>
+        <version>8.0.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -45,6 +53,10 @@
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
+            <artifactId>session-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
             <artifactId>service-config-api</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -53,8 +65,8 @@
             <artifactId>openam-auth-common</artifactId>
         </dependency>
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

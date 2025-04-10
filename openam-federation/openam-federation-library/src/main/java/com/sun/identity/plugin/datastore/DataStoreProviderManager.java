@@ -24,7 +24,7 @@
  *
  * $Id: DataStoreProviderManager.java,v 1.4 2008/08/06 17:28:13 exu Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.plugin.datastore;
 

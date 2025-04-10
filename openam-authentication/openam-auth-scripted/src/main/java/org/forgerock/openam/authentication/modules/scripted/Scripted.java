@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.scripted;
 
@@ -35,11 +43,12 @@ import org.forgerock.http.client.request.HttpClientRequest;
 import org.forgerock.http.client.request.HttpClientRequestFactory;
 import org.forgerock.openam.core.realms.RealmLookupException;
 import org.forgerock.openam.core.realms.Realms;
-import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluator.ScriptResult;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 import org.forgerock.openam.scripting.persistence.ScriptStore;
@@ -86,7 +95,7 @@ public class Scripted extends AMLoginModule {
     private String userName;
     private String realm;
     private boolean clientSideScriptEnabled;
-    private ScriptEvaluator scriptEvaluator;
+    private ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
     private ScriptStore scriptStore;
     public Map moduleConfiguration;
 
@@ -172,7 +181,7 @@ public class Scripted extends AMLoginModule {
     private int evaluateServerSideScript(String clientScriptOutputData, int state) throws AuthLoginException {
         Script script = getServerSideScript();
 
-        ScriptBindings scriptBindings = ServerSideAuthenticationScriptBindings.builder()
+        ServerSideAuthenticationScriptBindings scriptBindings = ServerSideAuthenticationScriptBindings.builder()
                 .withRequestData(getScriptHttpRequestWrapper())
                 .withClientScriptOutputData(clientScriptOutputData)
                 .withState(state)
@@ -186,7 +195,7 @@ public class Scripted extends AMLoginModule {
 
         Bindings bindings;
         try {
-            ScriptEvaluator.ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script, scriptBindings, Realms.of(realm));
+            ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script, scriptBindings, Realms.of(realm));
             bindings = scriptResult.getBindings();
         } catch (ScriptException e) {
             DEBUG.debug("Error running server side scripts", e);

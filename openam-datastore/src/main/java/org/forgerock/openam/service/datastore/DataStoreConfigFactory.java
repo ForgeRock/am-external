@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.service.datastore;
@@ -55,6 +63,7 @@ public class DataStoreConfigFactory {
         boolean mtlsEnabled = getBooleanMapAttr(attributes, "mtlsEnabled", false);
         String secretLabelAsSecretId = generateSecretId(getMapAttr(attributes, "mtlsSecretLabel"));
         boolean affinityEnabled = getBooleanMapAttr(attributes, "affinityEnabled", false);
+        boolean identityStore = getBooleanMapAttr(attributes, "identityStore", false);
 
         boolean useSsl = CollectionHelper.getBooleanMapAttr(attributes, "useSsl", false);
         Set<String> serverUrls = stripAttributeNameFromValue(attributes.get("serverUrls"));
@@ -63,7 +72,8 @@ public class DataStoreConfigFactory {
 
         DataStoreConfig.Builder dataStoreConfigBuilder = getBuilder(dataStoreId, ldapUrls, bindDn,
                 bindPassword != null ? bindPassword.toCharArray() : null, minimumConnectionPool, maximumConnectionPool,
-                useSsl, useStartTLS, dataStoreEnabled, mtlsEnabled, secretLabelAsSecretId, affinityEnabled);
+                useSsl, useStartTLS, dataStoreEnabled, mtlsEnabled, secretLabelAsSecretId, affinityEnabled,
+                identityStore);
 
         return dataStoreConfigBuilder.build();
     }
@@ -82,7 +92,8 @@ public class DataStoreConfigFactory {
                 dataStoreConfig.getBindDN(), dataStoreConfig.getBindPassword(), dataStoreConfig.getMinConnections(),
                 dataStoreConfig.getMaxConnections(), dataStoreConfig.isUseSsl(), dataStoreConfig.isStartTLSEnabled(),
                 dataStoreConfig.isDataStoreEnabled(), dataStoreConfig.isMtlsEnabled(),
-                dataStoreConfig.getMtlsSecretId(), dataStoreConfig.isAffinityEnabled());
+                dataStoreConfig.getMtlsSecretId(), dataStoreConfig.isAffinityEnabled(),
+                dataStoreConfig.isIdentityStore());
 
         return dataStoreConfigBuilder.build();
     }
@@ -90,7 +101,7 @@ public class DataStoreConfigFactory {
     private static DataStoreConfig.Builder getBuilder(DataStoreId dataStoreId, Set<LDAPURL> ldapUrls, String bindDn,
             char[] bindPassword, int minimumConnectionPool, int maximumConnectionPool, boolean useSsl,
             boolean useStartTLS, boolean dataStoreEnabled, boolean mtlsEnabled, String secretLabelAsSecretId,
-            boolean affinityEnabled) {
+            boolean affinityEnabled, boolean identityStore) {
 
         return DataStoreConfig.builder(dataStoreId)
                 .withLDAPURLs(ldapUrls)
@@ -103,7 +114,8 @@ public class DataStoreConfigFactory {
                 .withDataStoreEnabled(dataStoreEnabled)
                 .withMtlsEnabled(mtlsEnabled)
                 .withMtlsSecretId(secretLabelAsSecretId)
-                .withAffinityEnabled(affinityEnabled);
+                .withAffinityEnabled(affinityEnabled)
+                .withIdentityStore(identityStore);
     }
 
     private String generateSecretId(String secretLabel) {

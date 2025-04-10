@@ -24,7 +24,7 @@
  *
  * $Id: CacheCleanUpScheduler.java,v 1.8 2009/05/14 17:23:44 exu Exp $
  *
- * Portions Copyrighted 2014-2022 ForgeRock AS.
+ * Portions Copyrighted 2014-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 

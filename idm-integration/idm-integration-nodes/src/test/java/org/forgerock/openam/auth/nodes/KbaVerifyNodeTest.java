@@ -11,32 +11,40 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.resource.ResourceException.BAD_REQUEST;
 import static org.forgerock.json.resource.ResourceException.newResourceException;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.utils.IdmIntegrationNodeUtils.OBJECT_MAPPER;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_KBAINFO_ATTRIBUTE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.PasswordCallback;
@@ -49,32 +57,57 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.integration.idm.KbaConfig;
 import org.forgerock.selfservice.core.crypto.CryptoService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 /**
  * Test the KbaVerifyNode.
  */
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class KbaVerifyNodeTest {
 
     @Mock
-    private KbaVerifyNode.Config config;
-
-    @Mock
     IdmIntegrationService idmIntegrationService;
-
     @Mock
     LocaleSelector localeSelector;
-
+    @Mock
+    private KbaVerifyNode.Config config;
     private KbaVerifyNode node;
     private KbaConfig kbaConfig;
     private JsonValue userObject;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        initMocks(this);
+    public static Stream<Arguments> preferredLanguage() {
+        return Stream.of(
+                Arguments.of(Locale.ENGLISH, "Question One?"),
+                Arguments.of(Locale.FRENCH, "Question Une?"),
+                Arguments.of(Locale.GERMAN, "Unable to find translation."),
+                Arguments.of(null, "Question One?")
+        );
+    }
+
+    public static Stream<Arguments> sharedStateData() {
+        return Stream.of(
+                Arguments.of(json(object(
+                        field(OBJECT_ATTRIBUTES, object(
+                                field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
+                        ))
+                ))),
+                Arguments.of(json(object(
+                        field(USERNAME, "test-username")
+                )))
+        );
+    }
+
+    @BeforeEach
+    void setUp() throws Exception {
         kbaConfig = OBJECT_MAPPER.readValue(getClass()
                 .getResource("/KbaVerifyNode/idmKbaConfig.json"), KbaConfig.class);
         userObject = json(OBJECT_MAPPER.readValue(getClass()
@@ -86,14 +119,13 @@ public class KbaVerifyNodeTest {
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any())).thenReturn(userObject);
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
-        doNothing().when(idmIntegrationService).patchObject(any(), any(), any(), any(), any(), any());
         when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
 
         node = new KbaVerifyNode(config, null, idmIntegrationService, localeSelector, new CryptoService());
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowExceptionIfFailedToRetrieveKbaConfig() throws Exception {
+    @Test
+    void shouldThrowExceptionIfFailedToRetrieveKbaConfig() throws Exception {
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
@@ -102,18 +134,22 @@ public class KbaVerifyNodeTest {
 
         when(idmIntegrationService.getKbaConfig(any(), any())).thenThrow(newResourceException(BAD_REQUEST));
 
-        node.process(getContext(emptyList(), sharedState));
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowExceptionIfFailedToRetrieveIdentity() throws Exception {
-        JsonValue sharedState = json(object());
-
-        node.process(getContext(emptyList(), sharedState));
+        assertThatThrownBy(() -> node.process(getContext(emptyList(), sharedState)))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("org.forgerock.json.resource.BadRequestException: Bad Request");
     }
 
     @Test
-    public void callbacksAbsentShouldReturnCallbacks() throws Exception {
+    void shouldThrowExceptionIfFailedToRetrieveIdentity() throws Exception {
+        JsonValue sharedState = json(object());
+
+        assertThatThrownBy(() -> node.process(getContext(emptyList(), sharedState)))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("Failed to retrieve user object");
+    }
+
+    @Test
+    void callbacksAbsentShouldReturnCallbacks() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
@@ -131,17 +167,8 @@ public class KbaVerifyNodeTest {
         assertThat(((PasswordCallback) action.callbacks.get(0)).getPrompt()).isNotEmpty();
     }
 
-    @DataProvider
-    public Object[][] preferredLanguage() {
-        return new Object[][] {
-                { Locale.ENGLISH, "Question One?" },
-                { Locale.FRENCH, "Question Une?" },
-                { Locale.GERMAN, "Unable to find translation." },
-                { null, "Question One?" }
-        };
-    }
-
-    @Test(dataProvider = "preferredLanguage")
+    @ParameterizedTest
+    @MethodSource("preferredLanguage")
     public void callbacksAbsentNoLocaleShouldReturnEnglish(Locale locale, String question) throws Exception {
         // Given
         kbaConfig.setMinimumAnswersToVerify(2);
@@ -162,21 +189,8 @@ public class KbaVerifyNodeTest {
         assertThat(((PasswordCallback) action.callbacks.get(1)).getPrompt()).isEqualTo("custom?");
     }
 
-    @DataProvider
-    public Object[][] sharedStateData() {
-        return new Object[][]{
-            {json(object(
-                    field(OBJECT_ATTRIBUTES, object(
-                            field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
-                    ))
-            ))},
-            {json(object(
-                    field(USERNAME, "test-username")))
-            },
-        };
-    }
-
-    @Test(dataProvider = "sharedStateData")
+    @ParameterizedTest
+    @MethodSource("sharedStateData")
     public void callbacksPresentProcessesSuccessfully(JsonValue sharedState) throws Exception {
         // Given
         List<Callback> callbacks = new ArrayList<>();
@@ -193,7 +207,7 @@ public class KbaVerifyNodeTest {
     }
 
     @Test
-    public void invalidCallbacksGoToFalse() throws Exception {
+    void invalidCallbacksGoToFalse() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
@@ -213,7 +227,7 @@ public class KbaVerifyNodeTest {
     }
 
     @Test
-    public void shouldProcessCallbacksWhenCustomKBAInfoAppearsFirstInKBAInfoConfig() throws NodeProcessException,
+    void shouldProcessCallbacksWhenCustomKBAInfoAppearsFirstInKBAInfoConfig() throws NodeProcessException,
             IOException {
         // Given
         JsonValue sharedState = json(object(

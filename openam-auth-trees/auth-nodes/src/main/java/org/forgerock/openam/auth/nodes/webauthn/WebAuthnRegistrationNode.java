@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -20,13 +28,10 @@ import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
-import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.ERROR_MESSAGE;
 import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.WEB_AUTHENTICATION_DOM_EXCEPTION;
 
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,24 +42,24 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import org.apache.commons.codec.binary.Hex;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.http.util.Json;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationResponse;
 import org.forgerock.openam.auth.nodes.webauthn.flows.RegisterFlow;
+import org.forgerock.openam.auth.nodes.webauthn.flows.RegisterFlowFactory;
 import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.EncodingUtilities;
 import org.forgerock.openam.auth.nodes.webauthn.flows.exceptions.WebAuthnRegistrationException;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AttestationType;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
@@ -65,9 +70,9 @@ import org.forgerock.openam.utils.CodeException;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.forgerock.openam.utils.StringUtils;
+import org.forgerock.util.Strings;
 import org.forgerock.util.i18n.PreferredLocales;
 
-import com.google.common.base.Strings;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
@@ -95,11 +100,10 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
     private static final String POSTPONE_DEVICE_PROFILE_STORAGE = "postponeDeviceProfileStorage";
 
     private final Config config;
-    private final Realm realm;
-    private RegisterFlow registerFlow;
+    private final NodeUserIdentityProvider identityProvider;
+    private final RegisterFlow registerFlow;
     private final WebAuthnDeviceJsonUtils webAuthnDeviceJsonUtils;
-    private final LegacyIdentityService identityService;
-    private final CoreWrapper coreWrapper;
+    private final WebAuthnOutcomeDeserializer deserializer;
 
     private String registeredDeviceUuid;
     private String registeredAaguid;
@@ -198,7 +202,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
          * then any attestation certificate's trust chain MUST have a CRL or OCSP entry that can be verified by
          * AM during processing to not have a revocation entry for the certificate under verification.
          * <p>
-         * If this is is set to false, then presented certificates will not be checked for revocation.
+         * If this is set to false, then presented certificates will not be checked for revocation.
          *
          * @return whether to enforce the revocation check.
          */
@@ -273,6 +277,14 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         }
 
         /**
+         * WebAuthn2 equivalent to requiresResidentKey. Not currently configurable on the legacy node.
+         * @return {@link ResidentKeyRequirement} REQUIRED or DISCOURAGED
+         */
+        default ResidentKeyRequirement residentKeyRequirement() {
+            return requiresResidentKey() ? ResidentKeyRequirement.REQUIRED : ResidentKeyRequirement.DISCOURAGED;
+        }
+
+        /**
          * Specify the shared state attribute from which to read the user's Display Name.
          *
          * @return the shared state attribute from which to read the user's display name.
@@ -300,6 +312,32 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
             return 0;
         }
 
+        //@Checkstyle:off LineLength
+        /**
+         * Specify whether to perform validation of the AAGUID provided in the authenticator data for FIDO-U2F
+         * attestation types.
+         *
+         * @return {@code true} if validation is to be performed
+         * <pre>
+         * @see <a href="https://fidoalliance.org/specs/fido-v2.2-rd-20230321/fido-client-to-authenticator-protocol-v2.2-rd-20230321.html#u2f-authenticatorMakeCredential-interoperability">
+         *     10.2.5 Using the CTAP2 authenticatorMakeCredential Command with CTAP1/U2F authenticators</a>
+         * </pre>
+         */
+        //@Checkstyle:on LineLength
+        @Attribute(order = 170)
+        default boolean validateFidoU2fAaguid() {
+            return true;
+        }
+
+        /**
+         * FIDO Certification Level.
+         *
+         * @return the {@link FidoCertificationLevel} to use
+         */
+        @Attribute(order = 180)
+        default FidoCertificationLevel fidoCertificationLevel() {
+            return FidoCertificationLevel.OFF;
+        }
     }
 
     /**
@@ -307,30 +345,31 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
      *
      * @param config                  node config.
      * @param realm                   the realm.
-     * @param registerFlow            registration ceremony flow.
+     * @param registerFlowFactory     a factory for the registration ceremony flow.
      * @param clientScriptUtilities   utilities for handling the client side scripts.
      * @param webAuthnProfileManager  managers user's device profiles.
      * @param secureRandom            instance of the secure random generator
      * @param recoveryCodeGenerator   instance of the recovery code generator
      * @param webAuthnDeviceJsonUtils Helper to convert device to json
-     * @param identityService         an {@link LegacyIdentityService} instance.
-     * @param coreWrapper             The {@code CoreWrapper} instance.
+     * @param identityProvider        the identity provider
+     * @param deserializer            a deserializer for the webauthn outcome
      */
     @Inject
-    public WebAuthnRegistrationNode(@Assisted Config config, @Assisted Realm realm, RegisterFlow registerFlow,
-                                    ClientScriptUtilities clientScriptUtilities,
-                                    UserWebAuthnDeviceProfileManager webAuthnProfileManager,
-                                    SecureRandom secureRandom, RecoveryCodeGenerator recoveryCodeGenerator,
-                                    WebAuthnDeviceJsonUtils webAuthnDeviceJsonUtils,
-                                    LegacyIdentityService identityService, CoreWrapper coreWrapper) {
+    public WebAuthnRegistrationNode(@Assisted Config config, @Assisted Realm realm,
+            RegisterFlowFactory registerFlowFactory,
+            ClientScriptUtilities clientScriptUtilities,
+            UserWebAuthnDeviceProfileManager webAuthnProfileManager,
+            SecureRandom secureRandom, RecoveryCodeGenerator recoveryCodeGenerator,
+            WebAuthnDeviceJsonUtils webAuthnDeviceJsonUtils,
+            NodeUserIdentityProvider identityProvider,
+            WebAuthnOutcomeDeserializer deserializer) {
         super(clientScriptUtilities, webAuthnProfileManager, secureRandom, recoveryCodeGenerator);
 
         this.config = config;
-        this.realm = realm;
-        this.registerFlow = registerFlow;
+        this.registerFlow = registerFlowFactory.create(realm, config);
         this.webAuthnDeviceJsonUtils = webAuthnDeviceJsonUtils;
-        this.identityService = identityService;
-        this.coreWrapper = coreWrapper;
+        this.identityProvider = identityProvider;
+        this.deserializer = deserializer;
     }
 
     @Override
@@ -347,16 +386,17 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
 
         if (result.isPresent()) {
             logger.debug("processing user response");
+            WebAuthnOutcome outcome = deserializer.deserialize(result.get());
 
             //if the browser does not support us
-            if (result.get().equals(UNSUPPORTED)) {
+            if (!outcome.isSupported()) {
                 logger.warn("User's user agent does not support WebAuthn");
                 return Action.goTo(UNSUPPORTED_OUTCOME_ID).build();
             }
 
             //if there was a DOM error
-            if (result.get().startsWith(ERROR_MESSAGE)) {
-                WebAuthnDomException exception = parseError(result.get());
+            if (outcome.isError()) {
+                WebAuthnDomException exception = outcome.error().get();
                 logger.error("An error was reported by the DOM.");
                 return Action.goTo(ERROR_OUTCOME_ID).replaceSharedState(
                                 context.sharedState.copy().put(WEB_AUTHENTICATION_DOM_EXCEPTION, exception.toString()))
@@ -365,7 +405,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
 
             //parse script, perform attestation
             ClientRegistrationScriptResponse response =
-                    clientScriptUtilities.parseClientRegistrationResponse(result.get());
+                    clientScriptUtilities.parseClientRegistrationResponse(outcome.legacyData());
             AttestationResponse attestationResponse;
 
             //retrieve the domain from the passing in Origin if not specified
@@ -373,11 +413,20 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
                     context.request.serverUrl);
 
             try {
-                attestationResponse = registerFlow.accept(realm, response.getClientData(),
-                        response.getAttestationData(), challengeBytes, rpId, response.getCredentialId(),
-                        getPermittedOrigins(config.origins(), context), config);
-                registeredAaguid = Hex.encodeHexString(
-                        attestationResponse.getAttestationObject().authData.attestedCredentialData.aaguid);
+                attestationResponse = registerFlow.accept(response.getClientData(),
+                        response.getAttestationData(), challengeBytes, rpId,
+                        getPermittedOrigins(config.origins(), context));
+
+                JsonValue webAuthnObjectInfo = getWebAuthnObjectInfo(
+                        attestationResponse.getAttestationObject().authData);
+
+                outcome.authenticatorAttachment().ifPresent(authenticatorAttachment ->
+                        addAuthenticatorAttachment(webAuthnObjectInfo, authenticatorAttachment));
+
+                nodeState.putTransient(WEB_AUTHN_ATTESTATION_INFO, webAuthnObjectInfo);
+
+                registeredAaguid =
+                        attestationResponse.getAttestationObject().authData.attestedCredentialData.aaguid.toString();
                 attestationType = attestationResponse.getAttestationType();
                 logger.debug("registeredAaguid: {}, attestationType: {}", registeredAaguid, attestationType);
             } catch (WebAuthnRegistrationException wre) {
@@ -394,7 +443,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
             //store data for later analysis, generate device if appropriate, return with success if possible
             try {
                 if (config.storeAttestationDataInTransientState()) {
-                    transientState.put(WEB_AUTHN_STATE_DATA, result.get());
+                    transientState.put(WEB_AUTHN_STATE_DATA, outcome.legacyData());
                     transientState.put(WEB_AUTHN_ATTESTATION_TYPE, attestationType.toString());
                     transientState.put(WEB_AUTHN_AAGUID, registeredAaguid);
                 }
@@ -408,7 +457,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
 
         } else {
             logger.debug("sending callbacks to user for completion");
-            Optional<AMIdentity> user = getAMIdentity(context.universalId, nodeState, identityService, coreWrapper);
+            Optional<AMIdentity> user = identityProvider.getAMIdentity(context.universalId, nodeState);
             if (user.isEmpty()) {
                 logger.warn("getIdentity: Unable to find user {}", username);
                 return Action.goTo(FAILURE_OUTCOME_ID).build();
@@ -429,7 +478,8 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
 
             return getCallbacksForWebAuthnInteraction(config.asScript(), registrationScript,
                     getScriptContext(challengeBytes, user.get(),
-                            config.relyingPartyDomain().orElse(null), context),
+                            config.relyingPartyDomain().orElse(null), context,
+                            getExtensions(context)),
                     context);
         }
     }
@@ -451,7 +501,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         WebAuthnDeviceSettings device = webAuthnProfileManager.createDeviceProfile(response.getCredentialId(),
                 attestationObject.authData.attestedCredentialData.publicKey,
                 attestationObject.authData.attestedCredentialData.algorithm,
-                deviceName);
+                deviceName, attestationObject.authData.signCount);
 
         registeredDeviceUuid = device.getUUID();
         credentialId = device.getCredentialId();
@@ -468,8 +518,8 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
                 throw new DevicePersistenceException("Unable to store device in shared state", e);
             }
         } else {
-            Optional<AMIdentity> user = getAMIdentity(context.universalId, context.getStateFor(this), identityService,
-                    coreWrapper);
+            Optional<AMIdentity> user = identityProvider.getAMIdentity(context.universalId,
+                    context.getStateFor(this));
             if (user.isEmpty()) {
                 logger.debug("getIdentity: Unable to find user {}", username);
                 throw new DevicePersistenceException("Unable to store device data");
@@ -486,7 +536,7 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
     }
 
     private JsonValue getScriptContext(byte[] challengeBytes, AMIdentity user, String configuredRpId,
-                                       TreeContext context)
+                                       TreeContext context, JsonValue extensions)
             throws NodeProcessException {
         JsonValue scriptContext = json(object());
         String username = getAccountNameFromIdentity(user);
@@ -521,12 +571,11 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         }
         scriptContext.put("relyingPartyId", sb.toString());
         scriptContext.put("_relyingPartyId", configuredRpId);
-
+        scriptContext.put("extensions", extensions);
         return scriptContext;
     }
 
     private String getExcludeCredentials(AMIdentity user) throws NodeProcessException {
-
         List<WebAuthnDeviceSettings> devices;
         try {
             devices = webAuthnProfileManager.getDeviceProfiles(user.getName(), user.getRealm());
@@ -542,7 +591,6 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
     }
 
     private JsonValue getExcludeCredentialsAsJson(AMIdentity user) throws NodeProcessException {
-
         List<WebAuthnDeviceSettings> devices;
         try {
             devices = webAuthnProfileManager.getDeviceProfiles(user.getName(), user.getRealm());
@@ -575,6 +623,9 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
         if (config.authenticatorAttachment() != AuthenticatorAttachment.UNSPECIFIED) {
             jsonValue.put("authenticatorAttachment", config.authenticatorAttachment().getValue());
         }
+
+        jsonValue.put("residentKey", config.residentKeyRequirement().getValue());
+        // 5.4.4. present for backwards compatibility
         if (config.requiresResidentKey()) {
             jsonValue.put("requireResidentKey", true);
         }
@@ -603,29 +654,31 @@ public class WebAuthnRegistrationNode extends AbstractWebAuthnNode {
     /**
      * Provides the authentication node's set of outcomes.
      */
-    public static class OutcomeProvider implements org.forgerock.openam.auth.node.api.OutcomeProvider {
+    public static class OutcomeProvider implements BoundedOutcomeProvider {
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes)
                 throws NodeProcessException {
+            return getAllOutcomes(locales).stream()
+                    .filter(outcome -> {
+                        if (EXCEED_DEVICE_LIMIT_OUTCOME_ID.equals(outcome.id)) {
+                            return nodeAttributes.isNotNull()
+                                           && !nodeAttributes.get(POSTPONE_DEVICE_PROFILE_STORAGE).required()
+                                                       .asBoolean()
+                                           && nodeAttributes.get(MAX_SAVED_DEVICES).required().asInteger() > 0;
+                        }
+                        return true;
+                    }).toList();
+        }
+
+        @Override
+        public List<Outcome> getAllOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE,
                     WebAuthnRegistrationNode.OutcomeProvider.class.getClassLoader());
-
-            ArrayList<Outcome> outcomes = new ArrayList<>();
-
-            outcomes.add(new Outcome(UNSUPPORTED_OUTCOME_ID, bundle.getString(UNSUPPORTED_OUTCOME_ID)));
-            outcomes.add(new Outcome(SUCCESS_OUTCOME_ID, bundle.getString(SUCCESS_OUTCOME_ID)));
-            outcomes.add(new Outcome(FAILURE_OUTCOME_ID, bundle.getString(FAILURE_OUTCOME_ID)));
-            outcomes.add(new Outcome(ERROR_OUTCOME_ID, bundle.getString(ERROR_OUTCOME_ID)));
-
-            if (nodeAttributes.isNotNull()) {
-                // nodeAttributes is null when the node is created
-                if (!nodeAttributes.get(POSTPONE_DEVICE_PROFILE_STORAGE).required().asBoolean()
-                        && nodeAttributes.get(MAX_SAVED_DEVICES).required().asInteger() > 0) {
-                    outcomes.add(new Outcome(EXCEED_DEVICE_LIMIT_OUTCOME_ID,
-                            bundle.getString(EXCEED_DEVICE_LIMIT_OUTCOME_ID)));
-                }
-            }
-            return outcomes;
+            return List.of(new Outcome(UNSUPPORTED_OUTCOME_ID, bundle.getString(UNSUPPORTED_OUTCOME_ID)),
+                    new Outcome(SUCCESS_OUTCOME_ID, bundle.getString(SUCCESS_OUTCOME_ID)),
+                    new Outcome(FAILURE_OUTCOME_ID, bundle.getString(FAILURE_OUTCOME_ID)),
+                    new Outcome(ERROR_OUTCOME_ID, bundle.getString(ERROR_OUTCOME_ID)),
+                    new Outcome(EXCEED_DEVICE_LIMIT_OUTCOME_ID, bundle.getString(EXCEED_DEVICE_LIMIT_OUTCOME_ID)));
         }
     }
 

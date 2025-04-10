@@ -12,7 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.common;
 

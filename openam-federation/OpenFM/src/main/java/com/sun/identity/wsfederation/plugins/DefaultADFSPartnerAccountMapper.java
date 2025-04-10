@@ -24,7 +24,7 @@
  *
  * $Id: DefaultADFSPartnerAccountMapper.java,v 1.5 2009/10/29 00:03:49 exu Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  *
  */
 

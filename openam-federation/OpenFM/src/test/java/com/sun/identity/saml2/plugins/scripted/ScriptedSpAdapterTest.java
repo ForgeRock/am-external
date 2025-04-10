@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins.scripted;
 
@@ -39,6 +47,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.USER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.entry;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_SP_ADAPTER;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstructionWithAnswer;
@@ -51,21 +60,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import org.assertj.core.data.MapEntry;
 import org.forgerock.http.Client;
 import org.forgerock.http.handler.HttpClientHandler;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.LegacyScriptContext;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
@@ -91,7 +102,9 @@ public class ScriptedSpAdapterTest {
     private static final String binding = "myBinding";
 
     @Mock
-    private ScriptEvaluator scriptEvaluator;
+    ScriptEvaluatorFactory scriptEvaluatorFactory;
+    @Mock
+    private ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
     @Mock
     private SpAdapterScriptHelper spAdapterScriptHelper;
     @Mock
@@ -110,7 +123,7 @@ public class ScriptedSpAdapterTest {
     private final LogoutRequest logoutRequest = mock(LogoutRequest.class);
     private final LogoutResponse logoutResponse = mock(LogoutResponse.class);
 
-    private final ArgumentCaptor<ScriptBindings> bindingsCaptor = ArgumentCaptor.forClass(ScriptBindings.class);
+    private final ArgumentCaptor<LegacyScriptBindings> bindingsCaptor = ArgumentCaptor.forClass(LegacyScriptBindings.class);
     private final ArgumentCaptor<Script> scriptConfigurationCaptor = ArgumentCaptor.forClass(Script.class);
 
     private final MapEntry<String, Object> HOSTED_ENTITY_ID_BINDING = entry(HOSTED_ENTITYID, hostedEntityId);
@@ -137,13 +150,14 @@ public class ScriptedSpAdapterTest {
     // Class under test
     private ScriptedSpAdapter scriptedSpAdapter;
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         MockitoAnnotations.openMocks(this).close();
         HttpClientHandler httpClientHandler = new HttpClientHandler();
         Client httpClient = new Client(httpClientHandler);
         HTTP_CLIENT_BINDING = entry(HTTP_CLIENT, httpClient);
-        scriptedSpAdapter = new ScriptedSpAdapter(__ -> scriptEvaluator, spAdapterScriptHelper, httpClient, executor
+        when(scriptEvaluatorFactory.create(any(LegacyScriptContext.class))).thenReturn(scriptEvaluator);
+        scriptedSpAdapter = new ScriptedSpAdapter(scriptEvaluatorFactory, spAdapterScriptHelper, httpClient, executor
         );
 
         // Given
@@ -156,14 +170,14 @@ public class ScriptedSpAdapterTest {
                 HttpServletResponseWrapper.class, invocation -> wrappedResponse);
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         ignoredHttpServletRequestWrapper.close();
         ignoredHttpServletResponseWrapper.close();
     }
 
     @Test
-    public void testPreSingleSignOnRequest() throws Exception {
+    void testPreSingleSignOnRequest() throws Exception {
         // When
         scriptedSpAdapter.preSingleSignOnRequest(hostedEntityId, idpEntityId, realm, request, response, authnRequest);
 
@@ -176,7 +190,7 @@ public class ScriptedSpAdapterTest {
     }
 
     @Test
-    public void testPreSingleSignOnProcess() throws Exception {
+    void testPreSingleSignOnProcess() throws Exception {
         // When
         scriptedSpAdapter.preSingleSignOnProcess(hostedEntityId, realm, request, response, authnRequest, saml2Response,
                 profile);
@@ -191,7 +205,7 @@ public class ScriptedSpAdapterTest {
     }
 
     @Test
-    public void testPostSingleSignOnSuccess() throws Exception {
+    void testPostSingleSignOnSuccess() throws Exception {
         // When
         scriptedSpAdapter.postSingleSignOnSuccess(hostedEntityId, realm, request, response, out, session, authnRequest,
                 saml2Response, profile, true);
@@ -210,7 +224,7 @@ public class ScriptedSpAdapterTest {
     }
 
     @Test
-    public void testPostSingleSignOnFailure() throws Exception {
+    void testPostSingleSignOnFailure() throws Exception {
         // When
         scriptedSpAdapter.postSingleSignOnFailure(hostedEntityId, realm, request, response, authnRequest, saml2Response,
                 profile, failureCode);
@@ -226,7 +240,7 @@ public class ScriptedSpAdapterTest {
     }
 
     @Test
-    public void testPostNewNameIDSuccess() throws Exception {
+    void testPostNewNameIDSuccess() throws Exception {
         // When
         scriptedSpAdapter.postNewNameIDSuccess(hostedEntityId, realm, request, response, userId, idRequest, idResponse,
                 binding);
@@ -243,7 +257,7 @@ public class ScriptedSpAdapterTest {
     }
 
     @Test
-    public void testPostTerminateNameIDSuccess() throws Exception {
+    void testPostTerminateNameIDSuccess() throws Exception {
         // When
         scriptedSpAdapter.postTerminateNameIDSuccess(hostedEntityId, realm, request, response, userId, idRequest,
                 idResponse, binding);
@@ -260,7 +274,7 @@ public class ScriptedSpAdapterTest {
     }
 
     @Test
-    public void testPreSingleLogoutProcess() throws Exception {
+    void testPreSingleLogoutProcess() throws Exception {
         // When
         scriptedSpAdapter.preSingleLogoutProcess(hostedEntityId, realm, request, response, userId, logoutRequest,
                 logoutResponse, binding);
@@ -277,7 +291,7 @@ public class ScriptedSpAdapterTest {
     }
 
     @Test
-    public void testPostSingleLogoutSuccess() throws Exception {
+    void testPostSingleLogoutSuccess() throws Exception {
         // When
         scriptedSpAdapter.postSingleLogoutSuccess(hostedEntityId, realm, request, response, userId, logoutRequest,
                 logoutResponse, binding);

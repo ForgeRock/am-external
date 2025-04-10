@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.am.saml2.impl;
 
@@ -24,16 +32,15 @@ import static org.forgerock.am.saml2.impl.Saml2ClientConstants.RESPONSE_KEY;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.openam.utils.StringUtils.isBlank;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
-import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.utils.StringUtils;
@@ -207,8 +214,7 @@ public final class Saml2Proxy {
         }
 
         try {
-            long sessionExpireTime = currentTimeMillis() / 1000 + SPCache.interval; //counted in seconds
-            SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, data, sessionExpireTime);
+            SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, data);
         } catch (SAML2TokenRepositoryException e) {
             DEBUG.error("An error occurred while persisting the SAML token", e);
             return getUrlWithError(request, SAML_FAILOVER_DISABLED_ERROR);

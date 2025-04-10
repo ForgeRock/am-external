@@ -20,7 +20,7 @@
 
    Copyright 2009 Sun Microsystems Inc. All Rights Reserved
 
-   Portions Copyrighted 2013-2019 ForgeRock AS.
+   Portions Copyrighted 2013-2025 Ping Identity Corporation
    Portions Copyrighted 2014 Nomura Research Institute, Ltd
 --%>
 
@@ -45,7 +45,7 @@ function checkEmptyResource() {
     if (document.fedletXACMLQuery.resource.value == "")  {
         alert("Resource URL cannot be empty");
         return false;
-    }        
+    }
     return true;
 }
 </script>
@@ -90,7 +90,7 @@ function checkEmptyResource() {
 
     <p><br>
     <table border="0" width="700">
-	
+
     <tr>
       <td colspan="2">
       <%
@@ -122,7 +122,7 @@ function checkEmptyResource() {
     <tr>
       <td colspan="2"> </td>
     </tr>
-	
+
     <tr>
         <td colspan="2">
         <hr>
@@ -154,13 +154,13 @@ function checkEmptyResource() {
 	     <input type=text name=resource value=<%=ESAPI.encoder().encodeForHTMLAttribute(request.getRequestURL().toString())%> size=120> <br>
 	     <p> <p>
 	    <h3>Action</h3>
-            <input type="radio" name="action" value="GET" checked/> GET <br> 
+            <input type="radio" name="action" value="GET" checked/> GET <br>
 	    <input type="radio" name="action" value="POST"/> POST <br>
             <input type=submit>
 	</form>
 	<hr>
         </td>
-	</tr>	
+	</tr>
 
         <tr>
           <td colspan="2"> </td>

@@ -24,7 +24,7 @@
  *
  * $Id: package-info.java,v 1.3 2008/12/03 00:32:31 hengming Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 /**

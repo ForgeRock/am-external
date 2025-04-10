@@ -11,15 +11,23 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.assertion.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.sun.identity.saml2.assertion.BaseID;
 import com.sun.identity.saml2.assertion.EncryptedID;
@@ -28,8 +36,7 @@ import com.sun.identity.saml2.common.SAML2Constants;
 
 public class SubjectImplTest {
 
-    @DataProvider
-    public Object[][] xmlTestCasesWithBaseID() {
+    public static Object[][] xmlTestCasesWithBaseID() {
         return new Object[][] {
                 { true, true, "<saml:Subject xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">" +
                         "<saml:BaseID NameQualifier=\"testNameQualifier\" SPNameQualifier=\"testSPNameQualifier\" />" +
@@ -43,7 +50,8 @@ public class SubjectImplTest {
         };
     }
 
-    @Test(dataProvider = "xmlTestCasesWithBaseID")
+    @ParameterizedTest
+    @MethodSource("xmlTestCasesWithBaseID")
     public void testToXmlStringWithBaseID(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
         // Given
         SubjectImpl subject = new SubjectImpl();
@@ -59,8 +67,7 @@ public class SubjectImplTest {
         assertThat(xml).isEqualToIgnoringWhitespace(expectedXml);
     }
 
-    @DataProvider
-    public Object[][] xmlTestCasesWithNameID() {
+    public static Object[][] xmlTestCasesWithNameID() {
         return new Object[][] {
                 { true, true, "<saml:Subject xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">\n" +
                         "<saml:NameID " +
@@ -83,7 +90,8 @@ public class SubjectImplTest {
         };
     }
 
-    @Test(dataProvider = "xmlTestCasesWithNameID")
+    @ParameterizedTest
+    @MethodSource("xmlTestCasesWithNameID")
     public void testToXmlStringWithNameID(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
         // Given
         SubjectImpl subject = new SubjectImpl();
@@ -102,8 +110,7 @@ public class SubjectImplTest {
         assertThat(xml).isEqualToIgnoringWhitespace(expectedXml);
     }
 
-    @DataProvider
-    public Object[][] xmlTestCasesWithEncryptedID() {
+    public static Object[][] xmlTestCasesWithEncryptedID() {
         return new Object[][] {
                 { true, true, "<saml:Subject xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\">" +
                         "<EncryptedID>test</EncryptedID></saml:Subject>" },
@@ -112,7 +119,8 @@ public class SubjectImplTest {
         };
     }
 
-    @Test(dataProvider = "xmlTestCasesWithEncryptedID")
+    @ParameterizedTest
+    @MethodSource("xmlTestCasesWithEncryptedID")
     public void testToXmlStringWithEncryptedID(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
         // Given
         SubjectImpl subject = new SubjectImpl();

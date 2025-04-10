@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.xacml.context.impl;
@@ -20,8 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -30,8 +38,7 @@ import com.sun.identity.xacml.common.XACMLConstants;
 
 public class ResourceImplTest {
 
-    @DataProvider
-    public Object[][] xmlTestCases() {
+    public static Object[][] xmlTestCases() {
         return new Object[][] {
                 { true, true, "<xacml-context:Resource " +
                         "xmlns:xacml-context=\"urn:oasis:names:tc:xacml:2.0:context:schema:os\" " +
@@ -58,7 +65,8 @@ public class ResourceImplTest {
         };
     }
 
-    @Test(dataProvider = "xmlTestCases")
+    @ParameterizedTest
+    @MethodSource("xmlTestCases")
     public void testToXmlString(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
         // Given
         ResourceImpl resource = new ResourceImpl();

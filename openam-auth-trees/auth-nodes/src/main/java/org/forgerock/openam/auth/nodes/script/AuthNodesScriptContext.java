@@ -11,33 +11,33 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.script;
 
+import org.forgerock.openam.scripting.domain.LegacyScriptContext;
 import org.forgerock.openam.scripting.domain.ScriptContext;
 
 /**
  * Definitions of {@link ScriptContext}s for authentication nodes scripts.
  */
-public enum AuthNodesScriptContext implements ScriptContext {
+public enum AuthNodesScriptContext implements LegacyScriptContext {
 
     /**
      * The default authentication tree decision node script context.
      */
-    AUTHENTICATION_TREE_DECISION_NODE,
-    /**
-     * The default config provider node script context.
-     */
-    CONFIG_PROVIDER_NODE;
+    AUTHENTICATION_TREE_DECISION_NODE;
 
     /**
      * Compile-time constants to reference this context with.
      */
     public static final String AUTHENTICATION_TREE_DECISION_NODE_NAME = "AUTHENTICATION_TREE_DECISION_NODE";
-
-    /**
-     * Compile-time constants to reference this context with.
-     */
-    public static final String CONFIG_PROVIDER_NODE_NAME = "CONFIG_PROVIDER_NODE";
 }

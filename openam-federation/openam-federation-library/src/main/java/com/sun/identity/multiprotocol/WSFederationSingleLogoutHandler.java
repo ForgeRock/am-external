@@ -24,7 +24,7 @@
  *
  * $Id: WSFederationSingleLogoutHandler.java,v 1.4 2009/10/28 23:58:57 exu Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  *
  */
 
@@ -35,8 +35,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

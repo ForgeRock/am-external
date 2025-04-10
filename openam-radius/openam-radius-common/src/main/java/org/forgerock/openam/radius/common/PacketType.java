@@ -13,7 +13,7 @@
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
  *
- * Portions Copyrighted 2022 ForgeRock AS.
+ * Portions Copyrighted 2022-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.common;
 

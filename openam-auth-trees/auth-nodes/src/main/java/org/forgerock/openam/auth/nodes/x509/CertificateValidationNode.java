@@ -11,14 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
 
-import static com.sun.identity.security.cert.AMLDAPCertStoreParameters.createBasicAuthAMLDAPCertStoreParameters;
-import static com.sun.identity.security.cert.AMLDAPCertStoreParameters.createMtlsAMLDAPCertStoreParameters;
+import static com.sun.identity.shared.datastruct.CollectionHelper.getServerMapAttr;
 import static org.forgerock.openam.auth.nodes.x509.CertificateUtils.getX509Certificate;
+import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
@@ -36,6 +44,8 @@ import java.util.Vector;
 
 import javax.inject.Inject;
 
+import org.forgerock.am.identity.application.IdentityStoreLdapParametersProvider;
+import org.forgerock.am.identity.application.model.LdapConnectionParameters;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
@@ -44,6 +54,8 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.ldap.LDAPURL;
+import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.openam.secrets.Secrets;
 import org.forgerock.openam.sm.annotations.adapters.Password;
 import org.forgerock.openam.sm.annotations.adapters.SecretPurpose;
@@ -58,12 +70,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.am.util.SystemProperties;
+import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.security.cert.AMCRLStore;
 import com.sun.identity.security.cert.AMCertPath;
 import com.sun.identity.security.cert.AMCertStore;
-import com.sun.identity.security.cert.AMLDAPCertStoreParameters;
 import com.sun.identity.shared.Constants;
-import com.sun.identity.shared.datastruct.CollectionHelper;
+import com.sun.identity.sm.SMSException;
 
 /**
  * Certificate Validation Node.
@@ -78,6 +90,7 @@ public class CertificateValidationNode extends AbstractDecisionNode {
     private final Config config;
     private final Realm realm;
     private final Secrets secrets;
+    private final IdentityStoreLdapParametersProvider identityStoreLdapParametersProvider;
 
     /**
      * Configuration for the node.
@@ -173,6 +186,16 @@ public class CertificateValidationNode extends AbstractDecisionNode {
         }
 
         /**
+         * Sets the name of the pre-configured LDAP certificate store.
+         *
+         * @return the name of the LDAP certificate store.
+         */
+        @Attribute(order = 950, choiceValuesClass = IdentityStoreChoiceValues.class)
+        default String certificateIdentityStore() {
+            return ISAuthConstants.BLANK;
+        }
+
+        /**
          * Sets the LDAP servers where certificates are stored.
          *
          * @return the LDAP certificate servers.
@@ -242,15 +265,18 @@ public class CertificateValidationNode extends AbstractDecisionNode {
     /**
      * The constructor.
      *
-     * @param config  node config.
-     * @param realm the realm configuration.
-     * @param secrets the secrets API object.
+     * @param config the node config
+     * @param realm the realm configuration
+     * @param secrets the secrets API object
+     * @param identityStoreLdapParametersProvider the {@link IdentityStoreLdapParametersProvider}
      */
     @Inject
-    public CertificateValidationNode(@Assisted Config config, @Assisted Realm realm, Secrets secrets) {
+    public CertificateValidationNode(@Assisted Config config, @Assisted Realm realm, Secrets secrets,
+            IdentityStoreLdapParametersProvider identityStoreLdapParametersProvider) {
         this.config = config;
         this.realm = realm;
         this.secrets = secrets;
+        this.identityStoreLdapParametersProvider = identityStoreLdapParametersProvider;
     }
 
     private static String getDirectoryServerURL() {
@@ -266,7 +292,7 @@ public class CertificateValidationNode extends AbstractDecisionNode {
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
-        AMLDAPCertStoreParameters ldapParam = null;
+        LdapConnectionParameters ldapParam = null;
         List<X509Certificate> certs = context.transientState.get("X509Certificate").asList(X509Certificate.class);
         X509Certificate theCert = getX509Certificate(certs, logger);
 
@@ -284,7 +310,7 @@ public class CertificateValidationNode extends AbstractDecisionNode {
         }
 
         if (config.matchCertificateInLdap()) {
-            if (!config.ldapCertificateAttribute().isPresent()) {
+            if (config.ldapCertificateAttribute().isEmpty()) {
                 throw new NodeProcessException("Ldap Certificate Attribute is empty in node configuration but needed "
                         + "to match certificate in LDAP");
             }
@@ -328,11 +354,12 @@ public class CertificateValidationNode extends AbstractDecisionNode {
 
     }
 
-    private boolean isCertificateRevoked(List<X509Certificate> theCerts, AMLDAPCertStoreParameters ldapParam)
+    private boolean isCertificateRevoked(List<X509Certificate> theCerts, LdapConnectionParameters ldapParam)
             throws NodeProcessException {
         Vector<X509CRL> certificateRevocationLists = new Vector<>();
         for (X509Certificate cert : theCerts) {
-            X509CRL crl = AMCRLStore.getCRL(ldapParam, cert,
+            X509CRL crl = AMCRLStore.getCRL(ldapParam, cert, config.cacheCRLsInMemory(),
+                    config.updateCRLsFromDistributionPoint(), config.crlHttpParameters().orElse(null),
                     trimItems(config.crlMatchingCertificateAttribute().split(",")));
             if (crl != null) {
                 certificateRevocationLists.add(crl);
@@ -340,7 +367,7 @@ public class CertificateValidationNode extends AbstractDecisionNode {
         }
         logger.debug("CertificateRevocationLists size = {}", certificateRevocationLists.size());
         if (certificateRevocationLists.size() > 0) {
-            logger.debug("CRL = {}", certificateRevocationLists.toString());
+            logger.debug("CRL = {}", certificateRevocationLists);
         }
         AMCertPath certPath;
         try {
@@ -353,7 +380,23 @@ public class CertificateValidationNode extends AbstractDecisionNode {
                                config.ocspValidationEnabled());
     }
 
-    private AMLDAPCertStoreParameters setLdapStoreParam() throws NodeProcessException {
+    private LdapConnectionParameters setLdapStoreParam() throws NodeProcessException {
+        try {
+            String certificateIdentityStore = config.certificateIdentityStore();
+            if (isNotBlank(certificateIdentityStore) && !certificateIdentityStore.equals(ISAuthConstants.BLANK)) {
+                return createParamsFromIdentityStore();
+            }
+            return createParamsFromNodeConfig();
+        } catch (Exception e) {
+            throw new NodeProcessException("Unable to set LDAP Server configuration", e);
+        }
+    }
+
+    private LdapConnectionParameters createParamsFromIdentityStore() throws SMSException {
+        return identityStoreLdapParametersProvider.getLdapParams(realm, config.certificateIdentityStore());
+    }
+
+    private LdapConnectionParameters createParamsFromNodeConfig() throws NodeProcessException {
         /*
          * Setup the LDAP certificate directory service context for
          * use in verification of the users certificates.
@@ -362,36 +405,48 @@ public class CertificateValidationNode extends AbstractDecisionNode {
                 "certificateLdapServers", config.certificateLdapServers(),
                 "ldapSearchStartDN", config.ldapSearchStartDN());
 
-        String serverHost = CollectionHelper.getServerMapAttr(configMap, "certificateLdapServers");
-        if (serverHost != null) {
-            // set LDAP Parameters
-            try {
-                LdapUrl ldapUrl = LdapUrl.valueOf("ldap://" + serverHost);
-                String crlHttpParameters = config.crlHttpParameters()
-                        .orElseThrow(() -> new IllegalStateException("Missing CRL Http Parameters attribute value"));
-                if (config.mtlsEnabled()) {
-                    Purpose<SigningKey> secretLabel = config.mtlsSecretLabel().orElseThrow(
-                        () -> new IllegalStateException("Missing mTLS Secret Label Identifier"));
-                    return createMtlsAMLDAPCertStoreParameters(ldapUrl.getHost(),
-                            ldapUrl.getPort(),
-                            CollectionHelper.getServerMapAttr(configMap, "ldapSearchStartDN"),
-                            config.sslEnabled(), crlHttpParameters, config.cacheCRLsInMemory(),
-                            config.updateCRLsFromDistributionPoint(), secretLabel.getLabel(), realm, secrets);
-                } else {
-                    String userBindDn = config.userBindDN()
-                            .orElseThrow(() -> new IllegalStateException("Missing User Bind DN attribute value"));
-                    String userBindPassword = String.valueOf(config.userBindPassword().orElseThrow(() ->
-                                    new IllegalStateException("Missing User Bind Password attribute value")));
-                    return createBasicAuthAMLDAPCertStoreParameters(ldapUrl.getHost(),
-                            ldapUrl.getPort(), userBindDn, userBindPassword,
-                            CollectionHelper.getServerMapAttr(configMap, "ldapSearchStartDN"), config.sslEnabled(),
-                            crlHttpParameters, config.cacheCRLsInMemory(), config.updateCRLsFromDistributionPoint());
-                }
-            } catch (Exception e) {
-                throw new NodeProcessException("Unable to set LDAP Server configuration", e);
-            }
+        String serverHost = getServerMapAttr(configMap, "certificateLdapServers");
+        if (serverHost == null) {
+            throw new NodeProcessException("Unable to set LDAP Server configuration, LDAP Configuration is null");
         }
-        throw new NodeProcessException("Unable to set LDAP Server configuration, LDAP Configuration is null");
+        LdapUrl ldapUrl = LdapUrl.valueOf("ldap://" + serverHost);
+        Set<LDAPURL> ldapUrls = LDAPUtils.getLdapUrls(ldapUrl.getHost(), ldapUrl.getPort(), config.sslEnabled());
+        return LdapConnectionParameters.builder()
+                .ldapServers(ldapUrls)
+                .ldapUser(getLdapUser())
+                .ldapPassword(getLdapPassword())
+                .startSearchLocation(getServerMapAttr(configMap, "ldapSearchStartDN"))
+                .mtlsEnabled(config.mtlsEnabled())
+                .mtlsSecretLabel(getSecretLabel())
+                .realm(realm)
+                .build();
+    }
+
+    private String getLdapUser() {
+        return config.userBindDN().or(() -> {
+            if (!config.mtlsEnabled()) {
+                throw new IllegalStateException("Missing User Bind DN attribute value");
+            }
+            return Optional.empty();
+        }).orElse(null);
+    }
+
+    private char[] getLdapPassword() {
+        return config.userBindPassword().or(() -> {
+            if (!config.mtlsEnabled()) {
+                throw new IllegalStateException("Missing User Bind Password attribute value");
+            }
+            return Optional.empty();
+        }).orElse(null);
+    }
+
+    private String getSecretLabel() {
+        return config.mtlsSecretLabel().or(() -> {
+            if (config.mtlsEnabled()) {
+                throw new IllegalStateException("Missing mTLS Secret Label Identifier");
+            }
+            return Optional.empty();
+        }).map(Purpose::getLabel).orElse(null);
     }
 
     /**

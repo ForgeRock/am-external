@@ -11,13 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2.service;
 
 import static com.sun.identity.saml2.common.SAML2Constants.IDP_ADAPTER_SCRIPT;
-import static com.sun.identity.shared.Constants.EMPTY_SCRIPT_SELECTION;
+import static com.sun.identity.shared.Constants.EMPTY_DROPDOWN_SELECTION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ADAPTER_SCRIPT;
 import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_IDP_ATTRIBUTE_MAPPER_SCRIPT;
 import static org.forgerock.openam.saml2.service.Saml2GlobalScript.SAML2_SP_ADAPTER_SCRIPT;
@@ -29,6 +38,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -38,14 +48,14 @@ import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptContext;
 import org.forgerock.openam.scripting.domain.ScriptContextDetails;
 import org.forgerock.openam.scripting.domain.ScriptException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.jaxb.entityconfig.EntityConfigElement;
@@ -58,14 +68,14 @@ import com.sun.identity.saml2.meta.SAML2MetaUtils;
 /**
  * Tests for {@link Saml2ScriptContextProvider}.
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class Saml2ScriptContextProviderTest {
 
     private static final String ADAPTER_SCRIPT_IN_USE = "adapterScriptInUse";
 
     private static final String ADAPTER_SCRIPT_NOT_IN_USE = "adapterScriptNotInUse";
 
-    private static final String NO_SCRIPT_CONFIGURED = EMPTY_SCRIPT_SELECTION;
+    private static final String NO_SCRIPT_CONFIGURED = EMPTY_DROPDOWN_SELECTION;
 
     @Mock
     private Realm realm;
@@ -88,26 +98,26 @@ public class Saml2ScriptContextProviderTest {
     private MockedStatic<SAML2Utils> saml2UtilsMockedStatic;
     private MockedStatic<SAML2MetaUtils> saml2MetaUtilsMockedStatic;
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         saml2UtilsMockedStatic = mockStatic(SAML2Utils.class);
         saml2MetaUtilsMockedStatic = mockStatic(SAML2MetaUtils.class);
         when(SAML2Utils.getSAML2MetaManager()).thenReturn(saml2MetaManager);
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         saml2UtilsMockedStatic.close();
         saml2MetaUtilsMockedStatic.close();
     }
 
     @Test
-    public void shouldReturnAllSaml2ScriptContexts() {
-        assertThat(provider.get().size()).isEqualTo(3);
+    void shouldReturnAllSaml2ScriptContexts() {
+        assertThat(provider.get().size()).isEqualTo(4);
     }
 
     @Test
-    public void shouldReturnSaml2IdpAttributeMapperContext() {
+    void shouldReturnSaml2IdpAttributeMapperContext() {
         // When
         List<ScriptContextDetails> actual = provider.get();
 
@@ -120,7 +130,7 @@ public class Saml2ScriptContextProviderTest {
     }
 
     @Test
-    public void shouldReturnSaml2IdpAdapterContext() {
+    void shouldReturnSaml2IdpAdapterContext() {
         // When
         List<ScriptContextDetails> actual = provider.get();
 
@@ -133,7 +143,7 @@ public class Saml2ScriptContextProviderTest {
     }
 
     @Test
-    public void shouldReturnSaml2SpAdapterContext() {
+    void shouldReturnSaml2SpAdapterContext() {
         // When
         List<ScriptContextDetails> actual = provider.get();
 
@@ -146,7 +156,7 @@ public class Saml2ScriptContextProviderTest {
     }
 
     @Test
-    public void shouldReturnUsageCountWhenGivenScriptInUse() throws Exception {
+    void shouldReturnUsageCountWhenGivenScriptInUse() throws Exception {
         //When
         Script givenScript = createScript(ADAPTER_SCRIPT_IN_USE, SAML2_IDP_ADAPTER);
         mockSamlEntityConfig(ADAPTER_SCRIPT_IN_USE);
@@ -156,7 +166,7 @@ public class Saml2ScriptContextProviderTest {
     }
 
     @Test
-    public void shouldReturnNoUsageWhenGivenScriptNotInUse() throws Exception {
+    void shouldReturnNoUsageWhenGivenScriptNotInUse() throws Exception {
         //When
         Script givenScript = createScript(ADAPTER_SCRIPT_NOT_IN_USE, SAML2_IDP_ADAPTER);
         mockSamlEntityConfig(ADAPTER_SCRIPT_IN_USE);
@@ -166,7 +176,7 @@ public class Saml2ScriptContextProviderTest {
     }
 
     @Test
-    public void shouldReturnNoUsageWhenNoScriptConfigured() throws Exception {
+    void shouldReturnNoUsageWhenNoScriptConfigured() throws Exception {
         //When
         Script givenScript = createScript(ADAPTER_SCRIPT_NOT_IN_USE, SAML2_IDP_ADAPTER);
         mockSamlEntityConfig(NO_SCRIPT_CONFIGURED);
@@ -175,22 +185,26 @@ public class Saml2ScriptContextProviderTest {
         assertThat(provider.getUsageCount(realm, givenScript)).isEqualTo(0);
     }
 
-    @Test(expected = SamlPluginScriptUsageCountException.class)
-    public void shouldFailWhenUsageCantBeDetermined() throws Exception {
-        //When
+    @Test
+    void shouldFailWhenUsageCantBeDetermined() throws Exception {
+        //Given
         Script givenScript = createScript(ADAPTER_SCRIPT_NOT_IN_USE, SAML2_IDP_ADAPTER);
         when(saml2MetaManager.getAllHostedEntityConfigs(realm.asPath())).thenThrow(SAML2MetaException.class);
 
-        //Then
-        provider.getUsageCount(realm, givenScript);
+        //When-Then
+        assertThatThrownBy(() ->
+                provider.getUsageCount(realm, givenScript))
+                .isInstanceOf(SamlPluginScriptUsageCountException.class)
+                .hasMessage("Unable to check if the script name_adapterScriptNotInUse is used.");
     }
 
     private Optional<ScriptContextDetails> getScriptContextDetails(List<ScriptContextDetails> scriptContextDetails, Saml2ScriptContext match) {
-        return scriptContextDetails.stream().filter(s -> s.getName().equals(match.name())).findFirst();
+        return scriptContextDetails.stream().filter(s -> s.name().equals(match.name())).findFirst();
     }
 
     private void mockSamlEntityConfig(String scriptId) throws SAML2MetaException {
         when(saml2MetaManager.getAllHostedEntityConfigs(realm.asPath())).thenReturn(List.of(entityConfigElement));
+        when(saml2MetaManager.getAllRemoteEntityConfigs(realm.asPath())).thenReturn(Collections.singletonList(null));
         when(entityConfigElement.getValue()).thenReturn(entityConfigType);
         when(entityConfigType.getIDPSSOConfigOrSPSSOConfigOrAuthnAuthorityConfig())
                 .thenReturn(List.of(idpssoConfigElement));

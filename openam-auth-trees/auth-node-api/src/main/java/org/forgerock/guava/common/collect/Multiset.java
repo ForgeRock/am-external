@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
  */
 /*
  * Copyright (C) 2007 The Guava Authors
@@ -28,7 +28,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Portions Copyright 2018 ForgeRock AS.
+ * Portions Copyright 2018-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.guava.common.collect;

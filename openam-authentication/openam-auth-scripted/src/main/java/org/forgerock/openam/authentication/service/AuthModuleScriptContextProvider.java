@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.service;
@@ -24,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.scripting.domain.LegacyScriptContextDetails;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptContextDetails;
 import org.forgerock.openam.scripting.persistence.config.defaults.ScriptContextDetailsProvider;
@@ -54,7 +63,7 @@ public class AuthModuleScriptContextProvider implements ScriptContextDetailsProv
     public List<ScriptContextDetails> get() {
         List<ScriptContextDetails> scriptContexts = new ArrayList<>();
 
-        scriptContexts.add(ScriptContextDetails.builder()
+        scriptContexts.add(LegacyScriptContextDetails.builder()
                 .withContextReference(AUTHENTICATION_SERVER_SIDE)
                 .withI18NKey("script-type-02")
                 .withDefaultScript(AUTH_MODULE_SERVER_SIDE.getId())
@@ -94,7 +103,7 @@ public class AuthModuleScriptContextProvider implements ScriptContextDetailsProv
                         "org.forgerock.opendj.ldap.Dn"
                 ).build());
 
-        scriptContexts.add(ScriptContextDetails.builder()
+        scriptContexts.add(LegacyScriptContextDetails.builder()
                 .withContextReference(AUTHENTICATION_CLIENT_SIDE)
                 .withI18NKey("script-type-03")
                 .build());

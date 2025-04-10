@@ -11,15 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.forgerock.openam.authentication.service.AuthModuleGlobalScript.AUTH_MODULE_SERVER_SIDE;
 import static org.forgerock.openam.authentication.service.AuthModuleScriptContext.AUTHENTICATION_CLIENT_SIDE;
 import static org.forgerock.openam.authentication.service.AuthModuleScriptContext.AUTHENTICATION_SERVER_SIDE;
-import static org.forgerock.openam.authentication.service.AuthModuleGlobalScript.AUTH_MODULE_SERVER_SIDE;
 import static org.forgerock.openam.scripting.domain.Script.EMPTY_SCRIPT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -37,14 +46,16 @@ import java.util.Set;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptContext;
+import org.forgerock.openam.scripting.domain.ScriptContextDetails;
 import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
-import org.forgerock.openam.scripting.domain.ScriptContextDetails;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.iplanet.dpro.session.service.DsameAdminTokenProvider;
 import com.iplanet.sso.SSOToken;
@@ -54,7 +65,8 @@ import com.sun.identity.sm.SmsEntryUid;
 /**
  * Tests for {@link AuthModuleScriptContextProvider}.
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class AuthModuleScriptContextProviderTest {
 
     @Mock
@@ -67,8 +79,8 @@ public class AuthModuleScriptContextProviderTest {
     private Realm realm;
     private AuthModuleScriptContextProvider provider;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         realm = mockRealm("myRealm");
         given(dsameAdminTokenProvider.getAdminToken()).willReturn(adminToken);
         given(serviceManagementDAO.search(eq(adminToken), any(), contains("=usedScript"), anyInt(), anyInt(), anyBoolean(), anyBoolean()))
@@ -83,53 +95,55 @@ public class AuthModuleScriptContextProviderTest {
     }
 
     @Test
-    public void shouldReturnAuthModuleScriptContexts() {
+    void shouldReturnAuthModuleScriptContexts() {
         // When
         List<ScriptContextDetails> actual = provider.get();
 
         // Then
         assertThat(actual.size()).isEqualTo(2);
 
-        assertThat(actual.get(0).getName()).isEqualTo(AUTHENTICATION_SERVER_SIDE.name());
+        assertThat(actual.get(0).name()).isEqualTo(AUTHENTICATION_SERVER_SIDE.name());
         assertThat(actual.get(0).getDefaultScriptId()).isEqualTo(AUTH_MODULE_SERVER_SIDE.getId());
         assertThat(actual.get(0).getWhiteList())
                 .containsAll(Arrays.asList("java.lang.String", "org.forgerock.openam.authentication.modules.scripted.*"));
 
-        assertThat(actual.get(1).getName()).isEqualTo(AUTHENTICATION_CLIENT_SIDE.name());
+        assertThat(actual.get(1).name()).isEqualTo(AUTHENTICATION_CLIENT_SIDE.name());
         assertThat(actual.get(1).getDefaultScriptId()).isEqualTo(EMPTY_SCRIPT.getId());
         assertThat(actual.get(1).getWhiteList()).isNull();
     }
 
     @Test
-    public void shouldReturnServerSideUsageCount() throws Exception {
+    void shouldReturnServerSideUsageCount() throws Exception {
         Script script = createScriptWithIdAndContext("usedScript", AUTHENTICATION_SERVER_SIDE);
 
         assertThat(provider.getUsageCount(realm, script)).isEqualTo(2); // two potential references
     }
 
     @Test
-    public void shouldReturnClientSideUsageCount() throws Exception {
+    void shouldReturnClientSideUsageCount() throws Exception {
         Script script = createScriptWithIdAndContext("usedScript", AUTHENTICATION_CLIENT_SIDE);
 
         assertThat(provider.getUsageCount(realm, script)).isEqualTo(2); // two potential references
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldExceptForUnknownContext() throws Exception {
+    @Test
+    void shouldExceptForUnknownContext() throws Exception {
         Script script = createScriptWithIdAndContext("usedScript", EMPTY_SCRIPT.getContext());
 
-        provider.getUsageCount(realm, script);
+        assertThatThrownBy(() -> provider.getUsageCount(realm, script))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Called getUsageCount on wrong provider");
     }
 
     @Test
-    public void shouldReturnNoUsagesForUnknownScript() throws Exception {
+    void shouldReturnNoUsagesForUnknownScript() throws Exception {
         Script script = createScriptWithIdAndContext("unknownScript", AUTHENTICATION_SERVER_SIDE);
 
         assertThat(provider.getUsageCount(realm, script)).isEqualTo(0);
     }
 
     @Test
-    public void shouldReturnNoUsagesForScriptInWrongRealm() throws Exception {
+    void shouldReturnNoUsagesForScriptInWrongRealm() throws Exception {
         Realm otherRealm = mockRealm("otherRealm");
         Script script = createScriptWithIdAndContext("usedScript", AUTHENTICATION_SERVER_SIDE);
 

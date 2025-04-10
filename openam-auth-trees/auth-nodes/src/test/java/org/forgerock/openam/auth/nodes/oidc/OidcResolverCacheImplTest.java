@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.oidc;
 
@@ -20,12 +28,12 @@ import org.forgerock.oauth.resolvers.OpenIdResolver;
 
 import org.forgerock.json.jose.exceptions.FailedToLoadJWKException;
 import org.forgerock.openam.core.CoreWrapper;
-import org.junit.Test;
-import org.junit.Before;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -37,7 +45,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class OidcResolverCacheImplTest {
     private static final String FAUX_CONFIG_URL_STRING = "https://host.com/.well-known/openid-configuration";
     private static final String FAUX_JWK_URL_STRING = "https://host.com/my/jwk";
@@ -52,13 +60,13 @@ public class OidcResolverCacheImplTest {
     @InjectMocks
     private OidcResolverCacheImpl resolverCache;
 
-    @Before
-    public void initialize() throws FailedToLoadJWKException {
+    @BeforeEach
+    void initialize() throws FailedToLoadJWKException {
         resolverCache = new OidcResolverCacheImpl(factory, coreWrapper);
     }
 
     @Test
-    public void testResolverCreationUsingConfig() throws Exception {
+    void testResolverCreationUsingConfig() throws Exception {
         OpenIdResolver configResolver = mock(OpenIdResolver.class);
 
         // Given
@@ -73,7 +81,7 @@ public class OidcResolverCacheImplTest {
     }
 
     @Test
-    public void testResolverCreationUsingJwk() throws Exception {
+    void testResolverCreationUsingJwk() throws Exception {
         OpenIdResolver jwkResolver = mock(OpenIdResolver.class);
         OpenIdResolver jwkResolver2 = mock(OpenIdResolver.class);
 
@@ -91,7 +99,7 @@ public class OidcResolverCacheImplTest {
     }
 
     @Test
-    public void testResolverCreationUsingClientSecret() throws FailedToLoadJWKException {
+    void testResolverCreationUsingClientSecret() throws FailedToLoadJWKException {
         OpenIdResolver clientSecretResolver = mock(OpenIdResolver.class);
 
         // Given
@@ -106,7 +114,7 @@ public class OidcResolverCacheImplTest {
     }
 
     @Test
-    public void testCreateInvalidResolver() throws FailedToLoadJWKException {
+    void testCreateInvalidResolver() throws FailedToLoadJWKException {
         OpenIdResolver configResolver = mock(OpenIdResolver.class);
 
         // Given
@@ -124,7 +132,7 @@ public class OidcResolverCacheImplTest {
     }
 
     @Test
-    public void testBasicLookupForSecretResolver() throws Exception {
+    void testBasicLookupForSecretResolver() throws Exception {
         OpenIdResolver clientSecretResolver = mock(OpenIdResolver.class);
 
         // Given
@@ -141,7 +149,7 @@ public class OidcResolverCacheImplTest {
     }
 
     @Test
-    public void testBasicLookupForConfigResolver() throws Exception {
+    void testBasicLookupForConfigResolver() throws Exception {
         OpenIdResolver configResolver = mock(OpenIdResolver.class);
 
         // Given
@@ -158,7 +166,7 @@ public class OidcResolverCacheImplTest {
     }
 
     @Test
-    public void testBasicLookupForJwkResolver() throws Exception {
+    void testBasicLookupForJwkResolver() throws Exception {
         OpenIdResolver jwkResolver = mock(OpenIdResolver.class);
         OpenIdResolver jwkResolver2 = mock(OpenIdResolver.class);
 

@@ -24,17 +24,16 @@
  *
  * $Id: WSSReplayPasswd.java,v 1.3 2009/11/10 08:37:28 mrudul_uchil Exp $
  *
- * Portions Copyrighted 2019-2024 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.authentication.spi;
 
-import java.security.AccessController;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,7 +136,7 @@ public class WSSReplayPasswd implements AMPostAuthProcessInterface {
     }
 
      private static SSOToken getAdminToken() {
-        return (SSOToken) AccessController.doPrivileged(
-                         AdminTokenAction.getInstance());
+        return (SSOToken) 
+                         AdminTokenAction.getInstance().run();
     }
 }

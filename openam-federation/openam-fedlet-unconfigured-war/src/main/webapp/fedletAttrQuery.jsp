@@ -22,7 +22,7 @@
 
    Copyright 2009 Sun Microsystems Inc. All Rights Reserved
 
-     Portions Copyrighted 2014-2019 ForgeRock AS.
+     Portions Copyrighted 2014-2025 Ping Identity Corporation
      Portions Copyrighted 2014 Nomura Research Institute, Ltd
 --%>
 
@@ -107,12 +107,12 @@
 <div class="SkpMedGry1"><a href="#SkipAnchor4928"><img src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/other/dot.gif" alt="Jump Over Tab Navigation Area. Current Selection is: Access Control" border="0" height="1" width="1" /></a></div>
 
 <%
-    // Retreive the metadata information 
+    // Retreive the metadata information
     String nameIDValue=request.getParameter("nameIDValue");
 %>
     <p><br>
     <table border="0" width="700">
-	
+
     <tr>
       <td colspan="2">
       <%
@@ -142,7 +142,7 @@
     <tr>
       <td colspan="2"> </td>
     </tr>
-	
+
     <tr>
         <td colspan="2">
         <hr>
@@ -163,14 +163,14 @@
             <input type=hidden name=idpEntityID value="<%= ESAPI.encoder().encodeForHTMLAttribute(idpEntityID) %>">
             <input type=hidden name=spEntityID value="<%= ESAPI.encoder().encodeForHTMLAttribute(spEntityID) %>">
 	    <p><B> Profile Name </B></p>
-            <input type="radio" name="attrQueryProfile" value="default" onclick="enableSubjectDN()" checked/> Default <br> 
+            <input type="radio" name="attrQueryProfile" value="default" onclick="enableSubjectDN()" checked/> Default <br>
 	    <input type="radio" name="attrQueryProfile" onclick="enableSubjectDN()" value="x509Subject"/> X.509 <br>
              X.509 Subject DN <input type=text name=subjectDN disabled> <br>
             <input type=submit>
 	</form>
 	<hr>
         </td>
-	</tr>	
+	</tr>
 
         <tr>
           <td colspan="2"> </td>

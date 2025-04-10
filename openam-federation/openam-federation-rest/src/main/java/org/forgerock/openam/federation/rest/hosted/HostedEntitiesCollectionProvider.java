@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.rest.hosted;
 
@@ -57,6 +65,7 @@ import org.forgerock.json.resource.InternalServerErrorException;
 import org.forgerock.json.resource.PreconditionFailedException;
 import org.forgerock.json.resource.ResourceException;
 import org.forgerock.json.resource.ResourceResponse;
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.federation.rest.JaxbEntity;
 import org.forgerock.openam.federation.rest.Saml2EntitiesCollectionProvider;
 import org.forgerock.openam.federation.rest.schema.hosted.HostedSaml2EntityProvider;
@@ -79,6 +88,7 @@ import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorType;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
+import com.sun.identity.saml2.meta.SAML2MetaUtils;
 
 /**
  * Exposes entity provider level operations for hosted SAML2 entity providers.
@@ -151,26 +161,31 @@ public final class HostedEntitiesCollectionProvider extends Saml2EntitiesCollect
                         .asPromise();
             }
 
-            saml2MetaManager.createEntity(realm, jaxbEntity.getStandardMetadata(), jaxbEntity.getExtendedMetadata());
+            saml2MetaManager.createEntity(
+                    SAML2MetaUtils.MetadataUpdateType.CREATE,
+                    realm,
+                    jaxbEntity.getStandardMetadata(),
+                    jaxbEntity.getExtendedMetadata()
+            );
             return entityAsPromise(jaxbEntity);
         } catch (JsonProcessingException | SAML2Exception e) {
             logger.error("An error occurred while creating an entity provider", e);
             return new InternalServerErrorException(e).asPromise();
-        } catch (BadRequestException e) {
+        } catch (ResourceException e) {
             logger.debug("An error occurred while creating an entity provider", e);
             return e.asPromise();
         }
     }
 
     private void validateEntityJson(Context context, CreateRequest request, SAML2MetaManager saml2MetaManager)
-            throws BadRequestException {
-        final String realm = RealmContext.getRealm(context).asPath();
+            throws ResourceException {
+        final Realm realm = RealmContext.getRealm(context);
         try {
-            saml2MetaManager.validateMetaAliasForNewEntity(realm, getMetaAliases(request));
+            saml2MetaManager.validateMetaAliasForNewEntity(realm.asPath(), getMetaAliases(request));
         } catch (SAML2MetaException e) {
             throw new BadRequestException(e);
         }
-        validateSecretIdIdentifier(request.getContent());
+        validateEntityJson(request.getContent(), realm);
     }
 
     private List<String> getMetaAliases(CreateRequest request) {

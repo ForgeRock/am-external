@@ -24,12 +24,12 @@
  *
  * $Id: FMPasswordDecoder.java,v 1.2 2008/06/25 05:49:59 qcheng Exp $
  *
+ * Portions Copyright 2024-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml.xmlsig;
 
 import com.sun.identity.security.DecodeAction;
-import java.security.AccessController;
 
 /**
  * The class <code>FMPasswordDecoder</code> implements interface
@@ -46,8 +46,8 @@ public class FMPasswordDecoder implements PasswordDecoder {
      *     decode the password.
      */
     public String  getDecodedPassword (String encodedPwd) {
-        String password = (String) AccessController.doPrivileged(
-            new DecodeAction(encodedPwd));
+        String password = (String) 
+            new DecodeAction(encodedPwd).run();
         return password;     
     }
 }

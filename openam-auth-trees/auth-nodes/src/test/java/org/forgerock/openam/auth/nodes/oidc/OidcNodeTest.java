@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oidc;
@@ -31,8 +39,7 @@ import static org.mockito.Mockito.when;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.inject.Provider;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.assertj.core.api.Assertions;
 import org.forgerock.json.JsonValue;
@@ -41,40 +48,41 @@ import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.AuthScriptUtilities;
 import org.forgerock.openam.auth.nodes.testsupport.JwtClaimsSetFactory;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.oauth2.OAuth2Constants;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluator.ScriptResult;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
+import org.forgerock.openam.scripting.domain.LegacyScriptContext;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.secrets.cache.SecretCache;
 import org.forgerock.openam.secrets.cache.SecretReferenceCache;
-import org.forgerock.openam.test.rules.LoggerRule;
+import org.forgerock.openam.test.extensions.LoggerExtension;
 import org.forgerock.secrets.GenericSecret;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.SecretReference;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.mozilla.javascript.NativeJavaObject;
 
-import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.authentication.spi.AuthLoginException;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class OidcNodeTest {
     private static final String JWT_TOKEN = "jwtToken";
     private OidcNode.Config config;
-    @Rule
-    public LoggerRule loggerRule = new LoggerRule(OidcNode.class, Level.ERROR);
+    @RegisterExtension
+    public LoggerExtension loggerExtension = new LoggerExtension(OidcNode.class);
     @Mock
     private OidcIdTokenJwtHandlerFactory oidcIdTokenJwtHandlerFactory;
     @Mock
@@ -84,32 +92,30 @@ public class OidcNodeTest {
     @Mock
     private Script script;
     @Mock
-    private ScriptEvaluator scriptEvaluator;
+    private ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
     @Mock
     private ScriptEvaluatorFactory scriptEvaluatorFactory;
     @Mock
-    private Provider<SessionService> sessionServiceProvider;
-    @Mock
     private SecretReferenceCache secretReferenceCache;
-
     @Mock
-    HttpServletRequest request;
+    private HttpServletRequest request;
+    @Mock
+    private AuthScriptUtilities authScriptUtilities;
 
 
     private OidcNode oidcNode;
-
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         config = new MockConfig(OidcNode.OpenIdValidationType.WELL_KNOWN_URL);
         given(oidcIdTokenJwtHandlerFactory.createOidcIdTokenJwtHandler(any(OidcNode.Config.class),
                 any(Optional.class))).willReturn(jwtHandler);
-        given(scriptEvaluatorFactory.create(any())).willReturn(scriptEvaluator);
+        given(scriptEvaluatorFactory.create(any(LegacyScriptContext.class))).willReturn(scriptEvaluator);
         oidcNode = new OidcNode(config, realm, oidcIdTokenJwtHandlerFactory, scriptEvaluatorFactory,
-                sessionServiceProvider, secretReferenceCache);
+                secretReferenceCache, authScriptUtilities);
     }
 
     @Test
-    public void shouldProcessGivenIdTokenValueIsMissing() throws Exception {
+    void shouldProcessGivenIdTokenValueIsMissing() throws Exception {
 
         // Given
         given(request.getHeader(config.headerName())).willReturn(null);
@@ -125,7 +131,7 @@ public class OidcNodeTest {
     }
 
     @Test
-    public void shouldProcessGivenInvalidJwt() throws Exception {
+    void shouldProcessGivenInvalidJwt() throws Exception {
         SignedJwt signedJwt = mock(SignedJwt.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();
 
@@ -148,7 +154,7 @@ public class OidcNodeTest {
     }
 
     @Test
-    public void shouldGoToFalseOutcomeOnAuthLoginExceptionWhenCheckingIfJwtValid() throws Exception {
+    void shouldGoToFalseOutcomeOnAuthLoginExceptionWhenCheckingIfJwtValid() throws Exception {
         // Given
         JsonValue sharedState = JsonValue.json(object());
         JsonValue transientState = JsonValue.json(object());
@@ -165,13 +171,13 @@ public class OidcNodeTest {
         Action result = oidcNode.process(context);
 
         // Then
-        Assertions.assertThat(loggerRule.getErrors(ILoggingEvent::getFormattedMessage))
+        Assertions.assertThat(loggerExtension.getErrors(ILoggingEvent::getFormattedMessage))
                 .contains("test exception");
         assertThat(result.outcome).isEqualTo("false");
     }
 
     @Test
-    public void shouldProcessGivenValidJwtAndJavascriptScript() throws Exception {
+    void shouldProcessGivenValidJwtAndJavascriptScript() throws Exception {
         SignedJwt signedJwt = mock(SignedJwt.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();
         NativeJavaObject nativeJavaObject = mock(NativeJavaObject.class);
@@ -187,9 +193,9 @@ public class OidcNodeTest {
         given(signedJwt.getClaimsSet()).willReturn(jwtClaimsSet);
         given(jwtHandler.isJwtValid(signedJwt)).willReturn(true);
         given(nativeJavaObject.unwrap()).willReturn(JsonValue.json("a"));
-        ScriptEvaluator.ScriptResult<Object> scriptResult = mock(ScriptEvaluator.ScriptResult.class);
+        ScriptResult<Object> scriptResult = mock(ScriptResult.class);
         when(scriptResult.getScriptReturnValue()).thenReturn(nativeJavaObject);
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(realm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(LegacyScriptBindings.class), eq(realm)))
                 .willReturn(scriptResult);
 
         // When
@@ -202,7 +208,7 @@ public class OidcNodeTest {
     }
 
     @Test
-    public void shouldProcessGivenValidJwtAndGroovyScript() throws Exception {
+    void shouldProcessGivenValidJwtAndGroovyScript() throws Exception {
         SignedJwt signedJwt = mock(SignedJwt.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();
 
@@ -216,9 +222,9 @@ public class OidcNodeTest {
         given(jwtHandler.createJwtFromString(JWT_TOKEN)).willReturn(signedJwt);
         given(signedJwt.getClaimsSet()).willReturn(jwtClaimsSet);
         given(jwtHandler.isJwtValid(signedJwt)).willReturn(true);
-        ScriptEvaluator.ScriptResult<Object> scriptResult = mock(ScriptEvaluator.ScriptResult.class);
+        ScriptResult<Object> scriptResult = mock(ScriptResult.class);
         when(scriptResult.getScriptReturnValue()).thenReturn(JsonValue.json("a"));
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(realm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(LegacyScriptBindings.class), eq(realm)))
                 .willReturn(scriptResult);
 
         // When
@@ -231,7 +237,7 @@ public class OidcNodeTest {
     }
 
     @Test
-    public void shouldProcessGivenValidJwtAndUndefinedProofOfPossession() throws Exception {
+    void shouldProcessGivenValidJwtAndUndefinedProofOfPossession() throws Exception {
         SignedJwt signedJwt = mock(SignedJwt.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();
         NativeJavaObject nativeJavaObject = mock(NativeJavaObject.class);
@@ -247,9 +253,9 @@ public class OidcNodeTest {
         given(signedJwt.getClaimsSet()).willReturn(jwtClaimsSet);
         given(jwtHandler.isJwtValid(signedJwt)).willReturn(true);
         given(nativeJavaObject.unwrap()).willReturn(JsonValue.json("a"));
-        ScriptEvaluator.ScriptResult<Object> scriptResult = mock(ScriptEvaluator.ScriptResult.class);
+        ScriptResult<Object> scriptResult = mock(ScriptResult.class);
         when(scriptResult.getScriptReturnValue()).thenReturn(nativeJavaObject);
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(realm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(LegacyScriptBindings.class), eq(realm)))
                 .willReturn(scriptResult);
 
         // When
@@ -263,7 +269,7 @@ public class OidcNodeTest {
     }
 
     @Test
-    public void shouldProcessGivenValidJwtAndDefinedProofOfPossession() throws Exception {
+    void shouldProcessGivenValidJwtAndDefinedProofOfPossession() throws Exception {
         String validCnf = "valid_cnf";
         HttpServletRequest request = mock(HttpServletRequest.class);
         SignedJwt signedJwt = mock(SignedJwt.class);
@@ -283,9 +289,9 @@ public class OidcNodeTest {
         given(signedJwt.getClaimsSet()).willReturn(jwtClaimsSet);
         given(jwtHandler.isJwtValid(signedJwt)).willReturn(true);
         given(nativeJavaObject.unwrap()).willReturn(JsonValue.json("a"));
-        ScriptEvaluator.ScriptResult<Object> scriptResult = mock(ScriptEvaluator.ScriptResult.class);
+        ScriptResult<Object> scriptResult = mock(ScriptResult.class);
         when(scriptResult.getScriptReturnValue()).thenReturn(nativeJavaObject);
-        given(scriptEvaluator.evaluateScript(any(Script.class), any(ScriptBindings.class), eq(realm)))
+        given(scriptEvaluator.evaluateScript(any(Script.class), any(LegacyScriptBindings.class), eq(realm)))
                 .willReturn(scriptResult);
 
         // When
@@ -301,7 +307,7 @@ public class OidcNodeTest {
     }
 
     @Test
-    public void shouldGetSecretFromSecretCacheIfValidationTypeIsClientSecret() throws Exception {
+    void shouldGetSecretFromSecretCacheIfValidationTypeIsClientSecret() throws Exception {
         // Given
         var mockRealmCache = mock(SecretCache.class);
         given(secretReferenceCache.realm(realm)).willReturn(mockRealmCache);
@@ -311,7 +317,7 @@ public class OidcNodeTest {
 
         // When
         oidcNode = new OidcNode(config, realm, oidcIdTokenJwtHandlerFactory, scriptEvaluatorFactory,
-                sessionServiceProvider, secretReferenceCache);
+                secretReferenceCache, authScriptUtilities);
 
         // Then
         verify(oidcIdTokenJwtHandlerFactory).createOidcIdTokenJwtHandler(config, Optional.of(mockSecretReference));

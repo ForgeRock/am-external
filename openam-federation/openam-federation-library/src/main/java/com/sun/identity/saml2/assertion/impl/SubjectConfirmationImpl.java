@@ -27,14 +27,13 @@
  */
 
 /*
- * Portions Copyrighted 2013-2023 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.assertion.impl;
 
 import static org.forgerock.openam.utils.StringUtils.isBlank;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -59,7 +58,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  *  party to verify the correspondence of the subject of the assertion
  *  with the party with whom the relying party is communicating.
  */
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class SubjectConfirmationImpl implements SubjectConfirmation {
 
     private static final Logger logger = LoggerFactory.getLogger(SubjectConfirmationImpl.class);

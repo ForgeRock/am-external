@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -505,7 +513,8 @@ public class LdapDecisionNode implements Node {
                 action = processPasswordChange(context, sharedStateSubmittedUsername, userPassword);
             }
         } catch (LDAPUtilException e) {
-            logger.error(e.getMessage(), e);
+            logger.error("LDAPUtilException: {}", e.getMessage());
+            logger.debug("Exception", e);
             ResourceBundle bundle = getBundleInPreferredLocale(context);
             if (e.getResultCode() == null) {
                 logger.warn("Invalid configuration");
@@ -517,7 +526,7 @@ public class LdapDecisionNode implements Node {
                 String userLockedStatus = getFirstItem(
                         ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE));
                 if (StringUtils.isNotEmpty(userLockedStatus) && !userLockedStatus.equalsIgnoreCase(STATUS_ACTIVE)) {
-                    action = goTo(LdapOutcome.LOCKED).withErrorMessage(bundle.getString("accountLocked"));
+                    action = goTo(LdapOutcome.LOCKED).withLockoutMessage(bundle.getString("accountLocked"));
                 } else {
                     action = goTo(LdapOutcome.FALSE).withErrorMessage(bundle.getString("authenticationFailed"));
                 }
@@ -764,7 +773,9 @@ public class LdapDecisionNode implements Node {
             break;
         case ACCOUNT_LOCKED:
             logger.debug("Account for user {} has been locked.", ldapUtil.getUserId());
-            loginResult = goTo(LdapOutcome.LOCKED).withErrorMessage(bundle.getString("accountLocked"));
+            loginResult = goTo(LdapOutcome.LOCKED)
+                    .withLockoutMessage(bundle.getString("accountLocked"))
+                    .withErrorMessage(bundle.getString("accountLocked"));
             break;
         case GRACE_LOGINS:
             String message = Locale.formatMessage(bundle.getString("GraceLogins"), ldapUtil.getGraceLogins());

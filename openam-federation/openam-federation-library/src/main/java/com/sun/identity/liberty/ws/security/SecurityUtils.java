@@ -24,7 +24,7 @@
  *
  * $Id: SecurityUtils.java,v 1.5 2009/06/08 23:42:33 madan_ranganath Exp $
  *
- * Portions Copyrighted 2014-2020 ForgeRock AS.
+ * Portions Copyrighted 2014-2025 Ping Identity Corporation.
  */
 package com.sun.identity.liberty.ws.security;
 

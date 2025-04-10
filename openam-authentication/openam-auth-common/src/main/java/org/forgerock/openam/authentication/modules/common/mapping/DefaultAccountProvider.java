@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2022 ForgeRock AS.
+ * Copyright 2011-2025 Ping Identity Corporation.
  * Copyright 2011 Cybernetica AS.
  * 
  * The contents of this file are subject to the terms

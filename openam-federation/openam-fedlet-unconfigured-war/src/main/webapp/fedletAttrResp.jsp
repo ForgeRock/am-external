@@ -22,7 +22,7 @@
 
   Copyright 2009 Sun Microsystems Inc. All Rights Reserved
 
-  Portions Copyrighted 2016-2019 ForgeRock AS.
+  Portions Copyrighted 2016-2025 Ping Identity Corporation
 --%>
 
 
@@ -30,7 +30,7 @@
   fedletAttrResp.jsp
   This JSP used by the Fedlet performs the following:
    1) Retrieves the list of attributes from fedletAttrQuery.jsp
-   2) Invokes the method to retrieve the attribute values 
+   2) Invokes the method to retrieve the attribute values
    3) Displays the attribute value pairs.
 --%>
 
@@ -82,7 +82,7 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
 <%
     try {
         String idpEntityID = request.getParameter("idpEntityID");
-	if ((idpEntityID == null) || 
+	if ((idpEntityID == null) ||
             (idpEntityID.length() == 0)) {
            response.sendError(response.SC_BAD_REQUEST,
 			   SAML2Utils.bundle.getString("nullIDPEntityID"));
@@ -90,7 +90,7 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
 	}
 
         String spEntityID = request.getParameter("spEntityID");
-	if ((spEntityID == null) || 
+	if ((spEntityID == null) ||
             (spEntityID.length() == 0)) {
            response.sendError(response.SC_BAD_REQUEST,
 			   SAML2Utils.bundle.getString("nullSPEntityID"));
@@ -103,7 +103,7 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
         List attrsList = new ArrayList();
 
         try {
-            if (request.getParameter("attr1").length() > 1 | 
+            if (request.getParameter("attr1").length() > 1 |
                 request.getParameter("attr2").length() > 1 |
                 request.getParameter("attr3").length() > 1) {
                 if (request.getParameter("attr1").length() > 1) {
@@ -115,9 +115,9 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
                 if (request.getParameter("attr3").length()>1) {
                     attrsList.add(request.getParameter("attr3"));
                 }
-            } 
+            }
         } catch (Exception e){
-            out.print("Requesting all available IDP attributes");	
+            out.print("Requesting all available IDP attributes");
 	}
 
         String attrQueryProfile = request.getParameter("attrQueryProfile");
@@ -131,7 +131,7 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
                                         attrsList,
                                         attrQueryProfile,
                                         subjectDN);
-                                         
+
 %>
 <h2> Fedlet Attribute Query Response </h2>
 <table border="2" cellspacing="0" cellpadding="7">
@@ -139,21 +139,21 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
 <th>Attribute Query</th>
 <th>Attribute Response</th>
 </tr>
-<% 
+<%
    Iterator itr = attrMap.entrySet().iterator();
    while (itr.hasNext()) {
-       Map.Entry pairs = (Map.Entry)itr.next(); 
+       Map.Entry pairs = (Map.Entry)itr.next();
        out.println("<tr>");
-       out.println("<td>"); 
+       out.println("<td>");
        String attrKey = (String)pairs.getKey();
        out.println(attrKey + "<br>");
-       out.println("</td>"); 
-       out.println("<td>"); 
+       out.println("</td>");
+       out.println("<td>");
        String attrValue = String.join("|", (Set)pairs.getValue());
        out.println(attrValue + "<br>");
-       out.println("</td>"); 
-       out.println("</tr>"); 
-   } 
+       out.println("</td>");
+       out.println("</tr>");
+   }
 %>
 </table>
 <%

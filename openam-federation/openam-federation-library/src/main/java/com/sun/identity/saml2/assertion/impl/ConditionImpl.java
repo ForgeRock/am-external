@@ -24,7 +24,7 @@
  *
  * $Id: ConditionImpl.java,v 1.2 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2019-2023 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 
@@ -33,7 +33,6 @@ package com.sun.identity.saml2.assertion.impl;
 import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
 import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -49,8 +48,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * new conditions. 
 */
 
-@SupportedAll(scriptingApi = true, javaApi = false)
-public class ConditionImpl
+public class ConditionImpl 
     extends ConditionAbstractImpl implements Condition {
 
     private static final Logger logger = LoggerFactory.getLogger(ConditionImpl.class);

@@ -24,7 +24,7 @@
  *
  * $Id: DoManageNameID.java,v 1.26 2009/11/24 21:53:27 madan_ranganath Exp $
  *
- * Portions copyright 2013-2024 ForgeRock AS.
+ * Portions copyright 2013-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 
@@ -50,9 +50,9 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBElement;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.SOAPConnectionFactory;
@@ -122,21 +122,16 @@ public class DoManageNameID {
     private static final Logger logger = LoggerFactory.getLogger(DoManageNameID.class);
     final static String className = "DoManageNameID:";
     static ProtocolFactory pf = ProtocolFactory.getInstance();
-    static SOAPConnectionFactory scf = null;
-    static MessageFactory mf = null;
     static SAML2MetaManager metaManager = null;
     static SessionProvider sessionProvider = null;
     private static FedMonAgent agent;
     private static FedMonSAML2Svc saml2Svc;
+    private static SOAPCommunicator soapCommunicator;
     
     static {
         try {
-            scf = SOAPConnectionFactory.newInstance();
-            mf = MessageFactory.newInstance();
             metaManager= new SAML2MetaManager();
             sessionProvider = SessionManager.getProvider();
-        } catch (SOAPException se) {
-            logger.error(SAML2Utils.bundle.getString("errorSOAPFactory"), se);
         } catch (SAML2MetaException se) {
             logger.error(SAML2Utils.bundle.getString("errorMetaManager"), se);
         } catch (SessionException sessE) {
@@ -156,6 +151,13 @@ public class DoManageNameID {
         logger.debug(SAML2Utils.bundle.getString(msgID));
         String[] data = {value};
         LogUtil.access(Level.INFO, key, data, null);
+    }
+
+    private static SOAPCommunicator getSoapCommunicator() {
+        if (soapCommunicator == null) {
+            soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        }
+        return soapCommunicator;
     }
     
     /**
@@ -816,7 +818,7 @@ public class DoManageNameID {
         }
 
         // Retrieve a SOAPMessage
-        SOAPMessage message = SOAPCommunicator.getInstance().getSOAPMessage(request);
+        SOAPMessage message = getSoapCommunicator().getSOAPMessage(request);
 
         ManageNameIDRequest mniRequest = getMNIRequest(message);
         remoteEntityID = mniRequest.getIssuer().getValue();
@@ -850,7 +852,7 @@ public class DoManageNameID {
         signMNIResponse(mniResponse, realm, hostEntity, 
             hostEntityRole, remoteEntityID);
 
-        SOAPMessage reply = SOAPCommunicator.getInstance().createSOAPMessage(
+        SOAPMessage reply = getSoapCommunicator().createSOAPMessage(
                 mniResponse.toXMLString(true, true), false);
         if (reply != null) {
             /*  Need to call saveChanges because we're
@@ -1391,7 +1393,7 @@ public class DoManageNameID {
     // This is the application code for handling the message.
     static private ManageNameIDRequest getMNIRequest(SOAPMessage message)
                 throws SAML2Exception {
-        Element reqElem = SOAPCommunicator.getInstance().getSamlpElement(message,
+        Element reqElem = getSoapCommunicator().getSamlpElement(message,
                 "ManageNameIDRequest");
         ManageNameIDRequest manageRequest = 
             pf.createManageNameIDRequest(reqElem);
@@ -1463,14 +1465,14 @@ public class DoManageNameID {
         
         SOAPMessage resMsg = null;
         try {
-            resMsg = SOAPCommunicator.getInstance().sendSOAPMessage(mniRequestXMLString, mniURL,
+            resMsg = getSoapCommunicator().sendSOAPMessage(mniRequestXMLString, mniURL,
                     true);
         } catch (SOAPException se) {
             logger.error(SAML2Utils.bundle.getString("invalidSOAPMessge"), se);
             return false;
         }
         
-        Element mniRespElem = SOAPCommunicator.getInstance().getSamlpElement(resMsg,
+        Element mniRespElem = getSoapCommunicator().getSamlpElement(resMsg,
                 "ManageNameIDResponse");
         ManageNameIDResponse mniResponse = 
             mniResponse = pf.createManageNameIDResponse(mniRespElem);

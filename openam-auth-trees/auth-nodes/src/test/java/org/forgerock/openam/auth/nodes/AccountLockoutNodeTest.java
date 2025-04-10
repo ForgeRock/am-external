@@ -11,10 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -22,36 +31,29 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.newTreeContext;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
+import static org.mockito.Mockito.lenient;
+
+import java.util.Optional;
 
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.core.realms.RealmLookupException;
-import org.forgerock.am.identity.application.LegacyIdentityService;
-import org.mockito.BDDMockito;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.authentication.service.AMAccountLockout;
 import com.sun.identity.idm.AMIdentity;
 
+@ExtendWith(MockitoExtension.class)
 public class AccountLockoutNodeTest {
 
     @Mock
     AMIdentity userIdentity;
-
-    @Mock
-    CoreWrapper coreWrapper;
-
-    @Mock
-    LegacyIdentityService identityService;
 
     @Mock
     AMAccountLockout.Factory amAccountLockoutFactory;
@@ -65,20 +67,20 @@ public class AccountLockoutNodeTest {
     @Mock
     AccountLockoutNode.Config config;
 
-    @BeforeMethod
-    public void before() throws Exception {
-        openMocks(this);
-        when(config.lockAction()).thenReturn(AccountLockoutNode.LockStatus.LOCK);
-        given(coreWrapper.getIdentity(anyString())).willReturn(userIdentity);
-        given(coreWrapper.realmOf(anyString())).willReturn(realm);
-        given(amAccountLockoutFactory.create(any())).willReturn(amAccountLockout);
+    @Mock
+    NodeUserIdentityProvider identityProvider;
+
+    @BeforeEach
+    void before() throws Exception {
+        lenient().when(config.lockAction()).thenReturn(AccountLockoutNode.LockStatus.LOCK);
+        lenient().when(identityProvider.getAMIdentity(any(), any())).thenReturn(Optional.of(userIdentity));
+        lenient().when(amAccountLockoutFactory.create(any())).thenReturn(amAccountLockout);
     }
 
     @Test
-    public void testNodeCallsAMToLockAccount() throws Exception {
+    void testNodeCallsAMToLockAccount() throws Exception {
         // Given
-        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityService, amAccountLockoutFactory, config);
-        BDDMockito.willDoNothing().given(userIdentity).setActiveStatus(false);
+        AccountLockoutNode node = new AccountLockoutNode(amAccountLockoutFactory, config, identityProvider, realm);
 
         // When
         node.process(newTreeContext(json(object(field(REALM, "/"), field(USERNAME, "username")))));
@@ -88,15 +90,15 @@ public class AccountLockoutNodeTest {
     }
 
     @Test
-    public void testNodeCallsAMToUnLockAccount() throws Exception {
+    void testNodeCallsAMToUnLockAccount() throws Exception {
         // Given
-        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityService, amAccountLockoutFactory,
+        AccountLockoutNode node = new AccountLockoutNode(amAccountLockoutFactory,
                 new AccountLockoutNode.Config() {
             @Override
             public AccountLockoutNode.LockStatus lockAction() {
                 return AccountLockoutNode.LockStatus.UNLOCK;
             }
-        });
+        },  identityProvider, realm);
 
         // When
         node.process(newTreeContext(json(object(field(REALM, "/"), field(USERNAME, "username")))));
@@ -105,40 +107,14 @@ public class AccountLockoutNodeTest {
         Mockito.verify(amAccountLockout).setUserAccountActiveStatus(eq(userIdentity), eq(true));
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void testNullUsernameWillThrowNodeProcessException() throws Exception {
+    @Test
+    void testNullUsernameWillThrowNodeProcessException() {
         // Given
-        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityService, amAccountLockoutFactory, config);
+        AccountLockoutNode node = new AccountLockoutNode(amAccountLockoutFactory, config, identityProvider, realm);
 
         // When username is null
-        node.process(newTreeContext(json(object(field(REALM, "/")))));
-
-        // Then -> Throw NodeProcessException
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void testNullRealmWillThrowNodeProcessException() throws Exception {
-        // Given
-        AccountLockoutNode node =
-                new AccountLockoutNode(coreWrapper, identityService,  amAccountLockoutFactory, config);
-
-        // When realm is null
-        node.process(newTreeContext(json(object(field(USERNAME, "username")))));
-
-        // Then -> Throw NodeProcessException
-
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void testRealmLookupExceptionIsHandled() throws Exception {
-        // Given
-        AccountLockoutNode node = new AccountLockoutNode(coreWrapper, identityService, amAccountLockoutFactory, config);
-        given(coreWrapper.realmOf(anyString())).willThrow(new RealmLookupException(new Exception()));
-
-        // When
-        node.process(newTreeContext(json(object(field(REALM, "/"), field(USERNAME, "username")))));
-
-        // Then -> IdRepoException is catch and transformed into a NodeProcessException
+        assertThatThrownBy(() -> node.process(newTreeContext(json(object(field(REALM, "/"))))))
+                .isInstanceOf(NodeProcessException.class);
     }
 
 }

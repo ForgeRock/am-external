@@ -11,13 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.EMAIL_ADDRESS;
@@ -28,7 +39,6 @@ import static org.forgerock.util.promise.Promises.newResultPromise;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,6 +47,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.http.Handler;
 import org.forgerock.json.JsonValue;
 import org.forgerock.oauth.UserInfo;
@@ -48,20 +59,20 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.oauth.ProfileNormalizer;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
+import org.forgerock.openam.core.realms.Realm;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.spi.RedirectCallback;
 
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.am.identity.application.LegacyIdentityService;
-import org.mockito.Mock;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 /**
  * Test the {@link org.forgerock.openam.auth.nodes.oauth.AbstractSocialAuthLoginNode}
  */
+@ExtendWith(MockitoExtension.class)
 public class SocialNodeTest {
 
     @Mock
@@ -80,44 +91,39 @@ public class SocialNodeTest {
     private Handler handler;
     private UUID nodeId;
 
-    @BeforeMethod
-    public void before() throws URISyntaxException, AuthLoginException {
-        initMocks(this);
+    @BeforeEach
+    void before() throws URISyntaxException, AuthLoginException {
         when(config.provider()).thenReturn("provider");
         when(config.authenticationIdKey()).thenReturn("idKey");
         when(config.clientId()).thenReturn("clientId");
         when(config.clientSecret()).thenReturn("clientSecret".toCharArray());
         when(config.authorizeEndpoint()).thenReturn("http://authoriseEndpoint");
         when(config.basicAuth()).thenReturn(true);
-        when(config.cfgAccountMapperClass()).thenReturn("accountMapperClass");
-        when(config.cfgAccountProviderClass()).thenReturn("accountProviderClass");
-        when(config.cfgAttributeMappingConfiguration()).thenReturn(singletonMap("sub", "uid"));
-        when(config.cfgMixUpMitigation()).thenReturn(false);
-        when(config.cfgAccountMapperConfiguration()).thenReturn(singletonMap("sub", "uid"));
         when(config.userInfoEndpoint()).thenReturn("http://userEndpoint");
         when(config.tokenEndpoint()).thenReturn("http://tokenEndpoint");
         when(config.scopeString()).thenReturn("scope");
         when(config.scopeDelimiter()).thenReturn(" ");
-        when(config.saveUserAttributesToSession()).thenReturn(false);
         when(config.redirectURI()).thenReturn("http://redirectURI");
-        when(config.issuer()).thenReturn("issuer");
-        when(config.cfgAttributeMappingClasses()).thenReturn(singleton("JsonAttributeMapper"));
-
         when(helper.newOAuthClient(any(), any(OAuth2ClientConfiguration.class), any())).thenReturn(client);
-        String redirectURI = config.redirectURI();
-        when(client.getAuthRedirect(any(), any(), any())).thenReturn(newResultPromise(new URI(redirectURI)));
 
-        when(profileNormalizer.getNormalisedAccountAttributes(any(), any(), any()))
-                .thenReturn(singletonMap("attribute", singleton("value")));
-        when(profileNormalizer.getNormalisedAttributes(any(), any(), any()))
-                .thenReturn(singletonMap("mail", singleton("mail@mail")));
         nodeId = UUID.randomUUID();
 
     }
 
+    private void commonStubbings() throws Exception {
+        when(config.cfgMixUpMitigation()).thenReturn(false);
+        when(config.saveUserAttributesToSession()).thenReturn(false);
+        when(profileNormalizer.getNormalisedAccountAttributes(any(), any(), any()))
+                .thenReturn(singletonMap("attribute", singleton("value")));
+        when(profileNormalizer.getNormalisedAttributes(any(), any(), any()))
+                .thenReturn(singletonMap("mail", singleton("mail@mail")));
+    }
+
     @Test
-    public void processCallForTheFirstTimeReturnARedirectCallbackWithTrackingCookie() throws Exception {
+    void processCallForTheFirstTimeReturnARedirectCallbackWithTrackingCookie() throws Exception {
         //GIVEN
+        String redirectURI = config.redirectURI();
+        when(client.getAuthRedirect(any(), any(), any())).thenReturn(newResultPromise(new URI(redirectURI)));
         TreeContext context = new TreeContext(JsonValue.json(object(1)),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
         SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
@@ -126,16 +132,17 @@ public class SocialNodeTest {
         Action action = node.process(context);
 
         //THEN
-        Assert.assertTrue(action.sendingCallbacks());
-        Assert.assertEquals(action.callbacks.size(), 1);
-        Assert.assertTrue(action.callbacks.get(0) instanceof RedirectCallback);
-        Assert.assertTrue(((RedirectCallback) action.callbacks.get(0)).getTrackingCookie());
-        Assert.assertEquals(((RedirectCallback) action.callbacks.get(0)).getRedirectUrl(), config.redirectURI());
+        assertThat(action.sendingCallbacks()).isTrue();
+        assertThat(action.callbacks).hasSize(1);
+        assertThat(action.callbacks.get(0)).isInstanceOf(RedirectCallback.class);
+        assertThat(((RedirectCallback) action.callbacks.get(0)).getTrackingCookie()).isTrue();
+        assertThat(((RedirectCallback) action.callbacks.get(0)).getRedirectUrl()).isEqualTo(config.redirectURI());
     }
 
     @Test
-    public void processWithACodeAndTheUserHasAnIdentityReturnAccountExistOutcome() throws Exception {
+    void processWithACodeAndTheUserHasAnIdentityReturnAccountExistOutcome() throws Exception {
         //GIVEN
+        commonStubbings();
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
 
         TreeContext context = getTreeContext(parameters);
@@ -147,12 +154,13 @@ public class SocialNodeTest {
         Action action = node.process(context);
 
         //THEN
-        Assert.assertEquals(action.outcome, ACCOUNT_EXISTS.name());
+        assertThat(action.outcome).isEqualTo(ACCOUNT_EXISTS.name());
     }
 
     @Test
-    public void processWithACodeAndTheUserHasAnIdentityAddTheUserInSharedState() throws Exception {
+    void processWithACodeAndTheUserHasAnIdentityAddTheUserInSharedState() throws Exception {
         //GIVEN
+        commonStubbings();
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
 
         TreeContext context = getTreeContext(parameters);
@@ -164,34 +172,35 @@ public class SocialNodeTest {
         Action action = node.process(context);
 
         //THEN
-        Assert.assertTrue(action.sharedState.isDefined(USERNAME));
-        Assert.assertEquals(action.sharedState.get(USERNAME).asString(), "user");
-        Assert.assertFalse(action.sharedState.isDefined("attributes"));
-        Assert.assertFalse(action.sharedState.isDefined("userNames"));
+        assertThat(action.sharedState.isDefined(USERNAME)).isTrue();
+        assertThat(action.sharedState.get(USERNAME).asString()).isEqualTo("user");
+        assertThat(action.sharedState.isDefined("attributes")).isFalse();
+        assertThat(action.sharedState.isDefined("userNames")).isFalse();
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void processWithACodeButWithoutStateThrowException() throws Exception {
+    @Test
+    void processWithACodeButWithoutStateThrowException() throws Exception {
         //GIVEN
+        when(config.cfgMixUpMitigation()).thenReturn(false);
         Map<String, String[]> parameters = new HashMap<>();
-        parameters.put("code", new String[] {"the_code"});
+        parameters.put("code", new String[]{"the_code"});
 
         TreeContext context = getTreeContext(parameters);
-        mockToProviderUser(Optional.of("user"));
 
         SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
-        node.process(context);
-
-        //THEN
-        // throw an exception
+        assertThatThrownBy(() -> node.process(context))
+                //THEN
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("Not having the state could mean that this request did not come from the IDP");
 
     }
 
     @Test
-    public void processWithACodeAndUserDoesntMatchIdentityWillReturnNoAccount() throws Exception {
+    void processWithACodeAndUserDoesntMatchIdentityWillReturnNoAccount() throws Exception {
         //GIVEN
+        commonStubbings();
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
         TreeContext context = getTreeContext(parameters);
         mockToProviderUser(Optional.empty());
@@ -202,32 +211,13 @@ public class SocialNodeTest {
         Action action = node.process(context);
 
         //THEN
-        Assert.assertEquals(action.outcome, NO_ACCOUNT.name());
+        assertThat(action.outcome).isEqualTo(NO_ACCOUNT.name());
     }
 
     @Test
-    public void processWithACodeAndUserDoesntMatchIdentityWillPopulateSharedState() throws Exception {
+    void processWithACodeAndUserDoesntMatchIdentityWillPopulateSharedState() throws Exception {
         //GIVEN
-        Map<String, String[]> parameters = getStateAndCodeAsParameter();
-
-        TreeContext context = getTreeContext(parameters);
-        mockToProviderUser(Optional.empty());
-
-        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
-
-        //WHEN
-        Action action = node.process(context);
-
-        //THEN
-        Assert.assertTrue(action.sharedState.isDefined("userInfo"));
-        Assert.assertTrue(action.sharedState.get("userInfo").isDefined("attributes"));
-        Assert.assertTrue(action.sharedState.get("userInfo").isDefined("userNames"));
-        Assert.assertEquals(action.sharedState.get(EMAIL_ADDRESS).asString(), "mail@mail");
-    }
-
-    @Test
-    public void processWithACodeAndAttributeToSessionDeactivatedDoesntAddAttributeToSession() throws Exception {
-        //GIVEN
+        commonStubbings();
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
 
         TreeContext context = getTreeContext(parameters);
@@ -239,12 +229,34 @@ public class SocialNodeTest {
         Action action = node.process(context);
 
         //THEN
-        Assert.assertEquals(action.sessionProperties.size(), 0);
+        assertThat(action.sharedState.isDefined("userInfo")).isTrue();
+        assertThat(action.sharedState.get("userInfo").isDefined("attributes")).isTrue();
+        assertThat(action.sharedState.get("userInfo").isDefined("userNames")).isTrue();
+        assertThat(action.sharedState.get(EMAIL_ADDRESS).asString()).isEqualTo("mail@mail");
     }
 
     @Test
-    public void processWithACodeAndAttributeToSessionActivatedAddAttributeToSession() throws Exception {
+    void processWithACodeAndAttributeToSessionDeactivatedDoesntAddAttributeToSession() throws Exception {
         //GIVEN
+        commonStubbings();
+        Map<String, String[]> parameters = getStateAndCodeAsParameter();
+
+        TreeContext context = getTreeContext(parameters);
+        mockToProviderUser(Optional.empty());
+
+        SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
+
+        //WHEN
+        Action action = node.process(context);
+
+        //THEN
+        assertThat(action.sessionProperties).isEmpty();
+    }
+
+    @Test
+    void processWithACodeAndAttributeToSessionActivatedAddAttributeToSession() throws Exception {
+        //GIVEN
+        commonStubbings();
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
 
         TreeContext context = getTreeContext(parameters);
@@ -257,20 +269,21 @@ public class SocialNodeTest {
         Action action = node.process(context);
 
         //THEN
-        Assert.assertTrue(action.sessionProperties.containsKey("mail"));
-        Assert.assertFalse(action.sessionProperties.containsKey("attribute"));
-        Assert.assertEquals(action.sessionProperties.get("mail"), "mail@mail");
+        assertThat(action.sessionProperties.containsKey("mail")).isTrue();
+        assertThat(action.sessionProperties.containsKey("attribute")).isFalse();
+        assertThat(action.sessionProperties.get("mail")).isEqualTo("mail@mail");
     }
 
     @Test
-    public void processWithMixUpMitigateActivatedShouldThrowAnExceptionIfIssDoesntMatch() throws Exception {
+    void processWithMixUpMitigateActivatedShouldThrowAnExceptionIfIssDoesntMatch() throws Exception {
         //GIVEN
+        when(config.cfgMixUpMitigation()).thenReturn(false);
+        when(config.issuer()).thenReturn("issuer");
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        parameters.put("iss", new String[] { "dummyIss" });
-        parameters.put("client_id", new String[] { config.clientId() });
+        parameters.put("iss", new String[]{"dummyIss"});
+        parameters.put("client_id", new String[]{config.clientId()});
 
         TreeContext context = getTreeContext(parameters);
-        mockToProviderUser(Optional.empty());
 
         when(config.cfgMixUpMitigation()).thenReturn(true);
         SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
@@ -280,20 +293,20 @@ public class SocialNodeTest {
             node.process(context);
         } catch (NodeProcessException e) {
             //THEN
-            Assert.assertTrue(e.getMessage().contains("OAuth 2.0 mix-up mitigation is enabled, but the provided"
-                    + " iss"));
+            assertThat(e.getMessage()).contains("OAuth 2.0 mix-up mitigation is enabled, but the provided iss");
         }
     }
 
     @Test
-    public void processWithMixUpMitigateActivatedShouldThrowAnExceptionIfClientIdDoesntMatch() throws Exception {
+    void processWithMixUpMitigateActivatedShouldThrowAnExceptionIfClientIdDoesntMatch() throws Exception {
         //GIVEN
+        when(config.cfgMixUpMitigation()).thenReturn(false);
+        when(config.issuer()).thenReturn("issuer");
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        parameters.put("iss", new String[] { config.issuer() });
-        parameters.put("client_id", new String[] { "dummy_clientId" });
+        parameters.put("iss", new String[]{config.issuer()});
+        parameters.put("client_id", new String[]{"dummy_clientId"});
 
         TreeContext context = getTreeContext(parameters);
-        mockToProviderUser(Optional.empty());
 
         when(config.cfgMixUpMitigation()).thenReturn(true);
         SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
@@ -302,17 +315,19 @@ public class SocialNodeTest {
             node.process(context);
         } catch (NodeProcessException e) {
             //THEN
-            Assert.assertTrue(e.getMessage().contains("OAuth 2.0 mix-up mitigation is enabled, but the provided "
-                    + "client_id"));
+            assertThat(e.getMessage()).contains("OAuth 2.0 mix-up mitigation is enabled, but the provided "
+                    + "client_id");
         }
     }
 
     @Test
-    public void processWithMixUpMitigateActivatedShouldntThrowAnExceptionIfIssAndClientIdMatch() throws Exception {
+    void processWithMixUpMitigateActivatedShouldntThrowAnExceptionIfIssAndClientIdMatch() throws Exception {
         //GIVEN
+        commonStubbings();
+        when(config.issuer()).thenReturn("issuer");
         Map<String, String[]> parameters = getStateAndCodeAsParameter();
-        parameters.put("iss", new String[] { config.issuer() });
-        parameters.put("client_id", new String[] { config.clientId() });
+        parameters.put("iss", new String[]{config.issuer()});
+        parameters.put("client_id", new String[]{config.clientId()});
 
         TreeContext context = getTreeContext(parameters);
 
@@ -322,17 +337,13 @@ public class SocialNodeTest {
         SocialNode node = new SocialNode(handler, config, realm, helper, profileNormalizer, identityService, nodeId);
 
         //WHEN
-        node.process(context);
-
-        //THEN
-        // no exception
-        Assert.assertTrue(true);
+        assertThatCode(() -> node.process(context)).doesNotThrowAnyException();
     }
 
     private Map<String, String[]> getStateAndCodeAsParameter() {
         Map<String, String[]> parameters = new HashMap<>();
-        parameters.put("code", new String[] {"the_code"});
-        parameters.put("state", new String[] {"the_state"});
+        parameters.put("code", new String[]{"the_code"});
+        parameters.put("state", new String[]{"the_state"});
         return parameters;
     }
 
@@ -347,9 +358,9 @@ public class SocialNodeTest {
         JsonValue sharedState = JsonValue.json(object(field(
                 "redirectRequestSentForNode-" + nodeId, true)));
         return new TreeContext(sharedState,
-                    new ExternalRequestContext.Builder()
-                            .parameters(parameters)
-                            .build(),
-                    emptyList(), Optional.empty());
+                new ExternalRequestContext.Builder()
+                        .parameters(parameters)
+                        .build(),
+                emptyList(), Optional.empty());
     }
 }

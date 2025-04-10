@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml.assertion;
 
@@ -20,31 +28,35 @@ import static com.sun.identity.saml.common.SAMLConstants.TAG_ASSERTION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import org.forgerock.guice.core.GuiceModules;
-import org.forgerock.guice.core.GuiceTestCase;
+import org.forgerock.guice.core.GuiceExtension;
 import org.forgerock.openam.audit.AuditEventPublisher;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.google.inject.AbstractModule;
 import com.sun.identity.saml.xmlsig.AMSignatureProvider;
 import com.sun.identity.saml.xmlsig.JKSKeyProvider;
 import com.sun.identity.saml.xmlsig.SignatureProvider;
 
-@GuiceModules(AssertionSigningIgnoreLineBreaksTest.TestGuiceModule.class)
-public class AssertionSigningIgnoreLineBreaksTest extends GuiceTestCase {
+public class AssertionSigningIgnoreLineBreaksTest {
+
+    @RegisterExtension
+    GuiceExtension guiceExtension = new GuiceExtension.Builder()
+        .installModule(new TestGuiceModule())
+        .build();
 
     private static AMSignatureProvider signatureProvider;
 
-    @BeforeClass
-    public void setup() {
+    @BeforeAll
+    static void setup() {
         System.setProperty("org.apache.xml.security.ignoreLineBreaks", "true");
         signatureProvider = new AMSignatureProvider();
         signatureProvider.initialize(new JKSKeyProvider());
     }
 
     @Test
-    public void testAssertionSigningIgnoreLineBreaks() throws Exception {
+    void testAssertionSigningIgnoreLineBreaks() throws Exception {
         final String signedXml = getSignedWSFedAssertionXml();
 
         assertThat(signatureProvider.verifyXMLSignature(signedXml, TAG_ASSERTION_ID, "defaultkey")).isTrue();

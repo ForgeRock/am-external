@@ -11,14 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.jwtpop;
 
 import static org.forgerock.openam.utils.CollectionUtils.getFirstItem;
 
-import java.security.AccessController;
 import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.Principal;
@@ -93,7 +100,7 @@ public class JwtProofOfPossession extends AMLoginModule {
     public static final String SHARED_STATE_POP_VERIFIED_CLAIMS =
             "org.forgerock.openam.authentication.modules.jwtpop.verified_claims";
 
-    private static final String TLS_SESSION_ID_ATTR = "javax.servlet.request.ssl_session_id";
+    private static final String TLS_SESSION_ID_ATTR = "jakarta.servlet.request.ssl_session_id";
     private static final String TLS_SESSION_ID_CLAIM = "tls_sid";
 
     private static final Logger DEBUG = LoggerFactory.getLogger(JwtProofOfPossession.class);
@@ -239,8 +246,7 @@ public class JwtProofOfPossession extends AMLoginModule {
                 // user profile is being dynamically created.
                 if (verifiedClaims.isDefined("keys")) {
                     final JWKSet registrationKeys = JWKSet.parse(verifiedClaims.toJsonValue());
-                    final String encryptedKeys = AccessController.doPrivileged(
-                            new EncodeAction(registrationKeys.toJsonString()));
+                    final String encryptedKeys = new EncodeAction(registrationKeys.toJsonString()).run();
 
                     setUserAttributes(Collections.singletonMap(subjectJwkSetAttribute,
                             Collections.singleton(encryptedKeys)));
@@ -299,7 +305,7 @@ public class JwtProofOfPossession extends AMLoginModule {
                     DEBUG.debug("JwtProofOfPossession.getSubjectJwkSet(): null jwk set for user: {}", subject);
                     return new JWKSet();
                 }
-                final String decryptedJwkSet = AccessController.doPrivileged(new DecodeAction(jwkSetStr));
+                final String decryptedJwkSet = new DecodeAction(jwkSetStr).run();
                 this.subjectJwkSet = JWKSet.parse(decryptedJwkSet);
             } catch (IdRepoException | SSOException e) {
                 throw new IllegalStateException("unable to load user subject");

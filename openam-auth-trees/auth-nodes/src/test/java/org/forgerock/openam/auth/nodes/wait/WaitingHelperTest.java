@@ -11,17 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.wait;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.cuppa.Cuppa.after;
-import static org.forgerock.cuppa.Cuppa.beforeEach;
-import static org.forgerock.cuppa.Cuppa.describe;
-import static org.forgerock.cuppa.Cuppa.it;
-import static org.forgerock.cuppa.Cuppa.when;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -31,15 +34,15 @@ import java.util.UUID;
 
 import javax.security.auth.callback.Callback;
 
-import org.forgerock.cuppa.Test;
-import org.forgerock.cuppa.junit.CuppaRunner;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
 import org.forgerock.openam.utils.TimeTravelUtil;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 
-@Test
-@RunWith(CuppaRunner.class)
 public class WaitingHelperTest {
     private static final int INITIAL_TIME_MILLIS = 100;
     private static final int SECONDS_TO_WAIT = 10;
@@ -48,124 +51,6 @@ public class WaitingHelperTest {
     private UUID uuid;
 
     private JsonValue currentState;
-
-    {
-        describe("Waiting helper", () -> {
-
-            when("seconds to wait is a positive integer", () -> {
-                beforeEach(() -> {
-                    uuid = UUID.randomUUID();
-                    helper = new WaitingHelper(uuid, SECONDS_TO_WAIT);
-                    TimeTravelUtil.useFixedClock(INITIAL_TIME_MILLIS);
-                });
-                after(TimeTravelUtil::resetClock);
-                when("creating callbacks", () -> {
-                    it("has a polling wait callback", () -> {
-                        PollingWaitCallback pollingWaitCallback = getCallback(helper.createCallbacks("badger"),
-                                PollingWaitCallback.class);
-                        assertThat(pollingWaitCallback.getWaitTime())
-                                .isEqualTo(Integer.toString(SECONDS_TO_WAIT * 1000));
-                        assertThat(pollingWaitCallback.getMessage()).contains("badger");
-                    });
-                });
-                when("producing next state", () -> {
-                    when("waiting is not in progress", () -> {
-                        beforeEach(() -> {
-                            currentState = nonEmptyState();
-                        });
-                        it("sets the end time", () -> {
-                            assertThat(helper.getNextState(currentState).get(endTimeKey()).asInteger())
-                                    .isEqualTo(INITIAL_TIME_MILLIS + SECONDS_TO_WAIT * 1000);
-                        });
-                        it("sets the spam count to 0", () -> {
-                            assertThat(helper.getNextState(currentState).get(spamCountKey()).required().asInteger())
-                                    .isEqualTo(0);
-                        });
-                    });
-                    when("waiting is already in progress", () -> {
-                        beforeEach(() -> {
-                            currentState = helper.getNextState(nonEmptyState());
-                        });
-                        it("does not change the end time", () -> {
-                            assertThat(helper.getNextState(currentState).get(endTimeKey()).asInteger())
-                                    .isEqualTo(currentState.get(endTimeKey()).asInteger());
-                        });
-                        it("adds 1 to the spam count", () -> {
-                            assertThat(helper.getNextState(currentState).get(spamCountKey()).asInteger())
-                                    .isEqualTo(currentState.get(spamCountKey()).asInteger() + 1);
-                        });
-                    });
-                });
-                when("clearing state", () -> {
-                    when("state contains keys for this helper", () -> {
-                        beforeEach(() -> {
-                            currentState = helper.getNextState(nonEmptyState());
-                        });
-                        it("returns a copy of the state with the fields removed", () -> {
-                            JsonValue newState = helper.clearState(currentState);
-                            assertThat(newState).isNotSameAs(currentState);
-                            assertThat(newState.get(endTimeKey()).isNull()).isTrue();
-                            assertThat(newState.get(spamCountKey()).isNull()).isTrue();
-                        });
-                    });
-                    when("state does not contain keys for this helper", () -> {
-                        beforeEach(() -> {
-                            currentState = nonEmptyState();
-                        });
-                        it("returns an unchanged copy of the state", () -> {
-                            JsonValue newState = helper.clearState(currentState);
-                            assertThat(newState).isNotSameAs(currentState);
-                            assertThat(newState.getObject()).isEqualTo(currentState.getObject());
-                        });
-                    });
-                    when("state contains keys for a different WaitingHelper", () -> {
-                        beforeEach(() -> {
-                            currentState = new WaitingHelper(UUID.randomUUID(), 27).getNextState(nonEmptyState());
-                        });
-                        it("returns an unchanged copy of the state", () -> {
-                            JsonValue newState = helper.clearState(currentState);
-                            assertThat(newState).isNotSameAs(currentState);
-                            assertThat(newState.getObject()).isEqualTo(currentState.getObject());
-                        });
-                    });
-                });
-                when("checking spam count", () -> {
-                    when("count is less than limit", () -> {
-                        beforeEach(() -> currentState = createSpamState(SPAM_MAX - 1));
-                        it("returns false", () -> {
-                            assertThat(helper.spamCountExceeds(currentState, SPAM_MAX)).isFalse();
-                        });
-                    });
-                    when("count is more than limit", () -> {
-                        beforeEach(() -> currentState = createSpamState(SPAM_MAX + 1));
-                        it("returns true", () -> {
-                            assertThat(helper.spamCountExceeds(currentState, SPAM_MAX)).isTrue();
-                        });
-                    });
-                    when("count is equal to limit", () -> {
-                        beforeEach(() -> currentState = createSpamState(SPAM_MAX));
-                        it("returns false", () -> {
-                            assertThat(helper.spamCountExceeds(currentState, SPAM_MAX)).isFalse();
-                        });
-                    });
-                });
-                when("checking wait time", () -> {
-                    when("waiting time is complete", () -> {
-                        beforeEach(() -> currentState = createEndTimeState(99));
-                        it("returns true", () -> {
-                            assertThat(helper.waitTimeCompleted(currentState)).isTrue();
-                        });
-                    });
-                    when("waiting time is not complete", () -> {
-                        beforeEach(() -> currentState = createEndTimeState(101));
-                        it("returns false", () -> {
-                            assertThat(helper.waitTimeCompleted(currentState)).isFalse();
-                        });
-                    });
-                });
-            });
-        });
-    }
 
     private JsonValue createSpamState(int count) {
         return json(object(field(spamCountKey(), count)));
@@ -193,5 +78,235 @@ public class WaitingHelperTest {
                 .map(c -> (T) c)
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("No callback of type " + clazz.getSimpleName() + "found"));
+    }
+
+    @Nested
+    @DisplayName(value = "seconds to wait is a positive integer")
+    class SecondsToWaitIsAPositiveInteger {
+
+        @BeforeEach
+        public void beforeEach() {
+            uuid = UUID.randomUUID();
+            helper = new WaitingHelper(uuid, SECONDS_TO_WAIT);
+            TimeTravelUtil.useFixedClock(INITIAL_TIME_MILLIS);
+        }
+
+        @AfterAll
+        public static void after() {
+            TimeTravelUtil.resetClock();
+        }
+
+        @Test
+        @DisplayName(value = "creating callbacks it has a polling wait callback")
+        public void testCreatingCallbacksItHasAPollingWaitCallback() throws Exception {
+            PollingWaitCallback pollingWaitCallback = getCallback(helper.createCallbacks("badger"),
+                    PollingWaitCallback.class);
+            assertThat(pollingWaitCallback.getWaitTime())
+                    .isEqualTo(Integer.toString(SECONDS_TO_WAIT * 1000));
+            assertThat(pollingWaitCallback.getMessage()).contains("badger");
+        }
+
+        @Nested
+        @DisplayName(value = "producing next state")
+        class ProducingNextState {
+
+            @Nested
+            @DisplayName(value = "waiting is not in progress")
+            class WaitingIsNotInProgress {
+
+                @BeforeEach
+                public void beforeEach() {
+                    currentState = nonEmptyState();
+                }
+
+                @Test
+                @DisplayName(value = "sets the end time")
+                public void testSetsTheEndTime() throws Exception {
+                    assertThat(helper.getNextState(currentState).get(endTimeKey()).asInteger())
+                            .isEqualTo(INITIAL_TIME_MILLIS + SECONDS_TO_WAIT * 1000);
+                }
+
+                @Test
+                @DisplayName(value = "sets the spam count to 0")
+                public void testSetsTheSpamCountTo0() throws Exception {
+                    assertThat(helper.getNextState(currentState).get(spamCountKey()).required().asInteger())
+                            .isEqualTo(0);
+                }
+            }
+
+            @Nested
+            @DisplayName(value = "waiting is already in progress")
+            class WaitingIsAlreadyInProgress {
+
+                @BeforeEach
+                public void beforeEach() {
+                    currentState = helper.getNextState(nonEmptyState());
+                }
+
+                @Test
+                @DisplayName(value = "does not change the end time")
+                public void testDoesNotChangeTheEndTime() throws Exception {
+                    assertThat(helper.getNextState(currentState).get(endTimeKey()).asInteger())
+                            .isEqualTo(currentState.get(endTimeKey()).asInteger());
+                }
+
+                @Test
+                @DisplayName(value = "adds 1 to the spam count")
+                public void testAdds1ToTheSpamCount() throws Exception {
+                    assertThat(helper.getNextState(currentState).get(spamCountKey()).asInteger())
+                            .isEqualTo(currentState.get(spamCountKey()).asInteger() + 1);
+                }
+            }
+        }
+
+        @Nested
+        @DisplayName(value = "clearing state")
+        class ClearingState {
+
+            @Nested
+            @DisplayName(value = "state contains keys for this helper")
+            class StateContainsKeysForThisHelper {
+
+                @BeforeEach
+                public void beforeEach() {
+                    currentState = helper.getNextState(nonEmptyState());
+                }
+
+                @Test
+                @DisplayName(value = "returns a copy of the state with the fields removed")
+                public void testReturnsACopyOfTheStateWithTheFieldsRemoved() throws Exception {
+                    JsonValue newState = helper.clearState(currentState);
+                    assertThat(newState).isNotSameAs(currentState);
+                    assertThat(newState.get(endTimeKey()).isNull()).isTrue();
+                    assertThat(newState.get(spamCountKey()).isNull()).isTrue();
+                }
+            }
+
+            @Nested
+            @DisplayName(value = "state does not contain keys for this helper")
+            class StateDoesNotContainKeysForThisHelper {
+
+                @BeforeEach
+                public void beforeEach() {
+                    currentState = nonEmptyState();
+                }
+
+                @Test
+                @DisplayName(value = "returns an unchanged copy of the state")
+                public void testReturnsAnUnchangedCopyOfTheState() throws Exception {
+                    JsonValue newState = helper.clearState(currentState);
+                    assertThat(newState).isNotSameAs(currentState);
+                    assertThat(newState.getObject()).isEqualTo(currentState.getObject());
+                }
+            }
+
+            @Nested
+            @DisplayName(value = "state contains keys for a different WaitingHelper")
+            class StateContainsKeysForADifferentWaitinghelper {
+
+                @BeforeEach
+                public void beforeEach() {
+                    currentState = new WaitingHelper(UUID.randomUUID(), 27).getNextState(nonEmptyState());
+                }
+
+                @Test
+                @DisplayName(value = "returns an unchanged copy of the state")
+                public void testReturnsAnUnchangedCopyOfTheState() throws Exception {
+                    JsonValue newState = helper.clearState(currentState);
+                    assertThat(newState).isNotSameAs(currentState);
+                    assertThat(newState.getObject()).isEqualTo(currentState.getObject());
+                }
+            }
+        }
+
+        @Nested
+        @DisplayName(value = "checking spam count")
+        class CheckingSpamCount {
+
+            @Nested
+            @DisplayName(value = "count is less than limit")
+            class CountIsLessThanLimit {
+
+                @BeforeEach
+                public void beforeEach() {
+                    currentState = createSpamState(SPAM_MAX - 1);
+                }
+
+                @Test
+                @DisplayName(value = "returns false")
+                public void testReturnsFalse() throws Exception {
+                    assertThat(helper.spamCountExceeds(currentState, SPAM_MAX)).isFalse();
+                }
+            }
+
+            @Nested
+            @DisplayName(value = "count is more than limit")
+            class CountIsMoreThanLimit {
+
+                @BeforeEach
+                public void beforeEach() {
+                    currentState = createSpamState(SPAM_MAX + 1);
+                }
+
+                @Test
+                @DisplayName(value = "returns true")
+                public void testReturnsTrue() throws Exception {
+                    assertThat(helper.spamCountExceeds(currentState, SPAM_MAX)).isTrue();
+                }
+            }
+
+            @Nested
+            @DisplayName(value = "count is equal to limit")
+            class CountIsEqualToLimit {
+
+                @BeforeEach
+                public void beforeEach() {
+                    currentState = createSpamState(SPAM_MAX);
+                }
+
+                @Test
+                @DisplayName(value = "returns false")
+                public void testReturnsFalse() throws Exception {
+                    assertThat(helper.spamCountExceeds(currentState, SPAM_MAX)).isFalse();
+                }
+            }
+        }
+
+        @Nested
+        @DisplayName(value = "checking wait time")
+        class CheckingWaitTime {
+
+            @Nested
+            @DisplayName(value = "waiting time is complete")
+            class WaitingTimeIsComplete {
+
+                @BeforeEach
+                public void beforeEach() {
+                    currentState = createEndTimeState(99);
+                }
+
+                @Test
+                @DisplayName(value = "returns true")
+                public void testReturnsTrue() throws Exception {
+                    assertThat(helper.waitTimeCompleted(currentState)).isTrue();
+                }
+            }
+
+            @Nested
+            @DisplayName(value = "waiting time is not complete")
+            class WaitingTimeIsNotComplete {
+
+                @BeforeEach
+                public void beforeEach() {
+                    currentState = createEndTimeState(101);
+                }
+
+                @Test
+                @DisplayName(value = "returns false")
+                public void testReturnsFalse() throws Exception {
+                    assertThat(helper.waitTimeCompleted(currentState)).isFalse();
+                }
+            }
+        }
     }
 }

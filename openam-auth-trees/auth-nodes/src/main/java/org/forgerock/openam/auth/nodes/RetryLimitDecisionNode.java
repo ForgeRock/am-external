@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -22,7 +30,6 @@ import static org.forgerock.openam.auth.node.api.Action.goTo;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.RETRY_COUNT;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 import static org.forgerock.opendj.ldap.ResultCode.OBJECTCLASS_VIOLATION;
 
 import java.util.Collections;
@@ -35,7 +42,6 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -46,8 +52,8 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.nodes.validators.GreaterThanZeroValidator;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,25 +104,22 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
     private final Config config;
     private final UUID nodeId;
     private final Logger logger = LoggerFactory.getLogger(RetryLimitDecisionNode.class);
-    private final CoreWrapper coreWrapper;
-    private final LegacyIdentityService identityService;
     private final RetryStateHandler retryStateHandler;
+    private final NodeUserIdentityProvider identityProvider;
     private int currentRetryCount;
 
     /**
      * Create the node.
      * @param config The service config.
      * @param nodeId The UUID of this RetryLimitDecisionNode.
-     * @param coreWrapper the core wrapper
-     * @param identityService the identity service
+     * @param identityProvider The NodeUserIdentityProvider.
      */
     @Inject
-    public RetryLimitDecisionNode(@Assisted Config config, @Assisted UUID nodeId, CoreWrapper coreWrapper,
-                                  LegacyIdentityService identityService) {
+    public RetryLimitDecisionNode(@Assisted Config config, @Assisted UUID nodeId,
+            NodeUserIdentityProvider identityProvider) {
         this.config = config;
         this.nodeId = nodeId;
-        this.coreWrapper = coreWrapper;
-        this.identityService = identityService;
+        this.identityProvider = identityProvider;
         if (config.incrementUserAttributeOnFailure()) {
             this.retryStateHandler = new UserStoreRetryHandler();
         } else {
@@ -184,7 +187,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
     }
 
     private Optional<AMIdentity> getIdentityFromContext(TreeContext context) {
-        return getAMIdentity(context.universalId, context.getStateFor(this), identityService, coreWrapper);
+        return identityProvider.getAMIdentity(context.universalId, context.getStateFor(this));
     }
 
     private interface RetryStateHandler {
@@ -198,7 +201,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
         void clearAttribute(TreeContext context) throws NodeProcessException;
     }
 
-    private class SharedStateRetryHandler implements RetryStateHandler {
+    private final class SharedStateRetryHandler implements RetryStateHandler {
         @Override
         public int getCurrentCount(TreeContext context) {
             JsonValue retryCountFromSharedState = context.getStateFor(RetryLimitDecisionNode.this)
@@ -224,7 +227,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
         }
     }
 
-    private class UserStoreRetryHandler implements RetryStateHandler {
+    private final class UserStoreRetryHandler implements RetryStateHandler {
         @Override
         public int getCurrentCount(TreeContext context) {
             return getIdentityFromContext(context)
@@ -263,8 +266,8 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
         @Override
         public void clearAttribute(TreeContext context) throws NodeProcessException {
             try {
-                Optional<AMIdentity> amIdentity = getAMIdentity(context.universalId,
-                        context.getStateFor(RetryLimitDecisionNode.this), identityService, coreWrapper);
+                Optional<AMIdentity> amIdentity = identityProvider.getAMIdentity(context.universalId,
+                        context.getStateFor(RetryLimitDecisionNode.this));
                 if (amIdentity.isPresent()) {
                     AMIdentity identity = amIdentity.get();
                     Set<String> retryLimitNodeCounts = identity.getAttribute(RETRY_COUNT_ATTRIBUTE);

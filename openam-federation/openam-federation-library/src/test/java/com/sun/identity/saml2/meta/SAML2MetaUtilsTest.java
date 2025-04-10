@@ -11,17 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.meta;
 
-import static org.testng.Assert.*;
-import org.testng.annotations.Test;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
 
 public class SAML2MetaUtilsTest {
     
@@ -30,42 +35,23 @@ public class SAML2MetaUtilsTest {
     private static final String PREFIX = PATH_SEPARATOR + "abcdefg";
     private static final String TEST_SUB_REALM = "subsub";
     
-    public SAML2MetaUtilsTest() {
-    }
-
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-    }
-
-    @AfterClass
-    public static void tearDownClass() throws Exception {
-    }
-
-    @BeforeMethod
-    public void setUpMethod() throws Exception {
-    }
-
-    @AfterMethod
-    public void tearDownMethod() throws Exception {
-    }
-
     @Test
-    public void testGetMetaDataByURI_DefaultRealm() {
+    void testGetMetaDataByURI_DefaultRealm() {
         final String uri = PREFIX 
                 + PATH_SEPARATOR + SAML2MetaManager.NAME_META_ALIAS_IN_URI
                 + PATH_SEPARATOR + TEST_ENTITY;
         final String result = SAML2MetaUtils.getMetaAliasByUri(uri);
-        assertEquals(result, PATH_SEPARATOR + TEST_ENTITY);
+        assertThat(result).isEqualTo(PATH_SEPARATOR + TEST_ENTITY);
     }
     
     @Test
-    public void testGetMetaDataByURI_SubRealm() {
+    void testGetMetaDataByURI_SubRealm() {
         final String uri = PREFIX 
                 + PATH_SEPARATOR + SAML2MetaManager.NAME_META_ALIAS_IN_URI 
                 + PATH_SEPARATOR + TEST_SUB_REALM 
                 + PATH_SEPARATOR +  TEST_ENTITY;
         final String result = SAML2MetaUtils.getMetaAliasByUri(uri);
-        assertEquals(result, PATH_SEPARATOR + TEST_SUB_REALM + PATH_SEPARATOR + TEST_ENTITY);        
-    }    
+        assertThat(result).isEqualTo(PATH_SEPARATOR + TEST_SUB_REALM + PATH_SEPARATOR + TEST_ENTITY);
+    }
     
 }

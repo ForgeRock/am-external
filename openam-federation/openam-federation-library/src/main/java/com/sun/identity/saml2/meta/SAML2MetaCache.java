@@ -24,11 +24,11 @@
  *
  * $Id: SAML2MetaCache.java,v 1.4 2008/07/08 01:08:43 exu Exp $
  *
- * Portions Copyrighted 2010-2019 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.meta;
 
-import java.util.Hashtable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Objects;
 
 import org.slf4j.Logger;
@@ -44,8 +44,8 @@ class SAML2MetaCache
 {
     private static Logger debug = LoggerFactory.getLogger(SAML2MetaCache.class);
 
-    private static Hashtable<CacheKey, EntityDescriptorElement> descriptorCache = new Hashtable<>();
-    private static Hashtable<CacheKey, EntityConfigElement> configCache = new Hashtable<>();
+    private static ConcurrentHashMap<CacheKey, EntityDescriptorElement> descriptorCache = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<CacheKey, EntityConfigElement> configCache = new ConcurrentHashMap<>();
 
     private SAML2MetaCache() {
     }

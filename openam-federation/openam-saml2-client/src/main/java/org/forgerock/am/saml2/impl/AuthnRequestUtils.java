@@ -11,21 +11,27 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.am.saml2.impl;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import javax.inject.Singleton;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.am.saml2.api.Saml2Options;
 import org.forgerock.openam.core.realms.Realm;
@@ -104,12 +110,10 @@ class AuthnRequestUtils {
         synchronized (SPCache.requestHash) {
             SPCache.requestHash.put(authnRequest.getID(), reqInfo);
         }
-        long sessionExpireTimeInSeconds = TimeUnit.MILLISECONDS.toSeconds(currentTimeMillis()) + SPCache.interval;
         String key = authnRequest.getID();
 
         try {
-            SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, new AuthnRequestInfoCopy(reqInfo),
-                    sessionExpireTimeInSeconds);
+            SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, new AuthnRequestInfoCopy(reqInfo));
             logger.debug("AuthnRequestInfoCopy for requestID {} saved in SAML SFO", key);
         } catch (SAML2TokenRepositoryException e) {
             logger.error("Unable to save AuthnRequestInfoCopy in SAML SFO for requestID {}", key, e);

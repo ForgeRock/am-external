@@ -24,7 +24,7 @@
  *
  * $Id: OneTimeUseImpl.java,v 1.2 2008/06/25 05:47:44 qcheng Exp $
  *
- * Portions Copyrighted 2021-2023 ForgeRock AS.
+ * Portions Copyrighted 2021-2025 Ping Identity Corporation.
  */
 
 
@@ -33,7 +33,6 @@ package com.sun.identity.saml2.assertion.impl;
 import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_URI;
 import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -48,8 +47,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  * future use. 
 */
 
-@SupportedAll(scriptingApi = true, javaApi = false)
-public class OneTimeUseImpl
+public class OneTimeUseImpl 
     extends ConditionAbstractImpl implements OneTimeUse {
 
     public static final String ONETIMEUSE_ELEMENT = "OneTimeUse";

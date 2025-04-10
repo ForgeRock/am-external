@@ -11,13 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
 
 import java.net.URL;
-import java.security.AccessController;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -85,7 +92,7 @@ public class OpenIdResolverCacheImpl implements OpenIdResolverCache {
     private static ServiceConfigManager getServiceConfigManager() {
         try {
             return new ServiceConfigManager(
-                    AccessController.doPrivileged(AdminTokenAction.getInstance()),
+                    AdminTokenAction.getInstance().run(),
                     SUN_AM_AUTH_O_AUTH_SERVICE, "1.0");
         } catch (SMSException | SSOException e) {
             String message = "OpenIDResolverCacheImpl::Unable to construct ServiceConfigManager: " + e;

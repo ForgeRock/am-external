@@ -24,7 +24,7 @@
  *
  * $Id: SAML2MetaServiceListener.java,v 1.5 2009/08/28 23:42:14 exu Exp $
  *
- * Portions Copyrighted 2019-2020 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 

@@ -12,13 +12,18 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions copyright 2015-2024 ForgeRock AS.
+ * Portions copyright 2015-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server;
 
 import static org.forgerock.openam.audit.context.AuditRequestContext.setAuditRequestContext;
+import static org.forgerock.openam.radius.common.packet.MessageAuthenticatorAttribute.VALUE_LENGTH;
+import static org.forgerock.openam.radius.common.packet.MessageAuthenticatorAttribute.VALUE_START_POSITION;
 
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.forgerock.openam.audit.context.AuditRequestContext;
@@ -72,23 +77,27 @@ public class RadiusRequestHandler implements Runnable {
      */
     private final AccessRequestHandlerFactory accessRequestHandlerFactory;
 
+    private final MessageAuthenticatorCalculator messageAuthenticatorCalculator;
+
     /**
      * Constructs a request handler.
      *
      * @param accessRequestHandlerFactory - a factory object that will construct access request handlers used to handle
-     *            the radius requests.
+     * the radius requests.
      * @param reqCtx a <code>RadiusRequestContext</code> object. Must be non-null.
      * @param buffer an {@code ByteBuffer} containing the bytes received by a radius handler.
      * @param eventBus used to notify interested parties of events occurring during the processing of radius requests.
+     * @param messageAuthenticatorCalculator used to calculate the Message-Authenticator attribute value.
      */
     public RadiusRequestHandler(AccessRequestHandlerFactory accessRequestHandlerFactory,
             final RadiusRequestContext reqCtx, final ByteBuffer buffer,
-            final EventBus eventBus) {
+            final EventBus eventBus, MessageAuthenticatorCalculator messageAuthenticatorCalculator) {
         LOG.debug("Entering RadiusRequestHandler.RadiusRequestHandler()");
         this.requestContext = reqCtx;
         this.buffer = buffer;
         this.eventBus = eventBus;
         this.accessRequestHandlerFactory = accessRequestHandlerFactory;
+        this.messageAuthenticatorCalculator = messageAuthenticatorCalculator;
         LOG.debug("Leaving RadiusRequestHandler.RadiusRequestHandler()");
     }
 
@@ -108,6 +117,13 @@ public class RadiusRequestHandler implements Runnable {
             // This sets the request context so that when the OpenAM auth chains etc use the AuditRequestContext they
             // will use the same transaction id. This means log entries across the audit logs can be tied up.
             setAuditRequestContext(new AuditRequestContext(new TransactionId(requestId)));
+
+            if (requestContext.getClientConfig().isMessageAuthenticatorRequired()
+                    && buffer != null && PacketType.ACCESS_REQUEST == PacketType.getPacketType(buffer.duplicate().get())
+                    && !containsValidMessageAuthenticator(buffer)) {
+                LOG.debug("Message-Authenticator is missing or invalid. Dropping the request");
+                return;
+            }
 
             LOG.debug("Entering RadiusRequestHandler.run();");
             final Packet requestPacket = getValidPacket(buffer);
@@ -160,6 +176,14 @@ public class RadiusRequestHandler implements Runnable {
         }
     }
 
+    private boolean containsValidMessageAuthenticator(ByteBuffer buffer) {
+        Optional<ByteBuffer> calculatedValue = messageAuthenticatorCalculator.computeFromPayloadIfPresent(buffer,
+                requestContext.getClientSecret());
+
+        return calculatedValue.isPresent() && MessageDigest.isEqual(calculatedValue.get().array(),
+                Arrays.copyOfRange(buffer.array(), VALUE_START_POSITION, VALUE_START_POSITION + VALUE_LENGTH));
+    }
+
     private void postHandledEvent(RadiusRequest request, RadiusResponse response, RadiusRequestContext requestContext) {
         LOG.debug("Entering RadiusRequestHandler.postHandledEvent()");
 
@@ -193,8 +217,7 @@ public class RadiusRequestHandler implements Runnable {
      * Cast the request packet into an access request packet. If this is not possible a log entry is made and null is
      * returned.
      *
-     * @param requestPacket
-     *            - the request packet received from the client.
+     * @param requestPacket - the request packet received from the client.
      * @return the <code>AccessRequest</code> object, or null if one could not be derived from requestPacket.
      */
     private AccessRequest createAccessRequest(Packet requestPacket) {
@@ -217,8 +240,7 @@ public class RadiusRequestHandler implements Runnable {
     /**
      * Returns a <code>Packet</code> object that represents the incoming radius request.
      *
-     * @param buffer2
-     *            - buffer containing the bytes to create the packet from.
+     * @param buffer2 - buffer containing the bytes to create the packet from.
      * @return the radius request packet, or null if the packet could not be created.
      */
     private Packet getValidPacket(ByteBuffer buffer2) {
@@ -284,8 +306,7 @@ public class RadiusRequestHandler implements Runnable {
     /**
      * Attempts to send an AccessReject message to the client. Failed attempts will be logged.
      *
-     * @param reqCtx
-     *            - the RadiusRequestContext that will be used to send the AccessReject packet.
+     * @param reqCtx - the RadiusRequestContext that will be used to send the AccessReject packet.
      */
     private void sendAccessReject(RadiusRequestContext reqCtx) {
         try {

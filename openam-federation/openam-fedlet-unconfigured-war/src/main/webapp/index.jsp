@@ -1,8 +1,8 @@
 <%--
    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
-  
+
    Copyright (c) 2008 Sun Microsystems Inc. All Rights Reserved
-  
+
    The contents of this file are subject to the terms
    of the Common Development and Distribution License
    (the License). You may not use this file except in
@@ -24,7 +24,7 @@
 
    $Id: index.jsp,v 1.14 2009/06/09 20:28:30 exu Exp $
 
-    Portions Copyrighted 2013-2019 ForgeRock AS.
+    Portions Copyrighted 2013-2025 Ping Identity Corporation
  --%>
 
 
@@ -84,17 +84,17 @@
 <div class="SkpMedGry1"><a href="#SkipAnchor4928"><img src="<%= ESAPI.encoder().encodeForHTMLAttribute(deployuri) %>/com_sun_web_ui/images/other/dot.gif" alt="Jump Over Tab Navigation Area. Current Selection is: Access Control" border="0" height="1" width="1" /></a></div>
 
 <%
-    // Retreive the metadata information 
+    // Retreive the metadata information
     String spEntityID = null;
     String spMetaAlias = null;
     String idpEntityID = null;
     String idpMetaAlias= null;
-    boolean createConfig = false; 
+    boolean createConfig = false;
     // check need to create configuration
     String param = request.getParameter("CreateConfig");
     if ((param != null) && param.equalsIgnoreCase("true")) {
         createConfig = true;
-    } 
+    }
     try {
         if (createConfig) {
             // copy all files under conf to fedletHomeDir
@@ -112,10 +112,10 @@
                         "configuration home directory " + fedletHomeDir);
                 }
             } else if (dir.isFile()) {
-                throw new SAML2Exception("Fedlet configuration home " + 
+                throw new SAML2Exception("Fedlet configuration home " +
                     fedletHomeDir + " is a pre-existing file. <br>Please " +
-                    "remove the file and try again."); 
-            } 
+                    "remove the file and try again.");
+            }
             ServletContext servletCtx = getServletConfig().getServletContext();
             for (int i = 0; i < files.length; i++) {
                 String source = "/conf/" + files[i];
@@ -132,7 +132,7 @@
                             fos.write(bytes, 0, length);
                         }
                     } else {
-                        throw new SAML2Exception("File " + source + 
+                        throw new SAML2Exception("File " + source +
                             " could not be found in fedlet.war");
                     }
                 } catch (IOException e) {
@@ -182,7 +182,7 @@
                 }
             } else {
                 SAML2MetaManager manager = new SAML2MetaManager();
-                List spEntities = 
+                List spEntities =
                     manager.getAllHostedServiceProviderEntities("/");
                 if ((spEntities != null) && !spEntities.isEmpty()) {
                     // get first one
@@ -204,13 +204,13 @@
                 }
                 if ((idpEntityID == null) || (idpEntityID.length() == 0)) {
                     // find out all trusted IDPs
-                    List idpEntities = 
+                    List idpEntities =
                         manager.getAllRemoteIdentityProviderEntities("/");
                     if ((idpEntities != null) && !idpEntities.isEmpty()) {
                         int numOfIDP = idpEntities.size();
                         for (int j = 0; j < numOfIDP; j ++) {
-                            String idpID = (String) idpEntities.get(j); 
-                            if (manager.isTrustedProvider("/", 
+                            String idpID = (String) idpEntities.get(j);
+                            if (manager.isTrustedProvider("/",
                                 spEntityID, idpID)) {
                                 trustedIDPs.add(idpID);
                             }
@@ -229,7 +229,7 @@
                         thisURI = thisURI + "?";
                     }
                     for (int j = 0; j < numOfIDP; j ++) {
-                        idpEntityID = (String) trustedIDPs.get(j); 
+                        idpEntityID = (String) trustedIDPs.get(j);
                         out.println("<br><a href=\"" + ESAPI.encoder().encodeForHTMLAttribute(thisURI) + "idpEntityID="
                             + ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(idpEntityID)) + "\">" + idpEntityID + "</a>");
                     }
@@ -240,8 +240,8 @@
                     out.println("</body>");
                     out.println("</html>");
                     return;
-                } else if (!trustedIDPs.isEmpty()) {  
-                    // get the single IDP entity ID 
+                } else if (!trustedIDPs.isEmpty()) {
+                    // get the single IDP entity ID
                     idpEntityID = (String) trustedIDPs.get(0);
                 }
                 if ((spEntityID == null) || (idpEntityID == null)) {
@@ -258,7 +258,7 @@
                         idpEntityID, deployuri);
                     String idpBaseUrl = (String)idpMap.get("idpBaseUrl");
                     idpMetaAlias = (String)idpMap.get("idpMetaAlias");
-                    String fedletBaseUrl = 
+                    String fedletBaseUrl =
                         getFedletBaseUrl(spEntityID,deployuri);
 %>
     <h2>Validate Fedlet Setup</h2>
@@ -266,11 +266,11 @@
     <table border="0" width="700">
     <tr>
        <td colspan="2">
-          Click following links to start Fedlet(SP) and/or IDP initiated 
-          Single Sign-On. Upon successful completion, you will be presented 
-          with a page to display the Single Sign-On Response, Assertion and 
+          Click following links to start Fedlet(SP) and/or IDP initiated
+          Single Sign-On. Upon successful completion, you will be presented
+          with a page to display the Single Sign-On Response, Assertion and
           AttributeStatement received from IDP side.</td>
-    </tr> 
+    </tr>
     <tr>
       <td colspan="2"> </td>
     </tr>
@@ -303,7 +303,7 @@
     </tr>
 <%
                     if ((idpMetaAlias != null) && (idpMetaAlias.length() != 0)){
-                        //remote IDP is also FAM, show IDP initiated SSO 
+                        //remote IDP is also FAM, show IDP initiated SSO
 %>
     <tr>
       <td colspan="2"> </td>
@@ -315,7 +315,7 @@
        <td colspan="2"><a href="<%= ESAPI.encoder().encodeForHTMLAttribute(idpBaseUrl)%>/idpssoinit?NameIDFormat=urn:oasis:names:tc:SAML:2.0:nameid-format:transient&metaAlias=<%= ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(idpMetaAlias)) %>&spEntityID=<%=ESAPI.encoder().encodeForHTMLAttribute(Uris.urlEncodeQueryParameterNameOrValue(spEntityID))%>&binding=urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Artifact">Run Identity Provider initiated Single Sign-On using HTTP Artifact binding</a></td>
      </tr>
 <%
-                    }       
+                    }
 %>
     <tr>
       <td colspan="2"> </td>

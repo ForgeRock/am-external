@@ -27,7 +27,7 @@
  */
 
 /*
- * Portions Copyrighted 2011 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  * Portions Copyrighted 2015 Intellectual Reserve, Inc (IRI)
  */
 package org.forgerock.openam.radius.common;
@@ -58,6 +58,7 @@ import org.forgerock.openam.radius.common.packet.LoginLATPortAttribute;
 import org.forgerock.openam.radius.common.packet.LoginLATServiceAttribute;
 import org.forgerock.openam.radius.common.packet.LoginServiceAttribute;
 import org.forgerock.openam.radius.common.packet.LoginTCPPortAttribute;
+import org.forgerock.openam.radius.common.packet.MessageAuthenticatorAttribute;
 import org.forgerock.openam.radius.common.packet.NASClassAttribute;
 import org.forgerock.openam.radius.common.packet.NASIPAddressAttribute;
 import org.forgerock.openam.radius.common.packet.NASIdentifierAttribute;
@@ -79,7 +80,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class AttributeFactory {
 
-    private static Logger logger = LoggerFactory.getLogger(RadiusCommonConstants.RADIUS_COMMON_LOGGER);
+    private static final Logger logger = LoggerFactory.getLogger(RadiusCommonConstants.RADIUS_COMMON_LOGGER);
 
     /**
      * Private constructor so this utility class can not be instantiated.
@@ -91,12 +92,11 @@ public final class AttributeFactory {
     /**
      * Performs the translation based upon the first octed in the passed in on-the-wire representation.
      *
-     * @param data
-     *            the raw octets received in a radius packet on the wire for the attribute including leading attribute
-     *            type code octet and length octet.
+     * @param data the raw octets received in a radius packet on the wire for the attribute including leading attribute
+     * type code octet and length octet.
      * @return the corresponding subclass of the {@link org.forgerock.openam.radius.common.Attribute} class or an
-     *         instance of the {@link org.forgerock.openam.radius.common.packet.UnknownAttribute} class if
-     *         the field type is unrecognized and hence not supported.
+     * instance of the {@link org.forgerock.openam.radius.common.packet.UnknownAttribute} class if
+     * the field type is unrecognized and hence not supported.
      */
     public static Attribute createAttribute(byte[] data) {
         logger.trace("Entering AttributeFactory.createAttribute()");
@@ -105,92 +105,95 @@ public final class AttributeFactory {
         logger.trace("AttributeType in is " + attributeTypeInt + ", which is type "
                 + ((type == null) ? "null" : type.toString()));
         if (type != null) {
-            switch (type) {
-            case USER_NAME: // 1
-                return new UserNameAttribute(data);
-            case USER_PASSWORD: // 2
-                return new UserPasswordAttribute(data);
-            case NAS_IP_ADDRESS: // 4
-                return new NASIPAddressAttribute(data);
-            case NAS_PORT: // 5
-                return new NASPortAttribute(data);
-            case CHAP_PASSWORD: // 3
-                return new CHAPPasswordAttribute(data);
-            case SERVICE_TYPE: // 6
-                return new ServiceTypeAttribute(data);
-            case FRAMED_PROTOCOL: // 7
-                return new FramedProtocolAttribute(data);
-            case FRAMED_IP_ADDRESS: // 8
-                return new FramedIPAddressAttribute(data);
-            case FRAMED_IP_NETMASK: // 9
-                return new FramedIPNetmaskAttribute(data);
-            case FRAMED_ROUTING: // 10
-                return new FramedRoutingAttribute(data);
-            case FILTER_ID: // 11
-                return new FilterIdAttribute(data);
-            case FRAMED_MTU: // 12
-                return new FramedMTUAttribute(data);
-            case FRAMED_COMPRESSION: // 13
-                return new FramedCompressionAttribute(data);
-            case LOGIN_IP_HOST: // 14
-                return new LoginIPHostAttribute(data);
-            case LOGIN_SERVICE: // 15
-                return new LoginServiceAttribute(data);
-            case LOGIN_TCP_PORT: // 16
-                return new LoginTCPPortAttribute(data);
-            case REPLY_MESSAGE: // 18
-                return new ReplyMessageAttribute(data);
-            case CALLBACK_NUMBER: // 19
-                return new CallbackNumberAttribute(data);
-            case CALLBACK_ID: // 20
-                return new CallbackIdAttribute(data);
-            case FRAMED_ROUTE: // 22
-                return new FramedRouteAttribute(data);
-            case FRAMED_IPX_NETWORK: // 23
-                return new FramedIPXNetworkAttribute(data);
-            case STATE: // 24
-                return new StateAttribute(data);
-            case NAS_CLASS: // 25
-                return new NASClassAttribute(data);
-            case VENDOR_SPECIFIC: // 26
-                return new VendorSpecificAttribute(data);
-            case SESSION_TIMEOUT: // 27
-                return new SessionTimeoutAttribute(data);
-            case IDLE_TIMEOUT: // 28
-                return new IdleTimeoutAttribute(data);
-            case TERMINATION_ACTION: // 29
-                return new TerminationActionAttribute(data);
-            case CALLER_STATION_ID: // 30
-                return new CallerStationIdAttribute(data);
-            case CALLING_STATION_ID: // 31
-                return new CallingStationIdAttribute(data);
-            case NAS_IDENTIFIER: // 32
-                return new NASIdentifierAttribute(data);
-            case PROXY_STATE: // 33
-                return new ProxyStateAttribute(data);
-            case LOGIN_LAT_SERVICE: // 34
-                return new LoginLATServiceAttribute(data);
-            case LOGIN_LAT_NODE: // 35
-                return new LoginLATNodeAttribute(data);
-            case LOGIN_LAT_GROUP: // 36
-                return new LoginLATGroupAttribute(data);
-            case FRAMED_APPLETALK_LINK: // 37
-                return new FramedAppleTalkLinkAttribute(data);
-            case FRAMED_APPLETALK_NETWORK: // 38
-                return new FramedAppleTalkNetworkAttribute(data);
-            case FRAMED_APPLETALK_ZONE: // 39
-                return new FramedAppleTalkZoneAttribute(data);
-            case CHAP_CHALLENGE: // 60
-                return new CHAPChallengeAttribute(data);
-            case NAS_PORT_TYPE: // 61
-                return new NASPortTypeAttribute(data);
-            case PORT_LIMIT: // 62
-                return new PortLimitAttribute(data);
-            case LOGIN_LAT_PORT: // 63
-                return new LoginLATPortAttribute(data);
-            default:
-                return new UnknownAttribute(data);
-            }
+            //@Checkstyle:off Indentation
+            return switch (type) {
+                case USER_NAME -> // 1
+                        new UserNameAttribute(data);
+                case USER_PASSWORD -> // 2
+                        new UserPasswordAttribute(data);
+                case NAS_IP_ADDRESS -> // 4
+                        new NASIPAddressAttribute(data);
+                case NAS_PORT -> // 5
+                        new NASPortAttribute(data);
+                case CHAP_PASSWORD -> // 3
+                        new CHAPPasswordAttribute(data);
+                case SERVICE_TYPE -> // 6
+                        new ServiceTypeAttribute(data);
+                case FRAMED_PROTOCOL -> // 7
+                        new FramedProtocolAttribute(data);
+                case FRAMED_IP_ADDRESS -> // 8
+                        new FramedIPAddressAttribute(data);
+                case FRAMED_IP_NETMASK -> // 9
+                        new FramedIPNetmaskAttribute(data);
+                case FRAMED_ROUTING -> // 10
+                        new FramedRoutingAttribute(data);
+                case FILTER_ID -> // 11
+                        new FilterIdAttribute(data);
+                case FRAMED_MTU -> // 12
+                        new FramedMTUAttribute(data);
+                case FRAMED_COMPRESSION -> // 13
+                        new FramedCompressionAttribute(data);
+                case LOGIN_IP_HOST -> // 14
+                        new LoginIPHostAttribute(data);
+                case LOGIN_SERVICE -> // 15
+                        new LoginServiceAttribute(data);
+                case LOGIN_TCP_PORT -> // 16
+                        new LoginTCPPortAttribute(data);
+                case REPLY_MESSAGE -> // 18
+                        new ReplyMessageAttribute(data);
+                case CALLBACK_NUMBER -> // 19
+                        new CallbackNumberAttribute(data);
+                case CALLBACK_ID -> // 20
+                        new CallbackIdAttribute(data);
+                case FRAMED_ROUTE -> // 22
+                        new FramedRouteAttribute(data);
+                case FRAMED_IPX_NETWORK -> // 23
+                        new FramedIPXNetworkAttribute(data);
+                case STATE -> // 24
+                        new StateAttribute(data);
+                case NAS_CLASS -> // 25
+                        new NASClassAttribute(data);
+                case VENDOR_SPECIFIC -> // 26
+                        new VendorSpecificAttribute(data);
+                case SESSION_TIMEOUT -> // 27
+                        new SessionTimeoutAttribute(data);
+                case IDLE_TIMEOUT -> // 28
+                        new IdleTimeoutAttribute(data);
+                case TERMINATION_ACTION -> // 29
+                        new TerminationActionAttribute(data);
+                case CALLER_STATION_ID -> // 30
+                        new CallerStationIdAttribute(data);
+                case CALLING_STATION_ID -> // 31
+                        new CallingStationIdAttribute(data);
+                case NAS_IDENTIFIER -> // 32
+                        new NASIdentifierAttribute(data);
+                case PROXY_STATE -> // 33
+                        new ProxyStateAttribute(data);
+                case LOGIN_LAT_SERVICE -> // 34
+                        new LoginLATServiceAttribute(data);
+                case LOGIN_LAT_NODE -> // 35
+                        new LoginLATNodeAttribute(data);
+                case LOGIN_LAT_GROUP -> // 36
+                        new LoginLATGroupAttribute(data);
+                case FRAMED_APPLETALK_LINK -> // 37
+                        new FramedAppleTalkLinkAttribute(data);
+                case FRAMED_APPLETALK_NETWORK -> // 38
+                        new FramedAppleTalkNetworkAttribute(data);
+                case FRAMED_APPLETALK_ZONE -> // 39
+                        new FramedAppleTalkZoneAttribute(data);
+                case CHAP_CHALLENGE -> // 60
+                        new CHAPChallengeAttribute(data);
+                case NAS_PORT_TYPE -> // 61
+                        new NASPortTypeAttribute(data);
+                case PORT_LIMIT -> // 62
+                        new PortLimitAttribute(data);
+                case LOGIN_LAT_PORT -> // 63
+                        new LoginLATPortAttribute(data);
+                case MESSAGE_AUTHENTICATOR -> // 80
+                        new MessageAuthenticatorAttribute(data);
+                default -> new UnknownAttribute(data);
+            };
+            //@Checkstyle:on Indentation
         } else {
             logger.debug("Unknown attribute type.");
             return new UnknownAttribute(data);

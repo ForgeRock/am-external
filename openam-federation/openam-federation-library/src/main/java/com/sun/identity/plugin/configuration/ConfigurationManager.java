@@ -24,7 +24,7 @@
  *
  * $Id: ConfigurationManager.java,v 1.3 2009/10/28 23:58:57 exu Exp $
  *
- * Portions Copyrighted 2020 ForgeRock AS.
+ * Portions Copyrighted 2020-2025 Ping Identity Corporation.
  */
 package com.sun.identity.plugin.configuration;
 

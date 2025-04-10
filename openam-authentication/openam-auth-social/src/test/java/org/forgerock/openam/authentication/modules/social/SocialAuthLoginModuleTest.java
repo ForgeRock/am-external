@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.social;
 
@@ -19,6 +27,7 @@ import static com.sun.identity.authentication.util.ISAuthConstants.FULL_LOGIN_UR
 import static com.sun.identity.authentication.util.ISAuthConstants.LOGIN_IGNORE;
 import static com.sun.identity.authentication.util.ISAuthConstants.LOGIN_SUCCEED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.oauth.clients.oauth2.OAuth2Client.ACCESS_TOKEN;
 import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.COOKIE_LOGOUT_URL;
 import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.COOKIE_ORIG_URL;
@@ -64,8 +73,8 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.oauth.OAuthClient;
@@ -80,12 +89,12 @@ import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.promise.Promises;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.testng.MockitoTestNGListener;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
 import com.sun.identity.authentication.spi.AuthLoginException;
@@ -95,7 +104,7 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 /**
  * Test class for SocialAuthLoginModule.
  */
-@Listeners(MockitoTestNGListener.class)
+@ExtendWith(MockitoExtension.class)
 public class SocialAuthLoginModuleTest {
 
     private static final Subject SUBJECT = null;
@@ -141,7 +150,7 @@ public class SocialAuthLoginModuleTest {
     @Mock
     private Map requestParameters;
     @Mock
-    private Function<Map,AbstractSmsSocialAuthConfiguration> configFunction;
+    private Function<Map, AbstractSmsSocialAuthConfiguration> configFunction;
     @Mock
     private ClientTokenJwtGenerator clientTokenJwtGenerator;
     @Mock
@@ -155,7 +164,7 @@ public class SocialAuthLoginModuleTest {
     @Mock
     private EmailGateway emailGateway;
 
-    private ResourceBundle bundle = new ResourceBundle() {
+    private final ResourceBundle bundle = new ResourceBundle() {
         @Override
         protected Object handleGetObject(String key) {
             return "invalid password";
@@ -168,9 +177,8 @@ public class SocialAuthLoginModuleTest {
     };
 
 
-
-    @BeforeMethod
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         lenient().when(request.getParameterMap()).thenReturn(requestParameters);
 
         lenient().when(authModuleHelper.getOriginalUrl(request)).thenReturn(ORIGINAL_URL);
@@ -206,31 +214,31 @@ public class SocialAuthLoginModuleTest {
         module.setAMLoginModule(binder);
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
-    public void shouldFailWhenSharedStateIsNull() throws Exception {
+    @Test
+    void shouldFailWhenSharedStateIsNull() throws Exception {
         //given
         this.options = ImmutableMap.of();
         Map sharedState = null;
 
         //when
-        module.init(SUBJECT, sharedState, options);
-
-        //then Exception
+        assertThatThrownBy(() -> module.init(SUBJECT, sharedState, options))
+                //then
+                .isInstanceOf(NullPointerException.class);
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
-    public void shouldFailWhenOptionsIsNull() {
+    @Test
+    void shouldFailWhenOptionsIsNull() {
         //given
         this.options = null;
 
         //when
-        module.init(SUBJECT, SHARED_STATE, options);
-
-        //then Exception
+        assertThatThrownBy(() -> module.init(SUBJECT, SHARED_STATE, options))
+                //then
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    public void shouldProcessLoginStartReturnNextStage() throws Exception {
+    void shouldProcessLoginStartReturnNextStage() throws Exception {
         final String dataStoreId = "data_store_id";
         final String path = "/";
         final String original_url_encoded = URLEncoder.encode(ORIGINAL_URL, StandardCharsets.UTF_8);
@@ -269,7 +277,7 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldProcessOAuthTokenStateReturnLoginSucceedWhenUserAlreadyExists() throws Exception {
+    void shouldProcessOAuthTokenStateReturnLoginSucceedWhenUserAlreadyExists() throws Exception {
         final String user = "user1";
 
         //given
@@ -292,7 +300,7 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldProcessOAuthTokenStateReturnNextStateWhenConfiguredToUseRegistrationService() throws Exception {
+    void shouldProcessOAuthTokenStateReturnNextStateWhenConfiguredToUseRegistrationService() throws Exception {
         //given
         given(client.handlePostAuth(eq(dataStore), anyMap())).willReturn(Promises.newResultPromise(jsonValue));
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
@@ -319,7 +327,7 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldProcessOAuthTokenStateReturnLoginSucceedAfterProvisioningUserLocally() throws Exception {
+    void shouldProcessOAuthTokenStateReturnLoginSucceedAfterProvisioningUserLocally() throws Exception {
         final String user = "user1";
 
         //given
@@ -354,7 +362,7 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldProcessOAuthTokenStateReturnLoginSucceedWhenConfiguredToUseAnonymousUser() throws Exception {
+    void shouldProcessOAuthTokenStateReturnLoginSucceedWhenConfiguredToUseAnonymousUser() throws Exception {
         final String user = "user1";
 
         //given
@@ -389,7 +397,7 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldProcessOAuthTokenStateReturnLoginSucceedWhenConfiguredToUseMappedUsername() throws Exception {
+    void shouldProcessOAuthTokenStateReturnLoginSucceedWhenConfiguredToUseMappedUsername() throws Exception {
         final String user = "user1";
 
         //given
@@ -425,7 +433,7 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldSucceedWhenResumedFromRegistrationAndUserFound() throws Exception {
+    void shouldSucceedWhenResumedFromRegistrationAndUserFound() throws Exception {
         //given
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
                 any(), anyMap())).willReturn(Optional.of("user"));
@@ -439,8 +447,8 @@ public class SocialAuthLoginModuleTest {
         assertThat(nextState).isEqualTo(LOGIN_SUCCEED);
     }
 
-    @Test(expectedExceptions = AuthLoginException.class)
-    public void shouldFailWhenResumedFromRegistrationAndUserNotFound() throws Exception {
+    @Test
+    void shouldFailWhenResumedFromRegistrationAndUserNotFound() throws Exception {
         //given
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
                 any(), anyMap())).willReturn(Optional.empty());
@@ -448,13 +456,13 @@ public class SocialAuthLoginModuleTest {
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
-        module.process(null, RESUME_FROM_REGISTRATION_REDIRECT_STATE);
-
-        //then Exception
+        assertThatThrownBy(() -> module.process(null, RESUME_FROM_REGISTRATION_REDIRECT_STATE))
+                //then
+                .isInstanceOf(AuthLoginException.class);
     }
 
     @Test
-    public void shouldReturnSetPasswordStateWhenConfiguredToPromptUser() throws Exception {
+    void shouldReturnSetPasswordStateWhenConfiguredToPromptUser() throws Exception {
         //given
         given(client.handlePostAuth(eq(dataStore), anyMap())).willReturn(Promises.newResultPromise(jsonValue));
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
@@ -478,11 +486,11 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldReturnLoginIgnoreWhenUserCancelsPromptPassword() throws Exception {
+    void shouldReturnLoginIgnoreWhenUserCancelsPromptPassword() throws Exception {
         //given
         ConfirmationCallback callback = mock(ConfirmationCallback.class);
         given(callback.getSelectedIndex()).willReturn(CANCEL_ACTION_SELECTED);
-        given(binder.getCallback(SET_PASSWORD_STATE)).willReturn(new Callback[] {callback, callback, callback});
+        given(binder.getCallback(SET_PASSWORD_STATE)).willReturn(new Callback[]{callback, callback, callback});
 
         //when
         int nextState = module.process(null, SET_PASSWORD_STATE);
@@ -492,14 +500,14 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldErrorWhenInvalidPasswordProvided() throws Exception {
+    void shouldErrorWhenInvalidPasswordProvided() throws Exception {
         //given
         ConfirmationCallback confirmationCallback = mock(ConfirmationCallback.class);
         PasswordCallback passwordCallback = mock(PasswordCallback.class);
         given(confirmationCallback.getSelectedIndex()).willReturn(0);
         given(passwordCallback.getPassword()).willReturn(null);
         given(binder.getCallback(SET_PASSWORD_STATE))
-                .willReturn(new Callback[] {passwordCallback, passwordCallback, confirmationCallback});
+                .willReturn(new Callback[]{passwordCallback, passwordCallback, confirmationCallback});
 
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
@@ -512,16 +520,16 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldReturnCreateUserStateWhenPasswordProvided() throws Exception {
+    void shouldReturnCreateUserStateWhenPasswordProvided() throws Exception {
         //given
         ConfirmationCallback confirmationCallback = mock(ConfirmationCallback.class);
         PasswordCallback passwordCallback = mock(PasswordCallback.class);
         given(confirmationCallback.getSelectedIndex()).willReturn(0);
         given(passwordCallback.getPassword()).willReturn("newpassword".toCharArray());
         given(binder.getCallback(SET_PASSWORD_STATE))
-                .willReturn(new Callback[] {passwordCallback, passwordCallback, confirmationCallback});
+                .willReturn(new Callback[]{passwordCallback, passwordCallback, confirmationCallback});
         given(binder.getCallback(SET_PASSWORD_STATE))
-                .willReturn(new Callback[] {passwordCallback, passwordCallback, confirmationCallback});
+                .willReturn(new Callback[]{passwordCallback, passwordCallback, confirmationCallback});
         given(config.getCfgMailAttribute()).willReturn("email");
         Map<String, String> smtpConf = new HashMap<String, String>();
         smtpConf.put(KEY_EMAIL_GWY_IMPL,
@@ -544,11 +552,11 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldReturnLoginIgnoreWhenUserCancelsActivation() throws Exception {
+    void shouldReturnLoginIgnoreWhenUserCancelsActivation() throws Exception {
         //given
         ConfirmationCallback callback = mock(ConfirmationCallback.class);
         given(callback.getSelectedIndex()).willReturn(CANCEL_ACTION_SELECTED);
-        given(binder.getCallback(CREATE_USER_STATE)).willReturn(new Callback[] {callback, callback, callback});
+        given(binder.getCallback(CREATE_USER_STATE)).willReturn(new Callback[]{callback, callback, callback});
 
         //when
         int nextState = module.process(null, CREATE_USER_STATE);
@@ -558,7 +566,7 @@ public class SocialAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldSucceedWhenActivatedUserProvisioned() throws Exception {
+    void shouldSucceedWhenActivatedUserProvisioned() throws Exception {
         //given
         String user = "user1";
         given(config.getSaveAttributesToSessionFlag()).willReturn(true);
@@ -568,7 +576,7 @@ public class SocialAuthLoginModuleTest {
         given(nameCallback.getName()).willReturn("activationCode");
         given(authModuleHelper.isValidActivationCodeReturned(any(), anyString())).willReturn(true);
         given(binder.getCallback(CREATE_USER_STATE))
-                .willReturn(new Callback[] {nameCallback, nameCallback, confirmationCallback});
+                .willReturn(new Callback[]{nameCallback, nameCallback, confirmationCallback});
         given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 

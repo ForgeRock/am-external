@@ -12,9 +12,16 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server;
+
+import static org.forgerock.openam.radius.common.AttributeType.MESSAGE_AUTHENTICATOR;
+import static org.forgerock.openam.radius.common.PacketType.ACCESS_ACCEPT;
+import static org.forgerock.openam.radius.common.PacketType.ACCESS_CHALLENGE;
+import static org.forgerock.openam.radius.common.PacketType.ACCESS_REJECT;
+import static org.forgerock.openam.radius.common.packet.MessageAuthenticatorAttribute.ATTRIBUTE_LENGTH;
+import static org.forgerock.openam.radius.common.packet.MessageAuthenticatorAttribute.VALUE_LENGTH;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -23,12 +30,15 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Optional;
 
 import org.forgerock.openam.radius.common.AccessReject;
 import org.forgerock.openam.radius.common.Authenticator;
 import org.forgerock.openam.radius.common.Packet;
 import org.forgerock.openam.radius.common.ResponseAuthenticator;
 import org.forgerock.openam.radius.common.Utils;
+import org.forgerock.openam.radius.common.packet.MessageAuthenticatorAttribute;
 import org.forgerock.openam.radius.server.config.ClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,20 +82,23 @@ public class RadiusRequestContext {
      */
     private short requestId;
 
+    private final MessageAuthenticatorCalculator messageAuthenticatorCalculator;
+
     /**
-     * Constructs the reponse handler.
+     * Constructs a {@link RadiusRequestContext} object.
      *
-     * @param clientConfig
-     *            the configuration of the registered client
-     * @param channel
-     *            the datagram channel object for the received request
-     * @param source
-     *            the source address of the UDP packet
+     * @param clientConfig the configuration of the registered client
+     * @param channel the datagram channel object for the received request
+     * @param source the source address of the UDP packet
+     * @param messageAuthenticatorCalculator the {@link MessageAuthenticatorCalculator} used to calculate the
+     * Message-Authenticator attribute value from the request
      */
-    public RadiusRequestContext(ClientConfig clientConfig, DatagramChannel channel, InetSocketAddress source) {
+    public RadiusRequestContext(ClientConfig clientConfig, DatagramChannel channel, InetSocketAddress source,
+            MessageAuthenticatorCalculator messageAuthenticatorCalculator) {
         this.channel = channel;
         this.source = source;
         this.clientConfig = clientConfig;
+        this.messageAuthenticatorCalculator = messageAuthenticatorCalculator;
     }
 
     /**
@@ -124,21 +137,50 @@ public class RadiusRequestContext {
             return;
         }
 
-        // inject the id and authenticator
         response.setIdentifier(requestId);
+        response.setAuthenticator(requestAuthenticator);
+
+        if (clientConfig.isMessageAuthenticatorRequired()
+                && Arrays.asList(ACCESS_ACCEPT, ACCESS_REJECT, ACCESS_CHALLENGE).contains(response.getType())) {
+            addMessageAuthenticator(response);
+        }
+
         injectResponseAuthenticator(response);
 
         if (clientConfig.isLogPackets()) {
             logPacketContent(response, "\nPacket to " + clientConfig.getName() + ":");
         }
-        final ByteBuffer reqBuf = ByteBuffer.wrap(response.getOctets());
+        final ByteBuffer responseBuffer = ByteBuffer.wrap(response.getOctets());
 
         try {
             LOG.debug("Sending response of type " + response.getType() + " to " + clientConfig.getName());
-            channel.send(reqBuf, source);
+            channel.send(responseBuffer, source);
         } catch (final IOException e) {
             LOG.error("Unable to send response to " + clientConfig.getName() + ".", e);
         }
+    }
+
+    private void addMessageAuthenticator(Packet response) {
+        MessageAuthenticatorAttribute emptyMessageAuthenticator =
+                createMessageAuthenticatorAttribute(ByteBuffer.wrap(new byte[VALUE_LENGTH]));
+        response.getAttributeSet().addAttribute(emptyMessageAuthenticator, true);
+
+        Optional<ByteBuffer> calculatedValue = messageAuthenticatorCalculator
+                .computeFromPayloadIfPresent(ByteBuffer.wrap(response.getOctets()), clientConfig.getSecret());
+        if (calculatedValue.isPresent()) {
+            MessageAuthenticatorAttribute calculatedMessageAuthenticator =
+                    createMessageAuthenticatorAttribute(calculatedValue.get());
+            response.getAttributeSet().replaceAttribute(emptyMessageAuthenticator, calculatedMessageAuthenticator,
+                    true);
+        }
+    }
+
+    private MessageAuthenticatorAttribute createMessageAuthenticatorAttribute(ByteBuffer messageAuthenticatorValue) {
+        ByteBuffer messageAuthenticator = ByteBuffer.allocate(ATTRIBUTE_LENGTH);
+        messageAuthenticator.put((byte) MESSAGE_AUTHENTICATOR.getTypeCode());
+        messageAuthenticator.put((byte) ATTRIBUTE_LENGTH);
+        messageAuthenticator.put(messageAuthenticatorValue);
+        return new MessageAuthenticatorAttribute(messageAuthenticator.array());
     }
 
     /**
@@ -152,7 +194,6 @@ public class RadiusRequestContext {
      *             if the response authentication can not be added to the response.
      */
     private void injectResponseAuthenticator(Packet response) throws RadiusProcessingException {
-        response.setAuthenticator(requestAuthenticator);
         final byte[] onTheWireFormat = response.getOctets();
 
         MessageDigest md5 = null;

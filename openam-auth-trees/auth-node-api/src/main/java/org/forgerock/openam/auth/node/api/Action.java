@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -23,6 +31,7 @@ import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.NODE_TYPE;
 import static org.forgerock.openam.utils.StringUtils.isNotEmpty;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,11 +70,15 @@ public final class Action {
 
     /**
      * The output state of the node.
+     * @deprecated use {@link NodeState} instead, setting state in the action is no longer required.
      */
+    @Deprecated(since = "8.0.0")
     public final JsonValue sharedState;
     /**
      * The transient state of the node.
+     * @deprecated use {@link NodeState} instead, setting state in the action is no longer required.
      */
+    @Deprecated(since = "8.0.0")
     public final JsonValue transientState;
     /**
      * Result of the node. May be null.
@@ -83,6 +96,14 @@ public final class Action {
      * The error message to present to the caller when the user is locked out.
      */
     public final String lockoutMessage;
+    /**
+     * The maximum session time for the user.
+     */
+    public final Optional<Duration> maxSessionTime;
+    /**
+     * The maximum idle time for the user.
+     */
+    public final Optional<Duration> maxIdleTime;
     /**
      * Callbacks requested by the node when the outcome is null. May be null.
      */
@@ -114,6 +135,14 @@ public final class Action {
      * Optionally the identity confirmed to exist as part of this action.
      */
     public final Optional<IdentifiedIdentity> identifiedIdentity;
+    /**
+     * The duration for which the authentication request is suspended.
+     */
+    public final Optional<Duration> suspendDuration;
+    /**
+     * Optionally the maximum duration the tree is allowed to run for.
+     */
+    public final Optional<Duration> maxTreeDuration;
 
     /**
      * Move on to the next node in the tree that is connected to the given outcome.
@@ -156,20 +185,45 @@ public final class Action {
      * @return An action builder that suspends the current authentication flow.
      */
     public static ActionBuilder suspend(SuspensionHandler suspensionHandler) {
-        return new ActionBuilder(suspensionHandler);
+        return new ActionBuilder(suspensionHandler, null);
     }
 
-    private Action(JsonValue sharedState, JsonValue transientState, String outcome,
-            Map<String, Object> returnProperties, String errorMessage, String lockoutMessage,
-            List<? extends Callback> callbacks, Map<String, String> sessionProperties, List<JsonValue> sessionHooks,
-            List<String> webhooks, SuspensionHandler suspensionHandler, Optional<String> universalId,
-            Optional<IdentifiedIdentity> identifiedIdentity) {
+    /**
+     * Suspend the current authentication request, and allow the end-user to resume it later by clicking on a link for
+     * example.
+     * @param suspensionHandler The {@link SuspensionHandler} to use for sending the suspension ID to the end-users.
+     * @param duration The duration for which the authentication request is suspended.
+     * @return An action builder that suspends the current authentication flow.
+     */
+    public static ActionBuilder suspend(SuspensionHandler suspensionHandler, Duration duration) {
+        return new ActionBuilder(suspensionHandler, duration);
+    }
+
+    private Action(JsonValue sharedState,
+                   JsonValue transientState,
+                   String outcome,
+                   Map<String, Object> returnProperties,
+                   String errorMessage,
+                   String lockoutMessage,
+                   Optional<Duration> maxSessionTime,
+                   Optional<Duration> maxIdleTime,
+                   List<? extends Callback> callbacks,
+                   Map<String, String> sessionProperties,
+                   List<JsonValue> sessionHooks,
+                   List<String> webhooks,
+                   SuspensionHandler suspensionHandler,
+                   Optional<String> universalId,
+                   Optional<IdentifiedIdentity> identifiedIdentity,
+                   Optional<Duration> suspendDuration,
+                   Optional<Duration> maxTreeDuration) {
         this.sharedState = sharedState;
         this.transientState = transientState;
         this.outcome = outcome;
         this.returnProperties = returnProperties;
         this.errorMessage = errorMessage;
         this.lockoutMessage = lockoutMessage;
+        this.maxSessionTime = maxSessionTime;
+        this.maxIdleTime = maxIdleTime;
         this.callbacks = Collections.unmodifiableList(callbacks);
         this.sessionProperties = Collections.unmodifiableMap(sessionProperties);
         this.sessionHooks = sessionHooks;
@@ -177,6 +231,8 @@ public final class Action {
         this.suspensionHandler = suspensionHandler;
         this.universalId = universalId;
         this.identifiedIdentity = identifiedIdentity;
+        this.suspendDuration = suspendDuration;
+        this.maxTreeDuration = maxTreeDuration;
     }
 
     /**
@@ -186,6 +242,15 @@ public final class Action {
      */
     public boolean sendingCallbacks() {
         return !callbacks.isEmpty();
+    }
+
+    /**
+     * Returns true if the suspension handler is set.
+     *
+     * @return true if the action is a request to suspend the authentication flow.
+     */
+    public boolean hasSuspensionHandler() {
+        return suspensionHandler != null;
     }
 
     /**
@@ -199,12 +264,16 @@ public final class Action {
         private String lockoutMessage;
         private String universalId;
         private IdentifiedIdentity identifiedIdentity;
+        private Optional<Duration> maxSessionTime = Optional.empty();
+        private Optional<Duration> maxIdleTime = Optional.empty();
+        private Duration maxTreeDuration;
         private final String outcome;
         private final List<? extends Callback> callbacks;
         private final Map<String, String> sessionProperties = new HashMap<>();
         private final List<JsonValue> sessionHooks = new ArrayList<>();
         private final List<String> webhooks = new ArrayList<>();
         private final SuspensionHandler suspensionHandler;
+        private Duration suspendDuration;
 
         private ActionBuilder(String outcome) {
             this.outcome = outcome;
@@ -218,10 +287,11 @@ public final class Action {
             this.suspensionHandler = null;
         }
 
-        private ActionBuilder(SuspensionHandler suspensionHandler) {
+        private ActionBuilder(SuspensionHandler suspensionHandler, Duration suspendDuration) {
             this.outcome = null;
             this.callbacks = Collections.emptyList();
             this.suspensionHandler = suspensionHandler;
+            this.suspendDuration = suspendDuration;
         }
 
         /**
@@ -229,7 +299,9 @@ public final class Action {
          *
          * @param sharedState the new state.
          * @return the same instance of the ActionBuilder.
+         * @deprecated use {@link NodeState} instead, setting state in the action is no longer required.
          */
+        @Deprecated(since = "8.0.0")
         public ActionBuilder replaceSharedState(JsonValue sharedState) {
             Reject.ifNull(sharedState);
             this.sharedState = sharedState;
@@ -241,7 +313,9 @@ public final class Action {
          *
          * @param transientState the new transient state.
          * @return the same instance of the ActionBuilder.
+         * @deprecated use {@link NodeState} instead, setting state in the action is no longer required.
          */
+        @Deprecated(since = "8.0.0")
         public ActionBuilder replaceTransientState(JsonValue transientState) {
             Reject.ifNull(transientState);
             this.transientState = transientState;
@@ -475,7 +549,7 @@ public final class Action {
                 replaceSharedState(context.sharedState.copy());
             }
 
-            if (sharedState.contains(NODE_TYPE)) {
+            if (sharedState.isDefined(NODE_TYPE)) {
                 authType = sharedState.get(NODE_TYPE).asString();
             }
 
@@ -509,6 +583,28 @@ public final class Action {
         }
 
         /**
+         * Set the maximum session time for the user.
+         *
+         * @param maxSessionTime the maximum session time.
+         * @return this action builder.
+         */
+        public ActionBuilder withMaxSessionTime(Duration maxSessionTime) {
+            this.maxSessionTime = Optional.ofNullable(maxSessionTime);
+            return this;
+        }
+
+        /**
+         * Set the maximum idle time for the user.
+         *
+         * @param maxIdleTime the maximum idle time.
+         * @return this action builder.
+         */
+        public ActionBuilder withMaxIdleTime(Duration maxIdleTime) {
+            this.maxIdleTime = Optional.ofNullable(maxIdleTime);
+            return this;
+        }
+
+        /**
          * Set the identified identity that has been verified to exist in an identity store.
          * <p>The identity may or may not have been authenticated as part of the tree execution.
          *
@@ -520,6 +616,17 @@ public final class Action {
         }
 
         /**
+         * Set the maximum tree duration.
+         *
+         * @param maxTreeDuration the maximum tree duration.
+         * @return this action builder.
+         */
+        public ActionBuilder withMaxTreeDuration(Duration maxTreeDuration) {
+            this.maxTreeDuration = maxTreeDuration;
+            return this;
+        }
+
+        /**
          * Build the Action.
          *
          * @return an Action.
@@ -527,9 +634,10 @@ public final class Action {
          */
         public Action build() {
             return new Action(this.sharedState, this.transientState, this.outcome, this.returnProperties,
-                    this.errorMessage, this.lockoutMessage, this.callbacks, sessionProperties, sessionHooks,
-                    webhooks, suspensionHandler, Optional.ofNullable(this.universalId),
-                    Optional.ofNullable(identifiedIdentity));
+                    this.errorMessage, this.lockoutMessage, maxSessionTime, maxIdleTime, this.callbacks,
+                    sessionProperties, sessionHooks, webhooks, suspensionHandler, Optional.ofNullable(this.universalId),
+                    Optional.ofNullable(identifiedIdentity), Optional.ofNullable(suspendDuration),
+                    Optional.ofNullable(maxTreeDuration));
         }
     }
 }

@@ -24,7 +24,7 @@
  *
  * $Id: IDPSingleSignOnServiceSOAP.java,v 1.3 2009/10/14 23:59:44 exu Exp $
  *
- * Portions Copyrighted 2013-2019 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.servlet;
@@ -32,13 +32,15 @@ package com.sun.identity.saml2.servlet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.inject.Inject;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
+import org.forgerock.guice.core.InjectorHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,9 +57,12 @@ import com.sun.identity.saml2.profile.IDPSSOFederate;
  */
 public class IDPSingleSignOnServiceSOAP extends HttpServlet {
 
+    private SOAPCommunicator soapCommunicator;
+
     private static final Logger logger = LoggerFactory.getLogger(IDPSingleSignOnServiceSOAP.class);
 
     public void init() throws ServletException {
+        soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
     }
 
     public void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -87,7 +92,7 @@ public class IDPSingleSignOnServiceSOAP extends HttpServlet {
     private void sendError(HttpServletResponse response, String faultCode, String rbKey, String detail)
             throws IOException {
         try {
-            SOAPMessage soapFault = SOAPCommunicator.getInstance().createSOAPFault(faultCode, rbKey, detail);
+            SOAPMessage soapFault = soapCommunicator.createSOAPFault(faultCode, rbKey, detail);
             if (soapFault != null) {
                 //  Need to call saveChanges because we're
                 // going to use the MimeHeaders to set HTTP

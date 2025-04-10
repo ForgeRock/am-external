@@ -24,7 +24,7 @@
  *
  * $Id: SAML2Exception.java,v 1.3 2008/06/25 05:47:45 qcheng Exp $
  *
- * Portions Copyrighted 2019-2023 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.common;
 
@@ -36,7 +36,7 @@ import com.sun.identity.shared.locale.L10NMessageImpl;
  * This class is an extension point for all SAML related exceptions.
  * This class also handles message localization in SAML exceptions.
  */
-@SupportedAll(scriptingApi = true, javaApi = false)
+@SupportedAll
 public class SAML2Exception extends L10NMessageImpl {
 
     /**
@@ -73,7 +73,19 @@ public class SAML2Exception extends L10NMessageImpl {
     public SAML2Exception(String message) {
         super(message);
     }
-    
+
+    /**
+     * Constructs a new <code>SAML2Exception</code> with the given
+     * message and throwable.
+     *
+     * @param message message for this exception.
+     * @param cause Exception nested in the new exception.
+     *
+     */
+    public SAML2Exception(String message, Throwable cause) {
+        super(message, cause);
+    }
+
     /**
      * Constructs an <code>SAML2Exception</code> with given
      * <code>Throwable</code>.

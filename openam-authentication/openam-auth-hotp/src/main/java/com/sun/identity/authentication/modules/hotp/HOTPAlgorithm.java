@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
  */
 /**
  * OneTimePasswordAlgorithm.java
@@ -46,7 +46,7 @@
  *
  */
 /**
- * Portions Copyrighted 2011-2017 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 package com.sun.identity.authentication.modules.hotp;
 

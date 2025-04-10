@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.protocol.impl;
@@ -25,8 +33,9 @@ import java.util.Date;
 import java.util.List;
 
 import org.forgerock.openam.saml2.crypto.signing.SigningConfig;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.Document;
 
 import com.sun.identity.saml2.assertion.impl.IssuerImpl;
@@ -34,8 +43,9 @@ import com.sun.identity.shared.encode.Base64;
 import com.sun.identity.shared.xml.XMLUtils;
 
 public class StatusResponseImplTest {
+
     @Test
-    public void shouldEscapeSpecialCharactersInXmlInResponseTo() throws Exception {
+    void shouldEscapeSpecialCharactersInXmlInResponseTo() throws Exception {
         // Given
         String inResponseTo = "foo\" oops=\"bar";
         StatusResponseImpl statusResponse = new StubStatusResponse();
@@ -54,8 +64,7 @@ public class StatusResponseImplTest {
         assertThat(doc.getDocumentElement().getAttribute("InResponseTo")).isEqualTo(inResponseTo);
     }
 
-    @DataProvider
-    public Object[][] xmlTestCases() {
+    public static Object[][] xmlTestCases() {
         return new Object[][] {
                 { true, true, "<samlp:test xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\" " +
                         "Consent=\"testConsent\" " +
@@ -116,7 +125,8 @@ public class StatusResponseImplTest {
         };
     }
 
-    @Test(dataProvider = "xmlTestCases")
+    @ParameterizedTest
+    @MethodSource("xmlTestCases")
     public void testToXmlString(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
         // Given
         StatusResponseImpl statusResponse = statusResponse();
@@ -129,7 +139,7 @@ public class StatusResponseImplTest {
     }
 
     @Test
-    public void testToXmlStringWhenSigned() throws Exception {
+    void testToXmlStringWhenSigned() throws Exception {
         // Given
         StatusResponseImpl statusResponse = statusResponse();
         // Note: it's important to use a deterministic signature algorithm here to ensure the same signature value is

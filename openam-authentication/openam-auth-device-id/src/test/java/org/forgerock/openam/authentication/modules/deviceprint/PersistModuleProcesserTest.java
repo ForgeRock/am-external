@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.deviceprint;
@@ -31,8 +39,8 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ChoiceCallback;
 import javax.security.auth.callback.NameCallback;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.util.ISAuthConstants;
@@ -44,14 +52,14 @@ public class PersistModuleProcesserTest {
     private Map<String, Object> devicePrintProfile;
     private ProfilePersister profilePersister;
 
-    @BeforeMethod
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         profilePersister = mock(ProfilePersister.class);
-        devicePrintProfile = new HashMap<String, Object>();
+        devicePrintProfile = new HashMap<>();
     }
 
     @Test
-    public void shouldReturnLoginSucceedWhenDevicePrintProfileIsNull() throws AuthLoginException {
+    void shouldReturnLoginSucceedWhenDevicePrintProfileIsNull() throws AuthLoginException {
 
         //Given
         processor = new PersistModuleProcessor(null, false, profilePersister);
@@ -68,7 +76,7 @@ public class PersistModuleProcesserTest {
     }
 
     @Test
-    public void shouldReturnLoginSucceedWhenDevicePrintProfileIsEmpty() throws AuthLoginException {
+    void shouldReturnLoginSucceedWhenDevicePrintProfileIsEmpty() throws AuthLoginException {
 
         //Given
         processor = new PersistModuleProcessor(devicePrintProfile, false, profilePersister);
@@ -85,7 +93,7 @@ public class PersistModuleProcesserTest {
     }
 
     @Test
-    public void shouldReturnLoginSucceedAfterSavingProfileWhenDevicePrintNotEmptyAndAutoSaveConfigured()
+    void shouldReturnLoginSucceedAfterSavingProfileWhenDevicePrintNotEmptyAndAutoSaveConfigured()
             throws AuthLoginException {
 
         //Given
@@ -105,7 +113,7 @@ public class PersistModuleProcesserTest {
     }
 
     @Test
-    public void shouldReturnSaveProfileStateWhenDevicePrintNotEmptyAndAutoSaveNotConfigured()
+    void shouldReturnSaveProfileStateWhenDevicePrintNotEmptyAndAutoSaveNotConfigured()
             throws AuthLoginException {
 
         //Given
@@ -125,19 +133,18 @@ public class PersistModuleProcesserTest {
     }
 
     @Test
-    public void shouldReturnNameProfileStateWhenUserChooseToSaveProfile() throws AuthLoginException {
+    void shouldReturnNameProfileStateWhenUserChooseToSaveProfile() throws AuthLoginException {
 
         //Given
         processor = new PersistModuleProcessor(devicePrintProfile, false, profilePersister);
 
         ChoiceCallback choiceCallback = mock(ChoiceCallback.class);
         Callback[] callbacks = new Callback[]{choiceCallback};
-        int state = SAVE_PROFILE_STATE;
 
         given(choiceCallback.getSelectedIndexes()).willReturn(new int[]{0});
 
         //When
-        int newState = processor.process(callbacks, state);
+        int newState = processor.process(callbacks, SAVE_PROFILE_STATE);
 
         //Then
         assertThat(newState).isEqualTo(NAME_PROFILE_STATE);
@@ -145,19 +152,18 @@ public class PersistModuleProcesserTest {
     }
 
     @Test
-    public void shouldReturnLoginSucceedWithoutSavingProfileWhenUserChooseToNotSaveProfile() throws AuthLoginException {
+    void shouldReturnLoginSucceedWithoutSavingProfileWhenUserChooseToNotSaveProfile() throws AuthLoginException {
 
         //Given
         processor = new PersistModuleProcessor(devicePrintProfile, false, profilePersister);
 
         ChoiceCallback choiceCallback = mock(ChoiceCallback.class);
         Callback[] callbacks = new Callback[]{choiceCallback};
-        int state = SAVE_PROFILE_STATE;
 
         given(choiceCallback.getSelectedIndexes()).willReturn(new int[]{1});
 
         //When
-        int newState = processor.process(callbacks, state);
+        int newState = processor.process(callbacks, SAVE_PROFILE_STATE);
 
         //Then
         assertThat(newState).isEqualTo(ISAuthConstants.LOGIN_SUCCEED);
@@ -165,19 +171,18 @@ public class PersistModuleProcesserTest {
     }
 
     @Test
-    public void shouldReturnLoginSucceedAfterSavingProfileWhenUserHasNamedProfile() throws AuthLoginException {
+    void shouldReturnLoginSucceedAfterSavingProfileWhenUserHasNamedProfile() throws AuthLoginException {
 
         //Given
         processor = new PersistModuleProcessor(devicePrintProfile, false, profilePersister);
 
         NameCallback nameCallback = mock(NameCallback.class);
         Callback[] callbacks = new Callback[]{nameCallback};
-        int state = NAME_PROFILE_STATE;
 
         given(nameCallback.getName()).willReturn("NAME");
 
         //When
-        int newState = processor.process(callbacks, state);
+        int newState = processor.process(callbacks, NAME_PROFILE_STATE);
 
         //Then
         assertThat(newState).isEqualTo(ISAuthConstants.LOGIN_SUCCEED);

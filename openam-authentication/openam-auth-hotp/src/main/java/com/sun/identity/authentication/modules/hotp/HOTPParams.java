@@ -26,7 +26,7 @@
  *
  */
 /*
- * Portions Copyrighted 2013 ForgeRock AS
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation
  */
 
 package com.sun.identity.authentication.modules.hotp;
@@ -60,10 +60,10 @@ public class HOTPParams {
         emailLdapAttributeName, codeDelivery, config, codeLength, messageSubject, messageContent, fromAddressAttributeName,
         Collections.EMPTY_SET);
     }
-    
+
     public HOTPParams(final String gatewaySMSImplClass, final long codeValidityDuration,
             final String telephoneLdapAttributeName, final String carrierLdapAttributeName,
-            final String emailLdapAttributeName, final String codeDelivery, 
+            final String emailLdapAttributeName, final String codeDelivery,
             final Map<?, ?> config, final int codeLength, final String messageSubject,
             final String messageContent, final String fromAddressAttributeName,
             final Set<String> userSearchAttributes) {
@@ -79,7 +79,7 @@ public class HOTPParams {
         this.messageContent = messageContent;
         this.fromAddressAttributeName = fromAddressAttributeName;
         this.userSearchAttributes = userSearchAttributes;
-    }    
+    }
 
     public String getGatewaySMSImplClass() {
         return gatewaySMSImplClass;
@@ -124,7 +124,7 @@ public class HOTPParams {
     public String getFromAddressAttributeName() {
         return fromAddressAttributeName;
     }
-    
+
     public Set<String> getUserSearchAttributes() {
         return Collections.unmodifiableSet(userSearchAttributes);
     }

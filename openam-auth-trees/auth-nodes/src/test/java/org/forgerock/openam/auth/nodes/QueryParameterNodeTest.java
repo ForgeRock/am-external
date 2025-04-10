@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -37,13 +45,13 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.ServiceConfigException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
-import org.junit.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.api.Test;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class QueryParameterNodeTest {
 
     @Mock
@@ -55,7 +63,7 @@ public class QueryParameterNodeTest {
     private TreeContext context;
 
     @Test
-    public void shouldProcessAllowedQueryParameters() throws Exception {
+    void shouldProcessAllowedQueryParameters() throws Exception {
 
         // Given
         given(config.allowedQueryParameters()).willReturn(Map.of(
@@ -82,7 +90,7 @@ public class QueryParameterNodeTest {
     }
 
     @Test
-    public void shouldProcessAllowedAndDelimitedQueryParameters() throws Exception {
+    void shouldProcessAllowedAndDelimitedQueryParameters() throws Exception {
 
         // Given
         given(config.allowedQueryParameters()).willReturn(Map.of(
@@ -109,7 +117,7 @@ public class QueryParameterNodeTest {
     }
 
     @Test
-    public void shouldProcessGivenNonAllowedQueryParameter() throws Exception {
+    void shouldProcessGivenNonAllowedQueryParameter() throws Exception {
 
         // Given
         given(config.allowedQueryParameters()).willReturn(Map.of("brandColor", "sharedStateBrandColor"));
@@ -128,7 +136,7 @@ public class QueryParameterNodeTest {
     }
 
     @Test
-    public void shouldProcessGivenEmptyQueryParameters() throws Exception {
+    void shouldProcessGivenEmptyQueryParameters() throws Exception {
 
         // Given
         given(config.allowedQueryParameters()).willReturn(Map.of("brandColor", "sharedStateBrandColor"));
@@ -147,7 +155,7 @@ public class QueryParameterNodeTest {
     }
 
     @Test
-    public void shouldProcessGivenURLEncodedQueryParameters() throws Exception {
+    void shouldProcessGivenURLEncodedQueryParameters() throws Exception {
 
         // Given
         given(config.allowedQueryParameters()).willReturn(Map.of(
@@ -177,7 +185,7 @@ public class QueryParameterNodeTest {
     }
 
     @Test
-    public void shouldFailToValidateGivenEmptyConfig() {
+    void shouldFailToValidateGivenEmptyConfig() {
 
         // Given
         Map<String, Set<String>> config = Map.of(
@@ -196,7 +204,7 @@ public class QueryParameterNodeTest {
     }
 
     @Test
-    public void shouldFailToValidateGivenIncorrectlyConfiguredParamDoDelimit() {
+    void shouldFailToValidateGivenIncorrectlyConfiguredParamDoDelimit() {
 
         // Given
         Map<String, Set<String>> config = Map.of(

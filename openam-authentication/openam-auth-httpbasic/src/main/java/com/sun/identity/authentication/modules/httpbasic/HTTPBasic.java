@@ -24,12 +24,11 @@
  *
  * $Id: HTTPBasic.java,v 1.5 2009/06/19 17:54:14 ericow Exp $
  *
- * Portions Copyrighted 2011-2023 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 package com.sun.identity.authentication.modules.httpbasic;
 
 import java.io.IOException;
-import java.security.AccessController;
 import java.security.Principal;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -40,7 +39,7 @@ import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.LoginException;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.utils.StringUtils;
@@ -94,8 +93,7 @@ public class HTTPBasic extends AMLoginModule {
         this.options = options;
         instanceName  = CollectionHelper.getMapAttr(options, MODCONFIG);
         try {
-            SSOToken adminToken = (SSOToken)AccessController.doPrivileged(
-                AdminTokenAction.getInstance());
+            SSOToken adminToken = AdminTokenAction.getInstance().run();
             AMAuthenticationManager amAM = amAuthenticationManagerFactory.create(adminToken, getRequestOrg());
             AMAuthenticationInstance amInstance =
                 amAM.getAuthenticationInstance(instanceName);

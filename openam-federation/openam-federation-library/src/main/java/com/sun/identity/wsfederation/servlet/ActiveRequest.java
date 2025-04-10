@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.wsfederation.servlet;
 
@@ -38,9 +46,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPBody;
@@ -49,6 +57,7 @@ import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPHeader;
 import javax.xml.soap.SOAPMessage;
 
+import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.saml2.plugins.WsFedAuthenticator;
 import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.StringUtils;
@@ -95,6 +104,8 @@ public class ActiveRequest extends WSFederationAction {
     private char[] password = null;
     private String expires = null;
     private String address = null;
+
+    private static MessageFactory messageFactory;
 
     public ActiveRequest(HttpServletRequest request, HttpServletResponse response) {
         super(request, response);
@@ -145,13 +156,12 @@ public class ActiveRequest extends WSFederationAction {
         // We can process the SOAP request now.
         SAMLUtils.checkHTTPContentLength(request);
 
-        MimeHeaders headers = SOAPCommunicator.getInstance().getHeaders(request);
+        MimeHeaders headers = SAMLUtils.getMimeHeaders(request);
         SOAPMessage soapFault;
         SSOToken ssoToken = null;
         int httpStatus = HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
         try (InputStream is = request.getInputStream()) {
-            SOAPMessage soapMessage = MessageFactory.newInstance(SOAPConstants.SOAP_1_2_PROTOCOL)
-                    .createMessage(headers, is);
+            SOAPMessage soapMessage = getMessageFactory().createMessage(headers, is);
             if (DEBUG.isDebugEnabled()) {
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 soapMessage.writeTo(baos);
@@ -338,5 +348,12 @@ public class ActiveRequest extends WSFederationAction {
         int end = text.lastIndexOf("<", text.lastIndexOf("Password>"));
 
         return text.substring(0, start + "Password>".length()) + "### MASKED PASSWORD ###" + text.substring(end);
+    }
+
+    private MessageFactory getMessageFactory() throws SOAPException {
+        if (messageFactory == null) {
+            messageFactory = MessageFactory.newInstance(SOAPConstants.SOAP_1_2_PROTOCOL);
+        }
+        return messageFactory;
     }
 }

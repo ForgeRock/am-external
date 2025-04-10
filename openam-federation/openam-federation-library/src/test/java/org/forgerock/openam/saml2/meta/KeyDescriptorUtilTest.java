@@ -11,12 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.saml2.meta;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 import java.security.cert.CertificateEncodingException;
@@ -24,10 +33,10 @@ import java.security.cert.X509Certificate;
 
 import javax.xml.bind.JAXBIntrospector;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.saml2.jaxb.xmlsig.KeyInfoType;
 import com.sun.identity.saml2.jaxb.xmlsig.X509DataType;
@@ -37,18 +46,15 @@ import com.sun.identity.saml2.jaxb.xmlsig.X509DataType;
  *
  * @since 7.0.0
  */
+@ExtendWith(MockitoExtension.class)
 public final class KeyDescriptorUtilTest {
 
     @Mock
     private X509Certificate certificate;
 
-    @BeforeMethod
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
-    }
 
     @Test
-    public void whenCertificatePassedShouldReturnValidKeyInfo() throws CertificateEncodingException {
+    void whenCertificatePassedShouldReturnValidKeyInfo() throws CertificateEncodingException {
         // Given
         byte[] encodedCertificate = "some-certificate".getBytes();
         given(certificate.getEncoded()).willReturn(encodedCertificate);
@@ -69,13 +75,15 @@ public final class KeyDescriptorUtilTest {
         assertThat(actualEncoding).isEqualTo(encodedCertificate);
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
-    public void whenCertificateEncodingFailsShouldThrowException() throws CertificateEncodingException {
-        // Given
-        given(certificate.getEncoded()).willThrow(CertificateEncodingException.class);
+    @Test
+    void whenCertificateEncodingFailsShouldThrowException() {
+        assertThatThrownBy(() -> {
+            // Given
+            given(certificate.getEncoded()).willThrow(CertificateEncodingException.class);
 
-        // When
-        KeyDescriptorUtil.createKeyInfoFromCertificate(certificate);
+            // When
+            KeyDescriptorUtil.createKeyInfoFromCertificate(certificate);
+        }).isInstanceOf(IllegalStateException.class);
     }
 
 }

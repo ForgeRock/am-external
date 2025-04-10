@@ -11,12 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
-
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 
 import java.util.Optional;
 
@@ -27,9 +33,8 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,33 +57,30 @@ public class AccountActiveDecisionNode extends AbstractDecisionNode {
     }
 
     private final Logger logger = LoggerFactory.getLogger(AccountActiveDecisionNode.class);
-    private final CoreWrapper coreWrapper;
-    private final LegacyIdentityService identityService;
     private final AMAccountLockout.Factory amAccountLockoutFactory;
     private final Realm realm;
+    private final NodeUserIdentityProvider identityProvider;
 
     /**
      * Create the node.
      *
      * @param realm                   the realm context
-     * @param coreWrapper             a core wrapper instance
-     * @param identityService         an {@link LegacyIdentityService} instance
      * @param amAccountLockoutFactory factory for generating account lockout objects
+     * @param identityProvider        the identity provider
      */
     @Inject
-    public AccountActiveDecisionNode(@Assisted Realm realm, CoreWrapper coreWrapper,
-            LegacyIdentityService identityService, AMAccountLockout.Factory amAccountLockoutFactory) {
-        this.coreWrapper = coreWrapper;
-        this.identityService = identityService;
+    public AccountActiveDecisionNode(@Assisted Realm realm, AMAccountLockout.Factory amAccountLockoutFactory,
+            NodeUserIdentityProvider identityProvider) {
         this.amAccountLockoutFactory = amAccountLockoutFactory;
         this.realm = realm;
+        this.identityProvider = identityProvider;
     }
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("AccountActiveDecisionNode started");
-        Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
-                identityService, coreWrapper);
+        Optional<AMIdentity> userIdentity = identityProvider.getAMIdentity(context.universalId,
+                context.getStateFor(this));
         if (userIdentity.isEmpty()) {
             throw new NodeProcessException("Failed to get the identity object");
         }

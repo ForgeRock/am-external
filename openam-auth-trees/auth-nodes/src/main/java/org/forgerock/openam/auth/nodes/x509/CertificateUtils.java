@@ -11,23 +11,37 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.x509;
 
+import static org.forgerock.util.LambdaExceptionUtils.rethrowFunction;
+
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertPath;
+import java.security.cert.CertPathValidator;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.forgerock.json.jose.jwk.JWK;
+import org.forgerock.json.jose.jws.SignedJwt;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.slf4j.Logger;
 
@@ -37,8 +51,37 @@ import org.slf4j.Logger;
 public final class CertificateUtils {
 
     private static final String X_509 = "X.509";
+    private static final String PKIX = "PKIX";
 
     private CertificateUtils() {
+    }
+
+    /**
+     * Create an instance of the JDK standard certificate factory.
+     *
+     * @return a {@link CertificateFactory}
+     */
+    public static CertificateFactory getX509Factory() {
+        try {
+            return CertificateFactory.getInstance(X_509);
+        } catch (CertificateException e) {
+            //Not expected to be thrown, X.509 always supported on Java
+            throw new IllegalStateException("Unexpected failure", e);
+        }
+    }
+
+    /**
+     * Generate a JDK default {@link CertPathValidator} using the {@code PKIX} algorithm.
+     *
+     * @return An initialised instance of the {@link CertPathValidator}
+     */
+    public static CertPathValidator getCertPathValidator() {
+        try {
+            return CertPathValidator.getInstance(PKIX);
+        } catch (NoSuchAlgorithmException e) {
+            //Not expected to be thrown, PKIX always supported on Java
+            throw new IllegalStateException("Unexpected error", e);
+        }
     }
 
     /**
@@ -61,6 +104,17 @@ public final class CertificateUtils {
     }
 
     /**
+     * Read a certificate from the provided path.
+     *
+     * @param path stream to the certificate file
+     * @return An {@link X509Certificate} read from the file system
+     * @throws CertificateException if there was an error reading the {@link Certificate}
+     */
+    public static X509Certificate readCertificate(InputStream path) throws CertificateException {
+        return (X509Certificate) getX509Factory().generateCertificate(path);
+    }
+
+    /**
      * Extract the certificates contained within the {@code x5c} field of a {@link JWK}.
      * <p>
      * Certificates are a binary format and as such the JWK specification encodes them as Base64 encoded
@@ -79,19 +133,32 @@ public final class CertificateUtils {
         List<Certificate> certificates = jwk.getX509Chain().stream()
                 .map(rawCertificate -> "-----BEGIN CERTIFICATE-----\n" + rawCertificate + "\n-----END CERTIFICATE-----")
                 .map(parseCertificate())
-                .collect(Collectors.toList());
-        return CertificateFactory.getInstance(X_509).generateCertPath(certificates);
+                .toList();
+        return getX509Factory().generateCertPath(certificates);
     }
 
-    private static Function<String, Certificate> parseCertificate() {
-        return value -> {
-            try {
-                return (X509Certificate) CertificateFactory.getInstance(X_509)
-                        .generateCertificate(new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8)));
-            } catch (CertificateException e) {
-                throw new IllegalStateException(e);
-            }
-        };
+    /**
+     * Extract the certificates contained within the {@code x5c} field of a {@link SignedJwt}.
+     * <p>
+     * Certificates are a binary format and as such the JWT specification encodes them as Base64 encoded
+     * strings. These need to be extracted from the JWT and processed.
+     * </p>
+     *
+     * @param jwt Non null {@link SignedJwt}.
+     * @return Non null {@link CertPath}.
+     * @throws CertificateException Throws when failed to extract the x5c field.
+     */
+    public static CertPath getCertPathFromJwtX5c(SignedJwt jwt) throws CertificateException {
+        List<Certificate> certificates = jwt.getHeader().getX509CertificateChain().stream()
+                .map(base64Encoded -> new String(Base64.getDecoder().decode(base64Encoded)))
+                .map(rawCertificate -> "-----BEGIN CERTIFICATE-----\n" + rawCertificate + "\n-----END CERTIFICATE-----")
+                .map(parseCertificate())
+                .toList();
+        return getX509Factory().generateCertPath(certificates);
     }
 
+    private static Function<String, Certificate> parseCertificate() throws CertificateException {
+        return rethrowFunction(value -> getX509Factory()
+                .generateCertificate(new ByteArrayInputStream(value.getBytes(StandardCharsets.UTF_8))));
+    }
 }

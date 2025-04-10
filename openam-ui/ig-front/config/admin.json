@@ -1,0 +1,46 @@
+{
+  "connectors": [
+    {
+      "port": 8443,
+      "tls": "ServerTlsOptions-1"
+    }
+  ],
+  "heap": [
+    {
+      "name": "ServerTlsOptions-1",
+      "type": "ServerTlsOptions",
+      "config": {
+        "keyManager": {
+          "type": "SecretsKeyManager",
+          "config": {
+            "signingSecretId": "key.manager.secret.id",
+            "secretsProvider": "ServerIdentityStore"
+          }
+        }
+      }
+    },
+    {
+      "type": "FileSystemSecretStore",
+      "name": "SecretsPasswords",
+      "config": {
+        "directory": "&{ig_keystore_directory}/",
+        "format": "PLAIN"
+      }
+    },
+    {
+      "type": "KeyStoreSecretStore",
+      "name": "ServerIdentityStore",
+      "config": {
+        "file": "&{ig_keystore_directory}/IG-keystore",
+        "storePassword": "keystore.pass",
+        "secretsProvider": "SecretsPasswords",
+        "mappings": [
+          {
+            "secretId": "key.manager.secret.id",
+            "aliases": ["https-connector-key"]
+          }
+        ]
+      }
+    }
+  ]
+}

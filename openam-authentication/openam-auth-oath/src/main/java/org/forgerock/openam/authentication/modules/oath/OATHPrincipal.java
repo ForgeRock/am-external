@@ -1,4 +1,12 @@
 /*
+ * Copyright 2025 Ping Identity Corporation. All Rights Reserved.
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
+ */
+/*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
  * Copyright © 2012 ForgeRock Inc. All rights reserved.
@@ -19,7 +27,7 @@
  * If applicable, add the following below the CDDL Header,
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
- * "Portions Copyrighted 2012 ForgeRock AS"
+ * "Portions Copyrighted 2012-2025 Ping Identity Corporation
  */
 
 package org.forgerock.openam.authentication.modules.oath;

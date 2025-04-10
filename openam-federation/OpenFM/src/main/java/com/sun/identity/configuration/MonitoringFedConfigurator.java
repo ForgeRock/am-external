@@ -24,13 +24,14 @@
  *
  * $Id: MonitoringFedConfig.java,v 1.1 2009/06/19 02:42:25 bigfatrat Exp $
  *
+ * Portions Copyrighted 2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.configuration;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
 
 import com.sun.identity.setup.AMSetupServlet;
 

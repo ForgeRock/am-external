@@ -11,21 +11,35 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.deviceprint;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.json.JsonValue.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.forgerock.json.JsonValue.field;
+import static org.forgerock.json.JsonValue.json;
+import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.utils.Time.newDate;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
@@ -33,24 +47,22 @@ import org.forgerock.openam.core.rest.devices.DeviceSerialisation;
 import org.forgerock.openam.core.rest.devices.deviceprint.DeviceIdDao;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
 import org.forgerock.openam.core.rest.devices.services.deviceprint.DeviceIdService;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.idm.AMIdentity;
 
 public class DeviceIdDaoTest {
-    private DeviceIdDao devicePrintDao;
-
     private final String username = "username";
     private final String realm = "realm";
-
+    private DeviceIdDao devicePrintDao;
     private AuthenticatorDeviceServiceFactory<DeviceIdService> mockServiceFactory;
     private DeviceIdService mockDeviceService;
     private DeviceSerialisation mockDeviceSerialization;
     private AMIdentity mockAMIdentity;
 
-    @BeforeMethod
-    public void theSetUp() { //you need this
+    @BeforeEach
+    void theSetUp() { //you need this
         mockServiceFactory = mock(AuthenticatorDeviceServiceFactory.class);
         mockDeviceService = mock(DeviceIdService.class);
         mockDeviceSerialization = mock(DeviceSerialisation.class);
@@ -59,7 +71,7 @@ public class DeviceIdDaoTest {
     }
 
     @Test
-    public void shouldGetProfiles() throws Exception {
+    void shouldGetProfiles() throws Exception {
 
         //Given
         given(mockServiceFactory.create("realm")).willReturn(mockDeviceService);
@@ -76,7 +88,7 @@ public class DeviceIdDaoTest {
     }
 
     @Test
-    public void shouldSaveProfiles() throws Exception {
+    void shouldSaveProfiles() throws Exception {
 
         //Given
         List<JsonValue> profiles = new ArrayList<>();
@@ -106,24 +118,24 @@ public class DeviceIdDaoTest {
     }
 
 
-    @Test(expectedExceptions = DevicePersistenceException.class)
-    public void shouldThrowDevicePersistenceExceptionIfNoUserNamer() throws Exception {
+    @Test
+    void shouldThrowDevicePersistenceExceptionIfNoUserNamer() throws Exception {
 
         //When
-        devicePrintDao.getDeviceProfiles(null, realm);
-
-        // Then - DevicePersistenceException exception;
-
+        assertThatThrownBy(() -> devicePrintDao.getDeviceProfiles(null, realm))
+                //Then
+                .isInstanceOf(DevicePersistenceException.class)
+                .hasMessage("getIdentity: No user name provided");
     }
 
-    @Test(expectedExceptions = DevicePersistenceException.class)
-    public void shouldThrowDevicePersistenceExceptionIfNoUserNamerOverloadedMethod() throws Exception {
+    @Test
+    void shouldThrowDevicePersistenceExceptionIfNoUserNamerOverloadedMethod() throws Exception {
         // Test the overloaded method.
         //When
-        devicePrintDao.getDeviceProfiles(null, realm);
-
-        // Then - DevicePersistenceException exception;
-
+        assertThatThrownBy(() -> devicePrintDao.getDeviceProfiles(null, realm))
+                //Then
+                .isInstanceOf(DevicePersistenceException.class)
+                .hasMessage("getIdentity: No user name provided");
     }
 
     private class DeviceIdDaoMockedGetIdentity extends DeviceIdDao {
@@ -140,11 +152,6 @@ public class DeviceIdDaoTest {
         @Override
         protected AMIdentity getIdentity(String userName, String realm) {
             return mockAMIdentity;
-        }
-
-        @Override
-        protected Set<String> getUserAliasList(String realm) {
-            return Collections.emptySet();
         }
     }
 }

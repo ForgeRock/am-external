@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.xacml.policy.impl;
@@ -21,17 +29,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.URI;
 import java.util.List;
 
-import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.sun.identity.shared.xml.XMLUtils;
 import com.sun.identity.xacml.common.XACMLConstants;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ObligationImplTest {
 
-    @DataProvider
     public Object[][] xmlTestCases() {
         return new Object[][] {
                 { true, true, "<xacml:Obligation " +
@@ -62,7 +72,8 @@ public class ObligationImplTest {
         };
     }
 
-    @Test(dataProvider = "xmlTestCases")
+    @ParameterizedTest
+    @MethodSource("xmlTestCases")
     public void testToXmlString(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
         // Given
         ObligationImpl obligation = new ObligationImpl();

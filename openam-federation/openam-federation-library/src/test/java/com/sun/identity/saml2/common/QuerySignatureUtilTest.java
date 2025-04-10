@@ -11,16 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.common;
 
 import static com.sun.identity.saml2.common.QuerySignatureUtil.isValidSignature;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.math.BigInteger;
 import java.security.KeyPair;
@@ -33,18 +39,20 @@ import java.util.Set;
 import javax.security.auth.x500.X500Principal;
 
 import org.forgerock.json.jose.utils.DerUtils;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class QuerySignatureUtilTest {
 
     @Mock
     private X509Certificate certificate;
 
-    @BeforeMethod
-    public void setup() throws Exception {
-        openMocks(this).close();
+    @BeforeEach
+    void setup() throws Exception {
 
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
         keyPairGenerator.initialize(new ECGenParameterSpec("secp256r1"));
@@ -56,7 +64,7 @@ public class QuerySignatureUtilTest {
     }
 
     @Test
-    public void shouldRejectInvalidEcdsaSignatureValue() throws Exception {
+    void shouldRejectInvalidEcdsaSignatureValue() throws Exception {
         Signature signature = Signature.getInstance("SHA256WithECDSA");
         byte[] invalidSig = DerUtils.encodeEcdsaSignature(new byte[64]);
 

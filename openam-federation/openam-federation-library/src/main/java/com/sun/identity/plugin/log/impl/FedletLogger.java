@@ -24,7 +24,7 @@
  *
  * $Id: FedletLogger.java,v 1.3 2008/08/06 17:28:14 exu Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.plugin.log.impl;

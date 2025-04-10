@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.jwt;
 
@@ -66,19 +74,22 @@ import org.forgerock.secrets.keys.VerificationKey;
 import org.forgerock.util.encode.Base64url;
 import org.forgerock.util.promise.NeverThrowsException;
 import org.forgerock.util.promise.Promise;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.sm.SMSException;
 
 @SuppressWarnings({"deprecation", "rawtypes", "unchecked"})
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class PersistentJwtStringSupplierTest {
 
     public static final Purpose<DataEncryptionKey> DATA_ENCRYPTION_KEY_PURPOSE =
@@ -122,8 +133,8 @@ public class PersistentJwtStringSupplierTest {
     @Mock
     private SigningManager signingManager;
 
-    @Before
-    public void before() throws Exception {
+    @BeforeEach
+    void before() throws Exception {
         PersistentJwtProvider persistentJwtProvider = new PersistentJwtProvider(authKeyFactory,
                 new JwtReconstruction(), amKeyProvider, realmLookup, secretReferenceCache, signingManager);
         persistentJwtStringSupplier = new PersistentJwtStringSupplier(new JwtBuilderFactory(),
@@ -140,7 +151,7 @@ public class PersistentJwtStringSupplierTest {
     }
 
     @Test
-    public void testCreateJwtStringWithNullHmacKey() {
+    void testCreateJwtStringWithNullHmacKey() {
         assertThatThrownBy(() -> persistentJwtStringSupplier.createJwtString("orgname",
                 getEmptyAuthContext(), 40, 20, null, null))
                 .isInstanceOfSatisfying(NullPointerException.class,
@@ -148,7 +159,7 @@ public class PersistentJwtStringSupplierTest {
     }
 
     @Test
-    public void testCreateJwtStringWithEmptyEncryptionKeyAndEmptyDeprecatedEncryptionKey() {
+    void testCreateJwtStringWithEmptyEncryptionKeyAndEmptyDeprecatedEncryptionKey() {
         // Given
         given(realmCache.active(DATA_ENCRYPTION_KEY_PURPOSE))
                 .willAnswer(a -> SecretReference.active(new SecretsProvider(), DATA_ENCRYPTION_KEY_PURPOSE,
@@ -162,7 +173,7 @@ public class PersistentJwtStringSupplierTest {
     }
 
     @Test
-    public void testCreateJwtStringWithEmptyEncryptionKeyAndPresentDeprecatedEncryptionKey() throws Exception {
+    void testCreateJwtStringWithEmptyEncryptionKeyAndPresentDeprecatedEncryptionKey() throws Exception {
         // Given
         given(realmCache.active(DATA_ENCRYPTION_KEY_PURPOSE))
                 .willAnswer(a -> SecretReference.active(new SecretsProvider(), DATA_ENCRYPTION_KEY_PURPOSE,
@@ -187,7 +198,7 @@ public class PersistentJwtStringSupplierTest {
     }
 
     @Test
-    public void testCreateJwtStringWithPresentEncryptionKeyAndEmptyDeprecatedEncryptionKey() throws Exception {
+    void testCreateJwtStringWithPresentEncryptionKeyAndEmptyDeprecatedEncryptionKey() throws Exception {
         // Given
         given(realmCache.active(DATA_ENCRYPTION_KEY_PURPOSE))
                 .willAnswer(a -> SecretReference.constant(
@@ -211,7 +222,7 @@ public class PersistentJwtStringSupplierTest {
     }
 
     @Test
-    public void testCreateJwtStringWithPresentEncryptionKeyAndPresentDeprecatedEncryptionKey() throws Exception {
+    void testCreateJwtStringWithPresentEncryptionKeyAndPresentDeprecatedEncryptionKey() throws Exception {
         // Given
         given(realmCache.active(DATA_ENCRYPTION_KEY_PURPOSE))
                 .willAnswer(a -> SecretReference.constant(
@@ -239,14 +250,14 @@ public class PersistentJwtStringSupplierTest {
     }
 
     @Test
-    public void testGetUpdatedJwtWithNullJwtCookie() throws Exception {
+    void testGetUpdatedJwtWithNullJwtCookie() throws Exception {
         Jwt jwt = persistentJwtStringSupplier.getUpdatedJwt(null,
                 "orgName", signingKeyReference, verificationKeysReference, 10);
         assertThat(jwt).isNull();
     }
 
     @Test
-    public void testGetUpdatedJwtWithJwtCookie() throws Exception {
+    void testGetUpdatedJwtWithJwtCookie() throws Exception {
         // Given
         given(realmCache.active(DATA_ENCRYPTION_KEY_PURPOSE))
                 .willAnswer(a -> SecretReference.active(new SecretsProvider(), DATA_ENCRYPTION_KEY_PURPOSE,
@@ -288,7 +299,7 @@ public class PersistentJwtStringSupplierTest {
     }
 
     @Test
-    public void testBuildEncryptedJwtStringCatchesFileNotFoundException() throws Exception {
+    void testBuildEncryptedJwtStringCatchesFileNotFoundException() throws Exception {
         given(realmCache.active(DATA_ENCRYPTION_KEY_PURPOSE))
                 .willAnswer(a -> SecretReference.active(new SecretsProvider(), DATA_ENCRYPTION_KEY_PURPOSE,
                         FIXED_CLOCK));
@@ -299,7 +310,7 @@ public class PersistentJwtStringSupplierTest {
     }
 
     @Test
-    public void testBuildEncryptedJwtStringCatchesSMSException() throws Exception {
+    void testBuildEncryptedJwtStringCatchesSMSException() throws Exception {
         given(realmCache.active(DATA_ENCRYPTION_KEY_PURPOSE))
                 .willAnswer(a -> SecretReference.active(new SecretsProvider(), DATA_ENCRYPTION_KEY_PURPOSE,
                         FIXED_CLOCK));
@@ -310,7 +321,7 @@ public class PersistentJwtStringSupplierTest {
     }
 
     @Test
-    public void testBuildEncryptedJwtStringCatchesSSOException() throws Exception {
+    void testBuildEncryptedJwtStringCatchesSSOException() throws Exception {
         given(realmCache.active(DATA_ENCRYPTION_KEY_PURPOSE))
                 .willAnswer(a -> SecretReference.active(new SecretsProvider(), DATA_ENCRYPTION_KEY_PURPOSE,
                         FIXED_CLOCK));
@@ -321,7 +332,7 @@ public class PersistentJwtStringSupplierTest {
     }
 
     @Test
-    public void testCreateJwtStringSetsKidOnJwt() throws Exception {
+    void testCreateJwtStringSetsKidOnJwt() throws Exception {
         // Given
         given(realmCache.active(DATA_ENCRYPTION_KEY_PURPOSE))
                 .willAnswer(a -> SecretReference.active(new SecretsProvider(), DATA_ENCRYPTION_KEY_PURPOSE,

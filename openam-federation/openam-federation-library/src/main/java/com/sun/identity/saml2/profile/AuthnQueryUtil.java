@@ -24,7 +24,7 @@
  *
  * $Id: AuthnQueryUtil.java,v 1.8 2008/12/03 00:32:31 hengming Exp $
  *
- * Portions Copyrighted 2010-2024 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 
@@ -39,14 +39,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.annotations.Supported;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
+import org.forgerock.openam.saml2.IDPAuthnContextMapperFactory;
 import org.forgerock.openam.saml2.Saml2EntityRole;
 import org.forgerock.openam.saml2.crypto.signing.Saml2SigningCredentials;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
@@ -229,8 +230,9 @@ public class AuthnQueryUtil {
                 null, null);
         }
 
-        IDPAuthnContextMapper idpAuthnContextMapper =
-            IDPSSOUtil.getIDPAuthnContextMapper(realm, authnAuthorityEntityID);
+        IDPAuthnContextMapperFactory idpAuthnContextMapperFactory = InjectorHolder.getInstance(IDPAuthnContextMapperFactory.class);
+        IDPAuthnContextMapper idpAuthnContextMapper = idpAuthnContextMapperFactory.getAuthnContextMapper(realm,
+                authnAuthorityEntityID);
 
         // get assertion for matching authncontext using session
         List returnAssertions = new ArrayList();
@@ -452,8 +454,9 @@ public class AuthnQueryUtil {
                 config, authnServiceURL, realm);
         
         SOAPMessage resMsg = null;
+        SOAPCommunicator soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
         try {
-            resMsg = SOAPCommunicator.getInstance().sendSOAPMessage(authnQueryXMLString,
+            resMsg = soapCommunicator.sendSOAPMessage(authnQueryXMLString,
                     authnServiceURL, true);
         } catch (SOAPException se) {
             logger.error(
@@ -462,7 +465,7 @@ public class AuthnQueryUtil {
                 SAML2Utils.bundle.getString("errorSendingAuthnQuery"));
         }
         
-        Element respElem = SOAPCommunicator.getInstance().getSamlpElement(resMsg, "Response");
+        Element respElem = soapCommunicator.getSamlpElement(resMsg, "Response");
         Response response =
             ProtocolFactory.getInstance().createResponse(respElem);
         

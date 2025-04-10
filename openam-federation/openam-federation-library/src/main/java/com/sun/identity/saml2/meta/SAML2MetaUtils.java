@@ -24,7 +24,7 @@
  *
  * $Id: SAML2MetaUtils.java,v 1.9 2009/09/21 17:28:12 exu Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.meta;
 
@@ -118,6 +118,25 @@ public final class SAML2MetaUtils {
 
     private static NamespacePrefixMapperImpl nsPrefixMapper =
             new NamespacePrefixMapperImpl();
+
+    /**
+     * How to import the metadata.
+     */
+    public enum MetadataUpdateType {
+
+        /**
+         * Create a new remote instance using the Metadata. Throw an exception if an instance with the same entity ID
+         * already exists.
+         */
+        CREATE,
+
+        /**
+         * Update the certificates in an existing instance. Throw an exception if an instance with the same entity ID
+         * does not exist.
+         */
+        UPDATE_CERTIFICATES
+
+    }
 
     static {
         try {
@@ -571,22 +590,34 @@ public final class SAML2MetaUtils {
      * @throws SAML2MetaException for any issues as a result of trying to create the Entities.
      * @throws JAXBException for any issues converting the document into a JAXB document.
      */
-    public static List<String> importSAML2Document(SAML2MetaManager metaManager,
-            String realm, Document doc) throws SAML2MetaException, JAXBException {
+    public static List<String> importSAML2Document(
+            SAML2MetaManager metaManager,
+            MetadataUpdateType metadataUpdateType,
+            String realm,
+            Document doc
+    ) throws SAML2MetaException, JAXBException {
 
         List<String> result = new ArrayList<String>(1);
 
         Object element = preProcessSAML2Document(doc);
 
         if (element instanceof EntityDescriptorElement) {
-            String entityId = importSAML2Entity(metaManager, realm,
-                    (EntityDescriptorElement)element);
+            String entityId = importSAML2Entity(
+                    metaManager,
+                    metadataUpdateType,
+                    realm,
+                    (EntityDescriptorElement) element
+            );
             if (entityId != null) {
                 result.add(entityId);
             }
         } else if (element instanceof EntitiesDescriptorElement) {
-            result = importSAML2Entites(metaManager, realm,
-                    (EntitiesDescriptorElement)element);
+            result = importSAML2Entities(
+                    metaManager,
+                    metadataUpdateType,
+                    realm,
+                    (EntitiesDescriptorElement) element
+            );
         }
 
         if (debug.isDebugEnabled()) {
@@ -610,8 +641,12 @@ public final class SAML2MetaUtils {
         return obj;
     }
 
-    private static List<String> importSAML2Entites(SAML2MetaManager metaManager, String realm,
-            EntitiesDescriptorElement descriptor) throws SAML2MetaException {
+    private static List<String> importSAML2Entities(
+            SAML2MetaManager metaManager,
+            MetadataUpdateType metadataUpdateType,
+            String realm,
+            EntitiesDescriptorElement descriptor
+    ) throws SAML2MetaException {
 
         List<String> result = new ArrayList<String>();
 
@@ -621,8 +656,12 @@ public final class SAML2MetaUtils {
             while (entities.hasNext()) {
                 JAXBElement<?> o = entities.next();
                 if (o instanceof EntityDescriptorElement) {
-                    String entityId = importSAML2Entity(metaManager, realm,
-                            (EntityDescriptorElement) o);
+                    String entityId = importSAML2Entity(
+                            metaManager,
+                            metadataUpdateType,
+                            realm,
+                            (EntityDescriptorElement) o
+                    );
                     if (entityId != null) {
                         result.add(entityId);
                     }
@@ -633,8 +672,12 @@ public final class SAML2MetaUtils {
         return result;
     }
 
-    private static String importSAML2Entity(SAML2MetaManager metaManager, String realm,
-            EntityDescriptorElement descriptor) throws SAML2MetaException {
+    private static String importSAML2Entity(
+            SAML2MetaManager metaManager,
+            MetadataUpdateType metadataUpdateType,
+            String realm,
+            EntityDescriptorElement descriptor
+    ) throws SAML2MetaException {
 
         String result = null;
 
@@ -654,7 +697,7 @@ public final class SAML2MetaUtils {
         }
 
         if (roles.size() > 0) {
-            metaManager.createEntityDescriptor(realm, descriptor);
+            metaManager.createEntityDescriptor(metadataUpdateType, realm, descriptor);
             result = descriptor.getValue().getEntityID();
         }
 

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
@@ -20,26 +28,22 @@ import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.oath.OathRegistrationHelper.NEXT_OPTION;
 
-import javax.inject.Inject;
-import javax.security.auth.callback.Callback;
-import javax.security.auth.callback.ConfirmationCallback;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.assistedinject.Assisted;
-import com.sun.identity.idm.AMIdentity;
-import org.forgerock.am.identity.application.LegacyIdentityService;
+import javax.inject.Inject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.ConfirmationCallback;
+
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
-import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathService;
 import org.forgerock.openam.utils.CollectionUtils;
@@ -47,6 +51,10 @@ import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableList;
+import com.google.inject.assistedinject.Assisted;
+import com.sun.identity.idm.AMIdentity;
 
 /**
  * The OATH Registration node is a registration node that does not authenticate a user but
@@ -67,21 +75,16 @@ public class OathRegistrationNode extends AbstractMultiFactorNode {
      * The Oath registration node constructor.
      *
      * @param config                  the node configuration.
-     * @param realm                   the realm.
-     * @param coreWrapper             the {@code CoreWrapper} instance.
      * @param multiFactorNodeDelegate shared utilities common to second factor implementations.
-     * @param identityService         an instance of the IdentityService.
      * @param oathRegistrationHelper  the oath registration helper class.
+     * @param identityProvider        the identity provider.
      */
     @Inject
     public OathRegistrationNode(
             @Assisted OathRegistrationConfig config,
-            @Assisted Realm realm,
-            CoreWrapper coreWrapper,
             MultiFactorNodeDelegate<AuthenticatorOathService> multiFactorNodeDelegate,
-            LegacyIdentityService identityService,
-            OathRegistrationHelper oathRegistrationHelper) {
-        super(realm, coreWrapper, multiFactorNodeDelegate, identityService);
+            OathRegistrationHelper oathRegistrationHelper, NodeUserIdentityProvider identityProvider) {
+        super(multiFactorNodeDelegate, identityProvider);
         this.config = config;
         this.oathRegistrationHelper = oathRegistrationHelper;
     }

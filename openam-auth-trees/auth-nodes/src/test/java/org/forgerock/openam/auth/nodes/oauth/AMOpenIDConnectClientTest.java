@@ -11,16 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.oauth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.openam.oauth2.OAuth2Constants.ClientPurpose.RP_ID_TOKEN_DECRYPTION;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -60,75 +68,93 @@ import org.forgerock.secrets.SecretBuilder;
 import org.forgerock.secrets.keys.DataDecryptionKey;
 import org.forgerock.secrets.keys.SigningKey;
 import org.forgerock.util.promise.Promises;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeSuite;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class AMOpenIDConnectClientTest {
-
-    @Mock
-    private Handler httpHandler;
-
-    @Mock
-    private Clock clock;
-
-    private SecureRandom random;
-
-    @Mock
-    private OpenIdResolverService resolverService;
-
-    @Mock
-    private OpenIdResolverServiceConfigurator serviceConfigurator;
-
-    @Mock
-    private OpenIDConnectClientConfiguration config;
-
-    @Mock
-    private OpenIDConnectClientConfig amConfig;
-
-    @Mock
-    private SecretsProviderFacade secretsProviderFacade;
-
-    @Mock
-    private DataStore dataStore;
-
-    @Mock
-    JWKOpenIdResolverImpl jwkOpenIdResolver;
-
-    @Mock
-    SharedSecretOpenIdResolverImpl sharedSecretOpenIdResolver;
-
-    private JsonValue claims;
-    private KeyPair keyPair;
 
     private static final String NAME_CLAIM_KEY = "name";
     private static final String NAME_CLAIM_VALUE = "demo";
     private static final String MAIL_CLAIM_KEY = "mail";
     private static final String MAIL_CLAIM_VALUE = "demo@demo.com";
+    private static JsonValue claims;
+    private static KeyPair keyPair;
+    @Mock
+    JWKOpenIdResolverImpl jwkOpenIdResolver;
+    @Mock
+    SharedSecretOpenIdResolverImpl sharedSecretOpenIdResolver;
+    @Mock
+    private Handler httpHandler;
+    @Mock
+    private Clock clock;
+    private SecureRandom random;
+    @Mock
+    private OpenIdResolverService resolverService;
+    @Mock
+    private OpenIdResolverServiceConfigurator serviceConfigurator;
+    @Mock
+    private OpenIDConnectClientConfiguration config;
+    @Mock
+    private OpenIDConnectClientConfig amConfig;
+    @Mock
+    private SecretsProviderFacade secretsProviderFacade;
+    @Mock
+    private DataStore dataStore;
 
-    @DataProvider
-    public Object[][] incorrectExpectations() throws Exception {
-        return new Object[][]{
-                {buildSignedJwt(), UserInfoResponseType.JSON},
-                {buildSignedJwt(), UserInfoResponseType.SIGNED_THEN_ENCRYPTED_JWT},
-                {buildSignedThenEncryptedJwt(), UserInfoResponseType.SIGNED_JWT},
-                {buildSignedThenEncryptedJwt(), UserInfoResponseType.JSON},
-                {claims, UserInfoResponseType.SIGNED_THEN_ENCRYPTED_JWT},
-                {claims, UserInfoResponseType.SIGNED_THEN_ENCRYPTED_JWT},
-        };
+    public static Stream<Arguments> incorrectExpectations() throws Exception {
+        return Stream.of(
+                Arguments.of(buildSignedJwt(), UserInfoResponseType.JSON),
+                Arguments.of(buildSignedJwt(), UserInfoResponseType.SIGNED_THEN_ENCRYPTED_JWT),
+                Arguments.of(buildSignedThenEncryptedJwt(), UserInfoResponseType.SIGNED_JWT),
+                Arguments.of(buildSignedThenEncryptedJwt(), UserInfoResponseType.JSON),
+                Arguments.of(claims, UserInfoResponseType.SIGNED_THEN_ENCRYPTED_JWT),
+                Arguments.of(claims, UserInfoResponseType.SIGNED_THEN_ENCRYPTED_JWT)
+        );
     }
 
-    @BeforeSuite
-    public void setUp() throws Exception {
-        openMocks(this);
+    private static String buildSignedJwt() throws Exception {
+        SigningKey signingKey = new SigningKey(new SecretBuilder()
+                .secretKey(keyPair.getPrivate())
+                .publicKey(keyPair.getPublic())
+                .expiresAt(Instant.MAX)
+                .stableId("some-id"));
+
+        return new SignedJwtBuilderImpl(new SecretRSASigningHandler(signingKey))
+                .headers().alg(JwsAlgorithm.RS256).done()
+                .claims(new JwtClaimsSetBuilder().claims(claims.asMap()).build())
+                .build();
+    }
+
+    private static String buildSignedThenEncryptedJwt() throws Exception {
+        SigningKey signingKey = new SigningKey(new SecretBuilder()
+                .secretKey(keyPair.getPrivate())
+                .publicKey(keyPair.getPublic())
+                .expiresAt(Instant.MAX)
+                .stableId("some-id"));
+
+        return new SignedJwtBuilderImpl(new SecretRSASigningHandler(signingKey))
+                .headers().alg(JwsAlgorithm.RS256).done()
+                .claims(new JwtClaimsSetBuilder().claims(claims.asMap()).build())
+                .encrypt(keyPair.getPublic()).headers().alg(JweAlgorithm.RSA_OAEP_256).enc(EncryptionMethod.A128GCM)
+                .cty("JWT").done().build();
+    }
+
+    @BeforeEach
+    void setUp() throws Exception {
         random = SecureRandom.getInstanceStrong();
         keyPair = createTestKeyPair();
         claims = new JsonValue(Map.of(NAME_CLAIM_KEY, NAME_CLAIM_VALUE, MAIL_CLAIM_KEY, MAIL_CLAIM_VALUE));
     }
 
     @Test
-    public void shouldReturnUserInfoFromIdTokenJwtClaimsIfNoUserInfoUri() throws Exception {
+    void shouldReturnUserInfoFromIdTokenJwtClaimsIfNoUserInfoUri() throws Exception {
         //given
         dataStoreContainsClaimsSetAndAccessToken();
         when(config.getUserInfoEndpoint()).thenReturn(null);
@@ -142,7 +168,7 @@ public class AMOpenIDConnectClientTest {
     }
 
     @Test
-    public void shouldReturnUserInfoFromIdTokenJwtClaimsIfNoAccessToken() throws Exception {
+    void shouldReturnUserInfoFromIdTokenJwtClaimsIfNoAccessToken() throws Exception {
         //given
         dataStoreContainsClaimsSetButNoAccessToken();
         userInfoEndpointConfigured();
@@ -156,7 +182,7 @@ public class AMOpenIDConnectClientTest {
     }
 
     @Test
-    public void shouldReturnUserInfoFromValidJsonResponse() throws Exception {
+    void shouldReturnUserInfoFromValidJsonResponse() throws Exception {
         //given
         dataStoreContainsClaimsSetAndAccessToken();
         userInfoEndpointConfigured();
@@ -173,7 +199,7 @@ public class AMOpenIDConnectClientTest {
     }
 
     @Test
-    public void shouldReturnUserInfoFromValidSignedJwt() throws Exception {
+    void shouldReturnUserInfoFromValidSignedJwt() throws Exception {
         //given
         dataStoreContainsClaimsSetAndAccessToken();
         userInfoEndpointConfigured();
@@ -191,7 +217,7 @@ public class AMOpenIDConnectClientTest {
     }
 
     @Test
-    public void shouldReturnUserInfoFromValidSignedThenEncryptedJwt() throws Exception {
+    void shouldReturnUserInfoFromValidSignedThenEncryptedJwt() throws Exception {
         //given
         dataStoreContainsClaimsSetAndAccessToken();
         userInfoEndpointConfigured();
@@ -209,42 +235,44 @@ public class AMOpenIDConnectClientTest {
         assertThat(userInfo.getRawProfile().get(MAIL_CLAIM_KEY).asString()).isEqualTo(MAIL_CLAIM_VALUE);
     }
 
-    @Test(expectedExceptions = OAuthException.class)
-    public void shouldThrowExceptionIfCannotDecryptSignedThenEncryptedJwt() throws Exception {
+    @Test
+    void shouldThrowExceptionIfCannotDecryptSignedThenEncryptedJwt() throws Exception {
         //given
         dataStoreContainsClaimsSetAndAccessToken();
         userInfoEndpointConfigured();
-        authenticationIdProperlyConfigured();
         userInfoEndpointResponse(Status.OK, buildSignedThenEncryptedJwt());
         clientConfiguredForResponseType(UserInfoResponseType.SIGNED_THEN_ENCRYPTED_JWT);
-        resolverServiceReturnsExpectedResolver();
         secretsProviderReturnsKey(invalidDataDecryptionKey());
 
         //when
-        amOpenIdConnectClient().getUserInfo(dataStore).getOrThrow();
+        assertThatThrownBy(() -> amOpenIdConnectClient().getUserInfo(dataStore).getOrThrow())
+                //then
+                .isInstanceOf(OAuthException.class)
+                .hasMessageContaining("Unable to process request:");
     }
 
-    @Test(expectedExceptions = OAuthException.class)
-    public void shouldThrowExceptionIfCannotVerifySignedJwt() throws Exception {
+    @Test
+    void shouldThrowExceptionIfCannotVerifySignedJwt() throws Exception {
         //given
         dataStoreContainsClaimsSetAndAccessToken();
         userInfoEndpointConfigured();
-        authenticationIdProperlyConfigured();
         userInfoEndpointResponse(Status.OK, buildSignedJwt());
         clientConfiguredForResponseType(UserInfoResponseType.SIGNED_JWT);
         resolverServiceReturnsExpectedResolver();
         expectedResolverThrowsInvalidSignatureException();
 
         //when
-        amOpenIdConnectClient().getUserInfo(dataStore).getOrThrow();
+        assertThatThrownBy(() -> amOpenIdConnectClient().getUserInfo(dataStore).getOrThrow())
+                //then
+                .isInstanceOf(OAuthException.class)
+                .hasMessageContaining("Unable to process request:");
     }
 
-    @Test(expectedExceptions = OAuthException.class)
-    public void shouldThrowExceptionIfCannotVerifySignedThenEncryptedJwt() throws Exception {
+    @Test
+    void shouldThrowExceptionIfCannotVerifySignedThenEncryptedJwt() throws Exception {
         //given
         dataStoreContainsClaimsSetAndAccessToken();
         userInfoEndpointConfigured();
-        authenticationIdProperlyConfigured();
         userInfoEndpointResponse(Status.OK, buildSignedThenEncryptedJwt());
         clientConfiguredForResponseType(UserInfoResponseType.SIGNED_THEN_ENCRYPTED_JWT);
         resolverServiceReturnsExpectedResolver();
@@ -252,40 +280,45 @@ public class AMOpenIDConnectClientTest {
         expectedResolverThrowsInvalidSignatureException();
 
         //when
-        amOpenIdConnectClient().getUserInfo(dataStore).getOrThrow();
+        assertThatThrownBy(() -> amOpenIdConnectClient().getUserInfo(dataStore).getOrThrow())
+                //then
+                .isInstanceOf(OAuthException.class)
+                .hasMessageContaining("Unable to process request:");
     }
 
-    @Test(expectedExceptions = OAuthException.class)
-    public void shouldThrowExceptionIfProcessingJwtWithoutJWKOpenIdResolverImplResolver() throws Exception {
+    /* HELPER METHODS */
+
+    @Test
+    void shouldThrowExceptionIfProcessingJwtWithoutJWKOpenIdResolverImplResolver() throws Exception {
         //given
         dataStoreContainsClaimsSetAndAccessToken();
         userInfoEndpointConfigured();
-        authenticationIdProperlyConfigured();
         userInfoEndpointResponse(Status.OK, buildSignedJwt());
         clientConfiguredForResponseType(UserInfoResponseType.SIGNED_JWT);
         resolverServiceReturnsUnexpectedResolver();
 
         //when
-        amOpenIdConnectClient().getUserInfo(dataStore).getOrThrow();
+        assertThatThrownBy(() -> amOpenIdConnectClient().getUserInfo(dataStore).getOrThrow())
+                //then
+                .isInstanceOf(OAuthException.class)
+                .hasMessage("Unable to verify signature");
     }
 
-    @Test(dataProvider = "incorrectExpectations", expectedExceptions = OAuthException.class)
+    @ParameterizedTest
+    @MethodSource("incorrectExpectations")
     public void shouldThrowExceptionIfExpectedResponseTypeNotReceived(Object responseEntity,
             UserInfoResponseType expectedType) throws Exception {
         //given
         dataStoreContainsClaimsSetAndAccessToken();
         userInfoEndpointConfigured();
-        authenticationIdProperlyConfigured();
         userInfoEndpointResponse(Status.OK, responseEntity);
         clientConfiguredForResponseType(expectedType);
-        resolverServiceReturnsExpectedResolver();
-        secretsProviderReturnsKey(validDataDecryptionKey());
 
         //when
-        amOpenIdConnectClient().getUserInfo(dataStore).getOrThrow();
+        assertThatThrownBy(() -> amOpenIdConnectClient().getUserInfo(dataStore).getOrThrow())
+                .isInstanceOf(OAuthException.class)
+                .hasMessageContaining("Unable to process request:");
     }
-
-    /* HELPER METHODS */
 
     private AMOpenIDConnectClient amOpenIdConnectClient() {
         return new AMOpenIDConnectClient(httpHandler, config, clock, random, resolverService,
@@ -336,33 +369,6 @@ public class AMOpenIDConnectClientTest {
     private void expectedResolverThrowsInvalidSignatureException() throws InvalidSignatureException,
             FailedToLoadJWKException {
         doThrow(new InvalidSignatureException()).when(jwkOpenIdResolver).verifySignature(any());
-    }
-
-    private String buildSignedJwt() throws Exception {
-        SigningKey signingKey = new SigningKey(new SecretBuilder()
-                .secretKey(keyPair.getPrivate())
-                .publicKey(keyPair.getPublic())
-                .expiresAt(Instant.MAX)
-                .stableId("some-id"));
-
-        return new SignedJwtBuilderImpl(new SecretRSASigningHandler(signingKey))
-                .headers().alg(JwsAlgorithm.RS256).done()
-                .claims(new JwtClaimsSetBuilder().claims(claims.asMap()).build())
-                .build();
-    }
-
-    private String buildSignedThenEncryptedJwt() throws Exception {
-        SigningKey signingKey = new SigningKey(new SecretBuilder()
-                .secretKey(keyPair.getPrivate())
-                .publicKey(keyPair.getPublic())
-                .expiresAt(Instant.MAX)
-                .stableId("some-id"));
-
-        return new SignedJwtBuilderImpl(new SecretRSASigningHandler(signingKey))
-                .headers().alg(JwsAlgorithm.RS256).done()
-                .claims(new JwtClaimsSetBuilder().claims(claims.asMap()).build())
-                .encrypt(keyPair.getPublic()).headers().alg(JweAlgorithm.RSA_OAEP_256).enc(EncryptionMethod.A128GCM)
-                .cty("JWT").done().build();
     }
 
     private KeyPair createTestKeyPair() throws Exception {

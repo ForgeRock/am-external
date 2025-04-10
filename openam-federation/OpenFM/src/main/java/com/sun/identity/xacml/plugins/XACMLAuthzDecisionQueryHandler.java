@@ -24,7 +24,7 @@
  *
  * $Id: XACMLAuthzDecisionQueryHandler.java,v 1.6 2008/06/25 05:50:16 qcheng Exp $
  *
- * Portions Copyrighted 2011-2019 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.xacml.plugins;
@@ -38,13 +38,15 @@ import java.util.Map;
 
 import javax.xml.soap.SOAPMessage;
 
+import org.forgerock.guice.core.InjectorHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
 import com.iplanet.sso.SSOException;
 import com.iplanet.sso.SSOToken;
-import com.sun.identity.policy.PolicyEvaluator;
+import com.sun.identity.policy.LegacyPolicyEvaluator;
+import com.sun.identity.policy.LegacyPolicyEvaluatorFactory;
 import com.sun.identity.policy.PolicyException;
 import com.sun.identity.saml2.assertion.Assertion;
 import com.sun.identity.saml2.assertion.AssertionFactory;
@@ -239,7 +241,8 @@ public class XACMLAuthzDecisionQueryHandler implements RequestHandler {
         //get native policy deicison using native policy evaluator
         if (!evaluationFailed) {
             try {
-                PolicyEvaluator pe = new PolicyEvaluator(serviceName);
+                LegacyPolicyEvaluator pe = InjectorHolder.getInstance(LegacyPolicyEvaluatorFactory.class)
+                        .getLegacyPolicyEvaluator(serviceName);
                 booleanDecision = pe.isAllowed(ssoToken, resourceName,
                         actionName, environment);
             } catch (SSOException ssoe) {

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.am.saml2.impl;
 
@@ -20,6 +28,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.HTTP_REDIRECT;
 import static com.sun.identity.saml2.common.SAML2Constants.SAML_REQUEST;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.am.saml2.impl.Saml2ClientConstants.AM_LOCATION_COOKIE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,21 +38,21 @@ import static org.mockito.Mockito.verify;
 import java.util.Collections;
 
 import javax.security.auth.callback.Callback;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.am.saml2.api.Saml2SsoException;
 import org.forgerock.am.saml2.api.Saml2SsoInitiator;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.core.realms.RealmTestHelper.RealmFixture;
-import org.forgerock.openam.core.realms.Realms;
 import org.forgerock.openam.headers.CookieUtilsWrapper;
 import org.forgerock.util.Options;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.sun.identity.authentication.spi.RedirectCallback;
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
@@ -53,7 +62,8 @@ import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 
-@Listeners(RealmFixture.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class Saml2SpSsoInitiatorTest {
 
     @Mock
@@ -72,14 +82,15 @@ public class Saml2SpSsoInitiatorTest {
     private HttpServletRequest request;
     @Mock
     private HttpServletResponse response;
+    @Mock
     private Realm realm;
     private Saml2SsoInitiator client;
 
-    @BeforeMethod
-    public void setup() throws Exception {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void setup() throws Exception {
         client = new Saml2SpSsoInitiator(metaManager, cookieUtils, authnRequestUtils);
-        realm = Realms.root();
+
+        given(realm.asPath()).willReturn("/");
 
         given(metaManager.getIDPSSODescriptor(any(), eq("idp"))).willReturn(idpDescriptor);
         given(metaManager.getSPSSODescriptor(any(), eq("sp"))).willReturn(spDescriptor);
@@ -87,18 +98,23 @@ public class Saml2SpSsoInitiatorTest {
         given(spConfig.getAttribute()).willReturn(Collections.emptyList());
     }
 
-    @Test(expectedExceptions = Saml2SsoException.class, expectedExceptionsMessageRegExp = ".*SAML2 Configuration.*")
-    public void shouldThrowSaml2ClientExceptionIfStandardMetadataIsMissing() throws Exception {
-        client.initiateSso(request, response, realm, "badger", "idp", Options.defaultOptions());
-    }
-
-    @Test(expectedExceptions = Saml2SsoException.class, expectedExceptionsMessageRegExp = ".*Single Sign-on.*")
-    public void shouldThrowSaml2ClientExceptionIfSsoEndpointCannotBeFound() throws Exception {
-        client.initiateSso(request, response, realm, "sp", "idp", Options.defaultOptions());
+    @Test
+    void shouldThrowSaml2ClientExceptionIfStandardMetadataIsMissing() {
+        assertThatThrownBy(
+            () -> client.initiateSso(request, response, realm, "badger", "idp", Options.defaultOptions()))
+            .isInstanceOf(Saml2SsoException.class)
+            .hasMessageMatching(".*SAML2 Configuration.*");
     }
 
     @Test
-    public void shouldCacheAuthnRequest() throws Exception {
+    void shouldThrowSaml2ClientExceptionIfSsoEndpointCannotBeFound() {
+        assertThatThrownBy(() -> client.initiateSso(request, response, realm, "sp", "idp", Options.defaultOptions()))
+            .isInstanceOf(Saml2SsoException.class)
+            .hasMessageMatching(".*Single Sign-on.*");
+    }
+
+    @Test
+    void shouldCacheAuthnRequest() throws Exception {
         given(authnRequestUtils.findSsoEndpoint(eq(idpDescriptor), any())).willReturn(ssoEndpoint(HTTP_POST));
 
         client.initiateSso(request, response, realm, "sp", "idp", Options.defaultOptions());
@@ -107,24 +123,24 @@ public class Saml2SpSsoInitiatorTest {
     }
 
     @Test
-    public void shouldCreateAuthenticationStepCookie() throws Exception {
+    void shouldCreateAuthenticationStepCookie() throws Exception {
         given(authnRequestUtils.findSsoEndpoint(eq(idpDescriptor), any())).willReturn(ssoEndpoint(HTTP_POST));
 
         client.initiateSso(request, response, realm, "sp", "idp", Options.defaultOptions());
 
         // "bnVsbC8_cmVhbG09Lw" base64 decoded is - 'null/?realm=/'. Previously this was 'null/XUI/?realm=/'
         verify(cookieUtils).addCookieToResponseForRequestDomains(eq(request), eq(response), eq(AM_LOCATION_COOKIE),
-                eq("bnVsbC8_cmVhbG09Lw"), eq(-1));
+            eq("bnVsbC8_cmVhbG09Lw"), eq(-1));
     }
 
     @Test
-    public void shouldReturnRedirectCallbackForRedirectBinding() throws Exception {
+    void shouldReturnRedirectCallbackForRedirectBinding() throws Exception {
         given(authnRequestUtils.findSsoEndpoint(eq(idpDescriptor), any())).willReturn(ssoEndpoint(HTTP_POST));
         given(authnRequestUtils.encodeForPostBinding(any(), eq(realm), eq("idp"), eq(spDescriptor), eq("sp"),
-                eq(idpDescriptor))).willReturn("weasel");
+            eq(idpDescriptor))).willReturn("weasel");
 
         Callback callback = client.initiateSso(request, response, realm, "sp", "idp",
-                Options.defaultOptions());
+            Options.defaultOptions());
 
         assertThat(callback).isInstanceOf(RedirectCallback.class);
         RedirectCallback redirectCallback = (RedirectCallback) callback;
@@ -135,14 +151,14 @@ public class Saml2SpSsoInitiatorTest {
     }
 
     @Test
-    public void shouldReturnRedirectCallbackForPostBinding() throws Exception {
+    void shouldReturnRedirectCallbackForPostBinding() throws Exception {
         EndpointType ssoEndpoint = ssoEndpoint(HTTP_REDIRECT);
         given(authnRequestUtils.findSsoEndpoint(eq(idpDescriptor), any())).willReturn(ssoEndpoint);
         given(authnRequestUtils.getRedirectBindingUrl(any(), eq(realm), eq("idp"), eq(spDescriptor), eq("sp"),
-                eq(idpDescriptor), eq(ssoEndpoint))).willReturn("weasel");
+            eq(idpDescriptor), eq(ssoEndpoint))).willReturn("weasel");
 
         Callback callback = client.initiateSso(request, response, realm, "sp", "idp",
-                Options.defaultOptions());
+            Options.defaultOptions());
 
         assertThat(callback).isInstanceOf(RedirectCallback.class);
         RedirectCallback redirectCallback = (RedirectCallback) callback;
@@ -153,14 +169,14 @@ public class Saml2SpSsoInitiatorTest {
     }
 
     @Test
-    public void shouldEncodeAuthnRequestForRedirectBinding() throws Exception {
+    void shouldEncodeAuthnRequestForRedirectBinding() throws Exception {
         EndpointType ssoEndpoint = ssoEndpoint(HTTP_REDIRECT);
         given(authnRequestUtils.findSsoEndpoint(eq(idpDescriptor), any())).willReturn(ssoEndpoint);
 
         client.initiateSso(request, response, realm, "sp", "idp", Options.defaultOptions());
 
         verify(authnRequestUtils).getRedirectBindingUrl(any(), eq(realm), eq("idp"), eq(spDescriptor), eq("sp"),
-                eq(idpDescriptor), eq(ssoEndpoint));
+            eq(idpDescriptor), eq(ssoEndpoint));
     }
 
     private EndpointType ssoEndpoint(String binding) {

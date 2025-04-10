@@ -24,7 +24,7 @@
  *
  * $Id: SMSGateway.java,v 1.2 2009/06/03 20:46:51 veiming Exp $
  *
- * Portions Copyrighted 2011-2019 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 package com.sun.identity.authentication.modules.hotp;
 

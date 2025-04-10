@@ -24,7 +24,7 @@
  *
  * $Id: SAML2ConfigService.java,v 1.6 2009/06/12 22:21:40 mallas Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 

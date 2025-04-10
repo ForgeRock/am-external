@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -20,6 +28,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -37,34 +46,35 @@ import java.util.Optional;
 
 import javax.security.auth.callback.Callback;
 
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.authentication.callbacks.DeviceBindingCallback;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingManager;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingSettings;
 import org.forgerock.openam.core.rest.devices.services.binding.AndroidKeyAttestationService;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
-import com.sun.identity.idm.IdType;
 
 /**
  * Test for Device Binding.
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class DeviceBindingNodeTest {
 
     @Mock
@@ -76,9 +86,6 @@ public class DeviceBindingNodeTest {
     @Mock
     DeviceBindingManager deviceBindingManager;
 
-    @Mock
-    CoreWrapper coreWrapper;
-
     @InjectMocks
     DeviceBindingNode node;
 
@@ -86,16 +93,16 @@ public class DeviceBindingNodeTest {
     AMIdentity amIdentity;
 
     @Mock
-    LegacyIdentityService identityService;
-
-    @Mock
     AndroidKeyAttestationService androidKeyAttestationService;
 
-    @Before
-    public void setup() throws IdRepoException, SSOException {
-        given(identityService.getUniversalId(any(), any(), (IdType) any())).willReturn(Optional.of("bob"));
+    @Mock
+    NodeUserIdentityProvider identityProvider;
 
-        given(coreWrapper.getIdentity(anyString())).willReturn(amIdentity);
+    @BeforeEach
+    void setup() throws IdRepoException, SSOException {
+        given(identityProvider.getUniversalId(any())).willReturn(Optional.of("bob"));
+
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
         given(amIdentity.isExists()).willReturn(true);
         given(amIdentity.isActive()).willReturn(true);
         given(amIdentity.getName()).willReturn("bob");
@@ -113,7 +120,7 @@ public class DeviceBindingNodeTest {
     }
 
     @Test
-    public void testProcessWithNoInput()
+    void testProcessWithNoInput()
             throws NodeProcessException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -135,19 +142,20 @@ public class DeviceBindingNodeTest {
         assertThat(((DeviceBindingCallback) result.callbacks.get(0)).getUserId()).isEqualTo("bob");
     }
 
-    @Test(expected = NodeProcessException.class)
-    public void testUserNotActive() throws NodeProcessException, IdRepoException, SSOException {
+    @Test
+    void testUserNotActive() throws NodeProcessException, IdRepoException, SSOException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
         given(amIdentity.isActive()).willReturn(false);
 
-        // When
-        node.process(getContext(sharedState, transientState, emptyList()));
-
+        // When - Then
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Failed to lookup user");
     }
 
     @Test
-    public void testExceedDeviceLimit() throws NodeProcessException, DevicePersistenceException {
+    void testExceedDeviceLimit() throws NodeProcessException, DevicePersistenceException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
 
@@ -165,7 +173,7 @@ public class DeviceBindingNodeTest {
     }
 
     @Test
-    public void testClientErrorOutcome() throws NodeProcessException {
+    void testClientErrorOutcome() throws NodeProcessException {
 
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());

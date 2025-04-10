@@ -24,7 +24,7 @@
  *
  * $Id: AuthnContextImpl.java,v 1.3 2008/06/25 05:47:43 qcheng Exp $
  *
- * Portions Copyrighted 2015-2023 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.assertion.impl;
 
@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -91,7 +90,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  * &lt;/complexType&gt;
  * </pre>
  */
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class AuthnContextImpl implements AuthnContext {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthnContextImpl.class);
@@ -101,7 +99,13 @@ public class AuthnContextImpl implements AuthnContext {
     private List<String> authenticatingAuthority = null;
     private boolean mutable = true;
 
-    // verify the data according to the schema.
+    /*
+    * verify the data according to the schema.
+    * https://groups.oasis-open.org/higherlogic/ws/public/download/35711/sstc-saml-core-errata-2.0-wd-06-diff.pdf/latest
+    * 2.7.2.2
+    * The <AuthnContext> element specifies the context of an authentication event. The element can contain
+    * an authentication context class reference, an authentication context declaration or declaration reference, or both
+    */
     private void validateData() throws SAML2Exception {
         if ((authnContextClassRef == null ||
                 authnContextClassRef.trim().length() == 0) &&

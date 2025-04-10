@@ -11,21 +11,28 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.federation.rest.secret.manager;
 
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.MockitoAnnotations.openMocks;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import java.util.Collections;
 import java.util.Set;
@@ -35,12 +42,18 @@ import org.forgerock.openam.secrets.config.KeyStoreSecretStore;
 import org.forgerock.openam.secrets.config.PurposeMapping;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
 import org.forgerock.openam.sm.annotations.subconfigs.Multiple;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.sun.identity.saml2.meta.SAML2MetaException;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class Saml2EntitySecretMappingManagerTest {
 
     private static final String SERVICE_NAME = "sunFMSAML2MetadataService";
@@ -60,15 +73,14 @@ public class Saml2EntitySecretMappingManagerTest {
 
     private Saml2EntitySecretMappingManager manager;
 
-    @Before
-    public void setup() {
-        openMocks(this);
+    @BeforeEach
+    void setup() {
         manager = new Saml2EntitySecretMappingManager(configManagerFactory, helper, realmLookup);
         given(realmLookup.convertRealmDnToRealmPath(REALM)).willReturn(REALM_PATH);
     }
 
     @Test
-    public void shouldDoNothingWhenNewEntityIsAdded() throws Exception {
+    void shouldDoNothingWhenNewEntityIsAdded() throws Exception {
         //when
         manager.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, 1);
 
@@ -80,7 +92,7 @@ public class Saml2EntitySecretMappingManagerTest {
     }
 
     @Test
-    public void shouldNotGetRealmStoresWhenGetSecretIdentifiersThrowException() throws Exception {
+    void shouldNotGetRealmStoresWhenGetSecretIdentifiersThrowException() throws Exception {
         //given
         given(helper.getAllHostedEntitySecretIdIdentifiers(REALM_PATH)).willThrow(SAML2MetaException.class);
 
@@ -94,7 +106,7 @@ public class Saml2EntitySecretMappingManagerTest {
     }
 
     @Test
-    public void shouldNotGetUnusedMappingsWhenNoKeyStoreIsConfigured() {
+    void shouldNotGetUnusedMappingsWhenNoKeyStoreIsConfigured() {
         //given
         given(helper.getRealmStores(REALM_PATH)).willReturn(Collections.emptySet());
 
@@ -108,7 +120,7 @@ public class Saml2EntitySecretMappingManagerTest {
     }
 
     @Test
-    public void shouldNotGetUnusedMappingsWhenNoMappingsAvailable() {
+    void shouldNotGetUnusedMappingsWhenNoMappingsAvailable() {
         //given
         given(secretStore.mappings()).willReturn(null);
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
@@ -123,7 +135,7 @@ public class Saml2EntitySecretMappingManagerTest {
     }
 
     @Test
-    public void shouldNotDeleteWhenNoSubConfigFoundInMappings() throws Exception {
+    void shouldNotDeleteWhenNoSubConfigFoundInMappings() throws Exception {
         //given
         given(secretStore.mappings()).willReturn(mappings);
         given(mappings.idSet()).willReturn(emptySet());
@@ -139,7 +151,7 @@ public class Saml2EntitySecretMappingManagerTest {
     }
 
     @Test
-    public void shouldNotDeleteHostedEntitySecretMappingWhenNoUnusedMappingFound() throws Exception {
+    void shouldNotDeleteHostedEntitySecretMappingWhenNoUnusedMappingFound() throws Exception {
         //given
         Set <String> secretIds = singleton("secretId");
         String mappingId = "some.secret.mapping";
@@ -157,7 +169,7 @@ public class Saml2EntitySecretMappingManagerTest {
     }
 
     @Test
-    public void shouldNotDeleteRemoteEntitySecretMappingWhenNoUnusedMappingFound() throws Exception {
+    void shouldNotDeleteRemoteEntitySecretMappingWhenNoUnusedMappingFound() throws Exception {
         //given
         Set <String> secretIds = singleton("secretId");
         String mappingId = "some.secret.mapping";
@@ -175,7 +187,7 @@ public class Saml2EntitySecretMappingManagerTest {
     }
 
     @Test
-    public void shouldDeleteHostedEntitySecretMappingWhenUnusedMappingFound() throws Exception {
+    void shouldDeleteHostedEntitySecretMappingWhenUnusedMappingFound() throws Exception {
         //given
         Set <String> secretIds = singleton("secretId");
         String mappingId = "unused.secret.mapping";
@@ -193,7 +205,7 @@ public class Saml2EntitySecretMappingManagerTest {
     }
 
     @Test
-    public void shouldDeleteHostedEntitySecretMappingWhenOnlyRemoteMappingFound() throws Exception {
+    void shouldDeleteHostedEntitySecretMappingWhenOnlyRemoteMappingFound() throws Exception {
         //given
         Set <String> secretIds = singleton("secretId");
         String hostedMappingId = "hosted.secret.mapping";
@@ -215,7 +227,7 @@ public class Saml2EntitySecretMappingManagerTest {
     }
 
     @Test
-    public void shouldDeleteRemoteEntitySecretMappingWhenUnusedMappingFound() throws Exception {
+    void shouldDeleteRemoteEntitySecretMappingWhenUnusedMappingFound() throws Exception {
         //given
         Set <String> secretIds = singleton("secretId");
         String mappingId = "unused.secret.mapping";
@@ -233,7 +245,7 @@ public class Saml2EntitySecretMappingManagerTest {
     }
 
     @Test
-    public void shouldDeleteRemoteEntitySecretMappingWhenOnlyHostedMappingFound() throws Exception {
+    void shouldDeleteRemoteEntitySecretMappingWhenOnlyHostedMappingFound() throws Exception {
         //given
         Set <String> secretIds = singleton("secretId");
         String hostedMappingId = "hosted.secret.mapping";

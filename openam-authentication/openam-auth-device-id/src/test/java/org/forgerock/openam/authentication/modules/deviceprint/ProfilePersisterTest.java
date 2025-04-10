@@ -11,46 +11,49 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.deviceprint;
-
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.core.rest.devices.deviceprint.DeviceIdDao;
-import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.openam.utils.Time.*;
-import static org.mockito.BDDMockito.given;
+import static org.forgerock.openam.utils.Time.newDate;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.core.rest.devices.deviceprint.DeviceIdDao;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
 public class ProfilePersisterTest {
-
-    private ProfilePersister profilePersister;
-
-    private DeviceIdDao devicePrintDao;
 
     private final String username = "username";
     private final String password = "password";
+    private ProfilePersister profilePersister;
+    private DeviceIdDao devicePrintDao;
 
-    @BeforeMethod
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
 
         devicePrintDao = mock(DeviceIdDao.class);
 
@@ -58,7 +61,7 @@ public class ProfilePersisterTest {
     }
 
     @Test
-    public void shouldAddNewDevicePrintToProfiles() throws Exception {
+    void shouldAddNewDevicePrintToProfiles() throws Exception {
 
         //Given
         Map<String, Object> devicePrintProfile = new HashMap<>();

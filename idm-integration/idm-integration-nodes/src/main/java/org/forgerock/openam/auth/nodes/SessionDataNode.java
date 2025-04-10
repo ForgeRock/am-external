@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -34,7 +42,7 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.dpro.session.SessionException;
-import com.iplanet.dpro.session.SessionID;
+import com.iplanet.dpro.session.SessionIDFactory;
 import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.sm.RequiredValueValidator;
 
@@ -71,6 +79,7 @@ public class SessionDataNode extends SingleOutcomeNode {
     private final Config config;
     private final Provider<SessionService> sessionServiceProvider;
     private final IdmIntegrationService idmIntegrationService;
+    private final SessionIDFactory sessionIDFactory;
 
     /**
      * Constructs a SessionDataNode.
@@ -78,13 +87,15 @@ public class SessionDataNode extends SingleOutcomeNode {
      * @param config the node configuration.
      * @param sessionServiceProvider provides Sessions.
      * @param idmIntegrationService idm integration service.
+     * @param sessionIDFactory session ID factory.
      */
     @Inject
     public SessionDataNode(@Assisted Config config, Provider<SessionService> sessionServiceProvider,
-            IdmIntegrationService idmIntegrationService) {
+            IdmIntegrationService idmIntegrationService, SessionIDFactory sessionIDFactory) {
         this.config = config;
         this.sessionServiceProvider = sessionServiceProvider;
         this.idmIntegrationService = idmIntegrationService;
+        this.sessionIDFactory = sessionIDFactory;
     }
 
     @Override
@@ -110,7 +121,8 @@ public class SessionDataNode extends SingleOutcomeNode {
     private String getSessionData(String ssoTokenId) {
         String sessionData = null;
         try {
-            Session oldSession = sessionServiceProvider.get().getSession(new SessionID(ssoTokenId));
+            Session oldSession = sessionServiceProvider.get()
+                                         .getSession(sessionIDFactory.getSessionIDForString(ssoTokenId));
             sessionData = oldSession.getProperties().get(config.sessionDataKey());
             logger.debug("Got session data {} of value {}", config.sessionDataKey(), sessionData);
         } catch (SessionException e) {

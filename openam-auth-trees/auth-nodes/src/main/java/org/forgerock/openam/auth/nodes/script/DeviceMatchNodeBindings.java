@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -20,30 +28,23 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.SHARED_
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.STATE_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.TRANSIENT_STATE_IDENTIFIER;
 
-import java.util.List;
-
-import javax.security.auth.callback.Callback;
-
-import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
 import org.forgerock.openam.scripting.domain.BindingsMap;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 
 /**
  * Script bindings for the DeviceMatchNode script.
  */
-public final class DeviceMatchNodeBindings implements ScriptBindings {
+public final class DeviceMatchNodeBindings extends BaseScriptedDecisionNodeBindings
+        implements LegacyScriptBindings {
 
     private static final String DEVICE_PROFILES_DAO_IDENTIFIER = "deviceProfilesDao";
-    private final NodeState nodeState;
-    private final List<? extends Callback> callbacks;
     private final DeviceProfilesDao deviceProfilesDao;
     private final Object sharedState;
     private final Object transientState;
 
     private DeviceMatchNodeBindings(Builder builder) {
-        this.nodeState = builder.nodeState;
-        this.callbacks = builder.callbacks;
+        super(builder);
         this.deviceProfilesDao = builder.deviceProfilesDao;
         this.sharedState = builder.sharedState;
         this.transientState = builder.transientState;
@@ -69,17 +70,24 @@ public final class DeviceMatchNodeBindings implements ScriptBindings {
         return bindings;
     }
 
+    @Override
+    public BindingsMap nextGenBindings() {
+        var bindings =  new BindingsMap(commonNextGenBindings());
+        bindings.put(DEVICE_PROFILES_DAO_IDENTIFIER, new DeviceProfilesDaoScriptWrapper(deviceProfilesDao));
+        return bindings;
+    }
+
     /**
      * Step 1 of the builder.
      */
     public interface DeviceMatchNodeBindingsStep1 {
         /**
-         * Sets the {@link NodeState}.
+         * Sets the {@link DeviceProfilesDao}.
          *
-         * @param nodeState the node state
+         * @param deviceProfilesDao the {@link DeviceProfilesDao}
          * @return the next step of the {@link Builder}
          */
-        DeviceMatchNodeBindingsStep2 withNodeState(NodeState nodeState);
+        DeviceMatchNodeBindingsStep2 withDeviceProfilesDao(DeviceProfilesDao deviceProfilesDao);
     }
 
     /**
@@ -87,12 +95,12 @@ public final class DeviceMatchNodeBindings implements ScriptBindings {
      */
     public interface DeviceMatchNodeBindingsStep2 {
         /**
-         * Sets the callbacks.
+         * Sets shared state.
          *
-         * @param callbacks the callbacks
+         * @param sharedState the shared state
          * @return the next step of the {@link Builder}
          */
-        DeviceMatchNodeBindingsStep3 withCallbacks(List<? extends Callback> callbacks);
+        DeviceMatchNodeBindingsStep3 withSharedState(Object sharedState);
     }
 
     /**
@@ -100,75 +108,25 @@ public final class DeviceMatchNodeBindings implements ScriptBindings {
      */
     public interface DeviceMatchNodeBindingsStep3 {
         /**
-         * Sets the {@link DeviceProfilesDao}.
-         *
-         * @param deviceProfilesDao the {@link DeviceProfilesDao}
-         * @return the next step of the {@link Builder}
-         */
-        DeviceMatchNodeBindingsStep4 withDeviceProfilesDao(DeviceProfilesDao deviceProfilesDao);
-    }
-
-    /**
-     * Step 4 of the builder.
-     */
-    public interface DeviceMatchNodeBindingsStep4 {
-        /**
-         * Sets shared state.
-         *
-         * @param sharedState the shared state
-         * @return the next step of the {@link Builder}
-         */
-        DeviceMatchNodeBindingsStep5 withSharedState(Object sharedState);
-    }
-
-    /**
-     * Step 5 of the builder.
-     */
-    public interface DeviceMatchNodeBindingsStep5 {
-        /**
          * Sets transient state.
          *
          * @param transientState the transient state
          * @return the next step of the {@link Builder}
          */
-        Builder withTransientState(Object transientState);
+        BaseScriptedDecisionNodeBindingsStep1<DeviceMatchNodeBindings> withTransientState(Object transientState);
     }
 
     /**
      * Builder object to construct a {@link DeviceMatchNodeBindings}.
+     * Before modifying this builder, or creating a new one, please read
+     * service-component-api/scripting-api/src/main/java/org/forgerock/openam/scripting/domain/README.md
      */
-    public static final class Builder implements DeviceMatchNodeBindingsStep1, DeviceMatchNodeBindingsStep2,
-            DeviceMatchNodeBindingsStep3, DeviceMatchNodeBindingsStep4, DeviceMatchNodeBindingsStep5 {
+    private static final class Builder extends BaseScriptedDecisionNodeBindings.Builder<DeviceMatchNodeBindings>
+            implements DeviceMatchNodeBindingsStep1, DeviceMatchNodeBindingsStep2, DeviceMatchNodeBindingsStep3 {
 
-        private NodeState nodeState;
-        private List<? extends Callback> callbacks;
         private DeviceProfilesDao deviceProfilesDao;
         private Object sharedState;
         private Object transientState;
-
-        /**
-         * Set the nodeState for the builder.
-         *
-         * @param nodeState The nodeState.
-         * @return The next step of the Builder.
-         */
-        @Override
-        public DeviceMatchNodeBindingsStep2 withNodeState(NodeState nodeState) {
-            this.nodeState = nodeState;
-            return this;
-        }
-
-        /**
-         * Set the callbacks for the builder.
-         *
-         * @param callbacks The List of callbacks.
-         * @return The next step of the Builder.
-         */
-        @Override
-        public DeviceMatchNodeBindingsStep3 withCallbacks(List<? extends Callback> callbacks) {
-            this.callbacks = callbacks;
-            return this;
-        }
 
         /**
          * Set the {@link DeviceProfilesDao}.
@@ -177,7 +135,7 @@ public final class DeviceMatchNodeBindings implements ScriptBindings {
          * @return The next step of the Builder.
          */
         @Override
-        public DeviceMatchNodeBindingsStep4 withDeviceProfilesDao(DeviceProfilesDao deviceProfilesDao) {
+        public DeviceMatchNodeBindingsStep2 withDeviceProfilesDao(DeviceProfilesDao deviceProfilesDao) {
             this.deviceProfilesDao = deviceProfilesDao;
             return this;
         }
@@ -189,7 +147,7 @@ public final class DeviceMatchNodeBindings implements ScriptBindings {
          * @return The next step of the Builder.
          */
         @Override
-        public DeviceMatchNodeBindingsStep5 withSharedState(Object sharedState) {
+        public DeviceMatchNodeBindingsStep3 withSharedState(Object sharedState) {
             this.sharedState = sharedState;
             return this;
         }
@@ -201,7 +159,8 @@ public final class DeviceMatchNodeBindings implements ScriptBindings {
          * @return The next step of the Builder.
          */
         @Override
-        public Builder withTransientState(Object transientState) {
+        public BaseScriptedDecisionNodeBindingsStep1<DeviceMatchNodeBindings> withTransientState(
+                Object transientState) {
             this.transientState = transientState;
             return this;
         }

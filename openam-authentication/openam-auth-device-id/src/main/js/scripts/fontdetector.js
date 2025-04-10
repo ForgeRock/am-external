@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
  */
 var fontDetector = (function () {
     /**
@@ -34,7 +34,7 @@ var fontDetector = (function () {
      *          Replaced sans with serif in the list of baseFonts
      */
     /*
-     * Portions Copyrighted 2013 ForgeRock AS.
+     * Portions Copyrighted 2013-2025 Ping Identity Corporation.
      */
     var detector = {}, baseFonts, testString, testSize, h, s, defaultWidth = {}, defaultHeight = {}, index;
 

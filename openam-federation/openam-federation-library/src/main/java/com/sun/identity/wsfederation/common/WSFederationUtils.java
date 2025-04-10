@@ -24,7 +24,7 @@
  *
  * $Id: WSFederationUtils.java,v 1.6 2009/10/28 23:58:58 exu Exp $
  *
- * Portions Copyrighted 2015-2024 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 package com.sun.identity.wsfederation.common;
 
@@ -44,8 +44,8 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;

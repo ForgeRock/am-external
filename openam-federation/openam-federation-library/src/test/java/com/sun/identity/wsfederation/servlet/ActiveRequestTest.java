@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.wsfederation.servlet;
 
@@ -25,9 +33,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,31 +43,34 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.ReadListener;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ReadListener;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.WriteListener;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import org.forgerock.guice.core.GuiceModules;
-import org.forgerock.guice.core.GuiceTestCase;
+import com.sun.identity.saml2.common.SOAPCommunicator;
+import org.forgerock.guice.core.GuiceExtension;
 import org.forgerock.openam.audit.AuditEventPublisher;
 import org.forgerock.openam.federation.testutils.TestCaseConfigurationInstance;
 import org.forgerock.openam.federation.testutils.TestCaseSessionProvider;
 import org.forgerock.openam.utils.CollectionUtils;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 import org.owasp.esapi.ESAPI;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.AbstractModule;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.cot.COTConstants;
 import com.sun.identity.cot.CircleOfTrustDescriptor;
@@ -77,9 +85,18 @@ import com.sun.identity.wsfederation.common.WSFederationConstants;
 import com.sun.identity.wsfederation.plugins.TestIdpDefaultAccountMapper;
 import com.sun.identity.wsfederation.plugins.TestWsFedAuthenticator;
 
-@GuiceModules(ActiveRequestTest.TestGuiceModule.class)
-public class ActiveRequestTest extends GuiceTestCase {
-    private CircleOfTrustManager cotManager;
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
+public class ActiveRequestTest {
+
+    @RegisterExtension
+    GuiceExtension guiceExtension = new GuiceExtension.Builder()
+            .addInstanceBinding(AuditEventPublisher.class,mock(AuditEventPublisher.class))
+            .addInstanceBinding(SignatureProvider.class, signatureProvider)
+            .addInstanceBinding(SOAPCommunicator.class, mock(SOAPCommunicator.class))
+            .build();
+
+    private static CircleOfTrustManager cotManager;
 
     private static final String TEST_SESSION_ID = "TestSSOTokenId";
     private static final String TEST_USER_ID = "TestUser";
@@ -106,16 +123,15 @@ public class ActiveRequestTest extends GuiceTestCase {
 
     private static AMSignatureProvider signatureProvider;
 
-    @BeforeClass
-    public void init() throws Exception {
+    @BeforeAll
+    static void init() throws Exception {
         signatureProvider = new AMSignatureProvider();
         signatureProvider.initialize(new JKSKeyProvider());
         cotManager = new CircleOfTrustManager();
     }
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void setUp() throws Exception {
         TestCaseConfigurationInstance.resetConfiguration();
         // We are not testing real authentication in the test case, do no real processing and return dummy values.
         TestWsFedAuthenticator.setSsoToken(ssoToken);
@@ -127,14 +143,14 @@ public class ActiveRequestTest extends GuiceTestCase {
         TestCaseSessionProvider.setState(ssoToken, TEST_SESSION_ID, TEST_USER_ID, sessionProperties);
     }
 
-    @DataProvider
-    private Object[][] validSoapRequests() {
+    private static Object[][] validSoapRequests() {
         return new Object[][] {
                 {"/timestamp", "/wsfed-active-soap-request.xml"},
                 {"/no-timestamp", "/wsfed-active-soap-request-no-timestamp.xml"} };
     }
 
-    @Test(dataProvider = "validSoapRequests")
+    @ParameterizedTest
+    @MethodSource("validSoapRequests")
     public void requestValidationTest(String realm, String soapRequest) throws Exception {
 
         // Given
@@ -154,18 +170,19 @@ public class ActiveRequestTest extends GuiceTestCase {
 
         // Then
         // If this is not empty then there was a SOAP fault, fail early.
-        assertTrue(soapErrorOutputStream.toString().isEmpty());
+        assertThat(soapErrorOutputStream.toString()).isEmpty();
         verify(httpResponse, never()).setStatus(anyInt());
         verify(httpRequest, times(EXPECTED_NAMES.size())).setAttribute(anyString(), any());
         assertThat(httpRequest.attributes.keySet()).containsAll(EXPECTED_NAMES);
         // Sanity check a set of known values based on the original request.
         for (String key : EXPECTED_VALUES.keySet()) {
-            assertEquals(httpRequest.attributes.get(key), EXPECTED_VALUES.get(key));
+            assertThat(httpRequest.attributes).containsKey(key);
+            assertThat(httpRequest.attributes.get(key)).isEqualTo(EXPECTED_VALUES.get(key));
         }
     }
 
     @Test
-    public void shouldFailDueToExpiredRequest() throws Exception {
+    void shouldFailDueToExpiredRequest() throws Exception {
 
         // Given
         configureRealm("Expired", "idp-extended-active.xml");
@@ -183,7 +200,7 @@ public class ActiveRequestTest extends GuiceTestCase {
 
         // Then
         // An expired request should generate a SOAP fault and set the status.
-        assertFalse(soapErrorOutputStream.toString().isEmpty());
+        assertThat(soapErrorOutputStream.toString()).isNotEmpty();
         verify(httpResponse).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
 
@@ -257,12 +274,4 @@ public class ActiveRequestTest extends GuiceTestCase {
         }
     }
 
-    public static class TestGuiceModule extends AbstractModule {
-
-        @Override
-        protected void configure() {
-            bind(AuditEventPublisher.class).toInstance(mock(AuditEventPublisher.class));
-            bind(SignatureProvider.class).toInstance(signatureProvider);
-        }
-    }
 }

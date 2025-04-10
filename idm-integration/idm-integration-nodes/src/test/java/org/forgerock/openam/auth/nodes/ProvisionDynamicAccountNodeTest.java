@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ *  Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -20,10 +28,6 @@ import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.forgerock.cuppa.Cuppa.beforeEach;
-import static org.forgerock.cuppa.Cuppa.describe;
-import static org.forgerock.cuppa.Cuppa.it;
-import static org.forgerock.cuppa.Cuppa.when;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -52,8 +56,6 @@ import java.util.Set;
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.am.identity.application.LegacyIdentityService;
-import org.forgerock.cuppa.Test;
-import org.forgerock.cuppa.junit.CuppaRunner;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
@@ -62,12 +64,15 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-@Test
-@RunWith(CuppaRunner.class)
+import com.sun.identity.authentication.spi.AuthLoginException;
+
 public class ProvisionDynamicAccountNodeTest {
 
     private TreeContext treeContext;
@@ -96,115 +101,151 @@ public class ProvisionDynamicAccountNodeTest {
 
     private JsonValue transientState;
 
-    {
-        describe("Provision Dynamic Account Node", () -> {
-            beforeEach(() -> {
-                MockitoAnnotations.initMocks(this);
+    ProvisionDynamicAccountNodeTest() throws AuthLoginException {
+        MockitoAnnotations.initMocks(this);
 
-                given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
+        given(authModuleHelper.provisionUser(anyString(), any(), anyMap())).willReturn(user);
+        given(config.accountProviderClass())
+                .willReturn(
+                        "org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider");
+        given(realm.asPath()).willReturn("/");
+
+    }
+
+    @Nested
+    @DisplayName(value = "Provision Dynamic Account Node")
+    class ProvisionDynamicAccountNodeNested {
+
+        @Nested
+        @DisplayName(value = "there is no userinfo in the session")
+        class ThereIsNoUserinfoInTheSession {
+
+            @BeforeEach
+            public void beforeEach() {
+                node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
+                        idmIntegrationService);
+                sharedState = json(object(field("state", "initial")));
+                transientState = json(object(field("state", "initial")));
+            }
+
+            @Test
+            @DisplayName(value = "throws an exception")
+            public void testThrowsAnException() throws Exception {
+                TreeContext context = getContext(Collections.EMPTY_LIST);
+                assertThatThrownBy(() -> node.process(context)).isExactlyInstanceOf(NodeProcessException.class);
+            }
+        }
+
+        @Nested
+        @DisplayName(value = "no password has been provided")
+        class NoPasswordHasBeenProvided {
+
+            @BeforeEach
+            public void beforeEach() throws NodeProcessException {
+                node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
+                        idmIntegrationService);
+                sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm.asPath())));
+                transientState = json(object(field("state", "initial")));
+                given(authModuleHelper.getRandomData()).willReturn("myRandomPassword");
+            }
+
+            @Test
+            @DisplayName(value = "creates an account with a generated password")
+            public void testCreatesAnAccountWithAGeneratedPassword() throws Exception {
+                TreeContext context = getContext(Collections.EMPTY_LIST);
+                Action result = node.process(context);
+
+                verify(authModuleHelper).getRandomData();
+                Map<String, Set<String>> userAttributes = SocialOAuth2Helper.convertMapOfListToMapOfSet(
+                        context.sharedState.get(USER_INFO_SHARED_STATE_KEY)
+                                .get("attributes")
+                                .asMapOfList(String.class));
+                userAttributes.put(USER_PASSWORD, singleton("myRandomPassword"));
+                userAttributes.put(USER_STATUS, Collections.singleton(ACTIVE));
+
+                verify(authModuleHelper).provisionUser(any(), any(), eq(userAttributes));
+                assertThat(result.outcome).isEqualTo("outcome");
+                assertThat(result.sharedState.get(USERNAME).asString()).isEqualTo(user);
+                assertThat(result.identifiedIdentity).isPresent();
+                assertThat(result.identifiedIdentity.get().getUsername()).isEqualTo(user);
+
+            }
+        }
+
+        @Nested
+        @DisplayName(value = "a password has already been provided")
+        class APasswordHasAlreadyBeenProvided {
+
+            @BeforeEach
+            public void beforeEach() {
+                node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
+                        idmIntegrationService);
+                sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm.asPath())));
+                transientState = json(object(field(PASSWORD, password)));
+            }
+
+            @Test
+            @DisplayName(value = "creates an account with the supplied password")
+            public void testCreatesAnAccountWithTheSuppliedPassword() throws Exception {
+                TreeContext context = getContext(Collections.EMPTY_LIST);
+                Action result = node.process(context);
+
+                verify(authModuleHelper, never()).getRandomData();
+                assertThat(result.transientState).isNullOrEmpty();
+                assertThat(result.outcome).isEqualTo("outcome");
+                assertThat(result.sharedState.get(USERNAME).asString()).isEqualTo(user);
+                assertThat(result.identifiedIdentity).isPresent();
+                assertThat(result.identifiedIdentity.get().getUsername()).isEqualTo(user);
+            }
+        }
+
+        @Nested
+        @DisplayName(value = "in a subrealm")
+        class InASubrealm {
+
+            @BeforeEach
+            public void beforeEach() {
+                given(realm.asPath()).willReturn("/subrealm1/subrealm2");
+                node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
+                        idmIntegrationService);
+                sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm.asPath())));
+                transientState = json(object(field(PASSWORD, password)));
+            }
+
+            @Test
+            @DisplayName(value = "creates an account with the supplied password")
+            public void testCreatesAnAccountWithTheSuppliedPassword() throws Exception {
+                TreeContext context = getContext(Collections.EMPTY_LIST);
+                Action result = node.process(context);
+                assertThat(result.transientState).isNullOrEmpty();
+                assertThat(result.outcome).isEqualTo("outcome");
+                assertThat(result.sharedState.get(USERNAME).asString()).isEqualTo(user);
+                assertThat(result.identifiedIdentity).isPresent();
+                assertThat(result.identifiedIdentity.get().getUsername()).isEqualTo(user);
+            }
+        }
+
+        @Nested
+        @DisplayName(value = "an invalid account provider has been configured")
+        class AnInvalidAccountProviderHasBeenConfigured {
+
+            @BeforeEach
+            public void beforeEach() {
                 given(config.accountProviderClass())
-                        .willReturn(
-                                "org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider");
-                given(realm.asPath()).willReturn("/");
-            });
+                        .willReturn("org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper");
+                node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
+                        idmIntegrationService);
+                sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm)));
+                transientState = json(object(field(PASSWORD, password)));
+            }
 
-            when("there is no userinfo in the session", () -> {
-                beforeEach(() -> {
-                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
-                            idmIntegrationService);
-                    sharedState = json(object(field("state", "initial")));
-                    transientState = json(object(field("state", "initial")));
-                });
-                it("throws an exception", () -> {
-                    TreeContext context = getContext(Collections.EMPTY_LIST);
-                    assertThatThrownBy(() -> node.process(context)).isExactlyInstanceOf(NodeProcessException.class);
-                });
-            });
-
-            when("no password has been provided", () -> {
-                beforeEach(() -> {
-                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
-                            idmIntegrationService);
-                    sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm.asPath())));
-                    transientState = json(object(field("state", "initial")));
-                    given(authModuleHelper.getRandomData()).willReturn("myRandomPassword");
-                });
-                it("creates an account with a generated password", () -> {
-                    TreeContext context = getContext(Collections.EMPTY_LIST);
-                    Action result = node.process(context);
-
-                    verify(authModuleHelper).getRandomData();
-                    Map<String, Set<String>> userAttributes = SocialOAuth2Helper.convertMapOfListToMapOfSet(
-                            context.sharedState.get(USER_INFO_SHARED_STATE_KEY)
-                            .get("attributes")
-                            .asMapOfList(String.class));
-                    userAttributes.put(USER_PASSWORD, singleton("myRandomPassword"));
-                    userAttributes.put(USER_STATUS, Collections.singleton(ACTIVE));
-
-                    verify(authModuleHelper).provisionUser(any(), any(), eq(userAttributes));
-                    assertThat(result.outcome).isEqualTo("outcome");
-                    assertThat(result.sharedState.get(USERNAME).asString()).isEqualTo(user);
-                    assertThat(result.identifiedIdentity).isPresent();
-                    assertThat(result.identifiedIdentity.get().getUsername()).isEqualTo(user);
-
-                });
-            });
-
-            when("a password has already been provided", () -> {
-                beforeEach(() -> {
-                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
-                            idmIntegrationService);
-                    sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm.asPath())));
-                    transientState = json(object(field(PASSWORD, password)));
-                });
-                it("creates an account with the supplied password", () -> {
-                    TreeContext context = getContext(Collections.EMPTY_LIST);
-                    Action result = node.process(context);
-
-                    verify(authModuleHelper, never()).getRandomData();
-                    assertThat(result.transientState).isNullOrEmpty();
-                    assertThat(result.outcome).isEqualTo("outcome");
-                    assertThat(result.sharedState.get(USERNAME).asString()).isEqualTo(user);
-                    assertThat(result.identifiedIdentity).isPresent();
-                    assertThat(result.identifiedIdentity.get().getUsername()).isEqualTo(user);
-                });
-            });
-
-            when("in a subrealm", () -> {
-                beforeEach(() -> {
-                    given(realm.asPath()).willReturn("/subrealm1/subrealm2");
-                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
-                            idmIntegrationService);
-                    sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm.asPath())));
-                    transientState = json(object(field(PASSWORD, password)));
-                });
-                it("creates an account with the supplied password", () -> {
-                    TreeContext context = getContext(Collections.EMPTY_LIST);
-                    Action result = node.process(context);
-                    assertThat(result.transientState).isNullOrEmpty();
-                    assertThat(result.outcome).isEqualTo("outcome");
-                    assertThat(result.sharedState.get(USERNAME).asString()).isEqualTo(user);
-                    assertThat(result.identifiedIdentity).isPresent();
-                    assertThat(result.identifiedIdentity.get().getUsername()).isEqualTo(user);
-                });
-            });
-
-            when("an invalid account provider has been configured", () -> {
-                beforeEach(() -> {
-                    given(config.accountProviderClass())
-                            .willReturn("org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper");
-                    node = new ProvisionDynamicAccountNode(config, realm, authModuleHelper, identityService,
-                            idmIntegrationService);
-                    sharedState = json(object(field("userInfo", getUserInfo()), field(REALM, realm)));
-                    transientState = json(object(field(PASSWORD, password)));
-                });
-                it("throws an exception", () -> {
-                    TreeContext context = getContext(Collections.EMPTY_LIST);
-                    assertThatThrownBy(() -> node.process(context)).isExactlyInstanceOf(NodeProcessException.class);
-                });
-            });
-
-        });
+            @Test
+            @DisplayName(value = "throws an exception")
+            public void testThrowsAnException() throws Exception {
+                TreeContext context = getContext(Collections.EMPTY_LIST);
+                assertThatThrownBy(() -> node.process(context)).isExactlyInstanceOf(NodeProcessException.class);
+            }
+        }
     }
 
     private TreeContext getContext(List<Callback> callbacks) {
@@ -221,4 +262,5 @@ public class ProvisionDynamicAccountNodeTest {
                 field("userNames", userNames)
         ));
     }
+
 }

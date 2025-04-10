@@ -11,13 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.script;
 
 import static java.util.Arrays.asList;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
+import java.net.URI;
+import java.text.MessageFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +38,8 @@ import javax.security.auth.callback.Callback;
 
 import org.forgerock.openam.annotations.Supported;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.SuspendedTextOutputCallback;
+import org.forgerock.openam.auth.node.api.SuspensionHandler;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.Reject;
 
@@ -39,12 +52,19 @@ public final class ActionWrapper {
 
     private String outcome;
     private List<? extends Callback> callbacks = new ArrayList<>();
-    private Map<String, String> addSessionProperties = new HashMap<>();
-    private List<String> removeSessionProperties = new ArrayList<>();
+    private final Map<String, String> addSessionProperties = new HashMap<>();
+    private final List<String> removeSessionProperties = new ArrayList<>();
+    private Duration maxSessionTime;
+    private Duration maxIdleTime;
     private String errorMessage;
     private String lockoutMessage;
     private String username;
     private IdType identityType;
+    private String stage;
+    private String header;
+    private String description;
+    private SuspensionHandler suspensionHandler;
+    private Duration suspendDuration;
 
     /**
      * Move on to the next node in the tree that is connected to the given outcome.
@@ -81,6 +101,32 @@ public final class ActionWrapper {
     @Supported(scriptingApi = true, javaApi = false)
     public ActionWrapper removeSessionProperty(String key) {
         removeSessionProperties.add(key);
+        return this;
+    }
+
+    /**
+     * Set the maximum session time for the user, in minutes.
+     *
+     * @param maxSessionTime the maximum session time (minutes).
+     * @return this action builder.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public ActionWrapper withMaxSessionTime(int maxSessionTime) {
+        Reject.ifTrue(maxSessionTime < 1, "maximumSessionTime must be greater than 0");
+        this.maxSessionTime = Duration.ofMinutes(maxSessionTime);
+        return this;
+    }
+
+    /**
+     * Set the maximum idle time for the user, in minutes.
+     *
+     * @param maxIdleTime the maximum idle time (minutes).
+     * @return this action builder.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public ActionWrapper withMaxIdleTime(int maxIdleTime) {
+        Reject.ifTrue(maxIdleTime < 1, "maximumIdleTime must be greater than 0");
+        this.maxIdleTime = Duration.ofMinutes(maxIdleTime);
         return this;
     }
 
@@ -139,6 +185,89 @@ public final class ActionWrapper {
     }
 
     /**
+     * Sets the stage of the action.
+     *
+     * @param stage The stage to set.
+     * @return the same instance of the ActionWrapper.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public ActionWrapper withStage(String stage) {
+        this.stage = stage;
+        return this;
+    }
+
+    /**
+     * Sets the header of the action.
+     *
+     * @param header The header of the action.
+     * @return the same instance of the ActionWrapper.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public ActionWrapper withHeader(String header) {
+        this.header = header;
+        return this;
+    }
+
+    /**
+     * Sets the description of the action.
+     *
+     * @param description The description of the action.
+     * @return the same instance of the ActionWrapper.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public ActionWrapper withDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    /**
+     * Suspend the current authentication session and send the user the given callback.
+     *
+     * @param callbackTextFormat the text to display to the user.
+     * @return the same instance of the ActionWrapper.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public ActionWrapper suspend(String callbackTextFormat) {
+        return suspend(callbackTextFormat, (resumeURI) -> { });
+    }
+
+    /**
+     * Suspend the current authentication session and send the user the given callback.
+     *
+     * @param callbackTextFormat the text to display to the user.
+     * @param additionalLogic    additional logic to execute before suspending the session.
+     * @return the same instance of the ActionWrapper.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public ActionWrapper suspend(String callbackTextFormat, SuspensionLogic additionalLogic) {
+        this.suspensionHandler = (resumeURI) -> {
+            try {
+                additionalLogic.execute(resumeURI);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to execute additional logic", e);
+            }
+            return SuspendedTextOutputCallback.info(MessageFormat.format(callbackTextFormat, resumeURI));
+        };
+        return this;
+    }
+
+    /**
+     * Suspend the current authentication session and send the user the given callback.
+     *
+     * @param callbackTextFormat the text to display to the user.
+     * @param additionalLogic    additional logic to execute before suspending the session.
+     * @param maximumSuspendDuration  the maximum duration to suspend the session for (minutes).
+     * @return the same instance of the ActionWrapper.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public ActionWrapper suspend(String callbackTextFormat, SuspensionLogic additionalLogic,
+            int maximumSuspendDuration) {
+        Reject.ifTrue(maximumSuspendDuration < 1, "maximumSuspendDuration must be greater than 0");
+        this.suspendDuration = Duration.ofMinutes(maximumSuspendDuration);
+        return suspend(callbackTextFormat, additionalLogic);
+    }
+
+    /**
      * Send the given callbacks to the user for them to interact with.
      *
      * @param callbacks a non-empty list of callbacks.
@@ -162,11 +291,22 @@ public final class ActionWrapper {
      * @return Action object.
      */
     public Action buildAction() {
+        if (suspensionHandler != null) {
+            return suspendDuration != null
+                    ? Action.suspend(suspensionHandler, suspendDuration).build()
+                    : Action.suspend(suspensionHandler).build();
+        }
+
         Action.ActionBuilder actionBuilder = callbacks.isEmpty() ? Action.goTo(this.outcome) : Action.send(callbacks);
         addSessionProperties.forEach(actionBuilder::putSessionProperty);
         removeSessionProperties.forEach(actionBuilder::removeSessionProperty);
+        actionBuilder.withMaxSessionTime(maxSessionTime);
+        actionBuilder.withMaxIdleTime(maxIdleTime);
         actionBuilder.withErrorMessage(errorMessage);
         actionBuilder.withLockoutMessage(lockoutMessage);
+        actionBuilder.withStage(stage);
+        actionBuilder.withDescription(description);
+        actionBuilder.withHeader(header);
         if (isNotBlank(username) && identityType != null) {
             actionBuilder.withIdentifiedIdentity(username, identityType);
         }
@@ -179,6 +319,19 @@ public final class ActionWrapper {
      * @return True if callback or action required.
      */
     public boolean isEmpty() {
-        return this.callbacks.isEmpty() && StringUtils.isBlank(this.outcome);
+        return this.callbacks.isEmpty() && StringUtils.isBlank(this.outcome) && this.suspensionHandler == null;
+    }
+
+    /**
+     * Represents a callable function which can reference the resume URI at the point of suspension.
+     */
+    @FunctionalInterface
+    public interface SuspensionLogic {
+        /**
+         * Execute additional logic before suspending the session.
+         *
+         * @param resumeUri the URI that will be used to resume authentication.
+         */
+        void execute(URI resumeUri);
     }
 }

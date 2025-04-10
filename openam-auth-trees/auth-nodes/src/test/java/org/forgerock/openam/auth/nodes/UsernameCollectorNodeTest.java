@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -25,8 +33,8 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.test.assertj.AssertJJsonValueAssert.assertThat;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import java.util.List;
@@ -41,18 +49,18 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.util.i18n.PreferredLocales;
+import org.junit.jupiter.api.Test;
 
-import org.testng.annotations.Test;
 
 public class UsernameCollectorNodeTest {
     UsernameCollectorNode node = new UsernameCollectorNode();
 
     @Test
-    public void testProcessWithNoCallbacksReturnsASingleCallback() throws Exception {
+    void testProcessWithNoCallbacksReturnsASingleCallback() throws Exception {
         // Given
         JsonValue sharedState = json(object(field("initial", "initial")));
         PreferredLocales preferredLocales = mock(PreferredLocales.class);
-        ResourceBundle resourceBundle = new PasswordCollectorNodeTest.MockResourceBundle("Username");
+        ResourceBundle resourceBundle = new MockResourceBundle("Username");
         given(preferredLocales.getBundleInPreferredLocale(any(), any())).willReturn(resourceBundle);
 
         // When
@@ -74,7 +82,7 @@ public class UsernameCollectorNodeTest {
     }
 
     @Test
-    public void testProcessWithCallbacksAddsToState() throws Exception {
+    void testProcessWithCallbacksAddsToState() throws Exception {
         // Given
         JsonValue sharedState = json(object(field("initial", "initial")));
         NameCallback callback = new NameCallback("prompt");

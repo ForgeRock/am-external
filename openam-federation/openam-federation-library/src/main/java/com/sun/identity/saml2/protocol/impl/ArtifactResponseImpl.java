@@ -24,7 +24,7 @@
  *
  * $Id: ArtifactResponseImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2019-2024 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.protocol.impl;
 
@@ -34,7 +34,6 @@ import java.text.ParseException;
 import java.util.List;
 import java.util.Optional;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -70,9 +69,8 @@ import com.sun.identity.shared.xml.XMLUtils;
  * &lt;/complexType&gt;
  * </pre>
  */
-@SupportedAll(scriptingApi = true, javaApi = false)
-public class ArtifactResponseImpl extends StatusResponseImpl implements ArtifactResponse {
-
+public class ArtifactResponseImpl extends StatusResponseImpl
+	implements ArtifactResponse {
     private static final Logger logger = LoggerFactory.getLogger(ArtifactResponseImpl.class);
     public static final String ARTIFACT_RESPONSE = "ArtifactResponse";
     private String anyString = null;

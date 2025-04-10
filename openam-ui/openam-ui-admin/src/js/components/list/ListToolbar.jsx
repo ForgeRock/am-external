@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import { Button, ButtonToolbar } from "react-bootstrap";
@@ -21,8 +29,29 @@ import React from "react";
 
 import AddButton from "components/AddButton";
 
-const ListToolbar = ({ additionalButtons, addButton, isDeleteDisabled, onDelete, numberSelected }) => {
+const ListToolbar = ({
+    additionalButtons,
+    addButton,
+    isDeleteDisabled,
+    showExport = false,
+    showImport = false,
+    onDelete,
+    onExport,
+    onImport,
+    numberSelected
+}) => {
     const numberSelectedText = numberSelected ? `(${numberSelected})` : "";
+    const exportButton = showExport && (
+        <Button disabled={ numberSelected === 0 } onClick={ onExport }>
+            <i className="fa fa-download" /> { t("common.form.export") }
+        </Button>
+    );
+    const importButton = showImport && (
+        <Button onClick={ onImport }>
+            <i className="fa fa-upload" /> { t("common.form.import") }
+        </Button>
+    );
+
     return (
         <ButtonToolbar className="page-toolbar">
             <AddButton
@@ -32,6 +61,8 @@ const ListToolbar = ({ additionalButtons, addButton, isDeleteDisabled, onDelete,
             >
                 { addButton.menuItems }
             </AddButton>
+            { importButton }
+            { exportButton }
             <Button disabled={ isDeleteDisabled } onClick={ onDelete }>
                 <i className="fa fa-close" /> { t("common.form.delete") } { numberSelectedText }
             </Button>
@@ -53,7 +84,11 @@ ListToolbar.propTypes = {
     additionalButtons: PropTypes.node,
     isDeleteDisabled: PropTypes.bool.isRequired,
     numberSelected: PropTypes.number.isRequired,
-    onDelete: PropTypes.func.isRequired
+    onDelete: PropTypes.func.isRequired,
+    onExport: PropTypes.func,
+    onImport: PropTypes.func,
+    showExport: PropTypes.bool,
+    showImport: PropTypes.bool
 };
 
 export default ListToolbar;

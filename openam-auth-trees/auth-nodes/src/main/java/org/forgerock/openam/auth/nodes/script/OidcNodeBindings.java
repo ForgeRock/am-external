@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -25,12 +33,12 @@ import java.util.Map;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.scripting.domain.BindingsMap;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 
 /**
  * Script bindings for the OidcNode script.
  */
-public final class OidcNodeBindings implements ScriptBindings {
+public final class OidcNodeBindings implements LegacyScriptBindings {
 
     private static final String JWT_CLAIMS = "jwtClaims";
 
@@ -119,16 +127,29 @@ public final class OidcNodeBindings implements ScriptBindings {
          * @param existingSession the existing session
          * @return the next step of the {@link Builder}
          */
-        Builder withExistingSession(Map<String, String> existingSession);
+        OidcNodeBindingsFinalStep withExistingSession(Map<String, String> existingSession);
+    }
+
+    /**
+     * Final step of the builder.
+     */
+    public interface OidcNodeBindingsFinalStep {
+        /**
+         * Build the {@link OidcNodeBindings}.
+         *
+         * @return The built {@link OidcNodeBindings}.
+         */
+        OidcNodeBindings build();
     }
 
 
     /**
      * Builder object to construct a {@link OidcNodeBindings}.
+     * Before modifying this builder, or creating a new one, please read
+     * service-component-api/scripting-api/src/main/java/org/forgerock/openam/scripting/domain/README.md
      */
-    public static final class Builder implements OidcNodeBindingsStep1,
-            OidcNodeBindingsStep2, OidcNodeBindingsStep3, OidcNodeBindingsStep4 {
-
+    private static final class Builder implements OidcNodeBindingsStep1,
+            OidcNodeBindingsStep2, OidcNodeBindingsStep3, OidcNodeBindingsStep4, OidcNodeBindingsFinalStep {
 
         private JsonValue jwtClaims;
         private NodeState nodeState;
@@ -178,7 +199,7 @@ public final class OidcNodeBindings implements ScriptBindings {
          * @return The next step of the builder.
          */
         @Override
-        public Builder withExistingSession(Map<String, String> existingSession) {
+        public OidcNodeBindingsFinalStep withExistingSession(Map<String, String> existingSession) {
             this.existingSession = existingSession;
             return this;
         }

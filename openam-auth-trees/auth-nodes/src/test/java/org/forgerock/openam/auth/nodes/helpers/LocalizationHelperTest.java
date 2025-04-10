@@ -11,22 +11,25 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.helpers;
 
-import com.iplanet.sso.SSOException;
-import com.sun.identity.sm.SMSException;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.auth.node.api.ExternalRequestContext;
-import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.auth.nodes.LocaleSelector;
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.utils.OpenAMSettings;
-import org.mockito.Mock;
-import org.testng.annotations.Test;
+import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.forgerock.json.JsonValue.object;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -34,17 +37,23 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.Optional;
 
-import static java.util.Collections.emptyList;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.forgerock.json.JsonValue.object;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.LocaleSelector;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.utils.OpenAMSettings;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Test the Localization Helper.
  */
+@ExtendWith(MockitoExtension.class)
 public class LocalizationHelperTest {
 
     private static final String DEFAULT_KEY = "default.key";
@@ -60,15 +69,17 @@ public class LocalizationHelperTest {
 
     @Mock
     private OpenAMSettings settings;
+    @Mock
     private Realm realm;
+    @Mock
     private LocaleSelector localeSelector;
 
     @Test
-    public void shouldGetCorrectDefaultLocale() throws NodeProcessException {
-        initialiseMockConfig();
+    void shouldGetCorrectDefaultLocale() throws NodeProcessException {
+        given(localeSelector.getBestLocale(any(), any())).willReturn(DEFAULT_LOCALE);
 
         //GIVEN
-        LocalizationHelper localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
+        LocalizedMessageProvider localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
 
         //WHEN
         String message = localizationHelper.getLocalizedMessage(getContext(), LocalizationHelper.class,
@@ -80,11 +91,11 @@ public class LocalizationHelperTest {
     }
 
     @Test
-    public void shouldGetCorrectCustomLocale() throws NodeProcessException {
-        initialiseMockConfig(Locale.CHINESE);
+    void shouldGetCorrectCustomLocale() throws NodeProcessException {
+        given(localeSelector.getBestLocale(any(), any())).willReturn(Locale.CHINESE);
 
         //GIVEN
-        LocalizationHelper localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
+        LocalizedMessageProvider localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
 
         //WHEN
         String message = localizationHelper.getLocalizedMessage(getContext(), LocalizationHelper.class,
@@ -96,11 +107,11 @@ public class LocalizationHelperTest {
     }
 
     @Test
-    public void shouldGetNoMessageLocaleDoesNotExist() throws NodeProcessException {
-        initialiseMockConfig(Locale.ITALY);
+    void shouldGetNoMessageLocaleDoesNotExist() throws NodeProcessException {
+        given(localeSelector.getBestLocale(any(), any())).willReturn(Locale.ITALY);
 
         //GIVEN
-        LocalizationHelper localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
+        LocalizedMessageProvider localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
 
         //WHEN
         String message = localizationHelper.getLocalizedMessage(getContext(), LocalizationHelper.class,
@@ -111,11 +122,11 @@ public class LocalizationHelperTest {
     }
 
     @Test
-    public void shouldGetNoMessageMissingBundleClass() throws NodeProcessException {
-        initialiseMockConfig(Locale.ITALY);
+    void shouldGetNoMessageMissingBundleClass() throws NodeProcessException {
+        given(localeSelector.getBestLocale(any(), any())).willReturn(Locale.ITALY);
 
         //GIVEN
-        LocalizationHelper localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
+        LocalizedMessageProvider localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
 
         //WHEN
         String message = localizationHelper.getLocalizedMessage(getContext(), null,
@@ -126,11 +137,11 @@ public class LocalizationHelperTest {
     }
 
     @Test
-    public void shouldGetNoMessageMissingDefaultKey() throws NodeProcessException {
-        initialiseMockConfig(Locale.ITALY);
+    void shouldGetNoMessageMissingDefaultKey() throws NodeProcessException {
+        given(localeSelector.getBestLocale(any(), any())).willReturn(Locale.ITALY);
 
         //GIVEN
-        LocalizationHelper localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
+        LocalizedMessageProvider localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
 
         //WHEN
         String message = localizationHelper.getLocalizedMessage(getContext(), LocalizationHelper.class,
@@ -140,30 +151,31 @@ public class LocalizationHelperTest {
         assertThat(message).isEqualTo(null);
     }
 
-    @Test(expectedExceptions = MissingResourceException.class)
-    public void shouldThrowMissingResourceExceptionWhenNoLocalizationsAndNotInResourceBundle()
+    @Test
+    void shouldThrowMissingResourceExceptionWhenNoLocalizationsAndNotInResourceBundle()
             throws NodeProcessException {
-        initialiseMockConfig();
 
         //GIVEN
-        LocalizationHelper localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
+        LocalizedMessageProvider localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
 
         //WHEN
-        String message = localizationHelper.getLocalizedMessage(getContext(), LocalizationHelper.class,
-                null, "test.not.present.in.file");
-
-        //THEN
-        assertThat(message).isEqualTo(null);
+        assertThatThrownBy(() -> {
+            localizationHelper.getLocalizedMessage(getContext(), LocalizationHelper.class,
+                    null, "test.not.present.in.file");
+        })
+                //THEN
+                .isInstanceOf(MissingResourceException.class)
+                .hasMessage("Can't find bundle for base name "
+                        + "org.forgerock.openam.auth.nodes.helpers.LocalizationHelper, locale ");
     }
 
     @Test
-    public void shouldReturnDefaultValueWhenNoLocalizationsAndNotInResourceBundle()
+    void shouldReturnDefaultValueWhenNoLocalizationsAndNotInResourceBundle()
             throws NodeProcessException {
-        initialiseMockConfig();
         String defaultValue = "test.default.value";
 
         //GIVEN
-        LocalizationHelper localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
+        LocalizedMessageProvider localizationHelper = new LocalizationHelper(realm, localeSelector, settings);
 
         //WHEN
         String message = localizationHelper.getLocalizedMessageWithDefault(getContext(), LocalizationHelper.class,
@@ -176,24 +188,6 @@ public class LocalizationHelperTest {
     private TreeContext getContext() {
         return new TreeContext(JsonValue.json(object()),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
-    }
-
-    private void initialiseMockConfig() {
-        initialiseMockConfig(DEFAULT_LOCALE);
-    }
-
-    private void initialiseMockConfig(Locale defaultLocale) {
-        settings = mock(OpenAMSettings.class);
-        realm = mock(Realm.class);
-        localeSelector = mock(LocaleSelector.class);
-        given(localeSelector.getBestLocale(any(), any())).willReturn(defaultLocale);
-
-        try {
-            given(settings.getStringSetting(realm.asPath(), "iplanet-am-auth-locale"))
-                    .willReturn(defaultLocale.toString());
-        } catch (SSOException | SMSException e) {
-            fail("Failed to initialise mock");
-        }
     }
 
 }

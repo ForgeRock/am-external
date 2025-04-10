@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ *  Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -29,7 +37,7 @@ import javax.inject.Named;
 
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookupException;
-import org.forgerock.openam.entitlement.utils.EntitlementUtils;
+import org.forgerock.openam.entitlement.PolicyConstants;
 import org.forgerock.openam.services.datastore.DataStoreException;
 import org.forgerock.openam.services.datastore.DataStoreId;
 import org.forgerock.openam.services.datastore.DataStoreLookup;
@@ -71,6 +79,7 @@ final class SmsDataStoreLookup implements DataStoreLookup {
     static final String SERVICE_VERSION = "1.0";
     static final String CONTAINER_CONFIG_NAME = "dataStoreContainer";
     static final String DATA_STORE_ENABLED = "dataStoreEnabled";
+    static final String IDENTITY_STORE = "identityStore";
     private static final DataStoreIds CONFIG_IDS = new DataStoreIds(new DataStoreIdsBuilder());
     static final String POLICY_DATASTORE_ATTR_NAME = "policy-datastore-id";
     static final String APPLICATION_DATASTORE_ATTR_NAME = "application-datastore-id";
@@ -90,8 +99,8 @@ final class SmsDataStoreLookup implements DataStoreLookup {
         this.configManagerFactory = configManagerFactory;
         realmServiceToDataStoreId = ImmutableMap
                 .<String, Function<DataStoreIds, DataStoreId>>builder()
-                .put(EntitlementUtils.SERVICE_NAME, DataStoreIds::getPolicyId)
-                .put(EntitlementUtils.INDEXES_NAME, DataStoreIds::getPolicyId)
+                .put(PolicyConstants.ENTITLEMENTS_SERVICE_NAME, DataStoreIds::getPolicyId)
+                .put(PolicyConstants.ENTITLEMENTS_INDEXES_NAME, DataStoreIds::getPolicyId)
                 .put(IdConstants.AGENT_SERVICE, DataStoreIds::getApplicationId)
                 .put(Constants.SVC_NAME_SAML_METADATA, DataStoreIds::getApplicationId)
                 .put(Constants.COT_SERVICE, DataStoreIds::getApplicationId)
@@ -168,6 +177,15 @@ final class SmsDataStoreLookup implements DataStoreLookup {
 
     @Override
     public Set<DataStoreId> getEnabledIds() {
+        return gatherDataStoreIds(this::hasDataStoreAttributeEnabled);
+    }
+
+    @Override
+    public Set<DataStoreId> getEnabledConfigStoreIds() {
+        return gatherDataStoreIds(this::isEnabledConfigDataStore);
+    }
+
+    private Set<DataStoreId> gatherDataStoreIds(Function<ConfigurationAttributes, Boolean> function) {
         try {
             ServiceConfig globalConfig = getGlobalServiceConfig();
             ServiceConfig containerConfig = globalConfig.getSubConfig(CONTAINER_CONFIG_NAME);
@@ -177,7 +195,7 @@ final class SmsDataStoreLookup implements DataStoreLookup {
                     .filter(dataStoreId -> {
                         ConfigurationAttributes attributes =
                                 getContainerSubConfig(containerConfig, dataStoreId).getAttributes();
-                        return hasDataStoreAttributeEnabled(attributes);
+                        return function.apply(attributes);
                     })
                     .collect(Collectors.toSet());
 
@@ -198,8 +216,13 @@ final class SmsDataStoreLookup implements DataStoreLookup {
         }
     }
 
-    private static boolean hasDataStoreAttributeEnabled(ConfigurationAttributes attributes) {
+    private boolean hasDataStoreAttributeEnabled(ConfigurationAttributes attributes) {
         return getBooleanMapAttr(attributes, DATA_STORE_ENABLED, true);
+    }
+
+    private boolean isEnabledConfigDataStore(ConfigurationAttributes attributes) {
+        return !getBooleanMapAttr(attributes, IDENTITY_STORE, false)
+                && getBooleanMapAttr(attributes, DATA_STORE_ENABLED, true);
     }
 
     private static DataStoreException dataStoreException(Exception e) {

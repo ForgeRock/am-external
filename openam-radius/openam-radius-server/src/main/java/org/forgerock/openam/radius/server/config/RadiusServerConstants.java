@@ -12,6 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
+ * Portions Copyright 2024-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server.config;
 
@@ -122,6 +123,12 @@ public final class RadiusServerConstants {
      * class.
      */
     public static final String CLIENT_ATT_PROPERTIES = "handlerConfig";
+
+    /**
+     * In a configured radius client this is the name of the attribute whose value indicates if the message
+     * authenticator is required.
+     */
+    public static final String MESSAGE_AUTHENTICATOR_REQUIRED = "messageAuthenticatorRequired";
 
     /**
      * Empty String array pattern for use in toArray().

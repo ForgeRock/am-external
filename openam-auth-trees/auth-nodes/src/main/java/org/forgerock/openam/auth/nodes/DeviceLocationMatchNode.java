@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2020-2025 Ping Identity Corporation.
  */
 
 
@@ -32,11 +32,10 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.helpers.GeoCoordinate;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.nodes.validators.DecimalValidator;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
@@ -59,11 +58,10 @@ public class DeviceLocationMatchNode extends AbstractDecisionNode implements Dev
     private static final String UNKNOWN_DEVICE_OUTCOME_ID = "unknownDevice";
     private final Logger logger = LoggerFactory.getLogger(DeviceLocationMatchNode.class);
 
-    private final CoreWrapper coreWrapper;
-    private final LegacyIdentityService identityService;
     private final Config config;
     private final Realm realm;
     private final DeviceProfilesDao deviceProfilesDao;
+    private final NodeUserIdentityProvider identityProvider;
 
     /**
      * Configuration for the node.
@@ -88,18 +86,16 @@ public class DeviceLocationMatchNode extends AbstractDecisionNode implements Dev
      * other classes from the plugin.
      *
      * @param deviceProfilesDao A DeviceProfilesDao Instance
-     * @param coreWrapper       A CoreWrapper Instance
-     * @param identityService   An IdentityService Instance
+     * @param identityProvider  The NodeUserIdentityProvider
      * @param config            The Node Config
      * @param realm             The Realm
      */
     @Inject
     public DeviceLocationMatchNode(DeviceProfilesDao deviceProfilesDao,
-            CoreWrapper coreWrapper, LegacyIdentityService identityService, @Assisted Config config,
+            NodeUserIdentityProvider identityProvider, @Assisted Config config,
             @Assisted Realm realm) {
         this.deviceProfilesDao = deviceProfilesDao;
-        this.coreWrapper = coreWrapper;
-        this.identityService = identityService;
+        this.identityProvider = identityProvider;
         this.config = config;
         this.realm = realm;
     }
@@ -118,8 +114,8 @@ public class DeviceLocationMatchNode extends AbstractDecisionNode implements Dev
 
         try {
 
-            AMIdentity identity = getUserIdentity(context.universalId, context.getStateFor(this), coreWrapper,
-                    identityService);
+            AMIdentity identity = getUserIdentity(context.universalId, context.getStateFor(this),
+                    identityProvider);
             List<JsonValue> devices = deviceProfilesDao
                     .getDeviceProfiles(identity.getName(), realm.asPath());
             Optional<JsonValue> result = devices.stream()

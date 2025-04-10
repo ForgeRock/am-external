@@ -24,13 +24,12 @@
  *
  * $Id: ConfigurationInstanceImpl.java,v 1.12 2009/10/29 00:03:50 exu Exp $
  *
- * Portions Copyrighted 2015-2021 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 package com.sun.identity.plugin.configuration.impl;
 
 import static org.forgerock.openam.utils.StringUtils.isEmpty;
 
-import java.security.AccessController;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -98,7 +97,7 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
     }
 
     private SSOToken getSSOToken() {
-        return (ssoToken != null) ? ssoToken : AccessController.doPrivileged(AdminTokenAction.getInstance());
+        return (ssoToken != null) ? ssoToken : AdminTokenAction.getInstance().run();
     }
 
     @Override
@@ -312,7 +311,7 @@ public class ConfigurationInstanceImpl implements ConfigurationInstance {
                         "noConfig", data);
                 }
 
-                DefaultConfigServiceHolder.get().setDefaultsForService(ss.getServiceName(),
+                DefaultConfigServiceHolder.get().setDefaultsForService(ss.getServiceName(), ss.getVersion(),
                         ConfigurationAttributesFactory.create(avPairs), ss.getServiceType(), ss);
             }
         } catch (SmsAuthorizationException ex) {

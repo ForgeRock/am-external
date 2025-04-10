@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -22,22 +30,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.json.resource.ResourceException.NOT_FOUND;
-import static org.forgerock.json.resource.ResourceException.newResourceException;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.EmailSuspendNode.RESUME_URI;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_MAIL_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_REGISTRATION_EMAIL_TEMPLATE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -48,58 +54,47 @@ import javax.security.auth.callback.Callback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SuspendedTextOutputCallback;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class EmailSuspendNodeTest {
 
     private static final String SUSPEND_MESSAGE = "Suspend message.";
     private static final URI RESUME_URI_VALUE = URI.create("http://openam.example.com");
-
-    @Mock
-    private EmailSuspendNode.Config config;
-
-    @Mock
-    private Realm realm;
-
-    @Mock
-    private IdmIntegrationService idmIntegrationService;
-
-    @Mock
-    private ExecutorService executorService;
-
-    @Mock
-    private LocaleSelector localeSelector;
-
     @Captor
     ArgumentCaptor<String> recipientCaptor;
-
     @Captor
     ArgumentCaptor<JsonValue> objectCaptor;
-
+    @Mock
+    private EmailSuspendNode.Config config;
+    @Mock
+    private Realm realm;
+    @Mock
+    private IdmIntegrationService idmIntegrationService;
+    @Mock
+    private ExecutorService executorService;
+    @Mock
+    private LocaleSelector localeSelector;
+    @InjectMocks
     private EmailSuspendNode emailSuspendNode;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        initMocks(this);
-        emailSuspendNode = new EmailSuspendNode(config, realm, idmIntegrationService, executorService,
-                localeSelector);
-
-        when(config.emailTemplateName()).thenReturn(DEFAULT_IDM_REGISTRATION_EMAIL_TEMPLATE);
+    @Test
+    void shouldSuspendIfNoEmailAddressFoundInContext() throws Exception {
         when(config.emailSuspendMessage()).thenReturn(singletonMap(new Locale("en"), SUSPEND_MESSAGE));
+        when(config.suspendDuration()).thenReturn(Optional.empty());
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
-    }
-
-    @Test
-    public void shouldSuspendIfNoEmailAddressFoundInContext() throws Exception {
         // no managed object to look up
         when(config.objectLookup()).thenReturn(false);
         when(config.identityAttribute()).thenReturn(null);
@@ -110,13 +105,16 @@ public class EmailSuspendNodeTest {
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.of("universalId")));
 
         assertThat(action.outcome).isEqualTo(null);
+        assertThat(action.suspendDuration).isEmpty();
         assertThat(((SuspendedTextOutputCallback) action.suspensionHandler.handle(RESUME_URI_VALUE)).getMessage())
                 .isEqualTo(SUSPEND_MESSAGE);
         verify(idmIntegrationService, times(0)).sendTemplate(any(), any(), any(), any(), any(), any());
     }
 
     @Test
-    public void shouldSuspendIfNoEmailAddressInManagedObject() throws Exception {
+    void shouldSuspendIfNoEmailAddressInManagedObject() throws Exception {
+        when(config.emailSuspendMessage()).thenReturn(singletonMap(new Locale("en"), SUSPEND_MESSAGE));
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
@@ -138,7 +136,10 @@ public class EmailSuspendNodeTest {
     }
 
     @Test
-    public void shouldSuspendIfObjectNotFound() throws Exception {
+    void shouldSuspendIfObjectNotFound() throws Exception {
+        when(config.emailSuspendMessage()).thenReturn(singletonMap(new Locale("en"), SUSPEND_MESSAGE));
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
+        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
         JsonValue sharedState = json(object(
                 field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
         ));
@@ -146,8 +147,6 @@ public class EmailSuspendNodeTest {
         when(config.objectLookup()).thenReturn(true);
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
         when(config.emailAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
-        when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any()))
-                .thenThrow(newResourceException(NOT_FOUND));
 
         Action action = emailSuspendNode.process(getContext(emptyList(), sharedState));
 
@@ -158,7 +157,10 @@ public class EmailSuspendNodeTest {
     }
 
     @Test
-    public void shouldSuspendIfIdentityNotFound() throws Exception {
+    void shouldSuspendIfIdentityNotFound() throws Exception {
+        when(config.emailSuspendMessage()).thenReturn(singletonMap(new Locale("en"), SUSPEND_MESSAGE));
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
+        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
         JsonValue sharedState = json(object());
 
         when(config.objectLookup()).thenReturn(true);
@@ -174,7 +176,11 @@ public class EmailSuspendNodeTest {
     }
 
     @Test
-    public void shouldSendMailFromContextToTemplateEndpointIfNoObject() throws Exception {
+    void shouldSendMailFromContextToTemplateEndpointIfNoObject() throws Exception {
+        when(config.emailTemplateName()).thenReturn(DEFAULT_IDM_REGISTRATION_EMAIL_TEMPLATE);
+        when(config.emailSuspendMessage()).thenReturn(singletonMap(new Locale("en"), SUSPEND_MESSAGE));
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
+        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_MAIL_ATTRIBUTE, "sharedState@gmail.com")
@@ -202,7 +208,10 @@ public class EmailSuspendNodeTest {
     }
 
     @Test
-    public void shouldSendMailFromObjectToTemplateEndpoint() throws Exception {
+    void shouldSendMailFromObjectToTemplateEndpoint() throws Exception {
+        when(config.emailTemplateName()).thenReturn(DEFAULT_IDM_REGISTRATION_EMAIL_TEMPLATE);
+        when(config.emailSuspendMessage()).thenReturn(singletonMap(new Locale("en"), SUSPEND_MESSAGE));
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
@@ -229,7 +238,12 @@ public class EmailSuspendNodeTest {
     }
 
     @Test
-    public void shouldSendMailFromUsernameIdentityToTemplateEndpoint() throws Exception {
+    void shouldSendMailFromUsernameIdentityToTemplateEndpoint() throws Exception {
+        when(config.emailTemplateName()).thenReturn(DEFAULT_IDM_REGISTRATION_EMAIL_TEMPLATE);
+        when(config.emailSuspendMessage()).thenReturn(singletonMap(new Locale("en"), SUSPEND_MESSAGE));
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
+        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
+
         JsonValue sharedState = json(object(
                 field(USERNAME, "test")
         ));
@@ -254,7 +268,10 @@ public class EmailSuspendNodeTest {
     }
 
     @Test
-    public void shouldUseDefaultMessageIfLocalizationNotPresent() throws Exception {
+    void shouldUseDefaultMessageIfLocalizationNotPresent() throws Exception {
+        when(config.emailTemplateName()).thenReturn(DEFAULT_IDM_REGISTRATION_EMAIL_TEMPLATE);
+        when(config.emailSuspendMessage()).thenReturn(singletonMap(new Locale("en"), SUSPEND_MESSAGE));
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test"),
@@ -276,7 +293,7 @@ public class EmailSuspendNodeTest {
     }
 
     @Test
-    public void shouldNotSuspendIfResumingNode() throws Exception {
+    void shouldNotSuspendIfResumingNode() throws Exception {
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test"),
@@ -287,15 +304,34 @@ public class EmailSuspendNodeTest {
         TreeContext context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, json(object()),
                 json(object()), new ExternalRequestContext.Builder().build(), emptyList(), true, Optional.empty());
 
-        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
-        when(config.emailAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
-
         Action action = emailSuspendNode.process(context);
 
         verify(idmIntegrationService, times(0)).getObject(any(), any(), any(), any(String.class), any(), any(), any());
         verify(idmIntegrationService, times(0)).sendTemplate(any(), any(), any(), any(), any(), any());
         assertThat(action.suspensionHandler).isNull();
         assertThat(action.outcome).isEqualTo("outcome");
+    }
+
+    @Test
+    void shouldSuspendWithSuspendDurationIfPresentInConfig() throws NodeProcessException {
+        when(config.suspendDuration()).thenReturn(Optional.of(Duration.ofMinutes(1)));
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
+        JsonValue sharedState = json(object(
+                field(OBJECT_ATTRIBUTES, object(
+                        field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test"),
+                        field(DEFAULT_IDM_MAIL_ATTRIBUTE, "test@gmail.com")
+                ))
+        ));
+
+        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+        when(config.emailAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
+        when(idmIntegrationService.getSharedAttributesFromContext(any())).thenCallRealMethod();
+
+        TreeContext context = getContext(emptyList(), sharedState);
+
+        Action action = emailSuspendNode.process(context);
+
+        assertThat(action.suspendDuration).contains(Duration.ofMinutes(1));
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {

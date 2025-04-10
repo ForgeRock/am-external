@@ -24,15 +24,15 @@
  *
  * $Id: SessionProvider.java,v 1.7 2008/06/25 05:47:28 qcheng Exp $
  *
- * Portions Copyrighted 2014-2019 ForgeRock AS.
+ * Portions Copyrighted 2014-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.plugin.session;
 
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.annotations.SupportedAll;
 
@@ -185,6 +185,17 @@ public interface SessionProvider {
         HttpServletRequest request,   // optional input
         HttpServletResponse response  // optional input
     ) throws SessionException;
+
+    /**
+     * Removes a persistent cookie, using the cookie name found in a given SSO token.
+     *
+     * @param session a session that contains the cookie name.
+     * @param request the request.
+     * @param response the response.
+     * @throws SessionException if an error occurred during session processing
+     */
+    void clearPersistentCookie(Object session, HttpServletRequest request, HttpServletResponse response)
+            throws SessionException;
 
     /**
      * Returns <code>true</code> if the session is valid.

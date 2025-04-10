@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.treehook;
 
@@ -34,7 +42,7 @@ import org.forgerock.openam.auth.nodes.jwt.PersistentJwtStringSupplier;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.secrets.cache.SecretCache;
 import org.forgerock.openam.secrets.cache.SecretReferenceCache;
-import org.forgerock.openam.session.Session;
+import org.forgerock.openam.session.SessionUtils;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.secrets.NoSuchSecretException;
 import org.forgerock.secrets.SecretReference;
@@ -44,7 +52,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
-import com.iplanet.dpro.session.SessionException;
+import com.iplanet.sso.SSOException;
+import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.util.ISAuthConstants;
 
 /**
@@ -54,7 +63,7 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 public class CreatePersistentCookieTreeHook implements TreeHook {
 
     private static final String SERVICE_SESSION_PROPERTY = "Service";
-    private final Session session;
+    private final SSOToken ssoToken;
     private final Response response;
     private final Request request;
     private final SetPersistentCookieNode.Config config;
@@ -67,7 +76,7 @@ public class CreatePersistentCookieTreeHook implements TreeHook {
     /**
      * The CreatePersistentCookieTreeHook constructor.
      *
-     * @param session                         the session.
+     * @param ssoToken                        the sso token.
      * @param response                        the response.
      * @param config                          the config for creating a jwt.
      * @param request                         the request.
@@ -78,15 +87,15 @@ public class CreatePersistentCookieTreeHook implements TreeHook {
      * @param secretReferenceCache            the secret reference cache.
      */
     @Inject
-    CreatePersistentCookieTreeHook(@Assisted Session session, @Assisted Response response,
+    CreatePersistentCookieTreeHook(@Assisted SSOToken ssoToken, @Assisted Response response,
             @Assisted SetPersistentCookieNode.Config config, @Assisted Request request,
             @Assisted Realm realm,
             PersistentJwtStringSupplier persistentJwtStringSupplier,
             PersistentCookieResponseHandler persistentCookieResponseHandler,
             PersistentJwtClaimsHandler persistentJwtClaimsHandler,
             SecretReferenceCache secretReferenceCache) {
-        Reject.ifNull(session);
-        this.session = session;
+        Reject.ifNull(ssoToken);
+        this.ssoToken = ssoToken;
         this.response = response;
         this.config = config;
         this.request = request;
@@ -101,11 +110,11 @@ public class CreatePersistentCookieTreeHook implements TreeHook {
         logger.debug("creating persistent cookie tree hook");
         String clientId, service, clientIP;
         try {
-            clientId = session.getClientID();
-            service = session.getProperty(SERVICE_SESSION_PROPERTY);
-            clientIP = session.getProperty(ISAuthConstants.HOST);
+            clientId = ssoToken.getProperty(SessionUtils.UNIVERSAL_IDENTIFIER);
+            service = ssoToken.getProperty(SERVICE_SESSION_PROPERTY);
+            clientIP = ssoToken.getProperty(ISAuthConstants.HOST);
             logger.debug("clientId {} \n service {} \n clientIP {}", clientId, service, clientIP);
-        } catch (SessionException e) {
+        } catch (SSOException e) {
             logger.error("Tree hook creation exception", e);
             throw new TreeHookException(e);
         }

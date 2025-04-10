@@ -11,8 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
  */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
+ */
+const { DefinePlugin } = require("webpack");
 const TerserWebpackPlugin = require("terser-webpack-plugin");
 const webpackMerge = require("webpack-merge");
 
@@ -21,6 +30,9 @@ const common = require("./common/webpack.config");
 const eslintLoader = require("../loaders/eslintLoader");
 const lessLoader = require("../loaders/lessLoader");
 const loaders = require("../loaders/loaders");
+const path = require('path');
+
+require("dotenv").config({ path: '.env.production' });
 
 module.exports = webpackMerge(common, {
     devtool: "nosources-source-map",
@@ -61,6 +73,13 @@ module.exports = webpackMerge(common, {
             ])
         ]
     },
+    plugins: [
+      new DefinePlugin({
+        "process.env": {
+          XUI_MUST_RUN_ENABLED: process.env.XUI_MUST_RUN_ENABLED === 'true' || process.env.XUI_MUST_RUN_ENABLED === true
+        }
+      }),
+    ],
     optimization: {
         minimizer: [
             new TerserWebpackPlugin({

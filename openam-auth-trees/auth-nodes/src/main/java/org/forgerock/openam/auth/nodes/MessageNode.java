@@ -11,13 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 
 package org.forgerock.openam.auth.nodes;
 
-import static com.sun.identity.shared.Constants.AM_LOCALE;
 import static org.forgerock.openam.auth.node.api.Action.send;
 
 import java.util.ArrayList;
@@ -26,7 +33,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,6 +46,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
+import org.forgerock.openam.auth.node.api.LocalizedMessageProvider.LocalizedMessageProviderFactory;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutputState;
@@ -48,16 +56,10 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.ServiceConfigException;
 import org.forgerock.openam.sm.ServiceConfigValidator;
 import org.forgerock.openam.sm.ServiceErrorException;
-import org.forgerock.openam.utils.OpenAMSettings;
-import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
-import com.google.inject.name.Named;
-import com.iplanet.am.util.SystemProperties;
-import com.iplanet.sso.SSOException;
-import com.sun.identity.sm.SMSException;
 
 /**
  * Node with configurable message and acknowledgement buttons.
@@ -69,12 +71,8 @@ import com.sun.identity.sm.SMSException;
 public class MessageNode extends AbstractDecisionNode {
 
     private final Config config;
-    private final LocaleSelector localeSelector;
-    private final OpenAMSettings authSettings;
-    private static final String BUNDLE = MessageNode.class.getName();
     private static final List<String> MESSAGE_ATTRIBUTES = List.of("messageYes", "messageNo", "message");
-    private final Realm realm;
-    private final Logger logger = LoggerFactory.getLogger(MessageNode.class);
+    private final LocalizedMessageProvider localizedMessageProvider;
 
 
     /**
@@ -160,18 +158,15 @@ public class MessageNode extends AbstractDecisionNode {
     /**
      * Create the node.
      *
-     * @param config         The service config.
-     * @param realm          The realm
-     * @param localeSelector The locale selector support class.
-     * @param authSettings An accessor for the AM auth settings.
+     * @param config                          The service config.
+     * @param realm                           The realm
+     * @param localizedMessageProviderFactory Factory for creating a localized message provider
      */
     @Inject
-    public MessageNode(@Assisted Config config, @Assisted Realm realm, LocaleSelector localeSelector,
-            @Named("iPlanetAMAuthService") OpenAMSettings authSettings) {
+    public MessageNode(@Assisted Config config, @Assisted Realm realm,
+            LocalizedMessageProviderFactory localizedMessageProviderFactory) {
         this.config = config;
-        this.localeSelector = localeSelector;
-        this.authSettings = authSettings;
-        this.realm = realm;
+        this.localizedMessageProvider = localizedMessageProviderFactory.create(realm);
     }
 
     @Override
@@ -217,28 +212,8 @@ public class MessageNode extends AbstractDecisionNode {
      */
     private String getLocalisedMessage(TreeContext context, Map<Locale, String> localisations,
             String defaultMessageKey) {
-        PreferredLocales preferredLocales = context.request.locales;
-        Locale bestLocale = localeSelector.getBestLocale(preferredLocales, localisations.keySet());
-        if (bestLocale != null) {
-            return localisations.get(bestLocale);
-        } else if (localisations.size() > 0) {
-            List<Locale> systemLocales = new ArrayList<>();
-
-            addRealmConfiguredLocaleIfPresent(systemLocales);
-            addServerConfiguredLocaleIfPresent(systemLocales);
-
-            PreferredLocales preferredSystemLocales = new PreferredLocales(systemLocales);
-            Locale bestSystemLocale = localeSelector.getBestLocale(preferredSystemLocales, localisations.keySet());
-            if (bestSystemLocale != null) {
-                return localisations.get(bestSystemLocale);
-            }
-
-            return localisations.get(localisations.keySet().iterator().next());
-        }
-
-        ResourceBundle bundle = preferredLocales.getBundleInPreferredLocale(MessageNode.BUNDLE,
-                MessageNode.class.getClassLoader());
-        return bundle.getString(defaultMessageKey);
+        return localizedMessageProvider.getLocalizedMessage(context, MessageNode.class, localisations,
+                defaultMessageKey);
     }
 
     @Override
@@ -247,30 +222,5 @@ public class MessageNode extends AbstractDecisionNode {
             return new OutputState[]{new OutputState(config.stateField().get())};
         }
         return new OutputState[]{};
-    }
-
-    private void addRealmConfiguredLocaleIfPresent(List<Locale> systemLocales) {
-        Locale realmLocale = null;
-        try {
-            String localeString = authSettings.getStringSetting(realm.asPath(), "iplanet-am-auth-locale");
-            if (localeString != null && !localeString.equals("")) {
-                realmLocale = com.sun.identity.shared.locale.Locale.getLocale(localeString);
-            }
-        } catch (SSOException | SMSException e) {
-            logger.warn("Error attempting to retrieve the realm/global default locale");
-        }
-        if (realmLocale != null) {
-            systemLocales.add(realmLocale);
-        }
-    }
-
-    private void addServerConfiguredLocaleIfPresent(List<Locale> systemLocales) {
-        String globalLocaleString = SystemProperties.get(AM_LOCALE);
-        if (globalLocaleString != null) {
-            Locale globalLocale = Locale.forLanguageTag(globalLocaleString.replace("_", "-"));
-            if (globalLocale != null) {
-                systemLocales.add(globalLocale);
-            }
-        }
     }
 }

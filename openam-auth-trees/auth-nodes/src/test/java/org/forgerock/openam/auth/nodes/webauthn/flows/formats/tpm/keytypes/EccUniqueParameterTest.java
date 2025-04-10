@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes;
 
@@ -23,21 +31,21 @@ import java.math.BigInteger;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECPoint;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for the {@link EccUniqueParameter} class.
  */
 public class EccUniqueParameterTest {
     @Test
-    public void testValidateUniqueParameter() {
+    void testValidateUniqueParameter() {
         BigInteger x = new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B4F", 16);
         BigInteger y = new BigInteger("1D255EDB5170A9201DB93DB45DEC75CF94E41113A130999790F4918586ACD89", 16);
         runTest(x, y, x, y, true);
     }
 
     @Test
-    public void testValidateUniqueParameterWrongValues() {
+    void testValidateUniqueParameterWrongValues() {
         BigInteger x = new BigInteger("3A444E97FFFA7D89B928A2D55573B097C2616AF88CD9F8B1501772FF7C6B4F", 16);
         BigInteger y = new BigInteger("1D255EDB5170A9201DB93DB45DEC75CF94E41113A130999790F4918586ACD89", 16);
         BigInteger x2 = new BigInteger("1DD8CF685E90E8FF8B9BCABC6EA56C61A039AD8CC469677FA05BCA53A778D87", 16);

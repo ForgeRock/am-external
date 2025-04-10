@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -32,25 +40,24 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
 import org.forgerock.openam.sm.ServiceConfigException;
 import org.forgerock.openam.sm.ServiceErrorException;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.sm.SMSException;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.NamedParameters;
-import junitparams.Parameters;
-
 /**
  * Unit tests for {@link LdapDecisionNode}.
  */
-@RunWith(JUnitParamsRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class LdapDecisionNodeConfigValidatorTest {
 
     private static final boolean MTLS_ON = true;
@@ -80,15 +87,11 @@ public class LdapDecisionNodeConfigValidatorTest {
     private Realm realm;
     private LdapDecisionNode.ConfigValidator configValidator;
 
-    @Rule
-    public MockitoRule mockitoRule = MockitoJUnit.rule();
-
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         configValidator = new LdapDecisionNode.ConfigValidator(serviceRegistry);
     }
 
-    @NamedParameters("noExistingConfigDataMtlsEnabledAdminDnAndAdminPassword")
     private static Object[] noExistingConfigDataMtlsEnabledAdminDnAndAdminPassword() {
         return new Object[][]{
                 {USER_DN_MISSING, PASSWORD_MISSING},
@@ -97,8 +100,8 @@ public class LdapDecisionNodeConfigValidatorTest {
         };
     }
 
-    @Test
-    @Parameters(named = "noExistingConfigDataMtlsEnabledAdminDnAndAdminPassword")
+    @ParameterizedTest
+    @MethodSource("noExistingConfigDataMtlsEnabledAdminDnAndAdminPassword")
     public void testValidatorWithNoExistingConfigurationAndMtlsEnabledShouldntCareAboutAdminUsernameAndPassword(
             String userName, String password)
             throws SMSException, SSOException {
@@ -118,7 +121,6 @@ public class LdapDecisionNodeConfigValidatorTest {
         configValidator.validate(realm, CONFIG_PATH, attributes);
     }
 
-    @NamedParameters("noExistingConfigDataAndMtlsDisabledConnectionModeAndSecretId")
     private static Object[] noExistingConfigDataAndMtlsDisabledConnectionModeAndSecretId() {
         return new Object[][]{
                 {BLANK_SECRET},
@@ -127,8 +129,8 @@ public class LdapDecisionNodeConfigValidatorTest {
         };
     }
 
-    @Test
-    @Parameters(named = "noExistingConfigDataAndMtlsDisabledConnectionModeAndSecretId")
+    @ParameterizedTest
+    @MethodSource("noExistingConfigDataAndMtlsDisabledConnectionModeAndSecretId")
     public void testValidatorWithNoExistingConfigurationAndMtlsDisabledShouldntCareAboutLdapConnectionModeOrSecretId(
             String secretId) throws SMSException, SSOException {
         given(serviceRegistry.getRealmInstance(eq(LdapDecisionNode.Config.class), any(), any()))
@@ -145,7 +147,6 @@ public class LdapDecisionNodeConfigValidatorTest {
         configValidator.validate(realm, CONFIG_PATH, attributes);
     }
 
-    @NamedParameters("noExistingConfigDataMtlsDisabled")
     private static Object[] noExistingConfigDataMtlsDisabled() {
         return new Object[][]{
                 {USER_DN_MISSING, PASSWORD_MISSING, EXPECT_FAILURE},
@@ -160,8 +161,8 @@ public class LdapDecisionNodeConfigValidatorTest {
         };
     }
 
-    @Test
-    @Parameters(named = "noExistingConfigDataMtlsDisabled")
+    @ParameterizedTest
+    @MethodSource("noExistingConfigDataMtlsDisabled")
     public void testValidatorWithNoExistingConfigurationAndMtlsDisabled(String userName, String password,
             boolean expectSuccess) throws Throwable {
         given(serviceRegistry.getRealmInstance(eq(LdapDecisionNode.Config.class), any(), any()))
@@ -184,7 +185,6 @@ public class LdapDecisionNodeConfigValidatorTest {
         }
     }
 
-    @NamedParameters("noExistingConfigDataMtlsEnabled")
     private static Object[] noExistingConfigDataMtlsEnabled() {
         return new Object[][]{
                 {LDAP_CONNECTION_MODE, BLANK_SECRET, EXPECT_FAILURE},
@@ -196,8 +196,8 @@ public class LdapDecisionNodeConfigValidatorTest {
         };
     }
 
-    @Test
-    @Parameters(named = "noExistingConfigDataMtlsEnabled")
+    @ParameterizedTest
+    @MethodSource("noExistingConfigDataMtlsEnabled")
     public void testValidatorWithNoExistingConfigurationAndMtlsEnabled(LdapConnectionMode ldapConnectionMode,
             String mtlsSecretLabel, boolean expectSuccess) throws Throwable {
         given(serviceRegistry.getRealmInstance(eq(LdapDecisionNode.Config.class), any(), any()))
@@ -219,7 +219,6 @@ public class LdapDecisionNodeConfigValidatorTest {
         }
     }
 
-    @NamedParameters("existingConfigDataMtlsEnabled")
     private static Object[] existingConfigDataMtlsEnabled() {
         return new Object[][]{
                 {MTLS_OFF, USER_DN_MISSING, PASSWORD_MISSING, MISSING_CONNECTION_MODE, MISSING_SECRET, EXPECT_FAILURE},
@@ -238,8 +237,8 @@ public class LdapDecisionNodeConfigValidatorTest {
 
     }
 
-    @Test
-    @Parameters(named = "existingConfigDataMtlsEnabled")
+    @ParameterizedTest
+    @MethodSource("existingConfigDataMtlsEnabled")
     public void testValidatorWithExistingConfigurationAndMtlsEnabled(Boolean mtlsEnabled, String userName,
             String password, LdapConnectionMode ldapConnectionMode, String mtlsSecretLabel, boolean expectSuccess)
             throws Throwable {
@@ -272,7 +271,6 @@ public class LdapDecisionNodeConfigValidatorTest {
         }
     }
 
-    @NamedParameters("existingConfigDataMtlsDisabled")
     private static Object[] existingConfigDataMtlsDisabled() {
         return new Object[][]{
                 {MTLS_ON, USER_DN_MISSING, PASSWORD_MISSING, MISSING_CONNECTION_MODE, MISSING_SECRET, EXPECT_FAILURE},
@@ -290,8 +288,8 @@ public class LdapDecisionNodeConfigValidatorTest {
         given(config.ldapConnectionMode()).willReturn(LdapConnectionMode.LDAP);
     }
 
-    @Test
-    @Parameters(named = "existingConfigDataMtlsDisabled")
+    @ParameterizedTest
+    @MethodSource("existingConfigDataMtlsDisabled")
     public void testValidatorWithExistingConfigurationAndMtlsDisabled(Boolean mtlsEnabled, String userName,
             String password, LdapConnectionMode ldapConnectionMode, String mtlsSecretLabel, boolean expectSuccess)
             throws Throwable {
@@ -324,7 +322,7 @@ public class LdapDecisionNodeConfigValidatorTest {
     }
 
     @Test
-    public void testGivenServiceRegistryThrowsExceptionValidatorThrowsServiceErrorException()
+    void testGivenServiceRegistryThrowsExceptionValidatorThrowsServiceErrorException()
             throws SMSException, SSOException {
         given(serviceRegistry.getRealmInstance(eq(LdapDecisionNode.Config.class), any(), any()))
                 .willThrow(new SMSException());
@@ -333,25 +331,25 @@ public class LdapDecisionNodeConfigValidatorTest {
     }
 
     @Test
-    public void testGivenNullRealmValidateThrowsNullPointer() {
+    void testGivenNullRealmValidateThrowsNullPointer() {
         assertThatThrownBy(() -> configValidator.validate(null, CONFIG_PATH, Map.of()))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    public void testGivenNullConfigPathValidateThrowsNullPointer() {
+    void testGivenNullConfigPathValidateThrowsNullPointer() {
         assertThatThrownBy(() -> configValidator.validate(realm, null, Map.of()))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    public void testGivenNullAttributesValidateThrowsNullPointer() {
+    void testGivenNullAttributesValidateThrowsNullPointer() {
         assertThatThrownBy(() -> configValidator.validate(realm, CONFIG_PATH, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    public void testGivenEmptyConfigPathValidateThrowsIllegalArgument() {
+    void testGivenEmptyConfigPathValidateThrowsIllegalArgument() {
         assertThatThrownBy(() -> configValidator.validate(realm, List.of(), Map.of()))
                 .isInstanceOf(IllegalArgumentException.class);
     }

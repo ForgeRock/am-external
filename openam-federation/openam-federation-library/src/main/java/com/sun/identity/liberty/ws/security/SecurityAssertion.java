@@ -24,7 +24,7 @@
  *
  * $Id: SecurityAssertion.java,v 1.3 2009/10/01 18:42:07 mallas Exp $
  *
- * Portions Copyrighted 2017-2020 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
 package com.sun.identity.liberty.ws.security;
 

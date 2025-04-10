@@ -24,7 +24,7 @@
  *
  * $Id: NameIDandSPpair.java,v 1.3 2008/06/25 05:47:54 qcheng Exp $
  *
- * Portions Copyrighted 2013-2015 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 

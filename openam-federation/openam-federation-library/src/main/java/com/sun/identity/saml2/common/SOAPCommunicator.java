@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.common;
@@ -20,10 +28,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Enumeration;
-import java.util.StringTokenizer;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.inject.Singleton;
+import jakarta.servlet.http.HttpServletRequest;
 import javax.xml.soap.Detail;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeaders;
@@ -36,6 +43,7 @@ import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPFault;
 import javax.xml.soap.SOAPMessage;
 
+import com.google.inject.Inject;
 import org.forgerock.http.protocol.Response;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
@@ -46,35 +54,23 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.sun.identity.saml.common.SAMLConstants;
+import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.shared.xml.XMLUtils;
 
 /**
  * The SOAPCommunicator is a utility package to assist in SAML2 communication over SOAP.
  */
+@Singleton
 public class SOAPCommunicator {
 
     private static final Logger debug = LoggerFactory.getLogger(SOAPCommunicator.class);
-    private SOAPConnectionFactory soapConnectionFactory; // TODO: use Guice
-    private MessageFactory messageFactory; // TODO: use Guice
+    private final SOAPConnectionFactory soapConnectionFactory;
+    private final MessageFactory messageFactory;
 
-    private static SOAPCommunicator instance = new SOAPCommunicator(); // TODO: use Guice
-
-    private SOAPCommunicator() {
-        try {
-            soapConnectionFactory = SOAPConnectionFactory.newInstance();
-            messageFactory = MessageFactory.newInstance();
-        } catch (SOAPException se) {
-            debug.error("SOAPCommunicator: Unable to create SOAP MessageFactory", se);
-        }
-    }
-
-    /**
-     * Gets the singleton instance of the SOAPCommunicator.
-     *
-     * @return the SOAPCommunicator instance.
-     */
-    public static SOAPCommunicator getInstance() {
-        return instance;
+    @Inject
+    public SOAPCommunicator(SOAPConnectionFactory soapConnectionFactory, MessageFactory messageFactory) {
+        this.soapConnectionFactory = soapConnectionFactory;
+        this.messageFactory = messageFactory;
     }
 
     /**
@@ -276,7 +272,7 @@ public class SOAPCommunicator {
     public SOAPMessage getSOAPMessage(final HttpServletRequest request)
             throws IOException, SOAPException {
         // Get all the headers from the HTTP request
-        MimeHeaders headers = getHeaders(request);
+        MimeHeaders headers = SAMLUtils.getMimeHeaders(request);
         // Get the body of the HTTP request
         InputStream is = request.getInputStream();
 
@@ -380,35 +376,6 @@ public class SOAPCommunicator {
                     localName);
         }
         return returnElement;
-    }
-
-    /**
-     * Returns mime headers in HTTP servlet request.
-     *
-     * @param req HTTP servlet request.
-     * @return mime headers in HTTP servlet request.
-     */
-    public MimeHeaders getHeaders(final HttpServletRequest req) {
-        Enumeration<String> e = req.getHeaderNames();
-        MimeHeaders headers = new MimeHeaders();
-        while (e.hasMoreElements()) {
-            String headerName = e.nextElement();
-            String headerValue = req.getHeader(headerName);
-
-            debug.debug("SOAPCommunicator.getHeaders: Header name={}, value={}",
-                    headerName, headerValue);
-            StringTokenizer values =
-                    new StringTokenizer(headerValue, ",");
-            while (values.hasMoreTokens()) {
-                headers.addHeader(
-                        headerName, values.nextToken().trim());
-            }
-        }
-
-        if (debug.isDebugEnabled()) {
-            debug.debug("SOAPCommunicator.getHeaders: Header=" + headers.toString());
-        }
-        return headers;
     }
 
     /**

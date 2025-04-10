@@ -26,7 +26,7 @@
 
     $Id: amAuthJDBC.xml,v 1.3 2008/06/25 05:45:41 qcheng Exp $
 
-    Portions Copyright 2015-2020 ForgeRock AS.
+    Portions Copyright 2015-2025 Ping Identity Corporation.
 -->
 
 <!DOCTYPE ServicesConfiguration

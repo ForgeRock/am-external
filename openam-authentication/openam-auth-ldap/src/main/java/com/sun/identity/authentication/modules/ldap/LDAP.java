@@ -24,7 +24,7 @@
  *
  * $Id: LDAP.java,v 1.17 2010/01/25 22:09:16 qcheng Exp $
  *
- * Portions Copyrighted 2010-2023 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.authentication.modules.ldap;
@@ -76,7 +76,7 @@ public class LDAP extends AMLoginModule {
     private boolean sslTrustAll = false;
     private boolean isSecure = false;
     private boolean useStartTLS = false;
-    
+
     private static final String OPERATION_TIMEOUT_ATTR = "openam-auth-ldap-operation-timeout";
     private static final String LDAP_RESOURCE_BUNDLE_NAME = "amAuthLDAP";
 
@@ -231,7 +231,7 @@ public class LDAP extends AMLoginModule {
                     "openam-auth-ldap-heartbeat-interval", 10, debug);
             String heartBeatTimeUnit = CollectionHelper.getMapAttr(currentConfig,
                     "openam-auth-ldap-heartbeat-timeunit", "SECONDS");
-            
+
             final int operationTimeout = CollectionHelper.getIntMapAttr(currentConfig, OPERATION_TIMEOUT_ATTR , 0 , debug);
 
             isProfileCreationEnabled = isDynamicProfileCreationEnabled();
@@ -601,7 +601,7 @@ public class LDAP extends AMLoginModule {
                         AMAuthCallBackImpl.getInstance(this.getRequestOrg());
                     // We need the current system time since this is required
                     // as part of the callback method parameter.
-                    Long now = new Long(currentTimeMillis());
+                    Long now = currentTimeMillis();
                     // We now notify the plug-in that a successful
                     // password change was performed.
                     callbackImpl.processedPasswordChange(now, validatedUserID);

@@ -11,7 +11,15 @@
  Header, with the fields enclosed by brackets [] replaced by your own identifying
  information: "Portions copyright [year] [name of copyright owner]".
 
-  Copyright 2016-2023 ForgeRock AS. All Rights Reserved
+  Copyright 2025 ForgeRock AS.
+}}
+{{!
+  Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+
+ ! This code is to be used exclusively in connection with Ping Identity
+ ! Corporation software or services. Ping Identity Corporation only offers
+ ! such software or services to legal entities who have entered into a
+ ! binding license agreement with Ping Identity Corporation.
 }}
 {{> headers/_Title title="console.scripts.edit.title"}}
 
@@ -34,10 +42,12 @@
             <div class="col-sm-9">
                 <select class="form-control" data-field="context" id="context">
                     <option value="" disabled selected>{{t "console.scripts.edit.scriptTypes"}}</option>
-                    {{#each contexts}}
+                    {{#each scriptTypes}}
+                    {{#unless isHidden}}
                     <option value="{{_id}}" {{#equals ../../defaultContext _id}} selected {{/equals}} >
                         {{name}}
                     </option>
+                    {{/unless}}
                     {{/each}}
                 </select>
             </div>
@@ -56,6 +66,9 @@
                 <label for="radio-nextgen" class="btn fr-btn-secondary versionSelect disabled">
                   {{t "console.scripts.edit.version.2.0"}}
                 </label>
+                <a id="evaluatorVersionInfo" class="btn info-button hidden" tabindex="0" data-toggle="popoverclickaway" >
+                  <i class="fa fa-info-circle"></i>
+                </a>
               </div>
             </div>
         </div>

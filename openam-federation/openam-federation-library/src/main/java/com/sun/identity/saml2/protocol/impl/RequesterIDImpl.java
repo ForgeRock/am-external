@@ -24,7 +24,7 @@
  *
  * $Id: RequesterIDImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions Copyrighted 2019-2023 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 
@@ -36,7 +36,6 @@ import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
 import static com.sun.identity.saml2.common.SAML2Constants.REQUESTERID;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -52,7 +51,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  * <code>AuthnRequest</code> message.
  */
 
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class RequesterIDImpl implements RequesterID {
             
      private String requesterIdURI;

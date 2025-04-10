@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
@@ -69,27 +77,36 @@ public class AuthenticationFlow {
     /**
      * Performs the authentication ceremony, resulting in true if successful.
      *
-     *
-     * @param realm the realm.
-     * @param clientData the client data.
-     * @param authData the authenticator data.
-     * @param signature the signature provided.
-     * @param challengeBytes the challenge in bytes.
-     * @param rpId the replying party ID.
-     * @param device the authentication device.
+     * @param realm the realm
+     * @param clientData the client data
+     * @param authData the authenticator data
+     * @param signature the signature provided
+     * @param challengeBytes the challenge in bytes
+     * @param rpId the replying party ID
+     * @param device the authentication device
      * @param origins the origin urls one of which the device should claim
-     * @param userVerificationRequirement set to required if the user needs to be verified.
-     * @return true if the attestation data is correct and the user can authenticate.
+     * @param userVerificationRequirement set to "required" if the user needs to be verified
+     * @return true if the attestation data is correct and the user can authenticate
      */
     public boolean accept(Realm realm, String clientData, AuthData authData, byte[] signature,
             byte[] challengeBytes, String rpId, WebAuthnDeviceSettings device, Set<String> origins,
             UserVerificationRequirement userVerificationRequirement) {
+        // 7.2. Verifying an Authentication Assertion - https://www.w3.org/TR/webauthn-2/#sctn-verifying-assertion
 
-        // 7.2.1 & 7.2.2 & 7.2.3 handled prior to calling this method
+        // 7.2.1
+        // todo: validate the transports member of the allowCredentials option -- currently not supported
 
-        // 7.2.4 & 7.2.5 & 7.2.6
+        // 7.2.2 & 7.2.3 handled prior to calling this method
+        // 7.2.4 - see 7.2.18
+
+        // 7.2.5 & 7.2.6
+        // todo: validate the credential.id data member -- currently not supported
+        // 7.2.7 - see 7.2.20
+
+        // 7.2.8 & 7.2.9 handled prior to calling this method
+
+        // 7.2.10
         Map<String, Object> map;
-
         try {
             map = JsonValueBuilder.getObjectMapper().readValue(clientData, Map.class);
         } catch (IOException e) {
@@ -102,20 +119,20 @@ public class AuthenticationFlow {
             return false;
         }
 
-        // 7.2.7
-        if (!("webauthn.get").equals(map.get("type"))) {
-            logger.warn("client data type was incorrect, expecting webauth.get");
+        // 7.2.11
+        if (!"webauthn.get".equals(map.get("type"))) {
+            logger.warn("client data type was incorrect, expecting webauthn.get");
             return false;
         }
 
-        // 7.2.8
+        // 7.2.12
         if (map.get("challenge") == null
                 || !MessageDigest.isEqual(challengeBytes, base64UrlDecode(map.get("challenge").toString()))) {
             logger.warn("challenge in response not valid for the challenge sent");
             return false;
         }
 
-        //7.2.9
+        // 7.2.13
         String origin = Optional.ofNullable(map.get("origin")).map(Object::toString).orElse(null);
         if (origin == null || !flowUtilities.isOriginValid(realm, origins, origin)) {
             logger.warn("origin in response not valid for the actual origin. Origin provided was {} but origins"
@@ -123,22 +140,36 @@ public class AuthenticationFlow {
             return false;
         }
 
-        // 7.2.10
-        //todo: token binding -- currently not supported
+        // 7.2.14
+        // todo: token binding -- currently not supported
 
-        // 7.2.11
+        // 7.2.15
         if (!MessageDigest.isEqual(getHash(rpId), authData.rpIdHash)) {
             logger.warn("rpId hashes did not match");
             return false;
         }
 
-        // 7.2.12
-        if (!authData.attestationFlags.isUserPresent()) {
-            logger.warn("user present bit not set in auth data");
+        // 7.2.16 (+ FIDO Conformance Caveat - see AME-28700)
+        if (userVerificationRequirement == UserVerificationRequirement.REQUIRED) {
+            if (!authData.attestationFlags.isUserPresent()) {
+                logger.warn("user present bit not set in auth data");
+                return false;
+            }
+        }
+
+        // 6.1 verify the isAttestedDataIncluded flag is NOT set
+        if (authData.attestationFlags.isAttestedDataIncluded()) {
+            logger.error("attested data bit was set");
             return false;
         }
 
-        // 7.2.13
+        // 6.1 verify the attestedCredentialData is NOT present (i.e. is null)
+        if (authData.attestedCredentialData != null) {
+            logger.error("attested credential data was present");
+            return false;
+        }
+
+        // 7.2.17
         if (userVerificationRequirement == UserVerificationRequirement.REQUIRED) {
             if (!authData.attestationFlags.isUserVerified()) {
                 logger.warn("user verified bit required and not set in auth data");
@@ -146,14 +177,14 @@ public class AuthenticationFlow {
             }
         }
 
-        // 7.2.14
-        //todo: extensions -- currently not supported
+        // 7.2.4 & 7.2.18
+        // todo: extensions -- currently not supported
 
-        // 7.2.15
+        // 7.2.19
         byte[] cDataHash = getHash(clientData);
         byte[] concatBytes = ArrayUtils.addAll(authData.rawAuthenticatorData, cDataHash);
 
-        // 7.2.16
+        // 7.2.7 & 7.2.20
         try {
             PublicKey publicKey = flowUtilities.getPublicKeyFromJWK(device.getKey());
             if (device.getKey().getKeyType() == KeyType.EC) {
@@ -169,10 +200,10 @@ public class AuthenticationFlow {
             logger.error("error in verifying webauthn signature", e);
         }
 
-        // 7.2.17
-        //todo: signature counter
-        return false;
+        // 7.2.21
+        // todo: signature counter
 
+        return false;
     }
 
 }

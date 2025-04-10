@@ -11,21 +11,29 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2013-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml.xmlsig;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.openam.shared.testsupport.CertificateFactory.aTestX509Certificate;
 
-import java.security.AccessController;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -45,18 +53,18 @@ public class AMSignatureProviderTest {
     private static final String SIGNED_XML_DOCUMENT = "signeddocument.xml";
     private static final String XML_DOCUMENT_TO_SIGN = "documenttosign.xml";
 
-    private AMSignatureProvider signatureProvider;
+    private static AMSignatureProvider signatureProvider;
 
-    @BeforeClass
-    public void setUp() {
+    @BeforeAll
+    static void setUp() {
         signatureProvider = new AMSignatureProvider();
         signatureProvider.initialize(new JKSKeyProvider());
     }
 
     @Test
-    public void signXMLWithPrivateKeyUsingPassword() throws Exception {
+    void signXMLWithPrivateKeyUsingPassword() throws Exception {
         Document documentToSign = XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(XML_DOCUMENT_TO_SIGN));
-        String encodedPrivatePass = AccessController.doPrivileged(new EncodeAction(PRIVATE_KEY_PASS));
+        String encodedPrivatePass = new EncodeAction(PRIVATE_KEY_PASS).run();
         Element signature = signatureProvider.signXMLUsingKeyPass(documentToSign, PRIVATE_KEY_ALIAS,
                 encodedPrivatePass, null, SAML2Constants.ID, ID_ATTRIBUTE_VALUE, true, null);
 
@@ -66,22 +74,26 @@ public class AMSignatureProviderTest {
         assertThat(signature.isEqualNode(nodes.item(0))).isTrue();
     }
 
-    @Test(expectedExceptions = XMLSignatureException.class)
-    public void signXMLWithPrivateKeyAndNullPassword() throws Exception {
-        Document documentToSign = XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(XML_DOCUMENT_TO_SIGN));
-        signatureProvider.signXMLUsingKeyPass(documentToSign, PRIVATE_KEY_ALIAS,
-                null, null, SAML2Constants.ID, ID_ATTRIBUTE_VALUE, true, null);
-    }
-
-    @Test(expectedExceptions = XMLSignatureException.class)
-    public void signXMLWithPrivateKeyUsingDefaultPassword() throws Exception {
-        Document documentToSign = XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(XML_DOCUMENT_TO_SIGN));
-        signatureProvider.signXML(documentToSign, PRIVATE_KEY_ALIAS,
-                null, SAML2Constants.ID, ID_ATTRIBUTE_VALUE, true, null);
+    @Test
+    void signXMLWithPrivateKeyAndNullPassword() throws Exception {
+        assertThatThrownBy(() -> {
+            Document documentToSign = XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(XML_DOCUMENT_TO_SIGN));
+            signatureProvider.signXMLUsingKeyPass(documentToSign, PRIVATE_KEY_ALIAS,
+                    null, null, SAML2Constants.ID, ID_ATTRIBUTE_VALUE, true, null);
+        }).isInstanceOf(XMLSignatureException.class);
     }
 
     @Test
-    public void signXMLWithDefaultPrivateKeyAndNullPassword() throws Exception {
+    void signXMLWithPrivateKeyUsingDefaultPassword() throws Exception {
+        assertThatThrownBy(() -> {
+            Document documentToSign = XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(XML_DOCUMENT_TO_SIGN));
+            signatureProvider.signXML(documentToSign, PRIVATE_KEY_ALIAS,
+                    null, SAML2Constants.ID, ID_ATTRIBUTE_VALUE, true, null);
+        }).isInstanceOf(XMLSignatureException.class);
+    }
+
+    @Test
+    void signXMLWithDefaultPrivateKeyAndNullPassword() throws Exception {
         Document documentToSign = XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(XML_DOCUMENT_TO_SIGN));
         // Passing null for password should trigger using default keystore password to load private key
         Element signature = signatureProvider.signXMLUsingKeyPass(documentToSign, DEFAULT_PRIVATE_KEY_ALIAS,
@@ -94,7 +106,7 @@ public class AMSignatureProviderTest {
     }
 
     @Test
-    public void signXMLWithDefaultPrivateKey() throws Exception {
+    void signXMLWithDefaultPrivateKey() throws Exception {
         Document documentToSign = XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(XML_DOCUMENT_TO_SIGN));
         // Should trigger using default keystore password to load private key
         Element signature = signatureProvider.signXML(documentToSign, DEFAULT_PRIVATE_KEY_ALIAS,
@@ -107,7 +119,7 @@ public class AMSignatureProviderTest {
     }
 
     @Test
-    public void signXmlUsingPrivateKey() throws Exception {
+    void signXmlUsingPrivateKey() throws Exception {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(512);
         final KeyPair keyPair = keyGen.generateKeyPair();
@@ -123,7 +135,7 @@ public class AMSignatureProviderTest {
     }
 
     @Test
-    public void verifyDocumentResponseID() throws Exception {
+    void verifyDocumentResponseID() throws Exception {
         // Test that a signed document can be verified with an ID
         // from the set of "AssertionID", "RequestID", "ResponseID"
         Document signedDocument =
@@ -133,7 +145,7 @@ public class AMSignatureProviderTest {
     }
 
     @Test
-    public void verifyDocument() throws Exception {
+    void verifyDocument() throws Exception {
         // Test that a signed document can be verified
         Document signedDocument = XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(SIGNED_XML_DOCUMENT));
         assertThat(signatureProvider.verifyXMLSignature(signedDocument.getDocumentElement(),

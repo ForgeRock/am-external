@@ -11,26 +11,42 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mockStatic;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
 
+import org.forgerock.openam.core.rest.devices.RecoveryCodeStorage;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
 
 public class OathTotpVerifierTest {
 
+    @Mock
+    private static RecoveryCodeStorage recoveryCodeStorage;
+    private static MockedStatic<RecoveryCodeStorage> recoveryCodeStorageMockedStatic;
     private final OathDeviceSettings settings = new OathDeviceSettings();
-
     private final OffsetDateTime now = OffsetDateTime.of(
             2010,
             11,
@@ -41,23 +57,32 @@ public class OathTotpVerifierTest {
             0,
             ZoneOffset.UTC
     );
-
     private OathTokenVerifierNode.Config config = new OathTokenVerifierNode.Config() {
         @Override
         public HashAlgorithm totpHashAlgorithm() {
             return HashAlgorithm.HMAC_SHA1;
         }
     };
-
     private OathTotpVerifier totpVerifier = new OathTotpVerifier(config, settings, now.toEpochSecond());
 
-    @BeforeMethod
-    public void setup() {
+    @BeforeAll
+    static void setUp() {
+        recoveryCodeStorageMockedStatic = mockStatic(RecoveryCodeStorage.class);
+        recoveryCodeStorageMockedStatic.when(RecoveryCodeStorage::getSystemStorage).thenReturn(recoveryCodeStorage);
+    }
+
+    @AfterAll
+    static void tearDown() {
+        recoveryCodeStorageMockedStatic.close();
+    }
+
+    @BeforeEach
+    void setup() {
         settings.setSharedSecret("abcd");
     }
 
     @Test
-    public void verifyWhenFirstValidTotpInWindowThenSucceed() throws Exception {
+    void verifyWhenFirstValidTotpInWindowThenSucceed() throws Exception {
         // Given
         settings.setLastLogin(now.minusSeconds(120).toEpochSecond(), TimeUnit.SECONDS);
 
@@ -70,7 +95,7 @@ public class OathTotpVerifierTest {
     }
 
     @Test
-    public void verifyWhenSecondValidTotpInWindowThenSucceed() {
+    void verifyWhenSecondValidTotpInWindowThenSucceed() {
         // Given
         settings.setLastLogin(now.minusSeconds(1).toEpochSecond(), TimeUnit.SECONDS);
 
@@ -82,7 +107,7 @@ public class OathTotpVerifierTest {
     }
 
     @Test
-    public void verifyWhenClockHasDriftedThenSuccessAndStoreDrift() throws Exception {
+    void verifyWhenClockHasDriftedThenSuccessAndStoreDrift() throws Exception {
         // Given
         settings.setLastLogin(now.minusSeconds(31).toEpochSecond(), TimeUnit.SECONDS);
 
@@ -94,20 +119,18 @@ public class OathTotpVerifierTest {
         assertThat(settings.getLastLogin()).isEqualTo(now.plusSeconds(5).toEpochSecond());
     }
 
-    @Test(expectedExceptions = OathVerificationException.class)
-    public void verifyWhenInvalidTotpThenFail() throws OathVerificationException {
+    @Test
+    void verifyWhenInvalidTotpThenFail() {
         // Given
         settings.setLastLogin(now.minusSeconds(31).toEpochSecond(), TimeUnit.SECONDS);
 
-        // When
-        totpVerifier.verify("000000");
-
-        // Then
-        // throw exception
+        // When / Then
+        assertThatThrownBy(() -> totpVerifier.verify("000000"))
+                .isInstanceOf(OathVerificationException.class);
     }
 
     @Test
-    public void verifyWhenValidTotpUsingSHA256AlgorithmThenSucceed() throws Exception {
+    void verifyWhenValidTotpUsingSHA256AlgorithmThenSucceed() throws Exception {
         // Given
         settings.setLastLogin(now.minusSeconds(120).toEpochSecond(), TimeUnit.SECONDS);
         config = new OathTokenVerifierNode.Config() {
@@ -127,7 +150,7 @@ public class OathTotpVerifierTest {
     }
 
     @Test
-    public void verifyWhenValidTotpUsingSHA512AlgorithmThenSucceed() throws Exception {
+    void verifyWhenValidTotpUsingSHA512AlgorithmThenSucceed() throws Exception {
         // Given
         settings.setLastLogin(now.minusSeconds(120).toEpochSecond(), TimeUnit.SECONDS);
         config = new OathTokenVerifierNode.Config() {

@@ -11,12 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oauth.secrets;
 
-import static java.util.Collections.emptySet;
 import static java.util.Collections.singleton;
 import static org.forgerock.openam.ldap.PersistentSearchChangeType.ADDED;
 import static org.forgerock.openam.ldap.PersistentSearchChangeType.MODIFIED;
@@ -27,7 +34,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -37,10 +43,16 @@ import org.forgerock.openam.secrets.SecretStoreWithMappings;
 import org.forgerock.openam.secrets.config.PurposeMapping;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
 import org.forgerock.openam.sm.annotations.subconfigs.Multiple;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class OidcRpTrustStoreSecretMappingCleanerTest {
 
     private static final String REALM = "o=testrealm,ou=services,dc=test,dc=org";
@@ -58,18 +70,17 @@ public class OidcRpTrustStoreSecretMappingCleanerTest {
     private OidcRpTrustStoreSecretMappingCleaner.Helper helper;
     @Mock
     private Multiple<PurposeMapping> mappings;
+    @InjectMocks
     private OidcRpTrustStoreSecretMappingCleaner cleaner;
 
-    @BeforeMethod
-    public void setup() {
-        openMocks(this);
-        cleaner = new OidcRpTrustStoreSecretMappingCleaner(configManagerFactory, realmLookup, helper);
+    @BeforeEach
+    void setup() {
         given(realmLookup.convertRealmDnToRealmPath(REALM)).willReturn(REALM_PATH);
     }
 
 
     @Test
-    public void shouldDoNothingWhenNewConfigIsAdded() {
+    void shouldDoNothingWhenNewConfigIsAdded() {
         //when
         cleaner.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, ADDED);
 
@@ -78,7 +89,7 @@ public class OidcRpTrustStoreSecretMappingCleanerTest {
     }
 
     @Test
-    public void shouldDoNothingWhenNewConfigIsModified() {
+    void shouldDoNothingWhenNewConfigIsModified() {
         //when
         cleaner.organizationConfigChanged(SERVICE_NAME, SERVICE_VERSION, REALM, null, null, MODIFIED);
 
@@ -88,7 +99,7 @@ public class OidcRpTrustStoreSecretMappingCleanerTest {
     }
 
     @Test
-    public void shouldNotDeleteWhenNoKeyStoreIsConfigured() {
+    void shouldNotDeleteWhenNoKeyStoreIsConfigured() {
         //given
         given(helper.getRealmStores(REALM)).willReturn(Collections.emptySet());
 
@@ -100,7 +111,7 @@ public class OidcRpTrustStoreSecretMappingCleanerTest {
     }
 
     @Test
-    public void shouldNotDeleteWhenNoMappingsAvailable() {
+    void shouldNotDeleteWhenNoMappingsAvailable() {
         //given
         given(secretStore.mappings()).willReturn(null);
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
@@ -113,10 +124,9 @@ public class OidcRpTrustStoreSecretMappingCleanerTest {
     }
 
     @Test
-    public void shouldNotDeleteWhenNoSubConfigFoundInMappings() throws Exception {
+    void shouldNotDeleteWhenNoSubConfigFoundInMappings() throws Exception {
         //given
         given(secretStore.mappings()).willReturn(mappings);
-        given(mappings.idSet()).willReturn(emptySet());
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
 
         //when
@@ -127,7 +137,7 @@ public class OidcRpTrustStoreSecretMappingCleanerTest {
     }
 
     @Test
-    public void shouldNotDeleteWhenNoMappingFound() throws Exception {
+    void shouldNotDeleteWhenNoMappingFound() throws Exception {
         //given
         given(helper.getSecretId(REALM, CONFIG_NAME, secretStore, mappings)).willReturn(Optional.of("secretId"));
         given(secretStore.mappings()).willReturn(mappings);
@@ -142,12 +152,11 @@ public class OidcRpTrustStoreSecretMappingCleanerTest {
     }
 
     @Test
-    public void shouldDeleteWhenOrphanMappingFound() throws Exception {
+    void shouldDeleteWhenOrphanMappingFound() throws Exception {
         //given
         given(helper.getSecretId(REALM_PATH, "myOidcConfig", secretStore, mappings))
                 .willReturn(Optional.of("am.services.oidc.reliant.party.orphan.truststore"));
         given(secretStore.mappings()).willReturn(mappings);
-        given(mappings.idSet()).willReturn(singleton("am.services.oidc.reliant.party.orphan.truststore"));
         given(helper.getRealmStores(REALM_PATH)).willReturn(singleton(secretStore));
 
         //when

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -23,7 +31,6 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.AUTH_LEVEL;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Optional;
 
@@ -32,22 +39,19 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class AuthLevelDecisionNodeTest {
 
     @Mock
     AuthLevelDecisionNode.Config serviceConfig;
 
-    @BeforeMethod
-    public void before() {
-        openMocks(this);
-    }
-
     @Test
-    public void processReturnsTrueOutcomeIfAuthLevelIsEqualToRequirement() throws Exception {
+    void processReturnsTrueOutcomeIfAuthLevelIsEqualToRequirement() throws Exception {
         given(serviceConfig.authLevelRequirement()).willReturn(10);
         Node node = new AuthLevelDecisionNode(serviceConfig);
         Action result = node.process(getContext(json(object(field(AUTH_LEVEL, 10)))));
@@ -55,7 +59,7 @@ public class AuthLevelDecisionNodeTest {
     }
 
     @Test
-    public void processReturnsTrueOutcomeIfAuthLevelIsGreaterToRequirement() throws Exception {
+    void processReturnsTrueOutcomeIfAuthLevelIsGreaterToRequirement() throws Exception {
         given(serviceConfig.authLevelRequirement()).willReturn(10);
         Node node = new AuthLevelDecisionNode(serviceConfig);
         Action result = node.process(getContext(json(object(field(AUTH_LEVEL, 11)))));
@@ -63,7 +67,7 @@ public class AuthLevelDecisionNodeTest {
     }
 
     @Test
-    public void processReturnsFalseOutcomeIfAuthLevelIsLessToRequirement() throws Exception {
+    void processReturnsFalseOutcomeIfAuthLevelIsLessToRequirement() throws Exception {
         given(serviceConfig.authLevelRequirement()).willReturn(10);
         Node node = new AuthLevelDecisionNode(serviceConfig);
         Action result = node.process(getContext(json(object(field(AUTH_LEVEL, 9)))));

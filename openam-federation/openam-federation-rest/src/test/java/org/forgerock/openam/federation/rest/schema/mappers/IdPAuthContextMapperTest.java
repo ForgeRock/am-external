@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -28,7 +36,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.forgerock.openam.federation.rest.schema.hosted.identity.AuthContextItem;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class IdPAuthContextMapperTest {
 
@@ -36,7 +44,7 @@ public class IdPAuthContextMapperTest {
     private AuthContextItem authContextItem;
 
     @Test
-    public void shouldConvertSimpleEntry() {
+    void shouldConvertSimpleEntry() {
         List<AuthContextItem> converted = mapper.map(
                 singletonList("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport|3||"), ROOT);
         assertThat(converted).hasSize(1);
@@ -49,7 +57,7 @@ public class IdPAuthContextMapperTest {
     }
 
     @Test
-    public void shouldConvertEntryWithoutLevel() {
+    void shouldConvertEntryWithoutLevel() {
         List<AuthContextItem> converted = mapper.map(
                 singletonList("urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport|||"), ROOT);
         assertThat(converted).hasSize(1);
@@ -62,7 +70,7 @@ public class IdPAuthContextMapperTest {
     }
 
     @Test
-    public void shouldConvertEntryWithAllFieldsCompleted() {
+    void shouldConvertEntryWithAllFieldsCompleted() {
         List<AuthContextItem> converted = mapper.map(
                 singletonList("urn:oasis:names:tc:SAML:2.0:ac:classes:Password|10|module=DataStore|default"), ROOT);
         assertThat(converted).hasSize(1);
@@ -75,7 +83,7 @@ public class IdPAuthContextMapperTest {
     }
 
     @Test
-    public void shouldInverseMappedValue() {
+    void shouldInverseMappedValue() {
         // Given
         authContextItem = new AuthContextItem("urn:oasis:names:tc:SAML:2.0:ac:classes:Password", MODULE, "value", 5);
         List<AuthContextItem> mappedValue = new ArrayList<>();
@@ -87,7 +95,7 @@ public class IdPAuthContextMapperTest {
     }
 
     @Test
-    public void shouldInverseNonDefaultValuesCorrectly() {
+    void shouldInverseNonDefaultValuesCorrectly() {
         // Given
         AuthContextItem defaultItem = new AuthContextItem("urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocol",
                 SERVICE,
@@ -103,7 +111,7 @@ public class IdPAuthContextMapperTest {
     }
 
     @Test
-    public void shouldInverseEntryWithoutLevel() {
+    void shouldInverseEntryWithoutLevel() {
         // Given
         AuthContextItem defaultItem = new AuthContextItem("urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocol",
                 SERVICE,
@@ -119,7 +127,7 @@ public class IdPAuthContextMapperTest {
     }
 
     @Test
-    public void shouldSortItemsSoThatDefaultIsFirst() {
+    void shouldSortItemsSoThatDefaultIsFirst() {
         AuthContextItem defaultItem = new AuthContextItem(
                 "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport",
                 USER,
@@ -142,7 +150,7 @@ public class IdPAuthContextMapperTest {
     }
 
     @Test
-    public void shouldMarkFirstItemAsDefaultDuringSerialisation() {
+    void shouldMarkFirstItemAsDefaultDuringSerialisation() {
         AuthContextItem defaultItem = new AuthContextItem("urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocol",
                 SERVICE,
                 "blah",

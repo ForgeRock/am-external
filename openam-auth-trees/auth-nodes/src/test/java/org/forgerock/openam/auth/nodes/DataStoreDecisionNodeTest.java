@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -30,7 +38,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.security.PrivilegedAction;
 import java.util.Optional;
@@ -47,17 +54,22 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 import com.google.inject.Provider;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdType;
 
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class DataStoreDecisionNodeTest {
     @Mock
     CoreWrapper coreWrapper;
@@ -80,10 +92,8 @@ public class DataStoreDecisionNodeTest {
     @Mock
     SSOToken adminToken;
 
-    @BeforeMethod
-    public void setup() throws Exception {
-        node = null;
-        initMocks(this);
+    @BeforeEach
+    void setup() throws Exception {
         given(coreWrapper.convertRealmPathToRealmDn(any())).willReturn("org=name");
         given(coreWrapper.getIdentityRepository(any())).willReturn(identityStore);
         given(amIdentity.isActive()).willReturn(true);
@@ -93,7 +103,7 @@ public class DataStoreDecisionNodeTest {
     }
 
     @Test
-    public void testProcessAddsIdentifiedIdentityOfUserInStore() throws Exception {
+    void testProcessAddsIdentifiedIdentityOfUserInStore() throws Exception {
         // Given
         given(identityStore.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(true);
         JsonValue sharedState = json(object(field(USERNAME, "bob")));
@@ -110,7 +120,7 @@ public class DataStoreDecisionNodeTest {
     }
 
     @Test
-    public void givenNoUsernameAssertIdentityNotIdentified() throws Exception {
+    void givenNoUsernameAssertIdentityNotIdentified() throws Exception {
         // Given
         given(identityStore.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(true);
         JsonValue sharedState = json(object());
@@ -125,7 +135,7 @@ public class DataStoreDecisionNodeTest {
     }
 
     @Test
-    public void testProcessDoesNotAddIdentifiedIdentityOfUserNotInStore() throws Exception {
+    void testProcessDoesNotAddIdentifiedIdentityOfUserNotInStore() throws Exception {
         // Given
         given(identityStore.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(false);
         JsonValue sharedState = json(object(field(USERNAME, "bob-2")));
@@ -139,7 +149,7 @@ public class DataStoreDecisionNodeTest {
     }
 
     @Test
-    public void shouldFailIfPasswordIsBlank() throws Exception {
+    void shouldFailIfPasswordIsBlank() throws Exception {
         // Given
         given(identityStore.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(true);
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
@@ -158,7 +168,7 @@ public class DataStoreDecisionNodeTest {
     }
 
     @Test
-    public void testProcessPassesUsernameAndPasswordToIdentityRepository() throws Exception {
+    void testProcessPassesUsernameAndPasswordToIdentityRepository() throws Exception {
         // Given
         given(identityStore.authenticate(any(Callback[].class))).willReturn(true);
         JsonValue sharedState = json(object(field(USERNAME, "bob")));
@@ -179,7 +189,7 @@ public class DataStoreDecisionNodeTest {
     }
 
     @Test
-    public void testProcessWithNoCallbacksReturnsTrueIfAuthenticationIsSuccessful() throws Exception {
+    void testProcessWithNoCallbacksReturnsTrueIfAuthenticationIsSuccessful() throws Exception {
         // Given
         given(identityStore.authenticate(eq(IdType.USER), any(Callback[].class))).willReturn(true);
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
@@ -197,7 +207,7 @@ public class DataStoreDecisionNodeTest {
     }
 
     @Test
-    public void testProcessWithNoCallbacksReturnsFalseIfAuthenticationIsNotSuccessful() throws Exception {
+    void testProcessWithNoCallbacksReturnsFalseIfAuthenticationIsNotSuccessful() throws Exception {
         // Given
         given(identityStore.authenticate(any(Callback[].class))).willReturn(false);
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));

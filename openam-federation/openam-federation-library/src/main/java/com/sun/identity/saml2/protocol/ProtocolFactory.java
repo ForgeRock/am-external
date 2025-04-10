@@ -24,7 +24,7 @@
  *
  * $Id: ProtocolFactory.java,v 1.5 2008/06/25 05:47:57 qcheng Exp $
  *
- * Portions Copyrighted 2017-2024 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.protocol;

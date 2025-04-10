@@ -11,16 +11,26 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2013-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.common;
 
-import static org.mockito.BDDMockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.testng.AssertJUnit.assertEquals;
-import static org.testng.AssertJUnit.assertTrue;
 
 import java.security.Principal;
 import java.util.HashMap;
@@ -31,28 +41,24 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.message.AuthStatus;
 import javax.security.auth.message.MessageInfo;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import org.mockito.ArgumentMatchers;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.util.ISAuthConstants;
 
 public class JaspiAuthLoginModuleTest {
 
+    private final Map<String, Object> config = new HashMap<>();
     private JaspiAuthLoginModule jaspiAuthLoginModule;
-
     private boolean processMethodCalled = false;
-
     private JaspiAuthModuleWrapper jaspiAuthWrapper;
 
-    private Map<String, Object> config = new HashMap<>();
-
-    @BeforeMethod
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
 
         jaspiAuthWrapper = mock(JaspiAuthModuleWrapper.class);
 
@@ -68,7 +74,7 @@ public class JaspiAuthLoginModuleTest {
             }
 
             @Override
-            protected boolean process(MessageInfo messageInfo, Subject clientSubject, Callback[] callbacks) throws LoginException {
+            protected boolean process(MessageInfo messageInfo, Subject clientSubject, Callback[] callbacks) {
                 processMethodCalled = true;
                 return true;
             }
@@ -85,7 +91,7 @@ public class JaspiAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldInitialiseAuthenticationModuleWrapper() throws Exception {
+    void shouldInitialiseAuthenticationModuleWrapper() throws Exception {
 
         //Given
         Subject subject = new Subject();
@@ -100,109 +106,94 @@ public class JaspiAuthLoginModuleTest {
     }
 
     @Test
-    public void shouldProcessCallbacksAndThrowInvalidStateException() throws LoginException {
+    void shouldProcessCallbacksAndThrowInvalidStateException() throws LoginException {
 
         //Given
         Callback[] callbacks = new Callback[0];
         int state = 0;
 
         //When
-        boolean exceptionCaught = false;
-        AuthLoginException exception = null;
-        try {
-            jaspiAuthLoginModule.process(callbacks, state);
-        } catch (AuthLoginException e) {
-            exceptionCaught = true;
-            exception = e;
-        }
-
-        //Then
-        assertTrue(exceptionCaught);
-        assertEquals(exception.getErrorCode(), "incorrectState");
+        assertThatThrownBy(() -> jaspiAuthLoginModule.process(callbacks, state))
+                //Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessage("Incorrect State");
     }
 
     @Test
-    public void shouldProcessCallbacksWhenValidateRequestReturnsSuccess() throws LoginException {
+    void shouldProcessCallbacksWhenValidateRequestReturnsSuccess() throws LoginException {
 
         //Given
         Callback[] callbacks = new Callback[0];
         int state = ISAuthConstants.LOGIN_START;
 
-        given(jaspiAuthWrapper.validateRequest(ArgumentMatchers.<MessageInfo>anyObject(), ArgumentMatchers.<Subject>anyObject()))
+        given(jaspiAuthWrapper.validateRequest(any(), any()))
                 .willReturn(AuthStatus.SUCCESS);
 
         //When
         int returnedState = jaspiAuthLoginModule.process(callbacks, state);
 
         //Then
-        assertTrue(processMethodCalled);
-        verify(jaspiAuthWrapper).validateRequest(ArgumentMatchers.<MessageInfo>anyObject(), ArgumentMatchers.<Subject>anyObject());
-        assertEquals(returnedState, ISAuthConstants.LOGIN_SUCCEED);
+        assertThat(processMethodCalled).isTrue();
+        verify(jaspiAuthWrapper).validateRequest(any(), any());
+        assertThat(returnedState).isEqualTo(ISAuthConstants.LOGIN_SUCCEED);
     }
 
     @Test
-    public void shouldProcessCallbacksWhenValidateRequestReturnsSendSuccess() throws LoginException {
+    void shouldProcessCallbacksWhenValidateRequestReturnsSendSuccess() throws LoginException {
 
         //Given
         Callback[] callbacks = new Callback[0];
         int state = ISAuthConstants.LOGIN_START;
 
-        given(jaspiAuthWrapper.validateRequest(ArgumentMatchers.<MessageInfo>anyObject(), ArgumentMatchers.<Subject>anyObject()))
+        given(jaspiAuthWrapper.validateRequest(any(), any()))
                 .willReturn(AuthStatus.SEND_SUCCESS);
 
         //When
         int returnedState = jaspiAuthLoginModule.process(callbacks, state);
 
         //Then
-        assertTrue(processMethodCalled);
-        verify(jaspiAuthWrapper).validateRequest(ArgumentMatchers.<MessageInfo>anyObject(), ArgumentMatchers.<Subject>anyObject());
-        assertEquals(returnedState, ISAuthConstants.LOGIN_SUCCEED);
+        assertThat(processMethodCalled).isTrue();
+        verify(jaspiAuthWrapper).validateRequest(any(), any());
+        assertThat(returnedState).isEqualTo(ISAuthConstants.LOGIN_SUCCEED);
     }
 
     @Test
-    public void shouldProcessCallbacksWhenValidateRequestReturnsSendFailure() throws LoginException {
+    void shouldProcessCallbacksWhenValidateRequestReturnsSendFailure() throws LoginException {
 
         //Given
         Callback[] callbacks = new Callback[0];
         int state = ISAuthConstants.LOGIN_START;
 
-        given(jaspiAuthWrapper.validateRequest(ArgumentMatchers.<MessageInfo>anyObject(), ArgumentMatchers.<Subject>anyObject()))
+        given(jaspiAuthWrapper.validateRequest(any(), any()))
                 .willReturn(AuthStatus.SEND_FAILURE);
 
         //When
-        boolean exceptionCaught = false;
-        AuthLoginException exception = null;
-        try {
-            jaspiAuthLoginModule.process(callbacks, state);
-        } catch (AuthLoginException e) {
-            exceptionCaught = true;
-            exception = e;
-        }
+        assertThatThrownBy(() -> jaspiAuthLoginModule.process(callbacks, state))
+                //Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessage("Authentication Failed");
 
-        //Then
-        assertTrue(processMethodCalled);
-        verify(jaspiAuthWrapper).validateRequest(ArgumentMatchers.<MessageInfo>anyObject(), ArgumentMatchers.<Subject>anyObject());
-        assertTrue(exceptionCaught);
-        assertEquals(exception.getErrorCode(), "authFailed");
+        assertThat(processMethodCalled).isTrue();
+        verify(jaspiAuthWrapper).validateRequest(any(), any());
     }
 
     @Test
-    public void shouldProcessCallbacksWhenValidateRequestReturnsSendContinue() throws LoginException {
+    void shouldProcessCallbacksWhenValidateRequestReturnsSendContinue() throws LoginException {
 
         //Given
         Callback[] callbacks = new Callback[0];
         int state = ISAuthConstants.LOGIN_START;
 
-        given(jaspiAuthWrapper.validateRequest(ArgumentMatchers.<MessageInfo>anyObject(), ArgumentMatchers.<Subject>anyObject()))
+        given(jaspiAuthWrapper.validateRequest(any(), any()))
                 .willReturn(AuthStatus.SEND_CONTINUE);
 
         //When
         int returnedState = jaspiAuthLoginModule.process(callbacks, state);
 
         //Then
-        assertTrue(processMethodCalled);
-        verify(jaspiAuthWrapper).validateRequest(ArgumentMatchers.<MessageInfo>anyObject(), ArgumentMatchers.<Subject>anyObject());
-        assertEquals(returnedState, ISAuthConstants.LOGIN_IGNORE);
+        assertThat(processMethodCalled).isTrue();
+        verify(jaspiAuthWrapper).validateRequest(any(), any());
+        assertThat(returnedState).isEqualTo(ISAuthConstants.LOGIN_IGNORE);
     }
 
 }

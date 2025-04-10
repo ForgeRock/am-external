@@ -11,13 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
@@ -45,10 +51,10 @@ import javax.inject.Inject;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.SelectIdPCallback;
@@ -252,17 +258,26 @@ public class SelectIdPNode implements Node {
      * Defines the possible outcomes from this node. Depending on configuration, this will include a combination of
      * localAuthentication and socialAuthentication.
      */
-    public static class SelectIdPNodeOutcomeProvider implements OutcomeProvider {
+    public static class SelectIdPNodeOutcomeProvider implements BoundedOutcomeProvider {
 
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+            return getAllOutcomes(locales).stream().filter(outcome -> {
+                if (LOCAL_AUTHENTICATION.equals(outcome.id)) {
+                    return nodeAttributes.get("includeLocalAuthentication").defaultTo(true).asBoolean();
+                }
+                return true;
+            }).toList();
+        }
+
+        @Override
+        public List<Outcome> getAllOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(SelectIdPNode.BUNDLE,
                     SelectIdPNodeOutcomeProvider.class.getClassLoader());
-            return nodeAttributes.get("includeLocalAuthentication").defaultTo(true).asBoolean()
-                    ? asList(
-                        new Outcome(SOCIAL_AUTHENTICATION, bundle.getString(SOCIAL_OUTCOME)),
-                        new Outcome(LOCAL_AUTHENTICATION, bundle.getString(LOCAL_OUTCOME)))
-                    : singletonList(new Outcome(SOCIAL_AUTHENTICATION, bundle.getString(SOCIAL_OUTCOME)));
+            return List.of(
+                    new Outcome(SOCIAL_AUTHENTICATION, bundle.getString(SOCIAL_OUTCOME)),
+                    new Outcome(LOCAL_AUTHENTICATION, bundle.getString(LOCAL_OUTCOME))
+            );
         }
     }
 

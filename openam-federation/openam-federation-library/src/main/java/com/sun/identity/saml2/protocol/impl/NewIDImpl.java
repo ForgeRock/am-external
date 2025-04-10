@@ -24,7 +24,7 @@
  *
  * $Id: NewIDImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions Copyrighted 2019-2023 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.protocol.impl;
 
@@ -32,7 +32,6 @@ import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_NAMESPACE;
 import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -50,7 +49,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  * This class identifies the new ID entitie in an 
  * <code>ManageNameIDRequest</code> message.
  */
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class NewIDImpl implements NewID {
     public final String elementName = "NewID";
     private String newID;

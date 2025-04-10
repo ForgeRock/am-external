@@ -24,14 +24,13 @@
  *
  * $Id: LogProvider.java,v 1.5 2008/08/06 17:29:26 exu Exp $
  *
- * Portions Copyrighted 2019-2020 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.plugin.log.impl;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.security.AccessController;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -135,8 +134,7 @@ public class LogProvider implements com.sun.identity.plugin.log.Logger {
         Map props) throws LogException
     {
         if (isAccessLoggable(level)) {
-            SSOToken authSSOToken = (SSOToken) AccessController.doPrivileged(
-                AdminTokenAction.getInstance());
+            SSOToken authSSOToken = (SSOToken) AdminTokenAction.getInstance().run();
             LogRecord lr = getLogRecord(
                 messageId, data, session, props, authSSOToken);
             if (lr != null) {
@@ -247,8 +245,7 @@ public class LogProvider implements com.sun.identity.plugin.log.Logger {
       Map props) throws LogException
     {
         if (isErrorLoggable(level)) {
-            SSOToken authSSOToken = (SSOToken) AccessController.doPrivileged(
-                AdminTokenAction.getInstance());
+            SSOToken authSSOToken = (SSOToken) AdminTokenAction.getInstance().run();
             LogRecord lr = getLogRecord(
                 messageId, data, session, props, authSSOToken);
             if (lr != null) {
@@ -274,8 +271,7 @@ public class LogProvider implements com.sun.identity.plugin.log.Logger {
      * @return true if the given message level is currently being logged.
      */
     public boolean isAccessLoggable(Level level) {
-        SSOToken authSSOToken = (SSOToken) AccessController.doPrivileged(
-            AdminTokenAction.getInstance());
+        SSOToken authSSOToken = AdminTokenAction.getInstance().run();
         if ((authSSOToken == null) || !logStatus) {
             return false;
 	}
@@ -290,8 +286,7 @@ public class LogProvider implements com.sun.identity.plugin.log.Logger {
      * @return true if the given message level is currently being logged.
      */
     public boolean isErrorLoggable(Level level) {
-        SSOToken authSSOToken = (SSOToken) AccessController.doPrivileged(
-            AdminTokenAction.getInstance());
+        SSOToken authSSOToken = AdminTokenAction.getInstance().run();
         if ((authSSOToken == null) || !logStatus) {
             return false;
 	}

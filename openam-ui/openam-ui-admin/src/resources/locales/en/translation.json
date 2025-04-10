@@ -136,7 +136,7 @@
             "complete" : "Complete",
             "confirm": "Confirm",
             "continue" : "Continue",
-            "copyright" : "Copyright &copy; 2010-2024 ForgeRock AS. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2025 Ping Identity Corporation. All rights reserved.",
             "create" : "Create",
             "createdAt" : "Created at",
             "createNew": "Create New",
@@ -156,12 +156,14 @@
             "enable": "Enable",
             "enableCookies" : "Cookies must be enabled to login",
             "enabled": "Enabled",
+            "export": "Export",
             "fail" : "Fail",
             "false" : "False",
             "filter": "Filter...",
             "help" : "Help",
             "home" : "Home",
             "inactive": "Inactive",
+            "import": "Import",
             "key":"Key",
             "loadSchema":"Load Schema",
             "logout" : "Log out",
@@ -279,10 +281,6 @@
                 "breadcrumb": "Applications - Agents - Java",
                 "title": "Java"
             },
-            "applications-agents-soapSts": {
-                "breadcrumb": "Applications - Agents - SOAP STS",
-                "title": "SOAP STS"
-            },
             "applications-agents-web": {
                 "breadcrumb": "Applications - Agents - Web",
                 "title": "Web"
@@ -320,14 +318,6 @@
             "authentication": {
                 "title": "Authentication"
             },
-            "authentication-chains": {
-                "breadcrumb": "Authentication - Chains",
-                "title": "Chains"
-            },
-            "authentication-modules": {
-                "breadcrumb": "Authentication - Modules",
-                "title": "Modules"
-            },
             "authentication-settings": {
                 "breadcrumb": "Authentication - Settings",
                 "title": "Settings"
@@ -335,6 +325,10 @@
             "authentication-trees": {
                 "breadcrumb": "Authentication - Trees",
                 "title": "Trees"
+            },
+            "authentication-nodes": {
+                "breadcrumb": "Authentication - Node Designer",
+                "title": "Node Designer"
             },
             "authentication-webhooks": {
                 "breadcrumb": "Authentication - Webhooks",
@@ -488,106 +482,8 @@
             }
         },
         "authentication": {
-            "common": {
-                "module": "module",
-                "chain": "chain"
-            },
             "settings": {
                 "title": "Settings"
-            },
-            "modules": {
-                "title" : "Modules",
-                "newModule": "New Module",
-                "description" : "AM uses authentication modules to identify the user. Normally authentication modules are associated with an authentication chain. Each realm has a default authentication chain that will be used to authenticate users. This section is used to add, configure or remove authentication module available for authentication into this realm.",
-                "addModuleTitle" : "New Module",
-                "addModuleError": "Authentication instance already exists.",
-                "selectModuleType" : "Select Module type",
-                "addModule" : "Add Module",
-                "moduleName" : "Module Name",
-                "moduleType" : "Type",
-                "chain" : "Chain",
-                "notFound" : "The module __name__ could not be found",
-                "inUse": {
-                    "title": "Edit module",
-                    "message": "The <code>__moduleName__</code> module is being used by the following Authentication Chain(s) <code>__usedChains__</code>. Editing this module may change their behaviour. <br><br>Are you sure you want to continue?"
-                },
-                "moduleNameValidationError" : "Spaces are not allowed in a module's name"
-            },
-            "chains": {
-                "title" : "Chains",
-                "newChain" : "Add Chain",
-                "chainName" : "Chain Name",
-                "description" : "Use authentication chains to define the steps a subject takes to authenticate. Authentication chains consist of a series of one or more authentication modules, with credentials being passed down the chain to each module instance.",
-                "defaultAdminAuthConfiguration" : "Default Administrator Authentication Chain",
-                "defaultOrgAuthConfiguration" : "Default Organization Authentication Chain",
-                "duplicateChain" : "A Chain with the same name already exists"
-            },
-            "editChains": {
-                "options" : "Options",
-                "noOptions" : "No Options",
-                "selectCriteria" : "Select Criteria",
-                "addValue" : "Add Value",
-                "selectModule" : "Select Module",
-                "chains" : "Chains",
-                "editChain" : "Edit Chain",
-                "newModule" : "New Module",
-                "addModule": "Add a Module",
-                "editModule" : "Edit Module",
-                "gotoNextModule" : "Pass through to next module",
-                "gotoSuccessUrl" : "Go to Successful Login URL",
-                "gotoFailUrl" : "Go to Failed Login URL",
-                "redirectUrls" : "Redirect URLS",
-                "redirectUrlsHelp" : "Specify the URL to which the subject is redirected. You can specify separate URLs for authenticating successfully and when authentication fails.",
-                "successUrl" : "Successful Login URL",
-                "failUrl" : "Failed Login URL",
-                "addUrl" : "Add URL",
-                "dropHere" : "Drop here",
-                "moduleHelp" : "Add authentication modules to build a process in which a user must pass credentials to all module instances.",
-                "processingClass": {
-                    "title": "Post Authentication Processing Class",
-                    "className": "Class Name",
-                    "addClassNameDialog": {
-                        "title": "Add new Class Name",
-                        "message": "The new class name <mark>__newClassName__</mark> for Post Authentication Processing has not been saved. Do you want to save it?"
-                    },
-                    "duplicateClass" : "A Class with the same name already exists",
-                    "help" : "Specify the name of a Java class to execute at the end of the authentication process."
-                },
-                "criteria" : [
-                    {
-                        "title": "Required",
-                        "passText" : "Pass this module and you will get a pass flag, and continue in the chain.",
-                        "failText" : "Fail this module and you will get a fail flag, and continue in the chain."
-                    },
-                    {
-                        "title": "Optional",
-                        "passText" : "Pass this module and you will get a pass flag, and continue in the chain.",
-                        "failText" : "Fail this module and you will continue in the chain."
-                    },
-                    {
-                        "title": "Requisite",
-                        "passText" : "Pass this module and you will get a pass flag, and continue in the chain.",
-                        "failText" : "Fail this module and you will get a fail flag, and exit the chain."
-
-                    },
-                    {
-                        "title": "Sufficient",
-                        "passText" : "Pass this module and you will get a pass flag, and exit the chain.",
-                        "failText" : "Fail this module and you will continue in the chain."
-                    }
-                ],
-                "alerts" : {
-                    "reqdFailSuffPass" : "Warning: Passing a SUFFICIENT module after the failing a REQUIRED module will continue through the chain and will not exit at that point. Consider using REQUISITE instead of REQUIRED."
-                },
-                "callToAction" : "Chains require at least one module",
-                "lastCriteria" : "Will advance to success or failure URL",
-                "deletedChain": "Chain deleted successfully",
-                "deleteBtnTooltip": {
-                    "defaultAdminAuthChain": "This is the default authentication service for Administrators.",
-                    "defaultOrgAuthChain": "This is the default authentication service for Organizations.",
-                    "defaultAdminOrgAuthChain": "This is the default authentication chain for Administrators and Organizations."
-                },
-                "legend" : ["Successful authentication requires:","At least one PASS flag", "No FAIL flags"]
             },
             "trees": {
                 "edit": {
@@ -648,6 +544,36 @@
                 "new": {
                     "title": "New Tree",
                     "treeName": "Name"
+                }
+            },
+            "nodes": {
+                "list": {
+                    "title": "Node Types",
+                    "callToAction": {
+                        "title": "No custom node types configured",
+                        "description": "Create new node types to place into trees",
+                        "button" : "Create Node Type"
+                    },
+                    "grid": ["Name"]
+                },
+                "new": {
+                    "title": "New Node Type",
+                    "id" : "Service Name",
+                    "name": "Display Name",
+                    "invalidCharacters": "Must contain only lowercase letters and numbers"
+                },
+                "edit": {
+                    "type": "Node Type",
+                    "category": "Category",
+                    "categoryDesc": "Category in the tree editor in which this node will appear.",
+                    "selectCategory": "Select a category"
+                },
+                "export": {
+                  "error": "Error exporting nodes"
+                },
+                "import": {
+                  "title": "Import Nodes",
+                  "importFile": "Import File"
                 }
             },
             "webhooks": {
@@ -718,7 +644,7 @@
         },
         "realms": {
             "title": "Realms",
-            "description" : "Use realms to organize subjects and configuration data. Within each realm you can configure identity stores, administration privileges, authentication chains, authorization policies, and other realm-specific settings.",
+            "description" : "Use realms to organize subjects and configuration data. Within each realm you can configure identity stores, administration privileges, authentication trees, authorization policies, and other realm-specific settings.",
             "newRealm": "New Realm",
             "grid": {
                 "header": ["Realm name", "Status", "Path", "Realm/DNS Aliases"]
@@ -788,10 +714,6 @@
                     "coreAttributes": "Core Attributes",
                     "title": "Realm Authentication Defaults",
                     "description": "Configure default authentication properties applied when creating new realms."
-                },
-                "modules": {
-                    "title": "Authentication Module Defaults",
-                    "description": "Configure default properties applied when creating new authentication modules."
                 }
             },
             "globalServices" : {
@@ -1076,6 +998,23 @@
                         "nothingSelected": "Nothing selected",
                         "attributes": {
                             "object": "key:value[,value2,...]"
+                        },
+                        "IdmUser": {
+                            "title": "IDM User",
+                            "props": {
+                                "identityResource": "Identity Resource",
+                                "queryField": "Query Field",
+                                "decisionField": "Decision Field",
+                                "comparator": "Comparator",
+                                "value": "Value",
+                                "EQUALS": "Equal to",
+                                "CONTAINS": "Contains",
+                                "STARTS_WITH": "Starts with",
+                                "ENDS_WITH": "Ends with",
+                                "REGEX": "Matches regex"
+                            },
+                            "helperTitle": "IDM User",
+                            "helperContent": "Must specify the following values: Identity Resource (The identity resource to query e.g. managed/user), Query Field (IDM user identifying attribute), Decision Field (IDM user attribute to query), the comparator and the value to evaluate against."
                         }
                     }
                 },
@@ -1242,40 +1181,6 @@
                         }
                     }
                 },
-                "soapSts": {
-                    "title": "SOAP STS Agents",
-                    "agents": {
-                        "list": {
-                            "callToAction": {
-                                "button": "Add SOAP STS Agent",
-                                "title": "No SOAP STS Agents configured.",
-                                "description": "Configure SOAP STS Agents to authenticate external SOAP STS deployments."
-                            },
-                            "grid": ["Agent ID", "Group"]
-                        },
-                        "new": {
-                            "title": "New SOAP STS Agent"
-                        },
-                        "edit": {
-                            "type": "SOAP STS Agent"
-                        }
-                    },
-                    "groups": {
-                        "edit": {
-                            "type": "SOAP STS Agent Group"
-                        },
-                        "new": {
-                            "title": "New SOAP STS Agent Group"
-                        },
-                        "list": {
-                            "callToAction": {
-                                "description": "Specify settings for multiple SOAP STS agents by adding them to a group",
-                                "title": "No SOAP STS Agent groups configured."
-                            },
-                            "grid": ["Group ID"]
-                        }
-                    }
-                },
                 "identityGateway": {
                     "title": "Identity Gateway",
                     "agents": {
@@ -1387,6 +1292,7 @@
                             "xmlUploadInstructions": "Drag __fileType__ files here or, click to browse",
                             "uploadFieldFilesCount": "__filesCount__ queued for upload.",
                             "cot": "Circles of Trust",
+                            "updateType": "Upload Action",
                             "validation": {
                                 "atLeastOne": "At least one Meta Alias is required",
                                 "duplicate" : "Duplicate Meta Aliases not allowed"
@@ -1643,7 +1549,7 @@
             }
         },
         "sts": {
-            "tabs": ["Rest STS", "Soap STS"],
+            "tabs": ["Rest STS"],
             "title": "STS",
             "confirmDeleteSelected": "Are you sure you want to delete the selected STS instance?",
             "confirmDeleteSelected_plural": "Are you sure you want to delete the selected STS instances?",
@@ -1662,22 +1568,6 @@
                 },
                 "new": {
                     "title": "New REST STS Instance"
-                }
-            },
-            "soap": {
-                "edit": {
-                    "type": "Soap STS"
-                },
-                "list": {
-                    "grid": ["Name"],
-                    "callToAction": {
-                        "title": "No published Soap STS instances.",
-                        "description": "Configure Soap STS.",
-                        "button": "Add Soap STS"
-                    }
-                },
-                "new": {
-                    "title": "New SOAP STS Instance"
                 }
             }
         },
@@ -1772,8 +1662,6 @@
         "attributeAuthorityAbbr": "AttrAuth",
         "attributeQueryProviderAbbr": "AttrQuery",
         "authenticationAuthorityAbbr": "AuthnAuth",
-        "chain_plural": "Chains",
-        "chain": "Chain",
         "circleOfTrust_plural": "Circles of Trust",
         "circleOfTrust": "Circle of Trust",
         "configuration": "Configuration",
@@ -1783,8 +1671,6 @@
         "identity_plural": "Identities",
         "identityProviderAbbr": "IDP",
         "identityStore": "Identity Store",
-        "module_plural": "Modules",
-        "module": "Module",
         "oauth20Client_plural": "OAuth 2.0 Clients",
         "oauth20Client": "OAuth 2.0 Client",
         "oauth20Group_plural": "OAuth 2.0 Groups",
@@ -1800,6 +1686,7 @@
         "tree": "Tree",
         "webhook_plural": "Webhooks",
         "webhook": "Webhook",
+        "node_type": "Node Type",
         "xacmlPolicyDecisionPointAbbr": "XACML PDP",
         "xacmlPolicyEnforcementPointAbbr": "XACML PEP"
     }

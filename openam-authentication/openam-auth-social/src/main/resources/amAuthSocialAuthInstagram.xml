@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding="ISO-8859-1"?>
-
 <!--
  * The contents of this file are subject to the terms of the Common Development and
  * Distribution License (the License). You may not use this file except in compliance with the
@@ -13,9 +12,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2025 ForgeRock AS.
  * 
 -->
+
+<!--
+  ~ Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+  ~
+ ! This code is to be used exclusively in connection with Ping Identity
+ ! Corporation software or services. Ping Identity Corporation only offers
+ ! such software or services to legal entities who have entered into a
+ ! binding license agreement with Ping Identity Corporation.
+  -->
 
 <!DOCTYPE ServicesConfiguration
         PUBLIC "=//forgerock//Service Management Services (SMS) 1.0 DTD//EN"

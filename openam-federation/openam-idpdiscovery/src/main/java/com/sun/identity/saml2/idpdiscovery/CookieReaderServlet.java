@@ -24,18 +24,18 @@
  *
  * $Id: CookieReaderServlet.java,v 1.4 2009/03/26 19:41:29 madan_ranganath Exp $
  *
- * Portions Copyrighted 2019-2020 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.idpdiscovery;
 
 import static org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator.GlobalService.GLOBAL_SERVICE;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.shared.security.whitelist.RedirectUrlValidator;

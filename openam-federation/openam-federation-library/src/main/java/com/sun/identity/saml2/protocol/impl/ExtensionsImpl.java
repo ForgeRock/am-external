@@ -24,7 +24,7 @@
  *
  * $Id: ExtensionsImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2019-2023 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 
@@ -40,7 +40,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -57,7 +56,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  * The class defines methods for adding protcol message extension elements.
  */
 
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class ExtensionsImpl implements Extensions {
     
     private boolean isMutable=false;

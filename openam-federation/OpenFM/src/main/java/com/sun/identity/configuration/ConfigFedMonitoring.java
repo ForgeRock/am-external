@@ -24,14 +24,13 @@
  *
  * $Id: ConfigFedMonitoring.java,v 1.2 2009/10/29 00:03:51 exu Exp $
  *
- * Portions Copyrighted 2011-2022 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.configuration;
 
 import static org.forgerock.openam.utils.Time.newDate;
 
-import java.security.AccessController;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -136,8 +135,7 @@ public class ConfigFedMonitoring {
     }
 
     private SSOToken getSSOToken() throws SSOException {
-        return (SSOToken) AccessController.doPrivileged(
-            AdminTokenAction.getInstance());
+        return AdminTokenAction.getInstance().run();
     }
 
     /*

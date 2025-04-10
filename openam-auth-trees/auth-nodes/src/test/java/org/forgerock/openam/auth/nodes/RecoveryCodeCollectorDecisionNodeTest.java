@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -43,7 +51,6 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
 
 import org.forgerock.cuppa.Test;
-import org.forgerock.cuppa.junit.CuppaRunner;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -57,13 +64,10 @@ import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.core.rest.devices.push.UserPushDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
-
-import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 @Test
-@RunWith(CuppaRunner.class)
 @SuppressWarnings("unchecked")
 public class RecoveryCodeCollectorDecisionNodeTest {
 

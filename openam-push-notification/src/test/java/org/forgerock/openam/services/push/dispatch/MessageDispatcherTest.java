@@ -11,11 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.services.push.dispatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -28,43 +37,42 @@ import static org.mockito.Mockito.when;
 
 import java.util.HashSet;
 
-import org.forgerock.am.cts.api.tokens.TokenFactory;
-import org.forgerock.am.cts.api.tokens.TokenType;
-import org.forgerock.json.JsonValue;
-import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.am.cts.CTSPersistentStore;
 import org.forgerock.am.cts.api.tokens.Token;
+import org.forgerock.am.cts.api.tokens.TokenFactory;
+import org.forgerock.am.cts.api.tokens.TokenType;
 import org.forgerock.am.cts.exceptions.CoreTokenException;
 import org.forgerock.am.cts.utils.JSONSerialisation;
+import org.forgerock.json.JsonValue;
+import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
-@Test
 public class MessageDispatcherTest {
 
-    private Cache<MessageId, MessagePromise> cache = CacheBuilder.newBuilder().build();
-    private MessageId messageId = mock(MessageId.class);
-    private JSONSerialisation jsonSerialisation = mock(JSONSerialisation.class);
-    private CTSPersistentStore persistentStore = mock(CTSPersistentStore.class);
-    private ClusterMessageHandler mockMessageHandler = mock(ClusterMessageHandler.class);
-    private TokenFactory tokenFactory = mock(TokenFactory.class);
-    private Token token = mock(Token.class);
+    private final Cache<MessageId, MessagePromise> cache = CacheBuilder.newBuilder().build();
+    private final MessageId messageId = mock(MessageId.class);
+    private final JSONSerialisation jsonSerialisation = mock(JSONSerialisation.class);
+    private final CTSPersistentStore persistentStore = mock(CTSPersistentStore.class);
+    private final ClusterMessageHandler mockMessageHandler = mock(ClusterMessageHandler.class);
+    private final TokenFactory tokenFactory = mock(TokenFactory.class);
+    private final Token token = mock(Token.class);
 
     private MessageDispatcher messageDispatcher;
 
-    @BeforeTest
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         when(tokenFactory.create(anyString(), any(TokenType.class))).thenReturn(token);
         messageDispatcher = new MessageDispatcher(cache, persistentStore, jsonSerialisation, 120, tokenFactory);
     }
 
     @Test
-    public void shouldReturnEmptyPromiseForExpectedMessageId() throws Exception {
+    void shouldReturnEmptyPromiseForExpectedMessageId() throws Exception {
         //given
         given(jsonSerialisation.serialise(any())).willReturn("{ }");
 
@@ -76,7 +84,7 @@ public class MessageDispatcherTest {
     }
 
     @Test
-    public void shouldCompletePromiseForHandledMessageIdWhenExpected() throws Exception {
+    void shouldCompletePromiseForHandledMessageIdWhenExpected() throws Exception {
         //given
         given(jsonSerialisation.serialise(any())).willReturn("{ }");
         given(messageId.toString()).willReturn("AUTHENTICATE:badger");
@@ -89,20 +97,20 @@ public class MessageDispatcherTest {
         assertThat(result.getPromise().isDone()).isTrue();
     }
 
-    @Test(expectedExceptions = NotFoundException.class)
-    public void shouldFallBackToCTSWhenMessageNotExpectedAndFailToFind() throws Exception {
+    @Test
+    void shouldFallBackToCTSWhenMessageNotExpectedAndFailToFind() throws Exception {
         //given
         given(messageId.toString()).willReturn("messageId");
         given(persistentStore.read("messageId")).willReturn(null);
 
-        //when
-        messageDispatcher.handle(messageId, json(object()), mockMessageHandler);
-
-        //then
+        //when - then
+        assertThatThrownBy(() -> messageDispatcher.handle(messageId, json(object()), mockMessageHandler))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Unable to find token with id messageId in CTS.");
     }
 
     @Test
-    public void shouldFallBackToCTSWhenMessageNotExpectedAndSucceed() throws Exception {
+    void shouldFallBackToCTSWhenMessageNotExpectedAndSucceed() throws Exception {
         //given
         given(messageId.toString()).willReturn("messageId");
         Token token = mock(Token.class);
@@ -117,30 +125,31 @@ public class MessageDispatcherTest {
         verify(mockHandler, times(1)).update(any(Token.class), any(JsonValue.class));
     }
 
-    @Test(expectedExceptions = NotFoundException.class)
-    public void shouldErrorForHandleMessageIdWhenNotExpected() throws Exception {
+    @Test
+    void shouldErrorForHandleMessageIdWhenNotExpected() {
         //given
         given(messageId.toString()).willReturn("notExpected");
 
-        //when
-        messageDispatcher.handle(messageId, json(object()), null);
-
-        //then
-    }
-
-    @Test(expectedExceptions = NullPointerException.class)
-    public void shouldErrorWhenPrimedForNullMessageKey() throws Exception {
-        //given
-
-        //when
-        messageDispatcher.expectLocally(null, new HashSet<>());
-
-        //then
+        //when - then
+        assertThatThrownBy(() -> messageDispatcher.handle(messageId, json(object()), null))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Unable to find token with id notExpected in CTS.");
     }
 
     @Test
-    public void shouldReturnTrueAndForgetMessageIdWhenExpected() throws Exception {
+    void shouldErrorWhenPrimedForNullMessageKey() {
         //given
+
+        //when - then
+        assertThatThrownBy(() -> messageDispatcher.expectLocally(null, new HashSet<>()))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void shouldReturnTrueAndForgetMessageIdWhenExpected() throws Exception {
+        //given
+        //needed due to MessageDispatcher.storeInCTS complaining about null value in result
+        given(jsonSerialisation.serialise(any())).willReturn("{ }");
         given(messageId.toString()).willReturn("AUTHENTICATE:badger");
         messageDispatcher.expectLocally(messageId, new HashSet<>());
 
@@ -153,7 +162,7 @@ public class MessageDispatcherTest {
     }
 
     @Test
-    public void shouldReturnFalseForgetWhenNotExpected() throws CoreTokenException {
+    void shouldReturnFalseForgetWhenNotExpected() throws CoreTokenException {
         //given
         given(messageId.toString()).willReturn("notExpectedForget");
 
@@ -165,7 +174,7 @@ public class MessageDispatcherTest {
     }
 
     @Test
-    public void shouldReturnFalseForgetWhenAlreadyHandled() throws Exception {
+    void shouldReturnFalseForgetWhenAlreadyHandled() throws Exception {
         //given
         given(jsonSerialisation.serialise(any())).willReturn("{ }");
         given(messageId.toString()).willReturn("AUTHENTICATE:badger");
@@ -180,7 +189,7 @@ public class MessageDispatcherTest {
     }
 
     @Test
-    public void expectLocallyShouldUpdateCache() throws Exception {
+    void expectLocallyShouldUpdateCache() throws Exception {
         //given
         cache.invalidateAll();
         given(jsonSerialisation.serialise(any())).willReturn("{ }");
@@ -193,7 +202,7 @@ public class MessageDispatcherTest {
     }
 
     @Test
-    public void expectInClusterShouldNotUpdateCache() throws Exception {
+    void expectInClusterShouldNotUpdateCache() throws Exception {
         //given
         cache.invalidateAll();
         given(jsonSerialisation.serialise(any())).willReturn("{ }");

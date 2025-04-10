@@ -24,7 +24,7 @@
  *
  * $Id: DefaultIDPAccountMapper.java,v 1.9 2008/11/10 22:57:02 veiming Exp $
  *
- * Portions Copyrighted 2015-2024 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -51,9 +51,6 @@ import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.common.SAML2InvalidNameIDPolicyException;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.profile.IDPCache;
-import com.sun.identity.saml2.profile.IDPSSOUtil;
-import com.sun.identity.saml2.profile.IDPSession;
-import com.sun.identity.saml2.profile.NameIDandSPpair;
 import com.sun.identity.saml2.profile.SPCache;
 import com.sun.identity.shared.encode.Base64;
 
@@ -66,10 +63,12 @@ import com.sun.identity.shared.encode.Base64;
 public class DefaultIDPAccountMapper extends DefaultAccountMapper implements IDPAccountMapper {
 
     private static final Logger logger = LoggerFactory.getLogger(DefaultIDPAccountMapper.class);
+    private final IDPAccountMapperUtils idpAccountMapperUtils;
 
     public DefaultIDPAccountMapper() {
         logger.debug("DefaultIDPAccountMapper.constructor");
         role = IDP_ROLE;
+        idpAccountMapperUtils = new IDPAccountMapperUtils();
     }
 
     @Override
@@ -85,21 +84,7 @@ public class DefaultIDPAccountMapper extends DefaultAccountMapper implements IDP
 
         String nameIDValue = null;
         if (nameIDFormat.equals(SAML2Constants.NAMEID_TRANSIENT_FORMAT)) {
-            String sessionIndex = IDPSSOUtil.getSessionIndex(session);
-            if (sessionIndex != null) {
-                IDPSession idpSession = IDPSSOUtil.retrieveCachedIdPSession(sessionIndex);
-                if (idpSession != null) {
-                    List<NameIDandSPpair> list = idpSession.getNameIDandSPpairs();
-                    if (list != null) {
-                        for (NameIDandSPpair pair : list) {
-                            if (pair.getSPEntityID().equals(remoteEntityID)) {
-                                nameIDValue = pair.getNameID().getValue();
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
+            nameIDValue = idpAccountMapperUtils.getNameIdFromSession(session, remoteEntityID);
             if (nameIDValue == null) {
                 nameIDValue = getNameIDValueFromUserProfile(realm, hostEntityID, remoteEntityID, userID, nameIDFormat);
                 if (nameIDValue == null) {

@@ -24,7 +24,7 @@
  *
  * $Id: Cert.java,v 1.14 2009/03/13 20:54:42 beomsuk Exp $
  *
- * Portions Copyrighted 2013-2024 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.authentication.modules.cert;
@@ -52,8 +52,9 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.x500.X500Principal;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
+import org.forgerock.am.identity.application.model.LdapConnectionParameters;
 import org.forgerock.http.util.Uris;
 import org.forgerock.openam.ldap.LDAPUtils;
 import org.forgerock.opendj.io.Asn1;
@@ -68,7 +69,6 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 import com.sun.identity.security.cert.AMCRLStore;
 import com.sun.identity.security.cert.AMCertPath;
 import com.sun.identity.security.cert.AMCertStore;
-import com.sun.identity.security.cert.AMLDAPCertStoreParameters;
 import com.sun.identity.shared.datastruct.CollectionHelper;
 import com.sun.identity.shared.encode.Base64;
 
@@ -128,7 +128,7 @@ public class Cert extends AMLoginModule {
     private String certParamName = null;
     private boolean ocspEnabled = false;
     private boolean crlEnabled = false;
-    private AMLDAPCertStoreParameters ldapParam = null;
+    private LdapConnectionParameters ldapParam = null;
 
     // configurations
     private Map options;
@@ -374,7 +374,7 @@ public class Cert extends AMLoginModule {
             HttpServletRequest servletRequest = getHttpServletRequest();
             if (servletRequest != null) {
                 allCerts = (X509Certificate[]) servletRequest.
-                   getAttribute("javax.servlet.request.X509Certificate");
+                   getAttribute("jakarta.servlet.request.X509Certificate");
                 if (allCerts == null || allCerts.length == 0) {
                     debug.debug(
                           "Certificate: checking for cert passed in the URL.");
@@ -471,7 +471,8 @@ public class Cert extends AMLoginModule {
     	try {
             Vector crls = new Vector();
             for (X509Certificate cert : allCerts) {
-                X509CRL crl = AMCRLStore.getCRL(ldapParam, cert, amAuthCert_chkAttributesCRL);
+                X509CRL crl = AMCRLStore.getCRL(ldapParam, cert, doCRLCaching, doCRLUpdate,
+                        amAuthCert_uriParamsCRL, amAuthCert_chkAttributesCRL);
                 if (crl != null) {
                     crls.add(crl);
                 }
@@ -507,13 +508,13 @@ public class Cert extends AMLoginModule {
      * use in verification of the users certificates.
      */
         try {
-            ldapParam = AMCertStore.setLdapStoreParam(amAuthCert_serverHost,
-                       amAuthCert_serverPort,
-                       amAuthCert_principleUser,
-                       amAuthCert_principlePasswd,
-                       amAuthCert_startSearchLoc,
-                       amAuthCert_uriParamsCRL,
-                       amAuthCert_useSSL.equalsIgnoreCase("true"), doCRLCaching, doCRLUpdate);
+            ldapParam = LdapConnectionParameters.builder()
+                    .ldapServers(LDAPUtils.getLdapUrls(amAuthCert_serverHost, amAuthCert_serverPort,
+                            amAuthCert_useSSL.equalsIgnoreCase("true")))
+                    .ldapUser(amAuthCert_principleUser)
+                    .ldapPassword(amAuthCert_principlePasswd.toCharArray())
+                    .startSearchLocation(amAuthCert_startSearchLoc)
+                    .build();
         } catch (Exception e) {
             debug.error("validate.SSLSocketFactory", e);
             setFailureID(userTokenId);

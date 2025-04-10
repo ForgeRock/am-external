@@ -11,10 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.common;
+
+import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepository;
@@ -53,6 +63,20 @@ public class SAML2FailoverUtils {
             throws SAML2TokenRepositoryException {
 
         saveSAML2Token(primaryKey, null, samlObj, expirationTime);
+    }
+
+    /**
+     * Helper method for accessing the SAML2 Token Repository, should only be used when SAML2 failover is enabled.
+     * Persists token with default expiry time
+     * @param primaryKey The primary key of SAML2 object to save
+     * @param samlObj The SAML2 object to save
+     * @throws SAML2TokenRepositoryException if there was a problem accessing the SAML2 Token Repository
+     */
+    public static void saveSAML2TokenWithoutSecondaryKey(String primaryKey, Object samlObj)
+            throws SAML2TokenRepositoryException {
+        // Cache survival time is 10 mins
+        final long sessionExpireTime = currentTimeMillis() / 1000 + SPCache.interval; //counted in seconds
+        saveSAML2TokenWithoutSecondaryKey(primaryKey, samlObj, sessionExpireTime);
     }
 
     /**

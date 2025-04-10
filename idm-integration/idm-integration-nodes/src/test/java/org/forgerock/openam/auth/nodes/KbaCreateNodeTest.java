@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -19,20 +27,19 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.resource.ResourceException.BAD_REQUEST;
 import static org.forgerock.json.resource.ResourceException.newResourceException;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.utils.IdmIntegrationNodeUtils.OBJECT_MAPPER;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,57 +55,55 @@ import org.forgerock.openam.authentication.callbacks.KbaCreateCallback;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.integration.idm.KbaConfig;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class KbaCreateNodeTest {
 
     @Mock
-    private KbaCreateNode.Config config;
-
-    @Mock
-    private Realm realm;
-
-    @Mock
     IdmIntegrationService idmIntegrationService;
-
     @Mock
     LocaleSelector localeSelector;
-
+    @Mock
+    private KbaCreateNode.Config config;
+    @Mock
+    private Realm realm;
+    @InjectMocks
     private KbaCreateNode node;
     private KbaConfig kbaConfig;
+    private final Map<Locale, String> messages = Map.of(Locale.ENGLISH, "A message");
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        initMocks(this);
+    @BeforeEach
+    void setUp() throws Exception {
         kbaConfig = OBJECT_MAPPER.readValue(getClass()
                 .getResource("/KbaCreateNode/idmKbaConfig.json"), KbaConfig.class);
-
-        Map<Locale, String> messages = new HashMap<>();
-        messages.put(Locale.ENGLISH, "A message");
-        when(config.message()).thenReturn(messages);
-        when(idmIntegrationService.getKbaConfig(any(), any())).thenReturn(kbaConfig);
-        when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
-        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
-
-        node = new KbaCreateNode(config, realm, idmIntegrationService, localeSelector);
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowExceptionIfFailedToRetrieveKbaConfig() throws Exception {
+    @Test
+    void shouldThrowExceptionIfFailedToRetrieveKbaConfig() throws Exception {
+        when(idmIntegrationService.getKbaConfig(any(), any())).thenReturn(kbaConfig);
         JsonValue sharedState = json(object(
                 field(USERNAME, "test")
         ));
 
         when(idmIntegrationService.getKbaConfig(any(), any())).thenThrow(newResourceException(BAD_REQUEST));
 
-        node.process(getContext(emptyList(), sharedState));
+        assertThatThrownBy(() -> node.process(getContext(emptyList(), sharedState)))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("org.forgerock.json.resource.BadRequestException: Bad Request");
     }
 
     @Test
-    public void callbacksAbsentShouldReturnCallbacks() throws Exception {
+    void callbacksAbsentShouldReturnCallbacks() throws Exception {
         // Given
+        when(config.message()).thenReturn(messages);
+        when(idmIntegrationService.getKbaConfig(any(), any())).thenReturn(kbaConfig);
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
         JsonValue sharedState = json(object(field("initial", "initial")));
 
         // When
@@ -115,8 +120,11 @@ public class KbaCreateNodeTest {
     }
 
     @Test
-    public void shouldDefaultToPropertiesIfNoTranslationFound() throws Exception {
+    void shouldDefaultToPropertiesIfNoTranslationFound() throws Exception {
         // Given
+        when(config.message()).thenReturn(messages);
+        when(idmIntegrationService.getKbaConfig(any(), any())).thenReturn(kbaConfig);
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
         JsonValue sharedState = json(object(field("initial", "initial")));
 
         // When
@@ -130,8 +138,12 @@ public class KbaCreateNodeTest {
     }
 
     @Test
-    public void callbacksPresentProcessesSuccessfully() throws Exception {
+    void callbacksPresentProcessesSuccessfully() throws Exception {
         // Given
+        when(config.message()).thenReturn(messages);
+        when(idmIntegrationService.getKbaConfig(any(), any())).thenReturn(kbaConfig);
+        when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
         JsonValue sharedState = json(object(field("initial", "initial")));
         List<Callback> callbacks = new ArrayList<>();
         callbacks.add(new KbaCreateCallback("first", singletonList("Question One"), true)
@@ -151,8 +163,12 @@ public class KbaCreateNodeTest {
     }
 
     @Test
-    public void callbacksPresentProcessesSuccessfullyWithNonLatinQuestions() throws Exception {
+    void callbacksPresentProcessesSuccessfullyWithNonLatinQuestions() throws Exception {
         // Given
+        when(config.message()).thenReturn(messages);
+        when(idmIntegrationService.getKbaConfig(any(), any())).thenReturn(kbaConfig);
+        when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
         JsonValue sharedState = json(object(field("initial", "initial")));
         List<Callback> callbacks = new ArrayList<>();
         callbacks.add(new KbaCreateCallback("first", singletonList("Question One"), true)
@@ -174,8 +190,11 @@ public class KbaCreateNodeTest {
     }
 
     @Test
-    public void duplicateQuestionsReturnOriginalCallbacks() throws Exception {
+    void duplicateQuestionsReturnOriginalCallbacks() throws Exception {
         // Given
+        when(config.message()).thenReturn(messages);
+        when(idmIntegrationService.getKbaConfig(any(), any())).thenReturn(kbaConfig);
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
         JsonValue sharedState = json(object(field("initial", "initial")));
         List<Callback> callbacks = new ArrayList<>();
         callbacks.add(new KbaCreateCallback("first", singletonList("Question One"), true)
@@ -192,8 +211,11 @@ public class KbaCreateNodeTest {
     }
 
     @Test
-    public void invalidCallbacksReturnOriginalCallbacks() throws Exception {
+    void invalidCallbacksReturnOriginalCallbacks() throws Exception {
         // Given
+        when(config.message()).thenReturn(messages);
+        when(idmIntegrationService.getKbaConfig(any(), any())).thenReturn(kbaConfig);
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
         JsonValue sharedState = json(object(field("initial", "initial")));
         List<Callback> callbacks = new ArrayList<>();
         callbacks.add(new KbaCreateCallback("first", singletonList("Question One"), true)
@@ -208,10 +230,11 @@ public class KbaCreateNodeTest {
     }
 
     @Test
-    public void shouldFetchKbaQuestionsGivenUndefinedBestLocale() {
+    void shouldFetchKbaQuestionsGivenUndefinedBestLocale() {
         // Given
         JsonValue sharedState = json(object(field("initial", "initial")));
         when(localeSelector.getBestLocale(any(), any())).thenReturn(null);
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
 
         // When
         Map<String, String> questions = node.fetchKbaQuestions(getContext(emptyList(), sharedState), kbaConfig);

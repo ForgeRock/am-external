@@ -24,11 +24,11 @@
  *
  * $Id: FedMonSAML2SvcProvider.java,v 1.3 2009/12/07 19:11:32 bigfatrat Exp $
  *
- * Portions Copyrighted 2017-2022 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
 
 /*
- * Portions Copyrighted 2011 ForgeRock AS
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation
  */
 package com.sun.identity.plugin.monitoring.impl;
 

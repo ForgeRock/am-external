@@ -24,7 +24,7 @@
  *
  * $Id: IDPListImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2018-2023 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
 
 
@@ -39,7 +39,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -62,7 +61,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  * to authenticate the presenter.
  */
 
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class IDPListImpl implements IDPList {
 
     private static final Logger logger = LoggerFactory.getLogger(IDPListImpl.class);

@@ -7,13 +7,13 @@
  * of the Common Development and Distribution License
  * (the License). You may not use this file except in
  * compliance with the License.
- * 
+ *
  * You can obtain a copy of the License at
  * https://opensso.dev.java.net/public/CDDLv1.0.html or
  * opensso/legal/CDDLv1.0.txt
  * See the License for the specific language governing
  * permission and limitations under the License.
- * 
+ *
  * When distributing Covered Code, include this CDDL
  * Header Notice in each file and include the License file
  * at opensso/legal/CDDLv1.0.txt.
@@ -21,10 +21,10 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
- * 
+ *
  * $Id: SAML11RequestedSecurityToken.java,v 1.7 2009/12/14 23:42:48 mallas Exp $
  *
- * Portions Copyrighted 2016-2019 ForgeRock AS.
+ * Portions Copyrighted 2016-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.wsfederation.profile;
@@ -77,7 +77,7 @@ import com.sun.identity.wsfederation.meta.WSFederationMetaUtils;
  */
 public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
     // Just get this system property once - it should never change!
-    private static boolean removeCarriageReturns = 
+    private static boolean removeCarriageReturns =
         System.getProperty("line.separator").equals("\r\n");
     private static Logger debug = LoggerFactory.getLogger(SAML11RequestedSecurityToken.class);
     protected Assertion assertion = null;
@@ -89,29 +89,29 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
      * Creates a SAML11RequestedSecurityToken given a DOM Node
      * @param token a DOM Node representing a RequestedSecurityToken
      */
-    public SAML11RequestedSecurityToken(Node token) 
+    public SAML11RequestedSecurityToken(Node token)
         throws WSFederationException {
-        String classMethod = 
+        String classMethod =
             "SAML11RequestedSecurityToken.SAML11RequestedSecurityToken(Node)";
-        
+
         if ( ! token.getLocalName().equals("RequestedSecurityToken") ){
-            debug.error("Got node " + 
-                token.getLocalName() + " (expecting " + 
-                SAMLConstants.assertionSAMLNameSpaceURI + ":" + 
+            debug.error("Got node " +
+                token.getLocalName() + " (expecting " +
+                SAMLConstants.assertionSAMLNameSpaceURI + ":" +
                 SAMLConstants.TAG_ASSERTION + ")");
             throw new WSFederationException(
                 WSFederationUtils.bundle.getString("invalidToken"));
         }
-        
+
         Element ae = (Element)token.getFirstChild();
-        
+
         if (!(ae.getNamespaceURI().
                 equals(SAMLConstants.assertionSAMLNameSpaceURI)
             && ae.getLocalName().equals(SAMLConstants.TAG_ASSERTION)))
         {
-            debug.error("Got node " + 
-                ae.getLocalName() + " (expecting " + 
-                SAMLConstants.assertionSAMLNameSpaceURI + ":" + 
+            debug.error("Got node " +
+                ae.getLocalName() + " (expecting " +
+                SAMLConstants.assertionSAMLNameSpaceURI + ":" +
                 SAMLConstants.TAG_ASSERTION + ")");
             throw new WSFederationException(
                 WSFederationUtils.bundle.getString("invalidToken"));
@@ -123,17 +123,17 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
         catch (SAMLException se)
         {
             if ( debug.isDebugEnabled() ) {
-                debug.debug("Caught SAMLException, " + 
+                debug.debug("Caught SAMLException, " +
                     "rethrowing",se);
             }
             throw new WSFederationException(se);
         }
-        
+
         if ( debug.isDebugEnabled() ) {
             debug.debug(classMethod + "found Assertion with issuer:" +
                 assertion.getIssuer());
         }
-        
+
         List signs = XMLUtils.getElementsByTagNameNS1(ae,
             SAMLConstants.XMLSIG_NAMESPACE_URI,
             SAMLConstants.XMLSIG_ELEMENT_NAME);
@@ -146,7 +146,7 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
             }
         } else if (signsSize != 0) {
             if ( debug.isDebugEnabled() ) {
-                debug.debug(classMethod + 
+                debug.debug(classMethod +
                     "included more than one Signature element.");
             }
             throw new WSFederationException(
@@ -161,29 +161,29 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
      * @param idpEntityId identity provifer entity ID - issuer of the token.
      * @param notBeforeSkew number of seconds to subtract from current time
      * to form Assertion notBefore time.
-     * @param effectiveTime length of time, in seconds, from Assertion's 
+     * @param effectiveTime length of time, in seconds, from Assertion's
      * notBefore time to its notOnOrAfter time.
      * @param certAlias alias of the signing certificate. null means do not
      * sign the assertion
-     * @param authMethod mechanism by which the subject authenticated to the 
+     * @param authMethod mechanism by which the subject authenticated to the
      * identity provider
-     * @param authInstant time at which the subject authenticated to the 
+     * @param authInstant time at which the subject authenticated to the
      * identity provider
      * @param ni SAML 1.1 NameIdentitifer for the subject
-     * @param attributes List of com.sun.identity.saml.assertion.Attribute to 
+     * @param attributes List of com.sun.identity.saml.assertion.Attribute to
      * include in the Assertion
-     * @throws com.sun.identity.wsfederation.common.WSFederationException in 
+     * @throws com.sun.identity.wsfederation.common.WSFederationException in
      * case of error.
      */
     public SAML11RequestedSecurityToken(String realm, String spTokenIssuerName,
         String idpEntityId, int notBeforeSkew, int effectiveTime,
-        String certAlias, String authMethod, Date authInstant, 
+        String certAlias, String authMethod, Date authInstant,
         NameIdentifier ni, List attributes)
         throws WSFederationException
     {
         String classMethod = "SAML11RequestedSecurityToken."+
             "SAML11RequestedSecurityToken(String*)";
-        
+
         try {
             Subject sub = new Subject(ni);
             sub.setSubjectConfirmation(new SubjectConfirmation(SAMLConstants.CONFIRMATION_METHOD_BEARER));
@@ -197,7 +197,7 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
             Date issueInstant = newDate();
 
             long skewPeriod = (long)notBeforeSkew * 1000L;
-            Date notBefore = new Date(issueInstant.getTime() - skewPeriod);            
+            Date notBefore = new Date(issueInstant.getTime() - skewPeriod);
             long period = (long)effectiveTime * 1000L;
             Date notAfter = new Date(issueInstant.getTime() + period);
             WSFederationMetaManager metaManager =
@@ -209,12 +209,12 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
 
             List<String> targets = new ArrayList<String>();
             targets.add(spTokenIssuerName);
-            
-            AudienceRestrictionCondition arc = 
+
+            AudienceRestrictionCondition arc =
                 new AudienceRestrictionCondition(targets);
-            
+
             Conditions cond = new Conditions(notBefore, notAfter, null, arc);
-            assertion = new Assertion(null /* assertionID */, issuer, 
+            assertion = new Assertion(null /* assertionID */, issuer,
                 issueInstant, cond, statements);
 
             String aIDString = assertion.getAssertionID();
@@ -223,7 +223,7 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
             {
                 assertion.signXML(certAlias);
             }
-            
+
             if (LogUtil.isAccessLoggable(Level.FINER)) {
                 String[] data = { assertion.toString(true, true)};
                 LogUtil.access(java.util.logging.Level.FINER,
@@ -246,7 +246,7 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
     {
         return assertion.getAssertionID();
     }
-    
+
     /**
      * @return the issuer of the RequestedSecurityToken.
      */
@@ -254,9 +254,9 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
     {
         return assertion.getIssuer();
     }
-    
+
     /**
-     * @return a list of attributes of type 
+     * @return a list of attributes of type
      * <code>com.sun.identity.saml.assertion.Attribute</code>
      */
     public List getAttributes()
@@ -265,7 +265,7 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
         Iterator stmtIter = assertion.getStatement().iterator();
         while (stmtIter.hasNext()) {
             Statement statement = (Statement) stmtIter.next();
-            if (statement.getStatementType() 
+            if (statement.getStatementType()
                 == Statement.ATTRIBUTE_STATEMENT) {
                 attributeStatement =
                     (AttributeStatement)statement;
@@ -285,9 +285,9 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
     {
         return assertion;
     }
-    
-    /** 
-     * This method marshalls the token, returning a String comprising the 
+
+    /**
+     * This method marshalls the token, returning a String comprising the
      * textual XML representation.
      * @return The textual XML representation of the token.
      */
@@ -315,44 +315,44 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
             // Doing this here rather than in XMLUtils.print(Node, String)
             // minimizes the scope of the change.
             assertionString = assertionString.replaceAll("\r\n", "\n");
-        }        
+        }
 
         buffer.append("<wst:RequestedSecurityToken>")
             .append(assertionString)
             .append("</wst:RequestedSecurityToken>");
 
-        return buffer.toString();                
+        return buffer.toString();
     }
-    
+
     /**
-     * Verifies the token's validity, checking the signature, validity period 
+     * Verifies the token's validity, checking the signature, validity period
      * etc.
      * @param realm the realm of the local entity
      * @param hostEntityId the local entity ID
-     * @param timeskew permitted skew between service provider and identity 
+     * @param timeskew permitted skew between service provider and identity
      * provider clocks, in seconds
-     * @return a Map of relevant data including Subject and the List of 
+     * @return a Map of relevant data including Subject and the List of
      * Assertions.
-     * @throws com.sun.identity.wsfederation.common.WSFederationException in 
+     * @throws com.sun.identity.wsfederation.common.WSFederationException in
      * case of any error - invalid token signature, token expired etc.
      */
-    public Map<String,Object> verifyToken(String realm, String hostEntityId, 
+    public Map<String,Object> verifyToken(String realm, String hostEntityId,
         int timeskew)
         throws WSFederationException
     {
         String classMethod = "SAML11RequestedSecurityToken.verifyToken";
-        
+
         // check that assertion issuer is trusted by the local entity
         String issuer = assertion.getIssuer();
         WSFederationMetaManager metaManager =
             WSFederationUtils.getMetaManager();
-        String remoteEntityId = 
+        String remoteEntityId =
             metaManager.getEntityByTokenIssuerName(realm, issuer);
         if (! metaManager.isTrustedProvider(
                         realm, hostEntityId, remoteEntityId)) {
-            String[] data = 
-                {LogUtil.isErrorLoggable(Level.FINER)? this.toString() : 
-                this.getTokenId(), 
+            String[] data =
+                {LogUtil.isErrorLoggable(Level.FINER)? this.toString() :
+                this.getTokenId(),
                 realm, hostEntityId};
             LogUtil.error(Level.INFO,
                     LogUtil.UNTRUSTED_ISSUER,
@@ -362,24 +362,24 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
                 WSFederationUtils.bundle.getString("untrustedIssuer"));
         }
 
-        SPSSOConfigElement spConfig = 
+        SPSSOConfigElement spConfig =
             metaManager.getSPSSOConfig(realm, hostEntityId);
         if ( spConfig == null )
         {
-            debug.error(classMethod + "cannot find configuration for SP " 
+            debug.error(classMethod + "cannot find configuration for SP "
                 + hostEntityId);
             throw new WSFederationException("unableToFindSPConfiguration");
         }
-        
-        String strWantAssertionSigned = 
+
+        String strWantAssertionSigned =
             WSFederationMetaUtils.getAttribute(spConfig.getValue(),
             WSFederationConstants.WANT_ASSERTION_SIGNED);
-        
+
         // By default, we want to sign assertions
         boolean wantAssertionSigned = (strWantAssertionSigned == null) || Boolean.parseBoolean(strWantAssertionSigned);
 
         if ( wantAssertionSigned &&
-            (!WSFederationUtils.isSignatureValid(assertion, realm, 
+            (!WSFederationUtils.isSignatureValid(assertion, realm,
             remoteEntityId))) {
             // isSignatureValid will log the error
             throw new WSFederationException(
@@ -389,21 +389,21 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
         // TODO: check AudienceRestrictionCondition
 
         Subject assertionSubject = null;
-        
+
         Iterator stmtIter = assertion.getStatement().iterator();
         while (stmtIter.hasNext()) {
             Statement statement = (Statement) stmtIter.next();
-            if (statement.getStatementType() 
+            if (statement.getStatementType()
                 == Statement.AUTHENTICATION_STATEMENT) {
                 assertionSubject =
                     ((SubjectStatement)statement).getSubject();
                 break;
             }
         }
-        
+
         if ( assertionSubject == null ) {
-            String[] data = 
-                {LogUtil.isErrorLoggable(Level.FINER)? this.toString() : 
+            String[] data =
+                {LogUtil.isErrorLoggable(Level.FINER)? this.toString() :
                 this.getTokenId()};
             LogUtil.error(Level.INFO,
                     LogUtil.MISSING_SUBJECT,
@@ -424,32 +424,31 @@ public class SAML11RequestedSecurityToken implements RequestedSecurityToken {
         assertions.add(assertion);
 
         Map<String,Object> attrMap = new HashMap<String,Object>();
-        
+
         attrMap.put(SAML2Constants.SUBJECT, assertionSubject);
-        attrMap.put(SAML2Constants.POST_ASSERTION, assertion);        
+        attrMap.put(SAML2Constants.POST_ASSERTION, assertion);
         attrMap.put(SAML2Constants.ASSERTIONS, assertions);
 
         // TODO
         int authLevel = 0;
-        
+
         if (authLevel >= 0) {
-            attrMap.put(SAML2Constants.AUTH_LEVEL, new Integer(authLevel));
+            attrMap.put(SAML2Constants.AUTH_LEVEL, authLevel);
         }
-        
+
         Date sessionNotOnOrAfter = assertion.getConditions().getNotOnorAfter();
         if (sessionNotOnOrAfter != null) {
             long maxSessionTime = (sessionNotOnOrAfter.getTime() -
                     currentTimeMillis()) / 60000;
             if (maxSessionTime > 0) {
-                attrMap.put(SAML2Constants.MAX_SESSION_TIME,
-                        new Long(maxSessionTime));
+                attrMap.put(SAML2Constants.MAX_SESSION_TIME, maxSessionTime);
             }
         }
-        
+
         if ( debug.isDebugEnabled() ) {
             debug.debug(classMethod +" Attribute Map : " + attrMap);
         }
-        
+
         return attrMap;
     }
 }

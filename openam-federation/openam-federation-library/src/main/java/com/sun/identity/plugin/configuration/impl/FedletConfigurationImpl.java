@@ -24,7 +24,7 @@
  *
  * $Id: FedletConfigurationImpl.java,v 1.5 2010/01/26 21:31:59 madan_ranganath Exp $
  *
- * Portions Copyrighted 2017-2020 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.plugin.configuration.impl;

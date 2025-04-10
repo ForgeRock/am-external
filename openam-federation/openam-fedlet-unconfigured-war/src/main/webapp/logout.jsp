@@ -24,7 +24,7 @@
 
    $Id: logout.jsp,v 1.2 2009/06/17 03:07:37 exu Exp $
 
-   Portions Copyrighted 2016 ForgeRock AS.
+   Portions Copyrighted 2016-2025 Ping Identity Corporation
 --%><%@ page language="java"
         import="java.util.Enumeration,
 org.slf4j.LoggerFactory,
@@ -34,9 +34,9 @@ org.slf4j.Logger" %><%! private final Logger logger = LoggerFactory.getLogger("j
      * If header SLOStatus doesn't exist, it's IDP initiated SLO. Log user out.
      *    Besides "Cookie" header, other SLO related headers are: "IDP", "SP",
      *    "NameIDValue", "SessionIndex", "Binding".
-     * If header SLOStatus exist, it's fedlet initiated SLO. Do processing 
-     *     according to the SLOStatus. Besides "Cookie" header, other SLO 
-     *     related headers are: "IDP", "SP", "NameIDValue", "SessionIndex", 
+     * If header SLOStatus exist, it's fedlet initiated SLO. Do processing
+     *     according to the SLOStatus. Besides "Cookie" header, other SLO
+     *     related headers are: "IDP", "SP", "NameIDValue", "SessionIndex",
      *     "Binding", "SLOStatus".
      */
     if (logger.isDebugEnabled()) {

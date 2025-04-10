@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.testutils;
 
@@ -158,8 +166,11 @@ public class TestCaseConfigurationInstance implements ConfigurationInstance {
         String metadata = getFileContentFromClassPath(TestCaseConfigurationInstance.class, metadataPath);
         String extendedMetadata = getFileContentFromClassPath(TestCaseConfigurationInstance.class, extendedPath);
         SAML2MetaManager metaManager = new SAML2MetaManager();
-        metaManager.createEntityDescriptor(realm,
-                (EntityDescriptorElement) SAML2MetaUtils.convertStringToJAXB(metadata));
+        metaManager.createEntityDescriptor(
+                SAML2MetaUtils.MetadataUpdateType.CREATE,
+                realm,
+                (EntityDescriptorElement) SAML2MetaUtils.convertStringToJAXB(metadata)
+        );
         metaManager.createEntityConfig(realm,
                     (EntityConfigElement) SAML2MetaUtils.convertStringToJAXB(extendedMetadata));
     }

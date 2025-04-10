@@ -24,7 +24,7 @@
  *
  * $Id: DefaultSPAccountMapper.java,v 1.3 2008/07/08 23:03:34 hengming Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins;
 

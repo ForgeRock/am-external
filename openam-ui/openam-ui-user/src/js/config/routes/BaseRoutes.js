@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
@@ -48,6 +56,17 @@ export default {
         url: /^$/,
         pattern: ""
     },
+    // Override default route if MustRun feature flag is enabled. Route to login
+    // view instead in order to force trees to check in with AM
+    ...(process.env.XUI_MUST_RUN_ENABLED && {
+        "default": {
+            view: () => import("org/forgerock/openam/ui/user/login/RESTLoginView"),
+            url: /^$/,
+            pattern: "",
+            defaults: ["/", ""],
+            argumentNames: ["realm", "additionalParameters"]
+        }
+    }),
     // from https://developers.facebook.com/blog/post/552/
     // We started adding a fragment #_=_ to the redirect_uri when this field is left blank.
     // Please ensure that your app can handle this behavior.

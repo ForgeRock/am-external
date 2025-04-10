@@ -11,11 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -39,8 +48,8 @@ import org.forgerock.json.jose.jws.SignedJwt;
 import org.forgerock.json.jose.jws.handlers.SecretRSASigningHandler;
 import org.forgerock.secrets.SecretBuilder;
 import org.forgerock.secrets.keys.SigningKey;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.IdRepoException;
@@ -54,14 +63,14 @@ public class DeviceBindingTest {
     private DeviceBinding deviceBinding;
 
 
-    @BeforeMethod
-    public void setup() throws IdRepoException, SSOException {
+    @BeforeEach
+    void setup() throws IdRepoException, SSOException {
         deviceBinding = new DeviceBinding() {
         };
     }
 
     @Test
-    public void testValidateSignature() throws Exception {
+    void testValidateSignature() throws Exception {
         KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         String kid = UUID.randomUUID().toString();
         JWK rsaJwk = RsaJWK.builder((RSAPublicKey) keyPair.getPublic())
@@ -74,18 +83,19 @@ public class DeviceBindingTest {
         deviceBinding.validateSignature(signedJwt, rsaJwk);
     }
 
-    @Test(expectedExceptions = InvalidKeyException.class)
-    public void testWithNullKey() throws Exception {
+    @Test
+    void testWithNullKey() throws Exception {
         KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         String kid = UUID.randomUUID().toString();
 
         SignedJwt signedJwt = buildSignedJwt(keyPair, kid, ISS, "bob",
                 deviceBinding.createRandomBytes(), null);
-        deviceBinding.validateSignature(signedJwt, null);
+        assertThatThrownBy(() -> deviceBinding.validateSignature(signedJwt, null))
+                .isInstanceOf(InvalidKeyException.class);
     }
 
-    @Test(expectedExceptions = SignatureException.class)
-    public void testSignWithInvalidKey() throws Exception {
+    @Test
+    void testSignWithInvalidKey() throws Exception {
         KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         String kid = UUID.randomUUID().toString();
         JWK rsaJwk = RsaJWK.builder((RSAPublicKey) keyPair.getPublic())
@@ -96,11 +106,12 @@ public class DeviceBindingTest {
         KeyPair differentKey = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         SignedJwt signedJwt = buildSignedJwt(differentKey, kid, ISS, "bob",
                 deviceBinding.createRandomBytes(), null);
-        deviceBinding.validateSignature(signedJwt, rsaJwk);
+        assertThatThrownBy(() -> deviceBinding.validateSignature(signedJwt, rsaJwk))
+                .isInstanceOf(SignatureException.class);
     }
 
-    @Test(expectedExceptions = InvalidJwtException.class)
-    public void testSignWithExpiredJwt() throws Exception {
+    @Test
+    void testSignWithExpiredJwt() throws Exception {
         KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         String kid = UUID.randomUUID().toString();
 
@@ -111,51 +122,56 @@ public class DeviceBindingTest {
         String challenge = deviceBinding.createRandomBytes();
         SignedJwt signedJwt = buildSignedJwt(keyPair, kid, ISS, "bob",
                 challenge, exp);
-        deviceBinding.validateClaim(signedJwt, challenge, Set.of(ISS));
+        assertThatThrownBy(() -> deviceBinding.validateClaim(signedJwt, challenge, Set.of(ISS)))
+                .isInstanceOf(InvalidJwtException.class);
     }
 
-    @Test(expectedExceptions = InvalidJwtException.class)
-    public void testSignWithInvalidChallenge() throws Exception {
+    @Test
+    void testSignWithInvalidChallenge() throws Exception {
         KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         String kid = UUID.randomUUID().toString();
 
         String challenge = deviceBinding.createRandomBytes();
         SignedJwt signedJwt = buildSignedJwt(keyPair, kid, ISS, "bob",
                 "invalidChallenge", null);
-        deviceBinding.validateClaim(signedJwt, challenge, Set.of(ISS));
+        assertThatThrownBy(() -> deviceBinding.validateClaim(signedJwt, challenge, Set.of(ISS)))
+                .isInstanceOf(InvalidJwtException.class);
     }
 
-    @Test(expectedExceptions = InvalidJwtException.class)
-    public void testSignWithInvalidIssuer() throws Exception {
+    @Test
+    void testSignWithInvalidIssuer() throws Exception {
         KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         String kid = UUID.randomUUID().toString();
 
         String challenge = deviceBinding.createRandomBytes();
         SignedJwt signedJwt = buildSignedJwt(keyPair, kid, "invalidIssuer", "bob",
                 challenge, null);
-        deviceBinding.validateClaim(signedJwt, challenge, Set.of(ISS));
+        assertThatThrownBy(() -> deviceBinding.validateClaim(signedJwt, challenge, Set.of(ISS)))
+                .isInstanceOf(InvalidJwtException.class);
     }
 
-    @Test(expectedExceptions = InvalidJwtException.class)
-    public void testSignWithoutSub() throws Exception {
+    @Test
+    void testSignWithoutSub() throws Exception {
         KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         String kid = UUID.randomUUID().toString();
 
         String challenge = deviceBinding.createRandomBytes();
         SignedJwt signedJwt = buildSignedJwt(keyPair, kid, ISS, null,
                 challenge, null);
-        deviceBinding.validateClaim(signedJwt, challenge, Set.of(ISS));
+        assertThatThrownBy(() -> deviceBinding.validateClaim(signedJwt, challenge, Set.of(ISS)))
+                .isInstanceOf(InvalidJwtException.class);
     }
 
-    @Test(expectedExceptions = InvalidJwtException.class)
-    public void testSignWithoutIss() throws Exception {
+    @Test
+    void testSignWithoutIss() throws Exception {
         KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         String kid = UUID.randomUUID().toString();
 
         String challenge = deviceBinding.createRandomBytes();
         SignedJwt signedJwt = buildSignedJwt(keyPair, kid, null, "bob",
                 challenge, null);
-        deviceBinding.validateClaim(signedJwt, challenge, Set.of(ISS));
+        assertThatThrownBy(() -> deviceBinding.validateClaim(signedJwt, challenge, Set.of(ISS)))
+                .isInstanceOf(InvalidJwtException.class);
     }
 
 

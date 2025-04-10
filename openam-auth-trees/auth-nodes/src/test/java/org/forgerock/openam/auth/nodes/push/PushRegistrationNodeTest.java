@@ -11,13 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.push;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -26,12 +35,11 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode.FAILURE_OUTCOME_ID;
 import static org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode.SUCCESS_OUTCOME_ID;
 import static org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode.TIMEOUT_OUTCOME_ID;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_CODE_DEVICE_NAME;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_CODE_KEY;
-import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_BG_COLOR;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_GENERATE_RECOVERY_CODES;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_ISSUER;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.DEFAULT_TIMEOUT;
+import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_CODE_DEVICE_NAME;
+import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_CHALLENGE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_DEVICE_PROFILE_KEY;
@@ -46,7 +54,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,18 +70,17 @@ import org.forgerock.am.cts.exceptions.CoreTokenException;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
+import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.auth.nodes.helpers.LocalizationHelper;
 import org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode.UserAttributeToAccountNameMapping;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationUtilities;
 import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.services.push.DefaultMessageTypes;
 import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.MessageIdFactory;
@@ -83,24 +89,36 @@ import org.forgerock.openam.services.push.PushNotificationException;
 import org.forgerock.openam.services.push.PushNotificationService;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
 import org.forgerock.openam.session.SessionCookies;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 import com.sun.identity.idm.AMIdentity;
 
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith({MockitoExtension.class})
 public class PushRegistrationNodeTest {
 
+    static final String MESSAGE = "Scan the QR code image below with the ForgeRock Authenticator app to "
+            + "register your device with your login";
+    static final Map<Locale, String> MAP_SCAN_MESSAGE = new HashMap<>() {
+        {
+            put(Locale.CANADA, MESSAGE);
+        }
+    };
     @Mock
     PushRegistrationConfig config;
     @Mock
-    private Realm realm;
+    AMIdentity userIdentity;
+    PushRegistrationHelper pushRegistrationHelper;
+    PushRegistrationNode node;
     @Mock
-    private CoreWrapper coreWrapper;
+    private Realm realm;
     @Mock
     private PushNotificationService pushNotificationService;
     @Mock
@@ -114,36 +132,14 @@ public class PushRegistrationNodeTest {
     @Mock
     private ClusterMessageHandler messageHandler;
     @Mock
-    AMIdentity userIdentity;
-    @Mock
-    LegacyIdentityService identityService;
-    @Mock
-    private LocalizationHelper localizationHelper;
+    private LocalizedMessageProvider localizationHelper;
     @Mock
     private MultiFactorRegistrationUtilities multiFactorRegistrationUtilities;
+    @Mock
+    private NodeUserIdentityProvider identityProvider;
 
-    PushRegistrationHelper pushRegistrationHelper;
-    PushRegistrationNode node;
-
-    static final String MESSAGE = "Scan the QR code image below with the ForgeRock Authenticator app to "
-            + "register your device with your login";
-
-    static final Map<Locale, String> MAP_SCAN_MESSAGE = new HashMap<>() {
-        {
-            put(Locale.CANADA, MESSAGE);
-        }
-    };
-
-    @BeforeMethod
-    public void setup() {
-        initMocks(this);
-
-        when(realm.asPath()).thenReturn("/");
-        when(deviceProfileHelper.isDeviceSettingsStored(any())).thenReturn(false);
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void processThrowExceptionIfUserNameNotPresentInSharedState() throws Exception {
+    @Test
+    void processThrowExceptionIfUserNameNotPresentInSharedState() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -151,15 +147,16 @@ public class PushRegistrationNodeTest {
         whenNodeConfigHasDefaultValues();
 
         // When
-        node.process(getContext(sharedState, transientState, emptyList()));
-
-        // Then
-        // throw exception
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Expected username to be set.");
     }
 
     @Test
-    public void processShouldStartRegistration() throws Exception {
+    void processShouldStartRegistration() throws Exception {
         // Given
+        when(deviceProfileHelper.isDeviceSettingsStored(any())).thenReturn(false);
         whenNodeConfigHasDefaultValues();
 
         JsonValue sharedState = json(object(
@@ -171,10 +168,6 @@ public class PushRegistrationNodeTest {
                 .willReturn(messageId);
         given(messageId.toString())
                 .willReturn("REGISTER:8ae29738-52db-0ca4-caec-63c213360c341558531434231");
-        given(messageId.getMessageType())
-                .willReturn(DefaultMessageTypes.REGISTER);
-        given(pushNotificationService.getMessageHandlers(any()))
-                .willReturn(ImmutableMap.of(DefaultMessageTypes.REGISTER, messageHandler));
         given(deviceProfileHelper.createDeviceSettings(DEFAULT_ISSUER))
                 .willReturn(getDeviceSettings());
         given(deviceProfileHelper.createChallenge())
@@ -213,16 +206,14 @@ public class PushRegistrationNodeTest {
     }
 
     @Test
-    public void processWhenStateIsNullReturnTimeoutOutcome()
+    void processWhenStateIsNullReturnTimeoutOutcome()
             throws NodeProcessException, PushNotificationException, CoreTokenException {
         // Given
+        when(realm.asPath()).thenReturn("/");
         whenNodeConfigHasDefaultValues();
 
         given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
                 .willReturn(getDeviceSettings());
-        given(messageId.getMessageType()).willReturn(DefaultMessageTypes.REGISTER);
-        given(pushNotificationService.getMessageHandlers(any())).willReturn(
-                ImmutableMap.of(DefaultMessageTypes.REGISTER, messageHandler));
         doReturn(null).when(pushRegistrationHelper).getMessageState(any());
         doReturn(userIdentity)
                 .when(node).getIdentity(any());
@@ -241,9 +232,10 @@ public class PushRegistrationNodeTest {
     }
 
     @Test
-    public void processWhenStateSuccessReturnSuccessOutcomeAndRecoveryCodes()
+    void processWhenStateSuccessReturnSuccessOutcomeAndRecoveryCodes()
             throws CoreTokenException, NodeProcessException, PushNotificationException {
         // Given
+        when(realm.asPath()).thenReturn("/");
         whenNodeConfigHasDefaultValues(true);
 
         given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
@@ -272,9 +264,10 @@ public class PushRegistrationNodeTest {
     }
 
     @Test
-    public void processWhenStateSuccessAndRecoveryCodesDisabledReturnSuccessOutcome()
+    void processWhenStateSuccessAndRecoveryCodesDisabledReturnSuccessOutcome()
             throws CoreTokenException, NodeProcessException, PushNotificationException {
         // Given
+        when(realm.asPath()).thenReturn("/");
         whenNodeConfigHasDefaultValues(false);
 
         given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
@@ -300,9 +293,10 @@ public class PushRegistrationNodeTest {
     }
 
     @Test
-    public void processWhenStateDeniedReturnFailureOutcome()
+    void processWhenStateDeniedReturnFailureOutcome()
             throws CoreTokenException, NodeProcessException, PushNotificationException {
         // Given
+        when(realm.asPath()).thenReturn("/");
         whenNodeConfigHasDefaultValues();
 
         given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
@@ -325,18 +319,15 @@ public class PushRegistrationNodeTest {
     }
 
     @Test
-    public void processWhenStateUnknownReturnCallbacks()
+    void processWhenStateUnknownReturnCallbacks()
             throws CoreTokenException, NodeProcessException, PushNotificationException {
         // Given
         whenNodeConfigHasDefaultValues();
 
         given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any())).
                 willReturn(getDeviceSettings());
-        given(deviceProfileHelper.saveDeviceSettings(any(), any(), any(), eq(true)))
-                .willReturn(Collections.emptyList());
         doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
         doReturn(MessageState.UNKNOWN).when(pushRegistrationHelper).getMessageState(any());
-        doReturn(json(object())).when(pushRegistrationHelper).deleteMessage(any());
         doReturn(mock(MessageId.class)).when(pushRegistrationHelper).getMessageId(any());
         doReturn(Collections.emptyMap())
                 .when(pushRegistrationHelper).buildURIParameters(any(), anyString(), anyString(), any(), any());
@@ -363,10 +354,10 @@ public class PushRegistrationNodeTest {
     private JsonValue getPushRegistrationSharedState() {
         return json(
                 object(
-                    field(MESSAGE_ID_KEY, "REGISTER:6ed29738-20ef-4bc3-bece-48c238660f341558691882220"),
-                    field(PUSH_CHALLENGE_KEY, "KV1QiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2Ii="),
-                    field(PUSH_DEVICE_PROFILE_KEY, "ekd1j5Rr2A8DDeg3ekwZVD06bVJCpAHoR9ab="),
-                    field(PUSH_REGISTRATION_TIMEOUT, REGISTER_DEVICE_POLL_INTERVAL)
+                        field(MESSAGE_ID_KEY, "REGISTER:6ed29738-20ef-4bc3-bece-48c238660f341558691882220"),
+                        field(PUSH_CHALLENGE_KEY, "KV1QiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2Ii="),
+                        field(PUSH_DEVICE_PROFILE_KEY, "ekd1j5Rr2A8DDeg3ekwZVD06bVJCpAHoR9ab="),
+                        field(PUSH_REGISTRATION_TIMEOUT, REGISTER_DEVICE_POLL_INTERVAL)
                 )
         );
     }
@@ -393,7 +384,7 @@ public class PushRegistrationNodeTest {
     }
 
     private TreeContext getContext(JsonValue sharedState, JsonValue transientState,
-                                   List<? extends Callback> callbacks) {
+            List<? extends Callback> callbacks) {
         return new TreeContext(
                 sharedState, transientState, new ExternalRequestContext.Builder().build(),
                 callbacks, Optional.empty()
@@ -404,8 +395,6 @@ public class PushRegistrationNodeTest {
         whenNodeConfigHasDefaultValues(DEFAULT_ISSUER,
                 UserAttributeToAccountNameMapping.USERNAME,
                 DEFAULT_TIMEOUT,
-                DEFAULT_BG_COLOR,
-                "",
                 DEFAULT_GENERATE_RECOVERY_CODES);
     }
 
@@ -414,28 +403,21 @@ public class PushRegistrationNodeTest {
                 DEFAULT_ISSUER,
                 UserAttributeToAccountNameMapping.USERNAME,
                 DEFAULT_TIMEOUT,
-                DEFAULT_BG_COLOR,
-                "",
                 generateRecoveryCodes
         );
     }
 
     private void whenNodeConfigHasDefaultValues(String issuer,
-                                                UserAttributeToAccountNameMapping accountName,
-                                                int timeout,
-                                                String bgColor,
-                                                String imgUrl,
-                                                boolean generateRecoveryCodes) {
-        config = mock(PushRegistrationConfig.class);
+            UserAttributeToAccountNameMapping accountName,
+            int timeout,
+            boolean generateRecoveryCodes) {
         given(config.issuer()).willReturn(issuer);
         given(config.accountName()).willReturn(accountName);
         given(config.timeout()).willReturn(timeout);
-        given(config.bgColor()).willReturn(bgColor);
-        given(config.imgUrl()).willReturn(imgUrl);
         given(config.generateRecoveryCodes()).willReturn(generateRecoveryCodes);
         given(config.scanQRCodeMessage()).willReturn(MAP_SCAN_MESSAGE);
 
-        localizationHelper = mock(LocalizationHelper.class);
+        localizationHelper = mock(LocalizedMessageProvider.class);
         given(localizationHelper.getLocalizedMessage(any(), any(), any(), anyString())).willReturn(MESSAGE);
 
         MultiFactorNodeDelegate multiFactorNodeDelegate = new MultiFactorNodeDelegate(
@@ -443,25 +425,23 @@ public class PushRegistrationNodeTest {
         );
 
         pushRegistrationHelper = spy(
-               new PushRegistrationHelper(
-                       realm,
-                       pushNotificationService,
-                       sessionCookies,
-                       messageIdFactory,
-                       deviceProfileHelper,
-                       multiFactorNodeDelegate,
-                       localizationHelper,
-                       multiFactorRegistrationUtilities)
+                new PushRegistrationHelper(
+                        realm,
+                        pushNotificationService,
+                        sessionCookies,
+                        messageIdFactory,
+                        deviceProfileHelper,
+                        multiFactorNodeDelegate,
+                        r -> localizationHelper,
+                        multiFactorRegistrationUtilities)
         );
 
         node = spy(
                 new PushRegistrationNode(
                         config,
-                        realm,
-                        coreWrapper,
                         multiFactorNodeDelegate,
-                        identityService,
-                        pushRegistrationHelper
+                        pushRegistrationHelper,
+                        identityProvider
                 )
         );
 

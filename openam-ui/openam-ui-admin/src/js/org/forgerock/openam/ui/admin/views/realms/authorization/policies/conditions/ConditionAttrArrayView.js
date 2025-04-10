@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import "selectize";
@@ -31,12 +39,6 @@ const IDENTITY_TYPES = ["users", "groups"];
 const MIN_QUERY_LENGTH = 1;
 const SCRIPT_PLACEHOLDER = "console.authorization.policies.edit.conditionTypes.Script.placeholder";
 const SCRIPT_TYPE = "scriptId";
-const AUTHENTICATION_STRATEGY_ENUM_ARRAY = [
-    "AuthenticateToServiceConditionAdvice", "AuthenticateToRealmConditionAdvice",
-    "AuthenticateToTreeConditionAdvice", "AuthSchemeConditionAdvice", "AuthLevelConditionAdvice"
-];
-const AUTHENTICATION_STRATEGY_TYPE = "authenticationStrategy";
-const AUTHENTICATION_STRATEGY_I18N_PATH = "console.authorization.policies.edit.conditionTypes.Transaction.props.";
 const TIME_ZONE_PLACEHOLDER = "console.authorization.policies.edit.conditionTypes.SimpleTime.props.enterTimeZone";
 const TIME_ZONE_TYPE = "enforcementTimeZone";
 
@@ -44,10 +46,6 @@ export default ConditionAttrBaseView.extend({
     template: ConditionAttrArrayTemplate,
 
     render (data, element, callback) {
-        if (data.title === AUTHENTICATION_STRATEGY_TYPE) {
-            data.multiple = false;
-        }
-
         // default to multiple selection if this option is not specified
         if (data.multiple === undefined) {
             data.multiple = true;
@@ -137,25 +135,6 @@ export default ConditionAttrBaseView.extend({
                             }
                         });
                     }
-                } else if (type === AUTHENTICATION_STRATEGY_TYPE) {
-                    _.extend(options, {
-                        placeholder: $.t("common.form.select"),
-                        valueField: "value",
-                        labelField: "label",
-                        options: _.map(AUTHENTICATION_STRATEGY_ENUM_ARRAY, (key) => {
-                            return {
-                                value: key,
-                                label: $.t(`${AUTHENTICATION_STRATEGY_I18N_PATH}${key}`)
-                            };
-                        }),
-                        items: [view.data.itemData.authenticationStrategy],
-                        create: false,
-                        onChange (value) {
-                            title = this.$input.parent().find("label").data().title;
-                            itemData = view.data.itemData;
-                            itemData[title] = value ? value : "";
-                        }
-                    });
                 } else {
                     _.extend(options, {
                         delimiter: false,

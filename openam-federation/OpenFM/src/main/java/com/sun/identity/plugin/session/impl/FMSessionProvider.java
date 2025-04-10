@@ -24,7 +24,7 @@
  *
  * $Id: FMSessionProvider.java,v 1.23 2009/11/20 00:30:40 exu Exp $
  *
- * Portions Copyrighted 2010-2021 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.plugin.session.impl;
@@ -32,6 +32,7 @@ package com.sun.identity.plugin.session.impl;
 import static com.sun.identity.authentication.client.AuthClientUtils.getCookieDomainsForRequest;
 import static com.sun.identity.shared.encode.CookieUtils.addCookieToResponse;
 import static com.sun.identity.shared.encode.CookieUtils.newCookie;
+import static org.forgerock.openam.session.SessionConstants.PERSISTENT_COOKIE_SESSION_PROPERTY;
 
 import java.security.SecureRandom;
 import java.util.Collections;
@@ -43,10 +44,11 @@ import java.util.Set;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.NameCallback;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.guice.core.InjectorHolder;
+import org.forgerock.openam.authentication.service.AuthUtilsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -398,6 +400,24 @@ public class FMSessionProvider implements SessionProvider {
             if ((request != null) && (response != null)) {
                 AuthUtils.clearAllCookies(request, response);
             }
+        } catch (SSOException se) {
+            throw new SessionException(se);
+        }
+    }
+
+    /**
+     * Removes a persistent cookie, using the cookie name found in a given SSO token.
+     *
+     * @param session a session that contains the cookie name.
+     * @param request the request.
+     * @param response the response.
+     * @throws SessionException if an error occurred during session processing
+     */
+    public void clearPersistentCookie(Object session, HttpServletRequest request, HttpServletResponse response)
+            throws SessionException {
+        try {
+            AuthUtilsWrapper authUtilsWrapper = new AuthUtilsWrapper();
+            authUtilsWrapper.clearPersistentCookie((SSOToken)session, request, response);
         } catch (SSOException se) {
             throw new SessionException(se);
         }

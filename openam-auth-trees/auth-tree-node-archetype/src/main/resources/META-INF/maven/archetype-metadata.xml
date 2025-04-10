@@ -12,23 +12,40 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
  * 
 -->
-<archetype-descriptor xsi:schemaLocation="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.0.0 http://maven.apache.org/xsd/archetype-descriptor-1.0.0.xsd" name="template-auth-tree-node"
-    xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<!--
+  * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
+  *
+ ! This code is to be used exclusively in connection with Ping Identity
+ ! Corporation software or services. Ping Identity Corporation only offers
+ ! such software or services to legal entities who have entered into a
+ ! binding license agreement with Ping Identity Corporation.
+  -->
+<archetype-descriptor
+        xsi:schemaLocation="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.0.0 http://maven.apache.org/xsd/archetype-descriptor-1.0.0.xsd"
+        name="template-auth-tree-node"
+        xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-    <requiredProperties>
-      <requiredProperty key="authNodeName"/>
-    </requiredProperties>
+  <requiredProperties>
+    <requiredProperty key="authNodeName"/>
+  </requiredProperties>
+  
   <fileSets>
     <fileSet filtered="true" encoding="UTF-8" packaged="true">
       <directory>src/main/java</directory>
       <includes>
         <include>**/*.java</include>
       </includes>
-    </fileSet>  
+    </fileSet>
+    <fileSet filtered="true" encoding="UTF-8" packaged="true">
+      <directory>src/test/java</directory>
+      <includes>
+        <include>**/*.java</include>
+      </includes>
+    </fileSet>
     <fileSet filtered="true" encoding="UTF-8" packaged="true">
       <directory>src/main/resources</directory>
       <includes>
@@ -53,7 +70,7 @@
         <include>README.md</include>
       </includes>
     </fileSet>
-<fileSet encoding="UTF-8">
+    <fileSet encoding="UTF-8">
       <directory></directory>
       <includes>
         <include>example.png</include>

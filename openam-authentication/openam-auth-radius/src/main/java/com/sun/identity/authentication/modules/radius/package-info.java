@@ -12,7 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Copyrighted 2015	ForgeRock AS.
+ * Copyrighted 2015-2025	Ping Identity Corporation.
  */
 
 /**

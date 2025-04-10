@@ -24,7 +24,7 @@
  *
  * $Id: IPRPSignoutRequest.java,v 1.7 2009/10/28 23:59:00 exu Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  *
  */
 
@@ -34,9 +34,9 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.logging.Level;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.StringUtils;

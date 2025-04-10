@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import $ from "jquery";
@@ -23,6 +31,29 @@ import humanizeRealmPath from "org/forgerock/openam/ui/admin/views/realms/humani
 import RealmBreadcrumb from "org/forgerock/openam/ui/admin/views/realms/RealmBreadcrumb";
 import Router from "org/forgerock/commons/ui/common/main/Router";
 import TreeNavigation from "org/forgerock/openam/ui/common/components/TreeNavigation";
+import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
+
+const authOptions = [{
+    title: "console.navigation.authentication-settings.title",
+    icon: "fa-angle-right",
+    route: "realmsAuthenticationSettings"
+}, {
+    title: "console.navigation.authentication-trees.title",
+    icon: "fa-angle-right",
+    route: "realmsAuthenticationTrees"
+}, {
+    title: "console.navigation.authentication-webhooks.title",
+    icon: "fa-angle-right",
+    route: "realmsAuthenticationWebhooks"
+}];
+
+if (Configuration.globalData.nodeDesignerXuiEnabled) {
+    authOptions.push({
+        title: "console.navigation.authentication-nodes.title",
+        icon: "fa-angle-right",
+        route: "realmsAuthenticationNodes"
+    });
+}
 
 const navData = [{
     title: "console.navigation.dashboard.title",
@@ -42,10 +73,6 @@ const navData = [{
             title: "console.navigation.applications-agents-java.title",
             icon: "fa-angle-right",
             route: "realmsApplicationsAgentsJava"
-        }, {
-            title: "console.navigation.applications-agents-soapSts.title",
-            icon: "fa-angle-right",
-            route: "realmsApplicationsAgentsSoapSTS"
         }, {
             title: "console.navigation.applications-agents-web.title",
             icon: "fa-angle-right",
@@ -87,27 +114,7 @@ const navData = [{
 }, {
     title: "console.navigation.authentication.title",
     icon: "fa-user",
-    children: [{
-        title: "console.navigation.authentication-chains.title",
-        icon: "fa-angle-right",
-        route: "realmsAuthenticationChains"
-    }, {
-        title: "console.navigation.authentication-modules.title",
-        icon: "fa-angle-right",
-        route: "realmsAuthenticationModules"
-    }, {
-        title: "console.navigation.authentication-settings.title",
-        icon: "fa-angle-right",
-        route: "realmsAuthenticationSettings"
-    }, {
-        title: "console.navigation.authentication-trees.title",
-        icon: "fa-angle-right",
-        route: "realmsAuthenticationTrees"
-    }, {
-        title: "console.navigation.authentication-webhooks.title",
-        icon: "fa-angle-right",
-        route: "realmsAuthenticationWebhooks"
-    }]
+    children: authOptions
 }, {
     title: "console.navigation.authorization.title",
     icon: "fa-key",

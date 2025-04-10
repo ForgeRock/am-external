@@ -11,69 +11,80 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.plugin.datastore.impl;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+
+import java.util.stream.Stream;
 
 import org.forgerock.am.identity.application.IdentityService;
 import org.forgerock.am.identity.application.IdentityStoreFactory;
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.i18n.LocalizedIllegalArgumentException;
 import org.forgerock.openam.ldap.LDAPUtils;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Ignore;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@Test
+@ExtendWith(MockitoExtension.class)
 public class IdRepoDataStoreProviderTest {
 
     @Mock
-    LegacyIdentityService legacyIdentityService;
+    private LegacyIdentityService legacyIdentityService;
     @Mock
-    IdentityStoreFactory identityStoreFactory;
+    private IdentityStoreFactory identityStoreFactory;
     @Mock
-    IdentityService identityService;
+    private IdentityService identityService;
 
-    IdRepoDataStoreProvider idRepoDataStoreProvider;
+    private IdRepoDataStoreProvider idRepoDataStoreProvider;
 
-    @BeforeClass
-    public void setUp() throws Exception {
-        MockitoAnnotations.openMocks(this);
+    @BeforeEach
+    void setUp() throws Exception {
         idRepoDataStoreProvider = new IdRepoDataStoreProvider(legacyIdentityService, identityStoreFactory,
-                identityService);
+            identityService);
     }
 
-    @Ignore // not testing class under test but demonstrates problem
-    @Test(expectedExceptions = LocalizedIllegalArgumentException.class, dataProvider = "exceptionThrowingUsernames")
+    @Disabled // not testing class under test but demonstrates problem
+    @ParameterizedTest
+    @MethodSource("exceptionThrowingUsernames")
     public void testValuesWillThrowExceptionIfAttemptToConvertToDn(String username) {
-        // when
-        LDAPUtils.newDN(username);
-        // then
-        // expect exception
+        // when - then
+        assertThatThrownBy(() -> LDAPUtils.newDN(username))
+            .isInstanceOf(LocalizedIllegalArgumentException.class);
     }
 
-    @Test(dataProvider = "exceptionThrowingUsernames")
+    @ParameterizedTest
+    @MethodSource("exceptionThrowingUsernames")
     public void testConvertUserIdThatWillThrowRuntimeExceptionsToUniversalId(String userid) {
-        // given
-        given(legacyIdentityService.getIdentityName(userid)).willThrow(LocalizedIllegalArgumentException.class);
-
-        // when
+        // given - when
         idRepoDataStoreProvider.convertUserIdToUniversalId(userid, "/");
 
         // then
         // does not propagate the exception
     }
 
-    @DataProvider(name = "exceptionThrowingUsernames")
-    public Object[][] exceptionThrowingUsernames() {
-        return new Object[][]{
-                {"oiNPFA9XhdSRgfSn3Yj/pt6P8qTch/Cu6amH1Q=="},
-                {"LblhK1Y+0Wy0V0iwwPvCBmRh7F//yD1MTyGTRqggl38="},
-                {"9dW1Ce8ca0Mk606EMBXPFkKG43cwKVmd3NkBRXTpfg="}};
+    static Stream<Arguments> exceptionThrowingUsernames() {
+        return Stream.of(
+            Arguments.of("oiNPFA9XhdSRgfSn3Yj/pt6P8qTch/Cu6amH1Q=="),
+            Arguments.of("LblhK1Y+0Wy0V0iwwPvCBmRh7F//yD1MTyGTRqggl38="),
+            Arguments.of("9dW1Ce8ca0Mk606EMBXPFkKG43cwKVmd3NkBRXTpfg=")
+        );
     }
 }

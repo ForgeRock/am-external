@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -28,34 +36,29 @@ import static org.mockito.Mockito.verify;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.core.CoreWrapper;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
 
-
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class RetryLimitDecisionNodeTest {
 
     @Mock
     private RetryLimitDecisionNode.Config serviceConfig;
-    @Mock
-    private CoreWrapper coreWrapper;
-    @Mock
-    private LegacyIdentityService identityService;
     @Mock
     private AMIdentity amIdentity;
 
@@ -63,21 +66,23 @@ public class RetryLimitDecisionNodeTest {
     private JsonValue sharedState;
     private UUID nodeId;
     private int configRetryLimit;
+    @Mock
+    private NodeUserIdentityProvider identityProvider;
 
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         nodeId = UUID.randomUUID();
         configRetryLimit = 3;
         given(serviceConfig.retryLimit()).willReturn(configRetryLimit);
     }
 
     @Test
-    public void testReturnsRejectOutcomeWhenRetryLimitIsMetInSharedState() throws NodeProcessException {
+    void testReturnsRejectOutcomeWhenRetryLimitIsMetInSharedState() throws NodeProcessException {
         // given
         given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(false);
         sharedState = json(object(field(nodeRetryLimitKey(nodeId), configRetryLimit)));
-        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, identityProvider);
 
         // when
         Action action = node.process(newTreeContext(sharedState));
@@ -87,11 +92,11 @@ public class RetryLimitDecisionNodeTest {
     }
 
     @Test
-    public void testReturnsRetryOutcomeWhenRetryLimitIsNotInSharedState() throws NodeProcessException {
+    void testReturnsRetryOutcomeWhenRetryLimitIsNotInSharedState() throws NodeProcessException {
         // given
         sharedState = json(object());
         given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(false);
-        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, identityProvider);
 
         // when
         var action = node.process(newTreeContext(sharedState));
@@ -102,12 +107,12 @@ public class RetryLimitDecisionNodeTest {
     }
 
     @Test
-    public void testReturnsRetryOutcomeWhenRetryLimitIsNotMetInSharedState() throws NodeProcessException {
+    void testReturnsRetryOutcomeWhenRetryLimitIsNotMetInSharedState() throws NodeProcessException {
         // given
         int currentRetryLimit = 1;
         sharedState = json(object(field(nodeRetryLimitKey(nodeId), currentRetryLimit)));
         given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(false);
-        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, identityProvider);
 
         // when
         var action = node.process(newTreeContext(sharedState));
@@ -118,17 +123,16 @@ public class RetryLimitDecisionNodeTest {
     }
 
     @Test
-    public void testReturnsRejectOutcomeWhenRetryLimitIsMetInUserProfile() throws NodeProcessException, IdRepoException,
+    void testReturnsRejectOutcomeWhenRetryLimitIsMetInUserProfile() throws NodeProcessException, IdRepoException,
                                                                                               SSOException {
         // given
         given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
-        //noinspection deprecation
-        given(coreWrapper.getIdentity(any())).willReturn(amIdentity);
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
         Set<String> retryCounts = new HashSet<>();
         retryCounts.add(nodeId + "=" + configRetryLimit);
         given(amIdentity.getAttribute("retryLimitNodeCount")).willReturn(retryCounts);
         sharedState = json(object());
-        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, identityProvider);
 
         // when
         var action = node.process(newTreeContext(sharedState));
@@ -138,16 +142,15 @@ public class RetryLimitDecisionNodeTest {
     }
 
     @Test
-    public void testReturnsRetryOutcomeWhenRetryLimitIsNotMetInUserProfile()
+    void testReturnsRetryOutcomeWhenRetryLimitIsNotMetInUserProfile()
             throws NodeProcessException, IdRepoException, SSOException {
         // given
         given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
-        //noinspection deprecation
-        given(coreWrapper.getIdentity(any())).willReturn(amIdentity);
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
         Set<String> retryCounts = new HashSet<>();
         given(amIdentity.getAttribute("retryLimitNodeCount")).willReturn(retryCounts);
         sharedState = json(object());
-        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, identityProvider);
 
         // when
         var action = node.process(newTreeContext(sharedState));
@@ -159,18 +162,17 @@ public class RetryLimitDecisionNodeTest {
     }
 
     @Test
-    public void testReturnsRetryOutcomeWhenRetryLimitIsNotInUserProfile()
+    void testReturnsRetryOutcomeWhenRetryLimitIsNotInUserProfile()
             throws NodeProcessException, IdRepoException, SSOException {
         // given
         int currentRetryLimit = 1;
         given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
-        //noinspection deprecation
-        given(coreWrapper.getIdentity(any())).willReturn(amIdentity);
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
         Set<String> retryCounts = new HashSet<>();
         retryCounts.add(nodeId + "=" + currentRetryLimit);
         given(amIdentity.getAttribute("retryLimitNodeCount")).willReturn(retryCounts);
         sharedState = json(object());
-        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, identityProvider);
 
         // when
         var action = node.process(newTreeContext(sharedState));
@@ -182,13 +184,12 @@ public class RetryLimitDecisionNodeTest {
     }
 
     @Test
-    public void testReturnsRejectOutcomeWhenUserDoesNotExistButLimitIsInSharedState() throws NodeProcessException {
+    void testReturnsRejectOutcomeWhenUserDoesNotExistButLimitIsInSharedState() throws NodeProcessException {
         // given
         given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
-        //noinspection deprecation
-        given(coreWrapper.getIdentity(any())).willReturn(null);
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.empty());
         sharedState = json(object(field(nodeRetryLimitKey(nodeId), configRetryLimit)));
-        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, identityProvider);
 
         // when
         var action = node.process(newTreeContext(sharedState));
@@ -198,13 +199,12 @@ public class RetryLimitDecisionNodeTest {
     }
 
     @Test
-    public void testReturnsRetryOutcomeWhenUserDoesNotExistAndNothingInSharedState() throws NodeProcessException {
+    void testReturnsRetryOutcomeWhenUserDoesNotExistAndNothingInSharedState() throws NodeProcessException {
         // given
         given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
-        //noinspection deprecation
-        given(coreWrapper.getIdentity(any())).willReturn(null);
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
         sharedState = json(object());
-        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, identityProvider);
 
         // when
         var action = node.process(newTreeContext(sharedState));
@@ -215,14 +215,13 @@ public class RetryLimitDecisionNodeTest {
     }
 
     @Test
-    public void testReturnsRetryOutcomeWhenUserDoesNotExistAndNotMetInSharedState() throws NodeProcessException {
+    void testReturnsRetryOutcomeWhenUserDoesNotExistAndNotMetInSharedState() throws NodeProcessException {
         // given
         int currentRetryLimit = 1;
         given(serviceConfig.incrementUserAttributeOnFailure()).willReturn(true);
-        //noinspection deprecation
-        given(coreWrapper.getIdentity(any())).willReturn(null);
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.empty());
         sharedState = json(object(field(nodeRetryLimitKey(nodeId), currentRetryLimit)));
-        node = new RetryLimitDecisionNode(serviceConfig, nodeId, coreWrapper, identityService);
+        node = new RetryLimitDecisionNode(serviceConfig, nodeId, identityProvider);
 
         // when
         var action = node.process(newTreeContext(sharedState));

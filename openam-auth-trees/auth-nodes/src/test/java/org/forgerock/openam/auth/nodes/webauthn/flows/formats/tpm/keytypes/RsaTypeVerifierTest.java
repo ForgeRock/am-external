@@ -11,11 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.keytypes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +38,7 @@ import org.forgerock.json.jose.jwk.KeyType;
 import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmAlg;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.exceptions.InvalidTpmtPublicException;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test for the {@link RsaTypeVerifier} class.
@@ -37,9 +46,9 @@ import org.testng.annotations.Test;
 public class RsaTypeVerifierTest {
 
     @Test
-    public void testParseToType() throws IOException {
+    void testParseToType() throws IOException {
         //given
-        byte[] paramBytes = new byte[] { 0, 16, 0, 16, 8, 0, 0, 0, 0, 0 };
+        byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
 
         //when
         RsaTypeVerifier result = RsaTypeVerifier.parseToType(paramBytes);
@@ -52,7 +61,7 @@ public class RsaTypeVerifierTest {
     }
 
     @Test
-    public void testVerify() throws IOException {
+    void testVerify() throws IOException {
         //given
         byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
 
@@ -70,7 +79,7 @@ public class RsaTypeVerifierTest {
     }
 
     @Test
-    public void testVerifyFailsWhenKeyTypeIsInvalid() throws IOException {
+    void testVerifyFailsWhenKeyTypeIsInvalid() throws IOException {
         //given
         byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
 
@@ -88,7 +97,7 @@ public class RsaTypeVerifierTest {
     }
 
     @Test
-    public void testVerifyFailsWhenPublicExponentIsInvalid() throws IOException {
+    void testVerifyFailsWhenPublicExponentIsInvalid() throws IOException {
         //given
         byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
 
@@ -106,7 +115,7 @@ public class RsaTypeVerifierTest {
     }
 
     @Test
-    public void testVerifyFailsWhenUniqueParameterIsInvalid() throws IOException {
+    void testVerifyFailsWhenUniqueParameterIsInvalid() throws IOException {
         //given
         byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
 
@@ -126,7 +135,7 @@ public class RsaTypeVerifierTest {
     }
 
     @Test
-    public void testGetUniqueParameter() throws IOException, InvalidTpmtPublicException {
+    void testGetUniqueParameter() throws IOException, InvalidTpmtPublicException {
         //given
         byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
         byte[] pubAreaBytes = new byte[]{0, 3, 1, 2, 3};
@@ -142,8 +151,8 @@ public class RsaTypeVerifierTest {
         assertThat((RsaUniqueParameter) uniqueParameter).isEqualTo(rsaUniqueParameter);
     }
 
-    @Test (expectedExceptions = InvalidTpmtPublicException.class)
-    public void testGetUniqueParameterThrowsException() throws IOException, InvalidTpmtPublicException {
+    @Test
+    void testGetUniqueParameterThrowsException() throws IOException, InvalidTpmtPublicException {
         //given
         byte[] paramBytes = new byte[]{0, 16, 0, 16, 8, 0, 0, 0, 0, 0};
         byte[] pubAreaBytes = new byte[]{0, 3, 1, 2, 3, 0};
@@ -151,7 +160,10 @@ public class RsaTypeVerifierTest {
 
         //when
         RsaTypeVerifier result = RsaTypeVerifier.parseToType(paramBytes);
-        result.getUniqueParameter(pubArea);
+        assertThatThrownBy(() -> result.getUniqueParameter(pubArea))
+                //then
+                .isInstanceOf(InvalidTpmtPublicException.class)
+                .hasMessageContaining("Bytes remaining in pubArea after parsing tpmtPublic!");
     }
 
     private RsaJWK mockRsaJwk(BigInteger modulus, KeyType keyType, BigInteger publicExponent) {

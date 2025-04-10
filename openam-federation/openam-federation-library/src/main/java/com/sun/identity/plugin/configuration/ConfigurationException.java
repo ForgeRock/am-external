@@ -24,7 +24,7 @@
  *
  * $Id: ConfigurationException.java,v 1.3 2008/06/25 05:47:25 qcheng Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.plugin.configuration;
 

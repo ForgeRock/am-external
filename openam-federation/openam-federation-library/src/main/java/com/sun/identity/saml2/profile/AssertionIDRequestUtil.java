@@ -24,7 +24,7 @@
  *
  * $Id: AssertionIDRequestUtil.java,v 1.8 2009/06/12 22:21:40 mallas Exp $
  *
- * Portions Copyrighted 2013-2024 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 
@@ -45,8 +45,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBElement;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
@@ -662,8 +662,9 @@ public class AssertionIDRequestUtil {
                 role);
 
         SOAPMessage resMsg = null;
+        SOAPCommunicator soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
         try {
-            resMsg = SOAPCommunicator.getInstance().sendSOAPMessage(aIDReqStr, location, true);
+            resMsg = soapCommunicator.sendSOAPMessage(aIDReqStr, location, true);
         } catch (SOAPException se) {
             logger.error(
                     "AssertionIDRequestUtil.sendAssertionIDRequestBySOAP:", se);
@@ -671,7 +672,7 @@ public class AssertionIDRequestUtil {
                     SAML2Utils.bundle.getString("errorSendingAssertionIDRequest"));
         }
 
-        Element respElem = SOAPCommunicator.getInstance().getSamlpElement(resMsg, "Response");
+        Element respElem = soapCommunicator.getSamlpElement(resMsg, "Response");
         Response response =
                 ProtocolFactory.getInstance().createResponse(respElem);
 

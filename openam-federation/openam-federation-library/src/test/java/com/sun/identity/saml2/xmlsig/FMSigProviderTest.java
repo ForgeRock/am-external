@@ -11,14 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.xmlsig;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.openMocks;
+import static org.mockito.Mockito.mock;
 
 import java.math.BigInteger;
 import java.security.KeyPair;
@@ -31,35 +39,32 @@ import javax.security.auth.x500.X500Principal;
 
 import org.forgerock.json.jose.utils.BigIntegerUtils;
 import org.forgerock.util.encode.Base64;
-import org.mockito.Mock;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.google.common.primitives.Bytes;
 import com.sun.identity.saml2.common.SAML2Exception;
 
 public class FMSigProviderTest {
 
-    private KeyPair ecdsaKeyPair;
-    @Mock
-    private X509Certificate certificate;
+    private static KeyPair ecdsaKeyPair;
 
-    @BeforeClass
-    public void generateKeys() throws Exception {
-        openMocks(this).close();
+    private static X509Certificate certificate;
 
+    @BeforeAll
+    static void generateKeys() throws Exception {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
         keyPairGenerator.initialize(256);
         ecdsaKeyPair = keyPairGenerator.generateKeyPair();
 
+        certificate = mock(X509Certificate.class);
         given(certificate.getPublicKey()).willReturn(ecdsaKeyPair.getPublic());
         given(certificate.getSubjectDN()).willReturn(new X500Principal("cn=test"));
         given(certificate.getSerialNumber()).willReturn(BigInteger.ONE);
     }
 
-    @DataProvider
-    public Object[][] invalidEcdsaSignatureValues() {
+    public static Object[][] invalidEcdsaSignatureValues() {
         BigInteger order = ((ECPublicKey) ecdsaKeyPair.getPublic()).getParams().getOrder();
         byte[] tooBig = BigIntegerUtils.toBytesUnsigned(order);
         byte[] tooSmall = new byte[32];
@@ -74,7 +79,8 @@ public class FMSigProviderTest {
         };
     }
 
-    @Test(dataProvider = "invalidEcdsaSignatureValues")
+    @ParameterizedTest
+    @MethodSource("invalidEcdsaSignatureValues")
     public void shouldRejectInvalidEcdsaSignatureValues(byte[] invalidSignature) {
         // Given
         FMSigProvider sigProvider = new FMSigProvider();

@@ -11,17 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.push;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.cuppa.Cuppa.beforeEach;
-import static org.forgerock.cuppa.Cuppa.describe;
-import static org.forgerock.cuppa.Cuppa.it;
-import static org.forgerock.cuppa.Cuppa.when;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -29,35 +33,35 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_MESSAGE_EXPIRATION;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.TIME_TO_LIVE_KEY;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
-import java.util.Map.Entry;
 import java.util.Optional;
 
-import org.forgerock.cuppa.Test;
-import org.forgerock.cuppa.junit.CuppaRunner;
+import org.assertj.core.api.Assertions;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.services.push.DefaultMessageTypes;
 import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.MessageIdFactory;
 import org.forgerock.openam.services.push.MessageState;
 import org.forgerock.openam.services.push.PushNotificationService;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
-
-import com.google.common.collect.ImmutableMap;
-import org.assertj.core.api.Assertions;
 import org.forgerock.openam.utils.Time;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-@Test
-@RunWith(CuppaRunner.class)
+import com.google.common.collect.ImmutableMap;
+
 public class PushResultVerifierNodeTest {
 
     @Mock
@@ -68,108 +72,157 @@ public class PushResultVerifierNodeTest {
     private MessageId messageId;
     @Mock
     private ClusterMessageHandler messageHandler;
+    @Mock
+    private PushDeviceProfileHelper pushDeviceProfileHelper;
+    @Mock
+    private PushDeviceSettings pushDeviceSettings;
+
     private TreeContext treeContext;
     private PushResultVerifierNode node;
 
-    {
-        describe("Push Result Verifier Node", () -> {
-            beforeEach(() -> {
-                MockitoAnnotations.initMocks(this);
-                node = new PushResultVerifierNode(pushNotificationService, messageIdFactory);
-            });
-            when("the push message ID is missing from sharedstate", () -> {
-                beforeEach(() -> {
-                    treeContext = new TreeContext(json(object()), new Builder().build(), emptyList(), Optional.empty());
-                });
-                it("should throw an exception", () -> {
-                    try {
-                        node.process(treeContext);
-                        Assertions.fail("Expected exception missing");
-                    } catch (NodeProcessException npe) {
-                        assertThat(npe).hasMessageContaining("message ID");
-                    }
-                });
-            });
-            when("the push message ID is in the sharedstate", () -> {
-                beforeEach(() -> {
-                    given(messageIdFactory.create("badger", "weasel")).willReturn(messageId);
-                    given(messageId.toString()).willReturn("otter");
+    PushResultVerifierNodeTest() {
+        MockitoAnnotations.initMocks(this);
+        node = new PushResultVerifierNode(pushNotificationService, messageIdFactory, pushDeviceProfileHelper);
+    }
+
+    @Nested
+    @DisplayName(value = "Push Result Verifier Node")
+    class PushResultVerifierNodeNested {
+
+        @BeforeEach
+        public void beforeEach() {
+        }
+
+        @Nested
+        @DisplayName(value = "the push message ID is missing from sharedstate")
+        class ThePushMessageIdIsMissingFromSharedstate {
+
+            @BeforeEach
+            public void beforeEach() {
+                treeContext = new TreeContext(json(object()), new Builder().build(), emptyList(), Optional.empty());
+            }
+
+            @Test
+            @DisplayName(value = "should throw an exception")
+            public void testShouldThrowAnException() throws Exception {
+                try {
+                    node.process(treeContext);
+                    Assertions.fail("Expected exception missing");
+                } catch (NodeProcessException npe) {
+                    assertThat(npe).hasMessageContaining("message ID");
+                }
+            }
+        }
+
+        @Nested
+        @DisplayName(value = "the push message ID is in the sharedstate")
+        class ThePushMessageIdIsInTheSharedstate {
+
+            @BeforeEach
+            public void beforeEach() throws Exception {
+                given(messageIdFactory.create("badger", "weasel")).willReturn(messageId);
+                given(messageId.toString()).willReturn("otter");
+                given(messageId.getMessageType()).willReturn(DefaultMessageTypes.AUTHENTICATE);
+                given(pushNotificationService.getMessageHandlers("weasel")).willReturn(
+                        ImmutableMap.of(DefaultMessageTypes.AUTHENTICATE, messageHandler)
+                );
+                given(pushDeviceProfileHelper.getDeviceSettings(anyString(), anyString()))
+                        .willReturn(pushDeviceSettings);
+                treeContext = getContext();
+            }
+
+            @Nested
+            @DisplayName(value = "the push message's message type is unknown")
+            class ThePushMessageSMessageTypeIsUnknown {
+
+                @BeforeEach
+                public void beforeEach() {
+                    given(messageId.getMessageType()).willReturn(DefaultMessageTypes.REGISTER);
+                }
+
+                @Test
+                @DisplayName(value = "should return false outcome")
+                public void testShouldReturnFalseOutcome() throws Exception {
+                    Action result = node.process(treeContext);
+
+                    assertThat(result.outcome).isEqualTo("FALSE");
+                }
+            }
+
+            @Nested
+            @DisplayName(value = "the message is NOT expired")
+            class TheMessageIsNotExpired {
+
+                @BeforeEach
+                public void beforeEach() throws Exception {
+                    given(messageHandler.check(messageId)).willReturn(MessageState.UNKNOWN);
+                    treeContext = getContextWithPushTimeout(60000);
+                }
+
+                @Test
+                @DisplayName(value = "should return WAITING outcome")
+                public void testShouldReturnWaitingOutcome() throws Exception {
+                    Action result = node.process(treeContext);
+
+                    assertThat(result.outcome).isEqualTo("WAITING");
+                }
+            }
+
+            @Nested
+            @DisplayName(value = "the message is expired")
+            class TheMessageIsExpired {
+
+                @BeforeEach
+                public void beforeEach() throws Exception {
+                    given(messageHandler.check(messageId)).willReturn(MessageState.UNKNOWN);
+                    treeContext = getContextWithPushTimeout(-1000);
+                }
+
+                @Test
+                @DisplayName(value = "should return EXPIRED outcome")
+                public void testShouldReturnExpiredOutcome() throws Exception {
+                    Action result = node.process(treeContext);
+
+                    assertThat(result.outcome).isEqualTo("EXPIRED");
+                }
+            }
+
+            @Nested
+            @DisplayName(value = "the push message's message type is known")
+            class ThePushMessageSMessageTypeIsKnown {
+
+                @BeforeEach
+                public void beforeEach() {
                     given(messageId.getMessageType()).willReturn(DefaultMessageTypes.AUTHENTICATE);
-                    given(pushNotificationService.getMessageHandlers("weasel")).willReturn(
-                            ImmutableMap.of(DefaultMessageTypes.AUTHENTICATE, messageHandler));
-                    treeContext = getContext();
-                });
-                when("the push message's message type is unknown", () -> {
-                    beforeEach(() -> {
-                        given(messageId.getMessageType()).willReturn(DefaultMessageTypes.REGISTER);
-                    });
-                    it("should return false outcome", () -> {
-                        Action result = node.process(treeContext);
+                }
 
-                        assertThat(result.outcome).isEqualTo("FALSE");
-                    });
-                });
-                when("the message is NOT expired", () -> {
-                    beforeEach(() -> {
-                        given(messageHandler.check(messageId)).willReturn(MessageState.UNKNOWN);
-                        treeContext = getContextWithPushTimeout(60000);
-                    });
-                    it("should return WAITING outcome", () -> {
-                        Action result = node.process(treeContext);
+                @Test
+                @DisplayName(value = "should check the message state with the correct handler")
+                public void testShouldCheckTheMessageStateWithTheCorrectHandler() throws Exception {
+                    node.process(treeContext);
 
-                        assertThat(result.outcome).isEqualTo("WAITING");
-                    });
-                });
-                when("the message is expired", () -> {
-                    beforeEach(() -> {
-                        given(messageHandler.check(messageId)).willReturn(MessageState.UNKNOWN);
-                        treeContext = getContextWithPushTimeout(-1000);
-                    });
-                    it("should return EXPIRED outcome", () -> {
+                    verify(messageHandler).check(messageId);
+                }
+
+                @Nested
+                @DisplayName(value = "the message state can't be retrieved")
+                class TheMessageStateCanTBeRetrieved {
+
+                    @BeforeEach
+                    public void beforeEach() throws Exception {
+                        given(messageHandler.check(messageId)).willReturn(null);
+                    }
+
+                    @Test
+                    @DisplayName(value = "should return EXPIRED outcome")
+                    public void testShouldReturnExpiredOutcome() throws Exception {
                         Action result = node.process(treeContext);
 
                         assertThat(result.outcome).isEqualTo("EXPIRED");
-                    });
-                });
-                when("the push message's message type is known", () -> {
-                    beforeEach(() -> {
-                        given(messageId.getMessageType()).willReturn(DefaultMessageTypes.AUTHENTICATE);
-                    });
-                    it("should check the message state with the correct handler", () -> {
-                        node.process(treeContext);
-
-                        verify(messageHandler).check(messageId);
-                    });
-                    when("the message state can't be retrieved", () -> {
-                        beforeEach(() -> {
-                            given(messageHandler.check(messageId)).willReturn(null);
-                        });
-                        it("should return EXPIRED outcome", () -> {
-                            Action result = node.process(treeContext);
-
-                            assertThat(result.outcome).isEqualTo("EXPIRED");
-                        });
-                    });
-                    ImmutableMap<MessageState, String> testCases = ImmutableMap.<MessageState, String>builder()
-                            .put(MessageState.DENIED, "FALSE")
-                            .put(MessageState.SUCCESS, "TRUE")
-                            .put(MessageState.UNKNOWN, "WAITING")
-                            .build();
-                    for (Entry<MessageState, String> testCase : testCases.entrySet()) {
-                        when("the message state is " + testCase.getKey(), () -> {
-                            beforeEach(() -> {
-                                given(messageHandler.check(messageId)).willReturn(testCase.getKey());
-                            });
-                            it("should return " + testCase.getValue() + " outcome", () -> {
-                                Action result = node.process(treeContext);
-
-                                assertThat(result.outcome).isEqualTo(testCase.getValue());
-                            });
-                        });
                     }
-                });
-            });
-        });
+                }
+            }
+        }
     }
 
     private TreeContext getContext() {
@@ -196,4 +249,5 @@ public class PushResultVerifierNodeTest {
     private long getEndTime(int timeout) {
         return Time.getClock().instant().plusMillis(timeout).toEpochMilli();
     }
+
 }

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.wsfederation.profile;
 
@@ -23,9 +31,18 @@ import static org.forgerock.openam.federation.testutils.TestCaseConfigurationIns
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import java.util.Date;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
+import org.forgerock.guice.core.GuiceTestCase;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import com.sun.identity.cot.CircleOfTrustDescriptor;
+import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.saml2.assertion.SubjectConfirmationData;
 import com.sun.identity.saml2.assertion.impl.SubjectConfirmationDataImpl;
 import com.sun.identity.saml2.assertion.impl.SubjectConfirmationImpl;
@@ -33,24 +50,15 @@ import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.protocol.impl.ResponseImpl;
 import com.sun.identity.saml2.protocol.impl.StatusCodeImpl;
 import com.sun.identity.saml2.protocol.impl.StatusImpl;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
-import com.sun.identity.cot.CircleOfTrustDescriptor;
-import com.sun.identity.cot.CircleOfTrustManager;
-
-import java.util.Date;
-
-public class IDPSSOUtilTest {
+public class IDPSSOUtilTest extends GuiceTestCase {
 
     private static final String TEST_COT = "TestCOT";
-    private CircleOfTrustManager cotManager;
-    private HttpServletRequest request;
+    private static CircleOfTrustManager cotManager;
+    private static HttpServletRequest request;
 
-    @BeforeClass
-    public void init() throws Exception {
+    @BeforeAll
+    static void init() throws Exception {
         cotManager = new CircleOfTrustManager();
         request = mock(HttpServletRequest.class);
 
@@ -59,13 +67,12 @@ public class IDPSSOUtilTest {
         given(request.getServerPort()).willReturn(443);
     }
 
-    @BeforeMethod
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         resetConfiguration();
     }
 
-    @DataProvider(name = "mappingData")
-    private Object[][] mappingData() {
+    private static Object[][] mappingData() {
         return new Object[][]{
                 {"testIdpWithNoAuthUrl",
                         "idp-extended.xml",
@@ -85,8 +92,8 @@ public class IDPSSOUtilTest {
                         "https://am.example.com:443/UI/Login?realm=testIdpWithRootContext"}
         };
     }
-    @DataProvider
-    public Object[][] xmlMappingForDestinationParamTestingAmpEscaping() {
+
+    public static Object[][] xmlMappingForDestinationParamTestingAmpEscaping() {
         return new Object[][] {
                 { true, true, "<samlp:Response xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\" " +
                         "Destination=\"https://example.com?param=3420GJKDL&amp;sec=394fJDl90\" " +
@@ -111,8 +118,8 @@ public class IDPSSOUtilTest {
                         "</Response>" }
         };
     }
-    @DataProvider
-    public Object[][] xmlMappingForSubjectConfirmationTestingAmpEscaping() {
+
+    public static Object[][] xmlMappingForSubjectConfirmationTestingAmpEscaping() {
         return new Object[][] {
                 { true, true, "<saml:SubjectConfirmation xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\" " +
                         "Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\">" +
@@ -133,9 +140,8 @@ public class IDPSSOUtilTest {
         };
     }
 
-
-
-    @Test(dataProvider = "mappingData")
+    @ParameterizedTest
+    @MethodSource("mappingData")
     public void testGetAuthenticationServiceURL(String realm, String extendedMetadataPath, String contextPath,
             String expectedLoginUrl) throws Exception {
         given(request.getContextPath()).willReturn(contextPath);
@@ -145,7 +151,9 @@ public class IDPSSOUtilTest {
 
         assertThat(getAuthenticationServiceURL(realm, "openam-wsfed-idp", request)).isEqualTo(expectedLoginUrl);
     }
-    @Test(dataProvider = "xmlMappingForDestinationParamTestingAmpEscaping")
+
+    @ParameterizedTest
+    @MethodSource("xmlMappingForDestinationParamTestingAmpEscaping")
     public void testToXmlStringConversionOfAmpersandInDestinationField(
             boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
         // Given
@@ -168,8 +176,8 @@ public class IDPSSOUtilTest {
         assertThat(xml).isEqualToIgnoringWhitespace(expectedXml);
     }
 
-
-    @Test(dataProvider = "xmlMappingForSubjectConfirmationTestingAmpEscaping")
+    @ParameterizedTest
+    @MethodSource("xmlMappingForSubjectConfirmationTestingAmpEscaping")
     public void testToXmlStringWithEscapedChars(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
         // Given
         SubjectConfirmationImpl subjectConfirmation = new SubjectConfirmationImpl();

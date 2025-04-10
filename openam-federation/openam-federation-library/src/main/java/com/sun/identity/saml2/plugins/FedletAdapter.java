@@ -24,7 +24,7 @@
  *
  * $Id: FedletAdapter.java,v 1.2 2009/06/17 03:09:13 exu Exp $
  *
- * Portions Copyrighted 2019-2022 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins;
 

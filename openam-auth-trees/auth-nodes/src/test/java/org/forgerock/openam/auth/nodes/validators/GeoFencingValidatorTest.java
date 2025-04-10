@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.validators;
 
@@ -21,16 +21,13 @@ import static org.forgerock.cuppa.Cuppa.describe;
 import static org.forgerock.cuppa.Cuppa.it;
 import static org.forgerock.cuppa.Cuppa.when;
 
-import com.google.common.collect.ImmutableSet;
-
 import java.util.Collections;
 
 import org.forgerock.cuppa.Test;
-import org.forgerock.cuppa.junit.CuppaRunner;
 import org.forgerock.openam.auth.nodes.DeviceGeoFencingNode;
-import org.junit.runner.RunWith;
 
-@RunWith(CuppaRunner.class)
+import com.google.common.collect.ImmutableSet;
+
 @Test
 public class GeoFencingValidatorTest {
     private DeviceGeoFencingNode.GeoFencingValidator validator;

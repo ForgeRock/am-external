@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.federation.rest.schema.mappers;
@@ -28,8 +36,8 @@ import javax.xml.bind.JAXBIntrospector;
 import org.forgerock.openam.federation.rest.schema.shared.SigningAlgorithm;
 import org.forgerock.openam.objectenricher.EnricherContext;
 import org.forgerock.openam.objectenricher.service.CurrentSourceContext;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
@@ -46,13 +54,13 @@ public final class SigningAlgorithmMapperTest {
 
     private SigningAlgorithmMapper mapper;
 
-    @BeforeMethod
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         mapper = new SigningAlgorithmMapper();
     }
 
     @Test
-    public void whenMapSigningMethodsAreConvertedToTheirCorrespondingAlgorithms() {
+    void whenMapSigningMethodsAreConvertedToTheirCorrespondingAlgorithms() {
         // Given
         SigningMethodType signingMethod1 = new SigningMethodType();
         signingMethod1.setAlgorithm("http://www.w3.org/2000/09/xmldsig#rsa-sha1");
@@ -70,7 +78,7 @@ public final class SigningAlgorithmMapperTest {
     }
 
     @Test
-    public void whenMapDuplicateSigningMethodsAreDiscarded() {
+    void whenMapDuplicateSigningMethodsAreDiscarded() {
         // Given
         SigningMethodType signingMethod1 = new SigningMethodType();
         signingMethod1.setAlgorithm("http://www.w3.org/2000/09/xmldsig#rsa-sha1");
@@ -87,7 +95,7 @@ public final class SigningAlgorithmMapperTest {
     }
 
     @Test
-    public void whenMapOtherExtensionTypesAreIgnored() {
+    void whenMapOtherExtensionTypesAreIgnored() {
         // Given
         SigningMethodType signingMethod = new SigningMethodType();
         signingMethod.setAlgorithm("http://www.w3.org/2000/09/xmldsig#rsa-sha1");
@@ -104,7 +112,7 @@ public final class SigningAlgorithmMapperTest {
     }
 
     @Test
-    public void whenInverseSigningAlgorithmsAreConvertedToTheirCorrespondingSigningMethods() {
+    void whenInverseSigningAlgorithmsAreConvertedToTheirCorrespondingSigningMethods() {
         // Given
         EnricherContext context = new CurrentSourceContext(ROOT, null, TypeToken.of(ExtensionsType.class));
         List<SigningAlgorithm> signingAlgorithms = ImmutableList
@@ -129,7 +137,7 @@ public final class SigningAlgorithmMapperTest {
     }
 
     @Test
-    public void whenInverseExistingNonSigningMethodExtensionsAreRetained() {
+    void whenInverseExistingNonSigningMethodExtensionsAreRetained() {
         // Given
         DigestMethodType digestMethod = new DigestMethodType();
         digestMethod.setAlgorithm("http://www.w3.org/2000/09/xmldsig#sha1");
@@ -159,7 +167,7 @@ public final class SigningAlgorithmMapperTest {
     }
 
     @Test
-    public void whenInverseExistingMatchingSigningMethodsAreRetained() {
+    void whenInverseExistingMatchingSigningMethodsAreRetained() {
         // Given
         SigningMethodType signingMethod = new SigningMethodType();
         signingMethod.setAlgorithm("http://www.w3.org/2000/09/xmldsig#rsa-sha1");
@@ -195,7 +203,7 @@ public final class SigningAlgorithmMapperTest {
     }
 
     @Test
-    public void whenInverseExistingNonSigningMethodExtensionsOrderIsMaintained() {
+    void whenInverseExistingNonSigningMethodExtensionsOrderIsMaintained() {
         // Given
         DigestMethodType digestMethod1 = new DigestMethodType();
         DigestMethodType digestMethod2 = new DigestMethodType();
@@ -225,7 +233,7 @@ public final class SigningAlgorithmMapperTest {
     }
 
     @Test
-    public void whenInverseSigningAlgorithmOrderIsMaintained() {
+    void whenInverseSigningAlgorithmOrderIsMaintained() {
         // Given
         EnricherContext context = new CurrentSourceContext(ROOT, null, TypeToken.of(ExtensionsType.class));
         List<SigningAlgorithm> signingAlgorithms = ImmutableList

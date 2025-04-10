@@ -24,7 +24,7 @@
  *
  * $Id: IDPDiscoveryWARConfigurator.java,v 1.4 2008/08/19 19:11:14 veiming Exp $
  *
- * Portions Copyrighted 2013-2015 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.idpdiscovery;
@@ -39,7 +39,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Iterator;
 import java.util.Properties;
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 
 /**
  * This class is used to setup the OpenAM IDP Discovery WAR.

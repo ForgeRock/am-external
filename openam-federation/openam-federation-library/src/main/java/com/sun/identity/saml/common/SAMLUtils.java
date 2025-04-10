@@ -24,7 +24,7 @@
  *
  * $Id: SAMLUtils.java,v 1.16 2010/01/09 19:41:06 qcheng Exp $
  *
- * Portions Copyrighted 2012-2021 ForgeRock AS.
+ * Portions Copyrighted 2012-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml.common;
 
@@ -36,9 +36,9 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.StringTokenizer;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.soap.MimeHeaders;
 

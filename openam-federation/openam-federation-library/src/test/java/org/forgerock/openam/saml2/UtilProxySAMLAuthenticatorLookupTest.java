@@ -11,28 +11,43 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import java.io.PrintWriter;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
+import com.sun.identity.saml2.common.SOAPCommunicator;
+
+import org.forgerock.am.trees.api.TreeProvider;
+import org.forgerock.guice.core.GuiceExtension;
 import org.forgerock.openam.federation.testutils.TestCaseConfigurationInstance;
 import org.forgerock.openam.federation.testutils.TestCaseSessionProvider;
 import org.forgerock.openam.jwt.JwtEncryptionOptions;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
 import com.iplanet.sso.SSOToken;
@@ -42,25 +57,31 @@ import com.sun.identity.cot.CircleOfTrustManager;
 import com.sun.identity.plugin.session.SessionManager;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.profile.ClientFaultException;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class UtilProxySAMLAuthenticatorLookupTest {
+
+    @RegisterExtension
+    GuiceExtension guiceExtension = new GuiceExtension.Builder()
+            .addInstanceBinding(SOAPCommunicator.class, mock(SOAPCommunicator.class))
+            .addInstanceBinding(TreeProvider.class, mock(TreeProvider.class)).build();
 
     private static final String REALM = "/";
     private static final String TEST_COT = "TestCOT";
-    private IDPSSOFederateRequest data;
+    private static IDPSSOFederateRequest data;
     @Mock
-    private HttpServletRequest request;
+    private static HttpServletRequest request;
     @Mock
-    private HttpServletResponse response;
+    private static HttpServletResponse response;
     @Mock
-    private PrintWriter out;
+    private static PrintWriter out;
     @Mock
-    private SSOToken ssoToken;
-    private UtilProxySAMLAuthenticatorLookup lookup;
+    private static SSOToken ssoToken;
+    private static UtilProxySAMLAuthenticatorLookup lookup;
 
-    @BeforeClass
-    public void setup() {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void setup() {
         data = new IDPSSOFederateRequest("test-id", REALM, null, "test-metaAlias", "openam-saml2-idp");
         data.setSession(ssoToken);
         lookup = new UtilProxySAMLAuthenticatorLookup(data, request, response, out, mock(JwtEncryptionOptions.class));
@@ -68,13 +89,13 @@ public class UtilProxySAMLAuthenticatorLookupTest {
         TestCaseConfigurationInstance.resetConfiguration();
     }
 
-    @AfterMethod
-    public void teardown() {
+    @AfterEach
+    void teardown() {
         TestCaseConfigurationInstance.resetConfiguration();
     }
 
-    @Test(expectedExceptions = ClientFaultException.class)
-    public void shouldFindSessionInvalidIfTheSessionHasInsufficientAuthLevel() throws Exception {
+    @Test
+    void shouldFindSessionInvalidIfTheSessionHasInsufficientAuthLevel() throws Exception {
         // Given
         new CircleOfTrustManager().createCircleOfTrust(REALM,
                 new CircleOfTrustDescriptor(TEST_COT, REALM, COTConstants.ACTIVE));
@@ -82,11 +103,12 @@ public class UtilProxySAMLAuthenticatorLookupTest {
         TestCaseSessionProvider.setState(ssoToken, "test-session-id", "test-user", getSessionProperties(REALM, "0"));
 
         // When
-        lookup.isSessionValid(SessionManager.getProvider());
+        assertThatThrownBy(() -> lookup.isSessionValid(SessionManager.getProvider()))
+                .isInstanceOf(ClientFaultException.class);
     }
 
     @Test
-    public void shouldFindSessionValidIfTheSessionWasUpgradedCorrectly() throws Exception {
+    void shouldFindSessionValidIfTheSessionWasUpgradedCorrectly() throws Exception {
         // Given
         new CircleOfTrustManager().createCircleOfTrust(REALM,
                 new CircleOfTrustDescriptor(TEST_COT, REALM, COTConstants.ACTIVE));
@@ -100,16 +122,18 @@ public class UtilProxySAMLAuthenticatorLookupTest {
         assertThat(sessionValid).isTrue();
     }
 
-    @Test(expectedExceptions = ClientFaultException.class)
-    public void shouldFindSessionInvalidIfTheSessionBelongsToDifferentRealm() throws Exception {
+    @Test
+    void shouldFindSessionInvalidIfTheSessionBelongsToDifferentRealm() throws Exception {
         // Given
+        given(request.getRemoteAddr()).willReturn("");
         new CircleOfTrustManager().createCircleOfTrust(REALM,
                 new CircleOfTrustDescriptor(TEST_COT, REALM, COTConstants.ACTIVE));
         TestCaseConfigurationInstance.configureSaml2(REALM, "/saml2/idp.xml", "/saml2/idp-extended.xml");
         TestCaseSessionProvider.setState(ssoToken, "test-session-id", "test-user", getSessionProperties("/foo", "0"));
 
         // When
-        lookup.isSessionValid(SessionManager.getProvider());
+        assertThatThrownBy(() -> lookup.isSessionValid(SessionManager.getProvider()))
+                .isInstanceOf(ClientFaultException.class);
     }
 
     private static ImmutableMap<String, List<String>> getSessionProperties(String realm, String authLevel) {

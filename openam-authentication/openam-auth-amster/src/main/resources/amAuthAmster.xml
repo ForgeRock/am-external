@@ -1,5 +1,4 @@
 <?xml version='1.0' encoding="ISO-8859-1"?>
-
 <!--
  * The contents of this file are subject to the terms of the Common Development and
  * Distribution License (the License). You may not use this file except in compliance with the
@@ -13,8 +12,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2023 ForgeRock AS. All Rights Reserved
+ * Copyright 2025 ForgeRock AS.
  * 
+-->
+
+<!--
+  Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+
+ ! This code is to be used exclusively in connection with Ping Identity
+ ! Corporation software or services. Ping Identity Corporation only offers
+ ! such software or services to legal entities who have entered into a
+ ! binding license agreement with Ping Identity Corporation.
 -->
 
 <!DOCTYPE ServicesConfiguration
@@ -50,7 +58,7 @@
                                  i18nKey="field-authorized-keys"
                                  order="100"
                                  resourceName="authorizedKeys">
-                    <DefaultValues placeholder="&amp;{amster.secrets.keys.path|%}">
+                    <DefaultValues placeholder="&amp;{amster.secrets.keys.path|&amp;{am.server.config.dir}/security/keys/amster/authorized_keys}">
                         <Value>@BASE_DIR@/security/keys/amster/authorized_keys</Value>
                     </DefaultValues>
                 </AttributeSchema>
@@ -89,7 +97,7 @@
                                      i18nKey="field-authorized-keys"
                                      order="100"
                                      resourceName="authorizedKeys">
-                        <DefaultValues placeholder="&amp;{amster.secrets.keys.path|%}">
+                        <DefaultValues placeholder="&amp;{amster.secrets.keys.path|&amp;{am.server.config.dir}/security/keys/amster/authorized_keys}">
                             <Value>@BASE_DIR@/security/keys/amster/authorized_keys</Value>
                         </DefaultValues>
                     </AttributeSchema>
@@ -113,7 +121,7 @@
         </Schema>
         <Configuration>
             <OrganizationConfiguration name="/">
-                <AttributeValuePair placeholder="&amp;{amster.secrets.keys.path|%}">
+                <AttributeValuePair placeholder="&amp;{amster.secrets.keys.path|&amp;{am.server.config.dir}/security/keys/amster/authorized_keys}">
                     <Attribute name="forgerock-am-auth-amster-authorized-keys"/>
                     <Value>@BASE_DIR@/security/keys/amster/authorized_keys</Value>
                 </AttributeValuePair>

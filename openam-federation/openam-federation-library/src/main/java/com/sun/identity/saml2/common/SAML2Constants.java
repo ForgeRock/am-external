@@ -24,12 +24,13 @@
  *
  * $Id: SAML2Constants.java,v 1.44 2009/11/24 21:53:02 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2024 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.common;
 
 import org.forgerock.openam.annotations.SupportedAll;
 import org.forgerock.openam.saml2.plugins.IDPAdapter;
+import org.forgerock.openam.saml2.plugins.SPAdapter;
 
 import com.sun.identity.cot.COTConstants;
 import com.sun.identity.saml2.plugins.IDPAttributeMapper;
@@ -712,6 +713,16 @@ public interface SAML2Constants {
     public String SP_ADAPTER_SCRIPT = "spAdapterScript";
 
     /**
+     * NameID Mapper Script.
+     */
+    public String NAMEID_MAPPER_SCRIPT = "nameIDMapperScript";
+
+    /**
+     * Property name used for binding the scripted NameID Mapper to the guice module.
+     */
+    String SCRIPTED_NAMEID_MAPPER = "SCRIPTED_NAMEID_MAPPER";
+
+    /**
      * Fedlet adapter implementation class.
      */
     public String FEDLET_ADAPTER_CLASS = "fedletAdapter";
@@ -1052,6 +1063,12 @@ public interface SAML2Constants {
     public String WANT_ARTIFACT_RESOLVE_MTLS = "wantArtifactResolveMTLS";
 
     /**
+     * SP Entity Config attribute name. Used to specify whether the client certificate
+     * should be excluded from the exported metadata or not.
+     */
+    public String EXCLUDE_CLIENT_CERTIFICATE = "excludeClientCertificate";
+
+    /**
      * SP Entity Config attribute name. Used to specify IDPList child element
      * of ECP request.
      */
@@ -1209,6 +1226,9 @@ public interface SAML2Constants {
     // AuthnContext Class Reference names
     public String CLASSREF_PASSWORD_PROTECTED_TRANSPORT =
         "urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport";
+
+    public static final String AUTHN_CONTEXT_CLASS_REF_UNSPECIFIED =
+            "urn:oasis:names:tc:SAML:2.0:ac:classes:unspecified";
 
     // Represents an Authentication Level of 0
     public Integer AUTH_LEVEL_ZERO = Integer.valueOf(0);
@@ -1708,6 +1728,11 @@ public interface SAML2Constants {
      */
     String SCRIPTED_SP_ADAPTER = "SCRIPTED_SP_ADAPTER";
 
+    /**
+     * Tree name configured for remote SP.
+     */
+    String TREE_NAME = "treeName";
+
     /*
      * Constant that flags a session as not needing its associated IDP Session token to be removed.
      *
@@ -1727,6 +1752,7 @@ public interface SAML2Constants {
         public static final String LOGGER = "logger";
         public static final String SESSION = "session";
         public static final String HOSTED_ENTITYID = "hostedEntityId";
+        public static final String NAMEID_FORMAT = "nameIDFormat";
         public static final String REMOTE_ENTITY = "remoteEntityId";
         public static final String REALM = "realm";
         public static final String REQUEST = "request";
@@ -1738,6 +1764,8 @@ public interface SAML2Constants {
         public static final String FAULT_DETAIL = "faultDetail";
         public static final String SAML2_RESPONSE = "res";
         public static final String IDP_ATTRIBUTE_MAPPER_SCRIPT_HELPER = "idpAttributeMapperScriptHelper";
+        public static final String NAMEID_SCRIPT_HELPER = "nameIDScriptHelper";
+        public static final String IDENTITY = "identity";
         public static final String IDP_ADAPTER_SCRIPT_HELPER = "idpAdapterScriptHelper";
         public static final String SP_ADAPTER_SCRIPT_HELPER = "spAdapterScriptHelper";
         public static final String HTTP_CLIENT = "httpClient";

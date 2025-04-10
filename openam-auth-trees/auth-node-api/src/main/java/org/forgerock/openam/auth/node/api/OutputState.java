@@ -11,15 +11,30 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
-/** Describes one shared state datum produced by a node. */
-public class OutputState {
+import org.forgerock.openam.annotations.Supported;
+
+
+/**
+ * Describes one shared state attribute produced by a node.
+ */
+@Supported
+public final class OutputState {
     /** The attribute name of this state. */
     public final String name;
 
@@ -32,6 +47,7 @@ public class OutputState {
      *
      * @param name the name of the output state
      */
+    @Supported
     public OutputState(String name) {
         this.name = name;
         outcomes = new HashMap<>();
@@ -44,9 +60,48 @@ public class OutputState {
      * @param name the name of the output state
      * @param outcomes the outcomes for this state
      */
+    @Supported
     public OutputState(String name, Map<String, Boolean> outcomes) {
         this.name = name;
         this.outcomes = new HashMap<>();
         this.outcomes.putAll(outcomes);
+    }
+
+    /**
+     * Get the attribute (property) name of this state.
+     *
+     * @return The attribute (property) name of this state
+     */
+    @Supported
+    public String name() {
+        return name;
+    }
+
+    /**
+     * Gets the map of node outcome names and whether the output property is guaranteed to be provided for that outcome.
+     * <p> A wildcard * may be used to represent all outcomes.
+     *
+     * @return The map of node outcomes
+     */
+    @Supported
+    public Map<String, Boolean> outcomes() {
+        return outcomes;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        OutputState that = (OutputState) o;
+        return Objects.equals(name, that.name) && Objects.equals(outcomes, that.outcomes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, outcomes);
     }
 }

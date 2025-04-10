@@ -24,7 +24,7 @@
  *
  * $Id: Attribute.java,v 1.4 2008/09/03 22:28:40 weisun2 Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml.assertion;
 

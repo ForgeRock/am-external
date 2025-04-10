@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -26,7 +34,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,26 +48,19 @@ import javax.security.auth.callback.ConfirmationCallback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
-import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.authentication.callbacks.ScriptTextOutputCallback;
 
+@ExtendWith(MockitoExtension.class)
 public class GetAuthenticatorAppNodeTest {
-
-    @Mock
-    GetAuthenticatorAppNode.Config config;
-    @Mock
-    private LocaleSelector localeSelector;
-
-    GetAuthenticatorAppNode node;
 
     static final String MESSAGE = "Get the app from the {{appleLink}} or on {{googleLink}}";
     static final String CONTINUE_LABEL = "Continue";
-
     static final Map<Locale, String> MAP_DEFAULT_MESSAGE = new HashMap<>() {{
         put(Locale.CANADA, MESSAGE);
     }};
@@ -68,14 +68,14 @@ public class GetAuthenticatorAppNodeTest {
         put(Locale.CANADA, CONTINUE_LABEL);
     }};
     static final Locale DEFAULT_LOCALE = Locale.CANADA;
-
-    @BeforeMethod
-    public void setup() throws NodeProcessException {
-        initMocks(this);
-    }
+    @Mock
+    GetAuthenticatorAppNode.Config config;
+    GetAuthenticatorAppNode node;
+    @Mock
+    private LocaleSelector localeSelector;
 
     @Test
-    public void processNoException() throws Exception {
+    void processNoException() throws Exception {
         // Given
         whenNodeConfigHasDefaultValues();
 
@@ -89,7 +89,7 @@ public class GetAuthenticatorAppNodeTest {
     }
 
     @Test
-    public void processShouldReturnCorrectCallbacksDuringFirstPass() throws Exception {
+    void processShouldReturnCorrectCallbacksDuringFirstPass() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -106,7 +106,7 @@ public class GetAuthenticatorAppNodeTest {
     }
 
     @Test
-    public void shouldDisplayCorrectOptions() throws Exception {
+    void shouldDisplayCorrectOptions() throws Exception {
         // Given
         String[] options = {CONTINUE_LABEL};
 
@@ -124,7 +124,7 @@ public class GetAuthenticatorAppNodeTest {
     }
 
     @Test
-    public void processShouldContinueWhenSelected() throws Exception {
+    void processShouldContinueWhenSelected() throws Exception {
         // Given
         whenNodeConfigHasDefaultValues();
 
@@ -153,7 +153,7 @@ public class GetAuthenticatorAppNodeTest {
     }
 
     @Test
-    public void shouldDisplayCorrectDefaultMessage() throws Exception {
+    void shouldDisplayCorrectDefaultMessage() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -176,7 +176,7 @@ public class GetAuthenticatorAppNodeTest {
     }
 
     @Test
-    public void shouldDisplayCorrectMessageWithLabels() throws Exception {
+    void shouldDisplayCorrectMessageWithLabels() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -205,7 +205,7 @@ public class GetAuthenticatorAppNodeTest {
     }
 
     @Test
-    public void shouldDisplayCorrectLocalizedMessage() throws Exception {
+    void shouldDisplayCorrectLocalizedMessage() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());

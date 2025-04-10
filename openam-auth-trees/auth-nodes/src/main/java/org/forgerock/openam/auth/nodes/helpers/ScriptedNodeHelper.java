@@ -11,13 +11,27 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.helpers;
 
+import static java.util.Objects.requireNonNull;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.openam.scripting.domain.DecisionNodeApplicationConstants.OAUTH_OBJECT_KEY_PARAM;
+import static org.forgerock.openam.scripting.domain.DecisionNodeApplicationConstants.SAML_OBJECT_KEY_PARAM;
+import static org.forgerock.openam.utils.CollectionUtils.getFirstItem;
+import static org.forgerock.openam.utils.StringUtils.isBlank;
+import static org.forgerock.openam.utils.StringUtils.isEmpty;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,18 +41,31 @@ import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 import javax.script.Bindings;
 import javax.validation.constraints.NotNull;
 
+import org.forgerock.am.cts.CTSPersistentStore;
+import org.forgerock.am.cts.api.tokens.Token;
+import org.forgerock.am.cts.exceptions.CoreTokenException;
 import org.forgerock.guava.common.collect.ListMultimap;
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.json.JsonValue;
+import org.forgerock.oauth2.core.application.tree.OAuthScriptedBindingObjectAdapter;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.AuthScriptUtilities;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.script.ActionWrapper;
 import org.forgerock.openam.auth.nodes.script.ScriptedCallbacksBuilder;
+import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
+import org.forgerock.openam.scripting.domain.DecisionNodeApplicationConstants;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
+import org.forgerock.openam.scripting.domain.OAuthScriptedBindingObject;
+import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.session.Session;
@@ -47,13 +74,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.iplanet.dpro.session.SessionException;
-import com.iplanet.dpro.session.SessionID;
 import com.iplanet.dpro.session.service.SessionService;
+import com.sun.identity.saml2.common.SAML2FailoverUtils;
 
 /**
  * Utilities for running scripts in authentication nodes.
  */
-public final class ScriptedNodeHelper {
+@Singleton
+public class ScriptedNodeHelper implements AuthScriptUtilities {
 
     private static final Logger logger = LoggerFactory.getLogger(ScriptedNodeHelper.class);
 
@@ -73,77 +101,32 @@ public final class ScriptedNodeHelper {
      */
     @Deprecated
     public static final String TRANSIENT_STATE_IDENTIFIER = "transientState";
-    /**
-     * Node state identifier for scripts bindings.
-     */
-    public static final String STATE_IDENTIFIER = "nodeState";
-    /**
-     * HTTP client identifier for scripts bindings.
-     */
-    public static final String HTTP_CLIENT_IDENTIFIER = "httpClient";
-    /**
-     * Realm identifier for script bindings.
-     */
-    public static final String REALM_IDENTIFIER = "realm";
-    /**
-     * Request parameter identifier for script bindings.
-     */
-    public static final String QUERY_PARAMETER_IDENTIFIER = "requestParameters";
-    /**
-     * ID Repository identifier for script bindings.
-     */
-    public static final String ID_REPO_IDENTIFIER = "idRepository";
-    /**
-     * Secrets identifier for script bindings.
-     */
-    public static final String SECRETS_IDENTIFIER = "secrets";
-    /**
-     * Audit entry detail identifier for script bindings.
-     */
-    public static final String AUDIT_ENTRY_DETAIL = "auditEntryDetail";
-    /**
-     * Request headers identifier for script bindings.
-     */
-    public static final String HEADERS_IDENTIFIER = "requestHeaders";
-    /**
-     * Existing session identifier for script bindings.
-     */
-    public static final String EXISTING_SESSION = "existingSession";
-    /**
-     * Callbacks identifier for script bindings.
-     */
-    public static final String CALLBACKS_IDENTIFIER = "callbacks";
-    /**
-     * Node state wildcard character.
-     */
-    public static final String WILDCARD = "*";
+
+    private final ScriptHttpClientFactory httpClientFactory;
+    private final Provider<SessionService> sessionServiceProvider;
+    private final CTSPersistentStore cts;
+    private final OAuthScriptedBindingObjectAdapter scriptedBindingAdapter;
 
     /**
-     * Action object identifier for script bindings.
+     * Constructs a new instance of the helper.
+     * @param httpClientFactory      The factory for creating HTTP clients.
+     * @param sessionServiceProvider A provider for the service for managing sessions.
+     * @param cts                    The core token store.
+     * @param scriptedBindingAdapter The adapter for converting between {@link OAuthScriptedBindingObject}
+     *                               and {@link org.forgerock.am.cts.api.tokens.Token}.
      */
-    public static final String ACTION = "action";
-
-    /**
-     * Outcome object identifier for script bindings.
-     */
-    public static final String OUTCOME_IDENTIFIER = "outcome";
-
-    /**
-     * Callbacks builder object for script bindings.
-     */
-    public static final String CALLBACKS_BUILDER = "callbacksBuilder";
-
-    private ScriptedNodeHelper() {
+    @Inject
+    public ScriptedNodeHelper(ScriptHttpClientFactory httpClientFactory,
+            Provider<SessionService> sessionServiceProvider, CTSPersistentStore cts,
+            OAuthScriptedBindingObjectAdapter scriptedBindingAdapter) {
+        this.httpClientFactory = requireNonNull(httpClientFactory);
+        this.sessionServiceProvider = requireNonNull(sessionServiceProvider);
+        this.cts = cts;
+        this.scriptedBindingAdapter = scriptedBindingAdapter;
     }
 
-    /**
-     * The request headers are unmodifiable, this prevents them being converted into javascript. This method
-     * iterates the underlying collections, adding the values to modifiable collections.
-     *
-     * @param input the headers, must not be null
-     * @return the headers in modifiable collections
-     */
-    public static Map<String, List<String>> convertHeadersToModifiableObjects(
+    @Override
+    public Map<String, List<String>> convertHeadersToModifiableObjects(
             @NotNull ListMultimap<String, String> input) {
         Reject.ifNull(input);
         return input.keySet().stream()
@@ -157,16 +140,9 @@ public final class ScriptedNodeHelper {
                         ));
     }
 
-    /**
-     * Get a HTTP client that can be used within a script.
-     *
-     * @param script            the script that will use the client, must not be null
-     * @param httpClientFactory the HTTP client factory, must not be null
-     * @return the HTTP client
-     */
-    public static ChfHttpClient getHttpClient(@NotNull Script script,
-            @NotNull ScriptHttpClientFactory httpClientFactory) {
-        Reject.ifNull(script, httpClientFactory);
+    @Override
+    public ChfHttpClient getLegacyHttpClient(@NotNull Script script) {
+        Reject.ifNull(script);
         ScriptingLanguage scriptType = script.getLanguage();
         if (scriptType == null) {
             return null;
@@ -174,18 +150,15 @@ public final class ScriptedNodeHelper {
         return httpClientFactory.getScriptHttpClient(scriptType);
     }
 
-    /**
-     * Get the session properties for the session identified by the SSO token.
-     *
-     * @param sessionService the SessionService, must not be null
-     * @param ssoTokenId     the SSO Token session identifier
-     * @return a Map of session properties
-     */
-    public static Map<String, String> getSessionProperties(@NotNull SessionService sessionService, String ssoTokenId) {
-        Reject.ifNull(sessionService);
+    @Override
+    public Map<String, String> getSessionProperties(String ssoTokenId) {
+        if (isEmpty(ssoTokenId)) {
+            return null;
+        }
         Map<String, String> properties = null;
         try {
-            Session session = sessionService.getSession(new SessionID(ssoTokenId));
+            SessionService sessionService = sessionServiceProvider.get();
+            Session session = sessionService.getSession(sessionService.asSessionID(ssoTokenId));
             if (session != null) {
                 properties = new HashMap<>(session.getProperties());
             }
@@ -195,14 +168,8 @@ public final class ScriptedNodeHelper {
         return properties;
     }
 
-    /**
-     * The request parameters are unmodifiable, this prevents them being converted into javascript. This method
-     * copies unmodifiable to modifiable collections.
-     *
-     * @param input the parameters, not null
-     * @return the parameters in modifiable collections
-     */
-    public static Map<String, List<String>> convertParametersToModifiableObjects(
+    @Override
+    public Map<String, List<String>> convertParametersToModifiableObjects(
             @NotNull Map<String, List<String>> input) {
         Reject.ifNull(input);
         return input.entrySet().stream().collect(
@@ -214,15 +181,8 @@ public final class ScriptedNodeHelper {
                 ));
     }
 
-    /**
-     * Get the contents of the audit entry details binding and encapsulate within a JSON object.
-     *
-     * @param bindings the script bindings, must not be null
-     * @return a {@link JsonValue} object containing an object with a single field with key "auditInfo" and value equal
-     * to the audit details saved within the script
-     * @throws NodeProcessException if the audit entry details binding does not contain a String or Map
-     */
-    public static JsonValue getAuditEntryDetails(@NotNull Bindings bindings) throws NodeProcessException {
+    @Override
+    public JsonValue getAuditEntryDetails(@NotNull Bindings bindings) throws NodeProcessException {
         Object rawAuditEntryDetail = bindings.get(AUDIT_ENTRY_DETAIL);
         if (rawAuditEntryDetail != null) {
             if (rawAuditEntryDetail instanceof String || rawAuditEntryDetail instanceof Map) {
@@ -235,15 +195,8 @@ public final class ScriptedNodeHelper {
         return null;
     }
 
-    /**
-     * Turn the action result into an action object.
-     *
-     * @param actionResult the raw action.
-     * @param evalVersion the evaluator version of the script.
-     * @param callbacksBuilder the raw builder for callbacks.
-     * @return an optional action, or empty optional if no action is found.
-     */
-    public static Optional<Action> getAction(Object actionResult, EvaluatorVersion evalVersion,
+    @Override
+    public Optional<Action> getAction(Object actionResult, EvaluatorVersion evalVersion,
             Object callbacksBuilder) {
         Optional<Action> action = Optional.empty();
         switch (evalVersion) {
@@ -274,24 +227,74 @@ public final class ScriptedNodeHelper {
         return action;
     }
 
-    /**
-     * Get the outcome string.
-     *
-     * @param rawOutcome the raw outcome from the script.
-     * @param allowedOutcomes outcomes that are allowed by the node.
-     * @return the outcome string.
-     * @throws NodeProcessException if the outcome is missing or is an invalid type.
-     */
-    public static String getOutcome(Object rawOutcome, List<String> allowedOutcomes) throws NodeProcessException {
-        if (!(rawOutcome instanceof String)) {
+    @Override
+    public String getOutcome(Object rawOutcome, List<String> allowedOutcomes) throws NodeProcessException {
+        if (rawOutcome instanceof CharSequence) {
+            rawOutcome = rawOutcome.toString();
+        }
+        if (!(rawOutcome instanceof String outcome)) {
             logger.warn("script outcome error");
             throw new NodeProcessException("Script must set '" + OUTCOME_IDENTIFIER + "' to a string.");
         }
-        String outcome = (String) rawOutcome;
         if (!allowedOutcomes.contains(outcome)) {
             logger.warn("invalid script outcome {}", outcome);
             throw new NodeProcessException("Invalid outcome from script, '" + outcome + "'");
         }
         return outcome;
+    }
+
+    /**
+     * If the request params include {@value DecisionNodeApplicationConstants#SAML_OBJECT_KEY_PARAM},
+     * then will retrieve SAML application object from the CTS store.
+     *
+     * @param context The current tree context.
+     * @return SAML application object, or <pre>Optional.empty</pre> if not found.
+     * @throws NodeProcessException If the SAML application object could not be retrieved.
+     */
+    public Optional<SAMLScriptedBindingObject> getSamlDecisionNodeApplication(TreeContext context)
+            throws NodeProcessException {
+        var requestParams = context.request.parameters;
+        String storageKey = getFirstItem(requestParams.get(SAML_OBJECT_KEY_PARAM));
+        if (isBlank(storageKey)) {
+            return Optional.empty();
+        }
+        try {
+            SAMLScriptedBindingObject application =
+                    (SAMLScriptedBindingObject) SAML2FailoverUtils.retrieveSAML2Token(storageKey);
+            if  (application == null) {
+                throw new NodeProcessException("Failed to retrieve SAML application object from CTS store");
+            } else {
+                return Optional.of(application);
+            }
+        } catch (SAML2TokenRepositoryException e) {
+            throw new NodeProcessException("Failed to retrieve SAML application object from CTS store", e);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Optional<OAuthScriptedBindingObject> getOauthDecisionNodeApplication(TreeContext context)
+            throws NodeProcessException {
+        var requestParams = context.request.parameters;
+        String storageKey = getFirstItem(requestParams.get(OAUTH_OBJECT_KEY_PARAM));
+        if (isBlank(storageKey)) {
+            return Optional.empty();
+        }
+        try {
+            Token token = cts.read(storageKey);
+            if (token == null) {
+                throw new NodeProcessException("Failed to retrieve OAuth application object from CTS store");
+            }
+            OAuthScriptedBindingObject application = scriptedBindingAdapter.fromToken(token);
+            if  (application == null) {
+                throw new NodeProcessException("Failed to retrieve OAuth application object from CTS store");
+            } else {
+                return Optional.of(application);
+            }
+        } catch (CoreTokenException e) {
+            throw new NodeProcessException("Failed to retrieve OAuth application object from CTS store", e);
+        }
     }
 }

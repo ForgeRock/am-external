@@ -8,6 +8,15 @@
       "type": "string",
       "title": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.standardMetadata.title",
       "description": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.standardMetadata.description"
+    },
+    "updateType": {
+      "type": "string",
+      "title": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.updateType.title",
+      "description": "i18n:api-descriptor/Saml2EntitiesCollectionProvider#importEntity.updateType.description",
+      "enum": [
+        "CREATE",
+        "UPDATE_CERTIFICATES"
+      ]
     }
   },
   "required": [

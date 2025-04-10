@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2024 ForgeRock AS. All Rights Reserved
+ * Copyright 2025 ForgeRock AS.
+-->
+<!--
+  Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+
+ ! This code is to be used exclusively in connection with Ping Identity
+ ! Corporation software or services. Ping Identity Corporation only offers
+ ! such software or services to legal entities who have entered into a
+ ! binding license agreement with Ping Identity Corporation.
 -->
 
 # Access Management (AM) UI - Administration <!-- omit in toc -->
@@ -209,6 +217,57 @@ Node.js and other supporting tools are *not* installed automatically - you will 
 yarn run build
 ```
 The result is production-ready XUI output in the `build` directory.
+
+## Developing
+
+### Launching an ID Cloud tenant for development (ui-admin only)
+To do this go to [https://engineering.forgeblocks.com/login](https://engineering.forgeblocks.com/login) and sign up for a new cloud tenant using your email and `1234-1234-1234-1234` as the Support Set Key. You will receive an email shortly after which will allow you to complete your tenant setup. Make note of your tenant name, url, username and password.
+
+### Starting the development Proxy
+Any place in these instructions that says YOUR_TENANT_NAME should be updated with your actual tenant name.
+
+1. Add an entry to your hosts file linking your ID cloud tenant to your localhost:
+
+Open your hosts file at `/etc/hosts` with your editor of choice and add the following line. Note that you will need admin permissions to save changes to this file.
+
+```sh
+127.0.0.1 YOUR_TENANT_NAME.forgeblocks.com
+```
+
+2. Open up a terminal window in openam-ui root and run:
+
+```sh
+./proxy_run.sh -h YOUR_TENANT_NAME.forgeblocks.com
+```
+
+3. The previous stage will have generated an SSL certificate for your proxy. You need to import the certificate at `ig-front/ca.pem` into your system truststore and ensure it is always trusted. On a Mac, import the certificate by double clicking on it and following the prompts. Then to make sure the certificate is trusted, find the certificate in keychain by searching for `Local Network - Development`, double click the certificate and under Trust set to Always Trust.
+
+4. Once the proxy_run script is up and running, open a terminal for openam-ui-admin and run `yarn start`. Webpack will ask you a number of questions in order to start the dev server, answer the following:
+
+    a. Enter the hostname of the target AM instance: https://<YOUR_TENANT_NAME>
+
+    b Enter the port of the target AM instance: 443
+
+    c. Enter the path of the target AM instance: /am
+
+    d. Have you installed and trusted the SSL certificate locally? y
+
+Webpack will now spin up the dev server.
+
+
+5. Navigate to `https://YOUR_TENANT_NAME.forgeblocks.com/am/XUI` and use your credentials to log in. Now navigate to Native Consoles > Access Management and observe your locally running XUI. 
+
+#### Troubleshooting ID Cloud development
+On some versions of MacOS, you may get an error `envsubst: command not found` when running the proxy_run.sh.
+To fix, run:
+```sh
+brew install gettext
+brew link --force gettext
+```
+More info: https://stackoverflow.com/questions/23620827/envsubst-command-not-found-on-mac-os-x-10-8
+
+Please see package.json for any modifications to these rules
+
 
 [dotenv]: https://github.com/motdotla/dotenv
 [nodejs]: https://nodejs.org/en

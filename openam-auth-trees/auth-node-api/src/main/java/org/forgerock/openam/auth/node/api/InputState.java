@@ -11,12 +11,25 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
-/** Describes one shared state datum consumed by a node. */
-public class InputState {
+import org.forgerock.openam.annotations.Supported;
+
+/**
+ * Describes a single shared state attribute consumed by a node.
+ */
+@Supported
+public final class InputState {
     /** The attribute name of this state. */
     public final String name;
 
@@ -24,23 +37,45 @@ public class InputState {
     public final boolean required;
 
     /**
-     * Construct a required InputState.
+     * Constructs a required InputState. The `required` attribute is set to true.
      *
      * @param name the attribute name of this state
      */
+    @Supported
     public InputState(String name) {
         this(name, true);
     }
 
     /**
-     * Construct a potentially required InputState.
+     * Construct an InputState.
      *
      * @param name the attribute name of this state
-     * @param required whether this state is required
+     * @param required whether this state is required for the node to function.
      */
+    @Supported
     public InputState(String name, boolean required) {
         this.name = name;
         this.required = required;
+    }
+
+    /**
+     * Gets the attribute name of this input state.
+     *
+     * @return the attribute name of this state
+     */
+    @Supported
+    public String name() {
+        return name;
+    }
+
+    /**
+     * Returns a boolean indicating whether this state is required by the consuming node in order to function.
+     * If false the node must be able to handle the case where this input is missing.
+     * @return whether this state is required for the node to function.
+     */
+    @Supported
+    public boolean required() {
+        return required;
     }
 
     @Override

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins.scripted.bindings;
 
@@ -28,7 +36,7 @@ import com.sun.identity.saml2.protocol.ManageNameIDResponse;
 /**
  * Script bindings for the SamlSpUserIdRequestResponse.
  */
-final class SamlSpUserIdRequestResponseBindings extends BaseSamlSpBindings {
+public final class SamlSpUserIdRequestResponseBindings extends BaseSamlSpBindings {
 
     private final String userId;
     private final ManageNameIDRequest idRequest;
@@ -67,16 +75,6 @@ final class SamlSpUserIdRequestResponseBindings extends BaseSamlSpBindings {
         return bindings;
     }
 
-    @Override
-    public BindingsMap nextGenBindings() {
-        BindingsMap bindings = new BindingsMap(nextGenCommonBindings());
-        bindings.put(USER_ID, userId);
-        bindings.put(ID_REQUEST, idRequest);
-        bindings.put(ID_RESPONSE, idResponse);
-        bindings.put(BINDING, binding);
-        return bindings;
-    }
-
     /**
      * Interface utilised by the fluent builder to define step 1 in generating the SamlSpUserIdRequestResponseBindings.
      */
@@ -102,23 +100,17 @@ final class SamlSpUserIdRequestResponseBindings extends BaseSamlSpBindings {
      * Interface utilised by the fluent builder to define step 4 in generating the SamlSpUserIdRequestResponseBindings.
      */
     public interface SamlSpUserIdRequestResponseBindingsStep4 {
-        SamlSpUserIdRequestResponseBindingsStep5 withBinding(String binding);
-    }
-
-    /**
-     * Interface utilised by the fluent builder to define step 5 in generating the SamlSpUserIdRequestResponseBindings.
-     */
-    public interface SamlSpUserIdRequestResponseBindingsStep5 {
-        SamlSpBindingsStep2 withHostedEntityId(String hostedEntityId);
+        SamlSpBindingsStep1<SamlSpUserIdRequestResponseBindings> withBinding(String binding);
     }
 
     /**
      * Builder object to construct a {@link SamlSpUserIdRequestResponseBindings}.
+     * Before modifying this builder, or creating a new one, please read
+     * service-component-api/scripting-api/src/main/java/org/forgerock/openam/scripting/domain/README.md
      */
-    private static final class Builder extends BaseSamlSpBindings.Builder<Builder>
+    private static final class Builder extends BaseSamlSpBindings.Builder<SamlSpUserIdRequestResponseBindings>
             implements SamlSpUserIdRequestResponseBindingsStep1, SamlSpUserIdRequestResponseBindingsStep2,
-            SamlSpUserIdRequestResponseBindingsStep3, SamlSpUserIdRequestResponseBindingsStep4,
-            SamlSpUserIdRequestResponseBindingsStep5 {
+            SamlSpUserIdRequestResponseBindingsStep3, SamlSpUserIdRequestResponseBindingsStep4 {
 
         private String userId;
         private ManageNameIDRequest idRequest;
@@ -164,7 +156,7 @@ final class SamlSpUserIdRequestResponseBindings extends BaseSamlSpBindings {
          * @param binding The binding.
          * @return The next step of the builder.
          */
-        public SamlSpUserIdRequestResponseBindingsStep5 withBinding(String binding) {
+        public SamlSpBindingsStep1<SamlSpUserIdRequestResponseBindings> withBinding(String binding) {
             this.binding = binding;
             return this;
         }

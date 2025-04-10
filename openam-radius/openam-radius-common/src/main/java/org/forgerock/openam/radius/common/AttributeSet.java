@@ -27,7 +27,7 @@
  */
 
 /*
- * Portions Copyrighted 2011 ForgeRock AS
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation
  * Portions Copyrighted 2015 Intellectual Reserve, Inc (IRI)
  */
 package org.forgerock.openam.radius.common;
@@ -60,6 +60,35 @@ public class AttributeSet {
      */
     public void addAttribute(Attribute attr) {
         attrs.addElement(attr);
+    }
+
+    /**
+     * Adds an attribute to the {@link Vector} with the option to position it as the first element.
+     *
+     * @param attribute the {@link Attribute} to be added to the {@link Vector}
+     * @param addFirst if {@code true}, the attribute is added to the beginning of the {@link Vector}
+     */
+    public void addAttribute(Attribute attribute, boolean addFirst) {
+        if (attribute != null) {
+            if (addFirst) {
+                attrs.add(0, attribute);
+            } else {
+                addAttribute(attribute);
+            }
+        }
+    }
+
+    /**
+     * Replaces an attribute in the {@link Vector}.
+     *
+     * @param originalAttribute the {@link Attribute} to be replaced
+     * @param attribute the {@link Attribute} to replace the {@code originalAttribute} with
+     * @param addFirst if {@code true}, the attribute is added to the start of the {@link Vector}
+     */
+    public void replaceAttribute(Attribute originalAttribute, Attribute attribute, boolean addFirst) {
+        if (attrs.removeElement(originalAttribute)) {
+            addAttribute(attribute, addFirst);
+        }
     }
 
     /**

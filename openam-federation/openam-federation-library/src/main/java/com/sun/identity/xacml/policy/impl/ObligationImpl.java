@@ -24,7 +24,7 @@
  *
  * $Id: ObligationImpl.java,v 1.3 2008/11/10 22:57:06 veiming Exp $
  *
- * Portions Copyrighted 2017-2021 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
 package com.sun.identity.xacml.policy.impl;
 

@@ -12,6 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
+ * Portions Copyrighted 2024-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server.config;
 
@@ -63,6 +64,11 @@ public class ClientConfig {
      * Indicates if packet contents for this client should be dumped to log for troubleshooting.
      */
     private boolean logPackets = false;
+
+    /**
+     * Indicates if the message authenticator attribute is required for packets from this client.
+     */
+    private boolean messageAuthenticatorRequired = true;
 
     /**
      * Get the name of the client. The name is used solely for associating configuration and log messages with a given
@@ -223,5 +229,23 @@ public class ClientConfig {
      */
     public void setLogPackets(boolean logPackets) {
         this.logPackets = logPackets;
+    }
+
+    /**
+     * Set a value to indicate if the message authenticator attribute is required for packets from this client.
+     *
+     * @param messageAuthenticatorRequired the value to set
+     */
+    public void setMessageAuthenticatorRequired(boolean messageAuthenticatorRequired) {
+        this.messageAuthenticatorRequired = messageAuthenticatorRequired;
+    }
+
+    /**
+     * Indicates if the message authenticator attribute is required for packets from this client.
+     *
+     * @return {@code true} if the message authenticator attribute is required, otherwise {@code false}.
+     */
+    public boolean isMessageAuthenticatorRequired() {
+        return messageAuthenticatorRequired;
     }
 }

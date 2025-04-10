@@ -24,7 +24,7 @@
  *
  * $Id: EncryptionConstants.java,v 1.3 2008/06/25 05:48:16 qcheng Exp $
  *
- * Portions Copyrighted 2022 ForgeRock AS.
+ * Portions Copyrighted 2022-2025 Ping Identity Corporation.
  */
 
 

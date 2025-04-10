@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.rest.remote;
 
@@ -35,11 +43,13 @@ import static org.forgerock.openam.utils.JsonValueBuilder.toJsonValue;
 import static org.forgerock.util.promise.Promises.newResultPromise;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.inject.Inject;
 import javax.xml.bind.JAXBException;
 
+import org.forgerock.am.trees.api.TreeProvider;
 import org.forgerock.api.annotations.Action;
 import org.forgerock.api.annotations.ApiError;
 import org.forgerock.api.annotations.CollectionProvider;
@@ -47,12 +57,14 @@ import org.forgerock.api.annotations.Handler;
 import org.forgerock.api.annotations.Operation;
 import org.forgerock.api.annotations.Parameter;
 import org.forgerock.api.annotations.Schema;
+import org.forgerock.json.JsonPointer;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.ActionRequest;
 import org.forgerock.json.resource.ActionResponse;
 import org.forgerock.json.resource.BadRequestException;
 import org.forgerock.json.resource.InternalServerErrorException;
 import org.forgerock.json.resource.ResourceException;
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.federation.rest.JaxbEntity;
 import org.forgerock.openam.federation.rest.Saml2EntitiesCollectionProvider;
 import org.forgerock.openam.federation.rest.schema.remote.RemoteSaml2EntityProvider;
@@ -61,6 +73,7 @@ import org.forgerock.openam.federation.rest.schema.remote.service.ServiceProvide
 import org.forgerock.openam.objectenricher.ObjectEnricher;
 import org.forgerock.openam.rest.RealmContext;
 import org.forgerock.openam.saml2.Saml2EntityRole;
+import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.services.context.Context;
 import org.forgerock.util.encode.Base64url;
 import org.forgerock.util.promise.Promise;
@@ -71,6 +84,7 @@ import org.w3c.dom.Document;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.identity.saml2.meta.SAML2MetaException;
+import com.sun.identity.saml2.meta.SAML2MetaUtils.MetadataUpdateType;
 import com.sun.identity.shared.xml.XMLUtils;
 
 /**
@@ -94,16 +108,22 @@ public final class RemoteEntitiesCollectionProvider extends Saml2EntitiesCollect
     private static final Logger logger = LoggerFactory.getLogger(RemoteEntitiesCollectionProvider.class);
     private static final String SCHEMA = "schema.";
     private static final String IMPORT_ENTITY = "importEntity.";
+    private static final JsonPointer TREE_NAME_ID_PTR =
+            new JsonPointer("advanced/treeConfiguration/treeName");
+    private final TreeProvider treeProvider;
 
     /**
      * Instantiates a new Remote entities collection provider.
      *
      * @param objectEnricher the object enricher
      * @param objectMapper the object mapper
+     * @param treeProvider {@link TreeProvider} object
      */
     @Inject
-    public RemoteEntitiesCollectionProvider(ObjectEnricher objectEnricher, ObjectMapper objectMapper) {
+    public RemoteEntitiesCollectionProvider(ObjectEnricher objectEnricher, ObjectMapper objectMapper,
+            TreeProvider treeProvider) {
         super(objectEnricher, objectMapper);
+        this.treeProvider = treeProvider;
     }
 
     /**
@@ -125,15 +145,24 @@ public final class RemoteEntitiesCollectionProvider extends Saml2EntitiesCollect
             response = @Schema(schemaResource = "RemoteEntitiesCollectionProvider.importEntity.response.schema.json")
     )
     public Promise<ActionResponse, ResourceException> importEntity(ActionRequest actionRequest, Context context) {
-        Optional<Document> metadata = Optional.ofNullable(actionRequest.getContent().get("standardMetadata").asString())
+        JsonValue content = actionRequest.getContent();
+        Optional<Document> metadata = Optional.ofNullable(content.get("standardMetadata").asString())
                 .map(Base64url::decodeToString)
                 .map(XMLUtils::toDOMDocument);
+        var updateType = content.get("updateType").asString();
+        MetadataUpdateType metadataUpdateType = StringUtils.isNotEmpty(updateType)
+                ? MetadataUpdateType.valueOf(updateType)
+                : MetadataUpdateType.CREATE;
         if (metadata.isEmpty()) {
             return new BadRequestException("Invalid standard metadata value in request").asPromise();
         }
         try {
-            List<String> entityIds = importSAML2Document(getSAML2MetaManagerWithToken(getTokenFromContext(context)),
-                    context.asContext(RealmContext.class).getRealm().asPath(), metadata.get());
+            List<String> entityIds = importSAML2Document(
+                    getSAML2MetaManagerWithToken(getTokenFromContext(context)),
+                    metadataUpdateType,
+                    context.asContext(RealmContext.class).getRealm().asPath(),
+                    metadata.get()
+            );
             return newResultPromise(newActionResponse(json(object(field("importedEntities", entityIds)))));
         } catch (SAML2MetaException ex) {
             logger.error("An error occurred while importing a remote entity provider", ex);
@@ -204,5 +233,41 @@ public final class RemoteEntitiesCollectionProvider extends Saml2EntitiesCollect
         enrichRole(jaxbEntity, Saml2EntityRole.IDP, IdentityProvider::new, jsonEntity::setIdentityProvider);
         enrichRole(jaxbEntity, Saml2EntityRole.SP, ServiceProvider::new, jsonEntity::setServiceProvider);
         return jsonEntity;
+    }
+
+    @Override
+    protected void validateEntityJson(JsonValue payload, Realm realm) throws ResourceException {
+        super.validateEntityJson(payload, realm);
+        validateTree(payload, realm);
+    }
+
+    /**
+     * Validates the tree name in the request json payload.
+     *
+     * @param payload the request json payload
+     * @param realm the realm in which the request is made
+     * @throws BadRequestException if tree name is present and invalid.
+     */
+    private void validateTree(JsonValue payload, Realm realm) throws BadRequestException {
+        Optional<String> treeName = getTreeName(payload);
+        if (treeName.isPresent() && treeProvider.getTree(realm, treeName.get()).isEmpty()) {
+            throw new BadRequestException(String.format("Invalid tree name %s", treeName.get()));
+        }
+    }
+
+    /**
+     * Get the tree name from the request json payload.
+     *
+     * @param payload The request json payload.
+     * @return The tree name.
+     */
+    private Optional<String> getTreeName(JsonValue payload) {
+        return payload.stream()
+                .filter(JsonValue::isMap)
+                .map(schemaEntry -> schemaEntry.get(TREE_NAME_ID_PTR))
+                .filter(Objects::nonNull)
+                .map(JsonValue::asString)
+                .filter(treeName -> !StringUtils.isEmptyOrEmptySelection(treeName))
+                .findFirst();
     }
 }

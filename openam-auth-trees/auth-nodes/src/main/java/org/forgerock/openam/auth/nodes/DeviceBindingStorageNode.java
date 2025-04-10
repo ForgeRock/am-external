@@ -11,21 +11,27 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 
 import java.io.IOException;
 import java.util.Optional;
 
 import javax.inject.Inject;
 
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
@@ -33,7 +39,7 @@ import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingJsonUtils;
@@ -57,9 +63,8 @@ public class DeviceBindingStorageNode extends AbstractDecisionNode implements De
 
     private final DeviceBindingManager deviceBindingManager;
     private final DeviceBindingJsonUtils deviceBindingJsonUtils;
-    private final LegacyIdentityService identityService;
-    private final CoreWrapper coreWrapper;
     private final Realm realm;
+    private final NodeUserIdentityProvider identityProvider;
 
 
     /**
@@ -75,28 +80,25 @@ public class DeviceBindingStorageNode extends AbstractDecisionNode implements De
      * @param deviceBindingManager Instance of DeviceBindingManager
      * @param realm The realm
      * @param deviceBindingJsonUtils instance of the utils to help convert device to json
-     * @param identityService an{@link LegacyIdentityService} instance.
-     * @param coreWrapper A core wrapper instance.
+     * @param identityProvider The NodeUserIdentityProvider
      */
     @Inject
     public DeviceBindingStorageNode(DeviceBindingManager deviceBindingManager,
             @Assisted Realm realm,
             DeviceBindingJsonUtils deviceBindingJsonUtils,
-            LegacyIdentityService identityService,
-            CoreWrapper coreWrapper) {
+            NodeUserIdentityProvider identityProvider) {
         this.deviceBindingManager = deviceBindingManager;
         this.realm = realm;
         this.deviceBindingJsonUtils = deviceBindingJsonUtils;
-        this.identityService = identityService;
-        this.coreWrapper = coreWrapper;
+        this.identityProvider = identityProvider;
     }
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
 
         try {
-            Optional<AMIdentity> user = getAMIdentity(context.universalId, context.getStateFor(this),
-                    identityService, coreWrapper);
+            Optional<AMIdentity> user = identityProvider.getAMIdentity(context.universalId,
+                    context.getStateFor(this));
             if (user.isEmpty()) {
                 throw new DevicePersistenceException("Failed to get the "
                         + "AMIdentity object in the realm " + realm.asPath());

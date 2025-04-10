@@ -11,18 +11,34 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.guice;
 
 import static com.sun.identity.saml2.common.SAML2Constants.SAML2_CREDENTIAL_RESOLVER_PROPERTY;
 
+import java.util.Optional;
+import java.util.Set;
+
+import org.forgerock.am.trees.api.Tree;
+import org.forgerock.am.trees.api.TreeProvider;
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.saml2.plugins.KeyStoreSaml2CredentialResolver;
 import org.forgerock.openam.saml2.plugins.Saml2CredentialResolver;
 import org.forgerock.openam.saml2.soap.SOAPConnectionFactory;
 import org.forgerock.openam.saml2.soap.SimpleSOAPConnectionFactory;
 
+import com.google.inject.Exposed;
 import com.google.inject.PrivateModule;
+import com.google.inject.Provides;
 import com.sun.identity.common.SystemConfigurationUtil;
 
 /**
@@ -47,5 +63,21 @@ public class FedletGuiceModule extends PrivateModule {
 
         expose(Saml2CredentialResolver.class);
         expose(SOAPConnectionFactory.class);
+    }
+
+    @Provides
+    @Exposed
+    public TreeProvider getTreeProvider() {
+        return new TreeProvider() {
+            @Override
+            public Optional<? extends Tree> getTree(Realm realm, String id) {
+                return Optional.empty();
+            }
+
+            @Override
+            public Set<? extends Tree> getTrees(Realm realm) {
+                return Set.of();
+            }
+        }; // fedlet-specific implementation for when default will not be bound
     }
 }

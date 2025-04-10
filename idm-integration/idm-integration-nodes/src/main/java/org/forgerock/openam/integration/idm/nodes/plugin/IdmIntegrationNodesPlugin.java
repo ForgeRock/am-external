@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.integration.idm.nodes.plugin;
@@ -59,20 +67,38 @@ import org.forgerock.openam.auth.nodes.ValidatedUsernameNode;
 import org.forgerock.openam.plugins.AmPlugin;
 
 import com.google.common.collect.ImmutableMap;
+import org.forgerock.openam.plugins.PluginException;
 
 /**
  * Node installation plugin for the IDM integration nodes.
  */
 public class IdmIntegrationNodesPlugin extends AbstractNodeAmPlugin {
 
+    /**
+     * The current version of the IDM integration nodes plugin.
+     */
+    public static final String IDM_NODES_PLUGIN_VERSION = "3.0.0";
+
     @Override
     public String getPluginVersion() {
-        return "1.0.0";
+        return IDM_NODES_PLUGIN_VERSION;
     }
 
     @Override
     public Map<Class<? extends AmPlugin>, String> getDependencies() {
         return singletonMap(NodesPlugin.class, "[1.0.0," + NODES_PLUGIN_VERSION + "]");
+    }
+
+    @Override
+    public void upgrade(String fromVersion) throws PluginException {
+        if (inRange("1.0.0", fromVersion, "2.0.0")) {
+            pluginTools.upgradeAuthNode(SocialProviderHandlerNode.class);
+            pluginTools.upgradeAuthNode(SocialProviderHandlerNodeV2.class);
+        }
+        if (inRange("1.0.0", fromVersion, "3.0.0")) {
+            pluginTools.upgradeAuthNode(EmailSuspendNode.class);
+        }
+        super.upgrade(fromVersion);
     }
 
     @Override

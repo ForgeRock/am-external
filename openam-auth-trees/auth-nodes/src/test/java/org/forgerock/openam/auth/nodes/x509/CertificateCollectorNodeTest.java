@@ -11,11 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.x509;
 
 import static java.util.Collections.emptyList;
+import static org.apache.commons.codec.binary.Base64.encodeBase64String;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.json;
@@ -23,13 +32,14 @@ import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.nodes.x509.CertificateCollectorNode.CertificateCollectorOutcome.COLLECTED;
 import static org.forgerock.openam.auth.nodes.x509.CertificateCollectorNode.CertificateCollectorOutcome.NOT_COLLECTED;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
-import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Date;
@@ -38,7 +48,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.x500.X500Principal;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.codec.binary.Base64;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -51,34 +61,44 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.forgerock.openam.security.X509Decoder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CertificateCollectorNodeTest {
-    @Mock
-    private HttpServletRequest request;
+
+    private static final String HEADER_NAME = "testHeaderName";
+
     @Mock
     private CertificateCollectorNode.Config config;
+
+    @Mock
+    private X509Decoder certificateDecoder;
+
+    @InjectMocks
     private CertificateCollectorNode certificateCollectorNode;
 
-    @Before
-    public void setup() {
-        certificateCollectorNode = new CertificateCollectorNode(config);
+    private HttpServletRequest request;
+
+    @BeforeEach
+    void setup() {
+        request = mock(HttpServletRequest.class);
     }
 
     @Test
-    public void shouldNotCollectIfCollectionMethodEitherAndHeaderAndRequestNotProvided()
+    void shouldNotCollectIfCollectionMethodEitherAndHeaderAndRequestNotProvided()
             throws NodeProcessException {
         given(config.certificateCollectionMethod())
                 .willReturn(CertificateCollectorNode.CertificateCollectionMethod.EITHER);
-        given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of("testHeaderName"));
+        given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of(HEADER_NAME));
 
         ListMultimap<String, String> headers = ImmutableListMultimap.of();
         TreeContext treeContext = getContext(json(object()), headers);
@@ -89,13 +109,13 @@ public class CertificateCollectorNodeTest {
     }
 
     @Test
-    public void shouldCollectIfCollectionMethodEitherAndRequestProvided() throws NodeProcessException {
+    void shouldCollectIfCollectionMethodEitherAndRequestProvided() throws NodeProcessException {
         X509Certificate certificate = generateCASignedCertificate("uid=user");
         X509Certificate[] x509Certificates = new X509Certificate[]{certificate};
 
         given(config.certificateCollectionMethod())
                 .willReturn(CertificateCollectorNode.CertificateCollectionMethod.EITHER);
-        given(request.getAttribute("javax.servlet.request.X509Certificate")).willReturn(x509Certificates);
+        given(request.getAttribute("jakarta.servlet.request.X509Certificate")).willReturn(x509Certificates);
 
         ListMultimap<String, String> headers = ImmutableListMultimap.of();
         TreeContext treeContext = getContext(json(object()), headers);
@@ -104,13 +124,14 @@ public class CertificateCollectorNodeTest {
 
         assertThat(action.outcome).isEqualTo(COLLECTED.name());
     }
+
     @Test
-    public void shouldNotCollectIfCollectionMethodHeaderAndHeaderNotProvided()
+    void shouldNotCollectIfCollectionMethodHeaderAndHeaderNotProvided()
             throws NodeProcessException {
         given(config.trustedRemoteHosts()).willReturn(Set.of("any"));
         given(config.certificateCollectionMethod())
                 .willReturn(CertificateCollectorNode.CertificateCollectionMethod.HEADER);
-        given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of("testHeaderName"));
+        given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of(HEADER_NAME));
 
         ListMultimap<String, String> headers = ImmutableListMultimap.of();
         TreeContext treeContext = getContext(json(object()), headers);
@@ -121,52 +142,144 @@ public class CertificateCollectorNodeTest {
     }
 
     @Test
-    public void shouldCollectIfCollectionMethodHeaderAndHeaderProvided()
-            throws NodeProcessException, CertificateEncodingException {
-        given(config.trustedRemoteHosts()).willReturn(Set.of("any"));
+    void shouldCollectIfCollectionMethodHeaderAndBase64HeaderProvided()
+            throws NodeProcessException, CertificateException {
+        // Given
         given(config.certificateCollectionMethod())
                 .willReturn(CertificateCollectorNode.CertificateCollectionMethod.HEADER);
-        given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of("testHeaderName"));
+        given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of(HEADER_NAME));
+        given(config.trustedRemoteHosts()).willReturn(Set.of("any"));
 
         X509Certificate certificate = generateCASignedCertificate("uid=user");
-
+        String encodedCertificate = encodeBase64String(certificate.getEncoded());
         ListMultimap<String, String> headers = ImmutableListMultimap.of(
-                "testHeaderName", new String(Base64.encodeBase64(certificate.getEncoded())
-        ));
+                HEADER_NAME, encodedCertificate
+        );
         TreeContext treeContext = getContext(json(object()), headers);
+        given(certificateDecoder.decodeCertificate(encodedCertificate)).willReturn(certificate);
 
+        // When
         Action action = certificateCollectorNode.process(treeContext);
 
+        // Then
         assertThat(action.outcome).isEqualTo(COLLECTED.name());
+        JsonValue collectedCertificateJson = treeContext.getStateFor(certificateCollectorNode).get("X509Certificate");
+        assertThat(collectedCertificateJson).isNotNull();
+        assertThat(collectedCertificateJson.get(0).getObject()).isEqualTo(certificate);
     }
 
     @Test
-    public void shouldCollectIfCollectionMethodEitherAndHeaderProvided()
-            throws NodeProcessException, CertificateEncodingException {
+    void shouldCollectIfCollectionMethodHeaderAndPemHeaderProvided()
+            throws NodeProcessException, CertificateException {
+        // Given
+        given(config.certificateCollectionMethod())
+                .willReturn(CertificateCollectorNode.CertificateCollectionMethod.HEADER);
+        given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of(HEADER_NAME));
+        given(config.trustedRemoteHosts()).willReturn(Set.of("any"));
+
+        X509Certificate certificate = generateCASignedCertificate("uid=user");
+        String pemEncodedCertificate = "-----BEGIN CERTIFICATE-----\n%s\n-----END CERTIFICATE-----"
+                .formatted(encodeBase64String(certificate.getEncoded()));
+        ListMultimap<String, String> headers = ImmutableListMultimap.of(HEADER_NAME, pemEncodedCertificate);
+        TreeContext treeContext = getContext(json(object()), headers);
+        given(certificateDecoder.decodeCertificate(pemEncodedCertificate)).willReturn(certificate);
+
+        // When
+        Action action = certificateCollectorNode.process(treeContext);
+
+        // Then
+        assertThat(action.outcome).isEqualTo(COLLECTED.name());
+        JsonValue collectedCertificateJson = treeContext.getStateFor(certificateCollectorNode).get("X509Certificate");
+        assertThat(collectedCertificateJson).isNotNull();
+        assertThat(collectedCertificateJson.get(0).getObject()).isEqualTo(certificate);
+    }
+
+    @Test
+    void shouldCollectIfCollectionMethodHeaderAndDerHeaderProvided()
+            throws NodeProcessException, CertificateException {
+        // Given
+        given(config.certificateCollectionMethod())
+                .willReturn(CertificateCollectorNode.CertificateCollectionMethod.HEADER);
+        given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of(HEADER_NAME));
+        given(config.trustedRemoteHosts()).willReturn(Set.of("any"));
+
+        X509Certificate certificate = generateCASignedCertificate("uid=user");
+        String derEncodedCertificate = ":%s:".formatted(encodeBase64String(certificate.getEncoded()));
+        ListMultimap<String, String> headers = ImmutableListMultimap.of(HEADER_NAME, derEncodedCertificate);
+        TreeContext treeContext = getContext(json(object()), headers);
+        given(certificateDecoder.decodeCertificate(derEncodedCertificate)).willReturn(certificate);
+
+        // When
+        Action action = certificateCollectorNode.process(treeContext);
+
+        // Then
+        assertThat(action.outcome).isEqualTo(COLLECTED.name());
+        JsonValue collectedCertificateJson = treeContext.getStateFor(certificateCollectorNode).get("X509Certificate");
+        assertThat(collectedCertificateJson).isNotNull();
+        assertThat(collectedCertificateJson.get(0).getObject()).isEqualTo(certificate);
+    }
+
+    @Test
+    void shouldCollectIfCollectionMethodHeaderAndDerHeaderChainProvided()
+            throws NodeProcessException, CertificateException {
+        // Given
+        given(config.certificateCollectionMethod())
+                .willReturn(CertificateCollectorNode.CertificateCollectionMethod.HEADER);
+        given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of(HEADER_NAME));
+        given(config.trustedRemoteHosts()).willReturn(Set.of("any"));
+
+        X509Certificate userCertificate = generateCASignedCertificate("uid=user");
+        X509Certificate rootCertificate = generateCASignedCertificate("uid=root");
+        String derEncodedCertificateChain = ":%s:, :%s:".formatted(
+                encodeBase64String(userCertificate.getEncoded()),
+                encodeBase64String(rootCertificate.getEncoded()));
+        ListMultimap<String, String> headers = ImmutableListMultimap.of(HEADER_NAME, derEncodedCertificateChain);
+        TreeContext treeContext = getContext(json(object()), headers);
+        given(certificateDecoder.decodeCertificate(derEncodedCertificateChain)).willReturn(userCertificate);
+
+
+        // When
+        Action action = certificateCollectorNode.process(treeContext);
+
+        // Then
+        assertThat(action.outcome).isEqualTo(COLLECTED.name());
+        JsonValue collectedCertificateJson = treeContext.getStateFor(certificateCollectorNode).get("X509Certificate");
+        assertThat(collectedCertificateJson).isNotNull();
+        assertThat(collectedCertificateJson.size()).isEqualTo(1);
+        assertThat(collectedCertificateJson.get(0).getObject()).isEqualTo(userCertificate);
+    }
+
+    @Test
+    void shouldCollectIfCollectionMethodEitherAndHeaderProvided()
+            throws NodeProcessException, CertificateException {
         given(config.certificateCollectionMethod())
                 .willReturn(CertificateCollectorNode.CertificateCollectionMethod.EITHER);
-        given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of("testHeaderName"));
+        given(config.clientCertificateHttpHeaderName()).willReturn(Optional.of(HEADER_NAME));
 
         X509Certificate certificate = generateCASignedCertificate("uid=user");
 
+        String encodedCertificate = new String(Base64.encodeBase64(certificate.getEncoded()));
         ListMultimap<String, String> headers = ImmutableListMultimap.of(
-                "testHeaderName", new String(Base64.encodeBase64(certificate.getEncoded())
-                ));
+                HEADER_NAME, encodedCertificate);
         TreeContext treeContext = getContext(json(object()), headers);
+        given(certificateDecoder.decodeCertificate(encodedCertificate))
+                .willReturn(certificate);
 
+        // When
         Action action = certificateCollectorNode.process(treeContext);
 
+        // Then
         assertThat(action.outcome).isEqualTo(COLLECTED.name());
     }
 
     @Test
-    public void shouldCollectIfCollectionMethodRequestAndRequestProvided() throws NodeProcessException {
+    void shouldCollectIfCollectionMethodRequestAndRequestProvided() throws NodeProcessException {
         X509Certificate certificate = generateCASignedCertificate("uid=user");
         X509Certificate[] x509Certificates = new X509Certificate[]{certificate};
 
         given(config.certificateCollectionMethod())
                 .willReturn(CertificateCollectorNode.CertificateCollectionMethod.REQUEST);
-        given(request.getAttribute("javax.servlet.request.X509Certificate")).willReturn(x509Certificates);
+        given(request.getAttribute("jakarta.servlet.request.X509Certificate")).willReturn(x509Certificates);
 
         ListMultimap<String, String> headers = ImmutableListMultimap.of();
         TreeContext treeContext = getContext(json(object()), headers);
@@ -177,11 +290,11 @@ public class CertificateCollectorNodeTest {
     }
 
     @Test
-    public void shouldNotCollectIfCollectionMethodRequestAndRequestNotProvided()
+    void shouldNotCollectIfCollectionMethodRequestAndRequestNotProvided()
             throws NodeProcessException {
         given(config.certificateCollectionMethod())
                 .willReturn(CertificateCollectorNode.CertificateCollectionMethod.REQUEST);
-        given(request.getAttribute("javax.servlet.request.X509Certificate")).willReturn(null);
+        given(request.getAttribute("jakarta.servlet.request.X509Certificate")).willReturn(null);
 
         ListMultimap<String, String> headers = ImmutableListMultimap.of();
         TreeContext treeContext = getContext(json(object()), headers);
@@ -192,7 +305,7 @@ public class CertificateCollectorNodeTest {
     }
 
     @Test
-    public void shouldThrowExceptionIfNoClientCertificateHttpHeaderNameInConfigAndHeaderTypeSet() {
+    void shouldThrowExceptionIfNoClientCertificateHttpHeaderNameInConfigAndHeaderTypeSet() {
         given(config.trustedRemoteHosts()).willReturn(Set.of("any"));
         given(config.certificateCollectionMethod())
                 .willReturn(CertificateCollectorNode.CertificateCollectionMethod.HEADER);
@@ -206,7 +319,7 @@ public class CertificateCollectorNodeTest {
     }
 
     @Test
-    public void shouldThrowExceptionIfNoClientCertificateHttpHeaderNameInConfigAndEitherTypeSetWithNoCertInRequest() {
+    void shouldThrowExceptionIfNoClientCertificateHttpHeaderNameInConfigAndEitherTypeSetWithNoCertInRequest() {
         given(config.certificateCollectionMethod())
                 .willReturn(CertificateCollectorNode.CertificateCollectionMethod.EITHER);
         given(config.clientCertificateHttpHeaderName()).willReturn(Optional.empty());

@@ -1,0 +1,56 @@
+{
+    "heap": [
+        {
+            "name": "capture",
+            "type": "CaptureDecorator",
+            "config": {
+                "captureEntity": true,
+                "captureContext": true
+            }
+        },
+        {
+            "name": "_router",
+            "type": "Router",
+            "config": {
+                "defaultHandler": {
+                    "type": "DispatchHandler",
+                    "config": {
+                        "bindings": [
+                            {
+                                "condition": "${request.method == 'GET' and request.uri.path == '/'}",
+                                "handler": {
+                                    "type": "WelcomeHandler"
+                                }
+                            },
+                            {
+                                "condition": "${request.uri.path == '/'}",
+                                "handler": {
+                                    "type": "StaticResponseHandler",
+                                    "config": {
+                                        "status": 405,
+                                        "reason": "Method Not Allowed"
+                                    }
+                                }
+                            },
+                            {
+                                "handler": {
+                                    "type": "StaticResponseHandler",
+                                    "config": {
+                                        "status": 404,
+                                        "reason": "Not Found",
+                                        "headers": {
+                                            "Content-Type": [ "application/json" ]
+                                        },
+                                        "entity": "{ \"error\": \"Something gone wrong, please contact your system administrator.\"}"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "handler": "_router",
+    "audit": "global"
+}

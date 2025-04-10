@@ -24,7 +24,7 @@
  *
  * $Id: IFSConstants.java,v 1.12 2008/08/29 04:57:15 exu Exp $
  *
- * Portions Copyrights 2014-2019 ForgeRock AS.
+ * Portions Copyrights 2014-2025 Ping Identity Corporation.
  */
 package com.sun.identity.federation.common;
 

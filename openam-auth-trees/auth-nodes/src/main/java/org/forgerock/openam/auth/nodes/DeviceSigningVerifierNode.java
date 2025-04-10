@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -26,7 +34,6 @@ import static org.forgerock.openam.auth.nodes.DeviceBinding.FailureReason.INVALI
 import static org.forgerock.openam.auth.nodes.DeviceBinding.FailureReason.INVALID_SUBJECT;
 import static org.forgerock.openam.auth.nodes.DeviceBinding.FailureReason.INVALID_USER;
 import static org.forgerock.openam.auth.nodes.DeviceBinding.FailureReason.NOT_ACTIVE_USER;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getLocalisedMessage;
 
 import java.security.InvalidKeyException;
@@ -39,12 +46,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import org.apache.commons.lang.StringUtils;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.jwk.JWK;
@@ -56,8 +63,8 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.authentication.callbacks.DeviceSigningVerifierCallback;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingManager;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingSettings;
 import org.forgerock.openam.utils.Time;
@@ -94,10 +101,9 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
     static final String FAILURE_REASON = DeviceSigningVerifierNode.class.getSimpleName() + ".FAILURE";
 
     private final Config config;
-    private final CoreWrapper coreWrapper;
     private final LocaleSelector localeSelector;
-    private final LegacyIdentityService identityService;
     private final DeviceBindingManager deviceBindingManager;
+    private final NodeUserIdentityProvider identityProvider;
 
     private static final List<String> DEFAULT_CLIENT_ERROR_OUTCOMES =
             List.of("Unsupported", "Abort", "Timeout", "ClientNotRegistered");
@@ -206,20 +212,18 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
      * other classes from the plugin.
      *
      * @param config the service config
-     * @param identityService Identity Service to access the user identity
-     * @param coreWrapper Instance of CoreWrapper
+     * @param identityProvider NodeUserIdentityProvider to get the user identity
      * @param deviceBindingManager Instance of DeviceBindingManager
      * @param localeSelector a LocaleSelector for choosing the correct message to display
      */
     @Inject
-    public DeviceSigningVerifierNode(@Assisted Config config, LegacyIdentityService identityService,
-            DeviceBindingManager deviceBindingManager, CoreWrapper coreWrapper,
+    public DeviceSigningVerifierNode(@Assisted Config config, NodeUserIdentityProvider identityProvider,
+            DeviceBindingManager deviceBindingManager,
             LocaleSelector localeSelector) {
         this.config = config;
-        this.identityService = identityService;
-        this.coreWrapper = coreWrapper;
         this.localeSelector = localeSelector;
         this.deviceBindingManager = deviceBindingManager;
+        this.identityProvider = identityProvider;
     }
 
     @Override
@@ -234,15 +238,13 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
                 && StringUtils.isNotEmpty(deviceSigningVerifierCallback.get().getJws())) {
             //Signed data is received
             try {
-                SignedJwt signedJwt = new JwtReconstruction().reconstructJwt(
-                        deviceSigningVerifierCallback.get().getJws(), SignedJwt.class);
+                jwt = deviceSigningVerifierCallback.get().getJws();
+                SignedJwt signedJwt = new JwtReconstruction().reconstructJwt(jwt, SignedJwt.class);
 
                 String username = getUsername(context, nodeState, signedJwt);
 
                 //Make sure the user is valid
-                Optional<AMIdentity> userIdentity = getAMIdentity(Optional.of(username),
-                        nodeState,
-                        identityService, coreWrapper);
+                Optional<AMIdentity> userIdentity = identityProvider.getAMIdentity(Optional.of(username), nodeState);
                 validateUser(userIdentity, nodeState);
 
                 //Check device registered
@@ -258,6 +260,12 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
                         .filter(d -> d.getKey().getKeyId().equals(signedJwt.getHeader().getKeyId()))
                         .findFirst();
                 if (deviceOptional.isEmpty()) {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Device signing key not found: {} not in profile {}",
+                                signedJwt.getHeader().getKeyId(),
+                                deviceBindingSettings.stream().map(d -> d.getKey().getKeyId())
+                                        .collect(Collectors.toList()));
+                    }
                     return Action.goTo(KEY_NOT_FOUND).build();
                 }
 
@@ -265,9 +273,6 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
 
                 validateClaim(nodeState, signedJwt);
                 validateSignature(nodeState, signedJwt, device.getKey());
-
-                //For Audit
-                jwt = deviceSigningVerifierCallback.get().getJws();
 
                 device.setLastAccessDate(Time.currentTimeMillis());
                 deviceBindingManager.saveDeviceProfile(username, realm, device);
@@ -283,6 +288,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
                         .build();
             } catch (NodeProcessException e) {
                 if (config.captureFailure()) {
+                    logger.debug("Device Signing failed", e);
                     return Action.goTo(FAILURE_OUTCOME_ID).build();
                 }
                 throw e;
@@ -294,10 +300,11 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
         } else if (deviceSigningVerifierCallback.isPresent()
                 && StringUtils.isNotEmpty(deviceSigningVerifierCallback.get().getClientError())) {
             //Client Error, go to client defined error
+            logger.trace("Device Signing clientError: {}", deviceSigningVerifierCallback.get().getClientError());
             return Action.goTo(deviceSigningVerifierCallback.get().getClientError()).build();
         } else {
-            Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
-                    identityService, coreWrapper);
+            Optional<AMIdentity> userIdentity = identityProvider.getAMIdentity(context.universalId,
+                    context.getStateFor(this));
             try {
                 if (userIdentity.isEmpty()) {
                     if (nodeState.isDefined((USERNAME))) {
@@ -319,6 +326,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
                 }
             } catch (Exception e) {
                 if (config.captureFailure()) {
+                    logger.debug("Device Signing failed", e);
                     return Action.goTo(FAILURE_OUTCOME_ID).build();
                 }
                 throw new NodeProcessException(e);
@@ -331,6 +339,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
         try {
             validateSignature(signedJwt, jwk);
         } catch (Exception e) {
+            logger.debug("validateSignature failed with jwk: {}", jwk.toJsonString());
             nodeState.putShared(FAILURE_REASON, INVALID_SIGNATURE.name());
             throw e;
         }
@@ -350,6 +359,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
         try {
             validateClaim(signedJwt, challenge, config.applicationIds());
         } catch (Exception e) {
+            logger.debug("validateClaim failed [config.challenge: {}]", config.challenge());
             nodeState.putShared(FAILURE_REASON, INVALID_CLAIM.name());
             throw e;
         }
@@ -370,8 +380,8 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
         }
 
         //Check to see if the current context includes a user
-        Optional<AMIdentity> userIdentity = getAMIdentity(context.universalId, context.getStateFor(this),
-                identityService, coreWrapper);
+        Optional<AMIdentity> userIdentity = identityProvider.getAMIdentity(context.universalId,
+                context.getStateFor(this));
 
         //If no user context, then consider the subject as the user, but if current context has a user, fail the Node.
         if (userIdentity.isEmpty()) {
@@ -381,6 +391,7 @@ public class DeviceSigningVerifierNode implements Node, DeviceBinding {
             }
             return subject;
         } else if (!userIdentity.get().getUniversalId().equals(subject)) {
+            logger.debug("userId mismatch subject");
             nodeState.putShared(FAILURE_REASON, INVALID_SUBJECT.name());
             throw new NodeProcessException("Invalid Subject");
         }

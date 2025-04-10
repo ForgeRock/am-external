@@ -24,7 +24,7 @@
  *
  * $Id: Subject.java,v 1.2 2008/06/25 05:47:41 qcheng Exp $
  *
- * Portions Copyrighted 2015-2021 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 
 

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
@@ -26,8 +34,6 @@ import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_TOT
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_DEVICE_PROFILE_KEY;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -40,19 +46,18 @@ import javax.security.auth.callback.NameCallback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.SharedStateConstants;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.auth.nodes.validators.GreaterThanZeroValidator;
-import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathService;
-import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.openam.utils.Time;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,20 +94,16 @@ public class OathTokenVerifierNode extends AbstractMultiFactorNode {
      * The constructor.
      *
      * @param config the node configuration.
-     * @param realm the realm.
-     * @param coreWrapper the {@code CoreWrapper} instance.
      * @param deviceProfileHelper stores device profiles.
      * @param multiFactorNodeDelegate shared utilities common to second factor implementations.
-     * @param identityService an instance of the IdentityService.
+     * @param identityProvider the identity provider.
      */
     @Inject
     public OathTokenVerifierNode(@Assisted Config config,
-            @Assisted Realm realm,
-            CoreWrapper coreWrapper,
             OathDeviceProfileHelper deviceProfileHelper,
             MultiFactorNodeDelegate<AuthenticatorOathService> multiFactorNodeDelegate,
-            LegacyIdentityService identityService) {
-        super(realm, coreWrapper, multiFactorNodeDelegate, identityService);
+            NodeUserIdentityProvider identityProvider) {
+        super(multiFactorNodeDelegate, identityProvider);
         this.config = config;
         this.deviceProfileHelper = deviceProfileHelper;
     }
@@ -144,11 +145,12 @@ public class OathTokenVerifierNode extends AbstractMultiFactorNode {
         try {
             verifyCode(String.valueOf(nameCallback.get().getName()), oathDeviceSettings);
             logger.debug("OTP code verified, saving device settings.");
+            oathDeviceSettings.setLastAccessDate(Time.currentTimeMillis());
             deviceProfileHelper.saveDeviceSettings(realm, username, oathDeviceSettings);
             return Action.goTo(SUCCESS_OUTCOME_ID)
                     .addNodeType(context, OATH_AUTH_TYPE)
                     .build();
-        } catch (OathVerificationException | DevicePersistenceException e) {
+        } catch (OathVerificationException e) {
             logger.error(e.getMessage(), e);
             return buildAction(FAILURE_OUTCOME_ID, context);
         }
@@ -283,28 +285,30 @@ public class OathTokenVerifierNode extends AbstractMultiFactorNode {
     /**
      * Provides the oath verifier node's set of outcomes.
      */
-    public static final class OutcomeProvider implements org.forgerock.openam.auth.node.api.OutcomeProvider {
+    public static final class OutcomeProvider implements BoundedOutcomeProvider {
 
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+            return getAllOutcomes(locales).stream()
+                    .filter(outcome -> {
+                        if (RECOVERY_CODE_OUTCOME_ID.equals(outcome.id)) {
+                            return nodeAttributes.isNotNull()
+                                           && nodeAttributes.get("isRecoveryCodeAllowed").required().asBoolean();
+                        }
+                        return true;
+                    }).toList();
+        }
+
+        @Override
+        public List<Outcome> getAllOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE,
                     OathTokenVerifierNode.OutcomeProvider.class.getClassLoader());
-
-            List<Outcome> outcomes = new ArrayList<>(
-                    Arrays.asList(
-                            new Outcome(SUCCESS_OUTCOME_ID, bundle.getString(SUCCESS_OUTCOME_ID)),
-                            new Outcome(FAILURE_OUTCOME_ID, bundle.getString(FAILURE_OUTCOME_ID)),
-                            new Outcome(NOT_REGISTERED_OUTCOME_ID, bundle.getString(NOT_REGISTERED_OUTCOME_ID))
-                    )
-            );
-
-            if (nodeAttributes.isNotNull()) {
-                if (nodeAttributes.get("isRecoveryCodeAllowed").required().asBoolean()) {
-                    outcomes.add(new Outcome(RECOVERY_CODE_OUTCOME_ID, bundle.getString(RECOVERY_CODE_OUTCOME_ID)));
-                }
-            }
-
-            return Collections.unmodifiableList(outcomes);
+            return List.of(
+                    new Outcome(SUCCESS_OUTCOME_ID, bundle.getString(SUCCESS_OUTCOME_ID)),
+                    new Outcome(FAILURE_OUTCOME_ID, bundle.getString(FAILURE_OUTCOME_ID)),
+                    new Outcome(NOT_REGISTERED_OUTCOME_ID, bundle.getString(NOT_REGISTERED_OUTCOME_ID)),
+                    new Outcome(RECOVERY_CODE_OUTCOME_ID, bundle.getString(RECOVERY_CODE_OUTCOME_ID)
+            ));
         }
     }
 }

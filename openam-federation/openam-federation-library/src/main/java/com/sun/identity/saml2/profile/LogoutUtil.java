@@ -24,7 +24,7 @@
  *
  * $Id: LogoutUtil.java,v 1.16 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2012-2024 ForgeRock AS.
+ * Portions Copyrighted 2012-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 
@@ -48,8 +48,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.bind.JAXBElement;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
@@ -104,6 +104,7 @@ import com.sun.identity.shared.xml.XMLUtils;
 public class LogoutUtil {
     private static final Logger logger = LoggerFactory.getLogger(LogoutUtil.class);
     static SAML2MetaManager metaManager = null;
+    private static SOAPCommunicator soapCommunicator;
 
     static {
         metaManager= SAML2Utils.getSAML2MetaManager();
@@ -400,7 +401,7 @@ public class LogoutUtil {
 
         SOAPMessage resMsg = null;
         try {
-            resMsg = SOAPCommunicator.getInstance().sendSOAPMessage(sloRequestXMLString, sloURL,
+            resMsg = getSoapCommunicator().sendSOAPMessage(sloRequestXMLString, sloURL,
                     true);
         } catch (SOAPException se) {
             logger.error("Unable to send SOAPMessage to IDP ", se);
@@ -408,7 +409,7 @@ public class LogoutUtil {
         }
 
         // get the LogoutResponse element from SOAP message
-        Element respElem = SOAPCommunicator.getInstance().getSamlpElement(resMsg, "LogoutResponse");
+        Element respElem = getSoapCommunicator().getSamlpElement(resMsg, "LogoutResponse");
         LogoutResponse sloResponse = ProtocolFactory.getInstance()
                 .createLogoutResponse(respElem);
 
@@ -513,11 +514,11 @@ public class LogoutUtil {
         }
 
         try {
-            SOAPMessage resMsg = SOAPCommunicator.getInstance().sendSOAPMessage(
+            SOAPMessage resMsg = getSoapCommunicator().sendSOAPMessage(
                     logoutReq.toXMLString(true, true), remoteLogoutURL, true);
 
             // get the LogoutResponse element from SOAP message
-            Element respElem = SOAPCommunicator.getInstance().getSamlpElement(resMsg,
+            Element respElem = getSoapCommunicator().getSamlpElement(resMsg,
                     "LogoutResponse");
             return ProtocolFactory.getInstance().createLogoutResponse(respElem);
         } catch (Exception ex) {
@@ -1433,6 +1434,13 @@ public class LogoutUtil {
                     "errorGettingLogoutRequest"));
         }
         return req;
+    }
+
+    private static SOAPCommunicator getSoapCommunicator() {
+        if (soapCommunicator == null) {
+            soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        }
+        return soapCommunicator;
     }
 }
 

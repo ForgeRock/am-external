@@ -11,17 +11,27 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2013-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.xmlsig;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 import java.util.Collections;
 
+import org.forgerock.guice.core.GuiceTestCase;
 import org.forgerock.openam.saml2.crypto.signing.SigningConfigFactory;
 import org.forgerock.openam.utils.AMKeyProvider;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -29,76 +39,61 @@ import com.sun.identity.saml.xmlsig.KeyProvider;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.shared.xml.XMLUtils;
 
-public class SigProviderTest {
+public class SigProviderTest extends GuiceTestCase {
 
     private static final String DEFAULT_PRIVATE_KEY_ALIAS = "defaultkey";
     private static final String XML_DOCUMENT_TO_SIGN = "documenttosign.xml";
     private static final String SIGNED_XML_DOCUMENT = "signeddocument.xml";
     private static final String ID_ATTRIBUTE_VALUE = "signme";
 
-    private KeyProvider keyProvider = null;
-    private SigProvider sigProvider = null;
+    private static KeyProvider keyProvider = null;
+    private static SigProvider sigProvider = null;
 
-    @BeforeClass
-    public void setUp() {
-
+    @BeforeAll
+    static void setUp() {
         // The keystore properties required to bootstrap this class are setup in the POM
         keyProvider = new AMKeyProvider();
         sigProvider = SigManager.getSigInstance();
     }
 
     @Test
-    public void testSigning() {
+    void testSigning() throws SAML2Exception {
 
         String documentToSignXML = XMLUtils.print(
                     XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(XML_DOCUMENT_TO_SIGN)
                     ), "UTF-8");
 
         // Test the signing of an XML document
-        Element signature = null;
-        try {
-            signature = sigProvider.sign(documentToSignXML, ID_ATTRIBUTE_VALUE,
-                    SigningConfigFactory.getInstance()
-                            .createXmlSigningConfig(keyProvider.getPrivateKey(DEFAULT_PRIVATE_KEY_ALIAS),
-                                    keyProvider.getX509Certificate(DEFAULT_PRIVATE_KEY_ALIAS)));
-        } catch (SAML2Exception e) {
-            Assert.fail(e.getMessage());
-        }
-        Assert.assertNotNull(signature);
+        Element signature = sigProvider.sign(documentToSignXML, ID_ATTRIBUTE_VALUE,
+                SigningConfigFactory.getInstance()
+                        .createXmlSigningConfig(keyProvider.getPrivateKey(DEFAULT_PRIVATE_KEY_ALIAS),
+                                keyProvider.getX509Certificate(DEFAULT_PRIVATE_KEY_ALIAS)));
+
+        assertThat(signature).isNotNull();
         NodeList nodes = signature.getOwnerDocument().getElementsByTagName("ds:Signature");
-        Assert.assertTrue(nodes.getLength() > 0);
-        Assert.assertTrue(signature.isEqualNode(nodes.item(0)));
+        assertThat(nodes.getLength()).isGreaterThan(0);
+        assertThat(signature.isEqualNode(nodes.item(0))).isTrue();
     }
 
     @Test
-    public void testVerifySignature() {
+    void testVerifySignature() throws SAML2Exception {
 
         String signedDocumentXML = XMLUtils.print(
                     XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(SIGNED_XML_DOCUMENT)
                     ), "UTF-8");
 
         // Verify that the signed document has a valid signature
-        boolean verified = false;
-        try {
-            verified = sigProvider.verify(signedDocumentXML, ID_ATTRIBUTE_VALUE,
-                    Collections.singleton(keyProvider.getX509Certificate(DEFAULT_PRIVATE_KEY_ALIAS)));
-        } catch (SAML2Exception e) {
-            Assert.fail(e.getMessage());
-        }
-        Assert.assertTrue(verified);
+        boolean verified = sigProvider.verify(signedDocumentXML, ID_ATTRIBUTE_VALUE,
+                Collections.singleton(keyProvider.getX509Certificate(DEFAULT_PRIVATE_KEY_ALIAS)));
+        assertThat(verified).isTrue();
     }
 
     @Test
-    public void testVerifySignatureFromKeyInfo() {
+    void testVerifySignatureFromKeyInfo() throws SAML2Exception {
         String signedDocumentXML = XMLUtils.print(
             XMLUtils.toDOMDocument(ClassLoader.getSystemResourceAsStream(SIGNED_XML_DOCUMENT)), "UTF-8");
         // Verify that the signed document has a valid signature
-        boolean verified = false;
-        try {
-            verified = sigProvider.verify(signedDocumentXML, ID_ATTRIBUTE_VALUE, null);
-        } catch (SAML2Exception e) {
-            Assert.fail(e.getMessage());
-        }
-        Assert.assertTrue(verified);
+        boolean verified = sigProvider.verify(signedDocumentXML, ID_ATTRIBUTE_VALUE, null);
+        assertThat(verified).isTrue();
     }
 }

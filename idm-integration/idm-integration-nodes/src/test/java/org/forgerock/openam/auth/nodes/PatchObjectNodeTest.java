@@ -11,12 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptySet;
-import static org.assertj.core.api.Java6Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonPointer.ptr;
 import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
@@ -24,13 +33,13 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.resource.ResourceException.BAD_REQUEST;
 import static org.forgerock.json.resource.ResourceException.newResourceException;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.AcceptTermsAndConditionsNode.ACCEPT_DATE;
 import static org.forgerock.openam.auth.nodes.AcceptTermsAndConditionsNode.TERMS_ACCEPTED;
 import static org.forgerock.openam.auth.nodes.AcceptTermsAndConditionsNode.TERMS_VERSION;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDENTITY_RESOURCE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
@@ -38,31 +47,37 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import javax.security.auth.callback.Callback;
 
 import org.assertj.core.api.Assertions;
 import org.forgerock.json.JsonPointer;
 import org.forgerock.json.JsonValue;
+import org.forgerock.json.resource.ResourceException;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -70,9 +85,11 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+@ExtendWith(MockitoExtension.class)
 public class PatchObjectNodeTest {
 
     private static final ObjectMapper OBJECT_MAPPER;
+
     static {
         OBJECT_MAPPER =
                 new ObjectMapper().configure(JsonParser.Feature.ALLOW_COMMENTS, true)
@@ -96,49 +113,55 @@ public class PatchObjectNodeTest {
     @Captor
     private ArgumentCaptor<Map<String, Object>> patchCaptor;
 
+    @InjectMocks
     private PatchObjectNode node;
     private JsonValue schema;
 
-    @BeforeMethod
-    private void setUp() throws Exception {
-        initMocks(this);
+    public static Stream<Arguments> patchData() {
+        return Stream.of(
+                // fieldsToIgnore - expect none to be left over
+                Arguments.of(asSet("userName", "preferences/marketing", "age", "fake-field", "aliasList")),
+                // patch all fields - expect all to be leftover
+                Arguments.of(emptySet())
+        );
+    }
 
+    @BeforeEach
+    void setUp() throws Exception {
         schema = json(OBJECT_MAPPER.readValue(getClass().getResource("/PatchObjectNode/idmSchema.json"), Map.class));
 
         when(config.identityResource()).thenReturn(DEFAULT_IDENTITY_RESOURCE);
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
-
-        when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(schema);
-        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
-        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
-
-        node = new PatchObjectNode(config, realm, idmIntegrationService);
     }
 
     @Test
-    public void shouldReturnPropertiesAsInputStates() {
+    void shouldReturnPropertiesAsInputStates() throws ResourceException {
+        when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(schema);
         Assertions.assertThat(Arrays.stream(node.getInputs())
-                .filter(input -> !input.name.equals(TERMS_ACCEPTED))
-                .allMatch(input -> schema.get(convertAttributeNameToSchemaPointer(input.name)) != null))
+                        .filter(input -> !input.name.equals(TERMS_ACCEPTED))
+                        .allMatch(input -> schema.get(convertAttributeNameToSchemaPointer(input.name)) != null))
                 .isTrue();
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowExceptionIfErrorRetrievingExistingObject() throws Exception {
+    @Test
+    void shouldThrowExceptionIfErrorRetrievingExistingObject() throws Exception {
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
                 ))
         ));
 
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any()))
                 .thenThrow(newResourceException(BAD_REQUEST));
 
-        node.process(getContext(Collections.emptyList(), sharedState));
+        assertThatThrownBy(() -> node.process(getContext(Collections.emptyList(), sharedState)))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("org.forgerock.json.resource.BadRequestException: Bad Request");
     }
 
     @Test
-    public void shouldReturnFailureIfFailureToPatchObject() throws Exception {
+    void shouldReturnFailureIfFailureToPatchObject() throws Exception {
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test"),
@@ -146,6 +169,7 @@ public class PatchObjectNodeTest {
                 ))
         ));
 
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any())).thenReturn(userObject());
         doThrow(newResourceException(BAD_REQUEST, "Failed Policy"))
                 .when(idmIntegrationService).patchObject(any(), any(), any(), any(), any(), any());
@@ -157,29 +181,30 @@ public class PatchObjectNodeTest {
     }
 
     @Test
-    public void shouldReturnPatchedIfPatchSuccessful() throws Exception {
+    void shouldReturnPatchedIfPatchSuccessful() throws Exception {
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test"),
                         field("mail", "new@gmail.com"),
                         field("preferences", object(
                                 field("marketing", true
-                        ))),
+                                ))),
                         field("age", 21)
                 ))
         ));
 
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any())).thenReturn(userObject());
         doNothing().when(idmIntegrationService).patchObject(any(), any(), any(), any(), patchCaptor.capture(), any());
 
         String outcome = node.process(getContext(Collections.emptyList(), sharedState)).outcome;
         assertThat(outcome).isEqualTo(PatchObjectNode.PatchObjectOutcome.PATCHED.name());
         assertThat(patchCaptor.getValue())
-            .containsExactlyInAnyOrderEntriesOf(sharedState.get(OBJECT_ATTRIBUTES).asMap());
+                .containsExactlyInAnyOrderEntriesOf(sharedState.get(OBJECT_ATTRIBUTES).asMap());
     }
 
     @Test
-    public void shouldReturnPatchedIfPatchSuccessfulAndIdentityFromUsername() throws Exception {
+    void shouldReturnPatchedIfPatchSuccessfulAndIdentityFromUsername() throws Exception {
         JsonValue sharedState = json(object(
                 field(USERNAME, "test-username"),
                 field(OBJECT_ATTRIBUTES, object(
@@ -191,6 +216,8 @@ public class PatchObjectNodeTest {
                 ))
         ));
 
+        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any())).thenReturn(userObject());
         doNothing().when(idmIntegrationService).patchObject(any(), any(), any(), any(), any(), any());
 
@@ -199,23 +226,15 @@ public class PatchObjectNodeTest {
     }
 
     @Test
-    public void shouldFailIfNoUsernameInSharedState() throws Exception {
+    void shouldFailIfNoUsernameInSharedState() throws Exception {
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         String outcome = node.process(getContext(Collections.emptyList(), json(object()))).outcome;
 
         assertThat(outcome).isEqualTo(PatchObjectNode.PatchObjectOutcome.FAILURE.name());
     }
 
-    @DataProvider
-    public Object[][] patchData() {
-        return new Object[][]{
-                // fieldsToIgnore - expect none to be left over
-                {asSet("userName", "preferences/marketing", "age", "fake-field", "aliasList")},
-                // patch all fields - expect all to be leftover
-                {emptySet()}
-        };
-    }
-
-    @Test(dataProvider = "patchData")
+    @ParameterizedTest
+    @MethodSource("patchData")
     public void shouldOnlyPatchItemsAllowed(Set<String> ignoredFields) throws Exception {
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
@@ -230,6 +249,7 @@ public class PatchObjectNodeTest {
                 ))
         ));
 
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(config.ignoredFields()).thenReturn(ignoredFields);
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any())).thenReturn(userObject());
         doNothing().when(idmIntegrationService).patchObject(any(), any(), any(), any(), patchCaptor.capture(), any());
@@ -247,14 +267,15 @@ public class PatchObjectNodeTest {
     }
 
     @Test
-    public void shouldSkipPatchIfNoFieldsToPatch() throws Exception {
+    void shouldSkipPatchIfNoFieldsToPatch() throws Exception {
         JsonValue sharedState = json(object(
-                   field(OBJECT_ATTRIBUTES, object(
+                field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test"),
                         field("mail", "new@gmail.com")
                 ))
         ));
 
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         Set<String> ignoredFields = asSet("userName", "mail");
         when(config.ignoredFields()).thenReturn(ignoredFields);
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any())).thenReturn(userObject());
@@ -265,7 +286,7 @@ public class PatchObjectNodeTest {
 
 
     @Test
-    public void shouldUpdateTermsIfPresentInSharedState() throws Exception {
+    void shouldUpdateTermsIfPresentInSharedState() throws Exception {
 
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
@@ -274,6 +295,7 @@ public class PatchObjectNodeTest {
                         field(TERMS_VERSION, "1"),
                         field(ACCEPT_DATE, "today")))));
 
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any())).thenReturn(userObject());
         doNothing().when(idmIntegrationService).patchObject(any(), any(), any(), any(), any(), any());
         doNothing().when(idmIntegrationService).updateTermsAccepted(any(), any(), any(), any(), termsCaptor.capture());

@@ -24,7 +24,7 @@
  *
  * $Id: package-info.java,v 1.1 2009/07/02 21:53:26 madan_ranganath Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 /**

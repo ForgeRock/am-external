@@ -24,7 +24,7 @@
  *
  * $Id: Debug.java,v 1.5 2008/06/25 05:47:47 qcheng Exp $
  *
- * Portions Copyrighted 2015-2023 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.idpdiscovery;

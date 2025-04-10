@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.treehook;
@@ -37,19 +45,23 @@ import org.forgerock.openam.auth.nodes.jwt.PersistentJwtStringSupplier;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.secrets.cache.SecretCache;
 import org.forgerock.openam.secrets.cache.SecretReferenceCache;
-import org.forgerock.openam.session.Session;
 import org.forgerock.secrets.NoSuchSecretException;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.SecretReference;
 import org.forgerock.secrets.keys.SigningKey;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-@RunWith(MockitoJUnitRunner.class)
+import com.iplanet.sso.SSOToken;
+
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class CreatePersistentCookieTreeHookTest {
 
     private final SetPersistentCookieNode.Config config = new TestConfigWithSigningKey();
@@ -58,8 +70,6 @@ public class CreatePersistentCookieTreeHookTest {
     private static final String CONFIG_SIGNING_KEY = "configSigningKey";
     @Mock
     private Request request;
-    @Mock
-    private Session session;
     @Mock
     private Response response;
     @Mock
@@ -79,22 +89,24 @@ public class CreatePersistentCookieTreeHookTest {
     private SecretCache secretCache;
     @Mock
     private SecretReference<SigningKey> signingKeySecretReference;
+    @Mock
+    private SSOToken ssoToken;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         given(secretReferenceCache.realm(realm)).willReturn(secretCache);
-        treeHook = new CreatePersistentCookieTreeHook(session, response, config, request, realm,
+        treeHook = new CreatePersistentCookieTreeHook(ssoToken, response, config, request, realm,
                 persistentJwtStringSupplier, persistentCookieResponseHandler, persistentJwtClaimsHandler,
                 secretReferenceCache);
-        given(session.getClientID()).willReturn("clientId");
-        given(session.getProperty("Service")).willReturn("service");
-        given(session.getProperty("Host")).willReturn("123.456.789.1");
+        given(ssoToken.getProperty("sun.am.UniversalIdentifier")).willReturn("clientId");
+        given(ssoToken.getProperty("Service")).willReturn("service");
+        given(ssoToken.getProperty("Host")).willReturn("123.456.789.1");
         given(persistentJwtClaimsHandler.createJwtAuthContext(any(), any(), any(), any())).willReturn(emptyMap());
         given(signingKeySecretReference.get()).willReturn(signingKey);
     }
 
     @Test
-    public void setsCookieWithJwtStringOnResponse() throws Exception {
+    void setsCookieWithJwtStringOnResponse() throws Exception {
         // Given
         given(secretCache.active(NODE_DEFINED_PURPOSE)).willReturn(signingKeySecretReference);
         given(signingKey.getStableId()).willReturn("test-stable-id");
@@ -119,7 +131,7 @@ public class CreatePersistentCookieTreeHookTest {
     }
 
     @Test
-    public void throwsExceptionIfNoSigningKeyAvailable() throws NoSuchSecretException {
+    void throwsExceptionIfNoSigningKeyAvailable() throws NoSuchSecretException {
         var badSecretReference = mock(SecretReference.class);
         given(badSecretReference.get()).willThrow(new NoSuchSecretException("No secret found"));
         given(secretCache.active(any())).willReturn(badSecretReference);

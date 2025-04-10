@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -29,6 +37,7 @@ import static org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode.
 import static org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode.PUSH_AUTH_FAILURE_REASON;
 import static org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode.PushAuthenticationOutcomeProvider.PushAuthNOutcome.FAILURE;
 import static org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode.PushAuthenticationOutcomeProvider.PushAuthNOutcome.NOT_REGISTERED;
+import static org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode.PushAuthenticationOutcomeProvider.PushAuthNOutcome.SENT;
 import static org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode.PushAuthenticationOutcomeProvider.PushAuthNOutcome.SKIPPED;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,7 +47,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
-import javax.security.auth.callback.Callback;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -46,28 +54,36 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.sun.identity.idm.AMIdentity;
-import org.forgerock.am.identity.application.LegacyIdentityService;
+import javax.security.auth.callback.Callback;
+
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.LocaleSelector;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.rest.devices.push.UserPushDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
 import org.forgerock.openam.services.push.MessageIdFactory;
 import org.forgerock.openam.services.push.PushNotificationService;
 import org.forgerock.openam.session.SessionCookies;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.forgerock.util.i18n.PreferredLocales;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-@RunWith(MockitoJUnitRunner.class)
+import com.sun.identity.idm.AMIdentity;
+
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class PushAuthenticationSenderNodeTest {
 
     private static final int DEFAULT_MESSAGE_TIMEOUT_CONFIG = 120000;
@@ -83,22 +99,20 @@ public class PushAuthenticationSenderNodeTest {
     @Mock
     private UserPushDeviceProfileManager userPushDeviceProfileManager;
     @Mock
-    private CoreWrapper coreWrapper;
-    @Mock
     private PushNotificationService pushNotificationService;
     @Mock
     private SessionCookies sessionCookies;
     @Mock
     private MessageIdFactory messageIdFactory;
     @Mock
-    private LegacyIdentityService identityService;
-    @Mock
     private LocaleSelector localeSelector;
 
     private PushAuthenticationSenderNode node;
+    @Mock
+    private NodeUserIdentityProvider identityProvider;
 
     @Test
-    public void processThrowExceptionIfUserNameNotPresentInSharedStateAndCaptureFailureIsDisabled() throws Exception {
+    void processThrowExceptionIfUserNameNotPresentInSharedStateAndCaptureFailureIsDisabled() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -113,7 +127,7 @@ public class PushAuthenticationSenderNodeTest {
     }
 
     @Test
-    public void returnFailureOutcomeIfUserNameNotPresentInSharedStateAndCaptureFailureIsEnabled() throws Exception {
+    void returnFailureOutcomeIfUserNameNotPresentInSharedStateAndCaptureFailureIsEnabled() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -138,7 +152,7 @@ public class PushAuthenticationSenderNodeTest {
     }
 
     @Test
-    public void processThrowExceptionIfMessageIdPresentInSharedStateAndCaptureFailureIsDisabled() throws Exception {
+    void processThrowExceptionIfMessageIdPresentInSharedStateAndCaptureFailureIsDisabled() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -156,7 +170,7 @@ public class PushAuthenticationSenderNodeTest {
     }
 
     @Test
-    public void returnFailureOutcomeIfMessageIdPresentInSharedStateAndCaptureFailureIsEnabled() throws Exception {
+    void returnFailureOutcomeIfMessageIdPresentInSharedStateAndCaptureFailureIsEnabled() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -184,7 +198,7 @@ public class PushAuthenticationSenderNodeTest {
     }
 
     @Test
-    public void returnSkipOutcomeIfUserHasSkipEnabled() throws Exception {
+    void returnSkipOutcomeIfUserHasSkipEnabled() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -207,7 +221,7 @@ public class PushAuthenticationSenderNodeTest {
     }
 
     @Test
-    public void returnNotRegisteredOutcomeIfUserHasSkipNotSet() throws Exception {
+    void returnNotRegisteredOutcomeIfUserHasSkipNotSet() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -230,7 +244,7 @@ public class PushAuthenticationSenderNodeTest {
     }
 
     @Test
-    public void returnNotRegisteredOutcomeIfUserHasNotSkippableSetAndNoDevice() throws Exception {
+    void returnNotRegisteredOutcomeIfUserHasNotSkippableSetAndNoDevice() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -289,12 +303,89 @@ public class PushAuthenticationSenderNodeTest {
                 config,
                 userPushDeviceProfileManager,
                 pushNotificationService,
-                coreWrapper,
                 sessionCookies,
                 multiFactorNodeDelegate,
                 localeSelector,
                 messageIdFactory,
-                identityService)
+                identityProvider)
         );
+    }
+
+    @Test
+    void shouldReturnAllOutcomesWhenGetAllOutcomes() throws NodeProcessException {
+        // given
+        BoundedOutcomeProvider provider = new PushAuthenticationSenderNode.PushAuthenticationOutcomeProvider();
+
+        // when
+        var outcomes = provider.getAllOutcomes(new PreferredLocales());
+
+        // then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly(SENT.name(), NOT_REGISTERED.name(), SKIPPED.name(), FAILURE.name());
+    }
+
+    @Test
+    void shouldReturnAllOutcomesWhenMandatoryIsFalseAndCaptureFailureIsTrue() throws NodeProcessException {
+        // given
+        OutcomeProvider provider = new PushAuthenticationSenderNode.PushAuthenticationOutcomeProvider();
+        var attributes = json(object(
+                field("mandatory", false),
+                field("captureFailure", true)
+        ));
+
+        // when
+        var outcomes = provider.getOutcomes(new PreferredLocales(), attributes);
+
+        // then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly(SENT.name(), NOT_REGISTERED.name(), SKIPPED.name(), FAILURE.name());
+    }
+
+    @Test
+    void shouldNotReturnSkippedOutcomeWhenMandatoryIsTrue() throws NodeProcessException {
+        // given
+        OutcomeProvider provider = new PushAuthenticationSenderNode.PushAuthenticationOutcomeProvider();
+        var attributes = json(object(
+                field("mandatory", true),
+                field("captureFailure", true)
+        ));
+
+        // when
+        var outcomes = provider.getOutcomes(new PreferredLocales(), attributes);
+
+        // then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly(SENT.name(), NOT_REGISTERED.name(), FAILURE.name());
+    }
+
+    @Test
+    void shouldNotReturnFailureOutcomeWhenCaptureFailureIsFalse() throws NodeProcessException {
+        // given
+        OutcomeProvider provider = new PushAuthenticationSenderNode.PushAuthenticationOutcomeProvider();
+        var attributes = json(object(
+                field("mandatory", true),
+                field("captureFailure", false)
+        ));
+
+        // when
+        var outcomes = provider.getOutcomes(new PreferredLocales(), attributes);
+
+        // then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly(SENT.name(), NOT_REGISTERED.name());
+    }
+
+    @Test
+    void shouldNotReturnFailureOutcomeWhenAttributesIsNull() throws NodeProcessException {
+        // given
+        OutcomeProvider provider = new PushAuthenticationSenderNode.PushAuthenticationOutcomeProvider();
+        var attributes = json(null);
+
+        // when
+        var outcomes = provider.getOutcomes(new PreferredLocales(), attributes);
+
+        // then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly(SENT.name(), NOT_REGISTERED.name(), SKIPPED.name());
     }
 }

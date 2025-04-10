@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2017-2025 Ping Identity Corporation.
  */
 
 
@@ -24,6 +24,7 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,20 +49,21 @@ import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
 import com.sun.identity.idm.IdType;
-import com.sun.identity.idm.IdUtils;
+import com.sun.identity.idm.IdUtilsWrapper;
 
 /**
  * A node that checks to see if zero-page login headers have specified username and whether that username is in a group
- * permitted to use zero-page login headers.
+ * permitted to use zero-page login headers if a group name is provided.
  */
 @Node.Metadata(outcomeProvider  = AbstractDecisionNode.OutcomeProvider.class,
                configClass      = ${authNodeName}.Config.class)
 public class ${authNodeName} extends AbstractDecisionNode {
 
-    private final Pattern DN_PATTERN = Pattern.compile("^[a-zA-Z0-9]=([^,]+),");
-    private final Logger logger = LoggerFactory.getLogger(${authNodeName}.class);
+    private static final Pattern DN_PATTERN = Pattern.compile("^[a-zA-Z0-9]+=([^,]+),");
+    private static final Logger logger = LoggerFactory.getLogger(${authNodeName}.class);
     private final Config config;
     private final Realm realm;
+    private final IdUtilsWrapper idUtils;
     private String username = null;
 
     /**
@@ -71,7 +73,7 @@ public class ${authNodeName} extends AbstractDecisionNode {
         /**
          * The header name for zero-page login that will contain the identity's username.
          */
-        @Attribute(order = 100)
+        @Attribute(order = 100, requiredValue = true)
         default String usernameHeader() {
             return "X-OpenAM-Username";
         }
@@ -79,7 +81,7 @@ public class ${authNodeName} extends AbstractDecisionNode {
         /**
          * The header name for zero-page login that will contain the identity's password.
          */
-        @Attribute(order = 200)
+        @Attribute(order = 200, requiredValue = true)
         default String passwordHeader() {
             return "X-OpenAM-Password";
         }
@@ -88,8 +90,8 @@ public class ${authNodeName} extends AbstractDecisionNode {
          * The group name (or fully-qualified unique identifier) for the group that the identity must be in.
          */
         @Attribute(order = 300)
-        default String groupName() {
-            return "zero-page-login";
+        default Optional<String> groupName() {
+            return Optional.of("zero-page-login");
         }
     }
 
@@ -102,15 +104,17 @@ public class ${authNodeName} extends AbstractDecisionNode {
      * @param realm The realm the node is in.
      */
     @Inject
-    public ${authNodeName}(@Assisted Config config, @Assisted Realm realm) {
+    public ${authNodeName}(@Assisted Config config, @Assisted Realm realm, IdUtilsWrapper idUtils) {
         this.config = config;
         this.realm = realm;
+        this.idUtils = idUtils;
     }
 
     @Override
     public Action process(TreeContext context) {
         NodeState nodeState = context.getStateFor(this);
-        if (nodeState.isDefined("username") && nodeState.isDefined("password")) {
+        if (nodeState.isDefined(USERNAME) && nodeState.isDefined(PASSWORD)) {
+            username = nodeState.get(USERNAME).asString();
             return goTo(true).build();
         }
         boolean hasUsername = context.request.headers.containsKey(config.usernameHeader());
@@ -122,10 +126,10 @@ public class ${authNodeName} extends AbstractDecisionNode {
 
         String username = context.request.headers.get(config.usernameHeader()).get(0);
         String password = context.request.headers.get(config.passwordHeader()).get(0);
-        AMIdentity userIdentity = IdUtils.getIdentity(username, realm.asDN());
+        AMIdentity userIdentity = idUtils.getIdentity(username, realm.asDN());
         try {
             if (userIdentity != null && userIdentity.isExists() && userIdentity.isActive()
-                    && isMemberOfGroup(userIdentity, config.groupName())) {
+                    && (config.groupName().isEmpty() || isMemberOfGroup(userIdentity, config.groupName().get()))) {
                 this.username = username;
                 nodeState.putShared(USERNAME, username);
                 nodeState.putTransient(PASSWORD, password);

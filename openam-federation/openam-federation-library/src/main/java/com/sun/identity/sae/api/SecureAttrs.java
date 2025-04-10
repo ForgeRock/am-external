@@ -24,7 +24,7 @@
  *
  * $Id: SecureAttrs.java,v 1.12 2009/03/31 17:18:10 exu Exp $
  *
- * Portions Copyrighted 2016-2020 ForgeRock AS.
+ * Portions Copyrighted 2016-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.sae.api;

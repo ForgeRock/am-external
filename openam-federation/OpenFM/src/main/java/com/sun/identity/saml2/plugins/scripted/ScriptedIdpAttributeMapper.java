@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins.scripted;
@@ -23,14 +31,15 @@ import java.util.List;
 
 import javax.script.ScriptException;
 
+import org.forgerock.http.Client;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.core.realms.RealmLookupException;
 import org.forgerock.openam.scripting.application.ScriptEvaluationHelper;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
 
 import com.google.inject.Inject;
@@ -47,21 +56,23 @@ import com.sun.identity.saml2.profile.IDPSSOUtil;
  */
 public class ScriptedIdpAttributeMapper implements IDPAttributeMapper {
 
-    private final ScriptEvaluator scriptEvaluator;
+    private final ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
     private final ScriptStoreFactory scriptStoreFactory;
-    private final ScriptEvaluationHelper scriptEvaluationHelper;
+    private final ScriptEvaluationHelper<LegacyScriptBindings> scriptEvaluationHelper;
     private final ValidationHelper validationHelper;
     private final RealmLookup realmLookup;
+    private final Client httpClient;
 
     @Inject
     public ScriptedIdpAttributeMapper(ScriptEvaluatorFactory scriptEvaluatorFactory,
-            ScriptStoreFactory scriptStoreFactory, ScriptEvaluationHelper scriptEvaluationHelper,
-            ValidationHelper validationHelper, RealmLookup realmLookup) {
+            ScriptStoreFactory scriptStoreFactory,
+            ValidationHelper validationHelper, RealmLookup realmLookup, Client httpClient) {
         this.scriptEvaluator = scriptEvaluatorFactory.create(SAML2_IDP_ATTRIBUTE_MAPPER);
         this.scriptStoreFactory = scriptStoreFactory;
-        this.scriptEvaluationHelper = scriptEvaluationHelper;
+        this.scriptEvaluationHelper = scriptEvaluator.getScriptEvaluationHelper();
         this.validationHelper = validationHelper;
         this.realmLookup = realmLookup;
+        this.httpClient = httpClient;
     }
 
     @Override
@@ -74,14 +85,15 @@ public class ScriptedIdpAttributeMapper implements IDPAttributeMapper {
         try {
             Script script = getScript(realm, hostedEntityId);
 
-            ScriptBindings scriptBindings = SamlIdpAttributeMapperBindings.builder()
+            SamlIdpAttributeMapperBindings scriptBindings = SamlIdpAttributeMapperBindings.builder()
                     .withHostedEntityId(hostedEntityId)
                     .withIdpAttributeMapperScriptHelper(new IdpAttributeMapperScriptHelper())
                     .withRemoteEntityId(remoteEntityId)
                     .withSession(session)
+                    .withHttpClient(httpClient)
                     .build();
 
-            return scriptEvaluationHelper.evaluateScript(scriptEvaluator, script, scriptBindings, List.class,
+            return scriptEvaluationHelper.evaluateScript(script, scriptBindings, List.class,
                     getRealm(realm)).orElse(emptyList());
         } catch (ScriptException | org.forgerock.openam.scripting.domain.ScriptException e) {
             throw new SAML2Exception(e);

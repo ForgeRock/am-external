@@ -24,7 +24,7 @@
  *
  * $Id: Utils.java,v 1.9 2008/11/10 22:56:59 veiming Exp $
  *
- * Portions Copyright 2013-2019 ForgeRock AS.
+ * Portions Copyright 2013-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.liberty.ws.soapbinding;

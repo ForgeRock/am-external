@@ -24,7 +24,7 @@
  *
  * $Id: AuthnQueryServiceSOAP.java,v 1.5 2009/06/12 22:21:41 mallas Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.servlet;
@@ -32,13 +32,15 @@ package com.sun.identity.saml2.servlet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import javax.inject.Inject;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
+import org.forgerock.guice.core.InjectorHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -62,7 +64,10 @@ public class AuthnQueryServiceSOAP extends HttpServlet {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthnQueryServiceSOAP.class);
 
+    private SOAPCommunicator soapCommunicator;
+
     public void init() throws ServletException {
+        soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
     }
 
     public void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -84,8 +89,8 @@ public class AuthnQueryServiceSOAP extends HttpServlet {
         AuthnQuery authnQuery = null;
 
         try {
-            SOAPMessage msg = SOAPCommunicator.getInstance().getSOAPMessage(req);
-            Element elem = SOAPCommunicator.getInstance().getSamlpElement(msg,
+            SOAPMessage msg = soapCommunicator.getSOAPMessage(req);
+            Element elem = soapCommunicator.getSamlpElement(msg,
                     SAML2Constants.AUTHN_QUERY);
             authnQuery =
                 ProtocolFactory.getInstance().createAuthnQuery(elem);
@@ -123,12 +128,12 @@ public class AuthnQueryServiceSOAP extends HttpServlet {
         try {
             Response samlResp = AuthnQueryUtil.processAuthnQuery(
                 authnQuery, req, resp, authnAuthorityEntityID, realm);
-            replymsg = SOAPCommunicator.getInstance().createSOAPMessage(
+            replymsg = soapCommunicator.createSOAPMessage(
                     samlResp.toXMLString(true, true), false);
         } catch (Throwable t) {
             logger.error("AuthnQueryServiceSOAP.doGetPost: " +
                 "Unable to create SOAP message:", t);
-            replymsg = SOAPCommunicator.getInstance().createSOAPFault(SAML2Constants.SERVER_FAULT,
+            replymsg = soapCommunicator.createSOAPFault(SAML2Constants.SERVER_FAULT,
                     "unableToCreateSOAPMessage", null);
         }
 

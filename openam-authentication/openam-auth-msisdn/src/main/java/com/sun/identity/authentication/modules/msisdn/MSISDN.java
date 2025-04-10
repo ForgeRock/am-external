@@ -24,7 +24,7 @@
  *
  * $Id: MSISDN.java,v 1.3 2008/06/25 05:41:58 qcheng Exp $
  *
- * Portions Copyrighted 2013-2023 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 package com.sun.identity.authentication.modules.msisdn;
 
@@ -41,8 +41,8 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.openam.utils.ClientUtils;
 

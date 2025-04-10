@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.scripted;
 
@@ -27,13 +35,13 @@ import java.util.Map;
 
 import org.forgerock.http.client.ChfHttpClient;
 import org.forgerock.openam.scripting.domain.BindingsMap;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 
 /**
  * Script bindings for the Scripted Module script.
  */
-public final class ServerSideAuthenticationScriptBindings implements ScriptBindings {
+public final class ServerSideAuthenticationScriptBindings implements LegacyScriptBindings {
 
     private static final String SUCCESS_ATTR_NAME = "SUCCESS";
     private static final String FAILED_ATTR_NAME = "FAILED";
@@ -145,18 +153,33 @@ public final class ServerSideAuthenticationScriptBindings implements ScriptBindi
     }
 
     /**
-     * Interface utilised by the fluent builder to define step 10 in generating the ScriptedBindings.
+     * Interface utilised by the fluent builder to define step 9 in generating the ScriptedBindings.
      */
     public interface ScriptedBindingsStep9 {
-        Builder withIdentityRepository(ScriptIdentityRepository identityRepository);
+        ScriptedBindingsFinalStep withIdentityRepository(ScriptIdentityRepository identityRepository);
+    }
+
+    /**
+     * Final step of the builder.
+     */
+    public interface ScriptedBindingsFinalStep {
+        /**
+         * Build the {@link ServerSideAuthenticationScriptBindings}.
+         *
+         * @return The {@link ServerSideAuthenticationScriptBindings}.
+         */
+        ServerSideAuthenticationScriptBindings build();
     }
 
     /**
      * Builder object to construct a {@link ServerSideAuthenticationScriptBindings}.
+     * Before modifying this builder, or creating a new one, please read
+     * service-component-api/scripting-api/src/main/java/org/forgerock/openam/scripting/domain/README.md
      */
-    public static final class Builder implements ScriptedBindingsStep1,
+    private static final class Builder implements ScriptedBindingsStep1,
             ScriptedBindingsStep2, ScriptedBindingsStep3, ScriptedBindingsStep4, ScriptedBindingsStep5,
-            ScriptedBindingsStep6, ScriptedBindingsStep7, ScriptedBindingsStep8, ScriptedBindingsStep9 {
+            ScriptedBindingsStep6, ScriptedBindingsStep7, ScriptedBindingsStep8, ScriptedBindingsStep9,
+            ScriptedBindingsFinalStep {
 
         private ScriptHttpRequestWrapper requestData;
         private String clientScriptOutputData;

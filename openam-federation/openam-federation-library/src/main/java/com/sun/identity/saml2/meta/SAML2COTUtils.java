@@ -24,7 +24,7 @@
  *
  * $Id: SAML2COTUtils.java,v 1.8 2009/10/28 23:58:58 exu Exp $
  *
- * Portions Copyrighted 2018-2020 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  *
  */
 package com.sun.identity.saml2.meta;

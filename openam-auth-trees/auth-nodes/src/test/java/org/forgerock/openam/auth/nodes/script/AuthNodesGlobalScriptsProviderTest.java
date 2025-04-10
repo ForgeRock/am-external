@@ -11,47 +11,52 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.script;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.openam.auth.nodes.script.AuthNodesGlobalScript.DECISION_NODE_SCRIPT;
 import static org.forgerock.openam.auth.nodes.script.AuthNodesGlobalScript.DEVICE_PROFILE_MATCH_DECISION_NODE_SCRIPT;
-import static org.forgerock.openam.auth.nodes.script.AuthNodesGlobalScript.CONFIG_PROVIDER_NODE_SCRIPT;
 
 import java.util.List;
 
+import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.scripting.domain.ScriptContext;
 import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
-import org.forgerock.openam.scripting.domain.Script;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Tests for {@link AuthNodesGlobalScriptsProvider}.
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class AuthNodesGlobalScriptsProviderTest {
 
     @InjectMocks
     private AuthNodesGlobalScriptsProvider provider;
 
     @Test
-    public void shouldReturnAuthNodesGlobalScripts() throws ScriptException {
+    void shouldReturnAuthNodesGlobalScripts() throws ScriptException {
         // When
         List<Script> actual = provider.get();
 
         // Then
-        assertThat(actual.size()).isEqualTo(3);
+        assertThat(actual.size()).isEqualTo(2);
         assertScriptConfiguration(actual.get(0), DECISION_NODE_SCRIPT.getId(), DECISION_NODE_SCRIPT.getContext());
         assertScriptConfiguration(actual.get(1), DEVICE_PROFILE_MATCH_DECISION_NODE_SCRIPT.getId(),
                 DEVICE_PROFILE_MATCH_DECISION_NODE_SCRIPT.getContext());
-        assertScriptConfiguration(actual.get(2), CONFIG_PROVIDER_NODE_SCRIPT.getId(),
-                CONFIG_PROVIDER_NODE_SCRIPT.getContext());
     }
 
     private void assertScriptConfiguration(Script script, String id, ScriptContext context) {

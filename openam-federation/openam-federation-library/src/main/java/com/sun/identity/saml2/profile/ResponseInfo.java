@@ -24,7 +24,7 @@
  *
  * $Id: ResponseInfo.java,v 1.6 2009/06/17 03:09:13 exu Exp $
  *
- * Portions Copyrighted 2015-2016 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2013-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.key;
 
@@ -25,9 +33,8 @@ import javax.xml.bind.JAXBException;
 import org.apache.xml.security.encryption.XMLCipher;
 import org.apache.xml.security.utils.EncryptionConstants;
 import org.forgerock.openam.utils.IOUtils;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
 import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
@@ -43,8 +50,8 @@ public class KeyUtilTest {
     private static final String XML_DOCUMENT_TO_LOAD = "no-use-keydescriptor-metadata.xml";
     private static final String KEY_DESCRIPTOR_XML = "/saml2/key-descriptor.xml";
 
-    @BeforeMethod
-    public void setup() {
+    @BeforeEach
+    void setup() {
         KeyUtil.clear();
     }
 
@@ -53,7 +60,7 @@ public class KeyUtilTest {
      * without "use" attribute.
      */
     @Test
-    public void testNoUseKeyDescriptorEntityDescriptor() throws SAML2MetaException, JAXBException {
+    void testNoUseKeyDescriptorEntityDescriptor() throws SAML2MetaException, JAXBException {
 
         // Load test metadata
         String idpMetadata = XMLUtils.print(
@@ -64,14 +71,14 @@ public class KeyUtilTest {
         for (RoleDescriptorType descriptor : descriptors) {
             if (descriptor instanceof IDPSSODescriptorType) {
                 KeyDescriptorElement type = KeyUtil.getKeyDescriptor(descriptor, "signing");
-                Assert.assertNotNull(type);
+                assertThat(type).isNotNull();
                 break;
             }
         }
     }
 
     @Test
-    public void shouldBuildCorrectEncryptionConfigForRsaOaep11() throws Exception {
+    void shouldBuildCorrectEncryptionConfigForRsaOaep11() throws Exception {
         // Given
         RoleDescriptorType roleDescriptor = new SPSSODescriptorType();
         roleDescriptor.getKeyDescriptor().add(getKeyDescriptor());
@@ -91,7 +98,7 @@ public class KeyUtilTest {
     }
 
     @Test
-    public void shouldBuildCorrectEncryptionConfigForRsaOaep() throws Exception {
+    void shouldBuildCorrectEncryptionConfigForRsaOaep() throws Exception {
         // Given
         RoleDescriptorType roleDescriptor = new SPSSODescriptorType();
         KeyDescriptorElement keyDescriptor = getKeyDescriptor();

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 
@@ -21,19 +29,19 @@ import static org.mockito.Mockito.when;
 
 import java.io.PrintWriter;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.saml2.IDPRequestValidator;
 import org.forgerock.openam.saml2.IDPSSOFederateRequest;
 import org.forgerock.openam.saml2.SAML2ActorFactory;
 import org.forgerock.openam.saml2.SAMLAuthenticator;
 import org.forgerock.openam.saml2.SAMLAuthenticatorLookup;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 public class IDPSSOFederateTest {
 
@@ -60,8 +68,8 @@ public class IDPSSOFederateTest {
 
     private IDPSSOFederate idpSsoFederateRequest;
 
-    @BeforeMethod
-    public void initMocks() throws ServerFaultException {
+    @BeforeEach
+    void initMocks() throws ServerFaultException {
         MockitoAnnotations.initMocks(this);
         when(actorFactory.getIDPRequestValidator(any(), anyBoolean())).thenReturn(validator);
         when(actorFactory.getSAMLAuthenticator(
@@ -79,12 +87,12 @@ public class IDPSSOFederateTest {
     }
 
     @Test
-    public void shouldBeTestable() throws Exception {
+    void shouldBeTestable() throws Exception {
         idpSsoFederateRequest.process(mockRequest, mockResponse, mockPrintWriter, null);
     }
 
     @Test
-    public void shouldCallAuthenticateIfThereIsNoRequestId() throws Exception {
+    void shouldCallAuthenticateIfThereIsNoRequestId() throws Exception {
 
         // Arrange
         when(mockRequest.getParameter("ReqID")).thenReturn("");
@@ -98,7 +106,7 @@ public class IDPSSOFederateTest {
     }
 
     @Test
-    public void shouldCallAuthenticateLookupIfThereIsARequestId() throws Exception {
+    void shouldCallAuthenticateLookupIfThereIsARequestId() throws Exception {
 
         // Arrange
         when(mockRequest.getParameter("ReqID")).thenReturn("12345");

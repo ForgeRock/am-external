@@ -24,7 +24,7 @@
  *
  * $Id: QueryClient.java,v 1.9 2009/10/29 00:19:21 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2024 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  * Portions Copyrighted 2016 Nomura Research Institute, Ltd.
  */
 package com.sun.identity.saml2.soapbinding;
@@ -104,9 +104,9 @@ public class QueryClient {
             logger.error("Error retreiving metadata",sme);
         }
     }
-    
+
     private QueryClient() {}
-    
+
     /**
      * Returns SAMLv2 <code>Response</code>.
      * SAMLv2 request is sent enclosed in the body of a  SOAP Message
@@ -148,7 +148,7 @@ public class QueryClient {
             throw new SAML2Exception(
                     SAML2SDKUtils.bundle.getString("nullPDP"));
         }
-        
+
         if (request != null ) {
             // set properties in the request.
             XACMLAuthzDecisionQuery xacmlQuery =
@@ -174,7 +174,7 @@ public class QueryClient {
                         signAttributeQuery(xacmlQuery, realm, pepEntityID, pdpEntityID, false);
                     }
                 }
-                
+
                 String xmlString = xacmlQuery.toXMLString(true,true);
                 if (logger.isDebugEnabled()) {
                     logger.debug(classMethod + "XACML Query XML String :"
@@ -193,7 +193,7 @@ public class QueryClient {
                 try {
                    String soapMessage =
                        SAML2SDKUtils.createSOAPMessageString(xmlString);
-                        
+
                    endPoint = SAML2SDKUtils.fillInBasicAuthInfo(pepConfig, endPoint, realm);
                         String[] urls = { endPoint };
                         SOAPClient soapClient = new SOAPClient(urls);
@@ -216,9 +216,9 @@ public class QueryClient {
                         if (logger.isDebugEnabled()) {
                             logger.debug("Response Message:\n"+ xmlString);
                         }
-                        
+
                         samlResponse = getSAMLResponse(xmlString);
-                        
+
                         issuer  = samlResponse.getIssuer();
                         String issuerID = null;
                         if (issuer != null) {
@@ -226,14 +226,14 @@ public class QueryClient {
                         }
                         boolean isTrusted = verifyResponseIssuer(realm,
                                 pepEntityID,issuerID);
-                        
+
                         if (!isTrusted) {
                             if (logger.isDebugEnabled()) {
                                 logger.debug(classMethod +
                                         "Issuer in Request is not valid.");
                             }
                             String[] args = {realm, pepEntityID, pdpEntityID};
-                            
+
                             LogUtil.error(Level.INFO,
                                     LogUtil.INVALID_ISSUER_IN_PEP_REQUEST,
                                     args);
@@ -253,7 +253,7 @@ public class QueryClient {
                                         + response.toXMLString(true,true));
                             }
                         }
-                        
+
                     } catch (SOAPException soae) {
                         if (logger.isDebugEnabled()) {
                             logger.debug(classMethod + "SOAPException :",soae);
@@ -269,7 +269,7 @@ public class QueryClient {
             }
         return response;
     }
-    
+
     /**
      * Returns <code>Issuer</code> for the entity identifier.
      *
@@ -284,7 +284,7 @@ public class QueryClient {
         issuer.setValue(entityID);
         return issuer;
     }
-    
+
     /**
      * Returns SAMLv2 <code>Response</code> object. The <code>Response</code>
      * object is created from the String representation of the object.
@@ -383,7 +383,7 @@ public class QueryClient {
         } // end of for (int i = 0; i < nodeCount; i++)
         return samlResponse;
     }
-    
+
     /**
      * Returns true if the PEP and PDP entities are in the same Circle of
      * Trust. Verifies <code>Issuer</code> in <code>Response</code> to
@@ -407,7 +407,7 @@ public class QueryClient {
         }
         return isTrusted;
     }
-    
+
     /**
      * Returns the Policy Decision Point End Point (PDP) URL.
      *
@@ -448,12 +448,12 @@ public class QueryClient {
                 String[] args = { pdpEntityID };
                 LogUtil.error(Level.INFO,LogUtil.PDP_METADATA_ERROR,args);
                 throw new SAML2Exception(SAML2SDKUtils.BUNDLE_NAME,
-                        "pdpMetaRetreivalError",args);
+                        "pdpMetaRetreivalError", (Object[]) args);
             }
         }
         return endPoint;
     }
-    
+
     /**
      * Returns the extended Policy Enforcement Point Configuration.
      *
@@ -480,8 +480,8 @@ public class QueryClient {
                 String[] args = { pepEntityID };
                 LogUtil.error(Level.INFO,LogUtil.PEP_METADATA_ERROR,args);
                 throw new SAML2Exception(SAML2SDKUtils.BUNDLE_NAME,
-                        "pepMetaRetreivalError",args);
-                
+                        "pepMetaRetreivalError", (Object[]) args);
+
             }
         }
         return pepConfig;
@@ -499,7 +499,7 @@ public class QueryClient {
     private static XACMLPDPConfigElement getPDPConfig(
             String realm,
             String pdpEntityID) throws SAML2Exception {
-        
+
         XACMLPDPConfigElement pdpConfig = null;
         String classMethod = "QueryClient:getPDPConfig";
         if (saml2MetaManager != null)  {
@@ -514,7 +514,7 @@ public class QueryClient {
                 String[] args = { pdpEntityID };
                 LogUtil.error(Level.INFO,LogUtil.PEP_METADATA_ERROR,args);
                 throw new SAML2Exception(SAML2SDKUtils.BUNDLE_NAME,
-                        "pdpMetaRetreivalError",args);
+                        "pdpMetaRetreivalError", (Object[]) args);
 
             }
         }
@@ -533,7 +533,7 @@ public class QueryClient {
      */
     private static Response verifyResponse(String realm,String pepEntityID,
             Response samlResponse) throws SAML2Exception {
-        
+
         Response response = samlResponse;
         String classMethod = "QueryClient:verifyResponse";
         if (samlResponse != null) {
@@ -546,19 +546,19 @@ public class QueryClient {
             String pdpEntityID = issuerID;
             boolean isTrusted =
                     verifyResponseIssuer(realm,pepEntityID,issuerID);
-            
+
             if (!isTrusted) {
                 if (logger.isDebugEnabled()) {
                     logger.debug(classMethod +
                             "Issuer in Response is not valid.");
                 }
                 String[] args = {realm, pepEntityID, issuerID};
-                
+
                 LogUtil.error(Level.INFO,
                         LogUtil.INVALID_ISSUER_RESPONSE,
                         args);
                 throw new SAML2Exception(
-                        SAML2SDKUtils.BUNDLE_NAME,"invalidIssuerInResponse", args);
+                        SAML2SDKUtils.BUNDLE_NAME,"invalidIssuerInResponse", (Object[]) args);
             }
             // verify signed response
             verifySignedResponse(pepEntityID,pdpEntityID, samlResponse);
@@ -574,7 +574,7 @@ public class QueryClient {
                         ? true:false;
                 boolean wantAssertionSigned =
                         wantAssertionSigned(realm,pepEntityID);
-                
+
                 String respID = samlResponse.getID();
                 List assertions = samlResponse.getAssertion();
                 if (wantAssertionEncrypted &&  (assertions != null
@@ -600,7 +600,7 @@ public class QueryClient {
                         assertions.add(assertion);
                     }
                 }
-                
+
                 if (assertions == null || assertions.size() == 0) {
                     if (logger.isDebugEnabled()) {
                         logger.debug(classMethod +
@@ -612,7 +612,7 @@ public class QueryClient {
                     throw new SAML2Exception(
                             SAML2SDKUtils.bundle.getString("missingAssertion"));
                 }
-                
+
                 // validate Issuer  in Assertion
                 Iterator assertionIter = assertions.iterator();
                 Set<X509Certificate> verificationCerts = null;
@@ -623,7 +623,7 @@ public class QueryClient {
                             realm,pdpEntityID);
                     verificationCerts = KeyUtil.getPDPVerificationCerts(pdpDesc,pdpEntityID, realm);
                 }
-                
+
                 while (assertionIter.hasNext()) {
                     Assertion assertion = (Assertion) assertionIter.next();
                     String assertionID = assertion.getID();
@@ -691,9 +691,9 @@ public class QueryClient {
             }
         }
         return response;
-        
+
     }
-    
+
     /**
      * Returns SAMLv2 <code>Response</code> object.
      * A new <code>Response</code> object is created from
@@ -707,7 +707,7 @@ public class QueryClient {
      */
     private static Response createResponse(Response samlResponse,
             List assertions) throws SAML2Exception  {
-        
+
         Response response = new ResponseImpl();
         response.setVersion(samlResponse.getVersion()) ;
         response.setIssueInstant(samlResponse.getIssueInstant());
@@ -719,10 +719,10 @@ public class QueryClient {
         response.setConsent(samlResponse.getConsent());
         response.setStatus(samlResponse.getStatus());
         response.setAssertion(assertions);
-        
+
         return response;
     }
-    
+
     /**
      * Returns value of an attribute in the PEP extended configuration.
      *
@@ -740,16 +740,16 @@ public class QueryClient {
             logger.debug(classMethod + "attrName : " + attrName);
         }
         String result = null;
-        
+
         Map attrs = SAML2MetaUtils.getAttributes(pepConfig);
-        
+
         if (attrs != null) {
             List value = (List) attrs.get(attrName);
             if (value != null && value.size() != 0) {
                 result = (String) value.get(0);
             }
         }
-        
+
         if (logger.isDebugEnabled()) {
             logger.debug(classMethod + "Attribute value is : " + result);
         }
@@ -808,13 +808,13 @@ public class QueryClient {
                 saml2MetaManager.
                 getPolicyEnforcementPointDescriptor(realm,
                 pepEntityID);
-        
+
         return pepDescriptor.isWantAssertionsSigned();
     }
 
 
     /**
-     * 
+     *
      * @param xacmlQuery XACML Query
      * @param realm the entity's realm.
      * @param pepEntityID entity identifier of PEP.
@@ -851,15 +851,15 @@ public class QueryClient {
     public static boolean verifySignedResponse(String pepEntityID,
             String pdpEntityID, Response response) throws SAML2Exception {
         String classMethod = "QueryClient:verifySignedResponse: ";
-        
+
         String realm = "/";
         XACMLAuthzDecisionQueryConfigElement pepConfig =
                 getPEPConfig(realm,pepEntityID);
-        
+
         String wantResponseSigned =
                 getAttributeValueFromPEPConfig(pepConfig,
                 "wantXACMLAuthzDecisionResponseSigned");
-        
+
         boolean valid;
         if (wantResponseSigned != null &&
                 wantResponseSigned.equalsIgnoreCase("true")) {

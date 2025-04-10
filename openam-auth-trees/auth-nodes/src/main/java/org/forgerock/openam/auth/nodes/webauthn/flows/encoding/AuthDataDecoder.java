@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.encoding;
 
@@ -26,6 +34,7 @@ import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.json.jose.jwk.OkpJWK;
 import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.json.jose.jws.SupportedEllipticCurve;
+import org.forgerock.openam.auth.nodes.webauthn.Aaguid;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseCurve;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationFlags;
@@ -54,9 +63,9 @@ public final class AuthDataDecoder {
     /**
      * Decodes the Auth Data.
      *
-     * @param authDataAsBytes the auth data as bytes.
-     * @throws DecodingException if there's an error during decoding
+     * @param authDataAsBytes the auth data as bytes
      * @return AuthData object.
+     * @throws DecodingException        if there's an error during decoding
      */
     public AuthData decode(byte[] authDataAsBytes) throws DecodingException {
         byte[] rpIdHash = Arrays.copyOfRange(authDataAsBytes, 0, 32);
@@ -69,15 +78,17 @@ public final class AuthDataDecoder {
         int signCount = wrapped.getInt();
 
         AttestedCredentialData attestedCredentialData = null;
-        if (authDataAsBytes.length > 37) {
+        if (authDataAsBytes.length > 37 && attestationFlags.isAttestedDataIncluded()) {
             attestedCredentialData = getAttestedCredentialData(authDataAsBytes);
         }
 
         return new AuthData(rpIdHash, attestationFlags, signCount, attestedCredentialData, authDataAsBytes);
     }
 
-    private AttestedCredentialData getAttestedCredentialData(byte[] authData) throws DecodingException {
-        byte[] aaguid = Arrays.copyOfRange(authData, 37, 53);
+    private AttestedCredentialData getAttestedCredentialData(byte[] authData)
+            throws DecodingException {
+        byte[] rawAaguid = Arrays.copyOfRange(authData, 37, 53);
+        Aaguid aaguid = new Aaguid(rawAaguid);
         byte[] rawCredentialIdLength = Arrays.copyOfRange(authData, 53, 55);
         ByteBuffer wrapped = ByteBuffer.wrap(rawCredentialIdLength);
         int credentialIdLength = wrapped.getShort();

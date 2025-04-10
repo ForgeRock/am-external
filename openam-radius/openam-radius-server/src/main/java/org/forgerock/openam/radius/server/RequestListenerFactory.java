@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server;
 
@@ -51,7 +59,9 @@ public class RequestListenerFactory {
     /**
      * A factory that a <code>RadiusRequestHandler</code> may use to create <code>AccessRequestHandler</code> instances.
      */
-    private AccessRequestHandlerFactory accessRequestHandlerFactory;
+    private final AccessRequestHandlerFactory accessRequestHandlerFactory;
+
+    private final MessageAuthenticatorCalculator messageAuthenticatorCalculator;
 
     /**
      * Constructor.
@@ -59,14 +69,17 @@ public class RequestListenerFactory {
      * @param serviceFactory - a factory from which a ThreadPoolExecutor may be obtained.
      * @param eventBus is used to publish or register for notifications of RADIUS server events.
      * @param accessRequestHandlerFactory may be used to obtain access request handlers.
+     * @param messageAuthenticatorCalculator used to calculate the Message-Authenticator attribute value.
      */
     @Inject
     public RequestListenerFactory(ExecutorServiceFactory serviceFactory,
             @Named("RadiusEventBus") EventBus eventBus,
-            AccessRequestHandlerFactory accessRequestHandlerFactory) {
+            AccessRequestHandlerFactory accessRequestHandlerFactory,
+            MessageAuthenticatorCalculator messageAuthenticatorCalculator) {
         this.executorServiceFactory = serviceFactory;
         this.eventBus = eventBus;
         this.accessRequestHandlerFactory = accessRequestHandlerFactory;
+        this.messageAuthenticatorCalculator = messageAuthenticatorCalculator;
     }
 
     /**
@@ -86,7 +99,8 @@ public class RequestListenerFactory {
         final ArrayBlockingQueue<Runnable> queue = new ArrayBlockingQueue<Runnable>(poolConfig.getQueueSize());
         final ExecutorService executorService = executorServiceFactory.createThreadPool(coreSize, maxSize, idleTimeout,
                 TimeUnit.SECONDS, queue, "RadiusRequestHandler");
-        return new RadiusRequestListener(serviceConfig, executorService, eventBus, accessRequestHandlerFactory);
+        return new RadiusRequestListener(serviceConfig, executorService, eventBus, accessRequestHandlerFactory,
+                messageAuthenticatorCalculator);
     }
 
 

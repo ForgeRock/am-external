@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins.scripted.bindings;
 
@@ -27,7 +35,7 @@ import com.sun.identity.saml2.protocol.Response;
 /**
  * Script bindings for the SamlSpPreSingleSignOnProcess script.
  */
-final class SamlSpPreSingleSignOnProcessBindings extends BaseSamlSpBindings {
+public final class SamlSpPreSingleSignOnProcessBindings extends BaseSamlSpBindings {
 
     private final AuthnRequest authnRequest;
     private final Response ssoResponse;
@@ -63,15 +71,6 @@ final class SamlSpPreSingleSignOnProcessBindings extends BaseSamlSpBindings {
         return bindings;
     }
 
-    @Override
-    public BindingsMap nextGenBindings() {
-        BindingsMap bindings = new BindingsMap(nextGenCommonBindings());
-        bindings.put(AUTHN_REQUEST, authnRequest);
-        bindings.put(SAML2_RESPONSE, ssoResponse);
-        bindings.put(PROFILE, profile);
-        return bindings;
-    }
-
     /**
      * Interface utilised by the fluent builder to define step 1 in generating the
      * SamlSpPreSingleSignOnProcessBindings.
@@ -93,13 +92,15 @@ final class SamlSpPreSingleSignOnProcessBindings extends BaseSamlSpBindings {
      * SamlSpPreSingleSignOnProcessBindings.
      */
     public interface SamlSpPreSingleSignOnProcessBindingsStep3 {
-        SamlSpBindingsStep1 withProfile(String profile);
+        SamlSpBindingsStep1<SamlSpPreSingleSignOnProcessBindings> withProfile(String profile);
     }
 
     /**
      * Builder object to construct a {@link SamlSpPreSingleSignOnProcessBindings}.
+     * Before modifying this builder, or creating a new one, please read
+     * service-component-api/scripting-api/src/main/java/org/forgerock/openam/scripting/domain/README.md
      */
-    private static final class Builder extends BaseSamlSpBindings.Builder<Builder>
+    private static final class Builder extends BaseSamlSpBindings.Builder<SamlSpPreSingleSignOnProcessBindings>
             implements SamlSpPreSingleSignOnProcessBindingsStep1,
             SamlSpPreSingleSignOnProcessBindingsStep2, SamlSpPreSingleSignOnProcessBindingsStep3 {
 
@@ -135,7 +136,7 @@ final class SamlSpPreSingleSignOnProcessBindings extends BaseSamlSpBindings {
          * @param profile The profile.
          * @return The next step of the builder.
          */
-        public SamlSpBindingsStep1 withProfile(String profile) {
+        public SamlSpBindingsStep1<SamlSpPreSingleSignOnProcessBindings> withProfile(String profile) {
             this.profile = profile;
             return this;
         }

@@ -1,0 +1,50 @@
+{
+    "name": "xui",
+    "baseURI": "http://&{frontend.host}:8081",
+    "condition": "${matches(request.uri.path, '^/am/ui-admin')}",
+    "handler": {
+        "type": "DispatchHandler",
+        "config": {
+            "bindings": [
+                {
+                    "condition": "${matches(request.uri.path, '^/am/ui-admin$')}",
+                    "handler": {
+                        "type": "StaticResponseHandler",
+                        "config": {
+                            "status": 302,
+                            "headers": {
+                                "Location": [
+                                    "https://&{backend.host}/am/ui-admin/"
+                                ]
+                            }
+                        }
+                    }
+                },
+                {
+                    "handler": {
+                        "type": "Chain",
+                        "config": {
+                            "filters": [
+                                {
+                                    "type": "LocationHeaderFilter",
+                                    "config": {
+                                        "baseURI": "https://&{backend.host}"
+                                    }
+                                },
+                                {
+                                    "type": "UriPathRewriteFilter",
+                                    "config": {
+                                        "mappings": {
+                                            "/am/ui-admin/": "/am/ui-admin/"
+                                        }
+                                    }
+                                }
+                            ],
+                            "handler": "ClientHandler"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}

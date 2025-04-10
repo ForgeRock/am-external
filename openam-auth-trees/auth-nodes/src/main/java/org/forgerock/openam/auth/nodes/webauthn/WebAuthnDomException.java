@@ -11,12 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn;
 
-import static org.forgerock.openam.auth.nodes.webauthn.ClientScriptUtilities.RESPONSE_DELIMITER;
+import java.util.Objects;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -24,9 +32,6 @@ import org.apache.commons.lang.StringUtils;
  * Represents an error returned from the DOM.
  */
 public class WebAuthnDomException extends Exception {
-
-    /** Used to indicate we are communicating a DOM Exception back to the server. */
-    static final String ERROR_MESSAGE = "ERROR";
     /** Used as a key to transmit DOM exceptions after an error further along the tree. */
     static final String WEB_AUTHENTICATION_DOM_EXCEPTION = "WebAuthenticationDOMException";
     /** Error delimiter. */
@@ -61,18 +66,16 @@ public class WebAuthnDomException extends Exception {
      */
     @Override
     public String toString() {
-        return ERROR_MESSAGE + RESPONSE_DELIMITER + errorType.toString() + DESCRIPTION_DELIMITER + getMessage();
+        return errorType.toString() + DESCRIPTION_DELIMITER + getMessage();
     }
 
     /**
      * Construct a new WebAuthnDomException from a known-formatted String.
      *
-     * @param description Formatted string containing a DOM exception.
+     * @param errorDescription Formatted string containing a DOM exception.
      * @return an object representing this error.
      */
-    public static WebAuthnDomException parse(String description) {
-
-        String errorDescription = description.substring((ERROR_MESSAGE + RESPONSE_DELIMITER).length());
+    public static WebAuthnDomException parse(String errorDescription) {
         int colonIndex = errorDescription.indexOf(DESCRIPTION_DELIMITER);
         if (colonIndex == -1) {
             return new WebAuthnDomException(WebAuthnDomExceptionType.UnknownError, errorDescription);
@@ -86,4 +89,20 @@ public class WebAuthnDomException extends Exception {
         return new WebAuthnDomException(errorType, errorMessage);
     }
 
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+        if (object == null || getClass() != object.getClass()) {
+            return false;
+        }
+        WebAuthnDomException that = (WebAuthnDomException) object;
+        return errorType == that.errorType && getMessage().equals(that.getMessage());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(errorType, getMessage());
+    }
 }

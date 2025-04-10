@@ -199,6 +199,20 @@
               }
             }
           },
+          "accountMapper": {
+            "traverseObject": true,
+            "title": "Account Mapper",
+            "type": "object",
+            "properties": {
+              "nameIDMapperScript": {
+                "attributeKey": "nameIDMapperScript",
+                "title": "Name ID Mapper Script",
+                "type": "string",
+                "default": "[Empty]",
+                "description": "Script used for generating Name Identifier in Single Sign-on assertion. If a script is selected, it overrides the getNameID method of Account Mapper Java Class configured on the hosted IDP."
+              }
+            }
+          },
           "responseArtifactMessageEncoding": {
             "$ref": "definitions.json#/responseArtifactMessageEncoding"
           }
@@ -335,6 +349,20 @@
                 "items": {
                   "type": "string"
                 }
+              }
+            }
+          },
+          "treeConfiguration": {
+            "traverseObject": true,
+            "title": "Tree Name",
+            "type": "object",
+            "properties": {
+              "treeName": {
+                "attributeKey": "treeName",
+                "title": "Tree Name",
+                "type": "string",
+                "default": "[Empty]",
+                "description": "Tree to which this remote SP should be redirected. <strong>Note:</strong> If you specify a tree here, the configured Authentication Context Mapper is not executed. Instead, AM redirects to the specified tree, and makes the requested authentication context and configured mappings available to that tree through a scripted decision node binding."
               }
             }
           }

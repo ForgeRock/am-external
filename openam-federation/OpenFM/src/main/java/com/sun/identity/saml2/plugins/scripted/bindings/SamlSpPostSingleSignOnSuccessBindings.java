@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins.scripted.bindings;
 
@@ -32,7 +40,7 @@ import com.sun.identity.saml2.protocol.Response;
 /**
  * Script bindings for the SamlSpPostSingleSignOnSuccess script.
  */
-final class SamlSpPostSingleSignOnSuccessBindings extends BaseSamlSpBindings {
+public final class SamlSpPostSingleSignOnSuccessBindings extends BaseSamlSpBindings {
 
     private final AuthnRequest authnRequest;
     private final String profile;
@@ -69,18 +77,6 @@ final class SamlSpPostSingleSignOnSuccessBindings extends BaseSamlSpBindings {
     @Override
     public BindingsMap legacyBindings() {
         BindingsMap bindings = new BindingsMap(legacyCommonBindings());
-        bindings.put(AUTHN_REQUEST, authnRequest);
-        bindings.put(PROFILE, profile);
-        bindings.put(OUT, out);
-        bindings.put(SAML2_RESPONSE, ssoResponse);
-        bindings.put(SESSION, session);
-        bindings.put(IS_FEDERATION, federation);
-        return bindings;
-    }
-
-    @Override
-    public BindingsMap nextGenBindings() {
-        BindingsMap bindings = new BindingsMap(nextGenCommonBindings());
         bindings.put(AUTHN_REQUEST, authnRequest);
         bindings.put(PROFILE, profile);
         bindings.put(OUT, out);
@@ -135,13 +131,15 @@ final class SamlSpPostSingleSignOnSuccessBindings extends BaseSamlSpBindings {
      * SamlSpPostSingleSignOnSuccessBindings.
      */
     public interface SamlSpPostSingleSignOnSuccessBindingsStep6 {
-        SamlSpBindingsStep1 withFederation(boolean federation);
+        SamlSpBindingsStep1<SamlSpPostSingleSignOnSuccessBindings> withFederation(boolean federation);
     }
 
     /**
      * Builder object to construct a {@link SamlSpPostSingleSignOnSuccessBindings}.
+     * Before modifying this builder, or creating a new one, please read
+     * service-component-api/scripting-api/src/main/java/org/forgerock/openam/scripting/domain/README.md
      */
-    private static final class Builder extends BaseSamlSpBindings.Builder<Builder>
+    private static final class Builder extends BaseSamlSpBindings.Builder<SamlSpPostSingleSignOnSuccessBindings>
             implements SamlSpPostSingleSignOnSuccessBindingsStep1, SamlSpPostSingleSignOnSuccessBindingsStep2,
             SamlSpPostSingleSignOnSuccessBindingsStep3, SamlSpPostSingleSignOnSuccessBindingsStep4,
             SamlSpPostSingleSignOnSuccessBindingsStep5, SamlSpPostSingleSignOnSuccessBindingsStep6 {
@@ -214,7 +212,7 @@ final class SamlSpPostSingleSignOnSuccessBindings extends BaseSamlSpBindings {
          * @param federation The federation.
          * @return The next step of the builder.
          */
-        public SamlSpBindingsStep1 withFederation(boolean federation) {
+        public SamlSpBindingsStep1<SamlSpPostSingleSignOnSuccessBindings> withFederation(boolean federation) {
             this.federation = federation;
             return this;
         }

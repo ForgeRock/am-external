@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.federation.rest.schema.mappers;
@@ -27,8 +35,8 @@ import javax.xml.bind.JAXBIntrospector;
 import org.forgerock.openam.federation.rest.schema.shared.DigestAlgorithm;
 import org.forgerock.openam.objectenricher.EnricherContext;
 import org.forgerock.openam.objectenricher.service.CurrentSourceContext;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.reflect.TypeToken;
@@ -43,15 +51,15 @@ import com.sun.identity.saml2.jaxb.metadata.algsupport.SigningMethodType;
  */
 public final class DigestAlgorithmMapperTest {
 
-    private DigestAlgorithmMapper mapper;
+    private static DigestAlgorithmMapper mapper;
 
-    @BeforeMethod
-    public void setUp() {
+    @BeforeAll
+    static void setUp() {
         mapper = new DigestAlgorithmMapper();
     }
 
     @Test
-    public void whenMapDigestMethodsAreConvertedToTheirCorrespondingAlgorithms() {
+    void whenMapDigestMethodsAreConvertedToTheirCorrespondingAlgorithms() {
         // Given
         DigestMethodType digestMethod1 = new DigestMethodType();
         digestMethod1.setAlgorithm("http://www.w3.org/2000/09/xmldsig#sha1");
@@ -69,7 +77,7 @@ public final class DigestAlgorithmMapperTest {
     }
 
     @Test
-    public void whenMapDuplicateDigestMethodsAreDiscarded() {
+    void whenMapDuplicateDigestMethodsAreDiscarded() {
         // Given
         DigestMethodType digestMethod1 = new DigestMethodType();
         digestMethod1.setAlgorithm("http://www.w3.org/2000/09/xmldsig#sha1");
@@ -87,7 +95,7 @@ public final class DigestAlgorithmMapperTest {
     }
 
     @Test
-    public void whenMapOtherExtensionTypesAreIgnored() {
+    void whenMapOtherExtensionTypesAreIgnored() {
         // Given
         DigestMethodType digestMethod = new DigestMethodType();
         digestMethod.setAlgorithm("http://www.w3.org/2000/09/xmldsig#sha1");
@@ -104,7 +112,7 @@ public final class DigestAlgorithmMapperTest {
     }
 
     @Test
-    public void whenInverseDigestAlgorithmsAreConvertedToTheirCorrespondingDigestMethods() {
+    void whenInverseDigestAlgorithmsAreConvertedToTheirCorrespondingDigestMethods() {
         // Given
         EnricherContext context = new CurrentSourceContext(ROOT, null, TypeToken.of(ExtensionsType.class));
         List<DigestAlgorithm> digestAlgorithms = ImmutableList
@@ -128,7 +136,7 @@ public final class DigestAlgorithmMapperTest {
     }
 
     @Test
-    public void whenInverseExistingNonDigestMethodExtensionsAreRetained() {
+    void whenInverseExistingNonDigestMethodExtensionsAreRetained() {
         // Given
         SigningMethodType signingMethod = new SigningMethodType();
         signingMethod.setAlgorithm("http://www.w3.org/2000/09/xmldsig#sha1");
@@ -158,7 +166,7 @@ public final class DigestAlgorithmMapperTest {
     }
 
     @Test
-    public void whenInverseExistingDigestMethodsAreReplaced() {
+    void whenInverseExistingDigestMethodsAreReplaced() {
         // Given
         DigestMethodType digestMethod = new DigestMethodType();
         digestMethod.setAlgorithm("http://www.w3.org/2001/04/xmldsig-more#sha384");
@@ -187,7 +195,7 @@ public final class DigestAlgorithmMapperTest {
     }
 
     @Test
-    public void whenInverseExistingNonDigestMethodExtensionsOrderIsMaintained() {
+    void whenInverseExistingNonDigestMethodExtensionsOrderIsMaintained() {
         // Given
         SigningMethodType signingMethod1 = new SigningMethodType();
         SigningMethodType signingMethod2 = new SigningMethodType();
@@ -217,7 +225,7 @@ public final class DigestAlgorithmMapperTest {
     }
 
     @Test
-    public void whenInverseDigestAlgorithmOrderIsMaintained() {
+    void whenInverseDigestAlgorithmOrderIsMaintained() {
         // Given
         EnricherContext context = new CurrentSourceContext(ROOT, null, TypeToken.of(ExtensionsType.class));
         List<DigestAlgorithm> digestAlgorithms = ImmutableList

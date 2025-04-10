@@ -24,7 +24,7 @@
  *
  * $Id: IDPProxyUtil.java,v 1.18 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2010-2022 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.profile;
@@ -49,8 +49,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
@@ -111,7 +111,7 @@ import com.sun.identity.shared.xml.XMLUtils;
  */
 public class IDPProxyUtil {
 
-    // IDP proxy finder 
+    // IDP proxy finder
     // private static SAML2IDPFinder proxyFinder = null;
 
     private static final Logger logger = LoggerFactory.getLogger(IDPProxyUtil.class);
@@ -138,10 +138,10 @@ public class IDPProxyUtil {
      * Gets the preferred IDP Id to be proxied. This method makes use of an
      * SPI to determine the preferred IDP.
      * @param authnRequest original Authn Request.
-     * @param hostedEntityId hosted provider ID 
-     * @param realm Realm 
+     * @param hostedEntityId hosted provider ID
+     * @param realm Realm
      * @param request HttpServletRequest
-     * @param response HttpServletResponse 
+     * @param response HttpServletResponse
      * @exception SAML2Exception for any SAML2 failure.
      * @return String Provider id of the preferred IDP to be proxied.
      */
@@ -156,14 +156,14 @@ public class IDPProxyUtil {
     }
 
     /**
-     * Sends a new AuthnRequest to the authenticating provider. 
+     * Sends a new AuthnRequest to the authenticating provider.
      * @param authnRequest original AuthnRequest sent by the service provider.
-     * @param preferredIDP IDP to be proxied. 
+     * @param preferredIDP IDP to be proxied.
      * @param hostedEntityId hosted provider ID
-     * @param request HttpServletRequest 
+     * @param request HttpServletRequest
      * @param response HttpServletResponse
      * @param realm Realm
-     * @param relayState the Relay State 
+     * @param relayState the Relay State
      * @param originalBinding The binding used to send the original AuthnRequest.
      * @exception SAML2Exception for any SAML2 failure.
      * @exception IOException if there is a failure in redirection.
@@ -283,10 +283,7 @@ public class IDPProxyUtil {
         }
 
         try {
-            // sessionExpireTime is counted in seconds
-            long sessionExpireTime = currentTimeMillis() / 1000 + SPCache.interval;
-            SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(requestID, new AuthnRequestInfoCopy(reqInfo),
-                    sessionExpireTime);
+            SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(requestID, new AuthnRequestInfoCopy(reqInfo));
             if (logger.isDebugEnabled()) {
                 logger.debug(classMethod + " SAVE AuthnRequestInfoCopy for requestID " + requestID);
             }
@@ -382,7 +379,7 @@ public class IDPProxyUtil {
                 int proxyCount = 1;
                 if (proxyCountInt != null) {
                     proxyCount = scoping.getProxyCount().intValue();
-                    newScoping.setProxyCount(new Integer(proxyCount-1));
+                    newScoping.setProxyCount(proxyCount-1);
                 }
                 newScoping.setIDPList(scoping.getIDPList());
 
@@ -525,11 +522,11 @@ public class IDPProxyUtil {
     /**
      * Sends the proxy authentication response to the proxying service
      * provider which has originally requested for the authentication.
-     * @param request HttpServletRequest 
+     * @param request HttpServletRequest
      * @param response HttpServletResponse
      * @param out the print writer for writing out presentation
-     * @param requestID request ID 
-     * @param idpMetaAlias meta Alias 
+     * @param requestID request ID
+     * @param idpMetaAlias meta Alias
      * @param newSession Session object
      * @param nameIDFormat name identifier format
      * @param saml2Auditor a <code>SAML2EventLogger</code> auditor object to hook into
@@ -713,12 +710,12 @@ public class IDPProxyUtil {
     }
 
     /**
-     * Initiates the Single logout request by the IDP Proxy to the 
-     * authenticating identity provider. 
-     * @param request HttpServletRequest 
+     * Initiates the Single logout request by the IDP Proxy to the
+     * authenticating identity provider.
+     * @param request HttpServletRequest
      * @param response HttpServletResponse
      * @param out The print writer for writing out presentation.
-     * @param partner Authenticating identity provider 
+     * @param partner Authenticating identity provider
      * @param spMetaAlias IDP proxy's meta alias acting as SP
      * @param realm Realm
      */
@@ -801,11 +798,11 @@ public class IDPProxyUtil {
     }
 
     /**
-     * Gets the SLO response service location of the authenticating 
+     * Gets the SLO response service location of the authenticating
      * identity provider
      * @param realm Realm
-     * @param idpEntityID authenticating identity provider. 
-     * @return location URL of the SLO response service, return null 
+     * @param idpEntityID authenticating identity provider.
+     * @return location URL of the SLO response service, return null
      * if not found.
      */
     public static String getLocation (String realm, String idpEntityID,
@@ -845,12 +842,12 @@ public class IDPProxyUtil {
     }
 
     /**
-     * Gets the SLO response service element of the Entity 
+     * Gets the SLO response service element of the Entity
      * @param realm Realm
-     * @param entityID Authenticating Identity Provider. 
-     * @param binding Binding type. 
-     * @param role Identity Provider role. 
-     * @return SingleLogoutServiceElement of the SLO response service 
+     * @param entityID Authenticating Identity Provider.
+     * @param binding Binding type.
+     * @param role Identity Provider role.
+     * @return SingleLogoutServiceElement of the SLO response service
      * throws SAML2Exception for any SAML2 failure.
      */
     public static EndpointType getSLOElement(String realm, String entityID, String binding, String role)
@@ -1047,8 +1044,9 @@ public class IDPProxyUtil {
 
    public static Map getSessionPartners(SOAPMessage message) {
        try {
+           SOAPCommunicator soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
             Map sessMap = new HashMap();
-            Element reqElem = SOAPCommunicator.getInstance().getSamlpElement(message,
+            Element reqElem = soapCommunicator.getSamlpElement(message,
                     "LogoutRequest");
             LogoutRequest logoutReq =
                 ProtocolFactory.getInstance().createLogoutRequest(reqElem);

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -25,22 +33,15 @@ import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.ACTION;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.CALLBACKS_BUILDER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.OUTCOME_IDENTIFIER;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.WILDCARD;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertHeadersToModifiableObjects;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertParametersToModifiableObjects;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getAction;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getAuditEntryDetails;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getHttpClient;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getOutcome;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getSessionProperties;
 import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
 import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE_NAME;
+import static org.forgerock.openam.auth.nodes.script.ScriptedDecisionNodeContext.SCRIPTED_DECISION_NODE_NAME;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.inject.Provider;
 import javax.script.Bindings;
 
 import org.forgerock.http.client.ChfHttpClient;
@@ -48,6 +49,7 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.json.JsonValueException;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.AuthScriptUtilities;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
@@ -55,26 +57,24 @@ import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.script.ScriptedDecisionNodeBindings;
+import org.forgerock.openam.auth.nodes.script.ScriptedDecisionNodeContext;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.scripting.api.http.ScriptHttpClientFactory;
 import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepository;
-import org.forgerock.openam.scripting.api.secrets.ScriptedSecrets;
+import org.forgerock.openam.scripting.api.secrets.IScriptedSecrets;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluator.ScriptResult;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
 import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptFeature;
 import org.forgerock.openam.scripting.idrepo.ScriptIdentityRepository;
 import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
-import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
-import com.iplanet.dpro.session.service.SessionService;
 
 /**
  * A node that executes a script to make a decision.
@@ -88,13 +88,13 @@ public class ScriptedDecisionNode implements Node {
 
     private final Logger logger = LoggerFactory.getLogger(ScriptedDecisionNode.class);
     private final Config config;
-    private final ScriptEvaluator scriptEvaluator;
-    private final Provider<SessionService> sessionServiceProvider;
+    private final ScriptEvaluator<ScriptedDecisionNodeBindings> scriptEvaluator;
     private final ChfHttpClient httpClient;
     private final Realm realm;
     private final ScriptIdentityRepository scriptIdentityRepository;
     private final ScriptedIdentityRepository scriptedIdentityRepository;
-    private final ScriptedSecrets secrets;
+    private final IScriptedSecrets secrets;
+    private final AuthScriptUtilities authScriptUtils;
     private JsonValue auditEntryDetail;
 
     /**
@@ -102,24 +102,25 @@ public class ScriptedDecisionNode implements Node {
      *
      * @param scriptEvaluatorFactory            A script evaluator factory.
      * @param config                            The node configuration.
-     * @param sessionServiceProvider            provides Sessions.
-     * @param httpClientFactory                 provides http clients.
      * @param realm                             The realm the node is in, and that the request is targeting.
      * @param scriptIdentityRepositoryFactory   factory to build access to the identity repo for this node's script
      * @param scriptedIdentityRepositoryFactory factory to build access to the identity repo for this node's script
      * @param secretsFactory                    provides access to the secrets API for this node's script
+     * @param authScriptUtils                   utilities for scripted nodes
+     * @param scriptedDecisionNodeContext       The next-gen context for the scripted decision node.
      */
     @Inject
     public ScriptedDecisionNode(ScriptEvaluatorFactory scriptEvaluatorFactory,
-            @Assisted Config config, Provider<SessionService> sessionServiceProvider,
-            ScriptHttpClientFactory httpClientFactory, @Assisted Realm realm,
+            @Assisted Config config, @Assisted Realm realm,
             ScriptIdentityRepository.Factory scriptIdentityRepositoryFactory,
             ScriptedIdentityRepository.Factory scriptedIdentityRepositoryFactory,
-            ScriptedSecrets.Factory secretsFactory) {
-        this.scriptEvaluator = scriptEvaluatorFactory.create(AUTHENTICATION_TREE_DECISION_NODE);
+            IScriptedSecrets.Factory secretsFactory, AuthScriptUtilities authScriptUtils,
+            ScriptedDecisionNodeContext scriptedDecisionNodeContext) {
+        this.scriptEvaluator = scriptEvaluatorFactory
+                .create(AUTHENTICATION_TREE_DECISION_NODE, scriptedDecisionNodeContext);
         this.config = config;
-        this.sessionServiceProvider = sessionServiceProvider;
-        this.httpClient = getHttpClient(config.script(), httpClientFactory);
+        this.authScriptUtils = authScriptUtils;
+        this.httpClient = authScriptUtils.getLegacyHttpClient(config.script());
         this.realm = realm;
         this.scriptIdentityRepository = scriptIdentityRepositoryFactory.create(realm);
         this.scriptedIdentityRepository = scriptedIdentityRepositoryFactory.create(realm);
@@ -140,25 +141,26 @@ public class ScriptedDecisionNode implements Node {
                 filteredTransient = filterInputs(context.transientState);
             }
 
-            ScriptBindings scriptedDecisionNodeBindings = ScriptedDecisionNodeBindings.builder()
+            ScriptedDecisionNodeBindings scriptedDecisionNodeBindings = ScriptedDecisionNodeBindings.builder()
                     .withSharedState(filteredShared.getObject())
                     .withTransientState(filteredTransient.getObject())
                     .withHttpClient(httpClient)
+                    .withSecrets(secrets)
                     .withScriptIdentityRepository(scriptIdentityRepository)
+                    .withSamlApplication(authScriptUtils.getSamlDecisionNodeApplication(context).orElse(null))
+                    .withOauthApplication(authScriptUtils.getOauthDecisionNodeApplication(context).orElse(null))
                     .withNodeState(context.getStateFor(this))
                     .withCallbacks(context.getAllCallbacks())
-                    .withHeaders(convertHeadersToModifiableObjects(context.request.headers))
-                    .withQueryParameters(convertParametersToModifiableObjects(context.request.parameters))
+                    .withHeaders(authScriptUtils.convertHeadersToModifiableObjects(context.request.headers))
+                    .withQueryParameters(authScriptUtils.convertParametersToModifiableObjects(
+                            context.request.parameters))
                     .withScriptedIdentityRepository(scriptedIdentityRepository)
-                    .withSecrets(secrets)
                     .withResumedFromSuspend(context.hasResumedFromSuspend())
-                    .withExistingSession(
-                            StringUtils.isNotEmpty(context.request.ssoTokenId)
-                                    ? getSessionProperties(sessionServiceProvider.get(), context.request.ssoTokenId)
-                                    : null)
+                    .withExistingSession(authScriptUtils.getSessionProperties(context.request.ssoTokenId))
+                    .withRequestCookies(context.request.cookies)
                     .build();
 
-            ScriptEvaluator.ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script,
+            ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script,
                     scriptedDecisionNodeBindings, realm);
             Bindings bindings = scriptResult.getBindings();
             logger.debug("script {} \n binding {}", script, bindings);
@@ -170,24 +172,52 @@ public class ScriptedDecisionNode implements Node {
                 transferOutputs(filteredShared, context.sharedState);
                 transferOutputs(filteredTransient, context.transientState);
             }
-            auditEntryDetail = getAuditEntryDetails(bindings);
+            auditEntryDetail = authScriptUtils.getAuditEntryDetails(bindings);
             Object actionResult = bindings.get(ACTION);
             Object callbacksBuilder = bindings.get(CALLBACKS_BUILDER);
-            Optional<Action> actionOptional = getAction(actionResult, evaluatorVersion, callbacksBuilder);
+            Optional<Action> actionOptional = authScriptUtils.getAction(actionResult, evaluatorVersion,
+                    callbacksBuilder);
             if (actionOptional.isPresent()) {
                 Action action = actionOptional.get();
-                if (!action.sendingCallbacks() && !config.outcomes().contains(action.outcome)) {
+                if (!action.sendingCallbacks() && !action.hasSuspensionHandler()
+                        && !config.outcomes().contains(action.outcome)) {
                     logger.warn("invalid script outcome {} in action", action.outcome);
                     throw new NodeProcessException("Invalid outcome from script, '" + action.outcome + "'");
                 }
                 return action;
             }
-            return goTo(getOutcome(bindings.get(OUTCOME_IDENTIFIER), config.outcomes())).build();
+            return goTo(authScriptUtils.getOutcome(bindings.get(OUTCOME_IDENTIFIER), config.outcomes())).build();
         } catch (javax.script.ScriptException e) {
             logger.warn("error evaluating the script", e);
             throw new NodeProcessException(e);
         }
     }
+
+    @Override
+    public JsonValue getAuditEntryDetail() {
+        if (auditEntryDetail != null) {
+            return auditEntryDetail;
+        } else {
+            return json(object());
+        }
+    }
+
+    @Override
+    public InputState[] getInputs() {
+        return config.inputs().stream()
+                .map(input -> new InputState(input, true))
+                .toArray(InputState[]::new);
+    }
+
+    @Override
+    public OutputState[] getOutputs() {
+        return config.outputs().stream()
+                .map(OutputState::new)
+                .toArray(OutputState[]::new);
+    }
+
+
+    ////////////////// Private Methods //////////////////////////
 
     /**
      * Return only those state values declared as inputs.
@@ -259,40 +289,19 @@ public class ScriptedDecisionNode implements Node {
         }
     }
 
-    @Override
-    public JsonValue getAuditEntryDetail() {
-        if (auditEntryDetail != null) {
-            return auditEntryDetail;
-        } else {
-            return json(object());
-        }
-    }
-
-    @Override
-    public InputState[] getInputs() {
-        return config.inputs().stream()
-                .map(input -> new InputState(input, true))
-                .toArray(InputState[]::new);
-    }
-
-    @Override
-    public OutputState[] getOutputs() {
-        return config.outputs().stream()
-                .map(OutputState::new)
-                .toArray(OutputState[]::new);
-    }
-
     /**
-     * Node Config Declaration.
+     * Node configuration.
      */
     public interface Config {
+
         /**
          * The script configuration.
          *
          * @return The script configuration.
          */
         @Attribute(order = 100)
-        @ScriptContext(AUTHENTICATION_TREE_DECISION_NODE_NAME)
+        @ScriptContext(legacyContext = AUTHENTICATION_TREE_DECISION_NODE_NAME,
+                nextGenContext = SCRIPTED_DECISION_NODE_NAME)
         default Script script() {
             return Script.EMPTY_SCRIPT;
         }

@@ -11,64 +11,68 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.validators;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.cuppa.Cuppa.beforeEach;
-import static org.forgerock.cuppa.Cuppa.describe;
-import static org.forgerock.cuppa.Cuppa.it;
-import static org.forgerock.cuppa.Cuppa.when;
 
 import java.util.Collections;
 
-import org.forgerock.cuppa.Test;
-import org.forgerock.cuppa.junit.CuppaRunner;
-import org.junit.runner.RunWith;
 
 import com.google.common.collect.ImmutableSet;
 
-@RunWith(CuppaRunner.class)
-@Test
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 public class JsonValidatorTest {
     private JsonValidator validator;
 
-    {
-        describe("DecimalValidator", () -> {
-            describe("validate", () -> {
-                beforeEach(() -> {
-                    validator = new JsonValidator();
-                });
-                when("The input is valid", () -> {
-                    it("returns true", () -> {
-                        assertThat(validator.validate(ImmutableSet.of(
-                                "{\"biometricAvailable\": { },\"deviceTampering\": {\"score\": 0.8}}"))
-                        ).isTrue();
-                    });
-                });
-                when("there are no values", () -> {
-                    it("returns true", () -> {
-                        assertThat(validator.validate(Collections.emptySet())).isTrue();
-                    });
-                });
-                when("the value is empty", () -> {
-                    it("returns true", () -> {
-                        assertThat(validator.validate(ImmutableSet.of(""))).isTrue();
-                    });
-                });
-                when("the value is null", () -> {
-                    it("returns true", () -> {
-                        assertThat(validator.validate(null)).isTrue();
-                    });
-                });
-                when("the values aren't parsed", () -> {
-                    it("returns false", () -> {
-                        assertThat(validator.validate(ImmutableSet.of("invalid format"))).isFalse();
-                    });
-                });
-            });
-        });
+
+    @BeforeEach
+    public void beforeEach() {
+        validator = new JsonValidator();
+    }
+
+    @Test
+    @DisplayName(value = "The input is valid it returns true")
+    public void testTheInputIsValidItReturnsTrue() throws Exception {
+        assertThat(validator.validate(ImmutableSet.of(
+                "{\"biometricAvailable\": { },\"deviceTampering\": {\"score\": 0.8}}"))
+        ).isTrue();
+    }
+
+    @Test
+    @DisplayName(value = "there are no values it returns true")
+    public void testThereAreNoValuesItReturnsTrue() throws Exception {
+        assertThat(validator.validate(Collections.emptySet())).isTrue();
+    }
+
+    @Test
+    @DisplayName(value = "the value is empty it returns true")
+    public void testTheValueIsEmptyItReturnsTrue() throws Exception {
+        assertThat(validator.validate(ImmutableSet.of(""))).isTrue();
+    }
+
+    @Test
+    @DisplayName(value = "the value is null it returns true")
+    public void testTheValueIsNullItReturnsTrue() throws Exception {
+        assertThat(validator.validate(null)).isTrue();
+    }
+
+    @Test
+    @DisplayName(value = "the values aren't parsed it returns false")
+    public void testTheValuesArenTParsedItReturnsFalse() throws Exception {
+        assertThat(validator.validate(ImmutableSet.of("invalid format"))).isFalse();
     }
 }

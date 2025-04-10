@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.jwtpop;
@@ -34,17 +42,17 @@ import org.forgerock.json.jose.jwk.OctJWK;
 import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.json.jose.jws.SupportedEllipticCurve;
 import org.forgerock.util.encode.Base64url;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class JwkUtilsTest {
 
-    private EcJWK ecKeyPair;
-    private RsaJWK rsaKeyPair;
-    private OctJWK secretKey;
+    private static EcJWK ecKeyPair;
+    private static RsaJWK rsaKeyPair;
+    private static OctJWK secretKey;
 
-    @BeforeClass
-    public void createKeys() throws Exception {
+    @BeforeAll
+    static void createKeys() throws Exception {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
         keyPairGenerator.initialize(SupportedEllipticCurve.P256.getParameters());
         KeyPair keyPair = keyPairGenerator.generateKeyPair();
@@ -61,32 +69,32 @@ public class JwkUtilsTest {
     }
 
     @Test
-    public void shouldReturnEssentialKeysForEcJwk() throws Exception {
+    void shouldReturnEssentialKeysForEcJwk() throws Exception {
         // https://tools.ietf.org/html/rfc7638#section-3.2
         assertThat(new ArrayList<>(JwkUtils.essentialKeys(ecKeyPair).keySet())).containsExactly("crv", "kty", "x", "y");
     }
 
     @Test
-    public void shouldReturnEssentialKeysForRsaJwk() throws Exception {
+    void shouldReturnEssentialKeysForRsaJwk() throws Exception {
         // https://tools.ietf.org/html/rfc7638#section-3.2
         assertThat(new ArrayList<>(JwkUtils.essentialKeys(rsaKeyPair).keySet())).containsExactly("e", "kty", "n");
     }
 
     @Test
-    public void shouldReturnEssentialKeysForOctJWK() throws Exception {
+    void shouldReturnEssentialKeysForOctJWK() throws Exception {
         // https://tools.ietf.org/html/rfc7638#section-3.2
         assertThat(new ArrayList<>(JwkUtils.essentialKeys(secretKey).keySet())).containsExactly("k", "kty");
     }
 
     @Test
-    public void shouldReturnCorrectKeyType() throws Exception {
+    void shouldReturnCorrectKeyType() throws Exception {
         assertThat(JwkUtils.keyType(ecKeyPair)).isEqualTo(KeyType.EC);
         assertThat(JwkUtils.keyType(rsaKeyPair)).isEqualTo(KeyType.RSA);
         assertThat(JwkUtils.keyType(secretKey)).isEqualTo(KeyType.OCT);
     }
 
     @Test
-    public void shouldMatchThumbprintRfcExample() throws Exception {
+    void shouldMatchThumbprintRfcExample() throws Exception {
         // https://tools.ietf.org/html/rfc7638#section-3.1
         // Given
         final RsaJWK jwk = RsaJWK.parse("{"

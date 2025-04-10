@@ -24,7 +24,7 @@
  *
  * $Id: NameIDMapping.java,v 1.6 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2013-2024 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 
@@ -94,6 +94,7 @@ public class NameIDMapping {
     static SAML2MetaManager metaManager = null;
 
     static SessionProvider sessionProvider = null;
+    private static SOAPCommunicator soapCommunicator;
     
     static {
         try {
@@ -351,7 +352,7 @@ public class NameIDMapping {
         
         SOAPMessage resMsg = null;
         try {
-            resMsg = SOAPCommunicator.getInstance().sendSOAPMessage(nimRequestXMLString, nimURL,
+            resMsg = getSoapCommunicator().sendSOAPMessage(nimRequestXMLString, nimURL,
                     true);
         } catch (SOAPException se) {
             logger.error("NameIDMapping.doNIMBySOAP: ", se);
@@ -359,7 +360,7 @@ public class NameIDMapping {
                 "invalidSOAPMessge"));
         }
 
-        Element nimRespElem = SOAPCommunicator.getInstance().getSamlpElement(resMsg,
+        Element nimRespElem = getSoapCommunicator().getSamlpElement(resMsg,
                 SAML2Constants.NAME_ID_MAPPING_RESPONSE);
         NameIDMappingResponse nimResponse = 
              pf.createNameIDMappingResponse(nimRespElem);
@@ -585,5 +586,12 @@ public class NameIDMapping {
         }
 
         return nameID;
+    }
+
+    private static SOAPCommunicator getSoapCommunicator() {
+        if (soapCommunicator == null) {
+            soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        }
+        return soapCommunicator;
     }
 }

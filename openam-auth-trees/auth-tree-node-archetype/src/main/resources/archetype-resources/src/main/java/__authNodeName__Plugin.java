@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2017-2025 Ping Identity Corporation.
  */
 
 package ${package};
@@ -55,7 +55,7 @@ import org.forgerock.openam.plugins.PluginException;
  */
 public class ${authNodeName}Plugin extends AbstractNodeAmPlugin {
 
-	static private String currentVersion = "1.0.0";
+	private static final String CURRENT_VERSION = "1.0.0";
 	
     /** 
      * Specify the Map of list of node classes that the plugin is providing. These will then be installed and
@@ -65,8 +65,7 @@ public class ${authNodeName}Plugin extends AbstractNodeAmPlugin {
      */
 	@Override
 	protected Map<String, Iterable<? extends Class<? extends Node>>> getNodesByVersion() {
-		return Collections.singletonMap(${authNodeName}Plugin.currentVersion, 
-				Collections.singletonList(${authNodeName}.class));
+		return Collections.singletonMap("1.0.0", Collections.singletonList(${authNodeName}.class));
 	}
 
     /** 
@@ -86,7 +85,6 @@ public class ${authNodeName}Plugin extends AbstractNodeAmPlugin {
      * 
      * No need to implement this unless your AuthNode has specific requirements on startup.
      *
-     * @param startupType The type of startup that is taking place.
      */
 	@Override
 	public void onStartup() throws PluginException {
@@ -114,6 +112,6 @@ public class ${authNodeName}Plugin extends AbstractNodeAmPlugin {
      */
 	@Override
 	public String getPluginVersion() {
-		return ${authNodeName}Plugin.currentVersion;
+		return ${authNodeName}Plugin.CURRENT_VERSION;
 	}
 }

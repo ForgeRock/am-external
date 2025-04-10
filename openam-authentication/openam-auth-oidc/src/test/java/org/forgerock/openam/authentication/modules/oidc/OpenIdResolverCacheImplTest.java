@@ -11,31 +11,36 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.oidc;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.sun.identity.sm.ServiceConfigManager;
-
-import org.forgerock.oauth.resolvers.OpenIdResolverFactory;
-import org.forgerock.oauth.resolvers.OpenIdResolver;
-
-import org.forgerock.json.jose.exceptions.FailedToLoadJWKException;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import static org.mockito.ArgumentMatchers.eq;
-import static org.testng.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
+import org.forgerock.json.jose.exceptions.FailedToLoadJWKException;
+import org.forgerock.oauth.resolvers.OpenIdResolver;
+import org.forgerock.oauth.resolvers.OpenIdResolverFactory;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
+import com.google.inject.AbstractModule;
 
 
 public class OpenIdResolverCacheImplTest {
@@ -44,23 +49,15 @@ public class OpenIdResolverCacheImplTest {
     private static final String FAUX_CLIENT_SECRET = "shhh";
     private static final String FAUX_ISSUER = "accounts.somecompany.com";
     private static final String FAUX_ISSUER2 = "test.somecompany.com";
-    private OpenIdResolverCache cache;
-    private OpenIdResolverFactory factory;
-    private OpenIdResolver configResolver;
-    private OpenIdResolver jwkResolver;
-    private OpenIdResolver jwkResolver2;
-    private OpenIdResolver clientSecretResolver;
+    private static OpenIdResolverCache cache;
+    private static OpenIdResolverFactory factory;
+    private static OpenIdResolver configResolver;
+    private static OpenIdResolver jwkResolver;
+    private static OpenIdResolver jwkResolver2;
+    private static OpenIdResolver clientSecretResolver;
 
-    class MyModule extends AbstractModule {
-        @Override
-        protected void configure() {
-            bind(OpenIdResolverFactory.class).toInstance(factory);
-            bind(OpenIdResolverCache.class).to(OpenIdResolverCacheImpl.class);
-        }
-    }
-
-    @BeforeTest
-    public void initialize() throws FailedToLoadJWKException {
+    @BeforeAll
+    static void initialize() throws FailedToLoadJWKException {
         configResolver = mock(OpenIdResolver.class);
         when(configResolver.getIssuer()).thenReturn(FAUX_ISSUER);
         jwkResolver = mock(OpenIdResolver.class);
@@ -79,54 +76,56 @@ public class OpenIdResolverCacheImplTest {
     }
 
     @Test
-    public void testBasicCreation() throws MalformedURLException, FailedToLoadJWKException {
+    void testBasicCreation() throws MalformedURLException, FailedToLoadJWKException {
         OpenIdResolver localConfigResolver = createConfigResolver();
-        assertTrue(localConfigResolver == configResolver);
+        assertThat(localConfigResolver).isEqualTo(configResolver);
 
         OpenIdResolver localJwkResolver = createJwtResolver(FAUX_ISSUER);
-        assertTrue(localJwkResolver == jwkResolver);
+        assertThat(localJwkResolver).isEqualTo(jwkResolver);
 
         OpenIdResolver localJwkResolver2 = createJwtResolver(FAUX_ISSUER2);
-        assertTrue(localJwkResolver2 == jwkResolver2);
+        assertThat(localJwkResolver2).isEqualTo(jwkResolver2);
 
-        OpenIdResolver localClientSecretResolver =  createSecretResolver();
-        assertTrue(localClientSecretResolver == clientSecretResolver);
+        OpenIdResolver localClientSecretResolver = createSecretResolver();
+        assertThat(localClientSecretResolver).isEqualTo(clientSecretResolver);
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
-    public void createInvalidResolver() throws MalformedURLException, FailedToLoadJWKException {
-        cache.createResolver("issuer_string_that_does_not_match_resolver",
-            OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_CONFIG_URL, FAUX_CONFIG_URL_STRING,
-            new URL(FAUX_CONFIG_URL_STRING));
+    @Test
+    void createInvalidResolver() throws MalformedURLException, FailedToLoadJWKException {
+
+        assertThatThrownBy(() -> cache.createResolver("issuer_string_that_does_not_match_resolver",
+                OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_CONFIG_URL, FAUX_CONFIG_URL_STRING,
+                new URL(FAUX_CONFIG_URL_STRING)))
+                .isInstanceOf(IllegalStateException.class);
 
     }
 
     @Test
-    public void testBasicLookup() throws MalformedURLException, FailedToLoadJWKException {
+    void testBasicLookup() throws MalformedURLException, FailedToLoadJWKException {
         createConfigResolver();
         createJwtResolver(FAUX_ISSUER);
         createSecretResolver();
         OpenIdResolver localConfigResolver =
                 cache.getResolverForIssuer(FAUX_ISSUER, FAUX_CONFIG_URL_STRING);
-        assertTrue(localConfigResolver == configResolver);
+        assertThat(localConfigResolver).isEqualTo(configResolver);
 
         OpenIdResolver localJwkResolver =
                 cache.getResolverForIssuer(FAUX_ISSUER, FAUX_JWK_URL_STRING);
-        assertTrue(localJwkResolver == jwkResolver);
+        assertThat(localJwkResolver).isEqualTo(jwkResolver);
 
         OpenIdResolver localJwkResolver2 =
                 cache.getResolverForIssuer(FAUX_ISSUER2, FAUX_JWK_URL_STRING);
-        assertTrue(localJwkResolver2 == jwkResolver2);
+        assertThat(localJwkResolver2).isEqualTo(jwkResolver2);
 
         OpenIdResolver localClientSecretResolver =
                 cache.getResolverForIssuer(FAUX_ISSUER, FAUX_CLIENT_SECRET);
-        assertTrue(localClientSecretResolver == clientSecretResolver);
+        assertThat(localClientSecretResolver).isEqualTo(clientSecretResolver);
 
     }
 
     private OpenIdResolver createConfigResolver() throws MalformedURLException, FailedToLoadJWKException {
         return cache.createResolver(FAUX_ISSUER, OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_CONFIG_URL,
-            FAUX_CONFIG_URL_STRING, new URL(FAUX_CONFIG_URL_STRING));
+                FAUX_CONFIG_URL_STRING, new URL(FAUX_CONFIG_URL_STRING));
     }
 
     private OpenIdResolver createJwtResolver(String issuer) throws MalformedURLException, FailedToLoadJWKException {
@@ -134,9 +133,18 @@ public class OpenIdResolverCacheImplTest {
                 new URL(FAUX_JWK_URL_STRING));
 
     }
+
     private OpenIdResolver createSecretResolver() throws FailedToLoadJWKException {
         return cache.createResolver(FAUX_ISSUER, OpenIdConnectConfig.CRYPTO_CONTEXT_TYPE_CLIENT_SECRET, FAUX_CLIENT_SECRET,
                 null);
+    }
+
+    class MyModule extends AbstractModule {
+        @Override
+        protected void configure() {
+            bind(OpenIdResolverFactory.class).toInstance(factory);
+            bind(OpenIdResolverCache.class).to(OpenIdResolverCacheImpl.class);
+        }
     }
 
 }

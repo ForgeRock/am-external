@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
  */
 
 package com.forgerock.openam.functionaltest.sts.frmwk.rest;

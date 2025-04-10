@@ -11,18 +11,26 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -31,6 +39,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
@@ -40,27 +49,26 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
+import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
-
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.utils.OpenAMSettings;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
-import com.iplanet.sso.SSOException;
-import com.sun.identity.sm.SMSException;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Test the message node.
  */
+@ExtendWith(MockitoExtension.class)
 public class MessageNodeTest {
 
     private static final int DEFAULT_CHOICE_INDEX = 1;
 
-    private static final LocaleSelector LOCALE_SELECTOR = new LocaleSelector();
     private static final Map<Locale, String> CUSTOM_YES = new HashMap<>() {{
         put(Locale.US, "CustomDefaultUSYes");
         put(Locale.GERMANY, "CustomGermanyYes");
@@ -80,50 +88,40 @@ public class MessageNodeTest {
         put(Locale.CANADA, "CustomCanadaMessage");
     }};
 
-    private static final Locale DEFAULT_LOCALE = Locale.US;
-    private static final String CONFIRMATION_VARIABLE = "confirmationVariable";
-    private static final Map<Locale, String> EMPTY_MAP = new HashMap<>() {{
-        put(Locale.US, "");
-    }};
-
     @Mock
     private MessageNode.Config config;
-    private OpenAMSettings settings;
+    @Mock
     private Realm realm;
+    @Mock
+    private LocalizedMessageProvider localizedMessageProvider;
 
-    @DataProvider(name = "confirmations")
-    public Object[][] confirmations() {
-        return new Object[][]{
-                {0, "true"},
-                {1, "false"}
-        };
+    public static Stream<Arguments> confirmations() {
+        return Stream.of(Arguments.of(0, "true"), Arguments.of(1, "false"));
     }
 
     @Test
-    public void processSetResultInSharedStateWhenNoError() throws Exception {
-        initialiseMockNodeConfig();
-
+    void processSetResultInSharedStateWhenNoError() throws Exception {
         //GIVEN
+        when(localizedMessageProvider.getLocalizedMessage(any(), any(), any(), any())).thenReturn("message");
         when(config.stateField()).thenReturn(Optional.of("stateField"));
 
-        MessageNode messageNode = new MessageNode(config, realm, LOCALE_SELECTOR, settings);
+        MessageNode messageNode = new MessageNode(config, realm, r -> localizedMessageProvider);
 
         //WHEN
         Action action = messageNode.process(getContext());
 
         //THEN
-        Assert.assertTrue(config.stateField().isPresent());
-        Assert.assertTrue(action.sharedState.isDefined(config.stateField().get()));
-        Assert.assertNotEquals(action.sharedState.get(config.stateField().get()), Optional.empty());
+        assertThat(config.stateField()).isPresent();
+        assertThat(action.sharedState.isDefined(config.stateField().get())).isTrue();
+        assertThat(action.sharedState.get(config.stateField().get())).isNotEqualTo(Optional.empty());
 
     }
 
     @Test
-    public void processSetResultWithoutSharedStateWhenNoError() throws Exception {
-        initialiseMockNodeConfig("");
-
+    void processSetResultWithoutSharedStateWhenNoError() throws Exception {
         //GIVEN
-        MessageNode messageNode = new MessageNode(config, realm, LOCALE_SELECTOR, settings);
+        when(localizedMessageProvider.getLocalizedMessage(any(), any(), any(), any())).thenReturn("message");
+        MessageNode messageNode = new MessageNode(config, realm, r -> localizedMessageProvider);
 
         //WHEN
         Action action = messageNode.process(getContext());
@@ -132,9 +130,11 @@ public class MessageNodeTest {
         assertThat(action.outcome).isEqualTo(null);
     }
 
-    @Test(dataProvider = "confirmations")
+    @ParameterizedTest
+    @MethodSource("confirmations")
     public void shouldGetCorrectOutcomeForChoiceIndex(int index, String response) throws Exception {
-        initialiseMockNodeConfig();
+        when(localizedMessageProvider.getLocalizedMessage(any(), any(), any(), any())).thenReturn("message");
+        given(config.stateField()).willReturn(Optional.of("confirmationVariable"));
 
         TextOutputCallback textOutputCallback = new TextOutputCallback(TextOutputCallback.INFORMATION,
                 CUSTOM_MESSAGE.getOrDefault(Locale.US, ""));
@@ -147,18 +147,19 @@ public class MessageNodeTest {
         arrayList.add(textOutputCallback);
         arrayList.add(confirmationCallback);
 
-        MessageNode messageNode = new MessageNode(config, realm, LOCALE_SELECTOR, settings);
+        MessageNode messageNode = new MessageNode(config, realm, r -> localizedMessageProvider);
 
         Action action = messageNode.process(getContext(arrayList));
 
         assertThat(action.outcome).isEqualTo(response);
-        Assert.assertTrue(config.stateField().isPresent());
+        assertThat(config.stateField()).isPresent();
         assertThat(action.sharedState.get(config.stateField().get()).asInteger()).isEqualTo(index);
     }
 
-    @Test(dataProvider = "confirmations")
+    @ParameterizedTest
+    @MethodSource("confirmations")
     public void shouldGetCorrectOutcomeForChoiceIndexWithoutSharedState(int index, String response) throws Exception {
-        initialiseMockNodeConfig("");
+        when(localizedMessageProvider.getLocalizedMessage(any(), any(), any(), any())).thenReturn("message");
 
         TextOutputCallback textOutputCallback = new TextOutputCallback(TextOutputCallback.INFORMATION,
                 CUSTOM_MESSAGE.getOrDefault(Locale.US, ""));
@@ -171,7 +172,7 @@ public class MessageNodeTest {
         arrayList.add(textOutputCallback);
         arrayList.add(confirmationCallback);
 
-        MessageNode messageNode = new MessageNode(config, realm, LOCALE_SELECTOR, settings);
+        MessageNode messageNode = new MessageNode(config, realm, r -> localizedMessageProvider);
 
         Action action = messageNode.process(getContext(arrayList));
 
@@ -179,67 +180,10 @@ public class MessageNodeTest {
     }
 
     @Test
-    public void processNoException() throws Exception {
-        initialiseMockNodeConfig();
-
+    void processNoException() throws Exception {
         //GIVEN
-        MessageNode messageNode = new MessageNode(config, realm, LOCALE_SELECTOR, settings);
-
-        //WHEN
-        messageNode.process(getContext());
-
-        //THEN
-        //no exception
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void processThrowExceptionWhenEmptyMessage() throws Exception {
-        initialiseMockNodeConfig(EMPTY_MAP);
-
-        //GIVEN
-        MessageNode messageNode = new MessageNode(config, realm, LOCALE_SELECTOR, settings);
-
-        //WHEN
-        messageNode.process(getContext());
-
-        //THEN
-        //throw an exception
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void processThrowExceptionWhenEmptyYesMessage() throws Exception {
-        initialiseMockNodeConfig(getNonEmptyMap("CustomYes"), EMPTY_MAP);
-
-        //GIVEN
-        MessageNode messageNode = new MessageNode(config, realm, LOCALE_SELECTOR, settings);
-
-        //WHEN
-        messageNode.process(getContext());
-
-        //THEN
-        //throw an exception
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void processThrowExceptionWhenEmptyNoMessage() throws Exception {
-        initialiseMockNodeConfig(EMPTY_MAP, getNonEmptyMap("CustomNo"));
-
-        //GIVEN
-        MessageNode messageNode = new MessageNode(config, realm, LOCALE_SELECTOR, settings);
-
-        //WHEN
-        messageNode.process(getContext());
-
-        //THEN
-        //throw an exception
-    }
-
-    @Test
-    public void processNoExceptionWhenEmptyStateField() throws Exception {
-        initialiseMockNodeConfig("");
-
-        //GIVEN
-        MessageNode messageNode = new MessageNode(config, realm, LOCALE_SELECTOR, settings);
+        when(localizedMessageProvider.getLocalizedMessage(any(), any(), any(), any())).thenReturn("message");
+        MessageNode messageNode = new MessageNode(config, realm, r -> localizedMessageProvider);
 
         //WHEN
         messageNode.process(getContext());
@@ -249,26 +193,59 @@ public class MessageNodeTest {
     }
 
     @Test
-    public void shouldGetCorrectOutcomeForDefaultLocale() throws NodeProcessException {
-        initialiseMockNodeConfig(Locale.GERMANY);
+    void processThrowExceptionWhenEmptyMessage() {
+        when(localizedMessageProvider.getLocalizedMessage(any(), any(), any(), any())).thenReturn("message");
+        given(localizedMessageProvider.getLocalizedMessage(any(), any(), any(), any()))
+                .willThrow(IllegalArgumentException.class);
 
         //GIVEN
-        MessageNode messageNode = new MessageNode(config, realm, LOCALE_SELECTOR, settings);
+        MessageNode messageNode = new MessageNode(config, realm, r -> localizedMessageProvider);
 
-        //WHEN
-        Action action = messageNode.process(getContext());
-
-        //THEN
-        assertThat(action.outcome).isEqualTo(null);
-        assertThat(((TextOutputCallback) action.callbacks.get(0)).getMessage()).isEqualTo("CustomGermanyMessage");
+        //WHEN / THEN
+        assertThatThrownBy(() -> messageNode.process(getContext())).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    public void shouldGetCorrectOutcomeIfDefaultLocaleDoesNotExist() throws NodeProcessException {
-        initialiseMockNodeConfig(Locale.ITALY);
+    void processThrowExceptionWhenEmptyYesMessage() {
+        given(localizedMessageProvider.getLocalizedMessage(any(), any(), any(), any()))
+                .willThrow(IllegalArgumentException.class);
 
         //GIVEN
-        MessageNode messageNode = new MessageNode(config, realm, LOCALE_SELECTOR, settings);
+        MessageNode messageNode = new MessageNode(config, realm, r -> localizedMessageProvider);
+
+        //WHEN
+        assertThatThrownBy(() -> messageNode.process(getContext())).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void processThrowExceptionWhenEmptyNoMessage() {
+        //GIVEN
+        MessageNode messageNode = new MessageNode(config, realm, r -> localizedMessageProvider);
+        given(localizedMessageProvider.getLocalizedMessage(any(), any(), any(), any()))
+                .willThrow(IllegalArgumentException.class);
+
+        //WHEN
+        assertThatThrownBy(() -> messageNode.process(getContext())).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void processNoExceptionWhenEmptyStateField() throws Exception {
+        //GIVEN
+        when(localizedMessageProvider.getLocalizedMessage(any(), any(), any(), any())).thenReturn("message");
+        MessageNode messageNode = new MessageNode(config, realm, r -> localizedMessageProvider);
+
+        //WHEN
+        messageNode.process(getContext());
+
+        //THEN
+        //no exception
+    }
+
+    @Test
+    void shouldGetCorrectOutcomeIfDefaultLocaleDoesNotExist() throws NodeProcessException {
+        //GIVEN
+        when(localizedMessageProvider.getLocalizedMessage(any(), any(), any(), any())).thenReturn("message");
+        MessageNode messageNode = new MessageNode(config, realm, r -> localizedMessageProvider);
 
         //WHEN
         messageNode.process(getContext());
@@ -289,53 +266,5 @@ public class MessageNodeTest {
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
         return new TreeContext(sharedState, new Builder().build(), callbacks, Optional.empty());
-    }
-
-    private Map<Locale, String> getNonEmptyMap(String nonDefaultValue) {
-        return new HashMap<>() {{
-            put(Locale.US, nonDefaultValue);
-        }};
-    }
-
-    private void initialiseMockNodeConfig(String confirmationVariable) {
-        initialiseMockNodeConfig(CUSTOM_MESSAGE, CUSTOM_YES, CUSTOM_NO, confirmationVariable, DEFAULT_LOCALE);
-    }
-
-    private void initialiseMockNodeConfig() {
-        initialiseMockNodeConfig(CUSTOM_MESSAGE, CUSTOM_YES, CUSTOM_NO, CONFIRMATION_VARIABLE, DEFAULT_LOCALE);
-    }
-
-    private void initialiseMockNodeConfig(Map<Locale, String> customMessage) {
-        initialiseMockNodeConfig(customMessage, CUSTOM_YES, CUSTOM_NO, CONFIRMATION_VARIABLE, DEFAULT_LOCALE);
-    }
-
-    private void initialiseMockNodeConfig(Map<Locale, String> customYes, Map<Locale, String> customNo) {
-        initialiseMockNodeConfig(CUSTOM_MESSAGE, customYes, customNo, CONFIRMATION_VARIABLE, DEFAULT_LOCALE);
-    }
-
-    private void initialiseMockNodeConfig(Locale defaultLocale) {
-        initialiseMockNodeConfig(CUSTOM_MESSAGE, CUSTOM_YES, CUSTOM_NO, CONFIRMATION_VARIABLE, defaultLocale);
-    }
-
-    private void initialiseMockNodeConfig(
-            Map<Locale, String> customMessage,
-            Map<Locale, String> customYes,
-            Map<Locale, String> customNo,
-            String confirmationVariable,
-            Locale defaultLocale
-    ) {
-        settings = mock(OpenAMSettings.class);
-        config = mock(MessageNode.Config.class);
-        realm = mock(Realm.class);
-        given(config.message()).willReturn(customMessage);
-        given(config.messageYes()).willReturn(customYes);
-        given(config.messageNo()).willReturn(customNo);
-        given(config.stateField()).willReturn(Optional.of(confirmationVariable));
-        try {
-            given(settings.getStringSetting(realm.asPath(), "iplanet-am-auth-locale"))
-                    .willReturn(defaultLocale.toString());
-        } catch (SSOException | SMSException e) {
-            fail("Failed to initialise mock");
-        }
     }
 }

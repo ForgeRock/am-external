@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -24,7 +32,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.forgerock.json.JsonValue;
-import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.annotations.Supported;
 
 /**
  * A node is the core abstraction within an authentication tree. Trees are made up of nodes, which may modify the
@@ -38,7 +46,7 @@ import org.forgerock.openam.annotations.SupportedAll;
  * <p>All concrete implementations of this class should be annotated with {@link Metadata}.</p>
  *
  */
-@SupportedAll
+@Supported
 public interface Node {
 
     /**
@@ -52,9 +60,11 @@ public interface Node {
      *
      * @throws NodeProcessException If there was a problem processing that could not be resolved to a single outcome.
      */
+    @Supported
     Action process(TreeContext context) throws NodeProcessException;
 
     /** Annotation that describes the metadata of the node. */
+    @Supported
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.TYPE)
     @interface Metadata {
@@ -63,6 +73,7 @@ public interface Node {
          * The name of the node. If not provided, the simple name of the annotated interface is used.
          * @return the name.
          */
+        @Supported
         String name() default "";
 
         /**
@@ -71,6 +82,7 @@ public interface Node {
          *
          * @return the i18n file name.
          */
+        @Supported
         String i18nFile() default "";
 
         /**
@@ -78,6 +90,7 @@ public interface Node {
          *
          * @return the outcome provider.
          */
+        @Supported
         Class<? extends OutcomeProvider> outcomeProvider();
 
         /**
@@ -86,6 +99,7 @@ public interface Node {
          *
          * @return The config class.
          */
+        @Supported
         Class<?> configClass();
 
         /**
@@ -93,6 +107,7 @@ public interface Node {
          *
          * @return The config validator class.
          */
+        @Supported
         Class<?> configValidator() default Void.class;
 
         /**
@@ -100,6 +115,7 @@ public interface Node {
          *
          * @return The list of tags.
          */
+        @Supported
         String[] tags() default {};
 
         /**
@@ -122,6 +138,7 @@ public interface Node {
          *
          * @return The extensions.
          */
+        @Supported
         Class<?> extensions() default Void.class;
     }
 
@@ -131,6 +148,7 @@ public interface Node {
      *
      * @return The audit entry detail.
      */
+    @Supported
     default JsonValue getAuditEntryDetail() {
         return json(object());
     }
@@ -162,6 +180,7 @@ public interface Node {
      *
      * @return The list of shared state data.
      */
+    @Supported
     default InputState[] getInputs() {
         return new InputState[] {};
     }
@@ -191,6 +210,7 @@ public interface Node {
      *
      * @return The list of shared state data.
      */
+    @Supported
     default OutputState[] getOutputs() {
         return new OutputState[] {};
     }

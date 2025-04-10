@@ -24,7 +24,7 @@
  *
  * $Id: StatusResponseImpl.java,v 1.4 2008/06/25 05:48:01 qcheng Exp $
  *
- * Portions Copyrighted 2015-2021 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.protocol.impl;
 

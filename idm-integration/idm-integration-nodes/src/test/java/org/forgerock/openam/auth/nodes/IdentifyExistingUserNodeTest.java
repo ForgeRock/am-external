@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -26,36 +34,44 @@ import static org.forgerock.json.resource.ResourceException.NOT_FOUND;
 import static org.forgerock.json.resource.ResourceException.newResourceException;
 import static org.forgerock.openam.auth.node.api.AbstractDecisionNode.FALSE_OUTCOME_ID;
 import static org.forgerock.openam.auth.node.api.AbstractDecisionNode.TRUE_OUTCOME_ID;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.IdentifyExistingUserNode.IDM_IDPS;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_MAIL_ATTRIBUTE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
-import java.util.List;
 import java.util.Optional;
-
-import javax.security.auth.callback.Callback;
+import java.util.stream.Stream;
 
 import org.forgerock.json.JsonValue;
+import org.forgerock.json.resource.ResourceException;
+import org.forgerock.json.test.assertj.AssertJJsonValueAssert;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.OngoingStubbing;
 
+import com.iplanet.am.util.SystemPropertiesWrapper;
 import com.sun.identity.idm.IdType;
 
+@ExtendWith(MockitoExtension.class)
 public class IdentifyExistingUserNodeTest {
 
     @Mock
@@ -68,15 +84,19 @@ public class IdentifyExistingUserNodeTest {
     private IdmIntegrationService idmIntegrationService;
 
     @Mock
-    private LegacyIdentityService identityService;
+    private NodeUserIdentityProvider identityProvider;
 
+    @Mock
+    private SystemPropertiesWrapper systemProperties;
+
+    @InjectMocks
     private IdentifyExistingUserNode identifyExistingUserNode;
 
-    @DataProvider
-    public Object[][] userData() {
-        return new Object[][]{
-                // Basic User exists
-                {
+    private JsonValue transientState;
+
+    public static Stream<Arguments> userData() {
+        return Stream.of(
+                Arguments.of(
                         json(object(
                                 field("_id", "testId"),
                                 field("userName", "test"),
@@ -85,149 +105,224 @@ public class IdentifyExistingUserNodeTest {
                         objectAttributeValues(),
                         TRUE_OUTCOME_ID,
                         json(object(
-                                        field("_id", "testId"),
-                                        field("idps", null)
-                                )
-                        )
-                },
-                // Social User exists
-                {
+                                field("_id", "testId"),
+                                field("aliasList", null)
+                        )),
+                        json(object())
+
+                ),
+                Arguments.of(
                         json(object(
                                         field("_id", "testId"),
                                         field("userName", "test2"),
                                         field("mail", "test@test.com"),
-                                        field("idps", array(
-                                                object(
-                                                        field("_refResourceId", "googleId"),
-                                                        field("_refResourceCollection", "managed/google")
-                                                )))
+                                        field("aliasList", array("googleId"))
                                 )
                         ),
                         objectAttributeValues(),
                         TRUE_OUTCOME_ID,
                         json(object(
-                                        field("_id", "testId"),
-                                        field("idps", array(
-                                                object(
-                                                        field("_refResourceId", "googleId"),
-                                                        field("_refResourceCollection", "managed/google")
-                                                )))
+                                        field("_id", "testId")
                                 )
-                        )
-                },
-                // Social User exists, multiple accounts
-                {
+                        ),
+                        json(object(
+                                field("aliasList", array("googleId"))
+                        ))
+                ),
+                Arguments.of(
                         json(object(
                                 field("_id", "testId"),
                                 field("userName", "test3"),
                                 field("mail", "test@test.com"),
-                                field("idps", array(
-                                        object(
-                                                field("_refResourceId", "googleId"),
-                                                field("_refResourceCollection", "managed/google")
-                                        ), object(
-                                                field("_refResourceId", "amazonId"),
-                                                field("_refResourceCollection", "managed/amazon")
-                                        )
-                                )))
+                                field("aliasList", array("googleId")))
                         ),
                         objectAttributeValues(),
                         TRUE_OUTCOME_ID,
                         json(object(
-                                field("_id", "testId"),
-                                field("idps", array(
-                                        object(
-                                                field("_refResourceId", "googleId"),
-                                                field("_refResourceCollection", "managed/google")
-                                        ), object(
-                                                field("_refResourceId", "amazonId"),
-                                                field("_refResourceCollection", "managed/amazon")
-                                        )
-                                )))
+                            field("_id", "testId")
+                        )),
+                        json(object(
+                                field("aliasList", array("googleId")))
                         )
-                }
-        };
+                )
+        );
     }
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        initMocks(this);
-        identifyExistingUserNode = new IdentifyExistingUserNode(config, realm, identityService, idmIntegrationService);
-
-        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
-        when(config.identifier()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
-        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
-    }
-
-    @Test(dataProvider = "userData")
-    public void testProcessAddsIdentifiedIdentityOfExistingUser(JsonValue user, JsonValue sharedState,
-            String expectedOutcome, JsonValue expectedSharedState) throws Exception {
-        // Given
-        when(idmIntegrationService.getObject(any(), any(), any(), any(), any(), any())).thenReturn(user);
-
-        // When
-        Action result = identifyExistingUserNode.process(getContext(emptyList(), sharedState));
-
-        // Then
-        assertThat(result.outcome).isEqualTo(expectedOutcome);
-        assertThat(result.identifiedIdentity).isPresent();
-        IdentifiedIdentity idid = result.identifiedIdentity.get();
-        assertThat(idid.getUsername()).isEqualTo(user.get("userName").asString());
-        assertThat(idid.getIdentityType()).isEqualTo(IdType.USER);
-
-    }
-
-    @Test(dataProvider = "userData")
-    public void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser(JsonValue user, JsonValue sharedState,
-            String expectedOutcome, JsonValue expectedSharedState) throws Exception {
-        // Given
-        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenReturn(Optional.empty());
-        when(idmIntegrationService.getObject(any(), any(), any(), any(), any(), any())).thenReturn(user);
-
-        // When
-        Action result = identifyExistingUserNode.process(getContext(emptyList(), sharedState));
-
-        // Then
-        assertThat(result.identifiedIdentity).isEmpty();
-    }
-
-    @Test
-    public void shouldFailIfNoUserExist() throws Exception {
-        when(idmIntegrationService.getObject(any(), any(), any(), any(), any(), any())).thenThrow(
-                newResourceException(NOT_FOUND));
-
-        final Action process = identifyExistingUserNode.process(getContext(emptyList(), objectAttributeValues()));
-
-        assertThat(process.outcome).isEqualTo(FALSE_OUTCOME_ID);
-    }
-
-    @Test(dataProvider = "userData")
-    public void shouldReturnExpectedOutcome(JsonValue user, JsonValue sharedState, String expectedOutcome,
-            JsonValue expectedSharedState)
-            throws Exception {
-        when(idmIntegrationService.getObject(any(), any(), any(), any(), any(), any())).thenReturn(user);
-
-        final Action process = identifyExistingUserNode.process(getContext(emptyList(), sharedState));
-
-        assertThat(process.sharedState.get("_id").asString()).isEqualTo(expectedSharedState.get("_id").asString());
-        assertThat(process.sharedState.get(IDM_IDPS).getObject()).isEqualTo(
-                expectedSharedState.get(IDM_IDPS).getObject());
-        assertThat(process.sharedState.isDefined(USERNAME)).isTrue();
-        assertThat(process.outcome).isEqualTo(expectedOutcome);
-
-    }
-
-    private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {
-        return new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState,
-                new ExternalRequestContext.Builder().build(), callbacks);
-    }
-
-    private JsonValue objectAttributeValues() {
+    private static JsonValue objectAttributeValues() {
         return json(object(field(OBJECT_ATTRIBUTES,
                 object(
                         field("mail", "test@test.com")
                 )
         )));
+    }
+
+    @BeforeEach
+    void setUp() throws Exception {
+        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
+        lenient().when(systemProperties.getAsBoolean(
+                        "org.forgerock.nodes.product.IdentifyExistingUserNode.alwaysSetUniversalId", true))
+                .thenReturn(true);
+
+        transientState = json(object());
+        lenient().when(idmIntegrationService.storeListAttributeInState(eq(transientState), any(), any()))
+                .thenCallRealMethod();
+
+        lenient().when(config.identifier()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+    }
+
+
+    @Test
+    void shouldFailIfNoUserExist() throws Exception {
+        whenGetIdmObject().thenThrow(newResourceException(NOT_FOUND));
+
+        final Action process = identifyExistingUserNode.process(getContext(objectAttributeValues(), transientState));
+
+        assertThat(process.outcome).isEqualTo(FALSE_OUTCOME_ID);
+
+        assertThat(process.sharedState).isNull();
+        assertThat(process.transientState).isNull();
+
+        assertThat(process.universalId).isNotPresent();
+        assertThat(process.identifiedIdentity).isNotPresent();
+    }
+
+    @ParameterizedTest
+    @MethodSource("userData")
+    public void shouldReturnExpectedOutcome(JsonValue user, JsonValue sharedState, String expectedOutcome,
+                                            JsonValue expectedSharedState, JsonValue expectedTransientState)
+            throws Exception {
+        // given
+        whenGetIdmObject().thenReturn(user);
+
+        final String universalId = "uid=testId,ou=user,dc=openam,dc=forgerock,dc=org";
+        when(identityProvider.getUniversalId(any(), any())).thenReturn(Optional.of(universalId));
+
+        // when
+        final Action process = identifyExistingUserNode.process(getContext(sharedState, transientState));
+
+        // then
+        assertThat(process.outcome).isEqualTo(expectedOutcome);
+        assertIdAndAliasList(expectedSharedState, expectedTransientState, process);
+        assertThatJson(process.sharedState).hasPath(USERNAME).isEqualTo(user.get("userName"));
+
+        assertThat(process.universalId).isEqualTo(Optional.of(universalId));
+        assertIdentifiedIdentity(user.get("userName"), process.identifiedIdentity);
+    }
+
+    @ParameterizedTest
+    @MethodSource("userData")
+    public void shouldReturnExistingUniversalIdWhenAlwaysSetUniversalIdFlagIsFalse(
+            JsonValue user, JsonValue sharedState, String expectedOutcome, JsonValue expectedSharedState,
+            JsonValue expectedTransientState)
+            throws Exception {
+        // given
+        lenient().when(systemProperties.getAsBoolean(
+                        "org.forgerock.nodes.product.IdentifyExistingUserNode.alwaysSetUniversalId", true))
+                .thenReturn(false);
+        final String existingUniversalId = "uid=existingTestId,ou=user,dc=openam,dc=forgerock,dc=org";
+
+        whenGetIdmObject().thenReturn(user);
+
+        // when
+        final Action process = identifyExistingUserNode.process(
+                getContext(sharedState, transientState, existingUniversalId));
+
+        // then
+        assertThat(process.outcome).isEqualTo(expectedOutcome);
+        assertIdAndAliasList(expectedSharedState, expectedTransientState, process);
+        assertThatJson(process.sharedState).hasPath(USERNAME).isEqualTo(user.get("userName"));
+
+        assertThat(process.universalId).isEqualTo(Optional.of(existingUniversalId));
+        assertIdentifiedIdentity(user.get("userName"), process.identifiedIdentity);
+    }
+
+    @ParameterizedTest
+    @MethodSource("userData")
+    public void shouldGetUniversalIdFromUsernameInGlobalStateWhenAlwaysSetUniversalIdFlagIsFalse(
+            JsonValue user, JsonValue sharedState, String expectedOutcome, JsonValue expectedSharedState,
+            JsonValue expectedTransientState)
+            throws Exception {
+        // given
+        lenient().when(systemProperties.getAsBoolean(
+                        "org.forgerock.nodes.product.IdentifyExistingUserNode.alwaysSetUniversalId", true))
+                .thenReturn(false);
+
+        final String universalId = "uid=testId,ou=user,dc=openam,dc=forgerock,dc=org";
+        when(identityProvider.getUniversalId(any())).thenReturn(Optional.of(universalId));
+
+        whenGetIdmObject().thenReturn(user);
+
+        // when
+        final Action process = identifyExistingUserNode.process(getContext(sharedState, transientState));
+
+        // then
+        assertThat(process.outcome).isEqualTo(expectedOutcome);
+        assertIdAndAliasList(expectedSharedState, expectedTransientState, process);
+        assertThatJson(process.sharedState).hasPath(USERNAME).isEqualTo(user.get("userName"));
+
+        assertThat(process.universalId).isEqualTo(Optional.of(universalId));
+        assertIdentifiedIdentity(user.get("userName"), process.identifiedIdentity);
+    }
+
+    private static void assertIdentifiedIdentity(final JsonValue username,
+                                                 final Optional<IdentifiedIdentity> identifiedIdentity) {
+        assertThat(identifiedIdentity).isPresent();
+        IdentifiedIdentity idid = identifiedIdentity.get();
+        assertThat(idid.getUsername()).isEqualTo(username.asString());
+        assertThat(idid.getIdentityType()).isEqualTo(IdType.USER);
+    }
+
+    /*
+        Some customers have an {@link org.forgerock.openam.auth.nodes.IdentifyExistingUserNode.Config.identifier} which
+        is not in the IDM response, in this case some of the details are still set in the shared state.
+     */
+    @ParameterizedTest
+    @MethodSource("userData")
+    public void shouldSetStateAndIdentifierIfIdentifierNotFoundInResponse(
+            JsonValue user, JsonValue sharedState, String expectedOutcome, JsonValue expectedSharedState,
+            JsonValue expectedTransientState)
+            throws Exception {
+        // given
+        when(config.identifier()).thenReturn("DOES_NOT_EXIST_IN_IDM_RESPONSE");
+        whenGetIdmObject().thenReturn(user);
+
+        // when
+        final Action process = identifyExistingUserNode.process(getContext(sharedState, transientState));
+
+        // then
+        assertThat(process.outcome).isEqualTo(expectedOutcome);
+        assertIdAndAliasList(expectedSharedState, expectedTransientState, process);
+        assertThatJson(process.sharedState).doesNotContain(USERNAME);
+
+        assertThat(process.universalId).isNotPresent();
+        assertThat(process.identifiedIdentity).isNotPresent();
+    }
+
+    private void assertIdAndAliasList(final JsonValue expectedSharedState, final JsonValue expectedTransientState, final Action process) {
+        assertThatJson(process.sharedState).hasPath("_id")
+                .isEqualTo(expectedSharedState.get("_id"));
+        // currently the node updates the transient state with the IDM_IDPS attribute directly and doesn't set this on
+        // the action which I think still works to update the state
+        assertThatJson(transientState.get("objectAttributes").get(IDM_IDPS))
+                .isEqualTo(expectedTransientState.get(IDM_IDPS));
+    }
+
+    private OngoingStubbing<JsonValue> whenGetIdmObject() throws ResourceException {
+        return when(idmIntegrationService.getObject(any(), any(), any(), any(), any(), any()));
+    }
+
+    private static AssertJJsonValueAssert.AbstractJsonValueAssert assertThatJson(final JsonValue jsonValue) {
+        return AssertJJsonValueAssert.assertThat(jsonValue);
+    }
+
+    private TreeContext getContext(JsonValue sharedState, JsonValue transientState) {
+        return getContext(sharedState, transientState, null);
+    }
+
+    private TreeContext getContext(JsonValue sharedState, JsonValue transientState, String universalId) {
+        return new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, sharedState, transientState,
+                new ExternalRequestContext.Builder().build(), emptyList(), Optional.ofNullable(universalId));
     }
 
 }

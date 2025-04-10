@@ -11,35 +11,39 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
-
 import java.io.IOException;
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
 import javax.inject.Inject;
 
-import com.sun.identity.shared.validation.PositiveIntegerValidator;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceJsonUtils;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.CodeException;
 import org.forgerock.openam.utils.RecoveryCodeGenerator;
 import org.forgerock.util.i18n.PreferredLocales;
@@ -48,6 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.shared.validation.PositiveIntegerValidator;
 import com.sun.identity.sm.DNMapper;
 
 /**
@@ -67,8 +72,7 @@ public class WebAuthnDeviceStorageNode extends AbstractWebAuthnNode {
     private final WebAuthnDeviceStorageNode.Config config;
     private final Realm realm;
     private final WebAuthnDeviceJsonUtils webauthnDeviceJsonUtils;
-    private final LegacyIdentityService identityService;
-    private final CoreWrapper coreWrapper;
+    private final NodeUserIdentityProvider identityProvider;
 
     /**
      * Configuration for the node.
@@ -107,8 +111,7 @@ public class WebAuthnDeviceStorageNode extends AbstractWebAuthnNode {
      * @param secureRandom            instance of the secure random generator
      * @param recoveryCodeGenerator   instance of the recovery code generator
      * @param webauthnDeviceJsonUtils instance of the utils to help convert device to json
-     * @param identityService         an{@link LegacyIdentityService} instance.
-     * @param coreWrapper             A core wrapper instance.
+     * @param identityProvider        the identity provider
      */
     @Inject
     public WebAuthnDeviceStorageNode(@Assisted WebAuthnDeviceStorageNode.Config config, @Assisted Realm realm,
@@ -116,13 +119,12 @@ public class WebAuthnDeviceStorageNode extends AbstractWebAuthnNode {
                                      UserWebAuthnDeviceProfileManager webAuthnProfileManager,
                                      SecureRandom secureRandom, RecoveryCodeGenerator recoveryCodeGenerator,
                                      WebAuthnDeviceJsonUtils webauthnDeviceJsonUtils,
-                                     LegacyIdentityService identityService, CoreWrapper coreWrapper) {
+                                     NodeUserIdentityProvider identityProvider) {
         super(clientScriptUtilities, webAuthnProfileManager, secureRandom, recoveryCodeGenerator);
         this.config = config;
         this.realm = realm;
         this.webauthnDeviceJsonUtils = webauthnDeviceJsonUtils;
-        this.identityService = identityService;
-        this.coreWrapper = coreWrapper;
+        this.identityProvider = identityProvider;
     }
 
     @Override
@@ -134,8 +136,8 @@ public class WebAuthnDeviceStorageNode extends AbstractWebAuthnNode {
         logger.debug("storing device data in profile");
 
         try {
-            Optional<AMIdentity> user = getAMIdentity(context.universalId, context.getStateFor(this), identityService,
-                    coreWrapper);
+            Optional<AMIdentity> user = identityProvider.getAMIdentity(context.universalId,
+                    context.getStateFor(this));
             if (user.isEmpty()) {
                 throw new DevicePersistenceException("Failed to get the "
                         + "AMIdentity object in the realm " + realm.asPath());
@@ -171,27 +173,27 @@ public class WebAuthnDeviceStorageNode extends AbstractWebAuthnNode {
     /**
      * Provides the authentication node's set of outcomes.
      */
-    public static class OutcomeProvider implements org.forgerock.openam.auth.node.api.OutcomeProvider {
+    public static class OutcomeProvider implements BoundedOutcomeProvider {
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes)
                 throws NodeProcessException {
+            return getAllOutcomes(locales).stream()
+                           .filter(outcome -> {
+                               if (EXCEED_DEVICE_LIMIT_OUTCOME_ID.equals(outcome.id)) {
+                                   return nodeAttributes.isNotNull()
+                                                  && nodeAttributes.get(MAX_SAVED_DEVICES).required().asInteger() > 0;
+                               }
+                               return true;
+                           }).toList();
+        }
+
+        @Override
+        public List<Outcome> getAllOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE,
                     WebAuthnDeviceStorageNode.OutcomeProvider.class.getClassLoader());
-
-            ArrayList<Outcome> outcomes = new ArrayList<>();
-
-            outcomes.add(new Outcome(SUCCESS_OUTCOME_ID, bundle.getString(SUCCESS_OUTCOME_ID)));
-            outcomes.add(new Outcome(FAILURE_OUTCOME_ID, bundle.getString(FAILURE_OUTCOME_ID)));
-
-            if (nodeAttributes.isNotNull()) {
-                // nodeAttributes is null when the node is created
-                if (nodeAttributes.get(MAX_SAVED_DEVICES).required().asInteger() > 0) {
-                    outcomes.add(new Outcome(EXCEED_DEVICE_LIMIT_OUTCOME_ID,
-                            bundle.getString(EXCEED_DEVICE_LIMIT_OUTCOME_ID)));
-                }
-            }
-            return outcomes;
-
+            return List.of(new Outcome(SUCCESS_OUTCOME_ID, bundle.getString(SUCCESS_OUTCOME_ID)),
+                    new Outcome(FAILURE_OUTCOME_ID, bundle.getString(FAILURE_OUTCOME_ID)),
+                    new Outcome(EXCEED_DEVICE_LIMIT_OUTCOME_ID, bundle.getString(EXCEED_DEVICE_LIMIT_OUTCOME_ID)));
         }
     }
 

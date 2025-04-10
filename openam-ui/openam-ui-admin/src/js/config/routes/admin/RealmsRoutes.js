@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 /* eslint-disable max-len */
 
@@ -59,60 +67,7 @@ const RealmsRoutes = {
         navGroup: "admin",
         forceUpdate: true
     },
-    "realmsAuthenticationChains": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/ChainsView.js"),
-        url: scopedByRealm("authentication-chains"),
-        pattern: "realms/?/authentication-chains",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
-    "realmsAuthenticationChainEdit": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/chains/EditChainView.js"),
-        url: scopedByRealm("authentication-chains/edit/([^/]+)"),
-        pattern: "realms/?/authentication-chains/edit/?",
-        role: "ui-realm-admin",
-        navGroup: "admin"
-    },
-    "realmsAuthenticationChainNew": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/chains/AddChainView.js"),
-        url: scopedByRealm("authentication-chains/new"),
-        pattern: "realms/?/authentication-chains/new",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
 
-    "realmsAuthenticationModules": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/ModulesView.js"),
-        url: scopedByRealm("authentication-modules"),
-        pattern: "realms/?/authentication-modules",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
-    "realmsAuthenticationModuleNew": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/modules/AddModuleView.js"),
-        url: scopedByRealm("authentication-modules/new"),
-        pattern: "realms/?/authentication-modules/new",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
-    "realmsAuthenticationModuleEdit": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/modules/EditModuleView.js"),
-        url: scopedByRealm("authentication-modules/([^/]+)/edit/([^/]+)"),
-        pattern: "realms/?/authentication-modules/?/edit/?",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
     "realmsAuthenticationTrees": {
         view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
         page: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/trees/list/ListTreesContainer.jsx"),
@@ -135,6 +90,42 @@ const RealmsRoutes = {
         view: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/trees/edit/EditTreeContainer.jsx"),
         url: scopedByRealm("authentication-trees/edit/([^/]+)"),
         pattern: "realms/?/authentication-trees/edit/?",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsAuthenticationNodes": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/nodes/list/ListNodesContainer"),
+        url: scopedByRealm("authentication-nodes"),
+        pattern: "realms/?/authentication-nodes",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsAuthenticationNodesEdit": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/nodes/edit/EditNodeContainer"),
+        url: scopedByRealm("authentication-nodes/edit/([^/]+)"),
+        pattern: "realms/?/authentication-nodes/edit/?",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsAuthenticationNodesNew": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/nodes/new/NewNodeContainer"),
+        url: scopedByRealm("authentication-nodes/new"),
+        pattern: "realms/?/authentication-nodes/new",
+        role: "ui-realm-admin",
+        navGroup: "admin",
+        forceUpdate: true
+    },
+    "realmsAuthenticationNodesImport": {
+        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
+        page: () => import("org/forgerock/openam/ui/admin/views/realms/authentication/nodes/import/ImportNodesContainer"),
+        url: scopedByRealm("authentication-nodes/import"),
+        pattern: "realms/?/authentication-nodes/import",
         role: "ui-realm-admin",
         navGroup: "admin",
         forceUpdate: true
@@ -642,51 +633,6 @@ const RealmsRoutes = {
         navGroup: "admin",
         forceUpdate: true
     },
-    "realmsApplicationsAgentsSoapSTS": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/soap-sts/SoapSTSAgents.jsx"),
-        url: scopedByRealm("applications-agents-soapSts"),
-        pattern: "realms/?/applications-agents-soapSts",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
-    "realmsApplicationsAgentsSoapSTSAgentsNew": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/soap-sts/agents/new/NewSoapSTSAgentContainer.jsx"),
-        url: scopedByRealm("applications-agents-soapSts/agents/new"),
-        pattern: "realms/?/applications-agents-soapSts/agents/new",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
-    "realmsApplicationsAgentsSoapSTSAgentsEdit": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/soap-sts/agents/edit/EditSoapSTSAgent.js"),
-        url: scopedByRealm("applications-agents-soapSts/agents/edit/([^/]*)"),
-        pattern: "realms/?/applications-agents-soapSts/agents/edit/?",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
-    "realmsApplicationsAgentsSoapSTSAgentGroupsNew": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/soap-sts/groups/new/NewSoapSTSAgentGroupContainer.jsx"),
-        url: scopedByRealm("applications-agents-soapSts/groups/new"),
-        pattern: "realms/?/applications-agents-soapSts/groups/new",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
-    "realmsApplicationsAgentsSoapSTSAgentGroupsEdit": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/applications/agents/soap-sts/groups/edit/EditSoapSTSAgentGroup.js"),
-        url: scopedByRealm("applications-agents-soapSts/groups/edit/([^/]*)"),
-        pattern: "realms/?/applications-agents-soapSts/groups/edit/?",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
 
     // Applications => Federation => Circles of Trust
     "realmsApplicationsFederationCirclesOfTrust": {
@@ -876,29 +822,11 @@ const RealmsRoutes = {
         navGroup: "admin",
         forceUpdate: true
     },
-    "realmsStsSoapNew": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/sts/soap/new/NewSoapSTSContainer.jsx"),
-        url: scopedByRealm("sts/soap/new"),
-        pattern: "realms/?/sts/soap/new",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
     "realmsStsRestEdit": {
         view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
         page: () => import("org/forgerock/openam/ui/admin/views/realms/sts/rest/edit/EditRestSTS.js"),
         url: scopedByRealm("sts/rest/edit/([^/]*)"),
         pattern: "realms/?/sts/rest/edit/?",
-        role: "ui-realm-admin",
-        navGroup: "admin",
-        forceUpdate: true
-    },
-    "realmsStsSoapEdit": {
-        view: () => import("org/forgerock/openam/ui/admin/views/realms/RealmTreeNavigationView.js"),
-        page: () => import("org/forgerock/openam/ui/admin/views/realms/sts/soap/edit/EditSoapSTS.js"),
-        url: scopedByRealm("sts/soap/edit/([^/]*)"),
-        pattern: "realms/?/sts/soap/edit/?",
         role: "ui-realm-admin",
         navGroup: "admin",
         forceUpdate: true

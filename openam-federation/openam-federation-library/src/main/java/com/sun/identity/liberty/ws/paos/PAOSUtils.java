@@ -24,7 +24,7 @@
  *
  * $Id: PAOSUtils.java,v 1.3 2008/08/06 17:28:10 exu Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.liberty.ws.paos;
 

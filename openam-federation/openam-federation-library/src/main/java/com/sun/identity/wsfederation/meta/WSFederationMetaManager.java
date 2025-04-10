@@ -24,7 +24,7 @@
  *
  * $Id: WSFederationMetaManager.java,v 1.8 2009/10/28 23:58:59 exu Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 
 

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.services.push.utils;
 
@@ -31,10 +39,9 @@ import org.forgerock.json.jose.jws.SigningManager;
 import org.forgerock.openam.services.push.PushNotificationServiceConfig;
 import org.forgerock.openam.services.push.sns.utils.SnsClientFactory;
 import org.forgerock.openam.services.push.sns.utils.SnsPushResponseUpdater;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sns.model.CreatePlatformEndpointRequest;
 import com.amazonaws.services.sns.model.CreatePlatformEndpointResult;
 
 public class AmazonSNSPushResponseUpdaterTest {
@@ -46,7 +53,7 @@ public class AmazonSNSPushResponseUpdaterTest {
     SnsPushResponseUpdater responseUpdater = new SnsPushResponseUpdater(mockClientFactory);
 
     @Test
-    public void shouldSucceedWithValidInput() {
+    void shouldSucceedWithValidInput() {
         var realm = "/";
         //given
         given(mockClientFactory.produce(config, realm)).willReturn(mockClient);
@@ -54,8 +61,7 @@ public class AmazonSNSPushResponseUpdaterTest {
         CreatePlatformEndpointResult endpointResult = new CreatePlatformEndpointResult();
         endpointResult.setEndpointArn("endpointArn");
 
-        given(mockClient.createPlatformEndpoint((CreatePlatformEndpointRequest) anyObject()))
-                .willReturn(endpointResult);
+        given(mockClient.createPlatformEndpoint(anyObject())).willReturn(endpointResult);
 
         JwtClaimsSetBuilder jwtClaimsSetBuilder = new JwtClaimsSetBuilder()
                 .claim("communicationType", "communicationType")
@@ -85,15 +91,14 @@ public class AmazonSNSPushResponseUpdaterTest {
 
 
     @Test
-    public void shouldFailWithInvalidAmazonResponse() {
+    void shouldFailWithInvalidAmazonResponse() {
         var realm = "/";
         //given
         given(mockClientFactory.produce(config, realm)).willReturn(mockClient);
 
         CreatePlatformEndpointResult endpointResult = new CreatePlatformEndpointResult();
 
-        given(mockClient.createPlatformEndpoint((CreatePlatformEndpointRequest) anyObject()))
-                .willReturn(endpointResult);
+        given(mockClient.createPlatformEndpoint(anyObject())).willReturn(endpointResult);
 
         JwtClaimsSetBuilder jwtClaimsSetBuilder = new JwtClaimsSetBuilder()
                 .claim("communicationType", "communicationType")
@@ -116,7 +121,7 @@ public class AmazonSNSPushResponseUpdaterTest {
     }
 
     @Test
-    public void shouldFailWhenNoJwtInContent() {
+    void shouldFailWhenNoJwtInContent() {
         var realm = "/";
         //given
         mockClientFactory.produce(config, realm);

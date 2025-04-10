@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -20,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.openam.objectenricher.EnricherContext.ROOT;
 import static org.mockito.BDDMockito.given;
 
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.function.Function;
@@ -29,10 +36,10 @@ import org.forgerock.openam.federation.rest.schema.shared.EncryptionAlgorithm;
 import org.forgerock.openam.federation.util.XmlSecurity;
 import org.forgerock.openam.objectenricher.EnricherContext;
 import org.forgerock.openam.objectenricher.service.CurrentSourceContext;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 import com.google.common.reflect.TypeToken;
 import com.sun.identity.saml2.jaxb.metadata.KeyDescriptorElement;
@@ -53,8 +60,8 @@ public final class EncryptionAlgorithmMapperTest {
 
     private EncryptionAlgorithmMapper mapper;
 
-    @BeforeMethod
-    public void setup() throws CertificateEncodingException {
+    @BeforeEach
+    void setup() {
         MockitoAnnotations.initMocks(this);
         mapper = new EncryptionAlgorithmMapper();
 
@@ -65,7 +72,7 @@ public final class EncryptionAlgorithmMapperTest {
     }
 
     @Test
-    public void shouldReturnCorrespondingEncryptionAlgorithmsWhenPassedStringAlgorithms() {
+    void shouldReturnCorrespondingEncryptionAlgorithmsWhenPassedStringAlgorithms() {
         // When
         List<EncryptionAlgorithm> algorithms = mapper.map(
                 List.of("http://www.w3.org/2009/xmlenc11#rsa-oaep"), parentContext);
@@ -76,7 +83,7 @@ public final class EncryptionAlgorithmMapperTest {
     }
 
     @Test
-    public void shouldReturnDistinctEncryptionAlgorithmsWhenPassedDuplicateStringAlgorithms() {
+    void shouldReturnDistinctEncryptionAlgorithmsWhenPassedDuplicateStringAlgorithms() {
         // When
         List<EncryptionAlgorithm> algorithms = mapper.map(
                 List.of("http://www.w3.org/2009/xmlenc11#rsa-oaep",
@@ -90,7 +97,7 @@ public final class EncryptionAlgorithmMapperTest {
     }
 
     @Test
-    public void shouldReturnCorrespondingStringAlgorithmsWhenPassedEncryptionAlgorithms() {
+    void shouldReturnCorrespondingStringAlgorithmsWhenPassedEncryptionAlgorithms() {
         // When
         List<String> algorithms = mapper.inverse(
                 List.of(EncryptionAlgorithm.HTTP_WWW_W_3_ORG_2009_XMLENC_11_RSA_OAEP), parentContext);
@@ -101,7 +108,7 @@ public final class EncryptionAlgorithmMapperTest {
     }
 
     @Test
-    public void shouldReturnDistinctStringAlgorithmsWhenPassedDuplicateEncryptionAlgorithms() {
+    void shouldReturnDistinctStringAlgorithmsWhenPassedDuplicateEncryptionAlgorithms() {
         // When
         List<String> algorithms = mapper.inverse(
                 List.of(EncryptionAlgorithm.HTTP_WWW_W_3_ORG_2009_XMLENC_11_RSA_OAEP,

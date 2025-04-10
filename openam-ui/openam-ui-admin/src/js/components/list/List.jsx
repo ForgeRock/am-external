@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import { isEmpty, isEqual, map, omit } from "lodash";
@@ -46,6 +54,14 @@ class List extends Component {
         this.props.onDelete(this.state.selectedItems);
     };
 
+    handleExport = () => {
+        this.props.onExport(this.state.selectedItems);
+    };
+
+    handleImport = () => {
+        this.props.onImport();
+    };
+
     handleSelectedChange = (items) => {
         this.setState({ selectedItems: items });
     };
@@ -73,6 +89,8 @@ class List extends Component {
                     isDeleteDisabled={ !this.state.selectedItems.length }
                     numberSelected={ this.state.selectedItems.length }
                     onDelete={ this.handleDelete }
+                    onExport={ this.handleExport }
+                    onImport={ this.handleImport }
                 />
             );
             content = (
@@ -96,7 +114,11 @@ List.propTypes = {
     isFetching: PropTypes.bool.isRequired,
     items: PropTypes.arrayOf(PropTypes.object).isRequired,
     keyField: PropTypes.string,
-    onDelete: PropTypes.func.isRequired
+    onDelete: PropTypes.func.isRequired,
+    onExport: PropTypes.func,
+    onImport: PropTypes.func,
+    showExport: PropTypes.bool,
+    showImport: PropTypes.bool
 };
 
 export default List;

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins.scripted;
 
@@ -29,19 +37,21 @@ import java.util.stream.Collectors;
 
 import javax.security.auth.Subject;
 
-import org.forgerock.openam.entitlement.monitoring.EntitlementConfigurationWrapper;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.entitlement.Entitlement;
+import com.sun.identity.entitlement.EntitlementConfiguration;
 import com.sun.identity.entitlement.EntitlementException;
 import com.sun.identity.entitlement.Evaluator;
 import com.sun.identity.entitlement.opensso.SubjectUtils;
@@ -51,7 +61,8 @@ import com.sun.identity.saml2.protocol.AuthnRequest;
 /**
  * Tests for {@link IdpAdapterScriptHelper}.
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class IdpAdapterScriptHelperTest {
 
     private static final List<Entitlement> ENTITLEMENTS = Collections.singletonList(mock(Entitlement.class));
@@ -75,19 +86,15 @@ public class IdpAdapterScriptHelperTest {
     private final String realm = "testRealm";
 
     private MockedStatic<SubjectUtils> mockSubjectUtils;
-    private MockedConstruction<EntitlementConfigurationWrapper> ignoredEntitlementConfigurationWrapper;
     private MockedConstruction<Evaluator> ignoredEvaluator;
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         when(authnRequest.getIssuer()).thenReturn(issuer);
         when(issuer.getValue()).thenReturn(issuerValue);
         mockSubjectUtils = mockStatic(SubjectUtils.class);
         mockSubjectUtils.when(() -> SubjectUtils.createSubject(ssoToken)).thenReturn(subject);
         mockSubjectUtils.when(() -> SubjectUtils.createSubject((SSOToken) ssoTokenObj)).thenReturn(subject);
-
-        ignoredEntitlementConfigurationWrapper = mockConstructionWithAnswer(EntitlementConfigurationWrapper.class,
-                invocation -> mock(EntitlementConfigurationWrapper.class));
 
         ignoredEvaluator = mockConstructionWithAnswer(Evaluator.class, invocation -> {
             if (invocation.getMethod().equals(Evaluator.class.getMethod("evaluate", String.class, Subject.class,
@@ -98,15 +105,14 @@ public class IdpAdapterScriptHelperTest {
         });
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         mockSubjectUtils.close();
         ignoredEvaluator.close();
-        ignoredEntitlementConfigurationWrapper.close();
     }
 
     @Test
-    public void testGetIssuer() {
+    void testGetIssuer() {
         // When
         String issuerName = idpAdapterScriptHelper.getIssuerName(authnRequest);
 
@@ -115,7 +121,7 @@ public class IdpAdapterScriptHelperTest {
     }
 
     @Test
-    public void testGetResourcesForToken() {
+    void testGetResourcesForToken() {
         // When
         Set<String> resources = idpAdapterScriptHelper.getResourcesForToken(authnRequest);
 
@@ -124,7 +130,7 @@ public class IdpAdapterScriptHelperTest {
     }
 
     @Test
-    public void testGetSubjectForToken() {
+    void testGetSubjectForToken() {
         // When
         Subject subjectForToken = idpAdapterScriptHelper.getSubjectForToken(ssoToken);
 
@@ -133,7 +139,7 @@ public class IdpAdapterScriptHelperTest {
     }
 
     @Test
-    public void testGetSubjectForTokenObject() {
+    void testGetSubjectForTokenObject() {
         // When
         Subject subjectForToken = idpAdapterScriptHelper.getSubjectForToken(ssoTokenObj);
 
@@ -142,7 +148,7 @@ public class IdpAdapterScriptHelperTest {
     }
 
     @Test
-    public void testGetEvaluatorForSubject() {
+    void testGetEvaluatorForSubject() {
         // When
         Evaluator evaluatorForSubject = idpAdapterScriptHelper.getEvaluatorForSubject(applicationName, subject);
 
@@ -151,7 +157,7 @@ public class IdpAdapterScriptHelperTest {
     }
 
     @Test
-    public void testGetEntitlementsForToken() throws EntitlementException {
+    void testGetEntitlementsForToken() throws EntitlementException {
         // Given
         List<Entitlement> mockedEntitlements = ENTITLEMENTS;
 
@@ -165,7 +171,7 @@ public class IdpAdapterScriptHelperTest {
     }
 
     @Test
-    public void testGetEntitlementsWithEnvironmentParameters() throws EntitlementException {
+    void testGetEntitlementsWithEnvironmentParameters() throws EntitlementException {
         // Given
         Map<String, Set<String>> environmentParams = Map.of("key1", Set.of("value1"));
         List<Entitlement> mockedEntitlements = ENTITLEMENTS;

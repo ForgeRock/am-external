@@ -11,25 +11,36 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.federation.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonPointer.ptr;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import org.forgerock.json.JsonPointer;
 import org.forgerock.util.query.QueryFilter;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class EntityQueryFilterVisitorTest {
 
     private EntityQueryFilterVisitor entityQueryFilterVisitor;
@@ -39,9 +50,8 @@ public class EntityQueryFilterVisitorTest {
     @Mock
     private QueryFilter<JsonPointer> queryFilter;
 
-    @BeforeMethod
-    public void setup() {
-        initMocks(this);
+    @BeforeEach
+    void setup() {
         entityQueryFilterVisitor = new EntityQueryFilterVisitor();
         resultItems = new HashSet<>();
         resultItems.add("id1");
@@ -49,55 +59,58 @@ public class EntityQueryFilterVisitorTest {
         resultItems.add("entity");
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class,
-            expectedExceptionsMessageRegExp = "Only entityId is a supported filter field")
-    public void visitContainsFilterShouldThrowUnsupportedOperationExceptionForUnsupportedField() {
-        entityQueryFilterVisitor.visitContainsFilter(resultItems, UNSUPPORTED_FIELD, "id");
+    @Test
+    void visitContainsFilterShouldThrowUnsupportedOperationExceptionForUnsupportedField() {
+        assertThatThrownBy(() -> entityQueryFilterVisitor.visitContainsFilter(resultItems, UNSUPPORTED_FIELD, "id"))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("Only entityId is a supported filter field");
     }
 
     @Test
-    public void shouldReturnResultsContainingProvidedValue() {
+    void shouldReturnResultsContainingProvidedValue() {
         Set<String> actual = entityQueryFilterVisitor.visitContainsFilter(resultItems, SUPPORTED_FIELD, "id");
         assertThat(actual).hasSize(2);
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class,
-            expectedExceptionsMessageRegExp = "Only entityId is a supported filter field")
-    public void visitEqualsFilterShouldThrowUnsupportedOperationExceptionForUnsupportedField() {
-        entityQueryFilterVisitor.visitEqualsFilter(resultItems, UNSUPPORTED_FIELD, "entity");
+    @Test
+    void visitEqualsFilterShouldThrowUnsupportedOperationExceptionForUnsupportedField() {
+        assertThatThrownBy(() -> entityQueryFilterVisitor.visitEqualsFilter(resultItems, UNSUPPORTED_FIELD, "entity"))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("Only entityId is a supported filter field");
     }
 
     @Test
-    public void shouldReturnResultsEqualToProvidedValue() {
+    void shouldReturnResultsEqualToProvidedValue() {
         Set<String> actual = entityQueryFilterVisitor.visitEqualsFilter(resultItems, SUPPORTED_FIELD, "entity");
         assertThat(actual.size()).isEqualTo(1);
     }
 
     @Test
-    public void shouldReturnProvidedResultsWhenValueIsTrue() {
+    void shouldReturnProvidedResultsWhenValueIsTrue() {
         assertThat(entityQueryFilterVisitor.visitBooleanLiteralFilter(resultItems, true)).isEqualTo(resultItems);
     }
 
     @Test
-    public void shouldReturnANewHashSetWhenValueIsFalse() {
+    void shouldReturnANewHashSetWhenValueIsFalse() {
         Set<String> actual = entityQueryFilterVisitor.visitBooleanLiteralFilter(resultItems, false);
         assertThat(actual).isInstanceOf(HashSet.class).isEmpty();
     }
 
-    @Test(expectedExceptions = UnsupportedOperationException.class,
-            expectedExceptionsMessageRegExp = "Only entityId is a supported filter field")
-    public void visitStartsWithFilterShouldThrowUnsupportedOperationExceptionForUnsupportedField() {
-        entityQueryFilterVisitor.visitStartsWithFilter(resultItems, UNSUPPORTED_FIELD, "id");
+    @Test
+    void visitStartsWithFilterShouldThrowUnsupportedOperationExceptionForUnsupportedField() {
+        assertThatThrownBy(() -> entityQueryFilterVisitor.visitStartsWithFilter(resultItems, UNSUPPORTED_FIELD, "id"))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessage("Only entityId is a supported filter field");
     }
 
     @Test
-    public void shouldReturnResultsStartingWithValue() {
+    void shouldReturnResultsStartingWithValue() {
         Set<String> actual = entityQueryFilterVisitor.visitStartsWithFilter(resultItems, SUPPORTED_FIELD, "id");
         assertThat(actual.size()).isEqualTo(2);
     }
 
     @Test
-    public void shouldReturnResultsThatDoNotMatchTheQuery() {
+    void shouldReturnResultsThatDoNotMatchTheQuery() {
         HashSet<String> queryMatches = new HashSet<>();
         queryMatches.add("entity");
         given(queryFilter.accept(entityQueryFilterVisitor, resultItems)).willReturn(queryMatches);

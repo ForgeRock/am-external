@@ -24,7 +24,7 @@
  *
  * $Id: Federation.java,v 1.3 2009/01/28 05:35:10 ww203982 Exp $
  *
- * Portions Copyrighted 2014-2023 ForgeRock AS.
+ * Portions Copyrighted 2014-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.authentication.modules.federation;
@@ -40,7 +40,7 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

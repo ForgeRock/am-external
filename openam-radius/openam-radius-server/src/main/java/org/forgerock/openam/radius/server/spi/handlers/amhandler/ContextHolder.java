@@ -13,7 +13,7 @@
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
  *
- * Portions Copyright 2015-2019 ForgeRock AS.
+ * Portions Copyright 2015-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server.spi.handlers.amhandler;
 

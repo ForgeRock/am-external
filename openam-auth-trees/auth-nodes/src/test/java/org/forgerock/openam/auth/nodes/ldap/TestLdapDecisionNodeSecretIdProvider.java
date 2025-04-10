@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.ldap;
 
@@ -26,13 +34,13 @@ import java.util.Optional;
 import org.forgerock.openam.auth.nodes.LdapDecisionNode;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
-import org.forgerock.openam.test.rules.LoggerRule;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.forgerock.openam.test.extensions.LoggerExtension;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
@@ -41,7 +49,7 @@ import com.sun.identity.sm.SMSException;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class TestLdapDecisionNodeSecretIdProvider {
 
     @Mock
@@ -53,18 +61,18 @@ public class TestLdapDecisionNodeSecretIdProvider {
     @Mock
     Realm realm;
 
-    @Rule
-    public LoggerRule loggerRule = new LoggerRule(LdapDecisionNodeSecretIdProvider.class);
+    @RegisterExtension
+    public LoggerExtension loggerExtension = new LoggerExtension(LdapDecisionNodeSecretIdProvider.class);
 
     private LdapDecisionNodeSecretIdProvider provider;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         provider = new LdapDecisionNodeSecretIdProvider(serviceRegistry);
     }
 
     @Test
-    public void testGetRealmMultiInstanceSecretIds() throws SMSException, SSOException {
+    void testGetRealmMultiInstanceSecretIds() throws SMSException, SSOException {
         given(config.mtlsEnabled()).willReturn(true);
         given(config.mtlsSecretLabel()).willReturn(Optional.of("banana"));
         ImmutableSet<LdapDecisionNode.Config> ldapNodeConfigs = ImmutableSet.of(config);
@@ -80,7 +88,7 @@ public class TestLdapDecisionNodeSecretIdProvider {
     }
 
     @Test
-    public void testLogsErrorWhenExceptionThrown() throws SMSException, SSOException {
+    void testLogsErrorWhenExceptionThrown() throws SMSException, SSOException {
         given(serviceRegistry.getRealmInstances(LdapDecisionNode.Config.class, realm))
                 .willThrow(new SMSException());
 
@@ -89,12 +97,12 @@ public class TestLdapDecisionNodeSecretIdProvider {
 
         // Then
         assertThat(actual.isEmpty()).isTrue();
-        List<String> errors = loggerRule.getErrors(ILoggingEvent::getFormattedMessage);
+        List<String> errors = loggerExtension.getErrors(ILoggingEvent::getFormattedMessage);
         assertThat(errors).containsExactly("Failed to get ldap node secret labels");
     }
 
     @Test
-    public void testThrowsNullPointerWhenRealmIsNull() {
+    void testThrowsNullPointerWhenRealmIsNull() {
         assertThatThrownBy(() -> provider.getRealmMultiInstanceSecretIds(null, null))
                 .isInstanceOf(NullPointerException.class);
     }

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -21,14 +29,16 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.nodes.utils.IdmIntegrationNodeUtils.OBJECT_MAPPER;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.LOCAL_AUTHENTICATION;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.SELECTED_IDP;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Collections;
 import java.util.List;
@@ -49,13 +59,17 @@ import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.scripting.domain.Script;
 import org.forgerock.openam.social.idp.OAuthClientConfig;
 import org.forgerock.openam.social.idp.SocialIdentityProviders;
-
+import org.forgerock.util.i18n.PreferredLocales;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.ImmutableSet;
 
+@ExtendWith(MockitoExtension.class)
 public class SelectIdPNodeTest {
 
     @Mock
@@ -71,26 +85,23 @@ public class SelectIdPNodeTest {
     IdmIntegrationService idmIntegrationService;
 
     private JsonValue providers;
+    @InjectMocks
     private SelectIdPNode node;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        initMocks(this);
-
-        when(config.includeLocalAuthentication()).thenReturn(false);
-        when(config.offerOnlyExisting()).thenReturn(false);
-        when(config.filteredProviders()).thenReturn(Collections.emptySet());
+    @BeforeEach
+    void setUp() throws Exception {
+        lenient().when(config.includeLocalAuthentication()).thenReturn(false);
+        lenient().when(config.filteredProviders()).thenReturn(Collections.emptySet());
 
         providers = new JsonValue(OBJECT_MAPPER.readValue(
                 SelectIdPNodeTest.class.getResource("/SelectIdpNode/providers.json"), List.class));
-        when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(providers.stream()
-                .map(this::jsonToIdPConfig)
-                .collect(Collectors.toMap(OAuthClientConfig::provider, provider -> provider)));
-        node = new SelectIdPNode(config, realm, providerConfigStore, idmIntegrationService);
     }
 
     @Test
-    public void shouldReturnCallbackOnFirstProcess() throws Exception {
+    void shouldReturnCallbackOnFirstProcess() throws Exception {
+        when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(providers.stream()
+                .map(this::jsonToIdPConfig)
+                .collect(Collectors.toMap(OAuthClientConfig::provider, provider -> provider)));
         TreeContext context = getContext(emptyList(), json(object()));
         Action action = node.process(context);
 
@@ -101,7 +112,10 @@ public class SelectIdPNodeTest {
     }
 
     @Test
-    public void shouldRecordSelectedProvider() throws Exception {
+    void shouldRecordSelectedProvider() throws Exception {
+        when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(providers.stream()
+                .map(this::jsonToIdPConfig)
+                .collect(Collectors.toMap(OAuthClientConfig::provider, provider -> provider)));
         SelectIdPCallback callback = new SelectIdPCallback(providers);
         callback.setProvider("google");
         TreeContext context = getContext(singletonList(callback), json(object()));
@@ -111,16 +125,22 @@ public class SelectIdPNodeTest {
         assertThat(action.sharedState.get(SELECTED_IDP).asString()).isEqualTo("google");
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldRejectUnknownSelectedProvider() throws Exception {
+    @Test
+    void shouldRejectUnknownSelectedProvider() throws Exception {
+        when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(providers.stream()
+                .map(this::jsonToIdPConfig)
+                .collect(Collectors.toMap(OAuthClientConfig::provider, provider -> provider)));
         SelectIdPCallback callback = new SelectIdPCallback(providers);
         callback.setProvider("unknown");
         TreeContext context = getContext(singletonList(callback), json(object()));
-        node.process(context);
+        assertThatThrownBy(() -> node.process(context)).isInstanceOf(NodeProcessException.class);
     }
 
     @Test
-    public void shouldIncludeLocalAuthIfEnabled() throws Exception {
+    void shouldIncludeLocalAuthIfEnabled() throws Exception {
+        when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(providers.stream()
+                .map(this::jsonToIdPConfig)
+                .collect(Collectors.toMap(OAuthClientConfig::provider, provider -> provider)));
         when(config.includeLocalAuthentication()).thenReturn(true);
 
         TreeContext context = getContext(emptyList(), json(object()));
@@ -134,7 +154,10 @@ public class SelectIdPNodeTest {
     }
 
     @Test
-    public void shouldExcludeLocalAuthIfNotEnabled() throws Exception {
+    void shouldExcludeLocalAuthIfNotEnabled() throws Exception {
+        when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(providers.stream()
+                .map(this::jsonToIdPConfig)
+                .collect(Collectors.toMap(OAuthClientConfig::provider, provider -> provider)));
         when(config.includeLocalAuthentication()).thenReturn(false);
 
         TreeContext context = getContext(emptyList(), json(object()));
@@ -148,7 +171,7 @@ public class SelectIdPNodeTest {
     }
 
     @Test
-    public void shouldAuthAdvanceIfOnlyOneProviderAvailable() throws Exception {
+    void shouldAuthAdvanceIfOnlyOneProviderAvailable() throws Exception {
         when(config.includeLocalAuthentication()).thenReturn(true);
         when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(emptyMap());
 
@@ -159,17 +182,22 @@ public class SelectIdPNodeTest {
         assertThat(action.sharedState.get(SELECTED_IDP).asString()).isEqualTo(LOCAL_AUTHENTICATION);
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowIfNoProvidersAvailable() throws Exception {
+    @Test
+    void shouldThrowIfNoProvidersAvailable() throws Exception {
         when(config.includeLocalAuthentication()).thenReturn(false);
         when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(emptyMap());
 
         TreeContext context = getContext(emptyList(), json(object()));
-        node.process(context);
+        assertThatThrownBy(() -> node.process(context)).isInstanceOf(NodeProcessException.class);
     }
 
     @Test
-    public void shouldLimitChoicesToThoseFoundInExistingObject() throws Exception {
+    void shouldLimitChoicesToThoseFoundInExistingObject() throws Exception {
+        // given
+        when(config.offerOnlyExisting()).thenReturn(false);
+        when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(providers.stream()
+                .map(this::jsonToIdPConfig)
+                .collect(Collectors.toMap(OAuthClientConfig::provider, provider -> provider)));
         when(config.includeLocalAuthentication()).thenReturn(true);
         when(config.offerOnlyExisting()).thenReturn(true);
         when(idmIntegrationService.isEnabled()).thenReturn(true);
@@ -177,9 +205,11 @@ public class SelectIdPNodeTest {
                 .thenReturn(asList(LOCAL_AUTHENTICATION, "google"));
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenReturn(Optional.of(json("identity")));
 
+        // when
         TreeContext context = getContext(emptyList(), json(object()));
         Action action = node.process(context);
 
+        // then
         assertThat(action.callbacks).isNotEmpty();
         assertThat(action.callbacks.size()).isEqualTo(1);
         SelectIdPCallback callback = (SelectIdPCallback) action.callbacks.get(0);
@@ -191,7 +221,10 @@ public class SelectIdPNodeTest {
     }
 
     @Test
-    public void shouldLimitToThoseDefined() throws Exception {
+    void shouldLimitToThoseDefined() throws Exception {
+        when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(providers.stream()
+                .map(this::jsonToIdPConfig)
+                .collect(Collectors.toMap(OAuthClientConfig::provider, provider -> provider)));
         when(config.filteredProviders()).thenReturn(ImmutableSet.of("google", "facebook"));
         TreeContext context = getContext(emptyList(), json(object()));
         Action action = node.process(context);
@@ -205,7 +238,10 @@ public class SelectIdPNodeTest {
     }
 
     @Test
-    public void shouldLimitToThoseDefinedWithLocalAuthenticator() throws Exception {
+    void shouldLimitToThoseDefinedWithLocalAuthenticator() throws Exception {
+        when(providerConfigStore.getProviders(any(Realm.class))).thenReturn(providers.stream()
+                .map(this::jsonToIdPConfig)
+                .collect(Collectors.toMap(OAuthClientConfig::provider, provider -> provider)));
         when(config.includeLocalAuthentication()).thenReturn(true);
         when(config.filteredProviders()).thenReturn(ImmutableSet.of("google", "facebook"));
         TreeContext context = getContext(emptyList(), json(object()));
@@ -218,6 +254,53 @@ public class SelectIdPNodeTest {
         assertThat(callback.getProviders().get(0).get("provider").asString()).isEqualTo("facebook");
         assertThat(callback.getProviders().get(1).get("provider").asString()).isEqualTo("google");
         assertThat(callback.getProviders().get(2).get("provider").asString()).isEqualTo("localAuthentication");
+    }
+
+    @Test
+    void shouldIncludeAllOutcomesWhenGetAllOutcomes() {
+        // given
+        SelectIdPNode.SelectIdPNodeOutcomeProvider outcomeProvider = new SelectIdPNode.SelectIdPNodeOutcomeProvider();
+
+        // when
+        var outcomes = outcomeProvider.getAllOutcomes(new PreferredLocales());
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly("socialAuthentication", "localAuthentication");
+    }
+
+    @Test
+    void shouldIncludeLocalAuthenticationOutcomeWhenIncludeLocationAuthenticationIsMissing() {
+        // given
+        SelectIdPNode.SelectIdPNodeOutcomeProvider outcomeProvider = new SelectIdPNode.SelectIdPNodeOutcomeProvider();
+        JsonValue attributes = json(object());
+
+        // when
+        var outcomes = outcomeProvider.getOutcomes(new PreferredLocales(), attributes);
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly("socialAuthentication", "localAuthentication");
+    }
+
+    @Test
+    void shouldIncludeLocalAuthenticationOutcomeWhenIncludeLocationAuthenticationIsTrue() {
+        // given
+        SelectIdPNode.SelectIdPNodeOutcomeProvider outcomeProvider = new SelectIdPNode.SelectIdPNodeOutcomeProvider();
+        JsonValue attributes = json(object(field("includeLocalAuthentication", true)));
+
+        // when
+        var outcomes = outcomeProvider.getOutcomes(new PreferredLocales(), attributes);
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly("socialAuthentication", "localAuthentication");
+    }
+
+    @Test
+    void shouldNotIncludeLocalAuthenticationOutcomeWhenIncludeLocationAuthenticationIsFalse() {
+        // given
+        SelectIdPNode.SelectIdPNodeOutcomeProvider outcomeProvider = new SelectIdPNode.SelectIdPNodeOutcomeProvider();
+        JsonValue attributes = json(object(field("includeLocalAuthentication", false)));
+
+        // when
+        var outcomes = outcomeProvider.getOutcomes(new PreferredLocales(), attributes);
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList())
+                .containsExactly("socialAuthentication");
     }
 
     private TreeContext getContext(List<? extends Callback> callbacks, JsonValue sharedState) {

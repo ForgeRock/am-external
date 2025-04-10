@@ -24,7 +24,7 @@
  *
  * $Id: SPCache.java,v 1.17 2009/06/09 20:28:32 exu Exp $
  *
- * Portions Copyrighted 2015-2024 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 
 

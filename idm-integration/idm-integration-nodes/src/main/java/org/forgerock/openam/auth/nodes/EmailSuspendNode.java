@@ -11,11 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.singletonMap;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.Action.suspend;
@@ -30,6 +39,7 @@ import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_REGISTRATION_EMAIL_TEMPLATE;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -46,8 +56,10 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.SuspendedTextOutputCallback;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.nodes.validators.GreaterThanZeroValidator;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.forgerock.openam.sm.annotations.adapters.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +94,7 @@ public class EmailSuspendNode extends SingleOutcomeNode {
          * @return the template name
          */
         @Override
-        @Attribute(order = 100, validators = {RequiredValueValidator.class})
+        @Attribute(order = 100, requiredValue = true)
         default String emailTemplateName() {
             return DEFAULT_IDM_REGISTRATION_EMAIL_TEMPLATE;
         }
@@ -91,7 +103,7 @@ public class EmailSuspendNode extends SingleOutcomeNode {
          * The email attribute in the IDM managed object.
          * @return the email attribute
          */
-        @Attribute(order = 200, validators = {RequiredValueValidator.class})
+        @Attribute(order = 200, requiredValue = true)
         default String emailAttribute() {
             return DEFAULT_IDM_MAIL_ATTRIBUTE;
         }
@@ -120,10 +132,18 @@ public class EmailSuspendNode extends SingleOutcomeNode {
          * The identity attribute from the object.
          * @return identity attribute
          */
-        @Attribute(order = 500, validators = {RequiredValueValidator.class})
+        @Attribute(order = 500, requiredValue = true)
         default String identityAttribute() {
             return DEFAULT_IDM_IDENTITY_ATTRIBUTE;
         }
+
+        /**
+         * The duration in minutes to suspend the tree for.
+         * @return the duration in minutes
+         */
+        @Attribute(order = 600, validators = GreaterThanZeroValidator.class)
+        @TimeUnit(MINUTES)
+        Optional<Duration> suspendDuration();
     }
 
     /**
@@ -168,7 +188,8 @@ public class EmailSuspendNode extends SingleOutcomeNode {
                 .asString()).filter(s -> !s.isEmpty())
                 .orElse(null);
 
-        return suspend(resumeURI -> createSuspendOutcome(context, resumeURI, recipient, templateObject)).build();
+        return suspend(resumeURI -> createSuspendOutcome(context, resumeURI, recipient, templateObject),
+                config.suspendDuration().orElse(null)).build();
     }
 
     private SuspendedTextOutputCallback createSuspendOutcome(TreeContext context, URI resumeURI,

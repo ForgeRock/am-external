@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -25,12 +33,10 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.test.assertj.AssertJJsonValueAssert.assertThat;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.MockitoAnnotations.initMocks;
 
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -41,29 +47,25 @@ import javax.security.auth.callback.PasswordCallback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
-import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.util.i18n.PreferredLocales;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class PasswordCollectorNodeTest {
 
     @Mock
     PasswordCollectorNode.Config config;
 
+    @InjectMocks
     PasswordCollectorNode node;
 
-    @BeforeMethod
-    public void before() throws NodeProcessException {
-        initMocks(this);
-        node = new PasswordCollectorNode();
-    }
-
     @Test
-    public void testProcessWithNoCallbacksReturnsASingleCallback() throws Exception {
+    void testProcessWithNoCallbacksReturnsASingleCallback() throws Exception {
         // Given
         JsonValue sharedState = json(object(field("initial", "initial")));
         PreferredLocales preferredLocales = mock(PreferredLocales.class);
@@ -83,7 +85,7 @@ public class PasswordCollectorNodeTest {
     }
 
     @Test
-    public void testProcessWithCallbacksAddsToState() throws Exception {
+    void testProcessWithCallbacksAddsToState() throws Exception {
         JsonValue sharedState = json(object(field("initial", "initial")));
         PasswordCallback callback = new PasswordCallback("prompt", false);
         callback.setPassword("secret".toCharArray());
@@ -99,23 +101,5 @@ public class PasswordCollectorNodeTest {
             List<? extends Callback> callbacks) {
         return new TreeContext(sharedState,
                 new Builder().locales(preferredLocales).build(), callbacks, Optional.empty());
-    }
-
-    static class MockResourceBundle extends ResourceBundle {
-        private final String value;
-
-        MockResourceBundle(String value) {
-            this.value = value;
-        }
-
-        @Override
-        protected Object handleGetObject(String key) {
-            return value;
-        }
-
-        @Override
-        public Enumeration<String> getKeys() {
-            return null;
-        }
     }
 }

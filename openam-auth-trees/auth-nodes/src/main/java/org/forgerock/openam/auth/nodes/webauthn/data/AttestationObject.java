@@ -11,11 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.data;
 
-import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AttestationVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.AttestationStatement;
 
 /**
@@ -24,7 +31,7 @@ import org.forgerock.openam.auth.nodes.webauthn.flows.AttestationStatement;
 public class AttestationObject {
 
     /** https://www.w3.org/TR/webauthn/#attestation-formats. **/
-    public final AttestationVerifier attestationVerifier;
+    public final String format;
     /** https://www.w3.org/TR/webauthn/#authenticator-data. **/
     public final AuthData authData;
     /** https://www.w3.org/TR/webauthn/#attestation-statement. **/
@@ -33,13 +40,13 @@ public class AttestationObject {
     /**
      * The attestation object constructor.
      *
-     * @param attestationVerifier the format of the attestation.
+     * @param format the format of the attestation.
      * @param authData the auth data.
      * @param attestationStatement the attestation statement.
      */
-    public AttestationObject(AttestationVerifier attestationVerifier, AuthData authData,
+    public AttestationObject(String format, AuthData authData,
                              AttestationStatement attestationStatement) {
-        this.attestationVerifier = attestationVerifier;
+        this.format = format;
         this.authData = authData;
         this.attestationStatement = attestationStatement;
     }

@@ -24,7 +24,7 @@
  *
  * $Id: Application.java,v 1.9 2009/07/23 18:54:17 qcheng Exp $
  *
- * Portions Copyrighted 2011-2022 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.authentication.modules.application;
@@ -42,7 +42,7 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.opendj.ldap.Dn;
 import org.slf4j.Logger;
@@ -60,7 +60,7 @@ import org.forgerock.am.identity.persistence.IdentityStore;
  * <p>
  * Use <code>IDToken0</code> to specify application name and
  * <code>IDToken1</code> to specify secret.
- * (Old usage : <code>Login.Token0</code> to specify application name and 
+ * (Old usage : <code>Login.Token0</code> to specify application name and
  *  <code>Login.Token1</code> to specify secret.) For example:
  * </p>
  * <pre>
@@ -88,7 +88,7 @@ public class Application extends AMLoginModule {
     static {
         debug.debug("Application module getting secret");
     }
-    
+
     public void init(Subject subject, Map sharedState, Map options) {
         try {
             debug.debug("in initialize...");
@@ -101,7 +101,7 @@ public class Application extends AMLoginModule {
             errorMsg = "appInitFalied";
         }
     }
-    
+
     /**
      * Implementation of <code>AMLoginModule</code> abstract method.
      * Refer to <code>AMLoginModule</code> for method syntax.
@@ -135,16 +135,16 @@ public class Application extends AMLoginModule {
         if (secretParam == null || secretParam.length() == 0) {
             throw new AuthLoginException(amAuthApplication, "noPassword", null);
         }
-        
+
         if (!doFallbackAuth(userName, secretParam)) {
             debug.error("App validation failed, User not Valid: " + userName);
             setFailureID(userName);
             throw new AuthLoginException(amAuthApplication, "userInvalid", null);
         }
-        
+
         return ISAuthConstants.LOGIN_SUCCEED;
     }
-    
+
     private boolean doFallbackAuth(String userName, String userPassword)
         throws AuthLoginException {
         boolean success = false;
@@ -223,7 +223,7 @@ public class Application extends AMLoginModule {
             callbacks[0] = new NameCallback(bundle.getString("appname"));
             callbacks[1] = new PasswordCallback(
             bundle.getString("secret"), true);
-            debug.debug("Callback is.. : {}", callbacks);
+            debug.debug("Callback is.. : {}", (Object[]) callbacks);
             callbackHandler.handle(callbacks);
 
             // map to hold return
@@ -255,7 +255,7 @@ public class Application extends AMLoginModule {
         userTokenId = null;
         userPrincipal = null;
     }
-    
+
     public void nullifyUsedVars() {
         errorMsg = null;
         bundle = null;

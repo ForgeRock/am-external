@@ -24,7 +24,7 @@
  *
  * $Id: IDPArtifactResolution.java,v 1.13 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2012-2024 ForgeRock AS.
+ * Portions Copyrighted 2012-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 
@@ -42,8 +42,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeader;
 import javax.xml.soap.MimeHeaders;
@@ -95,6 +95,7 @@ public class IDPArtifactResolution {
 
     private static final Logger logger = LoggerFactory.getLogger(IDPArtifactResolution.class);
     static MessageFactory messageFactory = null;
+    private static SOAPCommunicator soapCommunicator;
     static {
         try {
             messageFactory = MessageFactory.newInstance();
@@ -174,7 +175,7 @@ public class IDPArtifactResolution {
 
     private static void sendSoapFault(HttpServletRequest request, HttpServletResponse response, String faultCode,
             String faultString) {
-        sendSoapResponse(request, response, SOAPCommunicator.getInstance().createSOAPFault(faultCode, faultString,
+        sendSoapResponse(request, response, getSoapCommunicator().createSOAPFault(faultCode, faultString,
                 null));
     }
 
@@ -234,7 +235,7 @@ public class IDPArtifactResolution {
             logger.debug(classMethod + "Entering onMessage().");
         }
     
-        Element reqElem = SOAPCommunicator.getInstance().getSamlpElement(message,
+        Element reqElem = getSoapCommunicator().getSamlpElement(message,
                 "ArtifactResolve");
         ArtifactResolve artResolve = 
             ProtocolFactory.getInstance().createArtifactResolve(reqElem);
@@ -244,7 +245,7 @@ public class IDPArtifactResolution {
                 logger.debug(classMethod +
                     "no valid ArtifactResolve node found in SOAP body.");
             }
-            return SOAPCommunicator.getInstance().createSOAPFault(SAML2Constants.CLIENT_FAULT,
+            return getSoapCommunicator().createSOAPFault(SAML2Constants.CLIENT_FAULT,
                     "noArtifactResolve", null);
         }
 
@@ -257,7 +258,7 @@ public class IDPArtifactResolution {
             String[] data = { idpEntityID, realm, artResolve.getID() };
             LogUtil.error(
                 Level.INFO, LogUtil.INVALID_ISSUER_REQUEST, data, null);
-            return SOAPCommunicator.getInstance().createSOAPFault(SAML2Constants.CLIENT_FAULT,
+            return getSoapCommunicator().createSOAPFault(SAML2Constants.CLIENT_FAULT,
                     "invalidIssuerInRequest", null);
         }
         SPSSODescriptorType spSSODescriptor = null;
@@ -271,7 +272,7 @@ public class IDPArtifactResolution {
         if (spSSODescriptor == null) {
             logger.error(classMethod +
                 "Unable to get SP SSO Descriptor from meta.");
-            return SOAPCommunicator.getInstance().createSOAPFault(SAML2Constants.SERVER_FAULT,
+            return getSoapCommunicator().createSOAPFault(SAML2Constants.SERVER_FAULT,
                     "metaDataError", null);
         }
         OrderedSet acsSet = SPSSOFederate.getACSUrl(spSSODescriptor,
@@ -289,7 +290,7 @@ public class IDPArtifactResolution {
                 logger.error(classMethod +
                     "The artifact resolve is not signed " +
                     "when it is expected to be signed.");
-                return SOAPCommunicator.getInstance().createSOAPFault(SAML2Constants.CLIENT_FAULT,
+                return getSoapCommunicator().createSOAPFault(SAML2Constants.CLIENT_FAULT,
                         "ArtifactResolveNotSigned", null);
             }
             Set<X509Certificate> verificationCerts = KeyUtil.getVerificationCerts(spSSODescriptor, spEntityID,
@@ -297,7 +298,7 @@ public class IDPArtifactResolution {
             if (!artResolve.isSignatureValid(verificationCerts)) {
                 logger.error(classMethod +
                     "artifact resolve verification failed.");
-                return SOAPCommunicator.getInstance().createSOAPFault(SAML2Constants.CLIENT_FAULT,
+                return getSoapCommunicator().createSOAPFault(SAML2Constants.CLIENT_FAULT,
                         "invalidArtifact", null);
             }
             if (logger.isDebugEnabled()) {
@@ -310,7 +311,7 @@ public class IDPArtifactResolution {
         if (art == null) {
             logger.error(classMethod +
                 "Unable to get an artifact from ArtifactResolve.");
-            return SOAPCommunicator.getInstance().createSOAPFault(SAML2Constants.CLIENT_FAULT,
+            return getSoapCommunicator().createSOAPFault(SAML2Constants.CLIENT_FAULT,
                     "invalidArtifactSignature", null);
         }
 
@@ -328,7 +329,7 @@ public class IDPArtifactResolution {
             } catch (SAML2TokenRepositoryException se) {
                 logger.error(classMethod + " There was a problem reading the response "
                         + "from the SAML2 Token Repository using artStr:" + artStr, se);
-                return SOAPCommunicator.getInstance().createSOAPFault(
+                return getSoapCommunicator().createSOAPFault(
                         SAML2Constants.CLIENT_FAULT,
                         "UnableToFindResponseInRepo", null);
             }
@@ -336,7 +337,7 @@ public class IDPArtifactResolution {
 
         if (res == null) {
             logger.error("Unable to find response for artifact {}", artStr);
-            return SOAPCommunicator.getInstance().createSOAPFault(SAML2Constants.CLIENT_FAULT,
+            return getSoapCommunicator().createSOAPFault(SAML2Constants.CLIENT_FAULT,
                     "UnableToFindResponse", null);
         }
 
@@ -415,10 +416,10 @@ public class IDPArtifactResolution {
 
         SOAPMessage msg = null;
         try {
-            msg = SOAPCommunicator.getInstance().createSOAPMessage(str, false);
+            msg = getSoapCommunicator().createSOAPMessage(str, false);
         } catch (SOAPException se) {
             logger.error(classMethod + "Unable to create a SOAPMessage and add a document ", se);
-            return SOAPCommunicator.getInstance().createSOAPFault(SAML2Constants.SERVER_FAULT, "unableToCreateSOAPMessage", null);
+            return getSoapCommunicator().createSOAPFault(SAML2Constants.SERVER_FAULT, "unableToCreateSOAPMessage", null);
         }
 
         return msg;
@@ -445,5 +446,13 @@ public class IDPArtifactResolution {
             res.setHeader(header.getName(), concat.toString());
             }
         }
+    }
+
+
+    private static SOAPCommunicator getSoapCommunicator() {
+        if(soapCommunicator == null) {
+            soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        }
+        return soapCommunicator;
     }
 } 

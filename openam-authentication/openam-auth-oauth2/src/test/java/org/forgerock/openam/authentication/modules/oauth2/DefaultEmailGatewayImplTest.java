@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.oauth2;
 
@@ -24,15 +32,15 @@ import java.util.Map;
 import javax.mail.MessagingException;
 
 import org.assertj.core.util.Arrays;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.forgerock.am.mail.application.AMSendMail;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class DefaultEmailGatewayImplTest {
 
     private static final String FROM = "from@example.com";
@@ -49,13 +57,13 @@ public class DefaultEmailGatewayImplTest {
     private AMSendMail sendMail;
     private EmailGateway emailGateway;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         emailGateway = new DefaultEmailGatewayImpl(sendMail);
     }
 
     @Test
-    public void testNullToAddressNoEmailSent() throws NoEmailSentException {
+    void testNullToAddressNoEmailSent() throws NoEmailSentException {
         // when
         emailGateway.sendEmail(FROM, null, SUBJECT, MESSAGE, Map.of());
 
@@ -64,7 +72,7 @@ public class DefaultEmailGatewayImplTest {
     }
 
     @Test
-    public void testMissingMailArgsUsesDefault() throws NoEmailSentException, MessagingException {
+    void testMissingMailArgsUsesDefault() throws NoEmailSentException, MessagingException {
         // when
         emailGateway.sendEmail(FROM, TO, SUBJECT, MESSAGE, Map.of());
 
@@ -73,7 +81,7 @@ public class DefaultEmailGatewayImplTest {
     }
 
     @Test
-    public void testAllArgsSendsEmailToCorrectPlace() throws NoEmailSentException, MessagingException {
+    void testAllArgsSendsEmailToCorrectPlace() throws NoEmailSentException, MessagingException {
         //given
         Map<String, String>  options = Map.of(OAuthParam.KEY_SMTP_HOSTNAME, HOST,
                 OAuthParam.KEY_SMTP_PORT, PORT,
@@ -90,7 +98,7 @@ public class DefaultEmailGatewayImplTest {
     }
 
     @Test
-    public void testThrowsExceptionWhenMessageFails() throws MessagingException {
+    void testThrowsExceptionWhenMessageFails() throws MessagingException {
         //given
         doThrow(MessagingException.class).when(sendMail).postMail(Arrays.array(TO), SUBJECT, MESSAGE, FROM);
 

@@ -11,11 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.data;
 
 import org.forgerock.json.jose.jwk.JWK;
+import org.forgerock.openam.auth.nodes.webauthn.Aaguid;
 
 /**
  * Represents https://www.w3.org/TR/webauthn/#attested-credential-data.
@@ -23,7 +32,7 @@ import org.forgerock.json.jose.jwk.JWK;
 public class AttestedCredentialData {
 
     /** AAGUID of the authenticator. **/
-    public final byte[] aaguid;
+    public final Aaguid aaguid;
 
     /** byte length of credentialId. **/
     public final int credentialIdLength;
@@ -46,7 +55,7 @@ public class AttestedCredentialData {
      * @param publicKey the public key.
      * @param algorithm the algorithm to use.
      */
-    public AttestedCredentialData(byte[] aaguid, int credentialIdLength, byte[] credentialId, JWK publicKey,
+    public AttestedCredentialData(Aaguid aaguid, int credentialIdLength, byte[] credentialId, JWK publicKey,
                                   String algorithm) {
         this.aaguid = aaguid;
         this.credentialIdLength = credentialIdLength;

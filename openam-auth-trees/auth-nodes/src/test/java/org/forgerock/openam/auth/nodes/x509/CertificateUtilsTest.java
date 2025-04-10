@@ -11,7 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ *  Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
+ *
  */
 
 package org.forgerock.openam.auth.nodes.x509;
@@ -19,22 +28,16 @@ package org.forgerock.openam.auth.nodes.x509;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.forgerock.cuppa.Cuppa.beforeEach;
-import static org.forgerock.cuppa.Cuppa.describe;
-import static org.forgerock.cuppa.Cuppa.it;
-import static org.forgerock.cuppa.Cuppa.when;
-import static org.forgerock.openam.auth.nodes.x509.CertificateUtils.getCertPathFromJwkX5c;
+import static org.forgerock.openam.auth.nodes.webauthn.metadata.FileUtils.getFromClasspath;
+import static org.forgerock.openam.auth.nodes.webauthn.metadata.FileUtils.readStream;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
 
-import org.forgerock.cuppa.junit.CuppaRunner;
 import org.forgerock.json.jose.builders.SignedJwtBuilderImpl;
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.jwk.JWK;
@@ -42,60 +45,69 @@ import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.json.jose.jws.JwsAlgorithm;
 import org.forgerock.json.jose.jws.SignedJwt;
 import org.forgerock.json.jose.jws.handlers.NOPSigningHandler;
-import org.forgerock.openam.utils.file.FileUtils;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
-@RunWith(CuppaRunner.class)
 public class CertificateUtilsTest {
 
     private SignedJwt jwt;
 
-    {
-        describe(CertificateUtils.class.getSimpleName(), () -> {
-            when("reading certificates from a JWK", () -> {
-                beforeEach(() -> {
-                    String string = readStream(getFromClasspath("forgerock-signed-jwk.jwt"));
-                    jwt = new JwtReconstruction().reconstructJwt(string, SignedJwt.class);
-                });
-                it("passes", () -> {
-                    assertThat(getCertPathFromJwkX5c(jwt.getHeader().getJsonWebKey())).isNotNull();
-                });
-                when("the JWK contains an invalid certificate", () -> {
-                    beforeEach(() -> {
-                        List<String> certificateStrings = singletonList(
-                                readStream(getFromClasspath("not-a-certificate")));
-
-                        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
-                        JWK jwk = RsaJWK.builder((RSAPublicKey) keyPair.getPublic())
-                                .keyId("Any")
-                                .algorithm(JwsAlgorithm.RS256)
-                                .x509Chain(certificateStrings)
-                                .build();
-                        SignedJwtBuilderImpl jwtBuilder = new SignedJwtBuilderImpl(new NOPSigningHandler());
-                        jwt = jwtBuilder.headers().jwk(jwk).done().asJwt();
-                    });
-                    it("fails", () -> {
-                        assertThatThrownBy(() -> getCertPathFromJwkX5c(jwt.getHeader().getJsonWebKey()))
-                                .isInstanceOf(IllegalStateException.class);
-                    });
-                });
-            });
-
-        });
+    @Test
+    void testReadingCertificate() throws Exception {
+        assertThat(CertificateUtils.readCertificate(
+                getFromClasspath("WebAuthnRegistrationNode/forgerock.test.crt"))).isNotNull();
     }
 
-    private static InputStream getFromClasspath(String name) {
-        return FileUtils.class.getResourceAsStream("/" + name);
+    @Test
+    void testReadingInvalidCertificate() {
+        assertThatThrownBy(() -> CertificateUtils.readCertificate(
+                getFromClasspath("not-a-certificate")))
+                .isInstanceOf(CertificateException.class);
     }
 
-    private static String readStream(InputStream stream) {
-        try (DataInputStream din = new DataInputStream(stream)) {
-            int available = din.available();
-            byte[] buffer = new byte[available];
-            din.readFully(buffer);
-            return new String(buffer, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+    @Test
+    void testReadingCertificateFromJwk() throws Exception {
+        String string = readStream(
+                getFromClasspath("forgerock-signed-jwk.jwt"));
+        jwt = new JwtReconstruction().reconstructJwt(string, SignedJwt.class);
+
+        assertThat(CertificateUtils.getCertPathFromJwkX5c(jwt.getHeader().getJsonWebKey())).isNotNull();
+    }
+
+    @Test
+    void testReadingCertificateFromJwt() throws Exception {
+        String string = readStream(
+                getFromClasspath("forgerock-signed.jwt"));
+        jwt = new JwtReconstruction().reconstructJwt(string, SignedJwt.class);
+
+        assertThat(CertificateUtils.getCertPathFromJwtX5c(jwt)).isNotNull();
+    }
+
+    @Test
+    void testReadingInvalidCertificateFromJwtX5c() {
+        List<String> certificateStrings = singletonList(
+                readStream(getFromClasspath("not-a-certificate")));
+
+        SignedJwtBuilderImpl jwtBuilder = new SignedJwtBuilderImpl(new NOPSigningHandler());
+        jwt = jwtBuilder.headers().x5c(certificateStrings).done().asJwt();
+
+        assertThatThrownBy(() -> CertificateUtils.getCertPathFromJwtX5c(jwt))
+                .isInstanceOf(CertificateException.class);
+    }
+
+    @Test
+    void testReadingInvalidCertificateFromJwkX5c() throws NoSuchAlgorithmException {
+        List<String> certificateStrings = singletonList(
+                readStream(getFromClasspath("not-a-certificate")));
+        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        JWK jwk = RsaJWK.builder((RSAPublicKey) keyPair.getPublic())
+                .keyId("Any")
+                .algorithm(JwsAlgorithm.RS256)
+                .x509Chain(certificateStrings)
+                .build();
+        SignedJwtBuilderImpl jwtBuilder = new SignedJwtBuilderImpl(new NOPSigningHandler());
+        jwt = jwtBuilder.headers().jwk(jwk).done().asJwt();
+
+        assertThatThrownBy(() -> CertificateUtils.getCertPathFromJwkX5c(jwt.getHeader().getJsonWebKey()))
+                .isInstanceOf(CertificateException.class);
     }
 }

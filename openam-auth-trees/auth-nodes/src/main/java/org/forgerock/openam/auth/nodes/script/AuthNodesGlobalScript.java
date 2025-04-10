@@ -11,13 +11,20 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.script;
 
 import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
-import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.CONFIG_PROVIDER_NODE;
 
 import org.forgerock.openam.scripting.domain.ScriptContext;
 import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScript;
@@ -38,13 +45,7 @@ public enum AuthNodesGlobalScript implements GlobalScript {
      * The default Device Profile Match script.
      */
     DEVICE_PROFILE_MATCH_DECISION_NODE_SCRIPT("Device Profile Match Template Decision Node",
-            "13e3f263-9cd3-4844-8d1c-040fd0dd02eb", AUTHENTICATION_TREE_DECISION_NODE),
-
-    /**
-     * The default Config Provider Node Script.
-     */
-    CONFIG_PROVIDER_NODE_SCRIPT("Config Provider",
-            "5e854779-6ec1-4c39-aeba-0477e0986646", CONFIG_PROVIDER_NODE);
+            "13e3f263-9cd3-4844-8d1c-040fd0dd02eb", AUTHENTICATION_TREE_DECISION_NODE);
 
     private final String displayName;
     private final String id;

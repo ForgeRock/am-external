@@ -1,8 +1,8 @@
 <%--
    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
-  
+
    Copyright (c) 2008 Sun Microsystems Inc. All Rights Reserved
-  
+
    The contents of this file are subject to the terms
    of the Common Development and Distribution License
    (the License). You may not use this file except in
@@ -24,7 +24,7 @@
 
    $Id: fedletSSOInit.jsp,v 1.8 2009/06/24 23:05:30 mrudulahg Exp $
 
-   Portions Copyright 2013-2016 ForgeRock AS.
+   Portions Copyright 2013-2025 Ping Identity Corporation.
 --%>
 
 <%@ page import="com.sun.identity.saml.common.SAMLUtils" %>
@@ -65,8 +65,8 @@
                          e.g. if the request URL has :
                          ?TARGET=http://server:port/uri&RelayStateAlias=TARGET
                          then the TARGET query parameter will be interpreted as
-                         RelayState and on successful completion of 
-                         SSO/Federation user will be redirected to the TARGET 
+                         RelayState and on successful completion of
+                         SSO/Federation user will be redirected to the TARGET
                          URL.
 
     5. NameIDFormat      NameIDPolicy format Identifier Value.
@@ -74,14 +74,14 @@
                          urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
                          urn:oasis:names:tc:SAML:2.0:nameid-format:transient
                          Note : transient will always be used for Fedlet
-            
+
     6. binding           URI value that identifies a SAML protocol binding to
                          used when returning the Response message.
                          The supported values are :
                              HTTP-Artifact
                              HTTP-POST (default for Fedlet)
 
-    7. AssertionConsumerServiceIndex 
+    7. AssertionConsumerServiceIndex
                          An integer number indicating the location
                          to which the Response message should be returned to
                          the requester.
@@ -94,7 +94,7 @@
                          Note: This parameter may not be supported for
                          this release.
 
-    9. isPassive         true or false value indicating whether the IDP 
+    9. isPassive         true or false value indicating whether the IDP
                          should authenticate passively.
 
     10. ForceAuthn       true or false value indicating if IDP must
@@ -110,18 +110,18 @@
     12.Destination       A URI Reference indicating the address to which the
                          request has been sent.
 
-    13.AuthnContextDeclRef  
+    13.AuthnContextDeclRef
                          Specifies the AuthnContext Declaration Reference.
                          The value is a pipe separated value with multiple
                          references.
 
-    14.AuthnContextClassRef 
+    14.AuthnContextClassRef
                          Specifies the AuthnContext Class References.
                          The value is a pipe separated value with multiple
                          references.
 
     15 AuthLevel         The Authentication Level of the Authentication
-                         Context to use for Authentication. 
+                         Context to use for Authentication.
 
     16.AuthComparison    The comparison method used to evaluate the
                          requested context classes or statements.
@@ -131,7 +131,7 @@
                              maximum
                              better
 
-    17.Consent           Specifies a URI a SAML defined identifier 
+    17.Consent           Specifies a URI a SAML defined identifier
                          known as Consent Identifiers.These are defined in
                          the SAML 2 Assertions and Protocols Document.
                          Note: This parameter may not be supported for
@@ -180,7 +180,7 @@
         metaAlias = request.getParameter("metaAlias");
         if ((metaAlias ==  null) || (metaAlias.length() == 0)) {
             SAML2MetaManager manager = new SAML2MetaManager();
-            List spMetaAliases = 
+            List spMetaAliases =
                 manager.getAllHostedServiceProviderMetaAliases("/");
             if ((spMetaAliases != null) && !spMetaAliases.isEmpty()) {
                 // get first one
@@ -207,7 +207,7 @@
             list = new ArrayList();
             list.add(SAML2Constants.HTTP_POST);
             paramsMap.put(SAML2Constants.BINDING, list);
-        } 
+        }
 
         if ((idpEntityID == null) || (idpEntityID.length() == 0)) {
             // get reader url
@@ -228,7 +228,7 @@
 
     if ((idpEntityID == null) || (idpEntityID.length() == 0)) {
         SAML2MetaManager manager = new SAML2MetaManager();
-        List idpEntities = manager.getAllRemoteIdentityProviderEntities("/"); 
+        List idpEntities = manager.getAllRemoteIdentityProviderEntities("/");
         if ((idpEntities == null) || idpEntities.isEmpty()) {
             saml2Auditor.auditAccessFailure(String.valueOf(response.SC_BAD_REQUEST),
                     SAML2Utils.bundle.getString("idpNotFound"));
@@ -238,7 +238,7 @@
         } else if (idpEntities.size() == 1) {
             // only one IDP, just use it
             idpEntityID = (String) idpEntities.get(0);
-        } else { 
+        } else {
             // multiple IDP configured in fedlet
             saml2Auditor.auditAccessFailure(String.valueOf(response.SC_BAD_REQUEST),
                     SAML2Utils.bundle.getString("nullIDPEntityID"));

@@ -24,7 +24,7 @@
  *
  * $Id: NamespacePrefixMapperImpl.java,v 1.3 2008/06/25 05:48:05 qcheng Exp $
  *
- * Portions Copyrighted 2018 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  *
  */
 

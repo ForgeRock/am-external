@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -25,6 +33,7 @@ import static org.forgerock.openam.services.push.PushNotificationConstants.MECHA
 import java.util.Collections;
 import java.util.List;
 
+import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
 import org.forgerock.json.JsonValue;
@@ -106,6 +115,18 @@ public class PushDeviceProfileHelper extends MultiFactorDeviceProfileHelper<Push
     }
 
     /**
+     * Save the device's settings on the user's profile.
+     *
+     * @param user the username of the user to generate a device profile for. Cannot be null.
+     * @param deviceSettings the device profile to save. Cannot be null.
+     * @throws DevicePersistenceException if the device profile cannot be saved.
+     */
+    public void saveDeviceProfile(@Nonnull String user, @Nonnull PushDeviceSettings deviceSettings)
+            throws DevicePersistenceException {
+        deviceProfileManager.saveDeviceProfile(user, realm.asPath(), deviceSettings);
+    }
+
+    /**
      * Create a number of random bytes to be used as challenge secret.
      *
      * @return the challenge as a Base64 encoded String.
@@ -113,5 +134,19 @@ public class PushDeviceProfileHelper extends MultiFactorDeviceProfileHelper<Push
     public String createChallenge() {
         return ((UserPushDeviceProfileManager) deviceProfileManager).createRandomBytes();
     }
-}
 
+    /**
+     * Retrieve stored device using the mechanism UID.
+     * @param mechanismUid the mechanismUid associated with the device. Cannot be null.
+     * @param username the username associated with the device. Cannot be null.
+     * @return the stored push device profile.
+     * @throws DevicePersistenceException In case anything goes wrong reading from the datastore.
+     */
+    public PushDeviceSettings getDeviceSettingsByMechanismUid(@Nonnull String mechanismUid, @Nonnull String username)
+            throws DevicePersistenceException {
+        return deviceProfileManager.getDeviceProfiles(username, realm.asPath()).stream()
+                .filter(device -> device.getDeviceMechanismUID().equals(mechanismUid))
+                .findFirst()
+                .orElse(null);
+    }
+}

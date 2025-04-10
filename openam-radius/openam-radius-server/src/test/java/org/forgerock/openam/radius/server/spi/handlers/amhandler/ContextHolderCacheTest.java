@@ -11,15 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
  */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
+ */
+
 package org.forgerock.openam.radius.server.spi.handlers.amhandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test methods for the <code>ContextHolderCacheTest</code> class.
@@ -34,7 +43,7 @@ public class ContextHolderCacheTest {
      * @see org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolderCache#createCachedContextHolder
      */
     @Test
-    public void createCachedContextHolder() {
+    void createCachedContextHolder() {
         // Given
         final ContextCacheSize cacheSize = mock(ContextCacheSize.class);
         when(cacheSize.getDesiredCacheSize()).thenReturn(5);
@@ -52,7 +61,7 @@ public class ContextHolderCacheTest {
      * @see org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolderCache#get
      */
     @Test
-    public void getReturnsCreatedValue() {
+    void getReturnsCreatedValue() {
         // Given
         final ContextCacheSize cacheSize = mock(ContextCacheSize.class);
         when(cacheSize.getDesiredCacheSize()).thenReturn(5);
@@ -71,7 +80,7 @@ public class ContextHolderCacheTest {
      * @see org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolderCache#getCacheKey
      */
     @Test
-    public void removeReducesSizeByOne() {
+    void removeReducesSizeByOne() {
         // Given
         final ContextCacheSize cacheSize = mock(ContextCacheSize.class);
         when(cacheSize.getDesiredCacheSize()).thenReturn(5);
@@ -91,7 +100,7 @@ public class ContextHolderCacheTest {
      * @see org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolderCache#get
      */
     @Test
-    public void updateCacheSize() {
+    void updateCacheSize() {
         // Given
         final int initialCacheSize = 5;
         final int newCacheSize = 3;

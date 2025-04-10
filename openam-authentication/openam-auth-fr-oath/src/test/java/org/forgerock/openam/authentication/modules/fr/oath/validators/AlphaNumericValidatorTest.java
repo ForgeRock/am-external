@@ -11,34 +11,45 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.fr.oath.validators;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class AlphaNumericValidatorTest {
 
     private final AlphaNumericValidator validator = new AlphaNumericValidator();
 
-    @DataProvider(name = "data")
-    public Object[][] data() {
-        return new Object[][] {
-                {"asdf", true},
-                {"123", true},
-                {"asdf1234", true},
-                {",123", false},
-                {"/w 15 you jailor?", false},
-                {"12/!@£%awefoun@weg", false},
-                {"", false}
-        };
+    private static Stream<Arguments> data() {
+        return Stream.of(
+                Arguments.of("asdf", true),
+                Arguments.of("123", true),
+                Arguments.of("asdf1234", true),
+                Arguments.of(",123", false),
+                Arguments.of("/w 15 you jailor?", false),
+                Arguments.of("12/!@£%awefoun@weg", false),
+                Arguments.of("", false)
+        );
     }
 
-    @Test(dataProvider = "data")
+    @ParameterizedTest
+    @MethodSource("data")
     public void checkCorrectness(String name, boolean expected) {
         //given
 

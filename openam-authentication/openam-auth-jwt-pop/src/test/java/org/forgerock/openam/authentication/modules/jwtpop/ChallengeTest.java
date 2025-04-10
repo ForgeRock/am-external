@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.jwtpop;
@@ -30,9 +38,9 @@ import org.forgerock.json.jose.jwk.KeyUseConstants;
 import org.forgerock.json.jose.jwk.OctJWK;
 import org.forgerock.json.jose.jws.SupportedEllipticCurve;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ChallengeTest {
     private static final String AUDIENCE = "testAudience";
@@ -43,12 +51,12 @@ public class ChallengeTest {
 
     private static final String SIGNING_KEY_ID = "signingKeyId";
 
-    private JWK challengeSigningKey;
-    private JWK responseEncryptionKey;
+    private static JWK challengeSigningKey;
+    private static JWK responseEncryptionKey;
     private Challenge challenge;
 
-    @BeforeClass
-    public void generateKeys() throws Exception {
+    @BeforeAll
+    static void generateKeys() throws Exception {
         final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
         keyPairGenerator.initialize(SupportedEllipticCurve.P256.getParameters());
         final KeyPair signingKey = keyPairGenerator.generateKeyPair();
@@ -57,12 +65,12 @@ public class ChallengeTest {
                 KeyUseConstants.SIG, SIGNING_KEY_ID);
 
         // Just reuse the signing key for testing purposes
-        responseEncryptionKey =  new EcJWK((ECPublicKey) signingKey.getPublic(), (ECPrivateKey) signingKey.getPrivate(),
+        responseEncryptionKey = new EcJWK((ECPublicKey) signingKey.getPublic(), (ECPrivateKey) signingKey.getPrivate(),
                 KeyUseConstants.ENC, null);
     }
 
-    @BeforeMethod
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() {
         challenge = Challenge.builder()
                 .audience(AUDIENCE)
                 .issuedAt(ISSUED_AT)
@@ -75,7 +83,7 @@ public class ChallengeTest {
     }
 
     @Test
-    public void shouldIncludeCorrectClaims() throws Exception {
+    void shouldIncludeCorrectClaims() {
         final JwtClaimsSet claims = challenge.toJwt().getClaimsSet();
 
         // The subject field should never be set, as we are not making a claim that the subject is who they say they are
@@ -89,17 +97,17 @@ public class ChallengeTest {
     }
 
     @Test
-    public void shouldIndicateCorrectSigningAlgorithm() throws Exception {
+    void shouldIndicateCorrectSigningAlgorithm() {
         assertThat(challenge.toJwt().getHeader().getAlgorithm()).hasToString(challengeSigningKey.getAlgorithm());
     }
 
     @Test
-    public void shouldIncludeChallengeSigningKeyId() throws Exception {
+    void shouldIncludeChallengeSigningKeyId() {
         assertThat(challenge.toJwt().getHeader().getKeyId()).isEqualTo(SIGNING_KEY_ID);
     }
 
     @Test
-    public void shouldIncludeResponseEncryptionKeyIfEphemeral() throws Exception {
+    void shouldIncludeResponseEncryptionKeyIfEphemeral() {
         final EcJWK epk = EcJWK.parse(challenge.toJwt().getClaimsSet().get("response_enc_epk"));
         assertThat(epk).isNotNull();
         assertThat(epk.getD()).isNull(); // Should not include private key components!
@@ -110,7 +118,7 @@ public class ChallengeTest {
     }
 
     @Test
-    public void shouldIncludeResponseEncryptionKeyIdIfNotEphemeral() throws Exception {
+    void shouldIncludeResponseEncryptionKeyIdIfNotEphemeral() {
         // Given
         String keyId = "someKeyId";
         JWK responseEncryptionKey = new OctJWK(KeyUseConstants.ENC, null, keyId, "key_bytes", null, null, null);

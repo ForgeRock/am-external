@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
  */
 /*
  * Copyright (C)2009 - SSHJ Contributors
@@ -30,7 +30,7 @@
  */
 
 /*
- * Portions copyrighted 2016 ForgeRock AS.
+ * Portions copyrighted 2016-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.amster;

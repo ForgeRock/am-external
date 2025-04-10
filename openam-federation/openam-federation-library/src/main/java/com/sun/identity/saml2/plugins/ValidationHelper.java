@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -21,7 +29,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
 
 public class ValidationHelper {
     /**
-     * Throws a SAML2Exception if the provided realm is null.
+     * Validates that the provided realm is not null. <br>
      *
      * @param realm the realm
      * @throws SAML2Exception if the realm is null
@@ -33,7 +41,19 @@ public class ValidationHelper {
     }
 
     /**
-     * Throws a SAML2Exception if the provided hostedEntity is null.
+     * Validates that the provided remote entityID is not null. <br>
+     *
+     * @param remoteEntity the Remote Entity
+     * @throws SAML2Exception if the remoteEntity is null
+     */
+    public void validateRemoteEntity(String remoteEntity) throws SAML2Exception {
+        if (remoteEntity == null) {
+            throw new SAML2Exception(bundle.getString("nullRemoteEntityID"));
+        }
+    }
+
+    /**
+     * Validates that the provided hosted entityID is not null. <br>
      *
      * @param hostedEntity the Hosted Entity
      * @throws SAML2Exception if the hostedEntity is null
@@ -45,7 +65,7 @@ public class ValidationHelper {
     }
 
     /**
-     * Throws a SAML2Exception if the provided session is null.
+     * Validates that the provided session is not null. <br>
      *
      * @param session the session
      * @throws SAML2Exception if the session is null

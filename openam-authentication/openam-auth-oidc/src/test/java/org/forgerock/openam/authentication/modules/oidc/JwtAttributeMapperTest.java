@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2017 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.oidc;
@@ -23,8 +31,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class JwtAttributeMapperTest {
     private static final String EMAIL = "email";
@@ -40,9 +48,9 @@ public class JwtAttributeMapperTest {
     private JwtClaimsSet claimsSet;
     private JwtAttributeMapper defaultPrincipalMapper;
 
-    @BeforeTest
-    public void initialize() {
-        jwtMappings = new HashMap<String, Object>();
+    @BeforeEach
+    void initialize() {
+        jwtMappings = new HashMap<>();
         jwtMappings.put(SUB, SUBJECT_VALUE);
         jwtMappings.put(ISS, ISSUER);
         jwtMappings.put(EMAIL, EMAIL_VALUE);
@@ -56,7 +64,7 @@ public class JwtAttributeMapperTest {
     }
 
     @Test
-    public void testBasicJwtMapping() {
+    void testBasicJwtMapping() {
         final Map<String, Set<String>> attrs =
                 defaultPrincipalMapper.getAttributes(attributeMappings, claimsSet);
         assertThat(attrs.get(UID).iterator().next()).isEqualTo("prefix-" + SUBJECT_VALUE);

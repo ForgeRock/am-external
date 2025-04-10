@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.assertion.impl;
@@ -21,15 +29,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Date;
 import java.util.List;
 
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.sun.identity.saml2.common.SAML2Constants;
 
 public class KeyInfoConfirmationDataImplTest {
 
-    @DataProvider
-    public Object[][] xmlTestCases() {
+    public static Object[][] xmlTestCases() {
         return new Object[][] {
                 { true, true, "<saml:KeyInfoConfirmationData xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\" " +
                         "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
@@ -67,7 +74,8 @@ public class KeyInfoConfirmationDataImplTest {
         };
     }
 
-    @Test(dataProvider = "xmlTestCases")
+    @ParameterizedTest
+    @MethodSource("xmlTestCases")
     public void testToXmlString(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
         // Given
         KeyInfoConfirmationDataImpl keyInfoConfirmationData = new KeyInfoConfirmationDataImpl();

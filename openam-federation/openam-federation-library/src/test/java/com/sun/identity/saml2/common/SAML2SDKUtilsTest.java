@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.common;
@@ -27,17 +35,18 @@ import java.util.Optional;
 
 import javax.xml.bind.JAXBElement;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
 import org.mockito.MockedStatic;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.saml2.jaxb.entityconfig.BaseConfigType;
 import com.sun.identity.saml2.meta.SAML2MetaUtils;
 import com.sun.identity.saml2.secrets.BasicAuthSecrets;
 
+@ExtendWith(MockitoExtension.class)
 public class SAML2SDKUtilsTest {
     @Mock
     private JAXBElement<BaseConfigType> config;
@@ -63,44 +72,39 @@ public class SAML2SDKUtilsTest {
             SAML2Constants.SECRET_ID_IDENTIFIER,List.of("test")
     );
 
-    @Before
-    public void setup() throws Exception {
-        MockitoAnnotations.openMocks(this).close();
-    }
-
     @Test
-    public void shouldGiveCorrectByteArrayFromString() {
+    void shouldGiveCorrectByteArrayFromString() {
         assertThat(SAML2SDKUtils.hexStringToByteArray(HEX_STRING)).isEqualTo(BYTE_ARRAY);
     }
 
     @Test
-    public void shouldGiveCorrectByteArrayFromStringLowerCase() {
+    void shouldGiveCorrectByteArrayFromStringLowerCase() {
         assertThat(SAML2SDKUtils.hexStringToByteArray(HEX_STRING.toLowerCase())).isEqualTo(BYTE_ARRAY);
     }
 
     @Test
-    public void shouldGiveEmptyByteArrayFromEmptyString() {
+    void shouldGiveEmptyByteArrayFromEmptyString() {
         assertThat(SAML2SDKUtils.hexStringToByteArray("")).isEqualTo(new byte[]{});
     }
 
     @Test
-    public void shouldGiveCorrectStringFromByteArray() {
+    void shouldGiveCorrectStringFromByteArray() {
         assertThat(SAML2SDKUtils.byteArrayToHexString(BYTE_ARRAY)).isEqualToIgnoringCase(HEX_STRING);
     }
 
     @Test
-    public void shouldGiveEmptyStringForEmptyByteArray() {
+    void shouldGiveEmptyStringForEmptyByteArray() {
         assertThat(SAML2SDKUtils.byteArrayToHexString(new byte[]{})).isEqualTo("");
     }
 
     @Test
-    public void shouldReturnOriginalLocationUrlIfConfigIsNull() {
+    void shouldReturnOriginalLocationUrlIfConfigIsNull() {
         String result = SAML2SDKUtils.fillInBasicAuthInfo(null, locationUrl, "alpha");
         assertThat(result).isEqualTo(locationUrl);
     }
 
     @Test
-    public void shouldReturnUpdatedLocationUrl() {
+    void shouldReturnUpdatedLocationUrl() {
         MockedStatic<SAML2MetaUtils> mockSamlUtils = createMockSamlUtils(configMap);
         String result = SAML2SDKUtils.fillInBasicAuthInfo(config, locationUrl, "alpha");
         assertThat(result).isEqualTo(updatedLocationUrl);
@@ -108,7 +112,7 @@ public class SAML2SDKUtilsTest {
     }
 
     @Test
-    public void shouldReturnSecretLocationUrlWhenSecretSet() {
+    void shouldReturnSecretLocationUrlWhenSecretSet() {
 
         MockedStatic<SAML2MetaUtils> mockSamlUtils = createMockSamlUtils(secretConfigMap);
         try (MockedConstruction<BasicAuthSecrets> mockedBasicAuthSecrets = mockConstruction(BasicAuthSecrets.class,

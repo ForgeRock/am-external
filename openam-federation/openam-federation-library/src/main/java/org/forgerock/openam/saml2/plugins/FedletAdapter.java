@@ -24,15 +24,15 @@
  *
  * $Id: FedletAdapter.java,v 1.2 2009/06/17 03:09:13 exu Exp $
  *
- * Portions Copyrighted 2022 ForgeRock AS.
+ * Portions Copyrighted 2022-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.saml2.plugins;
 
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.annotations.EvolvingAll;
 

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -23,6 +31,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.forgerock.json.JsonValue;
+import org.forgerock.openam.annotations.Supported;
 import org.forgerock.util.Reject;
 
 import com.sun.identity.idm.IdType;
@@ -33,7 +42,8 @@ import com.sun.identity.idm.IdType;
  * <p>Note that there are many ways of identifying an identity through a journey and the presence of an
  * {@link IdentifiedIdentity} is not evidence that sufficient authentication has taken place.
  */
-public class IdentifiedIdentity {
+@Supported
+public final class IdentifiedIdentity {
 
     private static final String USERNAME_FIELD = "name";
     private static final String IDENTITY_TYPE_FIELD = "type";
@@ -48,6 +58,7 @@ public class IdentifiedIdentity {
      * @param username     A non-null String denoting the username of the identified identity.
      * @param identityType A non-null String denoting the type of the identity.
      */
+    @Supported
     public IdentifiedIdentity(String username, IdType identityType) {
         Reject.ifNull(username, "username must be non-null");
         Reject.ifNull(identityType, "identityType must be non-null");
@@ -61,6 +72,7 @@ public class IdentifiedIdentity {
      *
      * @return The username for this instance.
      */
+    @Supported
     public String getUsername() {
         return username;
     }
@@ -70,6 +82,7 @@ public class IdentifiedIdentity {
      *
      * @return The identityType for this instance.
      */
+    @Supported
     public IdType getIdentityType() {
         return identityType;
     }

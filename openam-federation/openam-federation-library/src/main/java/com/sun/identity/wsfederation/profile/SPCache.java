@@ -24,7 +24,7 @@
  *
  * $Id: SPCache.java,v 1.5 2009/12/14 23:42:48 mallas Exp $
  *
- * Portions Copyright 2015-2022 ForgeRock AS.
+ * Portions Copyright 2015-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.wsfederation.profile;

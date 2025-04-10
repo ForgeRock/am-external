@@ -11,12 +11,30 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oidc;
 
-import com.sun.identity.authentication.spi.AuthLoginException;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.doNothing;
+
+import java.net.URL;
+import java.time.Clock;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.exceptions.FailedToLoadJWKException;
@@ -35,26 +53,19 @@ import org.forgerock.secrets.SecretReference;
 import org.forgerock.secrets.SecretsProvider;
 import org.forgerock.util.promise.Promise;
 import org.forgerock.util.promise.Promises;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.junit.Test;
-import org.junit.Before;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import java.net.URL;
-import java.time.Clock;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import com.sun.identity.authentication.spi.AuthLoginException;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.doNothing;
-
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class OidcIdTokenJwtHandlerTest {
     private static final String VALIDATION_VALUE_CONFIG =
             "https://accounts.google.com/.well-known/openid-configuration";
@@ -67,8 +78,8 @@ public class OidcIdTokenJwtHandlerTest {
 
     private OidcIdTokenJwtHandler jwtHandler;
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         OidcIdTokenJwtHandlerFactory oidcIdTokenJwtHandlerFactory = (config, clientSecret)
                 -> new OidcIdTokenJwtHandler(oidcResolverCache, config,
                     new JwtReconstruction(), Optional.empty());
@@ -76,7 +87,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldCheckAuthorizedPartiesExistsGivenNullAuthorizedParties() {
+    void shouldCheckAuthorizedPartiesExistsGivenNullAuthorizedParties() {
         //Given
         String authorizedParties = null;
 
@@ -88,7 +99,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldCheckIsAuthorizedPartiesValidGivenInvalidAuthorizedParties() {
+    void shouldCheckIsAuthorizedPartiesValidGivenInvalidAuthorizedParties() {
         //Given
         String authorizedParties = JwtClaimsSetFactory.AUTHORIZED_PARTIES_CONFIG + "not valid";
 
@@ -100,7 +111,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldCheckIsAlgorithmDefaultValueGivenNotDefaultAlgorithm() {
+    void shouldCheckIsAlgorithmDefaultValueGivenNotDefaultAlgorithm() {
         //Given
         JwsAlgorithm algorithm = JwsAlgorithm.HS384;
 
@@ -112,7 +123,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldCheckUsingMacBasedAlgorithmAndNotClientSecretGivenNotMacBasedAlgorithmAndClientSecret() {
+    void shouldCheckUsingMacBasedAlgorithmAndNotClientSecretGivenNotMacBasedAlgorithmAndClientSecret() {
         //Given
         JwsAlgorithm algorithm = JwsAlgorithm.HS256;
         given(config.oidcValidationType()).willReturn(OidcNode.OpenIdValidationType.CLIENT_SECRET);
@@ -125,7 +136,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldCheckIfMultipleAudiencesExistTheClientShouldVerifyAuthorisedPartiesIsPresent() throws Exception {
+    void shouldCheckIfMultipleAudiencesExistTheClientShouldVerifyAuthorisedPartiesIsPresent() throws Exception {
         SignedJwt signedJwt = Mockito.mock(SignedJwt.class);
         JwsHeader header = new JwsHeader();
         List<String> audiences = List.of(JwtClaimsSetFactory.AUDIENCE_CONFIG, "second audience");
@@ -150,7 +161,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldFailToHandleResolverGivenClientSecretAndNullClientSecretConfig() {
+    void shouldFailToHandleResolverGivenClientSecretAndNullClientSecretConfig() {
         SignedJwt signedJwt = Mockito.mock(SignedJwt.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();
 
@@ -167,7 +178,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldFailToHandleResolverGivenInvalidValidationValueConfig() {
+    void shouldFailToHandleResolverGivenInvalidValidationValueConfig() {
         SignedJwt signedJwt = Mockito.mock(SignedJwt.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();
 
@@ -185,7 +196,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldFailToHandleResolverGivenCacheCannotCreateAResolver() throws Exception {
+    void shouldFailToHandleResolverGivenCacheCannotCreateAResolver() throws Exception {
         SignedJwt signedJwt = Mockito.mock(SignedJwt.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();
 
@@ -206,7 +217,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldHandleResolverGivenNoResolverInCache() throws Exception {
+    void shouldHandleResolverGivenNoResolverInCache() throws Exception {
         SignedJwt signedJwt = Mockito.mock(SignedJwt.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();
         OpenIdResolver openIdResolver = Mockito.mock(OpenIdResolver.class);
@@ -227,7 +238,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldHandleResolverGivenValidationTypeIsClientSecret() throws Exception {
+    void shouldHandleResolverGivenValidationTypeIsClientSecret() throws Exception {
         SignedJwt signedJwt = Mockito.mock(SignedJwt.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();
 
@@ -244,7 +255,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldHandleResolverGivenResolverExistsInCache() throws Exception {
+    void shouldHandleResolverGivenResolverExistsInCache() throws Exception {
         SignedJwt signedJwt = Mockito.mock(SignedJwt.class);
         OpenIdResolver openIdResolver = Mockito.mock(OpenIdResolver.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();
@@ -264,7 +275,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldFailIsJwtValidGivenResolverCannotValidateIdentity() throws Exception {
+    void shouldFailIsJwtValidGivenResolverCannotValidateIdentity() throws Exception {
         SignedJwt signedJwt = Mockito.mock(SignedJwt.class);
         OpenIdResolver openIdResolver = Mockito.mock(OpenIdResolver.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();
@@ -291,7 +302,7 @@ public class OidcIdTokenJwtHandlerTest {
     }
 
     @Test
-    public void shouldCheckIsJwtValidGivenValidJwt() throws Exception {
+    void shouldCheckIsJwtValidGivenValidJwt() throws Exception {
         SignedJwt signedJwt = Mockito.mock(SignedJwt.class);
         OpenIdResolver openIdResolver = Mockito.mock(OpenIdResolver.class);
         JwtClaimsSet jwtClaimsSet = JwtClaimsSetFactory.aJwtClaimsSet().build();

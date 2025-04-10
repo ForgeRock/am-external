@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -34,15 +42,18 @@ import org.forgerock.secrets.GenericSecret;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.SecretReference;
 import org.forgerock.secrets.SecretsProvider;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @SuppressWarnings("deprecation")
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class OtpNodeConnectionConfigMapperTest {
 
     private static final Clock CLOCK = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault());
@@ -61,14 +72,14 @@ public class OtpNodeConnectionConfigMapperTest {
     private OtpNodeConnectionConfigMapper mapper;
 
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         given(config.sslOption()).willReturn(OtpNodeBaseConfig.SslOption.SSL);
         given(secretReferenceCache.realm(realm)).willReturn(realmCache);
     }
 
     @Test
-    public void createsMapFromConfigObject() {
+    void createsMapFromConfigObject() {
         given(config.hostName()).willReturn("hostName");
         given(config.hostPort()).willReturn(1234);
         given(config.username()).willReturn("userName");
@@ -85,7 +96,7 @@ public class OtpNodeConnectionConfigMapperTest {
     }
 
     @Test
-    public void shouldUseSecretStorePasswordIfBothPasswordsArePresentAndSecretIsPresentInTheSecretStore() {
+    void shouldUseSecretStorePasswordIfBothPasswordsArePresentAndSecretIsPresentInTheSecretStore() {
         char[] passwordCharArray = CONFIG_PASSWORD.toCharArray();
         given(config.passwordPurpose()).willReturn(Optional.of(Purpose.PASSWORD));
         lenient().when(config.password()).thenReturn(Optional.of(passwordCharArray));
@@ -102,7 +113,7 @@ public class OtpNodeConnectionConfigMapperTest {
     }
 
     @Test
-    public void shouldUsePasswordPurposeIfOnlyPasswordPurposeIsPresentInTheSecretStore() {
+    void shouldUsePasswordPurposeIfOnlyPasswordPurposeIsPresentInTheSecretStore() {
         given(config.passwordPurpose()).willReturn(Optional.of(Purpose.PASSWORD));
 
         SecretsProvider secretsProvider = new SecretsProvider(CLOCK);
@@ -117,7 +128,7 @@ public class OtpNodeConnectionConfigMapperTest {
     }
 
     @Test
-    public void shouldUseConfigPasswordIfBothPasswordsArePresentButPasswordIsNotPresentInTheSecretStore() {
+    void shouldUseConfigPasswordIfBothPasswordsArePresentButPasswordIsNotPresentInTheSecretStore() {
         char[] passwordCharArray = CONFIG_PASSWORD.toCharArray();
         given(config.passwordPurpose()).willReturn(Optional.of(Purpose.PASSWORD));
         given(config.password()).willReturn(Optional.of(passwordCharArray));
@@ -132,7 +143,7 @@ public class OtpNodeConnectionConfigMapperTest {
     }
 
     @Test
-    public void shouldReturnNullPasswordIfNeitherPasswordIsPresent() {
+    void shouldReturnNullPasswordIfNeitherPasswordIsPresent() {
         Map<String, Set<String>> map = mapper.asConfigMap(config, realm);
         assertThat(map).extractingByKey("sunAMAuthHOTPSMTPUserPassword").isEqualTo(Collections.singleton(null));
     }

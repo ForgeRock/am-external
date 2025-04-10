@@ -24,6 +24,7 @@
  *
  * $Id: FedletEncodeDecode.java,v 1.1 2009/11/12 17:30:31 exu Exp $
  *
+ * Portions Copyright 2024-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.fedlet;
@@ -31,7 +32,6 @@ package com.sun.identity.fedlet;
 import com.sun.identity.security.DecodeAction;
 import com.sun.identity.security.EncodeAction;
 import com.sun.identity.saml.xmlsig.PasswordDecoder;
-import java.security.AccessController;
 
 
 /**
@@ -51,8 +51,7 @@ public class FedletEncodeDecode implements PasswordDecoder {
         }
 
         try {
-            System.out.println((String) AccessController.doPrivileged(
-                new EncodeAction(args[0])));
+            System.out.println(new EncodeAction(args[0]).run());
             System.exit(0);
         } catch (Exception e) {
             e.printStackTrace();
@@ -68,8 +67,8 @@ public class FedletEncodeDecode implements PasswordDecoder {
      *     decode the password.
      */
     public String  getDecodedPassword (String encodedPwd) {
-        String password = (String) AccessController.doPrivileged(
-            new DecodeAction(encodedPwd));
+        String password = (String) 
+            new DecodeAction(encodedPwd).run();
         return password;
     }
 }

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
@@ -20,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.testng.AssertJUnit.assertEquals;
 
 import java.security.Principal;
 import java.util.Collections;
@@ -28,16 +35,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.security.auth.message.MessageInfo;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.caf.authentication.framework.AuthenticationFramework;
 import org.forgerock.jaspi.modules.session.jwt.JwtSessionModule;
 import org.forgerock.jaspi.modules.session.jwt.ServletJwtSessionModule;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.iplanet.sso.SSOToken;
 import com.iplanet.sso.SSOTokenID;
@@ -46,8 +53,8 @@ public class PersistentCookiePAPTest {
 
     private PersistentCookieAuthModulePostAuthenticationPlugin persistentCookieAuthPAP;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
 
         ServletJwtSessionModule sessionModule = new ServletJwtSessionModule(new SecretsApiJwtCryptographyHandler());
         RealmLookup realmLookup = mock(RealmLookup.class);
@@ -62,7 +69,7 @@ public class PersistentCookiePAPTest {
     }
 
     @Test
-    public void shouldInitialisePostAuthProcess() throws Exception {
+    void shouldInitialisePostAuthProcess() throws Exception {
 
         //Given
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -77,12 +84,12 @@ public class PersistentCookiePAPTest {
         Map<String, Object> config = persistentCookieAuthPAP.generateConfig(request, response, ssoToken);
 
         //Then
-        assertEquals(config.get(JwtSessionModule.TOKEN_IDLE_TIME_IN_MINUTES_CLAIM_KEY), "TOKEN_IDLE_TIME");
-        assertEquals(config.get(JwtSessionModule.MAX_TOKEN_LIFE_IN_MINUTES_KEY), "TOKEN_MAX_LIFE");
+        assertThat(config.get(JwtSessionModule.TOKEN_IDLE_TIME_IN_MINUTES_CLAIM_KEY)).isEqualTo("TOKEN_IDLE_TIME");
+        assertThat(config.get(JwtSessionModule.MAX_TOKEN_LIFE_IN_MINUTES_KEY)).isEqualTo("TOKEN_MAX_LIFE");
     }
 
     @Test
-    public void shouldInitialiseAuthModuleWithClientIPEnforcedForPAP() throws Exception {
+    void shouldInitialiseAuthModuleWithClientIPEnforcedForPAP() throws Exception {
 
         //Given
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -96,11 +103,11 @@ public class PersistentCookiePAPTest {
         Map<String, Object> config = persistentCookieAuthPAP.generateConfig(request, response, ssoToken);
 
         //Then
-        assertEquals(config.get("openam-auth-persistent-cookie-enforce-ip"), true);
+        assertThat(config.get("openam-auth-persistent-cookie-enforce-ip")).isEqualTo(true);
     }
 
     @Test
-    public void shouldCallOnLoginSuccessWhenJwtNotValidated() throws Exception {
+    void shouldCallOnLoginSuccessWhenJwtNotValidated() throws Exception {
 
         //Given
 
@@ -128,16 +135,16 @@ public class PersistentCookiePAPTest {
         persistentCookieAuthPAP.onLoginSuccess(messageInfo, requestParamsMap, request, response, ssoToken);
 
         //Then
-        assertEquals(map.size(), 1);
+        assertThat(map.size()).isEqualTo(1);
         Map<String, Object> contextMap = (Map<String, Object>) map.get("org.forgerock.authentication.context");
-        assertEquals(contextMap.get("openam.usr"), "PRINCIPAL_NAME");
-        assertEquals(contextMap.get("openam.aty"), "AUTH_TYPE");
-        assertEquals(contextMap.get("openam.rlm"), "ORGANISATION");
+        assertThat(contextMap.get("openam.usr")).isEqualTo("PRINCIPAL_NAME");
+        assertThat(contextMap.get("openam.aty")).isEqualTo("AUTH_TYPE");
+        assertThat(contextMap.get("openam.rlm")).isEqualTo("ORGANISATION");
         assertThat(contextMap.get("openam.clientip")).isNull();
     }
 
     @Test
-    public void shouldCallOnLoginSuccess() throws Exception {
+    void shouldCallOnLoginSuccess() throws Exception {
 
         //Given
         MessageInfo messageInfo = mock(MessageInfo.class);
@@ -165,17 +172,17 @@ public class PersistentCookiePAPTest {
         persistentCookieAuthPAP.onLoginSuccess(messageInfo, requestParamsMap, request, response, ssoToken);
 
         //Then
-        assertEquals(map.size(), 2);
-        assertEquals(map.get("jwtValidated"), true);
+        assertThat(map.size()).isEqualTo(2);
+        assertThat(map.get("jwtValidated")).isEqualTo(true);
         Map<String, Object> contextMap = (Map<String, Object>) map.get("org.forgerock.authentication.context");
-        assertEquals(contextMap.get("openam.usr"), "PRINCIPAL_NAME");
-        assertEquals(contextMap.get("openam.aty"), "AUTH_TYPE");
-        assertEquals(contextMap.get("openam.rlm"), "ORGANISATION");
+        assertThat(contextMap.get("openam.usr")).isEqualTo("PRINCIPAL_NAME");
+        assertThat(contextMap.get("openam.aty")).isEqualTo("AUTH_TYPE");
+        assertThat(contextMap.get("openam.rlm")).isEqualTo("ORGANISATION");
         assertThat(contextMap.get("openam.clientip")).isNull();
     }
 
     @Test
-    public void shouldStoreClientIPOnLoginSuccess() throws Exception {
+    void shouldStoreClientIPOnLoginSuccess() throws Exception {
 
         //Given
         MessageInfo messageInfo = mock(MessageInfo.class);
@@ -197,6 +204,6 @@ public class PersistentCookiePAPTest {
         persistentCookieAuthPAP.onLoginSuccess(messageInfo, Collections.emptyMap(), request, response, ssoToken);
 
         //Then
-        assertEquals(contextMap.get("openam.clientip"), "CLIENT_IP");
+        assertThat(contextMap.get("openam.clientip")).isEqualTo("CLIENT_IP");
     }
 }

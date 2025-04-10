@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.federation.rest.schema.mappers;
@@ -23,7 +31,7 @@ import static org.forgerock.openam.objectenricher.EnricherContext.ROOT;
 import java.util.List;
 
 import org.forgerock.openam.federation.rest.schema.shared.Endpoint;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.saml2.jaxb.metadata.IndexedEndpointType;
 
@@ -37,7 +45,7 @@ public final class IndexedEndpointMapperTest {
     private IndexedEndpointMapper mapper = new IndexedEndpointMapper();
 
     @Test
-    public void whenIndexedEndpointTypePassedItIsMapperAccordingly() {
+    void whenIndexedEndpointTypePassedItIsMapperAccordingly() {
         // Given
         IndexedEndpointType indexedEndpointType = new IndexedEndpointType();
         indexedEndpointType.setIndex(3);
@@ -60,7 +68,7 @@ public final class IndexedEndpointMapperTest {
     }
 
     @Test
-    public void whenIndexedEndpointPassedItIsMappedBackAccordingly() {
+    void whenIndexedEndpointPassedItIsMappedBackAccordingly() {
         // Given
         Endpoint endpoint = new Endpoint();
         endpoint.setLocation("some-location");

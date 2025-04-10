@@ -24,7 +24,7 @@
  *
  * $Id: ProxyRestrictionImpl.java,v 1.2 2008/06/25 05:47:44 qcheng Exp $
  *
- * Portions Copyrighted 2018-2023 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
 
 
@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -62,7 +61,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  *  in this condition on the basis of an assertion containing such
  *  a condition.
  */
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class ProxyRestrictionImpl implements ProxyRestriction {
 
     private static final Logger logger = LoggerFactory.getLogger(ProxyRestrictionImpl.class);

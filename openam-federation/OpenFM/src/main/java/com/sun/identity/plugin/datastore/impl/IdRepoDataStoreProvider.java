@@ -24,11 +24,10 @@
  *
  * $Id: IdRepoDataStoreProvider.java,v 1.6 2008/08/06 17:29:26 exu Exp $
  *
- * Portions Copyrighted 2013-2023 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 package com.sun.identity.plugin.datastore.impl;
 
-import java.security.AccessController;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -116,7 +115,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
         }
 
         try {
-            SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
+            SSOToken adminToken = AdminTokenAction.getInstance().run();
             AMIdentity amId = new AMIdentity(adminToken, userID);
             return amId.getAttribute(attrName);
         } catch (SSOException ssoe) {
@@ -152,7 +151,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
         }
 
         try {
-            SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
+            SSOToken adminToken = AdminTokenAction.getInstance().run();
             AMIdentity amId = new AMIdentity(adminToken, userID);
             return amId.getAttributes(attrNames);
         } catch (SSOException ssoe) {
@@ -210,7 +209,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
         }
 
         try {
-            SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
+            SSOToken adminToken = AdminTokenAction.getInstance().run();
             AMIdentity amId = new AMIdentity(adminToken, userID);
             return identityService.getBinaryAttributes(amId, attrNames);
         } catch (SSOException ssoe) {
@@ -241,7 +240,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
         }
 
         try {
-            SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
+            SSOToken adminToken = AdminTokenAction.getInstance().run();
             AMIdentity amId = new AMIdentity(adminToken, userID);
             amId.setAttributes(attrMap);
             amId.store();
@@ -339,7 +338,7 @@ public class IdRepoDataStoreProvider implements DataStoreProvider {
         }
 
         try {
-            SSOToken adminToken = AccessController.doPrivileged(AdminTokenAction.getInstance());
+            SSOToken adminToken = AdminTokenAction.getInstance().run();
             AMIdentity amId = new AMIdentity(adminToken, userID);
             // treat inactive as user does not exist
             return amId.isActive();

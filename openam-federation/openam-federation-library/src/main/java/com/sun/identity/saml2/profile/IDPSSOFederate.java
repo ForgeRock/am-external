@@ -22,17 +22,20 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2022 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
+
+import static org.forgerock.openam.scripting.domain.DecisionNodeApplicationConstants.SAML_OBJECT_KEY_PARAM;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
+import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.saml2.IDPRequestValidator;
 import org.forgerock.openam.saml2.IDPSSOFederateRequest;
 import org.forgerock.openam.saml2.SAML2ActorFactory;
@@ -49,6 +52,7 @@ import com.sun.identity.federation.common.FSUtils;
 import com.sun.identity.plugin.session.SessionException;
 import com.sun.identity.saml.common.SAMLUtils;
 import com.sun.identity.saml2.common.SAML2Exception;
+import com.sun.identity.saml2.common.SAML2FailoverUtils;
 import com.sun.identity.saml2.common.SAML2Utils;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 
@@ -226,6 +230,7 @@ public class IDPSSOFederate {
             }
             auditor.setRealm(realm);
         }
+        SAML2Utils.deleteSamlObjectToken(request);
         IDPSSOFederateRequest reqData = new IDPSSOFederateRequest(reqID, realm, idpAdapter, idpMetaAlias, idpEntityID);
         reqData.setEventAuditor(auditor);
         // get the request id query parameter from the request. If this

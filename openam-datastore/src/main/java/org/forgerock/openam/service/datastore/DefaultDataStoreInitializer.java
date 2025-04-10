@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -142,15 +150,15 @@ public class DefaultDataStoreInitializer implements DataStoreInitializer {
 
     private void createRealmHierarchy(Connection connection, Dn realmDn, Dn rootServicesDn) throws IOException {
         if (realmDn.equals(rootServicesDn)) {
-            AddRequest addRequest = LDAPRequests.newAddRequest(realmDn)
-                    .addAttribute(SMSEntry.ATTR_OBJECTCLASS, SMSEntry.OC_TOP, SMSEntry.OC_ORG_UNIT);
+            AddRequest addRequest = LDAPRequests.newAddRequest(realmDn);
+            addRequest.entry().addAttribute(SMSEntry.ATTR_OBJECTCLASS, SMSEntry.OC_TOP, SMSEntry.OC_ORG_UNIT);
             ignoreAlreadyExistsException(() -> connection.add(addRequest));
             return;
         }
 
         createRealmHierarchy(connection, realmDn.parent(), rootServicesDn);
-        AddRequest addRequest = LDAPRequests.newAddRequest(realmDn)
-                .addAttribute(SMSEntry.ATTR_OBJECTCLASS, SMSEntry.OC_TOP, SMSEntry.OC_REALM_SERVICE);
+        AddRequest addRequest = LDAPRequests.newAddRequest(realmDn);
+        addRequest.entry().addAttribute(SMSEntry.ATTR_OBJECTCLASS, SMSEntry.OC_TOP, SMSEntry.OC_REALM_SERVICE);
         ignoreAlreadyExistsException(() -> connection.add(addRequest));
     }
 
@@ -164,7 +172,7 @@ public class DefaultDataStoreInitializer implements DataStoreInitializer {
         try {
             ldapAction.run();
         } catch (ConstraintViolationException e) {
-            if (!e.getResult().getResultCode().equals(ResultCode.ENTRY_ALREADY_EXISTS)) {
+            if (!e.getResult().resultCode().equals(ResultCode.ENTRY_ALREADY_EXISTS)) {
                 throw e;
             }
             // ignore.. already exists

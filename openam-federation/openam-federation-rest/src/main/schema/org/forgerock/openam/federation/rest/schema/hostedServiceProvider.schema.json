@@ -202,6 +202,20 @@
           },
           "basicAuthentication": {
             "$ref": "definitions.json#/basicAuthentication"
+          },
+          "clientAuthentication": {
+            "traverseObject": true,
+            "title": "Client Authentication",
+            "type": "object",
+            "properties": {
+              "excludeClientCertificate": {
+                "attributeKey": "excludeClientCertificate",
+                "title": "Exclude Client Certificate from Metadata",
+                "description": "When enabled, don't export the client certificate in the SP metadata.",
+                "type": "boolean",
+                "default": false
+              }
+            }
           }
         }
       },

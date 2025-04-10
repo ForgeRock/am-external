@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2020-2025 Ping Identity Corporation.
  */
 
 
@@ -30,13 +30,12 @@ import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.JsonValueBuilder;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
@@ -57,12 +56,10 @@ import com.sun.identity.shared.validation.PositiveIntegerValidator;
 public class DeviceSaveNode extends SingleOutcomeNode implements DeviceProfile {
 
     private final Logger logger = LoggerFactory.getLogger(DeviceSaveNode.class);
-    private final CoreWrapper coreWrapper;
-
-    private final LegacyIdentityService identityService;
     private final Config config;
     private final Realm realm;
     private final DeviceProfilesDao deviceProfilesDao;
+    private final NodeUserIdentityProvider identityProvider;
 
     /**
      * Configuration for the node.
@@ -115,28 +112,25 @@ public class DeviceSaveNode extends SingleOutcomeNode implements DeviceProfile {
      * Create the node using Guice injection. Just-in-time bindings can be used to obtain instances of
      * other classes from the plugin.
      *
-     * @param coreWrapper       The CoreWrapper Instance.
-     * @param identityService   The IdentityService Instance.
      * @param config            The service config.
      * @param realm             The realm the node is in.
      * @param deviceProfilesDao The Device DAO to access device profile
+     * @param identityProvider  The identity provider
      */
     @Inject
-    public DeviceSaveNode(CoreWrapper coreWrapper, LegacyIdentityService identityService, @Assisted Config config,
-            @Assisted Realm realm, DeviceProfilesDao deviceProfilesDao) {
-        this.coreWrapper = coreWrapper;
-        this.identityService = identityService;
+    public DeviceSaveNode(@Assisted Config config,
+            @Assisted Realm realm, DeviceProfilesDao deviceProfilesDao, NodeUserIdentityProvider identityProvider) {
         this.config = config;
         this.realm = realm;
         this.deviceProfilesDao = deviceProfilesDao;
+        this.identityProvider = identityProvider;
     }
 
     @Override
     public Action process(TreeContext context) throws NodeProcessException {
         logger.debug("DeviceProfileSaveNode Started");
         try {
-            AMIdentity identity = getUserIdentity(context.universalId, context.getStateFor(this), coreWrapper,
-                    identityService);
+            AMIdentity identity = getUserIdentity(context.universalId, context.getStateFor(this), identityProvider);
             save(context, identity);
         } catch (IdRepoException | SSOException e) {
             throw new NodeProcessException(e);

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins.scripted.bindings;
 
@@ -28,7 +36,7 @@ import com.sun.identity.saml2.protocol.LogoutResponse;
 /**
  * Script bindings for the SamlSpUserIdLoginLogout script.
  */
-final class SamlSpUserIdLoginLogoutBindings extends BaseSamlSpBindings {
+public final class SamlSpUserIdLoginLogoutBindings extends BaseSamlSpBindings {
 
     private final String userId;
     private final LogoutRequest logoutRequest;
@@ -67,16 +75,6 @@ final class SamlSpUserIdLoginLogoutBindings extends BaseSamlSpBindings {
         return bindings;
     }
 
-    @Override
-    public BindingsMap nextGenBindings() {
-        BindingsMap bindings = new BindingsMap(nextGenCommonBindings());
-        bindings.put(USER_ID, userId);
-        bindings.put(LOGOUT_REQUEST, logoutRequest);
-        bindings.put(LOGOUT_RESPONSE, logoutResponse);
-        bindings.put(BINDING, binding);
-        return bindings;
-    }
-
     /**
      * Interface utilised by the fluent builder to define step 1 in generating the SamlSpUserIdLoginLogoutBindings.
      */
@@ -102,13 +100,15 @@ final class SamlSpUserIdLoginLogoutBindings extends BaseSamlSpBindings {
      * Interface utilised by the fluent builder to define step 4 in generating the SamlSpUserIdLoginLogoutBindings.
      */
     public interface SamlSpUserIdLoginLogoutBindingsStep4 {
-        SamlSpBindingsStep1 withBinding(String binding);
+        SamlSpBindingsStep1<SamlSpUserIdLoginLogoutBindings> withBinding(String binding);
     }
 
     /**
      * Builder object to construct a {@link SamlSpUserIdLoginLogoutBindings}.
+     * Before modifying this builder, or creating a new one, please read
+     * service-component-api/scripting-api/src/main/java/org/forgerock/openam/scripting/domain/README.md
      */
-    public static final class Builder extends BaseSamlSpBindings.Builder<Builder>
+    private static final class Builder extends BaseSamlSpBindings.Builder<SamlSpUserIdLoginLogoutBindings>
             implements SamlSpUserIdLoginLogoutBindingsStep1, SamlSpUserIdLoginLogoutBindingsStep2,
             SamlSpUserIdLoginLogoutBindingsStep3, SamlSpUserIdLoginLogoutBindingsStep4 {
 
@@ -156,7 +156,7 @@ final class SamlSpUserIdLoginLogoutBindings extends BaseSamlSpBindings {
          * @param binding The binding.
          * @return The next step of the builder.
          */
-        public SamlSpBindingsStep1 withBinding(String binding) {
+        public SamlSpBindingsStep1<SamlSpUserIdLoginLogoutBindings> withBinding(String binding) {
             this.binding = binding;
             return this;
         }

@@ -24,7 +24,7 @@
  *
  * $Id: NameIDImpl.java,v 1.3 2008/06/25 05:47:44 qcheng Exp $
  *
- * Portions Copyrighted 2015-2023 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.assertion.impl;
 
@@ -32,7 +32,6 @@ import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_NAMESPACE_U
 import static com.sun.identity.saml2.common.SAML2Constants.ASSERTION_PREFIX;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -53,7 +52,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  *  such as <code>Subject</code> and <code>SubjectConfirmation</code>
  *  elements, and in various protocol messages.
  */
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class NameIDImpl extends NameIDTypeImpl implements NameID {
 
     private static final Logger logger = LoggerFactory.getLogger(NameIDImpl.class);

@@ -24,7 +24,7 @@
  *
  * $Id: Evidence.java,v 1.2 2008/06/25 05:47:32 qcheng Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml.assertion;

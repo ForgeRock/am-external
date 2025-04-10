@@ -24,7 +24,7 @@
  *
  * $Id: SwapClientConfig.java,v 1.2 2009/12/03 18:57:50 mrudul_uchil Exp $
  *
- * Portions Copyrighted 2015-2024 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.setup;

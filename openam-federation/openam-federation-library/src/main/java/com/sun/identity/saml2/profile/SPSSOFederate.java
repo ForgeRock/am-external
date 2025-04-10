@@ -24,7 +24,7 @@
  *
  * $Id: SPSSOFederate.java,v 1.29 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2011-2023 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 
@@ -46,8 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
@@ -115,6 +115,7 @@ public class SPSSOFederate {
 
     private static final Logger logger = LoggerFactory.getLogger(SPSSOFederate.class);
     static SAML2MetaManager sm = null;
+    private static SOAPCommunicator soapCommunicator;
     static {
         try {
             sm = new SAML2MetaManager();
@@ -169,6 +170,13 @@ public class SPSSOFederate {
         }
     }
 
+    private static SOAPCommunicator getSoapCommunicator() {
+        if (soapCommunicator == null) {
+            soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+        }
+        return soapCommunicator;
+    }
+
     /**
      * Gets the SP Entity ID from the metaAlias.
      *
@@ -189,7 +197,7 @@ public class SPSSOFederate {
      * @param spEntityID entityID of Service Provider.
      * @param idpEntityID entityID of Identity Provider.
      * @param paramsMap Map of all other parameters.The key in the
-     *              map are the parameter names of the type String. 
+     *              map are the parameter names of the type String.
      *              The values in the paramsMap are of the type List.
      *              Some of the possible keys are:RelayState,NameIDFormat,
      *              reqBinding, binding, AssertionConsumerServiceIndex,
@@ -282,7 +290,7 @@ public class SPSSOFederate {
                 }
             }
 
-            // create AuthnRequest 
+            // create AuthnRequest
             AuthnRequest authnRequest = createAuthnRequest(request, response, realm, spEntityID, idpEntityID,
                     paramsMap, spConfigAttrsMap, extensionsList, spsso, idpsso, ssoURL, false);
             if (null != auditor && null != authnRequest) {
@@ -297,7 +305,7 @@ public class SPSSOFederate {
             }
 
             // Default URL if relayState not present? in providerConfig?
-            // TODO get Default URL from metadata 
+            // TODO get Default URL from metadata
             String relayState = getParameter(paramsMap, SAML2Constants.RELAY_STATE);
 
             String requestUrl = request.getRequestURL().toString();
@@ -331,11 +339,9 @@ public class SPSSOFederate {
             }
 
             if (isFailoverEnabled()) {
-                // sessionExpireTime is counted in seconds
-                long sessionExpireTime = currentTimeMillis() / 1000 + SPCache.interval;
                 String key = authnRequest.getID();
                 try {
-                    SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, new AuthnRequestInfoCopy(reqInfo), sessionExpireTime);
+                    SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, new AuthnRequestInfoCopy(reqInfo));
                     if (logger.isDebugEnabled()) {
                         logger.debug("SPSSOFederate.initiateAuthnRequest:"
                                 + " SAVE AuthnRequestInfoCopy for requestID " + key);
@@ -639,12 +645,12 @@ public class SPSSOFederate {
 
             String body = authnRequest.toXMLString(true, true);
             try {
-                SOAPMessage reply = SOAPCommunicator.getInstance().createSOAPMessage(header, body,
+                SOAPMessage reply = getSoapCommunicator().createSOAPMessage(header, body,
                         false);
 
                 String[] data2 = { spEntityID, realm, "" };
                 if (LogUtil.isAccessLoggable(Level.FINE)) {
-                    data2[2] = SOAPCommunicator.getInstance().soapMessageToString(reply);
+                    data2[2] = getSoapCommunicator().soapMessageToString(reply);
                 }
                 LogUtil.access(Level.INFO, LogUtil.SEND_ECP_PAOS_REQUEST, data2,
                         null);
@@ -682,11 +688,9 @@ public class SPSSOFederate {
                 SPCache.requestHash.put(authnRequest.getID(),reqInfo);
             }
             if (isFailoverEnabled()) {
-                // sessionExpireTime is counted in seconds
-                long sessionExpireTime = currentTimeMillis() / 1000 + SPCache.interval;
                 String key = authnRequest.getID();
                 try {
-                    SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, new AuthnRequestInfoCopy(reqInfo), sessionExpireTime);
+                    SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, new AuthnRequestInfoCopy(reqInfo));
                     if (logger.isDebugEnabled()) {
                         logger.debug("SPSSOFederate.initiateECPRequest:"
                                 + " SAVE AuthnRequestInfoCopy for requestID " + key);
@@ -891,7 +895,7 @@ public class SPSSOFederate {
         authnReq.setID(requestID);
         authnReq.setVersion(SAML2Constants.VERSION_2_0);
         authnReq.setIssueInstant(newDate());
-        //IDP Proxy 
+        //IDP Proxy
         Boolean enableIDPProxy =
                 getAttrValueFromMap(spConfigMap,
                         SAML2Constants.ENABLE_IDP_PROXY);
@@ -902,7 +906,7 @@ public class SPSSOFederate {
             String proxyCountParam = getParameter(spConfigMap,
                     SAML2Constants.IDP_PROXY_COUNT);
             if (proxyCountParam != null && (!proxyCountParam.equals(""))) {
-                scoping.setProxyCount(new Integer(proxyCountParam));
+                scoping.setProxyCount(Integer.parseInt(proxyCountParam));
             }
             List proxyIDPs = (List) spConfigMap.get(
                     SAML2Constants.IDP_PROXY_LIST);
@@ -945,7 +949,7 @@ public class SPSSOFederate {
             if ((attrVal != null)
                     && ( (attrVal.equals(SAML2Constants.TRUE))
                     || (attrVal.equals(SAML2Constants.FALSE)))) {
-                boolVal = new Boolean(attrVal);
+                boolVal = Boolean.parseBoolean(attrVal);
             }
         }
         return boolVal;
@@ -1050,7 +1054,7 @@ public class SPSSOFederate {
         if ((isPassiveStr != null) &&
                 ((isPassiveStr.equals(SAML2Constants.TRUE) ||
                         (isPassiveStr.equals(SAML2Constants.FALSE))))) {
-            isPassive = new Boolean(isPassiveStr);
+            isPassive = Boolean.parseBoolean(isPassiveStr);
         } else {
             isPassive = getAttrValueFromMap(spConfigAttrsMap,
                     SAML2Constants.ISPASSIVE);
@@ -1068,7 +1072,7 @@ public class SPSSOFederate {
         if ((forceAuthn != null) &&
                 ((forceAuthn.equals(SAML2Constants.TRUE) ||
                         (forceAuthn.equals(SAML2Constants.FALSE))))) {
-            isforceAuthn = new Boolean(forceAuthn);
+            isforceAuthn = Boolean.parseBoolean(forceAuthn);
         } else {
             isforceAuthn = getAttrValueFromMap(spConfigAttrsMap,
                     SAML2Constants.FORCEAUTHN);
@@ -1081,7 +1085,7 @@ public class SPSSOFederate {
 
     /* get value of AllowCreate */
     private static boolean isAllowCreate(Map paramsMap,Map spConfigAttrsMap) {
-        //assuming default true? 
+        //assuming default true?
         boolean allowCreate=true;
         String allowCreateStr=getParameter(paramsMap,
                 SAML2Constants.ALLOWCREATE);
@@ -1089,7 +1093,7 @@ public class SPSSOFederate {
                 ((allowCreateStr.equals(SAML2Constants.TRUE) ||
                         (allowCreateStr.equals(SAML2Constants.FALSE))))
         ) {
-            allowCreate = new Boolean(allowCreateStr).booleanValue();
+            allowCreate = Boolean.parseBoolean(allowCreateStr);
         } else {
             Boolean val = getAttrValueFromMap(spConfigAttrsMap,
                     SAML2Constants.ALLOWCREATE);
@@ -1131,7 +1135,7 @@ public class SPSSOFederate {
         Integer attrIndex = null;
         String index = getParameter(paramsMap,attrName);
         if ((index != null) && (index.length() > 0)) {
-            attrIndex = new Integer(index);
+            attrIndex = Integer.parseInt(index);
         }
         return attrIndex;
     }
@@ -1202,13 +1206,11 @@ public class SPSSOFederate {
         SPCache.relayStateHash.put(requestID, new CacheObject(relayState));
 
         if (isFailoverEnabled()) {
-            // sessionExpireTime is counted in seconds
-            long sessionExpireTime = currentTimeMillis() / 1000 + SPCache.interval;
             // Need to make the key unique due to the requestID also being used to
             // store a copy of the AuthnRequestInfo
             String key = requestID + requestID;
             try {
-                SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, relayState, sessionExpireTime);
+                SAML2FailoverUtils.saveSAML2TokenWithoutSecondaryKey(key, relayState);
                 if (logger.isDebugEnabled()) {
                     logger.debug("SPSSOFederate.getRelayStateID: SAVE relayState for requestID "
                             + key);

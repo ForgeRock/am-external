@@ -11,15 +11,25 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.push;
 
 import static org.forgerock.openam.auth.node.api.Action.goTo;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_CONTENT_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_MECHANISM_UID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_MESSAGE_EXPIRATION;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_NUMBER_CHALLENGE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.TIME_TO_LIVE_KEY;
@@ -43,12 +53,15 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.Node.Metadata;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.Config;
 import org.forgerock.openam.auth.nodes.push.PushResultVerifierNode.PushReceiveOutcomeProvider;
 import org.forgerock.am.cts.exceptions.CoreTokenException;
+import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
+import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.services.push.MessageId;
 import org.forgerock.openam.services.push.MessageIdFactory;
 import org.forgerock.openam.services.push.MessageState;
@@ -81,6 +94,7 @@ public class PushResultVerifierNode implements Node {
     private static final String BUNDLE = PushResultVerifierNode.class.getName();
     private final PushNotificationService pushNotificationService;
     private final MessageIdFactory messageIdFactory;
+    private final PushDeviceProfileHelper deviceProfileHelper;
 
     /**
      * The authentication node configuration.
@@ -93,12 +107,15 @@ public class PushResultVerifierNode implements Node {
      *
      * @param pushNotificationService The push notification service.
      * @param messageIdFactory The message key factory.
+     * @param deviceProfileHelper Manages the push device profiles.
      */
     @Inject
     public PushResultVerifierNode(PushNotificationService pushNotificationService,
-                                  MessageIdFactory messageIdFactory) {
+                                  MessageIdFactory messageIdFactory,
+                                  PushDeviceProfileHelper deviceProfileHelper) {
         this.pushNotificationService = pushNotificationService;
         this.messageIdFactory = messageIdFactory;
+        this.deviceProfileHelper = deviceProfileHelper;
     }
 
     @Override
@@ -128,6 +145,7 @@ public class PushResultVerifierNode implements Node {
 
             switch (state) {
             case SUCCESS:
+                updateLastAccessDate(context);
                 JsonValue pushContent = messageHandler.getContents(messageId);
                 messageHandler.delete(messageId);
                 if (pushContent != null) {
@@ -201,6 +219,28 @@ public class PushResultVerifierNode implements Node {
             builder.addNodeType(context, "AuthenticatorPush");
         }
         return builder.build();
+    }
+
+    private void updateLastAccessDate(TreeContext context) {
+        NodeState nodesState = context.getStateFor(this);
+        if (nodesState.isDefined(PUSH_MECHANISM_UID_KEY)) {
+            String username = Objects.requireNonNull(nodesState.get(USERNAME)).asString();
+            String mechanismUid = Objects.requireNonNull(nodesState.get(PUSH_MECHANISM_UID_KEY)).asString();
+
+            try {
+                PushDeviceSettings device = deviceProfileHelper.getDeviceSettingsByMechanismUid(mechanismUid, username);
+                if (device != null) {
+                    device.setLastAccessDate(Time.currentTimeMillis());
+                    deviceProfileHelper.saveDeviceProfile(username, device);
+                } else {
+                    LOGGER.warn("Unable to set last access date. Device was not found.");
+                }
+            } catch (DevicePersistenceException e) {
+                LOGGER.error("Unable to retrieve device settings", e);
+            }
+        } else {
+            LOGGER.warn("Unable to find push mechanismUid in sharedState");
+        }
     }
 
     /**

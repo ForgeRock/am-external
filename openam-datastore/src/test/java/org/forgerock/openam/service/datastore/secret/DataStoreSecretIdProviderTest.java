@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.service.datastore.secret;
 
@@ -25,11 +33,11 @@ import java.util.Set;
 import org.forgerock.openam.sm.ConfigurationAttributes;
 import org.forgerock.openam.sm.ConfigurationAttributesFactory;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -42,7 +50,7 @@ import com.sun.identity.sm.ServiceConfigManager;
 /**
  * Unit tests for {@link DataStoreSecretIdProvider}.
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class DataStoreSecretIdProviderTest {
     private static final String SERVICE_NAME = "amDataStoreService";
     private static final String SERVICE_VERSION = "1.0";
@@ -63,7 +71,7 @@ public class DataStoreSecretIdProviderTest {
     private DataStoreSecretIdProvider dataStoreSecretIdProvider;
 
     @Test
-    public void shouldGetGlobalMultiInstanceSecretIdsGivenADataStoreWithMTLSCertLabel() throws Exception {
+    void shouldGetGlobalMultiInstanceSecretIdsGivenADataStoreWithMTLSCertLabel() throws Exception {
         // Given
         Multimap<String, String> testMap = ImmutableMultimap.<String, String>builder()
                 .putAll(EXTERNAL_DATA_STORE,
@@ -87,7 +95,7 @@ public class DataStoreSecretIdProviderTest {
     }
 
     @Test
-    public void shouldGetGlobalMultiInstanceSecretIdsGivenMultipleDataStoresWithMTLSCertLabel() throws Exception {
+    void shouldGetGlobalMultiInstanceSecretIdsGivenMultipleDataStoresWithMTLSCertLabel() throws Exception {
         // Given
         String secondTestCertLabel = "second.test.datastore.cert";
         String secondSubConfigStore = "second-sub-config-store";
@@ -123,7 +131,7 @@ public class DataStoreSecretIdProviderTest {
     }
 
     @Test
-    public void shouldNotGetGlobalMultiInstanceSecretIdsGivenADataStoreWithoutMTLSCertLabel() throws Exception {
+    void shouldNotGetGlobalMultiInstanceSecretIdsGivenADataStoreWithoutMTLSCertLabel() throws Exception {
         // Given
         Multimap<String, String> testMap = ImmutableMultimap.<String, String>builder()
                 .build();
@@ -145,7 +153,7 @@ public class DataStoreSecretIdProviderTest {
     }
 
     @Test
-    public void shouldFailToGetGlobalMultiInstanceSecretIdsGivenInvalidSubConfig() throws Exception {
+    void shouldFailToGetGlobalMultiInstanceSecretIdsGivenInvalidSubConfig() throws Exception {
         // Given
         Multimap<String, String> testMap = ImmutableMultimap.<String, String>builder()
                 .build();
@@ -164,7 +172,7 @@ public class DataStoreSecretIdProviderTest {
     }
 
     @Test
-    public void shouldFailToGetGlobalMultiInstanceSecretIdsGivenInvalidContainerConfig() throws Exception {
+    void shouldFailToGetGlobalMultiInstanceSecretIdsGivenInvalidContainerConfig() throws Exception {
         // Given
         Multimap<String, String> testMap = ImmutableMultimap.<String, String>builder()
                 .build();

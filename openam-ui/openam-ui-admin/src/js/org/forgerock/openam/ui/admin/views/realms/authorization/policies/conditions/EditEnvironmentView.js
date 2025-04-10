@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import $ from "jquery";
@@ -30,6 +38,7 @@ import ObjectAttr from "./ConditionAttrObjectView";
 import PoliciesService from "org/forgerock/openam/ui/admin/services/realm/PoliciesService";
 import StringAttr from "./ConditionAttrStringView";
 import TimeAttr from "./ConditionAttrTimeView";
+import EnumAttr from "./ConditionAttrEnumView";
 
 export default AbstractView.extend({
     template: EditEnvironmentTemplate,
@@ -201,6 +210,12 @@ export default AbstractView.extend({
                 helperText.content =
                     i18next.t("console.authorization.policies.edit.conditionTypes.SimpleTime.helperContent");
                 break;
+            case "IdmUser":
+                helperText.title =
+                    i18next.t("console.authorization.policies.edit.conditionTypes.IdmUser.helperTitle");
+                helperText.content =
+                    i18next.t("console.authorization.policies.edit.conditionTypes.IdmUser.helperContent");
+                break;
             default:
                 break;
         }
@@ -254,15 +269,25 @@ export default AbstractView.extend({
         } else {
             attributesWrapper = '<div class="no-float"></div>';
 
-            if (_.has(schemaProps, "authenticationStrategy.type")) {
-                schemaProps.authenticationStrategy.type = "array";
-            }
-
             _.map(schemaProps, (value, key) => {
                 i18nKey = self.i18n.condition.key + schema.title + self.i18n.condition.props + key;
 
                 switch (value.type) {
-                    case "string": // fall through
+                    case "string":
+                        if (value.enum) {
+                            // Handle the special case where the string has an enum value
+                            new EnumAttr().render({
+                                envConditionType: schema.title,
+                                itemData,
+                                data: itemData[key],
+                                title: key,
+                                i18nKey,
+                                schema,
+                                value
+                            }, itemDataEl);
+                            break;
+                        }
+                        // fall through
                     case "number": // fall through
                     case "integer":
                         new StringAttr().render({

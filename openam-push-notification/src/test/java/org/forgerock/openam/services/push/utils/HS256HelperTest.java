@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.services.push.utils;
 
@@ -27,14 +35,14 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.forgerock.util.encode.Base64;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class HS256HelperTest {
 
     SecureRandom secureRandom = new SecureRandom();
 
     @Test
-    public void shouldPass() {
+    void shouldPass() {
         //given
         byte[] secretBytes = new byte[32];
         secureRandom.nextBytes(secretBytes);
@@ -51,7 +59,7 @@ public class HS256HelperTest {
     }
 
     @Test
-    public void shouldReturnNullWithNullSecret() {
+    void shouldReturnNullWithNullSecret() {
         //given
         byte[] secretBytes = null;
 
@@ -66,7 +74,7 @@ public class HS256HelperTest {
     }
 
     @Test
-    public void shouldReturnWithNullChallenge() {
+    void shouldReturnWithNullChallenge() {
         //given
         byte[] secretBytes = new byte[32];
         String answer = "thNnmggU2ex3L5XXeMNfxf8Wl8STcVZTxscSFEKSxa0=";

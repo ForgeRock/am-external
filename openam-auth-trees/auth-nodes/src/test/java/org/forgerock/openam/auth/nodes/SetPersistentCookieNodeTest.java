@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -32,20 +40,20 @@ import org.forgerock.openam.auth.node.api.TreeHook;
 import org.forgerock.openam.auth.nodes.treehook.CreatePersistentCookieTreeHook;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.keys.SigningKey;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class SetPersistentCookieNodeTest {
 
     private UUID nodeId;
     private SetPersistentCookieNode setPersistentCookieNode;
 
 
-    @Before
-    public void setup() throws NodeProcessException {
+    @BeforeEach
+    void setup() throws NodeProcessException {
         nodeId = UUID.randomUUID();
         SetPersistentCookieNode.Config config = new SetPersistentCookieNode.Config() {
             @Override
@@ -62,7 +70,7 @@ public class SetPersistentCookieNodeTest {
     }
 
     @Test
-    public void testSessionHookWrittenWithNodeId() throws NodeProcessException {
+    void testSessionHookWrittenWithNodeId() throws NodeProcessException {
 
         // when
         Action action = setPersistentCookieNode.process(new TreeContext(json(object()), json(object()),

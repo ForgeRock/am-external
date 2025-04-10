@@ -11,39 +11,49 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.services.push;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.testng.MockitoTestNGListener;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.ImmutableMap;
 
-@Listeners(MockitoTestNGListener.class)
+@ExtendWith(MockitoExtension.class)
 public class MessageIdFactoryTest {
 
     @Mock
     private PushNotificationService pushNotificationService;
     @Mock
     private ClusterMessageHandler messageHandler;
+
     private MessageIdFactory messageIdFactory;
 
-    @BeforeMethod
-    public void setup() {
+    @BeforeEach
+    void setup() {
         messageIdFactory = new MessageIdFactory(pushNotificationService);
     }
 
     @Test
-    public void shouldRecreateMessageKeyFromString() throws Exception {
+    void shouldRecreateMessageKeyFromString() throws Exception {
         given(pushNotificationService.getMessageHandlers(eq("/"))).willReturn(
                 ImmutableMap.<MessageType, ClusterMessageHandler>builder()
                         .put(DefaultMessageTypes.AUTHENTICATE, messageHandler)
@@ -57,13 +67,15 @@ public class MessageIdFactoryTest {
         assertThat(messageId.toString()).isNotNull().isEqualTo("AUTHENTICATE:badger");
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void shouldThrowIllegalArgumentExceptionIfMessageTypeIsUnknown() throws Exception {
-        messageIdFactory.create("AUTHENTICATE:badger", "/");
+    @Test
+    void shouldThrowIllegalArgumentExceptionIfMessageTypeIsUnknown() {
+        assertThatThrownBy(() -> messageIdFactory.create("AUTHENTICATE:badger", "/"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Unknown message type provided: AUTHENTICATE");
     }
 
     @Test
-    public void shouldGenerateMessageId() {
+    void shouldGenerateMessageId() {
         MessageId messageId = messageIdFactory.create(DefaultMessageTypes.AUTHENTICATE);
 
         assertThat(messageId.getMessageType()).isEqualTo(DefaultMessageTypes.AUTHENTICATE);

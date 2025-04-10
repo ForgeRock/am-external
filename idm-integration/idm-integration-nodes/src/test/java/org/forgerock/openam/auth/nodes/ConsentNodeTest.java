@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -24,12 +32,11 @@ import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.nodes.utils.IdmIntegrationNodeUtils.OBJECT_MAPPER;
 import static org.forgerock.openam.integration.idm.IdmIntegrationConfig.CONSENT;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.io.IOException;
 import java.util.List;
@@ -44,10 +51,14 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.ConsentMappingCallback;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class ConsentNodeTest {
 
     @Mock
@@ -62,29 +73,21 @@ public class ConsentNodeTest {
     @Mock
     LocaleSelector localeSelector;
 
+    @InjectMocks
     ConsentNode node;
     JsonValue consentMappings;
 
-    @BeforeMethod
-    private void init() throws Exception {
-        openMocks(this);
-
-        // Given
-        when(config.message()).thenReturn(singletonMap(Locale.ENGLISH, "Privacy & Consent wording"));
-
+    @BeforeEach
+    void init() throws Exception {
         consentMappings = getJsonPayload(CONSENT);
         when(idmIntegrationService.getConsentMappings(any(), any(), any())).thenReturn(consentMappings);
-        when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
-
-        when(realm.asPath()).thenReturn("/");
-        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
-
-        node = new ConsentNode(config, realm, idmIntegrationService, localeSelector);
     }
 
     @Test
-    public void allCallbacksAbsentShouldReturnCallbacks() throws Exception {
+    void allCallbacksAbsentShouldReturnCallbacks() throws Exception {
         // Given
+        when(config.message()).thenReturn(singletonMap(Locale.ENGLISH, "Privacy & Consent wording"));
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
         JsonValue sharedState = json(object(field("initial", "initial")));
 
         // When
@@ -95,7 +98,7 @@ public class ConsentNodeTest {
     }
 
     @Test
-    public void allCallbacksAbsentShouldAdvanceIfNoConsentMappingsExist() throws Exception {
+    void allCallbacksAbsentShouldAdvanceIfNoConsentMappingsExist() throws Exception {
         // Given
         JsonValue sharedState = json(object(field("initial", "initial")));
         when(idmIntegrationService.getConsentMappings(any(), any(), any())).thenReturn(json(array()));
@@ -109,8 +112,10 @@ public class ConsentNodeTest {
     }
 
     @Test
-    public void oneCallbackAbsentShouldReturnCallbacks() throws Exception {
+    void oneCallbackAbsentShouldReturnCallbacks() throws Exception {
         // Given
+        when(config.message()).thenReturn(singletonMap(Locale.ENGLISH, "Privacy & Consent wording"));
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
         JsonValue sharedState = json(object(field("initial", "initial")));
         List<Callback> callbacks = consentMappings.stream()
                 .map(mapping -> buildCallbackFromMapping(mapping).setValue(true))
@@ -125,8 +130,10 @@ public class ConsentNodeTest {
     }
 
     @Test
-    public void consentNotGivenWhenConsentIsRequiredShouldReturnCallbacks() throws Exception {
+    void consentNotGivenWhenConsentIsRequiredShouldReturnCallbacks() throws Exception {
         // Given
+        when(config.message()).thenReturn(singletonMap(Locale.ENGLISH, "Privacy & Consent wording"));
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
         JsonValue sharedState = json(object(field("initial", "initial")));
         when(config.allRequired()).thenReturn(true);
         List<Callback> callbacks = consentMappings.stream()
@@ -144,19 +151,21 @@ public class ConsentNodeTest {
         assertThat(action.outcome).isEqualTo(null);
         assertThat(action.callbacks).hasSize(consentMappings.size());
         action.callbacks.forEach(callback -> {
-           assertThat(callback).isInstanceOf(ConsentMappingCallback.class);
-           assertThat(consentMappings.stream()
-                   .anyMatch(mapping -> ((ConsentMappingCallback) callback).getName()
-                           .equals(mapping.get("name").asString())))
-                   .isTrue();
-           assertThat(((ConsentMappingCallback) callback).getMessage()).isEqualTo("Privacy & Consent wording");
+            assertThat(callback).isInstanceOf(ConsentMappingCallback.class);
+            assertThat(consentMappings.stream()
+                    .anyMatch(mapping -> ((ConsentMappingCallback) callback).getName()
+                            .equals(mapping.get("name").asString())))
+                    .isTrue();
+            assertThat(((ConsentMappingCallback) callback).getMessage()).isEqualTo("Privacy & Consent wording");
         });
         assertThat((Object) action.sharedState).isNull();
     }
 
     @Test
-    public void shouldDefaultToPropertiesIfNoTranslationFound() throws Exception {
+    void shouldDefaultToPropertiesIfNoTranslationFound() throws Exception {
         // Given
+        when(config.message()).thenReturn(singletonMap(Locale.ENGLISH, "Privacy & Consent wording"));
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
         JsonValue sharedState = json(object(field("initial", "initial")));
 
         // When
@@ -170,8 +179,11 @@ public class ConsentNodeTest {
     }
 
     @Test
-    public void allCallbacksPresentAddsToSharedState() throws Exception {
+    void allCallbacksPresentAddsToSharedState() throws Exception {
         // Given
+        when(config.message()).thenReturn(singletonMap(Locale.ENGLISH, "Privacy & Consent wording"));
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
+        when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
         JsonValue sharedState = json(object(field("initial", "initial")));
         List<Callback> callbacks = consentMappings.stream()
                 .map(mapping -> buildCallbackFromMapping(mapping).setValue(true))
@@ -189,8 +201,10 @@ public class ConsentNodeTest {
     }
 
     @Test
-    public void consentNotGivenDoesNotAddConsentMappingToSharedState() throws Exception {
+    void consentNotGivenDoesNotAddConsentMappingToSharedState() throws Exception {
         // Given
+        when(config.message()).thenReturn(singletonMap(Locale.ENGLISH, "Privacy & Consent wording"));
+        when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
         JsonValue sharedState = json(object(field("initial", "initial")));
         List<Callback> callbacks = consentMappings.stream()
                 .map(mapping -> buildCallbackFromMapping(mapping).setValue(false))
@@ -218,11 +232,11 @@ public class ConsentNodeTest {
 
     private JsonValue getJsonPayload(String path) throws IOException {
         switch (path) {
-            case CONSENT:
-                return new JsonValue(OBJECT_MAPPER.readValue(
-                        ConsentNodeTest.class.getResource("/ConsentNode/idmMappings.json"), List.class));
-            default:
-                return json(object());
+        case CONSENT:
+            return new JsonValue(OBJECT_MAPPER.readValue(
+                    ConsentNodeTest.class.getResource("/ConsentNode/idmMappings.json"), List.class));
+        default:
+            return json(object());
         }
     }
 }

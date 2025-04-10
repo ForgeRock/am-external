@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -23,11 +31,13 @@ import static org.forgerock.json.JsonValue.object;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.util.Reject;
 
 /**
  * Encapsulates all state that is provided by each node and passed between nodes on tree execution.
@@ -53,6 +63,7 @@ public final class NodeState {
     private final JsonValue transientState;
     private final JsonValue secureState;
     private final JsonValue sharedState;
+    private final Set<String> validContainers;
 
     /**
      * Create an instance of the {@link NodeState} with the provided state {@link JsonValue}.
@@ -67,7 +78,8 @@ public final class NodeState {
      * @param secureState A non-null {@link JsonValue} which represents the secure state.
      * @param sharedState A non-null {@link JsonValue} which represents the shared state.
      */
-    NodeState(List<String> stateFilter, JsonValue transientState, JsonValue secureState, JsonValue sharedState) {
+    NodeState(List<String> stateFilter, JsonValue transientState, JsonValue secureState, JsonValue sharedState,
+            Set<String> validContainers) {
         if (stateFilter.contains(STATE_FILTER_WILDCARD)) {
             this.stateFilter = Collections.emptyList();
         } else {
@@ -76,21 +88,22 @@ public final class NodeState {
         this.transientState = transientState;
         this.secureState = secureState;
         this.sharedState = sharedState;
+        this.validContainers = validContainers;
     }
 
     /**
      * Create an instance of the {@link NodeState} with the provided state {@link JsonValue}.
      *
      * <p>This constructor variant will allow access to all keys in the node state. If the caller intends
-     * to limit which keys can be accessed then {@link NodeState#NodeState(List, JsonValue, JsonValue, JsonValue)}
+     * to limit which keys can be accessed then {@link NodeState#NodeState(List, JsonValue, JsonValue, JsonValue, Set)}
      * should be used instead.
 
      * @param transientState A non-null {@link JsonValue} which represents the transient state.
      * @param secureState A non-null {@link JsonValue} which represents the secure state.
      * @param sharedState A non-null {@link JsonValue} which represents the shared state.
      */
-    NodeState(JsonValue transientState, JsonValue secureState, JsonValue sharedState) {
-        this(singletonList(STATE_FILTER_WILDCARD), transientState, secureState, sharedState);
+    NodeState(JsonValue transientState, JsonValue secureState, JsonValue sharedState, Set<String> validContainers) {
+        this(singletonList(STATE_FILTER_WILDCARD), transientState, secureState, sharedState, validContainers);
     }
 
     /**
@@ -179,6 +192,75 @@ public final class NodeState {
     public NodeState putShared(String key, Object value) {
         sharedState.put(key, value);
         return this;
+    }
+
+    /**
+     * Puts the given object into the shared state.
+     *
+     * <p>If any of the keys exist already in any state they will be overwritten.
+     * <p>The shared state should only be used for non-sensitive information that will be signed
+     * on round trips to the client.
+     * <p>If any keys in the input object match the shared state keys, the new values will be used.
+     * <p>The object must not contain any objects at the root level unless they are registered state containers,
+     * for example objectAttributes. Nested objects are allowed inside registered state containers but will not
+     * be merged.
+     *
+     * @param object The object to merge into the shared state.
+     * @return This modified {@code NodeState} instance.
+     */
+    public NodeState mergeShared(Map<String, Object> object) {
+        mergeObject(object, sharedState, Set.of(transientState, secureState));
+        return this;
+    }
+
+    /**
+     * Puts the given object into the shared state.
+     *
+     * <p>If any of the keys exist already in any state they will be overwritten.
+     * <p>The transient state should only be used for sensitive information that will be encrypted
+     * on round trips to the client.
+     * <p>If any keys in the input object match the shared state keys, the new values will be used.
+     * <p>The object must not contain any objects at the root level unless they are registered state containers,
+     * for example objectAttributes. Nested objects are allowed inside registered state containers but will not
+     * be merged.
+     *
+     * @param object The object to merge into the shared state.
+     * @return This modified {@code NodeState} instance.
+     */
+    public NodeState mergeTransient(Map<String, Object> object) {
+        mergeObject(object, transientState, Set.of(secureState, sharedState));
+        return this;
+    }
+
+    private void mergeObject(Map<String, Object> object, JsonValue state, Set<JsonValue> otherStates) {
+        Reject.ifNull(object);
+        object.forEach((key, value) -> {
+            if (validContainers.contains(key)) {
+                if (!(value instanceof Map)) {
+                    throw new IllegalArgumentException("State containers must be a JSON object.");
+                }
+                if (!state.isDefined(key)) {
+                    state.put(key, object());
+                }
+                JsonValue containerState = state.get(key);
+                Set<JsonValue> otherContainerStates = otherStates.stream()
+                                                              .map(s -> s.get(key))
+                                                              .filter(JsonValue::isNotNull)
+                                                              .collect(toSet());
+                Map<String, Object> containerObject = (Map<String, Object>) value;
+                containerObject.forEach((containerKey, containerValue) -> {
+                    otherContainerStates.forEach(s -> s.remove(containerKey));
+                    containerState.put(containerKey, containerValue);
+                });
+            } else if (value instanceof Map) {
+                throw new IllegalArgumentException("State must not contain nested objects unless they are inside "
+                                                           + "registered state containers: "
+                                                           + String.join(",", this.validContainers));
+            } else {
+                otherStates.forEach(s -> s.remove(key));
+                state.put(key, value);
+            }
+        });
     }
 
     /**

@@ -24,7 +24,7 @@
  *
  * $Id: IDPAccountMapper.java,v 1.5 2008/06/25 05:47:51 qcheng Exp $
  *
- * Portions Copyrighted 2015-2022 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins;
 

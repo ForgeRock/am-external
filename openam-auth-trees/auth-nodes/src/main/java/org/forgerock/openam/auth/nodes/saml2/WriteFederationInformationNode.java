@@ -11,11 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getUniversalId;
 import static org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper.USER_INFO_SHARED_STATE_KEY;
 
 import java.util.Optional;
@@ -29,7 +36,7 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 
 import com.google.inject.Inject;
 import com.sun.identity.saml2.common.AccountUtils;
@@ -45,7 +52,7 @@ import com.sun.identity.saml2.common.SAML2Exception;
 public class WriteFederationInformationNode extends SingleOutcomeNode {
 
     private final Saml2SsoResponseUtils ssoResponseUtils;
-    private final LegacyIdentityService identityService;
+    private final NodeUserIdentityProvider identityProvider;
 
     /**
      * Node configuration.
@@ -57,13 +64,13 @@ public class WriteFederationInformationNode extends SingleOutcomeNode {
      * Guice injected constructor.
      *
      * @param ssoResponseUtils SAML2 response utilities.
-     * @param identityService An instance of IdentityService.
+     * @param identityProvider The identity provider.
      */
     @Inject
     public WriteFederationInformationNode(Saml2SsoResponseUtils ssoResponseUtils,
-            LegacyIdentityService identityService) {
+            NodeUserIdentityProvider identityProvider) {
         this.ssoResponseUtils = ssoResponseUtils;
-        this.identityService = identityService;
+        this.identityProvider = identityProvider;
     }
 
     @Override
@@ -86,7 +93,7 @@ public class WriteFederationInformationNode extends SingleOutcomeNode {
         String infoAttributeValue = attributes.get(infoAttribute).get(0).asString();
         NodeState nodeState = context.getStateFor(this);
         try {
-            Optional<String> universalId = context.universalId.or(() -> getUniversalId(nodeState, identityService));
+            Optional<String> universalId = context.universalId.or(() -> identityProvider.getUniversalId(nodeState));
             ssoResponseUtils.linkAccounts(infoAttributeValue, universalId.orElse(null));
         } catch (SAML2Exception ex) {
             throw new NodeProcessException("Unable to link accounts", ex);

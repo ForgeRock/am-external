@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -31,15 +39,17 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
 
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
-import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.LocalizedMessageProvider.LocalizedMessageProviderFactory;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
+import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.auth.nodes.helpers.LocalizationHelper;
+import org.forgerock.openam.auth.node.api.LocalizedMessageProvider;
 import org.forgerock.openam.auth.nodes.wait.WaitingHelper;
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.util.i18n.PreferredLocales;
 
 import com.google.inject.assistedinject.Assisted;
@@ -59,7 +69,7 @@ public class PushWaitNode implements Node {
 
     private final Config config;
     private final WaitingHelper waitingHelper;
-    private final LocalizationHelper localizationHelper;
+    private final LocalizedMessageProvider localizationHelper;
 
     static final String DEFAULT_WAITING_MESSAGE_KEY = "default.waiting.message";
     static final String DEFAULT_CHALLENGE_MESSAGE_KEY = "default.challenge.message";
@@ -115,14 +125,16 @@ public class PushWaitNode implements Node {
      *
      * @param config The service config.
      * @param uuid The UUID of th node.
-     * @param localizationHelper the localization helper class.
+     * @param realm The realm.
+     * @param localizationHelperFactory the localization helper factory.
      */
     @Inject
     public PushWaitNode(@Assisted Config config,
                         @Assisted UUID uuid,
-                        LocalizationHelper localizationHelper) {
+                        @Assisted Realm realm,
+                        LocalizedMessageProviderFactory localizationHelperFactory) {
         this.config = config;
-        this.localizationHelper = localizationHelper;
+        this.localizationHelper = localizationHelperFactory.create(realm);
         this.waitingHelper = new WaitingHelper(uuid, config.secondsToWait());
     }
 
@@ -225,10 +237,10 @@ public class PushWaitNode implements Node {
     /**
      * Provides the outcomes for the Push wait node.
      */
-    public static class PushWaitOutcomeProvider implements OutcomeProvider {
+    public static class PushWaitOutcomeProvider implements StaticOutcomeProvider {
 
         @Override
-        public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+        public List<Outcome> getOutcomes(PreferredLocales locales) {
             List<Outcome> outcomes = new ArrayList<>();
             outcomes.add(PushWaitOutcome.DONE.getOutcome());
             outcomes.add(PushWaitOutcome.EXITED.getOutcome());

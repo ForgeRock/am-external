@@ -24,7 +24,7 @@
  *
  * $Id: ECPIDPFinder.java,v 1.2 2008/06/25 05:47:51 qcheng Exp $
  *
- * Portions Copyrighted 2018-2022 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  *
  */
 
@@ -33,8 +33,8 @@ package com.sun.identity.saml2.plugins;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.saml2.plugins.IDPFinder;
 

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.node.api;
@@ -100,5 +108,11 @@ public final class SharedStateConstants {
 
     /** The final session that is issued after authentication will be restricted according to this restriction. */
     public static final String TOKEN_RESTRICTION = "tokenRestriction";
+
+    /** Key for a map of extension input data. */
+    public static final String WEBAUTHN_EXTENSIONS = "webAuthnExtensions";
+
+    /** Key for the max tree duration (in minutes). */
+    public static final String MAX_TREE_DURATION_IN_MINUTES = "maxAuthenticationSessionDuration";
 
 }

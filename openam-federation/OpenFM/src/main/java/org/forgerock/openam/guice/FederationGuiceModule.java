@@ -11,10 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.guice;
 
+import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_NAMEID_MAPPER;
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_IDP_ADAPTER;
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_IDP_ATTRIBUTE_MAPPER;
 import static com.sun.identity.saml2.common.SAML2Constants.SCRIPTED_SP_ADAPTER;
@@ -27,6 +36,8 @@ import javax.xml.soap.SOAPConnection;
 
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.sun.identity.plugin.session.impl.FMSessionNotification;
+
+import org.forgerock.openam.authentication.Saml2SessionUpgradeHandler;
 import org.forgerock.openam.federation.config.Saml2DataStoreListener;
 import org.forgerock.openam.saml2.plugins.IDPAdapter;
 import org.forgerock.openam.saml2.plugins.SPAdapter;
@@ -39,6 +50,7 @@ import org.forgerock.openam.saml2.soap.SecretsAwareSOAPConnection;
 import org.forgerock.openam.scripting.persistence.config.defaults.ScriptContextDetailsProvider;
 import org.forgerock.openam.secrets.config.SecretStoreConfigChangeListener;
 import org.forgerock.openam.services.datastore.DataStoreServiceChangeNotifier;
+import org.forgerock.openam.session.SessionUpgradeHandler;
 import org.forgerock.util.thread.ExecutorServiceFactory;
 
 import com.google.inject.AbstractModule;
@@ -46,9 +58,11 @@ import com.google.inject.Key;
 import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
+import com.sun.identity.saml2.plugins.IDPAccountMapper;
 import com.sun.identity.saml2.plugins.IDPAttributeMapper;
 import com.sun.identity.saml2.plugins.scripted.ScriptedIdpAdapter;
 import com.sun.identity.saml2.plugins.scripted.ScriptedIdpAttributeMapper;
+import com.sun.identity.saml2.plugins.scripted.ScriptedIDPAccountMapper;
 import com.sun.identity.saml2.plugins.scripted.ScriptedSpAdapter;
 
 /**
@@ -72,12 +86,16 @@ public class FederationGuiceModule extends AbstractModule {
                 Names.named(SCRIPTED_IDP_ATTRIBUTE_MAPPER))).to(ScriptedIdpAttributeMapper.class);
         bind(Key.get(IDPAdapter.class, Names.named(SCRIPTED_IDP_ADAPTER))).to(ScriptedIdpAdapter.class);
         bind(Key.get(SPAdapter.class, Names.named(SCRIPTED_SP_ADAPTER))).to(ScriptedSpAdapter.class);
+        bind(Key.get(IDPAccountMapper.class, Names.named(SCRIPTED_NAMEID_MAPPER))).to(ScriptedIDPAccountMapper.class);
         bind(FMSessionNotification.class).in(Singleton.class);
         install(new FactoryModuleBuilder().implement(SOAPConnection.class, SecretsAwareSOAPConnection.class)
                 .build(SOAPConnectionFactory.class));
         Multibinder<SecretStoreConfigChangeListener> secretConfigChangeListeners =
                 Multibinder.newSetBinder(binder(), SecretStoreConfigChangeListener.class);
         secretConfigChangeListeners.addBinding().to(SamlMtlsHandlerFactory.class);
+        final Multibinder<SessionUpgradeHandler> sessionUpgradeHandlers = Multibinder.newSetBinder(
+                binder(), SessionUpgradeHandler.class);
+        sessionUpgradeHandlers.addBinding().to(Saml2SessionUpgradeHandler.class);
     }
 
     @Provides

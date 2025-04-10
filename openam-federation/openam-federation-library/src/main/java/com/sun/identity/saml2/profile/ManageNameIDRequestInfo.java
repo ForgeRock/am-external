@@ -24,7 +24,7 @@
  *
  * $Id: ManageNameIDRequestInfo.java,v 1.4 2009/11/20 21:41:16 exu Exp $
  *
- * Portions Copyrighted 2016-2019 ForgeRock AS.
+ * Portions Copyrighted 2016-2025 Ping Identity Corporation.
  */
 
 
@@ -34,8 +34,8 @@ import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

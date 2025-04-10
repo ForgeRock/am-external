@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -23,10 +31,8 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.plugins.PluginException;
 import org.forgerock.openam.plugins.StartupType;
 
-import com.google.common.collect.ImmutableMap;
 import com.iplanet.am.util.SystemProperties;
 import com.sun.identity.shared.Constants;
-import org.forgerock.openam.plugins.VersionComparison;
 
 /**
  * Core nodes installed by default with no engine dependencies.
@@ -48,9 +54,7 @@ public class CloudOnlyNodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public void onInstall() throws PluginException {
-        if (isEnabled()) {
-            super.onInstall();
-        }
+        // no install to do in cloud
     }
 
     @Override
@@ -62,21 +66,11 @@ public class CloudOnlyNodesPlugin extends AbstractNodeAmPlugin {
 
     @Override
     public void upgrade(String fromVersion) throws PluginException {
-        if (isEnabled()) {
-            if (VersionComparison.compareVersionStrings("1.0.0", fromVersion) >= 0
-                    && VersionComparison.compareVersionStrings("1.0.1", fromVersion) <= 0) {
-                pluginTools.upgradeAuthNode(IdentityStoreDecisionNode.class);
-            }
-            super.upgrade(fromVersion);
-        }
+        // no upgrade to do in cloud
     }
 
     @Override
     protected Map<String, Iterable<? extends Class<? extends Node>>> getNodesByVersion() {
-        return new ImmutableMap.Builder<String, Iterable<? extends Class<? extends Node>>>()
-                .put("1.0.0", List.of(
-                        IdentityStoreDecisionNode.class)
-                )
-                .build();
+        return Map.of("1.0.0", List.of(IdentityStoreDecisionNode.class));
     }
 }

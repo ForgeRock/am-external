@@ -11,41 +11,18 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.saml2.plugins;
-
-import com.iplanet.sso.SSOException;
-import com.iplanet.sso.SSOToken;
-import com.iplanet.sso.SSOTokenManager;
-import com.sun.identity.authentication.util.ISAuthConstants;
-import com.sun.identity.sm.ServiceConfig;
-import com.sun.identity.sm.ServiceConfigManager;
-import org.apache.http.HttpStatus;
-import org.forgerock.http.protocol.Response;
-import org.forgerock.http.protocol.Status;
-import org.forgerock.json.JsonValue;
-import org.forgerock.openam.authentication.api.AuthenticationHandler;
-import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.core.realms.RealmLookup;
-import org.forgerock.openam.core.realms.RealmTestHelper;
-import org.forgerock.openam.sm.ConfigurationAttributes;
-import org.forgerock.openam.wsfederation.common.ActiveRequestorException;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.invocation.InvocationOnMock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.xml.soap.SOAPMessage;
-import java.security.Principal;
-import java.util.Collections;
 
 import static com.sun.identity.authentication.util.ISAuthConstants.AUTH_LEVEL_REQUEST_ATTR;
 import static com.sun.identity.authentication.util.ISAuthConstants.PRINCIPAL_UID_REQUEST_ATTR;
@@ -62,7 +39,41 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@Listeners(RealmTestHelper.RealmFixture.class)
+import java.security.Principal;
+import java.util.Collections;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import javax.xml.soap.SOAPMessage;
+
+import org.apache.http.HttpStatus;
+import org.forgerock.http.protocol.Response;
+import org.forgerock.http.protocol.Status;
+import org.forgerock.json.JsonValue;
+import org.forgerock.openam.authentication.api.AuthenticationHandler;
+import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.openam.core.realms.Realm;
+import org.forgerock.openam.core.realms.RealmLookup;
+import org.forgerock.openam.sm.ConfigurationAttributes;
+import org.forgerock.openam.wsfederation.common.ActiveRequestorException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+
+import com.iplanet.sso.SSOException;
+import com.iplanet.sso.SSOToken;
+import com.iplanet.sso.SSOTokenManager;
+import com.sun.identity.authentication.util.ISAuthConstants;
+import com.sun.identity.sm.ServiceConfig;
+import com.sun.identity.sm.ServiceConfigManager;
+
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 public class DefaultWsFedAuthenticatorTest {
 
     private final static String AUTHN_SERVICE_NAME = "testAuthn";
@@ -70,10 +81,8 @@ public class DefaultWsFedAuthenticatorTest {
     private final static String TEST_PASSWORD = "testPassword";
     private final static String TEST_UID = "uid=test-uid";
 
-    @RealmTestHelper.RealmHelper
-    private static RealmTestHelper realmHelper;
+    @Mock
     private Realm realm;
-
     @Mock
     private CoreWrapper coreWrapper;
     @Mock
@@ -100,21 +109,20 @@ public class DefaultWsFedAuthenticatorTest {
     Principal principal;
 
     private DefaultWsFedAuthenticator authenticator;
-    private String camelCaseRealmName = "camelCaseRealmName";
+    private final String camelCaseRealmName = "camelCaseRealmName";
 
-    @BeforeMethod
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
 
-        realm = realmHelper.mockRealm(camelCaseRealmName);
+        given(realm.asPath()).willReturn("/camelCaseRealmName");
 
-        MockitoAnnotations.initMocks(this);
         authenticator = new DefaultWsFedAuthenticator(authenticationHandler, coreWrapper, realmLookup, ssoTokenManager);
         when(coreWrapper.getAdminToken()).thenReturn(mock(SSOToken.class));
         when(coreWrapper.getServiceConfigManager(any(), any())).thenReturn(serviceConfigManager);
         when(serviceConfigManager.getOrganizationConfig(any(), any())).thenReturn(organizationConfig);
         when(organizationConfig.getAttributes()).thenReturn(configurationAttributes);
         when(configurationAttributes.get(ISAuthConstants.AUTHCONFIG_ORG)).thenReturn(
-                Collections.singleton(AUTHN_SERVICE_NAME));
+            Collections.singleton(AUTHN_SERVICE_NAME));
         when(realmLookup.lookup(any())).thenReturn(realm);
         when(ssoTokenManager.createSSOToken(anyString())).thenReturn(ssoToken);
         when(ssoToken.getPrincipal()).thenReturn(principal);
@@ -123,13 +131,13 @@ public class DefaultWsFedAuthenticatorTest {
     }
 
     @Test
-    public void shouldSetSsoTokenFromAuthentication() throws Exception {
+    void shouldSetSsoTokenFromAuthentication() throws Exception {
         // Given
         given(authenticationHandler.authenticate(any(), any(), any(), any(), any(), any())).willAnswer(this::success);
 
         // When
         SSOToken result = authenticator.authenticate(
-                servletRequest, response, soapMessage, realm.asPath(), TEST_USERNAME, TEST_PASSWORD.toCharArray());
+            servletRequest, response, soapMessage, realm.asPath(), TEST_USERNAME, TEST_PASSWORD.toCharArray());
 
         // Then
         ArgumentCaptor<HttpServletRequest> requestCaptor = ArgumentCaptor.forClass(HttpServletRequest.class);
@@ -140,60 +148,60 @@ public class DefaultWsFedAuthenticatorTest {
     }
 
     @Test
-    public void shouldCompleteCallbacksInBatch() throws Exception {
+    void shouldCompleteCallbacksInBatch() throws Exception {
         // Given
         given(authenticationHandler.authenticate(any(), any(), any(), any(), any(), any()))
-                .willAnswer(this::usernamePassword).willAnswer(this::success);
+            .willAnswer(this::usernamePassword).willAnswer(this::success);
 
         // When
         SSOToken result = authenticator.authenticate(
-                servletRequest, response, soapMessage, realm.asPath(), TEST_USERNAME, TEST_PASSWORD.toCharArray());
+            servletRequest, response, soapMessage, realm.asPath(), TEST_USERNAME, TEST_PASSWORD.toCharArray());
 
         // Then
         ArgumentCaptor<JsonValue> jsonCaptor = ArgumentCaptor.forClass(JsonValue.class);
         verify(authenticationHandler, times(2))
-                .authenticate(any(), any(), jsonCaptor.capture(), any(), any(), any());
+            .authenticate(any(), any(), jsonCaptor.capture(), any(), any(), any());
         assertThat(jsonCaptor.getAllValues().get(0)).isEmpty();
         System.out.println(jsonCaptor.getAllValues().get(1).toString());
         assertThat(jsonCaptor.getAllValues().get(1).toString()).contains(
-                "\"NameCallback\", \"input\": [ { \"value\": \"testUser\"");
+            "\"NameCallback\", \"input\": [ { \"value\": \"testUser\"");
         assertThat(jsonCaptor.getAllValues().get(1).toString()).contains(
-                "\"PasswordCallback\", \"input\": [ { \"value\": \"testPassword\"");
+            "\"PasswordCallback\", \"input\": [ { \"value\": \"testPassword\"");
         verifyResult(result);
     }
 
     @Test
-    public void shouldCompleteIndividualCallbacks() throws Exception {
+    void shouldCompleteIndividualCallbacks() throws Exception {
         // Given
         given(authenticationHandler.authenticate(any(), any(), any(), any(), any(), any()))
-                .willAnswer(this::username).willAnswer(this::password).willAnswer(this::success);
+            .willAnswer(this::username).willAnswer(this::password).willAnswer(this::success);
 
         // When
         SSOToken result = authenticator.authenticate(
-                servletRequest, response, soapMessage, realm.asPath(), TEST_USERNAME, TEST_PASSWORD.toCharArray());
+            servletRequest, response, soapMessage, realm.asPath(), TEST_USERNAME, TEST_PASSWORD.toCharArray());
 
         // Then
         ArgumentCaptor<JsonValue> jsonCaptor = ArgumentCaptor.forClass(JsonValue.class);
         verify(authenticationHandler, times(3))
-                .authenticate(any(), any(), jsonCaptor.capture(), any(), any(), any());
+            .authenticate(any(), any(), jsonCaptor.capture(), any(), any(), any());
         assertThat(jsonCaptor.getAllValues().get(0)).isEmpty();
         assertThat(jsonCaptor.getAllValues().get(1).toString()).contains(
-                "\"NameCallback\", \"input\": [ { \"value\": \"testUser\"");
+            "\"NameCallback\", \"input\": [ { \"value\": \"testUser\"");
         assertThat(jsonCaptor.getAllValues().get(2).toString()).contains(
-                "\"PasswordCallback\", \"input\": [ { \"value\": \"testPassword\"");
+            "\"PasswordCallback\", \"input\": [ { \"value\": \"testPassword\"");
         verifyResult(result);
     }
 
     @Test
-    public void shouldFailWhenEntityIsNotJson() throws Exception {
+    void shouldFailWhenEntityIsNotJson() throws Exception {
         // Given
         given(authenticationHandler.authenticate(any(), any(), any(), any(), any(), any()))
-                .willAnswer(this::notJson);
+            .willAnswer(this::notJson);
 
         // When
         try {
             authenticator.authenticate(
-                    servletRequest, response, soapMessage, realm.asPath(), TEST_USERNAME, TEST_PASSWORD.toCharArray());
+                servletRequest, response, soapMessage, realm.asPath(), TEST_USERNAME, TEST_PASSWORD.toCharArray());
             shouldHaveThrown(ActiveRequestorException.class);
         } catch (ActiveRequestorException e) {
             // Then
@@ -202,10 +210,10 @@ public class DefaultWsFedAuthenticatorTest {
     }
 
     @Test
-    public void shouldFailWhenUserNameNotProvided() throws Exception {
+    void shouldFailWhenUserNameNotProvided() throws Exception {
         // Given
         given(authenticationHandler.authenticate(any(), any(), any(), any(), any(), any()))
-                .willAnswer(this::username).willAnswer(this::failure);
+            .willAnswer(this::username).willAnswer(this::failure);
 
         // When
         try {
@@ -218,10 +226,10 @@ public class DefaultWsFedAuthenticatorTest {
     }
 
     @Test
-    public void shouldFailWhenPasswordNotProvided() throws Exception {
+    void shouldFailWhenPasswordNotProvided() throws Exception {
         // Given
         given(authenticationHandler.authenticate(any(), any(), any(), any(), any(), any()))
-                .willAnswer(this::username).willAnswer(this::password).willAnswer(this::failure);
+            .willAnswer(this::username).willAnswer(this::password).willAnswer(this::failure);
 
         // When
         try {
@@ -234,15 +242,15 @@ public class DefaultWsFedAuthenticatorTest {
     }
 
     @Test
-    public void shouldFailWhenUsernameIsInvalid() throws Exception {
+    void shouldFailWhenUsernameIsInvalid() throws Exception {
         // Given
         given(authenticationHandler.authenticate(any(), any(), any(), any(), any(), any()))
-                .willAnswer(this::username).willAnswer(this::password).willAnswer(this::failure);
+            .willAnswer(this::username).willAnswer(this::password).willAnswer(this::failure);
 
         // When
         try {
             authenticator.authenticate(servletRequest, response, soapMessage, realm.asPath(),
-                    "NonExistentUser", "IncorrectPassword".toCharArray());
+                "NonExistentUser", "IncorrectPassword".toCharArray());
             shouldHaveThrown(ActiveRequestorException.class);
         } catch (ActiveRequestorException e) {
             // Then
@@ -251,15 +259,15 @@ public class DefaultWsFedAuthenticatorTest {
     }
 
     @Test
-    public void shouldFailWhenPasswordIsInvalid() throws Exception {
+    void shouldFailWhenPasswordIsInvalid() throws Exception {
         // Given
         given(authenticationHandler.authenticate(any(), any(), any(), any(), any(), any()))
-                .willAnswer(this::username).willAnswer(this::password).willAnswer(this::failure);
+            .willAnswer(this::username).willAnswer(this::password).willAnswer(this::failure);
 
         // When
         try {
             authenticator.authenticate(servletRequest, response, soapMessage, realm.asPath(),
-                    TEST_USERNAME, "IncorrectPassword".toCharArray());
+                TEST_USERNAME, "IncorrectPassword".toCharArray());
             shouldHaveThrown(ActiveRequestorException.class);
         } catch (ActiveRequestorException e) {
             // Then
@@ -268,10 +276,10 @@ public class DefaultWsFedAuthenticatorTest {
     }
 
     @Test
-    public void shouldFailOnFailureWithoutSpecificMessage() throws Exception {
+    void shouldFailOnFailureWithoutSpecificMessage() throws Exception {
         // Given
         given(authenticationHandler.authenticate(any(), any(), any(), any(), any(), any()))
-                .willAnswer(this::failure);
+            .willAnswer(this::failure);
 
         // When
         try {
@@ -284,10 +292,10 @@ public class DefaultWsFedAuthenticatorTest {
     }
 
     @Test
-    public void shouldFailOnFailureWithSameMessage() throws Exception {
+    void shouldFailOnFailureWithSameMessage() throws Exception {
         // Given
         given(authenticationHandler.authenticate(any(), any(), any(), any(), any(), any()))
-                .willAnswer(this::failureWithMessage);
+            .willAnswer(this::failureWithMessage);
 
         // When
         try {
@@ -300,16 +308,16 @@ public class DefaultWsFedAuthenticatorTest {
     }
 
     @Test
-    public void shouldFixRealmInUUID() throws Exception {
+    void shouldFixRealmInUUID() throws Exception {
         // Given
         when(principal.getName()).thenReturn(TEST_UID + ",o=" + camelCaseRealmName +
-                ",ou=services,dc=openam,dc=example,dc=com");
+            ",ou=services,dc=openam,dc=example,dc=com");
         given(authenticationHandler.authenticate(any(), any(), any(), any(), any(), any()))
-                .willAnswer(this::successCamelRealm);
+            .willAnswer(this::successCamelRealm);
 
         // When
         SSOToken result = authenticator.authenticate(
-                servletRequest, response, soapMessage, realm.asPath(), TEST_USERNAME, TEST_PASSWORD.toCharArray());
+            servletRequest, response, soapMessage, realm.asPath(), TEST_USERNAME, TEST_PASSWORD.toCharArray());
 
         // Then
         ArgumentCaptor<HttpServletRequest> requestCaptor = ArgumentCaptor.forClass(HttpServletRequest.class);
@@ -333,14 +341,14 @@ public class DefaultWsFedAuthenticatorTest {
     private void verifyResultCamelRealm(SSOToken result) throws SSOException {
         assertThat(result.getAuthLevel()).isEqualTo(5);
         assertThat(result.getPrincipal().getName()).isEqualTo(
-                TEST_UID + ",o=" + camelCaseRealmName + ",ou=services,dc=openam,dc=example,dc=com");
+            TEST_UID + ",o=" + camelCaseRealmName + ",ou=services,dc=openam,dc=example,dc=com");
     }
 
     private Response usernamePassword(InvocationOnMock invocation) {
         Response response = new Response(Status.OK);
         response.getEntity().setJson(object(field("callbacks", array(
-                object(field("type", "NameCallback"), field("input", array(object(field("value", ""))))),
-                object(field("type", "PasswordCallback"), field("input", array(object(field("value", "")))))
+            object(field("type", "NameCallback"), field("input", array(object(field("value", ""))))),
+            object(field("type", "PasswordCallback"), field("input", array(object(field("value", "")))))
         ))));
         return response;
     }
@@ -348,7 +356,7 @@ public class DefaultWsFedAuthenticatorTest {
     private Response username(InvocationOnMock invocation) {
         Response response = new Response(Status.OK);
         response.getEntity().setJson(object(field("callbacks", array(
-                object(field("type", "NameCallback"), field("input", array(object(field("value", "")))))
+            object(field("type", "NameCallback"), field("input", array(object(field("value", "")))))
         ))));
         return response;
     }
@@ -356,7 +364,7 @@ public class DefaultWsFedAuthenticatorTest {
     private Response password(InvocationOnMock invocation) {
         Response response = new Response(Status.OK);
         response.getEntity().setJson(object(field("callbacks", array(
-                object(field("type", "PasswordCallback"), field("input", array(object(field("value", "")))))
+            object(field("type", "PasswordCallback"), field("input", array(object(field("value", "")))))
         ))));
         return response;
     }
@@ -371,7 +379,7 @@ public class DefaultWsFedAuthenticatorTest {
 
     private Response successCamelRealm(InvocationOnMock invocation) {
         when(servletRequest.getAttribute(PRINCIPAL_UID_REQUEST_ATTR)).thenReturn(TEST_UID + ",o=" +
-                camelCaseRealmName.toLowerCase() +",ou=services,dc=openam,dc=example,dc=com");
+            camelCaseRealmName.toLowerCase() + ",ou=services,dc=openam,dc=example,dc=com");
         when(servletRequest.getAttribute(AUTH_LEVEL_REQUEST_ATTR)).thenReturn(5);
         Response response = new Response(Status.OK);
         response.getEntity().setJson(object(field("successUrl", "/success"), field("tokenId", "test-token-id")));
@@ -393,9 +401,9 @@ public class DefaultWsFedAuthenticatorTest {
     private Response failureWithMessage(InvocationOnMock invocation) {
         Response response = new Response(Status.UNAUTHORIZED);
         response.getEntity().setJson(object(
-                field("failureUrl", "/failure"),
-                field("code", "108"),
-                field("message", "Custom failure message")));
+            field("failureUrl", "/failure"),
+            field("code", "108"),
+            field("message", "Custom failure message")));
         return response;
     }
 }

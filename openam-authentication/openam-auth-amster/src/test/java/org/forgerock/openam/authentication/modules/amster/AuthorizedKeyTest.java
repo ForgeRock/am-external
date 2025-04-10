@@ -11,30 +11,43 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.amster;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.stream.Stream;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.json.jose.builders.JwtClaimsSetBuilder;
 import org.forgerock.json.jose.exceptions.JwsSigningException;
 import org.forgerock.json.jose.jws.JwsHeader;
 import org.forgerock.json.jose.jws.SignedJwt;
 import org.forgerock.json.jose.jws.handlers.SigningHandler;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.slf4j.Logger;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class AuthorizedKeyTest {
 
     @Mock
@@ -43,31 +56,55 @@ public class AuthorizedKeyTest {
     private HttpServletRequest request;
     @Mock
     private SigningHandler signingHandler;
-    @Mock
-    private Logger debug;
 
-    @BeforeMethod
-    public void setup() throws Exception {
-        MockitoAnnotations.initMocks(this);
+    private static Stream<Arguments> matchingFrom() {
+        return Stream.of(
+                Arguments.of("127.0.0.1,fred.co.uk", "127.0.0.1", "localhost"),
+                Arguments.of("127.0.0.?,!127.0.0.1,fred.co.uk", "127.0.0.2", "localhost"),
+                Arguments.of("127.0.0.1,::1,fred.co.uk", "::1", "localhost"),
+                Arguments.of("127.0.0.1,::?,fred.co.uk", "::?", "localhost"),
+                Arguments.of("127.0.0.0/24,fred.co.uk", "127.0.0.1", "localhost"),
+                Arguments.of("127.0.0.1,::1/128,fred.co.uk", "::1", "localhost")
+        );
+    }
+
+    private static Stream<Arguments> fallingFrom() {
+        return Stream.of(
+                Arguments.of("127.0.0.?,::1,*.co.uk", "::2", "localhost"),
+                Arguments.of("127.0.0.?,::1,*.co.uk", "192.168.0.1", "localhost"),
+                Arguments.of("192.168.0.0/24,!192.168.0.1,::1,*.co.uk", "192.168.0.1", "localhost"),
+                Arguments.of("127.0.0.?,::aaaa:0/128,*.co.uk", "::1", "localhost"),
+                Arguments.of("127.0.0.0/24,::aaaa:0/128,*.co.uk", "192.168.0.1", "localhost"),
+                Arguments.of("127.0.0.1,fred.co.uk", "127.0.0.2", "fred.co.uk"),
+                Arguments.of("127.0.0.1,*.co.uk", "127.0.0.2", "fred.co.uk")
+        );
+    }
+
+    private void addJwsHeaderStubbing() {
         JwsHeader value = new JwsHeader();
         value.setKeyId("fred");
         when(jwt.getHeader()).thenReturn(value);
-        when(jwt.getClaimsSet()).thenReturn(new JwtClaimsSetBuilder().sub("amadmin").build());
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void shouldRequirePublicKey() throws Exception {
-        AuthorizedKey authorizedKey = new AuthorizedKey(null, signingHandler, null);
-    }
-
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void shouldRequireSigningHandler() throws Exception {
-        AuthorizedKey authorizedKey = new AuthorizedKey("fred", null, null);
     }
 
     @Test
-    public void shouldVerifyJwtIsValidWithWildcardSubjectOption() throws Exception {
+    void shouldRequirePublicKey() {
+        assertThatThrownBy(() -> new AuthorizedKey(null, signingHandler, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Public key is required");
+    }
+
+    @Test
+    void shouldRequireSigningHandler() {
+        assertThatThrownBy(() -> new AuthorizedKey("fred", null, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Signing handler is required");
+    }
+
+    @Test
+    void shouldVerifyJwtIsValidWithWildcardSubjectOption() throws Exception {
         // Given
+        addJwsHeaderStubbing();
+        when(jwt.getClaimsSet()).thenReturn(new JwtClaimsSetBuilder().sub("amadmin").build());
         Key key = new AuthorizedKey("fred", signingHandler, "subject=\"*\"");
         given(jwt.verify(any(SigningHandler.class))).willThrow(new IllegalArgumentException());
 
@@ -79,8 +116,10 @@ public class AuthorizedKeyTest {
     }
 
     @Test
-    public void shouldVerifyJwtIsValidWithSubjectOption() throws Exception {
+    void shouldVerifyJwtIsValidWithSubjectOption() throws Exception {
         // Given
+        when(jwt.getClaimsSet()).thenReturn(new JwtClaimsSetBuilder().sub("amadmin").build());
+        addJwsHeaderStubbing();
         Key key = new AuthorizedKey("fred", signingHandler, "subject=\"alice,amadmin,fred\"");
         given(jwt.verify(any(SigningHandler.class))).willThrow(new IllegalArgumentException());
 
@@ -92,10 +131,10 @@ public class AuthorizedKeyTest {
     }
 
     @Test
-    public void shouldVerifyJwtIsValidWithSubjectContainingComma() throws Exception {
+    void shouldVerifyJwtIsValidWithSubjectContainingComma() throws Exception {
         // Given
+        when(jwt.getClaimsSet()).thenReturn(new JwtClaimsSetBuilder().sub("amadmin").build());
         Key key = new AuthorizedKey("fred", signingHandler, "subject=\"alice,ama\\\\,dmin,fred\"");
-        given(jwt.verify(any(SigningHandler.class))).willThrow(new IllegalArgumentException());
         jwt.getClaimsSet().setSubject("ama,dmin");
 
         // When
@@ -106,8 +145,9 @@ public class AuthorizedKeyTest {
     }
 
     @Test
-    public void shouldVerifyJwtIsValidWithPublicKey() throws Exception {
+    void shouldVerifyJwtIsValidWithPublicKey() throws Exception {
         // Given
+        addJwsHeaderStubbing();
         AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, null);
         given(jwt.verify(any(SigningHandler.class))).willReturn(true);
 
@@ -119,10 +159,10 @@ public class AuthorizedKeyTest {
     }
 
     @Test
-    public void shouldVerifyJwtIsInvalidWithMismatchingPublicKey() throws Exception {
+    void shouldVerifyJwtIsInvalidWithMismatchingPublicKey() throws Exception {
         // Given
+        addJwsHeaderStubbing();
         AuthorizedKey authorizedKey = new AuthorizedKey("freddy", signingHandler, null);
-        given(jwt.verify(any(SigningHandler.class))).willReturn(true);
 
         // When
         boolean result = authorizedKey.isValid(jwt, request);
@@ -132,8 +172,9 @@ public class AuthorizedKeyTest {
     }
 
     @Test
-    public void shouldVerifyJwtIsInvalid() throws Exception {
+    void shouldVerifyJwtIsInvalid() throws Exception {
         // Given
+        addJwsHeaderStubbing();
         AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, null);
         given(jwt.verify(any(SigningHandler.class))).willReturn(false);
 
@@ -145,8 +186,9 @@ public class AuthorizedKeyTest {
     }
 
     @Test
-    public void shouldVerifyJwtIsInvalidFromIllegalArgument() throws Exception {
+    void shouldVerifyJwtIsInvalidFromIllegalArgument() throws Exception {
         // Given
+        addJwsHeaderStubbing();
         AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, null);
         given(jwt.verify(any(SigningHandler.class))).willThrow(new IllegalArgumentException());
 
@@ -158,10 +200,10 @@ public class AuthorizedKeyTest {
     }
 
     @Test
-    public void shouldVerifyJwtIsInvalidFromSubjectOption() throws Exception {
+    void shouldVerifyJwtIsInvalidFromSubjectOption() throws Exception {
         // Given
+        when(jwt.getClaimsSet()).thenReturn(new JwtClaimsSetBuilder().sub("amadmin").build());
         Key key = new AuthorizedKey("fred", signingHandler, "subject=\"alice,fred\"");
-        given(jwt.verify(any(SigningHandler.class))).willReturn(true);
 
         // When
         boolean result = key.isValid(jwt, request);
@@ -171,8 +213,9 @@ public class AuthorizedKeyTest {
     }
 
     @Test
-    public void shouldVerifyJwtIsInvalidFromSigningException() throws Exception {
+    void shouldVerifyJwtIsInvalidFromSigningException() throws Exception {
         // Given
+        addJwsHeaderStubbing();
         AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, null);
         given(jwt.verify(any(SigningHandler.class))).willThrow(new JwsSigningException(""));
 
@@ -184,7 +227,7 @@ public class AuthorizedKeyTest {
     }
 
     @Test
-    public void shouldApproveRequestsWhenNoFromRestriction() throws Exception {
+    void shouldApproveRequestsWhenNoFromRestriction() throws Exception {
         // Given
         AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler,
                 "agent-forwarding,environment=\"fred=\\\"a string\\\"\",nopty");
@@ -196,23 +239,12 @@ public class AuthorizedKeyTest {
         assertThat(result).isTrue();
     }
 
-    @DataProvider
-    public Object[][] matchingFrom() {
-        return new Object[][] {
-                { "127.0.0.1,fred.co.uk", "127.0.0.1", "localhost" },
-                { "127.0.0.?,!127.0.0.1,fred.co.uk", "127.0.0.2", "localhost" },
-                { "127.0.0.1,::1,fred.co.uk", "::1", "localhost" },
-                { "127.0.0.1,::?,fred.co.uk", "::?", "localhost" },
-                { "127.0.0.0/24,fred.co.uk", "127.0.0.1", "localhost" },
-                { "127.0.0.1,::1/128,fred.co.uk", "::1", "localhost" },
-        };
-    }
-
-    @Test(dataProvider = "matchingFrom")
+    @ParameterizedTest
+    @MethodSource("matchingFrom")
     public void shouldApproveRequests(String from, String address, String host) throws Exception {
         // Given
         AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, "from=\"" + from + "\"");
-        setRequestOrigin(address, host);
+        setRequestOrigin(address);
 
         // When
         boolean result = authorizedKey.isValidOrigin(request);
@@ -221,24 +253,12 @@ public class AuthorizedKeyTest {
         assertThat(result).isTrue();
     }
 
-    @DataProvider
-    public Object[][] failingFrom() {
-        return new Object[][] {
-                { "127.0.0.?,::1,*.co.uk", "::2", "localhost" },
-                { "127.0.0.?,::1,*.co.uk", "192.168.0.1", "localhost" },
-                { "192.168.0.0/24,!192.168.0.1,::1,*.co.uk", "192.168.0.1", "localhost" },
-                { "127.0.0.?,::aaaa:0/128,*.co.uk", "::1", "localhost" },
-                { "127.0.0.0/24,::aaaa:0/128,*.co.uk", "192.168.0.1", "localhost" },
-                { "127.0.0.1,fred.co.uk", "127.0.0.2", "fred.co.uk" },
-                { "127.0.0.1,*.co.uk", "127.0.0.2", "fred.co.uk" },
-        };
-    }
-
-    @Test(dataProvider = "failingFrom")
+    @ParameterizedTest
+    @MethodSource("fallingFrom")
     public void shouldDenyRequests(String from, String address, String host) throws Exception {
         // Given
         AuthorizedKey authorizedKey = new AuthorizedKey("fred", signingHandler, "from=\"" + from + "\"");
-        setRequestOrigin(address, host);
+        setRequestOrigin(address);
 
         // When
         boolean result = authorizedKey.isValidOrigin(request);
@@ -247,9 +267,8 @@ public class AuthorizedKeyTest {
         assertThat(result).isFalse();
     }
 
-    private void setRequestOrigin(String address, String host) {
+    private void setRequestOrigin(String address) {
         when(request.getRemoteAddr()).thenReturn(address);
-        when(request.getRemoteHost()).thenReturn(host);
     }
 
 }

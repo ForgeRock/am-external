@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2012-2023 ForgeRock AS.
+ * Copyright 2012-2025 Ping Identity Corporation.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -20,7 +20,7 @@
  * with the fields enclosed by brackets [] replaced by
  * your own identifying information:
  *
- * Copyright 2012-2017 ForgeRock AS.
+ * Copyright 2012-2025 Ping Identity Corporation.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 

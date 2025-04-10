@@ -11,12 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -31,6 +38,7 @@ import javax.security.auth.callback.ConfirmationCallback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.OutcomeProvider;
@@ -233,22 +241,29 @@ public class PollingWaitNode implements Node {
     /**
      * Provides the outcomes for the polling wait node.
      */
-    public static class PollingWaitOutcomeProvider implements OutcomeProvider {
+    public static class PollingWaitOutcomeProvider implements BoundedOutcomeProvider {
 
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
-            List<Outcome> outcomes = new ArrayList<>();
-            outcomes.add(PollingWaitOutcome.DONE.getOutcome());
-            if (nodeAttributes.isNotNull()) {
-                // nodeAttributes is null when the node is created
-                if (nodeAttributes.get("exitable").required().asBoolean()) {
-                    outcomes.add(PollingWaitOutcome.EXITED.getOutcome());
-                }
-                if (nodeAttributes.get("spamDetectionEnabled").required().asBoolean()) {
-                    outcomes.add(PollingWaitOutcome.SPAM.getOutcome());
-                }
-            }
-            return outcomes;
+            return getAllOutcomes(locales).stream()
+                           .filter(outcome -> {
+                               if (PollingWaitOutcome.EXITED.name().equals(outcome.id)) {
+                                   return nodeAttributes.isNotNull()
+                                                  && nodeAttributes.get("exitable").required().asBoolean();
+                               }
+                               if (PollingWaitOutcome.SPAM.name().equals(outcome.id)) {
+                                   return nodeAttributes.isNotNull()
+                                                  && nodeAttributes.get("spamDetectionEnabled").required().asBoolean();
+                               }
+                               return true;
+                           }).toList();
+        }
+
+        @Override
+        public List<Outcome> getAllOutcomes(PreferredLocales locales) {
+            return List.of(PollingWaitOutcome.DONE.getOutcome(),
+                    PollingWaitOutcome.EXITED.getOutcome(),
+                    PollingWaitOutcome.SPAM.getOutcome());
         }
     }
 }

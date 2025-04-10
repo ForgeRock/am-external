@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -22,21 +30,21 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.resource.ResourceException.NOT_FOUND;
 import static org.forgerock.json.resource.ResourceException.newResourceException;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_MAIL_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_WELCOME_EMAIL_TEMPLATE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Stream;
 
 import javax.security.auth.callback.Callback;
 
@@ -46,38 +54,55 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class EmailTemplateNodeTest {
-
-    @Mock
-    private EmailTemplateNode.Config config;
-
-    @Mock
-    private Realm realm;
-
-    @Mock
-    private IdmIntegrationService idmIntegrationService;
-
-    @Mock
-    private ExecutorService executorService;
 
     @Captor
     ArgumentCaptor<String> recipientCaptor;
-
     @Captor
     ArgumentCaptor<JsonValue> objectCaptor;
-
+    @Mock
+    private EmailTemplateNode.Config config;
+    @Mock
+    private Realm realm;
+    @Mock
+    private IdmIntegrationService idmIntegrationService;
+    @Mock
+    private ExecutorService executorService;
     private EmailTemplateNode emailTemplateNode;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        initMocks(this);
+    public static Stream<Arguments> sharedStateData() {
+        return Stream.of(
+                Arguments.of(json(object(
+                        field(OBJECT_ATTRIBUTES, object(
+                                field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test"),
+                                field(DEFAULT_IDM_MAIL_ATTRIBUTE, "test@gmail.com")
+                        ))
+                ))),
+                Arguments.of(json(object(
+                        field(USERNAME, "test"),
+                        field(OBJECT_ATTRIBUTES, object(
+                                field(DEFAULT_IDM_MAIL_ATTRIBUTE, "test@gmail.com")
+                        ))
+                )))
+        );
+    }
+
+    @BeforeEach
+    void setUp() throws Exception {
         emailTemplateNode = new EmailTemplateNode(config, realm, idmIntegrationService, executorService);
 
         when(config.emailTemplateName()).thenReturn(DEFAULT_IDM_WELCOME_EMAIL_TEMPLATE);
@@ -86,7 +111,7 @@ public class EmailTemplateNodeTest {
     }
 
     @Test
-    public void shouldContinueIfNoEmailAddressInManagedObject() throws Exception {
+    void shouldContinueIfNoEmailAddressInManagedObject() throws Exception {
         JsonValue userObject = userObject();
         userObject.remove(DEFAULT_IDM_MAIL_ATTRIBUTE);
 
@@ -101,7 +126,7 @@ public class EmailTemplateNodeTest {
     }
 
     @Test
-    public void shouldContinueIfNoMailInContextAndOnlyIdentityAttributeSpecified() throws Exception {
+    void shouldContinueIfNoMailInContextAndOnlyIdentityAttributeSpecified() throws Exception {
 
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
         when(config.emailAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
@@ -114,7 +139,7 @@ public class EmailTemplateNodeTest {
     }
 
     @Test
-    public void shouldContinueIfNoMailInContextAndOnlyObjectTypeSpecified() throws Exception {
+    void shouldContinueIfNoMailInContextAndOnlyObjectTypeSpecified() throws Exception {
         // no mail in context either
         when(config.identityAttribute()).thenReturn(null);
         when(config.emailAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
@@ -127,7 +152,7 @@ public class EmailTemplateNodeTest {
     }
 
     @Test
-    public void shouldContinueIfObjectNotFound() throws Exception {
+    void shouldContinueIfObjectNotFound() throws Exception {
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
         when(config.emailAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any()))
@@ -140,7 +165,7 @@ public class EmailTemplateNodeTest {
     }
 
     @Test
-    public void shouldContinueIfIdentityNotFound() throws Exception {
+    void shouldContinueIfIdentityNotFound() throws Exception {
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
         when(config.emailAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
 
@@ -150,28 +175,8 @@ public class EmailTemplateNodeTest {
         verify(idmIntegrationService, times(0)).sendTemplate(any(), any(), any(), any(), any(), any());
     }
 
-
-    @DataProvider
-    public Object[][] sharedStateData() {
-        return new Object[][] {
-            {
-                json(object(
-                    field(OBJECT_ATTRIBUTES, object(
-                            field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test"),
-                            field(DEFAULT_IDM_MAIL_ATTRIBUTE, "test@gmail.com")
-                ))))
-            },
-            {
-                json(object(
-                        field(USERNAME, "test"),
-                        field(OBJECT_ATTRIBUTES, object(
-                                field(DEFAULT_IDM_MAIL_ATTRIBUTE, "test@gmail.com")
-                ))))
-            }
-
-        };
-    }
-    @Test(dataProvider = "sharedStateData")
+    @ParameterizedTest
+    @MethodSource("sharedStateData")
     public void shouldSendMailFromObjectToTemplateEndpoint(JsonValue sharedState) throws Exception {
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
         when(config.emailAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
@@ -193,10 +198,10 @@ public class EmailTemplateNodeTest {
 
     private JsonValue userObject() {
         return json(object(
-           field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test"),
-           field(DEFAULT_IDM_MAIL_ATTRIBUTE, "test@gmail.com"),
-           field("givenName", "foo"),
-           field("sn", "bar")
+                field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test"),
+                field(DEFAULT_IDM_MAIL_ATTRIBUTE, "test@gmail.com"),
+                field("givenName", "foo"),
+                field("sn", "bar")
         ));
     }
 }

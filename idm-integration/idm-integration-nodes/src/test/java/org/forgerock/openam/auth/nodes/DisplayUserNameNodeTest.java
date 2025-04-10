@@ -11,24 +11,30 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.json.resource.ResourceException.BAD_REQUEST;
-import static org.forgerock.json.resource.ResourceException.newResourceException;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_MAIL_ATTRIBUTE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.List;
 
@@ -42,47 +48,37 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class DisplayUserNameNodeTest {
 
     @Mock
+    IdmIntegrationService idmIntegrationService;
+    @Mock
     private DisplayUserNameNode.Config config;
-
     @Mock
     private Realm realm;
-
-    @Mock
-    IdmIntegrationService idmIntegrationService;
-
+    @InjectMocks
     private DisplayUserNameNode displayUserNameNode;
 
-
-    @BeforeMethod
-    public void setUp() throws Exception {
-        initMocks(this);
-
+    @Test
+    void shouldThrowExceptionIfFailedToRetrieveObject() throws Exception {
         when(config.userName()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
-
-        displayUserNameNode = new DisplayUserNameNode(realm, config, idmIntegrationService);
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowExceptionIfFailedToRetrieveObject() throws Exception {
-
-        when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any()))
-                .thenThrow(newResourceException(BAD_REQUEST));
-
-        displayUserNameNode.process(getContext(emptyList(), json(object())));
+        assertThatThrownBy(() -> displayUserNameNode.process(getContext(emptyList(), json(object())))
+        ).isInstanceOf(NodeProcessException.class).hasMessageContaining("Failed to retrieve existing object");
     }
 
     @Test
-    public void shouldReturnUserNameFromSharedStateIfPresent() throws Exception {
+    void shouldReturnUserNameFromSharedStateIfPresent() throws Exception {
+        when(config.userName()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")
@@ -97,7 +93,10 @@ public class DisplayUserNameNodeTest {
     }
 
     @Test
-    public void shouldRetrieveUserNameIfNotPresentInSharedState() throws Exception {
+    void shouldRetrieveUserNameIfNotPresentInSharedState() throws Exception {
+        when(config.userName()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_MAIL_ATTRIBUTE, "test@gmail.com")
@@ -113,8 +112,11 @@ public class DisplayUserNameNodeTest {
         assertThat(resultCallback.getMessage()).isEqualTo("test");
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldFailIfUserNameNotPresentInRetrievedObject() throws Exception {
+    @Test
+    void shouldFailIfUserNameNotPresentInRetrievedObject() throws Exception {
+        when(config.userName()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
+        when(config.identityAttribute()).thenReturn(DEFAULT_IDM_MAIL_ATTRIBUTE);
+        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_MAIL_ATTRIBUTE, "test@gmail.com")
@@ -123,11 +125,12 @@ public class DisplayUserNameNodeTest {
 
         when(idmIntegrationService.getObject(any(), any(), any(), any(), any(), any())).thenReturn(json(object()));
 
-        displayUserNameNode.process(getContext(emptyList(), sharedState));
+        assertThatThrownBy(() -> displayUserNameNode.process(getContext(emptyList(), sharedState)))
+                .isInstanceOf(NodeProcessException.class).hasMessageContaining("Unable to find username to display");
     }
 
     @Test
-    public void shouldContinueIfCallbackPresent() throws Exception {
+    void shouldContinueIfCallbackPresent() throws Exception {
 
         Action action = displayUserNameNode.process(getContext(
                 singletonList(new TextOutputCallback(TextOutputCallback.INFORMATION, "test")), json(object())));

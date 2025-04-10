@@ -1,0 +1,42 @@
+{
+  "name": "backend",
+  "baseURI": "https://&{backend.host}",
+  "condition": "${matches(request.uri.path, '(?:^/am(?!/ui-admin))|(?:^/openidm)|(?:^/admin)|(?:^/upload)|(?:^/export)|(?:^/openicf)|(?:^/keys)|(?:^/environment)|(?:^/monitoring)|(?:^/dashboard)|(?:^/auto)|(?:^/autoaccess)|(?:^/reports)|(?:^/login)|(?:^/iga)|(?:^/platform)|(?:^/enduser)')}",
+  "handler": {
+    "type": "Chain",
+    "config": {
+      "filters": [
+        {
+          "type": "LocationHeaderFilter",
+          "config": {
+            "baseURI": "https://&{backend.host}"
+          }
+        },
+        {
+          "type": "HeaderFilter",
+          "config": {
+            "messageType": "REQUEST",
+            "remove": [
+              "host"
+            ]
+          }
+        }
+      ],
+      "handler": {
+        "type": "ReverseProxyHandler",
+        "tls": {
+          "type": "ClientTlsOptions",
+          "config": {
+            "trustManager": {
+              "type": "TrustAllManager"
+            }
+          }
+        },
+        "capture": [
+          "request",
+          "response"
+        ]
+      }
+    }
+  }
+}

@@ -11,13 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.social;
 
 import static com.sun.identity.authentication.util.ISAuthConstants.FULL_LOGIN_URL;
 import static com.sun.identity.authentication.util.ISAuthConstants.LOGIN_SUCCEED;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.oauth.clients.oauth2.OAuth2Client.AUTHORIZATION_HEADER;
 import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.COOKIE_ORIG_URL;
 import static org.forgerock.openam.authentication.modules.oauth2.OAuthParam.NONCE_TOKEN_ID;
@@ -43,13 +52,12 @@ import java.util.Set;
 import java.util.function.Function;
 
 import javax.security.auth.Subject;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.UserInfo;
 import org.forgerock.openam.authentication.modules.common.AMLoginModuleBinder;
-import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.authentication.modules.oauth2.EmailGateway;
 import org.forgerock.openam.authentication.modules.oauth2.EmailGatewayLookup;
 import org.forgerock.openam.authentication.modules.oidc.JwtHandlerConfig;
@@ -58,12 +66,12 @@ import org.forgerock.openam.integration.idm.ClientTokenJwtGenerator;
 import org.forgerock.openam.integration.idm.IdmIntegrationConfig;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.promise.Promises;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.testng.MockitoTestNGListener;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
 import com.sun.identity.authentication.spi.AuthLoginException;
@@ -73,17 +81,15 @@ import com.sun.identity.authentication.util.ISAuthConstants;
 /**
  * Test class for SocialAuthLoginModuleWeChatMobile.
  */
-@Listeners(MockitoTestNGListener.class)
+@ExtendWith({MockitoExtension.class})
 public class SocialAuthLoginModuleWeChatMobileTest {
 
     private static final String ORIGINAL_URL = "http://originalUrl";
     private static final String DOMAIN_1 = "domain1";
     private static final String DOMAIN_2 = "domain2";
-
-    private ImmutableMap<String, Set<String>> options;
     private static final Subject SUBJECT = null;
     private static final Map SHARED_STATE = new HashMap();
-
+    private ImmutableMap<String, Set<String>> options;
     private SocialAuthLoginModuleWeChatMobile module;
 
     @Mock
@@ -125,8 +131,8 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     @Mock
     private EmailGateway emailGateway;
 
-    @BeforeMethod
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         lenient().when(authModuleHelper.getOriginalUrl(request)).thenReturn(ORIGINAL_URL);
         lenient().when(authModuleHelper.getCookieDomainsForRequest(request))
                 .thenReturn(CollectionUtils.asSet(DOMAIN_1, DOMAIN_2));
@@ -154,31 +160,31 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         module.setAMLoginModule(binder);
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
-    public void shouldFailWhenSharedStateIsNull() throws Exception {
+    @Test
+    void shouldFailWhenSharedStateIsNull() {
         //given
         this.options = ImmutableMap.of();
         Map sharedState = null;
 
         //when
-        module.init(SUBJECT, sharedState, options);
-
-        //then Exception
+        assertThatThrownBy(() -> module.init(SUBJECT, sharedState, options))
+                //then
+                .isInstanceOf(NullPointerException.class);
     }
 
-    @Test(expectedExceptions = NullPointerException.class)
-    public void shouldFailWhenOptionsIsNull() throws Exception {
+    @Test
+    void shouldFailWhenOptionsIsNull() throws Exception {
         //given
         this.options = null;
 
         //when
-        module.init(SUBJECT, SHARED_STATE, options);
-
-        //then Exception
+        assertThatThrownBy(() -> module.init(SUBJECT, SHARED_STATE, options))
+                //then
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    public void shouldAddDomainCookiesToResponse() throws Exception {
+    void shouldAddDomainCookiesToResponse() throws Exception {
         //given
         String path = "/";
         String dataStoreId = "data_store_id";
@@ -200,7 +206,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     }
 
     @Test
-    public void shouldAddOriginalUrlToSession() throws Exception {
+    void shouldAddOriginalUrlToSession() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
@@ -214,37 +220,35 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         verify(binder, times(1)).setUserSessionProperty(eq(FULL_LOGIN_URL), eq(ORIGINAL_URL));
     }
 
-    @Test(expectedExceptions = AuthLoginException.class, expectedExceptionsMessageRegExp = "Unable to retrieve access token from header")
-    public void shouldFailWhenAccessTokenNotPresent() throws Exception {
+    @Test
+    void shouldFailWhenAccessTokenNotPresent() throws Exception {
         //given
         given(request.getHeader(AUTHORIZATION_HEADER)).willReturn(null);
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
-                .willReturn(Optional.empty());
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
-        module.process(null, ISAuthConstants.LOGIN_START);
-
-        //then Exception
+        assertThatThrownBy(() -> module.process(null, ISAuthConstants.LOGIN_START))
+                //then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessage("Unable to retrieve access token from header");
     }
 
-    @Test(expectedExceptions = AuthLoginException.class, expectedExceptionsMessageRegExp = "Unable to retrieve WeChat OpenId")
-    public void shouldFailWhenOpenIdNotPresent() throws Exception {
+    @Test
+    void shouldFailWhenOpenIdNotPresent() throws Exception {
         //given
         given(request.getParameter(OPENID)).willReturn(null);
-        given(authModuleHelper.userExistsInTheDataStore(anyString(), any(AccountProvider.class), anyMap()))
-                .willReturn(Optional.empty());
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
-        module.process(null, ISAuthConstants.LOGIN_START);
-
-        //then Exception
+        assertThatThrownBy(() -> module.process(null, ISAuthConstants.LOGIN_START))
+                //then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessage("Unable to retrieve WeChat OpenId");
     }
 
 
     @Test
-    public void shouldSucceedWhenUserIsPresent() throws Exception {
+    void shouldSucceedWhenUserIsPresent() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
@@ -260,7 +264,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     }
 
     @Test
-    public void shouldSaveAttributesToSessionOnSuccessWhenConfigured() throws Exception {
+    void shouldSaveAttributesToSessionOnSuccessWhenConfigured() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
@@ -278,14 +282,14 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     }
 
     @Test
-    public void shouldReturnResumeRegistrationStateWhenConfiguredToUseRegistrationService() throws Exception {
+    void shouldReturnResumeRegistrationStateWhenConfiguredToUseRegistrationService() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
                 .willReturn(Optional.empty());
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
         given(config.getCfgCreateAccount()).willReturn(true);
-        given(config.isCfgRegistrationServiceEnabled() ).willReturn(true);
+        given(config.isCfgRegistrationServiceEnabled()).willReturn(true);
 
         //when
         int nextState = module.process(null, ISAuthConstants.LOGIN_START);
@@ -297,7 +301,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     }
 
     @Test
-    public void shouldSucceedWhenConfiguredToProvisionLocally() throws Exception {
+    void shouldSucceedWhenConfiguredToProvisionLocally() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
@@ -314,7 +318,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     }
 
     @Test
-    public void shouldSucceedWhenConfiguredToUseAnonymousUser() throws Exception {
+    void shouldSucceedWhenConfiguredToUseAnonymousUser() throws Exception {
         //given
         given(client.getUserInfo(dataStore)).willReturn(Promises.newResultPromise(userInfo));
         given(authModuleHelper.userExistsInTheDataStore(anyString(), any(), anyMap()))
@@ -333,7 +337,7 @@ public class SocialAuthLoginModuleWeChatMobileTest {
     }
 
     @Test
-    public void shouldSucceedWhenResumedFromRegistrationAndUserFound() throws Exception {
+    void shouldSucceedWhenResumedFromRegistrationAndUserFound() throws Exception {
         //given
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
                 any(), anyMap())).willReturn(Optional.of("user"));
@@ -347,8 +351,8 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         assertThat(nextState).isEqualTo(LOGIN_SUCCEED);
     }
 
-    @Test(expectedExceptions = AuthLoginException.class)
-    public void shouldFailWhenResumedFromRegistrationAndUserNotFound() throws Exception {
+    @Test
+    void shouldFailWhenResumedFromRegistrationAndUserNotFound() throws Exception {
         //given
         given(authModuleHelper.userExistsInTheDataStore(anyString(),
                 any(), anyMap())).willReturn(Optional.empty());
@@ -356,8 +360,9 @@ public class SocialAuthLoginModuleWeChatMobileTest {
         module.init(SUBJECT, config, client, dataStore, jwtHandlerConfig, profileNormalizer, bundle, gatewayLookup);
 
         //when
-        module.process(null, RESUME_FROM_REGISTRATION_REDIRECT_STATE);
-
-        //then Exception
+        assertThatThrownBy(() -> module.process(null, RESUME_FROM_REGISTRATION_REDIRECT_STATE))
+                //then Exception
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessage("No user mapped!");
     }
 }

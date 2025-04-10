@@ -24,15 +24,15 @@
  *
  * $Id: SAML2ServiceProviderAdapter.java,v 1.5 2008/08/19 19:11:15 veiming Exp $
  *
- * Portions Copyrighted 2022 ForgeRock AS.
+ * Portions Copyrighted 2022-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.saml2.plugins;
 
 import java.io.PrintWriter;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.annotations.EvolvingAll;
 

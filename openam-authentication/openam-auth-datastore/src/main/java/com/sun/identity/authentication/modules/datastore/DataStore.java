@@ -24,7 +24,7 @@
  *
  * $Id: DataStore.java,v 1.4 2008/06/25 05:41:56 qcheng Exp $
  *
- * Portions Copyrighted 2011-2024 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 package com.sun.identity.authentication.modules.datastore;
 

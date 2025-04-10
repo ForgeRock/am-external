@@ -24,7 +24,7 @@
  *
  * $Id: QueryHandlerServlet.java,v 1.9 2009/09/22 22:49:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2012-2020 ForgeRock AS.
+ * Portions Copyrighted 2012-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.soapbinding;
 
@@ -39,10 +39,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
@@ -87,8 +87,10 @@ public class QueryHandlerServlet extends HttpServlet {
     static final String METAALIAS_KEY = "/metaAlias" ;
     private static Logger debug = LoggerFactory.getLogger(QueryHandlerServlet.class);
 
+    private SOAPCommunicator soapCommunicator;
     
     public void init() throws ServletException {
+        soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
     }
     
     /**
@@ -139,8 +141,8 @@ public class QueryHandlerServlet extends HttpServlet {
                         + ", pdpEntityID=" + pdpEntityID);
             }
 
-            SOAPMessage soapMsg = SOAPCommunicator.getInstance().getSOAPMessage(request);
-            Element soapBody = SOAPCommunicator.getInstance().getSOAPBody(soapMsg);
+            SOAPMessage soapMsg = soapCommunicator.getSOAPMessage(request);
+            Element soapBody = soapCommunicator.getSOAPBody(soapMsg);
             if (debug.isDebugEnabled()) {
                 debug.debug(classMethod + "SOAPMessage received.:"
                         + XMLUtils.print(soapBody));
@@ -157,7 +159,7 @@ public class QueryHandlerServlet extends HttpServlet {
                 // Error
                debug.error(classMethod + "SOAPMessage is null");
                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-               reply = SOAPCommunicator.getInstance().createSOAPFault(
+               reply = soapCommunicator.createSOAPFault(
                        SAML2Constants.SERVER_FAULT, "invalidQuery", null);
             }
              // Write out the message on the response stream
@@ -202,21 +204,21 @@ public class QueryHandlerServlet extends HttpServlet {
         SOAPMessage soapMessage = null;
         String pepEntityID = null;
         try {
-            Element soapBody = SOAPCommunicator.getInstance().getSOAPBody(soapMsg);
+            Element soapBody = soapCommunicator.getSOAPBody(soapMsg);
             if (debug.isDebugEnabled()) {
                 debug.debug(classMethod + "SOAPMessage recd. :"
                         + XMLUtils.print(soapBody));
             }
-            Element reqAbs = SOAPCommunicator.getInstance().getSamlpElement(soapMsg,
+            Element reqAbs = soapCommunicator.getSamlpElement(soapMsg,
                     REQUEST_ABSTRACT);
             
             Response samlResponse = 
                 processSAMLRequest(realm,pdpEntityID,reqAbs,request,soapMsg);
-            soapMessage = SOAPCommunicator.getInstance().createSOAPMessage(
+            soapMessage = soapCommunicator.createSOAPMessage(
                     samlResponse.toXMLString(true, true), false);
         } catch (SAML2Exception se) {
             debug.error(classMethod + "XACML Response Error SOAP Fault", se);
-            soapMessage = SOAPCommunicator.getInstance().createSOAPFault(
+            soapMessage = soapCommunicator.createSOAPFault(
                     SAML2Constants.SERVER_FAULT, "invalidQuery", se.getMessage());
         }
         return soapMessage;

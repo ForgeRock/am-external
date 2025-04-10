@@ -11,28 +11,37 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.AbstractDecisionNode.FALSE_OUTCOME_ID;
 import static org.forgerock.openam.auth.node.api.AbstractDecisionNode.TRUE_OUTCOME_ID;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.AttributeValueDecisionNode.ComparisonOperation.EQUALS;
 import static org.forgerock.openam.auth.nodes.AttributeValueDecisionNode.ComparisonOperation.PRESENT;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.resource.BadRequestException;
@@ -41,11 +50,18 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class AttributeValueDecisionNodeTest {
 
     @Mock
@@ -60,24 +76,20 @@ public class AttributeValueDecisionNodeTest {
     private AttributeValueDecisionNode node;
     private TreeContext context;
 
-    @DataProvider
-    public Object[][] attributeValueData() {
-        return new Object[][] {
-                {PRESENT, "userName", null, json(object(field("userName", "test"))), TRUE_OUTCOME_ID},
-                {PRESENT, "userName", null, json(object()), FALSE_OUTCOME_ID},
-                {EQUALS, "userName", "test", json(object(field("userName", "test"))), TRUE_OUTCOME_ID},
-                {EQUALS, "userName", "test", json(object(field("userName", "bad"))), FALSE_OUTCOME_ID},
-                {EQUALS, "userName", "test", json(object()), FALSE_OUTCOME_ID},
-                {EQUALS, "preferences/updates", "true",
-                        json(object(field("preferences", object(field("updates", true))))), TRUE_OUTCOME_ID},
-                {EQUALS, "age", "1", json(object(field("age", 1))), TRUE_OUTCOME_ID}
-        };
+    public static Stream<Arguments> attributeValueData() {
+        return Stream.of(
+                Arguments.of(PRESENT, "userName", null, json(object(field("userName", "test"))), TRUE_OUTCOME_ID),
+                Arguments.of(PRESENT, "userName", null, json(object()), FALSE_OUTCOME_ID),
+                Arguments.of(EQUALS, "userName", "test", json(object(field("userName", "test"))), TRUE_OUTCOME_ID),
+                Arguments.of(EQUALS, "userName", "test", json(object(field("userName", "bad"))), FALSE_OUTCOME_ID),
+                Arguments.of(EQUALS, "userName", "test", json(object()), FALSE_OUTCOME_ID),
+                Arguments.of(EQUALS, "preferences/updates", "true", json(object(field("preferences", object(field("updates", true))))), TRUE_OUTCOME_ID),
+                Arguments.of(EQUALS, "age", "1", json(object(field("age", 1))), TRUE_OUTCOME_ID)
+        );
     }
 
-    @BeforeMethod
-    public void before() throws Exception {
-        openMocks(this);
-
+    @BeforeEach
+    void before() throws Exception {
         when(config.identityAttribute()).thenReturn("userName");
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
         when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
@@ -91,7 +103,8 @@ public class AttributeValueDecisionNodeTest {
         node = new AttributeValueDecisionNode(config, realm, idmIntegrationService);
     }
 
-    @Test(dataProvider = "attributeValueData")
+    @ParameterizedTest
+    @MethodSource("attributeValueData")
     public void shouldReturnExpectedOutcome(AttributeValueDecisionNode.ComparisonOperation operation, String attribute,
             String value, JsonValue user, String expectedOutcome) throws Exception {
         when(config.comparisonOperation()).thenReturn(operation);
@@ -102,7 +115,8 @@ public class AttributeValueDecisionNodeTest {
         assertThat(node.process(context).outcome).isEqualTo(expectedOutcome);
     }
 
-    @Test(dataProvider = "attributeValueData")
+    @ParameterizedTest
+    @MethodSource("attributeValueData")
     public void shouldReturnExpectedOutcomeFromUsername(AttributeValueDecisionNode.ComparisonOperation operation,
             String attribute, String value, JsonValue user, String expectedOutcome) throws Exception {
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveUsernameSharedState(),
@@ -117,19 +131,19 @@ public class AttributeValueDecisionNodeTest {
         assertThat(node.process(context).outcome).isEqualTo(expectedOutcome);
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowNodeProcessExceptionIfGetObjectCallFails() throws Exception {
+    @Test
+    void shouldThrowNodeProcessExceptionIfGetObjectCallFails() throws Exception {
         when(config.comparisonOperation()).thenReturn(EQUALS);
         when(config.comparisonAttribute()).thenReturn("test");
         when(config.comparisonValue()).thenReturn(Optional.of("foo"));
         when(idmIntegrationService.getObject(any(), any(), any(), any(), any(), any()))
                 .thenThrow(new BadRequestException());
 
-        node.process(context);
+        assertThatThrownBy(() -> node.process(context)).isInstanceOf(NodeProcessException.class);
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowNodeProcessExceptionIfNoIdentityFound() throws Exception {
+    @Test
+    void shouldThrowNodeProcessExceptionIfNoIdentityFound() throws Exception {
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, json(object()), json(object()),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
         node = new AttributeValueDecisionNode(config, realm, idmIntegrationService);
@@ -137,14 +151,14 @@ public class AttributeValueDecisionNodeTest {
         when(config.comparisonAttribute()).thenReturn("test");
         when(config.comparisonValue()).thenReturn(Optional.of("foo"));
 
-        node.process(context);
+        assertThatThrownBy(() -> node.process(context)).isInstanceOf(NodeProcessException.class);
     }
 
     private JsonValue retrieveSharedState() {
         return json(object(
                 field(OBJECT_ATTRIBUTES, object(
                         field(DEFAULT_IDM_IDENTITY_ATTRIBUTE, "test")))
-                ));
+        ));
     }
 
     private JsonValue retrieveUsernameSharedState() {

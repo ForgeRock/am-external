@@ -24,7 +24,7 @@
  *
  * $Id: DefaultIDPAuthenticationMethodMapper.java,v 1.4 2009/10/28 23:58:59 exu Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  *
  */
 

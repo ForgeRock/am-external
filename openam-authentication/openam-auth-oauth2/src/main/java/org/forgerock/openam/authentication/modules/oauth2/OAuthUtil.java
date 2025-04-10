@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2022 ForgeRock AS. All rights reserved.
+ * Copyright 2011-2025 Ping Identity Corporation. All rights reserved.
  * Copyright 2011 Cybernetica AS.
  *
  * The contents of this file are subject to the terms
@@ -22,7 +22,7 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2022 Forgerock AS.
+ * Portions Copyrighted 2022-2025 Ping Identity Corporation
  */
 package org.forgerock.openam.authentication.modules.oauth2;
 
@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.StringUtils;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;

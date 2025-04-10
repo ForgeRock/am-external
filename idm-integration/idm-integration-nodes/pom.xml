@@ -12,14 +12,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS. All Rights Reserved
+ * Copyright 2025 ForgeRock AS.
  * 
 -->
+<!--
+  ~ Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
+  ~
+ ! This code is to be used exclusively in connection with Ping Identity
+ ! Corporation software or services. Ping Identity Corporation only offers
+ ! such software or services to legal entities who have entered into a
+ ! binding license agreement with Ping Identity Corporation.
+  -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>idm-integration</artifactId>
-        <version>7.5.1</version>
+        <version>8.0.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -49,24 +57,14 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>javax.servlet</groupId>
-            <artifactId>javax.servlet-api</artifactId>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>identity-api</artifactId>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-testng</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -80,14 +78,23 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.forgerock.am</groupId>
-            <artifactId>openam-shared</artifactId>
-            <type>test-jar</type>
-            <scope>test</scope>
+          <groupId>org.forgerock.am</groupId>
+          <artifactId>openam-shared</artifactId>
+          <type>test-jar</type>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.forgerock.commons</groupId>
+          <artifactId>forgerock-test-utils</artifactId>
+          <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jdk8</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>session-api</artifactId>
         </dependency>
     </dependencies>
 

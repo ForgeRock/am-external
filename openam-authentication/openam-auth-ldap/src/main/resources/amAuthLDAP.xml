@@ -26,7 +26,7 @@
 
     $Id: amAuthLDAP.xml,v 1.8 2010/01/25 22:09:17 qcheng Exp $
 
-    Portions Copyrighted 2011-2023 ForgeRock AS.
+    Portions Copyrighted 2011-2025 Ping Identity Corporation.
 -->
 
 <!DOCTYPE ServicesConfiguration
@@ -49,7 +49,7 @@
                     i18nKey="a101"
                     order="100"
                     resourceName="primaryLdapServer">
-                    <DefaultValues placeholder="{&quot;$list&quot;:&quot;&amp;{am.authentication.modules.ldap.servers|%}&quot;}">
+                    <DefaultValues placeholder="{&quot;$list&quot;:&quot;&amp;{am.authentication.modules.ldap.servers|&amp;{am.stores.user.servers}}&quot;}">
                         <Value>@UM_DIRECTORY_SERVER@:@UM_DIRECTORY_PORT@</Value>
                     </DefaultValues>
                 </AttributeSchema>
@@ -76,7 +76,7 @@
                     i18nKey="a104"
                     order="400"
                     resourceName="userBindDN">
-                    <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.username|%}">
+                    <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.username|&amp;{am.stores.user.username|uid=am-identity-bind-account,ou=admins,ou=identities}}">
                         <Value>@UM_DS_DIRMGRDN@</Value>
                     </DefaultValues>
                 </AttributeSchema>
@@ -86,7 +86,7 @@
                     i18nKey="a105"
                     order="500"
                     resourceName="userBindPassword">
-                    <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.password|}"/>
+                    <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.password|&amp;{am.stores.user.password}}"/>
                 </AttributeSchema>
                 <AttributeSchema name="iplanet-am-auth-ldap-user-naming-attribute"
                     type="single"
@@ -277,7 +277,7 @@
                         i18nKey="a101"
                         order="100"
                         resourceName="primaryLdapServer">
-                        <DefaultValues placeholder="{&quot;$list&quot;:&quot;&amp;{am.authentication.modules.ldap.servers|%}&quot;}">
+                        <DefaultValues placeholder="{&quot;$list&quot;:&quot;&amp;{am.authentication.modules.ldap.servers}|&amp;{am.stores.user.servers}&quot;}">
                             <Value>@UM_DIRECTORY_SERVER@:@UM_DIRECTORY_PORT@</Value>
                         </DefaultValues>
                     </AttributeSchema>
@@ -304,7 +304,7 @@
                         i18nKey="a104"
                         order="400"
                         resourceName="userBindDN">
-                        <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.username|%}">
+                        <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.username|&amp;{am.stores.user.username|uid=am-identity-bind-account,ou=admins,ou=identities}}">
                             <Value>@UM_DS_DIRMGRDN@</Value>
                         </DefaultValues>
                     </AttributeSchema>
@@ -314,7 +314,7 @@
                         i18nKey="a105"
                         order="500"
                         resourceName="userBindPassword">
-                        <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.password|}"/>
+                        <DefaultValues placeholder="&amp;{am.authentication.modules.ldap.password|&amp;{am.stores.user.password}}"/>
                     </AttributeSchema>
                     <AttributeSchema name="iplanet-am-auth-ldap-user-naming-attribute"
                         type="single"
@@ -503,7 +503,7 @@
         </Schema>
         <Configuration>
             <OrganizationConfiguration name="/">
-                <AttributeValuePair placeholder="&amp;{am.authentication.modules.ldap.password|%}">
+                <AttributeValuePair placeholder="&amp;{am.authentication.modules.ldap.password|&amp;{am.stores.user.password}}">
                     <Attribute name="iplanet-am-auth-ldap-bind-passwd"/>
                     <Value>@UM_DS_DIRMGRPASSWD@</Value>
                 </AttributeValuePair>

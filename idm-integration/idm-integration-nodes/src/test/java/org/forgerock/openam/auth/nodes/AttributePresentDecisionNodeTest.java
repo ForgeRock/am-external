@@ -11,23 +11,31 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.lang.String.valueOf;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Optional;
 
@@ -40,10 +48,13 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.util.query.QueryFilter;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class AttributePresentDecisionNodeTest {
 
     @Mock
@@ -58,21 +69,25 @@ public class AttributePresentDecisionNodeTest {
     private AttributePresentDecisionNode node;
     private TreeContext context;
 
-    @BeforeMethod
-    public void before() {
-        openMocks(this);
+    private static JsonValue managedObject() {
+        return json(object(
+                field(FIELD_CONTENT_ID, "1"),
+                field("password", "Test1234")
+        ));
+    }
 
+    @BeforeEach
+    void before() {
         when(config.identityAttribute()).thenReturn("userName");
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
-        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
 
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveSharedState(), json(object()),
-                    new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
         node = new AttributePresentDecisionNode(config, realm, idmIntegrationService);
     }
 
     @Test
-    public void shouldReturnTrueIfFieldExists() throws Exception {
+    void shouldReturnTrueIfFieldExists() throws Exception {
         when(config.presentAttribute()).thenReturn("password");
         when(idmIntegrationService.getObject(any(), any(), any(), any(QueryFilter.class), any()))
                 .thenReturn(managedObject());
@@ -81,20 +96,23 @@ public class AttributePresentDecisionNodeTest {
     }
 
     @Test
-    public void shouldReturnTrueIfUsernameIdentityExists() throws Exception {
+    void shouldReturnTrueIfUsernameIdentityExists() throws Exception {
+        // given
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveUsernameSharedState(),
                 json(object()), new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
         node = new AttributePresentDecisionNode(config, realm, idmIntegrationService);
 
+        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
         when(config.presentAttribute()).thenReturn("password");
         when(idmIntegrationService.getObject(any(), any(), any(), any(QueryFilter.class), any()))
                 .thenReturn(managedObject());
 
+        // when & then
         assertThat(node.process(context).outcome).isEqualTo(valueOf(true));
     }
 
     @Test
-    public void shouldReturnFalseIfFieldDoesNotExist() throws Exception {
+    void shouldReturnFalseIfFieldDoesNotExist() throws Exception {
         when(config.presentAttribute()).thenReturn("invalid");
         when(idmIntegrationService.getObject(any(), any(), any(), any(QueryFilter.class), any()))
                 .thenThrow(new NotFoundException());
@@ -102,24 +120,27 @@ public class AttributePresentDecisionNodeTest {
         assertThat(node.process(context).outcome).isEqualTo(valueOf(false));
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowNodeProcessExceptionIfGetObjectCallFails() throws Exception {
+    @Test
+    void shouldThrowNodeProcessExceptionIfGetObjectCallFails() throws Exception {
+        // given
         when(config.presentAttribute()).thenReturn("password");
         when(idmIntegrationService.getObject(any(), any(), any(), any(QueryFilter.class), any()))
                 .thenThrow(new BadRequestException());
-
-        node.process(context);
+        // when & then
+        assertThatThrownBy(() -> node.process(context)).isInstanceOf(NodeProcessException.class);
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowNodeProcessExceptionIfNoIdentityFound() throws Exception {
+    @Test
+    void shouldThrowNodeProcessExceptionIfNoIdentityFound() throws Exception {
+        // given
+        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, json(object()), json(object()),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
         node = new AttributePresentDecisionNode(config, realm, idmIntegrationService);
-
         when(config.presentAttribute()).thenReturn("password");
 
-        node.process(context);
+        // when & then
+        assertThatThrownBy(() -> node.process(context)).isInstanceOf(NodeProcessException.class);
     }
 
     private JsonValue retrieveSharedState() {
@@ -132,13 +153,6 @@ public class AttributePresentDecisionNodeTest {
     private JsonValue retrieveUsernameSharedState() {
         return json(object(
                 field(USERNAME, "test-username")
-        ));
-    }
-
-    private static JsonValue managedObject() {
-        return json(object(
-                field(FIELD_CONTENT_ID, "1"),
-                field("password", "Test1234")
         ));
     }
 

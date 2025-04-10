@@ -25,7 +25,7 @@
  */
 /*
  * Portions Copyrighted 2013 Syntegrity.
- * Portions Copyrighted 2013-2018 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 
 var ScalarComparator = {}, ScreenComparator = {}, MultiValueComparator = {}, UserAgentComparator = {}, GeolocationComparator = {};

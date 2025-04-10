@@ -24,7 +24,7 @@
  *
  * $Id: DefaultAttributeMapper.java,v 1.4 2008/06/25 05:47:50 qcheng Exp $
  *
- * Portions Copyrighted 2013-2019 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins;

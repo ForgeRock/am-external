@@ -1,8 +1,8 @@
 <%--
    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
-  
+
    Copyright (c) 2008 Sun Microsystems Inc. All Rights Reserved
-  
+
    The contents of this file are subject to the terms
    of the Common Development and Distribution License
    (the License). You may not use this file except in
@@ -24,7 +24,7 @@
 
    $Id: fedletSampleApp.jsp,v 1.15 2010/01/08 21:56:58 vimal_67 Exp $
 
-   Portions Copyrighted 2013-2019 ForgeRock AS.
+   Portions Copyrighted 2013-2025 Ping Identity Corporation
 --%><%@page
 import="com.sun.identity.saml2.common.SAML2Exception,
 com.sun.identity.saml2.common.SAML2Constants,
@@ -106,12 +106,12 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
         if (stringPos != -1) {
             response.sendRedirect(relayUrl);
         }
-    } 
+    }
 
     // Following are sample code to show how to retrieve information,
-    // such as Reponse/Assertion/Attributes, from the returned map. 
-    // You might not need them in your real application code. 
-    Response samlResp = (Response) map.get(SAML2Constants.RESPONSE); 
+    // such as Reponse/Assertion/Attributes, from the returned map.
+    // You might not need them in your real application code.
+    Response samlResp = (Response) map.get(SAML2Constants.RESPONSE);
     Assertion assertion = (Assertion) map.get(SAML2Constants.ASSERTION);
     Subject subject = (Subject) map.get(SAML2Constants.SUBJECT);
     String entityID = (String) map.get(SAML2Constants.IDPENTITYID);
@@ -119,7 +119,7 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
     NameID nameId = (NameID) map.get(SAML2Constants.NAMEID);
     String value = nameId.getValue();
     String format = nameId.getFormat();
-    out.println("<br><br><b>Single Sign-On successful with IDP " 
+    out.println("<br><br><b>Single Sign-On successful with IDP "
         + ESAPI.encoder().encodeForHTML(entityID) + ".</b>");
     out.println("<br><br>");
     out.println("<table border=0>");
@@ -134,15 +134,15 @@ Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></tab
         out.println("<td valign=top><b>Name ID value: </b></td>");
         out.println("<td>" + ESAPI.encoder().encodeForHTML(value) + "</td>");
         out.println("</tr>");
-    }    
+    }
     String sessionIndex = (String) map.get(SAML2Constants.SESSION_INDEX);
     if (sessionIndex != null) {
         out.println("<tr>");
         out.println("<td valign=top><b>SessionIndex: </b></td>");
         out.println("<td>" + ESAPI.encoder().encodeForHTML(sessionIndex) + "</td>");
         out.println("</tr>");
-    }    
-    
+    }
+
     Map attrs = (Map) map.get(SAML2Constants.ATTRIBUTE_MAP);
     if (attrs != null) {
         out.println("<tr>");

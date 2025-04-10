@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2;
 
@@ -25,7 +33,10 @@ import com.sun.identity.saml2.profile.ServerFaultException;
 public interface SAMLAuthenticatorLookup {
 
     /**
-     * Retrieves the authentication details for the session from the cache.
+     * Retrieves and processes the authentication details for the session from the cache.  This also sends the
+     * appropriate response to the user, such as returning their SAML response to the ACS URL, or redirecting to
+     * authenticate again if needed.
+     *
      * @throws SessionException if there is a problem retrieving the session.
      * @throws ServerFaultException if there was a problem with the authentication
      * @throws ClientFaultException if there is a problem with the provided data.

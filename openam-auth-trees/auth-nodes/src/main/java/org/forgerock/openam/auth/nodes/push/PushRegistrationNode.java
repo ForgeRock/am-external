@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.push;
@@ -33,16 +41,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.idm.AMIdentity;
 import org.forgerock.am.cts.exceptions.CoreTokenException;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
 import org.forgerock.openam.authentication.callbacks.PollingWaitCallback;
-import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.push.AuthenticatorPushService;
 import org.forgerock.openam.services.push.MessageId;
@@ -72,20 +78,16 @@ public class PushRegistrationNode extends AbstractMultiFactorNode {
      * The Push registration node constructor.
      *
      * @param config                  the node configuration.
-     * @param realm                   the realm.
-     * @param coreWrapper             the {@code CoreWrapper} instance.
      * @param multiFactorNodeDelegate shared utilities common to second factor implementations.
-     * @param identityService         an instance of the IdentityService.
      * @param pushRegistrationHelper  the push registration helper class.
+     * @param identityProvider        the NodeUserIdentityProvider.
      */
     @Inject
     public PushRegistrationNode(@Assisted PushRegistrationConfig config,
-                                @Assisted Realm realm,
-                                CoreWrapper coreWrapper,
                                 MultiFactorNodeDelegate<AuthenticatorPushService> multiFactorNodeDelegate,
-                                LegacyIdentityService identityService,
-                                PushRegistrationHelper pushRegistrationHelper) {
-        super(realm, coreWrapper, multiFactorNodeDelegate, identityService);
+                                PushRegistrationHelper pushRegistrationHelper,
+                                NodeUserIdentityProvider identityProvider) {
+        super(multiFactorNodeDelegate, identityProvider);
         this.config = config;
         this.pushRegistrationHelper = pushRegistrationHelper;
     }

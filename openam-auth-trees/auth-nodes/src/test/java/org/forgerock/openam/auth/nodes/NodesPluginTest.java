@@ -11,17 +11,25 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
+import static org.apache.commons.lang3.stream.Streams.failableStream;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.util.Arrays;
 
-import org.apache.commons.lang3.Streams;
 import org.forgerock.openam.auth.nodes.mfa.CombinedMultiFactorRegistrationNode;
 import org.forgerock.openam.auth.nodes.oath.OathRegistrationNode;
 import org.forgerock.openam.auth.nodes.push.PushAuthenticationSenderNode;
@@ -33,108 +41,108 @@ import org.forgerock.openam.auth.nodes.webauthn.WebAuthnRegistrationNode;
 import org.forgerock.openam.auth.nodes.x509.CertificateValidationNode;
 import org.forgerock.openam.plugins.PluginException;
 import org.forgerock.openam.plugins.PluginTools;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.NamedParameters;
-import junitparams.Parameters;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Tests for the {@link NodesPlugin}.
  * <p>Currently only tests for {@code NodesPlugin::upgrade}.
  */
-@RunWith(JUnitParamsRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class NodesPluginTest {
-
-    @Rule
-    public MockitoRule mockitoRule = MockitoJUnit.rule();
 
     @Mock
     private PluginTools pluginTools;
 
     private NodesPlugin nodesPlugin;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         nodesPlugin = new NodesPlugin();
         nodesPlugin.setPluginTools(pluginTools);
     }
 
-    @NamedParameters("upgradeDataProvider")
     private static Object[] upgradeDataProvider() {
         return new Object[][]{
-                {"12.0.0", LdapDecisionNode.class,
+                {"12.0.0", new Class[]{LdapDecisionNode.class,
                         PushAuthenticationSenderNode.class, CertificateValidationNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
-                        PersistentCookieDecisionNode.class, DeviceSigningVerifierNode.class, CaptchaNode.class},
-                {"11.0.0", CombinedMultiFactorRegistrationNode.class, LdapDecisionNode.class,
+                        PersistentCookieDecisionNode.class, DeviceSigningVerifierNode.class, CaptchaNode.class,
+                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class}},
+                {"11.0.0", new Class[]{CombinedMultiFactorRegistrationNode.class, LdapDecisionNode.class,
                         PushAuthenticationSenderNode.class, OneTimePasswordSmsSenderNode.class,
                         OneTimePasswordSmtpSenderNode.class, CertificateValidationNode.class,
-                        PersistentCookieDecisionNode.class, CaptchaNode.class},
-                {"10.0.0", LdapDecisionNode.class, PushAuthenticationSenderNode.class,
+                        PersistentCookieDecisionNode.class, CaptchaNode.class, WebAuthnAuthenticationNode.class,
+                        SetSessionPropertiesNode.class}},
+                {"10.0.0", new Class[]{LdapDecisionNode.class, PushAuthenticationSenderNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
-                        CertificateValidationNode.class, PersistentCookieDecisionNode.class, CaptchaNode.class},
-                {"9.0.0", LdapDecisionNode.class, Saml2Node.class, OathRegistrationNode.class,
+                        CertificateValidationNode.class, PersistentCookieDecisionNode.class, CaptchaNode.class,
+                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class}},
+                {"9.0.0", new Class[]{LdapDecisionNode.class, Saml2Node.class, OathRegistrationNode.class,
                         PushAuthenticationSenderNode.class, OneTimePasswordSmsSenderNode.class,
                         OneTimePasswordSmtpSenderNode.class, CertificateValidationNode.class,
-                        PersistentCookieDecisionNode.class, CaptchaNode.class},
-                {"8.0.0", LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
+                        PersistentCookieDecisionNode.class, CaptchaNode.class,
+                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class}},
+                {"8.0.0", new Class[]{LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class, OathRegistrationNode.class,
                         PushRegistrationNode.class, ChoiceCollectorNode.class, MessageNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
-                        CertificateValidationNode.class, PersistentCookieDecisionNode.class},
-                {"7.0.0", LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
+                        CertificateValidationNode.class, PersistentCookieDecisionNode.class,
+                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class}},
+                {"7.0.0", new Class[]{LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class, OathRegistrationNode.class,
                         PushRegistrationNode.class, ChoiceCollectorNode.class, MessageNode.class,
                         RetryLimitDecisionNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
-                        CertificateValidationNode.class, PersistentCookieDecisionNode.class},
-                {"6.0.0", LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
+                        CertificateValidationNode.class, PersistentCookieDecisionNode.class,
+                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class}},
+                {"6.0.0", new Class[]{LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class,
                         PushRegistrationNode.class, ChoiceCollectorNode.class, MessageNode.class,
                         RetryLimitDecisionNode.class, OneTimePasswordSmsSenderNode.class,
                         OneTimePasswordSmtpSenderNode.class, CertificateValidationNode.class,
-                        PersistentCookieDecisionNode.class},
-                {"5.0.0", LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
+                        PersistentCookieDecisionNode.class, WebAuthnAuthenticationNode.class,
+                        SetSessionPropertiesNode.class}},
+                {"5.0.0", new Class[]{LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class, ChoiceCollectorNode.class,
                         MessageNode.class, RetryLimitDecisionNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
                         WebAuthnAuthenticationNode.class, CertificateValidationNode.class,
-                        PersistentCookieDecisionNode.class},
-                {"4.0.0", LdapDecisionNode.class, WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class,
-                        ChoiceCollectorNode.class, MessageNode.class, RetryLimitDecisionNode.class,
-                        OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
-                        WebAuthnAuthenticationNode.class, ScriptedDecisionNode.class,
-                        PersistentCookieDecisionNode.class},
-                {"3.0.0", LdapDecisionNode.class, WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class,
-                        ChoiceCollectorNode.class, MessageNode.class, RetryLimitDecisionNode.class,
-                        OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
-                        WebAuthnAuthenticationNode.class, ScriptedDecisionNode.class,
-                        PersistentCookieDecisionNode.class},
-                {"2.0.0", LdapDecisionNode.class, PushAuthenticationSenderNode.class, ChoiceCollectorNode.class,
+                        PersistentCookieDecisionNode.class, SetSessionPropertiesNode.class}},
+                {"4.0.0", new Class[]{LdapDecisionNode.class, WebAuthnRegistrationNode.class,
+                        PushAuthenticationSenderNode.class, ChoiceCollectorNode.class, MessageNode.class,
                         RetryLimitDecisionNode.class, OneTimePasswordSmsSenderNode.class,
+                        OneTimePasswordSmtpSenderNode.class, WebAuthnAuthenticationNode.class,
+                        ScriptedDecisionNode.class, PersistentCookieDecisionNode.class,
+                        SetSessionPropertiesNode.class}},
+                {"3.0.0", new Class[]{LdapDecisionNode.class, WebAuthnRegistrationNode.class,
+                        PushAuthenticationSenderNode.class, ChoiceCollectorNode.class, MessageNode.class,
+                        RetryLimitDecisionNode.class, OneTimePasswordSmsSenderNode.class,
+                        OneTimePasswordSmtpSenderNode.class, WebAuthnAuthenticationNode.class,
+                        ScriptedDecisionNode.class, PersistentCookieDecisionNode.class,
+                        SetSessionPropertiesNode.class}},
+                {"2.0.0", new Class[]{LdapDecisionNode.class, PushAuthenticationSenderNode.class,
+                        ChoiceCollectorNode.class, RetryLimitDecisionNode.class, OneTimePasswordSmsSenderNode.class,
                         OneTimePasswordSmtpSenderNode.class, ScriptedDecisionNode.class,
-                        PersistentCookieDecisionNode.class},
-                {"1.0.0", ChoiceCollectorNode.class, ScriptedDecisionNode.class, ZeroPageLoginNode.class},
-                {"0.0.0", new Class[]{} },
+                        PersistentCookieDecisionNode.class, SetSessionPropertiesNode.class}},
+                {"1.0.0", new Class[]{ChoiceCollectorNode.class, ScriptedDecisionNode.class, ZeroPageLoginNode.class,
+                        SetSessionPropertiesNode.class}},
+                {"0.0.0", new Class[]{}},
         };
     }
 
-    @Test
-    @Parameters(named = "upgradeDataProvider")
-    public void testUpgrade(String version, Class<?>... classes) throws PluginException {
+    @ParameterizedTest
+    @MethodSource("upgradeDataProvider")
+    public void testUpgrade(String version, Class<?>[] classes) throws PluginException {
         nodesPlugin.upgrade(version);
-        Streams.stream(Arrays.stream(classes)).forEach(clas -> {
+        failableStream(Arrays.stream(classes)).forEach(clas -> {
             verify(pluginTools).upgradeAuthNode(Mockito.eq(clas));
         });
         verify(pluginTools, times(classes.length)).upgradeAuthNode(any());
     }
-
 }

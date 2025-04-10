@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2020-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -19,13 +19,14 @@ package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.nodes.DeviceProfile.DEVICE_PROFILE_CONTEXT_NAME;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,30 +38,26 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.DeviceLocationMatchNode.Config;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.JsonValueBuilder;
-
-import com.iplanet.sso.SSOException;
-import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.IdRepoException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.sun.identity.idm.AMIdentity;
+
+@ExtendWith(MockitoExtension.class)
 public class DeviceLocationMatchNodeTest {
 
-    @Mock
-    CoreWrapper coreWrapper;
 
     @Mock
-    LegacyIdentityService identityService;
+    NodeUserIdentityProvider identityProvider;
 
     @Mock
     AMIdentity amIdentity;
@@ -77,22 +74,20 @@ public class DeviceLocationMatchNodeTest {
     @InjectMocks
     DeviceLocationMatchNode node;
 
-    @BeforeMethod
-    public void setup() throws IdRepoException, SSOException, DevicePersistenceException {
-        node = null;
-        initMocks(this);
+    private void commonStubbings() throws Exception {
         given(realm.asPath()).willReturn("/");
-        given(coreWrapper.getIdentity(anyString())).willReturn(amIdentity);
         given(amIdentity.isExists()).willReturn(true);
         given(amIdentity.isActive()).willReturn(true);
         given(amIdentity.getName()).willReturn("bob");
-        given(config.distance()).willReturn("100");
     }
 
     @Test
-    public void testProcessContextWithinRange()
-            throws NodeProcessException, DevicePersistenceException {
+    void testProcessContextWithinRange()
+            throws Exception {
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
+        commonStubbings();
 
+        given(config.distance()).willReturn("100");
         JsonValue storedLocation = JsonValueBuilder.jsonValue().build();
         storedLocation.put("longitude", 49.164532);
         storedLocation.put("latitude", -123.177201);
@@ -123,9 +118,12 @@ public class DeviceLocationMatchNodeTest {
     }
 
     @Test
-    public void testProcessContextWithExactMatch()
-            throws NodeProcessException, DevicePersistenceException {
+    void testProcessContextWithExactMatch()
+            throws Exception {
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
+        commonStubbings();
 
+        given(config.distance()).willReturn("100");
         JsonValue storedLocation = JsonValueBuilder.jsonValue().build();
         storedLocation.put("longitude", 49.164532);
         storedLocation.put("latitude", -123.177201);
@@ -156,8 +154,11 @@ public class DeviceLocationMatchNodeTest {
     }
 
     @Test
-    public void testProcessContextWithOutOfRange()
-            throws NodeProcessException, DevicePersistenceException {
+    void testProcessContextWithOutOfRange()
+            throws Exception {
+        given(config.distance()).willReturn("100");
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
+        commonStubbings();
 
         //Vancouver
         JsonValue storedLocation = JsonValueBuilder.jsonValue().build();
@@ -191,8 +192,10 @@ public class DeviceLocationMatchNodeTest {
     }
 
     @Test
-    public void testProcessDeviceNotFound()
-            throws NodeProcessException, DevicePersistenceException {
+    void testProcessDeviceNotFound()
+            throws Exception {
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
+        commonStubbings();
 
         //Vancouver
         JsonValue storedLocation = JsonValueBuilder.jsonValue().build();
@@ -226,8 +229,10 @@ public class DeviceLocationMatchNodeTest {
     }
 
     @Test
-    public void testProcessLocationNotFound()
-            throws NodeProcessException, DevicePersistenceException {
+    void testProcessLocationNotFound()
+            throws Exception {
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
+        commonStubbings();
 
         //Winnipeg
         JsonValue newLocation = JsonValueBuilder.jsonValue().build();
@@ -255,7 +260,7 @@ public class DeviceLocationMatchNodeTest {
     }
 
     @Test
-    public void testProcessLocationNotInContext()
+    void testProcessLocationNotInContext()
             throws NodeProcessException {
 
         JsonValue collectedAttributes = JsonValueBuilder.jsonValue().build();
@@ -273,7 +278,7 @@ public class DeviceLocationMatchNodeTest {
     }
 
     @Test
-    public void testProcessIdentifierNotInContext()
+    void testProcessIdentifierNotInContext()
             throws NodeProcessException {
 
         JsonValue newLocation = JsonValueBuilder.jsonValue().build();
@@ -295,11 +300,10 @@ public class DeviceLocationMatchNodeTest {
     }
 
 
-    @Test(expectedExceptions = NodeProcessException.class,
-            expectedExceptionsMessageRegExp = "org.forgerock.openam.auth.node.api.NodeProcessException: "
-                    + "User does not exist or inactive")
-    public void testProcessContextNoUserInContext()
-            throws NodeProcessException {
+    @Test
+    void testProcessContextNoUserInContext() {
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.empty());
 
         JsonValue newLocation = JsonValueBuilder.jsonValue().build();
         newLocation.put("longitude", 49.164532);
@@ -316,12 +320,16 @@ public class DeviceLocationMatchNodeTest {
         JsonValue transientState = json(object());
 
         // When
-        node.process(getContext(sharedState, transientState, emptyList(), Optional.empty()));
+        assertThatThrownBy(() ->
+                node.process(getContext(sharedState, transientState, emptyList(), Optional.empty())))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("org.forgerock.openam.auth.node.api.NodeProcessException: "
+                        + "User does not exist or inactive");
 
     }
 
     @Test
-    public void testProcessMissingLongitude()
+    void testProcessMissingLongitude()
             throws NodeProcessException {
 
         //Winnipeg
@@ -343,7 +351,7 @@ public class DeviceLocationMatchNodeTest {
     }
 
     @Test
-    public void testProcessMissingLatitude()
+    void testProcessMissingLatitude()
             throws NodeProcessException {
 
         //Winnipeg
@@ -365,7 +373,7 @@ public class DeviceLocationMatchNodeTest {
     }
 
     @Test
-    public void testProcessLongitudeIsNull()
+    void testProcessLongitudeIsNull()
             throws NodeProcessException {
 
         JsonValue newLocation = JsonValueBuilder.jsonValue().build();
@@ -387,7 +395,7 @@ public class DeviceLocationMatchNodeTest {
     }
 
     @Test
-    public void testProcessLatitudeIsNull()
+    void testProcessLatitudeIsNull()
             throws NodeProcessException {
 
         JsonValue newLocation = JsonValueBuilder.jsonValue().build();
@@ -409,11 +417,11 @@ public class DeviceLocationMatchNodeTest {
     }
 
 
-
-
     @Test
-    public void testProcessStoreAttributeInvalidJson()
-            throws NodeProcessException, DevicePersistenceException {
+    void testProcessStoreAttributeInvalidJson()
+            throws Exception {
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
+        commonStubbings();
 
         //Winnipeg
         JsonValue newLocation = JsonValueBuilder.jsonValue().build();

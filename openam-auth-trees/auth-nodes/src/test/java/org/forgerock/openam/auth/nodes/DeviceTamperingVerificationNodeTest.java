@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -19,13 +19,13 @@ package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.DeviceProfile.DEVICE_PROFILE_CONTEXT_NAME;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.List;
 import java.util.Optional;
@@ -39,12 +39,13 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.DeviceTamperingVerificationNode.Config;
 import org.forgerock.openam.utils.JsonValueBuilder;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class DeviceTamperingVerificationNodeTest {
 
     @Mock
@@ -53,16 +54,10 @@ public class DeviceTamperingVerificationNodeTest {
     @InjectMocks
     DeviceTamperingVerificationNode node;
 
-    @BeforeMethod
-    public void setup() {
-        node = null;
-        initMocks(this);
-        given(config.score()).willReturn("0.5"); //min score to pass
-    }
-
     @Test
-    public void testProcessWithJailBroken()
+    void testProcessWithJailBroken()
             throws NodeProcessException {
+        given(config.score()).willReturn("0.5");
 
         JsonValue profile = JsonValueBuilder.jsonValue().build();
         JsonValue platform = JsonValueBuilder.jsonValue().build();
@@ -86,8 +81,9 @@ public class DeviceTamperingVerificationNodeTest {
     }
 
     @Test
-    public void testProcessWithNotJailBroken()
+    void testProcessWithNotJailBroken()
             throws NodeProcessException {
+        given(config.score()).willReturn("0.5");
 
         JsonValue profile = JsonValueBuilder.jsonValue().build();
         JsonValue platform = JsonValueBuilder.jsonValue().build();
@@ -111,8 +107,9 @@ public class DeviceTamperingVerificationNodeTest {
     }
 
     @Test
-    public void testProcessWithExactMatch()
+    void testProcessWithExactMatch()
             throws NodeProcessException {
+        given(config.score()).willReturn("0.5");
 
         JsonValue profile = JsonValueBuilder.jsonValue().build();
         JsonValue platform = JsonValueBuilder.jsonValue().build();
@@ -135,20 +132,22 @@ public class DeviceTamperingVerificationNodeTest {
         assertThat(result.outcome).isEqualTo("true");
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void testProcessNoProfileCollected()
+    @Test
+    void testProcessNoProfileCollected()
             throws NodeProcessException {
 
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
 
         // When
-        node.process(getContext(sharedState, transientState, emptyList()));
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
+                // Then
+                .isInstanceOf(NodeProcessException.class);
 
     }
 
     @Test
-    public void testProcessWithInvalidMetadata()
+    void testProcessWithInvalidMetadata()
             throws NodeProcessException {
 
         JsonValue profile = JsonValueBuilder.jsonValue().build();

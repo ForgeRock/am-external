@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011-2023 ForgeRock AS.
+ * Copyright 2011-2025 Ping Identity Corporation.
  *
  * The contents of this file are subject to the terms
  * of the Common Development and Distribution License
@@ -34,7 +34,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.security.AccessController;
 import java.security.Principal;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -51,8 +50,8 @@ import java.util.UUID;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.openam.session.Session;
@@ -780,7 +779,7 @@ public class Adaptive extends AMLoginModule {
             if (StringUtils.isNotEmpty(cookieValue)) {
                 debug.debug("{}.checkRegisteredClient: Found {} Cookie with value: {}", ADAPTIVE, deviceCookieName,
                         cookieValue);
-                cookieValue = AccessController.doPrivileged(new DecodeAction(cookieValue));
+                cookieValue = new DecodeAction(cookieValue).run();
                 if (StringUtils.isNotEmpty(cookieValue)) {
                     if (Fingerprints.isValid(cookieValue, sb.toString())) {
                         retVal = deviceCookieScore;
@@ -790,8 +789,8 @@ public class Adaptive extends AMLoginModule {
 
             if (deviceCookieSave) {
                 postAuthNMap.put("DEVICENAME", deviceCookieName);
-                postAuthNMap.put("DEVICEVALUE", AccessController.doPrivileged(new EncodeAction(
-                        Fingerprints.generate(sb.toString()))));
+                postAuthNMap.put("DEVICEVALUE", new EncodeAction(
+                        Fingerprints.generate(sb.toString())).run());
             }
         }
 
@@ -836,7 +835,7 @@ public class Adaptive extends AMLoginModule {
                         debug.debug("{}.checkLastLogin: Found Cookie : {}", ADAPTIVE, timeSinceLastLoginAttribute);
                     }
                     lastLoginEnc = CookieUtils.getCookieValue(cookie);
-                    lastLogin = AccessController.doPrivileged(new DecodeAction(lastLoginEnc));
+                    lastLogin = new DecodeAction(lastLoginEnc).run();
                 }
                 if (lastLogin != null) {
                     String[] tokens = lastLogin.split("\\|");
@@ -868,7 +867,7 @@ public class Adaptive extends AMLoginModule {
                 postAuthNMap.put("LOGINNAME", timeSinceLastLoginAttribute);
                 lastLogin = formatter.format(now);
                 lastLogin = UUID.randomUUID() + "|" + lastLogin + "|" + userName;
-                lastLoginEnc = AccessController.doPrivileged(new EncodeAction(lastLogin));
+                lastLoginEnc = new EncodeAction(lastLogin).run();
                 postAuthNMap.put("LOGINVALUE", lastLoginEnc);
             }
         }

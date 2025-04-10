@@ -11,16 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
-import static java.util.Arrays.asList;
-
+import java.util.List;
 import java.util.Map;
 
 import org.forgerock.openam.auth.node.api.AbstractNodeAmPlugin;
 import org.forgerock.openam.auth.node.api.Node;
+import org.forgerock.openam.auth.nodes.amster.AmsterJwtDecisionNode;
 import org.forgerock.openam.auth.nodes.mfa.CombinedMultiFactorRegistrationNode;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorRegistrationOptionsNode;
 import org.forgerock.openam.auth.nodes.mfa.OptOutMultiFactorAuthenticationNode;
@@ -41,7 +49,6 @@ import org.forgerock.openam.auth.nodes.x509.CertificateCollectorNode;
 import org.forgerock.openam.auth.nodes.x509.CertificateUserExtractorNode;
 import org.forgerock.openam.auth.nodes.x509.CertificateValidationNode;
 import org.forgerock.openam.plugins.PluginException;
-import org.forgerock.openam.plugins.VersionComparison;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -55,7 +62,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
      * N.B. If upgrading this version you must ensure that the amPluginService version in the latest.groovy
      * FBC upgrade rules file is kept in sync.
      */
-    public static final String NODES_PLUGIN_VERSION = "21.0.0";
+    public static final String NODES_PLUGIN_VERSION = "32.0.0";
 
     @Override
     public String getPluginVersion() {
@@ -66,7 +73,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
     public void upgrade(String fromVersion) throws PluginException {
         if (fromVersion.equals("1.0.0")) {
             pluginTools.upgradeAuthNode(ZeroPageLoginNode.class);
-        } else if (inRangeLess("3.0.0", fromVersion, "6.0.0")) {
+        } else if (inRangeLess("3.0.0", fromVersion, "24.0.0")) {
             pluginTools.upgradeAuthNode(WebAuthnAuthenticationNode.class);
         }
         if (inRangeLess("1.0.0", fromVersion, "5.0.0")) {
@@ -121,23 +128,16 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
         if (inRange("8.2.0", fromVersion, "21.0.0")) {
             pluginTools.upgradeAuthNode(CaptchaNode.class);
         }
+        if (inRange("1.0.0", fromVersion, "29.0.0")) {
+            pluginTools.upgradeAuthNode(SetSessionPropertiesNode.class);
+        }
         super.upgrade(fromVersion);
-    }
-
-    private boolean inRangeLess(String minVersion, String version, String maxVersion) {
-        return VersionComparison.compareVersionStrings(minVersion, version) >= 0
-                && VersionComparison.compareVersionStrings(maxVersion, version) < 0;
-    }
-
-    private boolean inRange(String minVersion, String version, String maxVersion) {
-        return VersionComparison.compareVersionStrings(minVersion, version) >= 0
-                && VersionComparison.compareVersionStrings(maxVersion, version) <= 0;
     }
 
     @Override
     protected Map<String, Iterable<? extends Class<? extends Node>>> getNodesByVersion() {
         return new ImmutableMap.Builder<String, Iterable<? extends Class<? extends Node>>>()
-                .put("1.0.0", asList(
+                .put("1.0.0", List.of(
                         ChoiceCollectorNode.class,
                         AuthLevelDecisionNode.class,
                         DataStoreDecisionNode.class,
@@ -148,7 +148,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                         UsernameCollectorNode.class,
                         ZeroPageLoginNode.class)
                 )
-                .put("2.0.0", asList(
+                .put("2.0.0", List.of(
                         AccountLockoutNode.class,
                         AnonymousUserNode.class,
                         LdapDecisionNode.class,
@@ -173,7 +173,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                         TimerStartNode.class,
                         TimerStopNode.class)
                 )
-                .put("3.0.0", asList(
+                .put("3.0.0", List.of(
                         AgentDataStoreDecisionNode.class,
                         CookiePresenceDecisionNode.class,
                         MessageNode.class,
@@ -181,11 +181,11 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                         WebAuthnAuthenticationNode.class,
                         RecoveryCodeDisplayNode.class)
                 )
-                .put("4.0.0", asList(
+                .put("4.0.0", List.of(
                         MetadataNode.class,
                         SocialOpenIdConnectNode.class)
                 )
-                .put("5.0.0", asList(
+                .put("5.0.0", List.of(
                         AccountActiveDecisionNode.class,
                         KerberosNode.class,
                         ReCaptchaNode.class,
@@ -203,50 +203,39 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
                         CertificateUserExtractorNode.class,
                         CertificateValidationNode.class)
                 )
-                .put("6.0.0", asList(
+                .put("6.0.0", List.of(
                         PushRegistrationNode.class,
                         OptOutMultiFactorAuthenticationNode.class,
                         GetAuthenticatorAppNode.class,
                         MultiFactorRegistrationOptionsNode.class)
                 )
-                .put("7.0.0", asList(
+                .put("7.0.0", List.of(
                         OathRegistrationNode.class,
                         OathTokenVerifierNode.class)
                 )
-                .put("8.2.0", asList(
-                        CaptchaNode.class)
-                )
-                .put("8.3.0", asList(
-                        DebugNode.class)
-                )
-                .put("8.4.0", asList(
-                        SetCustomCookieNode.class)
-                )
-                .put("8.5.0", asList(
-                        PushWaitNode.class)
-                )
-                .put("10.0.0", asList(
-                        OathDeviceStorageNode.class)
-                )
-                .put("10.1.0", asList(
-                        CombinedMultiFactorRegistrationNode.class)
-                )
-                .put("11.0.0", asList(
-                        OidcNode.class
-                ))
-                .put("11.1.0", asList(
+                .put("8.2.0", List.of(CaptchaNode.class))
+                .put("8.3.0", List.of(DebugNode.class))
+                .put("8.4.0", List.of(SetCustomCookieNode.class))
+                .put("8.5.0", List.of(PushWaitNode.class))
+                .put("10.0.0", List.of(OathDeviceStorageNode.class))
+                .put("10.1.0", List.of(CombinedMultiFactorRegistrationNode.class))
+                .put("11.0.0", List.of(OidcNode.class))
+                .put("11.1.0", List.of(
                         DeviceBindingNode.class,
                         DeviceSigningVerifierNode.class
                 ))
-                .put("12.0.0", asList(
-                        QueryParameterNode.class)
-                )
-                .put("13.0.0", asList(
-                        DeviceBindingStorageNode.class
-                ))
-                .put("19.0.0", asList(
-                        RequestHeaderNode.class
-                ))
+                .put("12.0.0", List.of(QueryParameterNode.class))
+                .put("13.0.0", List.of(DeviceBindingStorageNode.class))
+                .put("19.0.0", List.of(RequestHeaderNode.class))
+                .put("22.0.0", List.of(EnableDeviceManagementNode.class))
+                .put("23.0.0", List.of(SetStateNode.class))
+                .put("25.0.0", List.of(SetFailureDetailsNode.class))
+                .put("26.0.0", List.of(CaptchaEnterpriseNode.class))
+                .put("27.0.0", List.of(SetSuccessDetailsNode.class))
+                .put("28.0.0", List.of(FlowControlNode.class))
+                .put("30.0.0", List.of(UpdateJourneyTimeoutNode.class))
+                .put("31.0.0", List.of(AmsterJwtDecisionNode.class))
+                .put("32.0.0", List.of(SetErrorDetailsNode.class))
                 .build();
     }
 }

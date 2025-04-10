@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
@@ -21,7 +29,6 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.MFA_METHOD;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -37,6 +44,7 @@ import javax.security.auth.callback.TextOutputCallback;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
@@ -306,7 +314,7 @@ public class MultiFactorRegistrationOptionsNode implements Node {
     /**
      * Provides the push registration node's set of outcomes.
      */
-    public static final class OutcomeProvider implements org.forgerock.openam.auth.node.api.OutcomeProvider {
+    public static final class OutcomeProvider implements BoundedOutcomeProvider {
         /**
          * Outcomes Ids for this node.
          */
@@ -317,29 +325,30 @@ public class MultiFactorRegistrationOptionsNode implements Node {
 
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+
+            return getAllOutcomes(locales).stream()
+                           .filter(outcome -> {
+                               if (GET_APP_OUTCOME.equals(outcome.id)) {
+                                   return nodeAttributes.isNull()
+                                                  || nodeAttributes.get("getApp").required().asBoolean();
+                               }
+                               if (SKIP_OUTCOME.equals(outcome.id) || OPT_OUT_OUTCOME.equals(outcome.id)) {
+                                   return nodeAttributes.isNull()
+                                                  || !nodeAttributes.get("mandatory").required().asBoolean();
+                               }
+                               return true;
+                           }).toList();
+        }
+
+        @Override
+        public List<Outcome> getAllOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE, OutcomeProvider.class.getClassLoader());
-
-            List<Outcome> results = new ArrayList<>(
-                    Arrays.asList(
-                            new Outcome(REGISTER_OUTCOME, bundle.getString(REGISTER_OUTCOME))
-                    )
+            return List.of(
+                    new Outcome(REGISTER_OUTCOME, bundle.getString(REGISTER_OUTCOME)),
+                    new Outcome(GET_APP_OUTCOME, bundle.getString(GET_APP_OUTCOME)),
+                    new Outcome(SKIP_OUTCOME, bundle.getString(SKIP_OUTCOME)),
+                    new Outcome(OPT_OUT_OUTCOME, bundle.getString(OPT_OUT_OUTCOME))
             );
-
-            if (nodeAttributes.isNotNull()) {
-                if (nodeAttributes.get("getApp").required().asBoolean()) {
-                    results.add(new Outcome(GET_APP_OUTCOME, bundle.getString(GET_APP_OUTCOME)));
-                }
-                if (!nodeAttributes.get("mandatory").required().asBoolean()) {
-                    results.add(new Outcome(SKIP_OUTCOME, bundle.getString(SKIP_OUTCOME)));
-                    results.add(new Outcome(OPT_OUT_OUTCOME, bundle.getString(OPT_OUT_OUTCOME)));
-                }
-            } else {
-                results.add(new Outcome(GET_APP_OUTCOME, bundle.getString(GET_APP_OUTCOME)));
-                results.add(new Outcome(SKIP_OUTCOME, bundle.getString(SKIP_OUTCOME)));
-                results.add(new Outcome(OPT_OUT_OUTCOME, bundle.getString(OPT_OUT_OUTCOME)));
-            }
-
-            return Collections.unmodifiableList(results);
         }
     }
 

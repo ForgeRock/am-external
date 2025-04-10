@@ -11,10 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.test.assertj.AssertJJsonValueAssert.assertThat;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD;
 import static org.forgerock.openam.auth.nodes.TreeContextFactory.emptyTreeContext;
@@ -24,40 +33,32 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.authentication.modules.hotp.HOTPAlgorithm;
 
+@ExtendWith(MockitoExtension.class)
 public class OneTimePasswordGeneratorNodeTest {
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-
-    private ArgumentMatcher<byte[]> anyByteArrayMatcher = bytes -> true;
-
     @Mock
     OneTimePasswordGeneratorNode.Config serviceConfig;
-
     HOTPAlgorithm otpGenerator = new HOTPAlgorithm();
-
-    @BeforeMethod
-    public void before() throws InvalidKeyException, NoSuchAlgorithmException {
-        initMocks(this);
-    }
+    private final ArgumentMatcher<byte[]> anyByteArrayMatcher = bytes -> true;
 
     @Test
-    public void shouldGenerateOneTimePassword() throws Exception {
+    void shouldGenerateOneTimePassword() throws Exception {
         int otpSize = 7;
         given(serviceConfig.length()).willReturn(otpSize);
         OneTimePasswordGeneratorNode node = new OneTimePasswordGeneratorNode(serviceConfig, SECURE_RANDOM,
@@ -67,7 +68,7 @@ public class OneTimePasswordGeneratorNodeTest {
     }
 
     @Test
-    public void shouldGenerateOneTimePasswordOfLengthOne() throws Exception {
+    void shouldGenerateOneTimePasswordOfLengthOne() throws Exception {
         int otpSize = 1;
         given(serviceConfig.length()).willReturn(otpSize);
         OneTimePasswordGeneratorNode node = new OneTimePasswordGeneratorNode(serviceConfig, SECURE_RANDOM,
@@ -77,8 +78,8 @@ public class OneTimePasswordGeneratorNodeTest {
     }
 
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowWhenOTPGenerationFails() throws Exception {
+    @Test
+    void shouldThrowWhenOTPGenerationFails() throws Exception {
         int otpSize = 8;
         given(serviceConfig.length()).willReturn(otpSize);
         HOTPAlgorithm errorGenerator = mock(HOTPAlgorithm.class);
@@ -90,7 +91,8 @@ public class OneTimePasswordGeneratorNodeTest {
                 anyInt())).thenThrow(InvalidKeyException.class);
         OneTimePasswordGeneratorNode node = new OneTimePasswordGeneratorNode(serviceConfig, SECURE_RANDOM,
                 errorGenerator);
-        Action result = node.process(emptyTreeContext());
-        assertThat(result.transientState).stringAt(ONE_TIME_PASSWORD).hasSize(otpSize);
+        assertThatThrownBy(() -> node.process(emptyTreeContext()))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("java.security.InvalidKeyException");
     }
 }

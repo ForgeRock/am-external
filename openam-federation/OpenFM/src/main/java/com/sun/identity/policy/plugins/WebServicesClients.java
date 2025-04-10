@@ -24,7 +24,7 @@
  *
  * $Id: WebServicesClients.java,v 1.7 2009/06/09 00:41:37 madan_ranganath Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.policy.plugins;

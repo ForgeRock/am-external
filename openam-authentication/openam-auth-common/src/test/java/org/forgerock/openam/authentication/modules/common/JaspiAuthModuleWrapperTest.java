@@ -11,12 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2013-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.common;
 
-import static org.mockito.BDDMockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.mock;
@@ -26,27 +35,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.security.auth.callback.CallbackHandler;
-import javax.security.auth.message.MessagePolicy;
 import javax.security.auth.message.module.ServerAuthModule;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import org.mockito.ArgumentMatchers;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class JaspiAuthModuleWrapperTest {
 
     private ServerAuthModule serverAuthModule;
     private JaspiAuthModuleWrapper<ServerAuthModule> jaspiAuthWrapper;
 
-    @BeforeMethod
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
 
         AMLoginModuleBinder amLoginModuleBinder = mock(AMLoginModuleBinder.class);
         serverAuthModule = mock(ServerAuthModule.class);
 
-        jaspiAuthWrapper = new JaspiAuthModuleWrapper<ServerAuthModule>(serverAuthModule) {};
+        jaspiAuthWrapper = new JaspiAuthModuleWrapper<>(serverAuthModule) {
+        };
 
         HttpServletRequest request = mock(HttpServletRequest.class);
         HttpServletResponse response = mock(HttpServletResponse.class);
@@ -55,7 +63,7 @@ public class JaspiAuthModuleWrapperTest {
     }
 
     @Test
-    public void shouldInitialiseAuthenticationModule() throws Exception {
+    void shouldInitialiseAuthenticationModule() throws Exception {
 
         //Given
         CallbackHandler callbackHandler = mock(CallbackHandler.class);
@@ -65,7 +73,7 @@ public class JaspiAuthModuleWrapperTest {
         jaspiAuthWrapper.initialize(callbackHandler, config);
 
         //Then
-        verify(serverAuthModule).initialize(ArgumentMatchers.<MessagePolicy>anyObject(), (MessagePolicy) isNull(),
+        verify(serverAuthModule).initialize(any(), isNull(),
                 eq(callbackHandler), eq(config));
     }
 }

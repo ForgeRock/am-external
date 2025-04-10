@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2;
 
@@ -23,7 +31,6 @@ import static org.forgerock.openam.saml2.UtilProxySAMLAuthenticatorLookup.SAML_2
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doCallRealMethod;
 
 import java.net.URLEncoder;
@@ -32,6 +39,9 @@ import java.util.Date;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import com.iplanet.am.util.SystemPropertiesWrapper;
+import org.forgerock.guice.core.GuiceBind;
+import org.forgerock.guice.core.GuiceExtension;
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.jwe.CompressionAlgorithm;
 import org.forgerock.json.jose.jwe.EncryptedJwt;
@@ -50,34 +60,42 @@ import org.forgerock.secrets.keys.DataDecryptionKey;
 import org.forgerock.secrets.keys.DataEncryptionKey;
 import org.forgerock.util.promise.Promise;
 import org.forgerock.util.promise.Promises;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
 import com.sun.identity.saml2.assertion.impl.AuthnContextImpl;
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.protocol.AuthnRequest;
 import com.sun.identity.saml2.protocol.impl.AuthnRequestImpl;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-
+@ExtendWith({MockitoExtension.class, GuiceExtension.class})
 public class UtilProxySAMLAuthenticatorTest {
+
+    @Mock
+    @GuiceBind(SystemPropertiesWrapper.class)
+    SystemPropertiesWrapper systemPropertiesWrapper;
+
+    @Mock
+    private SecretsProviderFacade secretsProviderFacade;
+    @Mock
+    private UtilProxySAMLAuthenticatorLookup utilProxySAMLAuthenticatorLookup;
 
     private static final String IDP_ENTITY_ID = "idp.localtest.me";
     private static final String NON_URI_ENTITY_ID = "Custom IDP : Non URI";
     private static final String KID = "testKey";
     private final SecretKeySpec key = new SecretKeySpec(new byte[32], "AES");
-
-    private SecretsProviderFacade secretsProviderFacade;
-    private UtilProxySAMLAuthenticatorLookup utilProxySAMLAuthenticatorLookup;
     private Promise<DataEncryptionKey, NoSuchSecretException> encryptionPromise;
     private Promise<DataDecryptionKey, NoSuchSecretException> decryptionPromise;
     private JwtEncryptionOptions jwtEncryptionOptions;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        secretsProviderFacade = mock(SecretsProviderFacade.class);
-        utilProxySAMLAuthenticatorLookup = mock(UtilProxySAMLAuthenticatorLookup.class);
+
+    @BeforeEach
+    void setUp() throws Exception {
         encryptionPromise = getEncryptionPromise();
         decryptionPromise = getDecryptionPromise();
         jwtEncryptionOptions = new JwtEncryptionOptions(
@@ -85,17 +103,13 @@ public class UtilProxySAMLAuthenticatorTest {
                 JweAlgorithm.DIRECT, EncryptionMethod.A256GCM, CompressionAlgorithm.DEF);
     }
 
-    @DataProvider
-    Object[][] idpEntityIds() {
-        return new Object[][] {
-                { IDP_ENTITY_ID },
-                { "'A normal IDP description'" },
-                { "'" + NON_URI_ENTITY_ID + "'" },
-                { "'https://idp.example,.com/IDP'" }
-        };
-    }
-
-    @Test(dataProvider = "idpEntityIds")
+    @ParameterizedTest
+    @CsvSource({
+            "'" + IDP_ENTITY_ID + "'",
+            "'A normal IDP description'",
+            "'" + NON_URI_ENTITY_ID + "'",
+            "'https://idp.example,.com/IDP'"
+    })
     public void shouldCreateEncryptedJwtForSamlAuthnRequest(String idpEntityID) throws Exception {
         IDPSSOFederateRequest idpSsoRequest = createIdpSsoRequest(idpEntityID);
         UtilProxySAMLAuthenticator utilProxySAMLAuthenticator = new UtilProxySAMLAuthenticator(idpSsoRequest, null,
@@ -103,10 +117,6 @@ public class UtilProxySAMLAuthenticatorTest {
 
         given(secretsProviderFacade.getActiveSecret(SAML_2_LOCAL_STORAGE_JWT_ENCRYPTION)).willReturn(
                 encryptionPromise);
-        given(secretsProviderFacade.getNamedSecret(SAML_2_LOCAL_STORAGE_JWT_ENCRYPTION, KID)).willReturn(
-                encryptionPromise);
-        given(secretsProviderFacade.getActiveSecret(SAML_2_LOCAL_STORAGE_JWT_DECRYPTION)).willReturn(
-                decryptionPromise);
         given(secretsProviderFacade.getNamedSecret(SAML_2_LOCAL_STORAGE_JWT_DECRYPTION, KID)).willReturn(
                 decryptionPromise);
         doCallRealMethod().when(utilProxySAMLAuthenticatorLookup).validateSaml2RequestJwt(eq(idpSsoRequest), any(JwtClaimsSet.class));

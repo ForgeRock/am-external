@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.amster;
@@ -40,8 +48,9 @@ import java.security.interfaces.ECPrivateKey;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -61,38 +70,40 @@ import org.forgerock.json.jose.jws.handlers.SigningHandler;
 import org.forgerock.json.jose.jwt.Algorithm;
 import org.forgerock.util.Pair;
 import org.forgerock.util.SignatureUtil;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.KeyPair;
 
+@ExtendWith({MockitoExtension.class})
 public class AuthorizedKeysTest {
     private static final Provider BC_PROVIDER = new BouncyCastleProvider();
     private static final JSch JSCH = new JSch();
     private static final Pattern SSH_KEY_PATTERN = Pattern.compile("(AAAA[A-Za-z0-9+/=]+)");
-
+    private static final Mutable<Pair<PrivateKey, KeyPair>> rsaKeyPair = new MutableObject<>();
+    private static final Mutable<Pair<PrivateKey, KeyPair>> ec256KeyPair = new MutableObject<>();
+    private static final Mutable<Pair<PrivateKey, KeyPair>> ec384KeyPair = new MutableObject<>();
+    private static final Mutable<Pair<PrivateKey, KeyPair>> ec521KeyPair = new MutableObject<>();
+    private static final Mutable<Pair<PrivateKey, KeyPair>> dsaKeyPair = new MutableObject<>();
+    private static final Mutable<SigningHandler> rsa = new MutableObject<>();
+    private static final Mutable<SigningHandler> ec256 = new MutableObject<>();
+    private static final Mutable<SigningHandler> ec384 = new MutableObject<>();
+    private static final Mutable<SigningHandler> ec521 = new MutableObject<>();
     @Mock
     private Logger debug;
-    private Mutable<Pair<PrivateKey, KeyPair>> rsaKeyPair = new MutableObject<>();
-    private Mutable<Pair<PrivateKey, KeyPair>> ec256KeyPair = new MutableObject<>();
-    private Mutable<Pair<PrivateKey, KeyPair>> ec384KeyPair = new MutableObject<>();
-    private Mutable<Pair<PrivateKey, KeyPair>> ec521KeyPair = new MutableObject<>();
-    private Mutable<Pair<PrivateKey, KeyPair>> dsaKeyPair = new MutableObject<>();
-    private Mutable<SigningHandler> rsa = new MutableObject<>();
-    private Mutable<SigningHandler> ec256 = new MutableObject<>();
-    private Mutable<SigningHandler> ec384 = new MutableObject<>();
-    private Mutable<SigningHandler> ec521 = new MutableObject<>();
 
-    @BeforeClass
-    public void classSetup() throws Exception {
+    @BeforeAll
+    static void classSetup() throws Exception {
         Security.addProvider(BC_PROVIDER);
         rsaKeyPair.setValue(generateKeyPair(KeyPair.RSA, 2048));
         ec256KeyPair.setValue(generateKeyPair(KeyPair.ECDSA, 256));
@@ -105,18 +116,34 @@ public class AuthorizedKeysTest {
         ec521.setValue(new ECDSASigningHandler((ECPrivateKey) ec521KeyPair.getValue().getFirst()));
     }
 
-    @AfterClass
-    public void removeProvider() {
+    @AfterAll
+    static void removeProvider() {
         Security.removeProvider(BC_PROVIDER.getName());
     }
 
-    @BeforeMethod
-    public void setup() throws Exception {
-        MockitoAnnotations.initMocks(this);
+    private static Stream<Arguments> algorithms() {
+        return Stream.of(
+                Arguments.of(rsaKeyPair, rsa, JwsAlgorithm.RS256),
+                Arguments.of(ec256KeyPair, ec256, JwsAlgorithm.ES256),
+                Arguments.of(ec384KeyPair, ec384, JwsAlgorithm.ES384),
+                Arguments.of(ec521KeyPair, ec521, JwsAlgorithm.ES512)
+        );
+    }
+
+    static Pair<PrivateKey, KeyPair> generateKeyPair(int type, int size) throws Exception {
+        KeyPair keyPair = KeyPair.genKeyPair(JSCH, type, size);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        keyPair.writePrivateKey(baos);
+        Reader keyReader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
+        PEMKeyPair key = (PEMKeyPair) new PEMParser(keyReader).readObject();
+        PrivateKey privateKey = new JcaPEMKeyConverter().getPrivateKey(key.getPrivateKeyInfo());
+
+        return Pair.of(privateKey, keyPair);
     }
 
     @Test
-    public void shouldReadAnEmptyStream() throws Exception {
+    void shouldReadAnEmptyStream() throws Exception {
         // Given
         InputStream stream = new ByteArrayInputStream(new byte[0]);
 
@@ -129,7 +156,7 @@ public class AuthorizedKeysTest {
     }
 
     @Test
-    public void shouldWarnAboutInvalidKeys() throws Exception {
+    void shouldWarnAboutInvalidKeys() throws Exception {
         // Given
         InputStream stream = new ByteArrayInputStream("ssh-rsa AAAAAwnotarealkey===\n".getBytes());
 
@@ -145,7 +172,7 @@ public class AuthorizedKeysTest {
     }
 
     @Test
-    public void initShouldReadAuthorizedKeys() throws Exception {
+    void initShouldReadAuthorizedKeys() throws Exception {
         // Given
         InputStream stream = new ByteArrayInputStream(makeAuthorizedKeys());
 
@@ -159,17 +186,8 @@ public class AuthorizedKeysTest {
         assertThat(result).hasSize(4);
     }
 
-    @DataProvider
-    public Object[][] algorithms() {
-        return new Object[][] {
-                { rsaKeyPair, rsa, JwsAlgorithm.RS256 },
-                { ec256KeyPair, ec256, JwsAlgorithm.ES256 },
-                { ec384KeyPair, ec384, JwsAlgorithm.ES384 },
-                { ec521KeyPair, ec521, JwsAlgorithm.ES512 },
-        };
-    }
-
-    @Test(dataProvider = "algorithms")
+    @ParameterizedTest
+    @MethodSource("algorithms")
     public void shouldSetupCorrectSigningHandlerForAlgorithm(Mutable<Pair<PrivateKey, KeyPair>> keys,
             Mutable<SigningHandler> privateKeySigningHandler, Algorithm alg) throws Exception {
         // Given
@@ -207,23 +225,11 @@ public class AuthorizedKeysTest {
 
     private byte[] makeAuthorizedKeys() throws Exception {
         return concatenate(concatenate(
-                authorizedKeysLineFor(rsaKeyPair.getValue().getSecond(), "RSA"),
-                authorizedKeysLineFor(ec256KeyPair.getValue().getSecond(), "ECDSA"),
-                authorizedKeysLineFor(ec384KeyPair.getValue().getSecond(), "ECDSA"),
-                authorizedKeysLineFor(ec521KeyPair.getValue().getSecond(), "ECDSA")),
+                        authorizedKeysLineFor(rsaKeyPair.getValue().getSecond(), "RSA"),
+                        authorizedKeysLineFor(ec256KeyPair.getValue().getSecond(), "ECDSA"),
+                        authorizedKeysLineFor(ec384KeyPair.getValue().getSecond(), "ECDSA"),
+                        authorizedKeysLineFor(ec521KeyPair.getValue().getSecond(), "ECDSA")),
                 authorizedKeysLineFor(dsaKeyPair.getValue().getSecond(), "DSA"));
-    }
-
-    static Pair<PrivateKey, KeyPair> generateKeyPair(int type, int size) throws Exception {
-        KeyPair keyPair = KeyPair.genKeyPair(JSCH, type, size);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        keyPair.writePrivateKey(baos);
-        Reader keyReader = new InputStreamReader(new ByteArrayInputStream(baos.toByteArray()));
-        PEMKeyPair key = (PEMKeyPair) new PEMParser(keyReader).readObject();
-        PrivateKey privateKey = new JcaPEMKeyConverter().getPrivateKey(key.getPrivateKeyInfo());
-
-        return Pair.of(privateKey, keyPair);
     }
 
 

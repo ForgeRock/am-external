@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml.assertion;
 
@@ -20,42 +28,37 @@ import static com.sun.identity.saml.common.SAMLConstants.TAG_ASSERTION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import java.util.stream.Stream;
-
-import org.forgerock.guice.core.GuiceModules;
-import org.forgerock.guice.core.GuiceTestCase;
-import org.forgerock.guice.core.InjectorConfiguration;
+import org.forgerock.guice.core.GuiceExtension;
 import org.forgerock.openam.audit.AuditEventPublisher;
-import org.forgerock.openam.federation.guice.FederationGuiceModule;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.google.inject.AbstractModule;
 import com.sun.identity.saml.xmlsig.AMSignatureProvider;
 import com.sun.identity.saml.xmlsig.JKSKeyProvider;
 import com.sun.identity.saml.xmlsig.SignatureProvider;
 
-@GuiceModules(AssertionSigningTest.TestGuiceModule.class)
-public class AssertionSigningTest extends GuiceTestCase {
+public class AssertionSigningTest {
+
+    @RegisterExtension
+    GuiceExtension guiceExtension = new GuiceExtension.Builder()
+        .installModule(new TestGuiceModule())
+        .build();
 
     private static AMSignatureProvider signatureProvider;
 
-    @BeforeClass
-    public void setup() {
-        signatureProvider = new AMSignatureProvider();
-        signatureProvider.initialize(new JKSKeyProvider());
-    }
-
     @Test
-    public void testAssertionSigning() throws Exception {
+    void testAssertionSigning() throws Exception {
         assertThat(signatureProvider.verifyXMLSignature(getSignedWSFedAssertionXml(),
-                TAG_ASSERTION_ID, "defaultkey")).isTrue();
+            TAG_ASSERTION_ID, "defaultkey")).isTrue();
     }
 
     public static class TestGuiceModule extends AbstractModule {
 
         @Override
         protected void configure() {
+            signatureProvider = new AMSignatureProvider();
+            signatureProvider.initialize(new JKSKeyProvider());
             bind(AuditEventPublisher.class).toInstance(mock(AuditEventPublisher.class));
             bind(SignatureProvider.class).toInstance(signatureProvider);
         }

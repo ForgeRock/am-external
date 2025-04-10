@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -48,19 +56,22 @@ import org.forgerock.secrets.GenericSecret;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.SecretReference;
 import org.forgerock.util.promise.Promise;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.sun.identity.authentication.callbacks.ReCaptchaCallback;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class CaptchaNodeTest {
 
     @Mock
@@ -91,8 +102,8 @@ public class CaptchaNodeTest {
     @Mock
     private SecretCache realmCache;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
 
         when(config.siteKey()).thenReturn(SITE_KEY);
         when(config.captchaUri()).thenReturn("https://www.google.com/recaptcha/api/siteverify");
@@ -103,7 +114,7 @@ public class CaptchaNodeTest {
     }
 
     @Test
-    public void shouldReturnSiteKeyDuringFirstPass() throws Exception {
+    void shouldReturnSiteKeyDuringFirstPass() throws Exception {
         Action result = node.process(emptyTreeContext());
 
         assertThat(result.callbacks.size()).isEqualTo(1);
@@ -113,7 +124,7 @@ public class CaptchaNodeTest {
     }
 
     @Test
-    public void shouldThrowExceptionIfNoResponseProvided() throws Exception {
+    void shouldThrowExceptionIfNoResponseProvided() throws Exception {
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
         TreeContext context = new TreeContext(json(object()),
@@ -123,7 +134,7 @@ public class CaptchaNodeTest {
     }
 
     @Test
-    public void shouldThrowExceptionIfResponseCannotBeVerified() throws Exception {
+    void shouldThrowExceptionIfResponseCannotBeVerified() throws Exception {
         when(config.secretKey()).thenReturn(Optional.of("my-secret-key"));
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
@@ -139,7 +150,7 @@ public class CaptchaNodeTest {
     }
 
     @Test
-    public void shouldGoToFailOutcomeIfResponseContainsFailure() throws Exception {
+    void shouldGoToFailOutcomeIfResponseContainsFailure() throws Exception {
         when(config.secretKey()).thenReturn(Optional.of("my-secret-key"));
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
@@ -158,7 +169,7 @@ public class CaptchaNodeTest {
     }
 
     @Test
-    public void shouldGoToTrueOutcomeIfResponseContainsSuccessAndMeetsScoreThreshold() throws Exception {
+    void shouldGoToTrueOutcomeIfResponseContainsSuccessAndMeetsScoreThreshold() throws Exception {
         when(config.secretKey()).thenReturn(Optional.of("my-secret-key"));
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
@@ -178,7 +189,7 @@ public class CaptchaNodeTest {
     }
 
     @Test
-    public void shouldGoToFalseOutcomeIfResponseDoesNotMeetThreshold() throws Exception {
+    void shouldGoToFalseOutcomeIfResponseDoesNotMeetThreshold() throws Exception {
         when(config.secretKey()).thenReturn(Optional.of("my-secret-key"));
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);
@@ -198,7 +209,7 @@ public class CaptchaNodeTest {
     }
 
     @Test
-    public void shouldUseLabelWhenSecretKeyAndSecretLabelAreBothSet() throws Exception {
+    void shouldUseLabelWhenSecretKeyAndSecretLabelAreBothSet() throws Exception {
         var purpose = Purpose.purpose("am.authentication.nodes.captcha.banana.secret", GenericSecret.class);
         when(config.secretKeyPurpose()).thenReturn(Optional.of(purpose));
         when(secretReferenceCache.realm(realm)).thenReturn(realmCache);
@@ -223,7 +234,7 @@ public class CaptchaNodeTest {
     }
 
     @Test
-    public void shouldUseSecretKeyWhenNoSecretLabelIsSet() throws Exception {
+    void shouldUseSecretKeyWhenNoSecretLabelIsSet() throws Exception {
 
         // Given
         when(config.secretKey()).thenReturn(Optional.of("secret-key"));
@@ -248,7 +259,7 @@ public class CaptchaNodeTest {
     }
 
     @Test
-    public void shouldThrowExceptionIfNoSecretKeyOrSecretLabelIsSet() {
+    void shouldThrowExceptionIfNoSecretKeyOrSecretLabelIsSet() {
         // Given
         ReCaptchaCallback callback = new ReCaptchaCallback(SITE_KEY, API_URI, DIV_CLASS, RECAPTCHA_V3,
                 DISABLE_SUBMISSIONS);

@@ -11,15 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oidc;
 
 import static java.util.Collections.singletonList;
 import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.WILDCARD;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertHeadersToModifiableObjects;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getSessionProperties;
 import static org.forgerock.openam.social.idp.SocialIdPScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION;
 import static org.forgerock.openam.social.idp.SocialIdPScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME;
 import static org.forgerock.openam.utils.StringUtils.isBlank;
@@ -28,8 +34,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.inject.Provider;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jws.SignedJwt;
@@ -37,6 +42,7 @@ import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.AuthScriptUtilities;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
@@ -46,15 +52,15 @@ import org.forgerock.openam.auth.nodes.script.OidcNodeBindings;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.oauth2.OAuth2Constants;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluator.ScriptResult;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
 import org.forgerock.openam.secrets.cache.SecretReferenceCache;
 import org.forgerock.openam.sm.annotations.adapters.ExampleValue;
 import org.forgerock.openam.sm.annotations.adapters.SecretPurpose;
-import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.secrets.GenericSecret;
 import org.forgerock.secrets.Purpose;
 import org.forgerock.secrets.SecretReference;
@@ -64,7 +70,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
-import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.sm.RequiredValueValidator;
 
@@ -84,8 +89,8 @@ public class OidcNode extends AbstractDecisionNode {
     private final OidcIdTokenJwtHandler jwtHandler;
     private final OidcNode.Config config;
     private final Realm realm;
-    private final ScriptEvaluator scriptEvaluator;
-    private final Provider<SessionService> sessionServiceProvider;
+    private final ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
+    private final AuthScriptUtilities authScriptUtils;
 
 
     /**
@@ -93,10 +98,10 @@ public class OidcNode extends AbstractDecisionNode {
      *
      * @param config                       Config for the node
      * @param realm                        Realm for the node
-     * @param sessionServiceProvider       provides Sessions.
      * @param oidcIdTokenJwtHandlerFactory Factory for producing OidcIdTokenJwtHandler
      * @param scriptEvaluatorFactory       Factory for the scriptEvaluator
      * @param secretReferenceCache         The secret reference cache
+     * @param authScriptUtils              Utilities for scripted nodes
      * @throws NodeProcessException when an error occurs while processing the node
      */
     @Inject
@@ -104,11 +109,10 @@ public class OidcNode extends AbstractDecisionNode {
             @Assisted Realm realm,
             OidcIdTokenJwtHandlerFactory oidcIdTokenJwtHandlerFactory,
             ScriptEvaluatorFactory scriptEvaluatorFactory,
-            Provider<SessionService> sessionServiceProvider,
-            SecretReferenceCache secretReferenceCache) throws NodeProcessException {
+            SecretReferenceCache secretReferenceCache, AuthScriptUtilities authScriptUtils)
+            throws NodeProcessException {
         this.config = config;
         this.realm = realm;
-        this.sessionServiceProvider = sessionServiceProvider;
         // Set up the needed configuration for the client secret validation method
         SecretReference<GenericSecret> secret = null;
         if (config.oidcValidationType().equals(OpenIdValidationType.CLIENT_SECRET)) {
@@ -117,6 +121,7 @@ public class OidcNode extends AbstractDecisionNode {
         }
         this.jwtHandler = oidcIdTokenJwtHandlerFactory.createOidcIdTokenJwtHandler(config, Optional.ofNullable(secret));
         this.scriptEvaluator = scriptEvaluatorFactory.create(SOCIAL_IDP_PROFILE_TRANSFORMATION);
+        this.authScriptUtils = authScriptUtils;
     }
 
     /**
@@ -170,17 +175,14 @@ public class OidcNode extends AbstractDecisionNode {
             JsonValue inputData) throws NodeProcessException {
         try {
 
-            ScriptBindings scriptBindings = OidcNodeBindings.builder()
+            OidcNodeBindings scriptBindings = OidcNodeBindings.builder()
                     .withJwtClaims(inputData)
                     .withNodeState(context.getStateFor(this))
-                    .withHeaders(convertHeadersToModifiableObjects(context.request.headers))
-                    .withExistingSession(StringUtils.isNotEmpty(context.request.ssoTokenId)
-                            ? getSessionProperties(sessionServiceProvider.get(), context.request.ssoTokenId)
-                            : null)
+                    .withHeaders(authScriptUtils.convertHeadersToModifiableObjects(context.request.headers))
+                    .withExistingSession(authScriptUtils.getSessionProperties(context.request.ssoTokenId))
                     .build();
 
-            ScriptEvaluator.ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script,
-                    scriptBindings, realm);
+            ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script, scriptBindings, realm);
             logger.debug("script {} \n binding {}", script, scriptResult.getBindings());
 
             return (JsonValue) (script.getLanguage().equals(ScriptingLanguage.JAVASCRIPT)
@@ -296,7 +298,7 @@ public class OidcNode extends AbstractDecisionNode {
          * @return The script configuration
          */
         @Attribute(order = 800, validators = {RequiredValueValidator.class})
-        @ScriptContext(SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME)
+        @ScriptContext(legacyContext = SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME)
         Script script();
 
         /**

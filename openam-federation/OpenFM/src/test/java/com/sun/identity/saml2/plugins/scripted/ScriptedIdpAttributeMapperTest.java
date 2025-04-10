@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins.scripted;
@@ -24,6 +32,7 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SESSION;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ATTRIBUTE_MAPPER;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -34,33 +43,47 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.UUID;
 
+import org.forgerock.guice.core.GuiceExtension;
+import org.forgerock.http.Client;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.scripting.application.ScriptEvaluationHelper;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
 import org.forgerock.openam.scripting.domain.BindingsMap;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
+import org.forgerock.openam.scripting.domain.LegacyScriptContext;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.ScriptStore;
 import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
 import org.forgerock.openam.session.Session;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.plugin.monitoring.MonitorManager;
 import com.sun.identity.plugin.monitoring.impl.AgentProvider;
 import com.sun.identity.saml2.common.SAML2Constants;
+import com.sun.identity.saml2.common.SOAPCommunicator;
 import com.sun.identity.saml2.plugins.ValidationHelper;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
 
+@ExtendWith(MockitoExtension.class)
 public class ScriptedIdpAttributeMapperTest {
 
+    @RegisterExtension
+    GuiceExtension guiceExtension = new GuiceExtension.Builder()
+            .addInstanceBinding(SOAPCommunicator.class, mock(SOAPCommunicator.class)).build();
+
+    @Mock
+    private ScriptEvaluatorFactory scriptEvaluatorFactory;
     @Mock
     private ScriptEvaluator scriptEvaluator;
     @Mock
@@ -77,6 +100,8 @@ public class ScriptedIdpAttributeMapperTest {
     RealmLookup realmLookup;
     @Mock
     private AgentProvider agentProvider;
+    @Mock
+    private Client httpClient;
 
     private final UUID scriptId = UUID.randomUUID();
     private final String exampleScript = "exampleScript";
@@ -86,23 +111,24 @@ public class ScriptedIdpAttributeMapperTest {
     // Class under test
     private ScriptedIdpAttributeMapper scriptedIdpAttributeMapper;
 
-    @Before
-    public void setup() throws Exception {
-        MockitoAnnotations.openMocks(this).close();
-        scriptedIdpAttributeMapper = new ScriptedIdpAttributeMapper(__ -> scriptEvaluator, scriptStoreFactory,
-                scriptEvaluationHelper, validationHelper, realmLookup);
+    @BeforeEach
+    void setup() throws Exception {
+        when(scriptEvaluatorFactory.create(any(LegacyScriptContext.class))).thenReturn(scriptEvaluator);
+        when(scriptEvaluator.getScriptEvaluationHelper()).thenReturn(scriptEvaluationHelper);
+        scriptedIdpAttributeMapper = new ScriptedIdpAttributeMapper(scriptEvaluatorFactory, scriptStoreFactory,
+                validationHelper, realmLookup, httpClient);
         monitorManagerMockedStatic = mockStatic(MonitorManager.class);
         idpssoUtilMockedStatic = mockStatic(IDPSSOUtil.class);
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         monitorManagerMockedStatic.close();
         idpssoUtilMockedStatic.close();
     }
 
     @Test
-    public void shouldEvaluateIdpAttributeMapperScript() throws Exception {
+    void shouldEvaluateIdpAttributeMapperScript() throws Exception {
         String hostedEntityId = "myIdp";
         String remoteEntityId = "mySp";
         String realm = "myRealm";
@@ -110,7 +136,7 @@ public class ScriptedIdpAttributeMapperTest {
         String scriptContent = "myScript";
         when(realmLookup.lookup(realm)).thenReturn(realmObject);
 
-        ArgumentCaptor<ScriptBindings> bindingsCaptor = ArgumentCaptor.forClass(ScriptBindings.class);
+        ArgumentCaptor<LegacyScriptBindings> bindingsCaptor = ArgumentCaptor.forClass(LegacyScriptBindings.class);
         ArgumentCaptor<Script> scriptCaptor = ArgumentCaptor.forClass(Script.class);
 
         // Given
@@ -124,7 +150,7 @@ public class ScriptedIdpAttributeMapperTest {
         scriptedIdpAttributeMapper.getAttributes(session, hostedEntityId, remoteEntityId, realm);
 
         // Then
-        verify(scriptEvaluationHelper, times(1)).evaluateScript(eq(scriptEvaluator), scriptCaptor.capture(),
+        verify(scriptEvaluationHelper, times(1)).evaluateScript(scriptCaptor.capture(),
                 bindingsCaptor.capture(), eq(List.class), eq(realmObject));
         final Script script = scriptCaptor.getValue();
         assertThat(script.getScript()).isEqualTo(exampleScript);

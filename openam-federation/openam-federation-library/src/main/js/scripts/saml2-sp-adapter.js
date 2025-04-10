@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 /*
@@ -32,9 +40,9 @@
  * Defined variables. Check the documentation on the respective functions for the variables available to it.
  *
  * hostedEntityId - String
- *     Entity ID for the hosted IDP
+ *     Entity ID for the hosted SP
  * realm - String
- *     Realm of the hosted IDP
+ *     Realm of the hosted SP
  * idpEntityId - String
  *     The entity ID for the Identity Provider for which the sign-on request will be sent.
  * request - HttpServletRequest (1)
@@ -82,8 +90,8 @@
  *     for any exceptions occurring in the adapter. The federation process will continue
  *
  * Class reference:
- * (1) HttpServletRequest - https://tomcat.apache.org/tomcat-7.0-doc/servletapi/javax/servlet/http/HttpServletRequest.html.
- * (2) HttpServletResponse - https://tomcat.apache.org/tomcat-7.0-doc/servletapi/javax/servlet/http/HttpServletResponse.html.
+ * (1) HttpServletRequest - https://tomcat.apache.org/tomcat-10.1-doc/servletapi/jakarta/servlet/http//HttpServletRequest.html.
+ * (2) HttpServletResponse - https://tomcat.apache.org/tomcat-10.1-doc/servletapi/jakarta/servlet/http//HttpServletResponse.html.
  * (3) AuthnRequest - https://backstage.forgerock.com/docs/am/7.3/_attachments/apidocs/com/sun/identity/saml2/protocol/AuthnRequest.html.
  * (4) SSOToken - https://backstage.forgerock.com/docs/am/7.3/_attachments/apidocs/com/iplanet/sso/SSOToken.html.
  * (5) Response - https://backstage.forgerock.com/docs/am/7.3/_attachments/apidocs/com/sun/identity/saml2/protocol/Response.html

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication;
 
@@ -23,8 +31,8 @@ import com.sun.identity.plugin.session.SessionProvider;
 import com.sun.identity.plugin.session.impl.FMSessionNotification;
 import com.sun.identity.saml2.profile.IDPSSOUtil;
 import org.forgerock.guice.core.InjectorHolder;
-import org.forgerock.openam.authentication.service.SessionUpgradeHandler;
 import org.forgerock.openam.session.Session;
+import org.forgerock.openam.session.SessionUpgradeHandler;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.LoggerFactory;
 

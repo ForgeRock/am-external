@@ -24,7 +24,7 @@
  *
  * $Id: SPSessionListener.java,v 1.6 2009/09/23 22:28:32 bigfatrat Exp $
  *
- * Portions Copyrighted 2014-2019 ForgeRock AS.
+ * Portions Copyrighted 2014-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 

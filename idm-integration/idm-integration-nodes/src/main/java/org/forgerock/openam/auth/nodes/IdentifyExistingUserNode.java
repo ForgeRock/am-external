@@ -11,15 +11,23 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
+import static com.sun.identity.shared.FeatureEnablementConstants.ALWAYS_SET_UNIVERSAL_ID;
 import static java.util.Collections.singletonMap;
 import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getUniversalId;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getAttributeFromContext;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getObject;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getUsernameFromContext;
@@ -38,11 +46,10 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
-import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.util.Strings;
 import org.slf4j.Logger;
@@ -50,6 +57,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.am.util.SystemPropertiesWrapper;
 import com.sun.identity.idm.IdType;
 import com.sun.identity.sm.RequiredValueValidator;
 
@@ -60,14 +68,16 @@ import com.sun.identity.sm.RequiredValueValidator;
         configClass = IdentifyExistingUserNode.Config.class,
         tags = {"identity management"})
 public class IdentifyExistingUserNode extends AbstractDecisionNode {
+
     private final Logger logger = LoggerFactory.getLogger(IdentifyExistingUserNode.class);
 
     static final String IDM_IDPS = "aliasList";
 
     private final IdentifyExistingUserNode.Config config;
     private final Realm realm;
-    private final LegacyIdentityService identityService;
+    private final NodeUserIdentityProvider identityProvider;
     private final IdmIntegrationService idmIntegrationService;
+    private final SystemPropertiesWrapper systemProperties;
 
     /**
      * Configuration for the Identify Existing User Node.
@@ -101,16 +111,19 @@ public class IdentifyExistingUserNode extends AbstractDecisionNode {
      *
      * @param config The node configuration.
      * @param realm The realm context.
-     * @param identityService An instance of IdentityService.
+     * @param identityProvider The identity provider.
      * @param idmIntegrationService The IDM integration service.
+     * @param systemProperties The system properties.
      */
     @Inject
     public IdentifyExistingUserNode(@Assisted IdentifyExistingUserNode.Config config, @Assisted Realm realm,
-            LegacyIdentityService identityService, IdmIntegrationService idmIntegrationService) {
+            NodeUserIdentityProvider identityProvider, IdmIntegrationService idmIntegrationService,
+            SystemPropertiesWrapper systemProperties) {
         this.config = config;
         this.realm = realm;
-        this.identityService = identityService;
         this.idmIntegrationService = idmIntegrationService;
+        this.identityProvider = identityProvider;
+        this.systemProperties = systemProperties;
     }
 
     /**
@@ -143,6 +156,7 @@ public class IdentifyExistingUserNode extends AbstractDecisionNode {
             JsonValue copyState = context.sharedState.copy().put(FIELD_CONTENT_ID,
                     managedObject.get().get(FIELD_CONTENT_ID));
 
+            var action = goTo(true);
             // save identifier so that it is present for login
             if (!Strings.isNullOrEmpty(config.identifier()) && managedObject.get().isDefined(config.identifier())) {
                 String identifier = managedObject.get().get(config.identifier()).asString();
@@ -150,18 +164,23 @@ public class IdentifyExistingUserNode extends AbstractDecisionNode {
                 idmIntegrationService.storeAttributeInState(copyState, config.identifier(), identifier);
             }
 
-            NodeState globalState = context.getStateFor(this);
-            var action = goTo(true)
-                                 .replaceSharedState(copyState)
-                                 .withUniversalId(context.universalId.or(
-                                     () -> getUniversalId(globalState, identityService)));
+            action.replaceSharedState(copyState);
+
             if (copyState.get(USERNAME).isNotNull()) {
-                action.withIdentifiedIdentity(copyState.get(USERNAME).asString(), IdType.USER);
+                final String username = copyState.get(USERNAME).asString();
+                action.withIdentifiedIdentity(username, IdType.USER)
+                    .withUniversalId(getUniversalId(username, context));
             }
             return action.build();
         }
         logger.debug("No {} identified", context.identityResource);
         return goTo(false).build();
+    }
+
+    private Optional<String> getUniversalId(final String identifier, final TreeContext context) {
+        return systemProperties.getAsBoolean(ALWAYS_SET_UNIVERSAL_ID, true)
+                ? identityProvider.getUniversalId(identifier, realm)
+                : context.universalId.or(() -> identityProvider.getUniversalId(context.getStateFor(this)));
     }
 
     @Override

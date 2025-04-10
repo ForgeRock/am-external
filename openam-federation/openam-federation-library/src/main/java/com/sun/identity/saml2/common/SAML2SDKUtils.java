@@ -24,7 +24,7 @@
  *
  * $Id: SAML2SDKUtils.java,v 1.12 2008/08/31 05:49:48 bina Exp $
  *
- * Portions copyright 2014-2024 ForgeRock AS.
+ * Portions copyright 2014-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.common;
 
@@ -308,7 +308,7 @@ public class SAML2SDKUtils {
                         + "impl (4) instance for " + iName);
             }
             Object[] params = new Object[]
-                    { typecode, new Integer(endpointIndex),
+                    { typecode, endpointIndex,
                             sourceID, messageHandle };
             return getObjectInstance(implClass, artParam, params);
         }
@@ -714,7 +714,7 @@ public class SAML2SDKUtils {
      *
      */
     public static Boolean booleanValueOf(String value) {
-        return new Boolean("true".equalsIgnoreCase(value) || "1".equals(value));
+        return "true".equalsIgnoreCase(value) || "1".equals(value);
     }
 
     /**

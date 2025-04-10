@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats;
 
@@ -28,6 +36,7 @@ import java.security.spec.ECParameterSpec;
 
 import org.forgerock.json.jose.jwk.EcJWK;
 import org.forgerock.json.jose.jwk.JWK;
+import org.forgerock.openam.auth.nodes.webauthn.Aaguid;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
 import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
 import org.forgerock.util.encode.Base64url;
@@ -39,15 +48,21 @@ import org.slf4j.LoggerFactory;
  */
 public class FidoU2fVerifier extends TrustableAttestationVerifier {
 
+    private static final Aaguid ZERO_INITIALISED_AAGUID = new Aaguid(new byte[16]);
+
     private final Logger logger = LoggerFactory.getLogger(FidoU2fVerifier.class);
+    private final boolean validateAaguid;
 
     /**
      * The constructor.
      *
-     * @param validator the verifier containing appropriate certs.
+     * @param validator the verifier containing appropriate certs
+     * @param validateAaguid true if the AAGUID of the attestation being verified should be validated to ensure
+     *                       it is initialised to all zeroes, false otherwise
      */
-    public FidoU2fVerifier(TrustAnchorValidator validator) {
+    public FidoU2fVerifier(TrustAnchorValidator validator, boolean validateAaguid) {
         super(validator);
+        this.validateAaguid = validateAaguid;
     }
 
     /**
@@ -61,6 +76,12 @@ public class FidoU2fVerifier extends TrustableAttestationVerifier {
     public VerificationResponse verify(AttestationObject attestationObject, byte[] clientDataHash) {
 
         if (attestationObject.attestationStatement.getAttestnCerts().size() != 1) {
+            return VerificationResponse.failure();
+        }
+
+        // verify aaguid is 0x00 - any other value is not valid and suggests non fido-u2f authenticator.
+        if (validateAaguid
+                && !ZERO_INITIALISED_AAGUID.equals(attestationObject.authData.attestedCredentialData.aaguid)) {
             return VerificationResponse.failure();
         }
 

@@ -24,7 +24,7 @@
  *
  * $Id: IDPDiscoveryConstants.java,v 1.5 2009/11/03 00:50:34 madan_ranganath Exp $
  *
- * Portions Copyrighted 2018-2020 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.idpdiscovery;
 

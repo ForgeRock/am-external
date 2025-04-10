@@ -11,20 +11,29 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.openam.saml2.IDPRequestValidator;
 import org.forgerock.openam.saml2.UtilProxyIDPRequestValidator;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 
@@ -36,21 +45,23 @@ public class IDPRequestValidatorTest {
     private HttpServletRequest mockRequest;
     private IDPRequestValidator validator;
 
-    @BeforeMethod
-    public void setUp() throws ServerFaultException, ClientFaultException {
+    @BeforeEach
+    void setUp() throws ServerFaultException, ClientFaultException {
         mockRequest = mock(HttpServletRequest.class);
         validator = new UtilProxyIDPRequestValidator("", false, mock(SAML2MetaManager.class));
     }
 
-    @Test (expectedExceptions = ClientFaultException.class)
-    public void shouldNotAllowMissingMetaAlias() throws ServerFaultException, ClientFaultException {
-        given(mockRequest.getParameter(SAML2MetaManager.NAME_META_ALIAS_IN_URI)).willReturn("");
-        given(mockRequest.getRequestURI()).willReturn("");
-        validator.getMetaAlias(mockRequest);
+    @Test
+    void shouldNotAllowMissingMetaAlias() throws ServerFaultException, ClientFaultException {
+        assertThatThrownBy(() -> {
+            given(mockRequest.getParameter(SAML2MetaManager.NAME_META_ALIAS_IN_URI)).willReturn("");
+            given(mockRequest.getRequestURI()).willReturn("");
+            validator.getMetaAlias(mockRequest);
+        }).isInstanceOf(ClientFaultException.class);
     }
 
     @Test
-    public void shoulAllowMetaAliasInParameter() throws ServerFaultException, ClientFaultException {
+    void shoulAllowMetaAliasInParameter() throws ServerFaultException, ClientFaultException {
         // Given
         String metaBadger = "badger";
         given(mockRequest.getParameter(SAML2MetaManager.NAME_META_ALIAS_IN_URI)).willReturn(metaBadger);
@@ -62,7 +73,7 @@ public class IDPRequestValidatorTest {
     }
 
     @Test
-    public void shoulAllowMetaAliasInURI() throws ServerFaultException, ClientFaultException {
+    void shoulAllowMetaAliasInURI() throws ServerFaultException, ClientFaultException {
         // Given
         String metaBadger = "badger";
         given(mockRequest.getParameter(SAML2MetaManager.NAME_META_ALIAS_IN_URI)).willReturn("");

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn;
 
@@ -21,12 +29,9 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
-import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.ERROR_MESSAGE;
 import static org.forgerock.openam.auth.nodes.webauthn.WebAuthnDomException.WEB_AUTHENTICATION_DOM_EXCEPTION;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -39,31 +44,31 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.ConfirmationCallback;
 
 import org.forgerock.am.identity.application.IdentityStoreFactory;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.am.identity.persistence.IdentityStore;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.webauthn.data.AuthData;
 import org.forgerock.openam.auth.nodes.webauthn.flows.AuthenticationFlow;
 import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.AuthDataDecoder;
 import org.forgerock.openam.auth.nodes.webauthn.flows.encoding.DecodingException;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.webauthn.UserWebAuthnDeviceProfileManager;
 import org.forgerock.openam.core.rest.devices.webauthn.WebAuthnDeviceSettings;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.RecoveryCodeGenerator;
+import org.forgerock.openam.utils.Time;
+import org.forgerock.util.Strings;
 import org.forgerock.util.annotations.VisibleForTesting;
 import org.forgerock.util.i18n.PreferredLocales;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.idm.AMIdentity;
@@ -82,9 +87,14 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
     private static final String AUTH_SCRIPT = RESOURCE_LOCATION + "webauthn-client-auth-script.js";
 
     private static final String IS_RECOVERY_CODE_ALLOWED = "isRecoveryCodeAllowed";
+    private static final String DETECT_SIGN_COUNT_MISMATCH = "detectSignCountMismatch";
 
-    private static final String NO_DEVICE_OUTCOME_ID = "noDevice";
-    private static final String RECOVERY_CODE_OUTCOME_ID = "recoveryCode";
+    /**
+     * The outcome when the user's device processing has succeeded, but a sign count mismatch was detected.
+     */
+    public static final String SIGN_COUNT_MISMATCH_OUTCOME_ID = "successSignCountMismatch";
+    static final String NO_DEVICE_OUTCOME_ID = "noDevice";
+    static final String RECOVERY_CODE_OUTCOME_ID = "recoveryCode";
 
     private static final int RECOVERY_PRESSED = 0;
     private static final int RECOVERY_NOT_PRESSED = 100;
@@ -93,9 +103,9 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
     private final Realm realm;
     private final AuthenticationFlow authenticationFlow;
     private final AuthDataDecoder authDataDecoder;
-    private final LegacyIdentityService identityService;
     private final IdentityStoreFactory identityStoreFactory;
-    private final CoreWrapper coreWrapper;
+    private final NodeUserIdentityProvider identityProvider;
+    private final WebAuthnOutcomeDeserializer deserializer;
 
     private String registeredDeviceUuid;
     private String deviceName;
@@ -169,6 +179,15 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         }
 
         /**
+         * WebAuthn2 equivalent to requiresResidentKey. Not currently configurable on the legacy node.
+         *
+         * @return {@link ResidentKeyRequirement} REQUIRED or DISCOURAGED
+         */
+        default ResidentKeyRequirement residentKeyRequirement() {
+            return requiresResidentKey() ? ResidentKeyRequirement.REQUIRED : ResidentKeyRequirement.DISCOURAGED;
+        }
+
+        /**
          * Specify whether to return the challenge as a script or just as metadata.
          *
          * @return {@literal true} if return as a script.
@@ -176,6 +195,16 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         @Attribute(order = 60)
         default boolean asScript() {
             return true;
+        }
+
+        /**
+         * Specify whether to detect signature counter mismatch in the provided device attestation.
+         *
+         * @return {@literal true} if signature counter mismatch detection is required.
+         */
+        @Attribute(order = 70)
+        default boolean detectSignCountMismatch() {
+            return false;
         }
 
     }
@@ -191,9 +220,9 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
      * @param secureRandom           instance of the secure random generator
      * @param authDataDecoder        instance of the auth data decoder
      * @param recoveryCodeGenerator  instance of the recovery code generator.
-     * @param identityService        an {@link LegacyIdentityService} instance.
      * @param identityStoreFactory   an {@link IdentityStoreFactory} instance
-     * @param coreWrapper            An instance of the {@code CoreWrapper}.
+     * @param identityProvider       the identity provider
+     * @param deserializer           instance of the assertion object deserializer
      */
     @Inject
     public WebAuthnAuthenticationNode(@Assisted Config config, @Assisted Realm realm,
@@ -201,17 +230,17 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
             ClientScriptUtilities clientScriptUtilities,
             UserWebAuthnDeviceProfileManager webAuthnProfileManager,
             SecureRandom secureRandom, AuthDataDecoder authDataDecoder,
-            RecoveryCodeGenerator recoveryCodeGenerator, LegacyIdentityService identityService,
-            IdentityStoreFactory identityStoreFactory, CoreWrapper coreWrapper) {
+            RecoveryCodeGenerator recoveryCodeGenerator, IdentityStoreFactory identityStoreFactory,
+            NodeUserIdentityProvider identityProvider, WebAuthnOutcomeDeserializer deserializer) {
         super(clientScriptUtilities, webAuthnProfileManager, secureRandom, recoveryCodeGenerator);
 
         this.config = config;
         this.realm = realm;
         this.authenticationFlow = authenticationFlow;
         this.authDataDecoder = authDataDecoder;
-        this.identityService = identityService;
-        this.coreWrapper = coreWrapper;
         this.identityStoreFactory = identityStoreFactory;
+        this.identityProvider = identityProvider;
+        this.deserializer = deserializer;
     }
 
     @Override
@@ -235,7 +264,8 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
 
         String authScript = clientScriptUtilities.getScriptAsString(AUTH_SCRIPT);
         JsonValue scriptContext = getScriptContext(challengeBytes, devices,
-                config.relyingPartyDomain().orElse(null));
+                config.relyingPartyDomain().orElse(null),
+                getExtensions(context));
 
         if (context.getCallback(ConfirmationCallback.class)
                 .filter(callback -> callback.getSelectedIndex() == RECOVERY_PRESSED)
@@ -249,13 +279,14 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
                 .filter(scriptOutput -> !Strings.isNullOrEmpty(scriptOutput));
 
         if (result.isPresent()) {
+            WebAuthnOutcome outcome = deserializer.deserialize(result.get());
             logger.debug("processing user response");
-            if (result.get().equals(UNSUPPORTED)) {
+            if (!outcome.isSupported()) {
                 logger.warn("User's user agent does not support WebAuthn");
                 return Action.goTo(UNSUPPORTED_OUTCOME_ID).build();
             }
-            if (result.get().startsWith(ERROR_MESSAGE)) {
-                WebAuthnDomException exception = parseError(result.get());
+            if (outcome.isError()) {
+                WebAuthnDomException exception = outcome.error().get();
                 logger.error("An error was reported by the DOM.");
                 return Action.goTo(ERROR_OUTCOME_ID).replaceSharedState(
                         context.sharedState.copy().put(WEB_AUTHENTICATION_DOM_EXCEPTION, exception.toString())).build();
@@ -264,8 +295,8 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
             String rpId = getDomain(config.relyingPartyDomain(), context.request.headers.get("origin"),
                     context.request.serverUrl);
 
-            ClientAuthenticationScriptResponse response =
-                    clientScriptUtilities.parseClientAuthenticationResponse(result.get(), config.requiresResidentKey());
+            ClientAuthenticationScriptResponse response = clientScriptUtilities.parseClientAuthenticationResponse(
+                    outcome.legacyData(), config.requiresResidentKey());
 
             if (config.requiresResidentKey()) {
                 userHandle = response.getUserHandle();
@@ -298,6 +329,10 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
                 return Action.goTo(FAILURE_OUTCOME_ID).build();
             }
 
+            context.getStateFor(this)
+                    .putShared(WEB_AUTHN_DEVICE_UUID, registeredDeviceUuid)
+                    .putShared(WEB_AUTHN_DEVICE_NAME, deviceName);
+
             logger.debug("registeredDeviceUuid: {}, credentialId: {}, deviceName: {}",
                     registeredDeviceUuid, credentialId, deviceName);
 
@@ -308,17 +343,39 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
 
                 Action.ActionBuilder responseAction = Action.goTo(SUCCESS_OUTCOME_ID);
 
+                // SignCount of zero indicates signature counter is not supported
+                // Section 7.2.21 https://www.w3.org/TR/webauthn/#sctn-verifying-assertion
+                if (config.detectSignCountMismatch() && authData.signCount != 0
+                        && authData.signCount <= device.getSignCount()) {
+                    responseAction = Action.goTo(SIGN_COUNT_MISMATCH_OUTCOME_ID);
+                }
+
                 //we are responsible for putting the username into the shared state so the appropriate user logs in
                 if (config.requiresResidentKey()) {
                     responseAction
                             .replaceSharedState(context.sharedState.copy().put(USERNAME, response.getUserHandle()));
                 }
 
+                try {
+                    updateLastAccessDateAndSignCount(device.getUUID(), devices, authData.signCount);
+                    webAuthnProfileManager.saveDeviceProfile(userHandle,
+                            context.sharedState.get(REALM).asString(), devices);
+                } catch (DevicePersistenceException e) {
+                    logger.warn("Setting last access date to the device failed", e);
+                }
+
                 NodeState nodeState = context.getStateFor(this);
                 Action.ActionBuilder actionBuilder = responseAction.addNodeType(context, WEB_AUTHN_AUTH_TYPE);
-                Optional<AMIdentity> identity = getAMIdentity(context.universalId, nodeState, identityService,
-                        coreWrapper);
+                Optional<AMIdentity> identity = identityProvider.getAMIdentity(context.universalId, nodeState);
                 identity.ifPresent(actionBuilder::withIdentifiedIdentity);
+
+                JsonValue webAuthnObjectInfo = getWebAuthnObjectInfo(authData);
+
+                outcome.authenticatorAttachment().ifPresent(authenticatorAttachment ->
+                        addAuthenticatorAttachment(webAuthnObjectInfo, authenticatorAttachment));
+
+                nodeState.putTransient(WEB_AUTHN_ASSERTION_INFO, webAuthnObjectInfo);
+
                 return actionBuilder.withUniversalId(identity.map(AMIdentity::getUniversalId)).build();
             } else {
                 logger.debug("returning with failure outcome");
@@ -355,8 +412,18 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         return devices;
     }
 
+    private void updateLastAccessDateAndSignCount(String deviceUUID, List<WebAuthnDeviceSettings> devices,
+            int signCount) {
+        for (WebAuthnDeviceSettings device : devices) {
+            if (device.getUUID().equals(deviceUUID)) {
+                device.setLastAccessDate(Time.currentTimeMillis());
+                device.setSignCount(signCount);
+            }
+        }
+    }
+
     private JsonValue getScriptContext(byte[] challengeBytes, List<WebAuthnDeviceSettings> devices,
-            String configuredRpId) {
+            String configuredRpId, JsonValue extensions) {
         JsonValue jsonValue = json(object());
         jsonValue.put("_action", "webauthn_authentication");
         jsonValue.put("challenge", Arrays.toString(challengeBytes));
@@ -376,6 +443,7 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
         }
         jsonValue.put("relyingPartyId", sb.toString());
         jsonValue.put("_relyingPartyId", configuredRpId);
+        jsonValue.put("extensions", extensions);
 
         return jsonValue;
     }
@@ -420,28 +488,33 @@ public class WebAuthnAuthenticationNode extends AbstractWebAuthnNode {
     /**
      * Provides the authentication node's set of outcomes.
      */
-    public static class OutcomeProvider implements org.forgerock.openam.auth.node.api.OutcomeProvider {
+    public static class OutcomeProvider implements BoundedOutcomeProvider {
         @Override
         public List<Outcome> getOutcomes(PreferredLocales locales, JsonValue nodeAttributes) {
+            return getAllOutcomes(locales).stream()
+                    .filter(outcome -> {
+                        if (RECOVERY_CODE_OUTCOME_ID.equals(outcome.id)) {
+                            return nodeAttributes.get(IS_RECOVERY_CODE_ALLOWED).defaultTo(false).asBoolean();
+                        }
+                        if (SIGN_COUNT_MISMATCH_OUTCOME_ID.equals(outcome.id)) {
+                            return nodeAttributes.get(DETECT_SIGN_COUNT_MISMATCH).defaultTo(false).asBoolean();
+                        }
+                        return true;
+                    }).toList();
+        }
+
+        @Override
+        public List<Outcome> getAllOutcomes(PreferredLocales locales) {
             ResourceBundle bundle = locales.getBundleInPreferredLocale(BUNDLE,
                     WebAuthnAuthenticationNode.OutcomeProvider.class.getClassLoader());
-
-            ArrayList<Outcome> outcomes = new ArrayList<>();
-
-            outcomes.add(new Outcome(UNSUPPORTED_OUTCOME_ID, bundle.getString(UNSUPPORTED)));
-            outcomes.add(new Outcome(NO_DEVICE_OUTCOME_ID, bundle.getString(NO_DEVICE_OUTCOME_ID)));
-            outcomes.add(new Outcome(SUCCESS_OUTCOME_ID, bundle.getString(SUCCESS_OUTCOME_ID)));
-            outcomes.add(new Outcome(FAILURE_OUTCOME_ID, bundle.getString(FAILURE_OUTCOME_ID)));
-            outcomes.add(new Outcome(ERROR_OUTCOME_ID, bundle.getString(ERROR_OUTCOME_ID)));
-
-            if (nodeAttributes.isNotNull()) {
-                // nodeAttributes is null when the node is created
-                if (nodeAttributes.get(IS_RECOVERY_CODE_ALLOWED).required().asBoolean()) {
-                    outcomes.add(new Outcome(RECOVERY_CODE_OUTCOME_ID, bundle.getString(RECOVERY_CODE_OUTCOME_ID)));
-                }
-            }
-
-            return ImmutableList.copyOf(outcomes);
+            return List.of(
+                    new Outcome(UNSUPPORTED_OUTCOME_ID, bundle.getString(UNSUPPORTED_OUTCOME_ID)),
+                    new Outcome(NO_DEVICE_OUTCOME_ID, bundle.getString(NO_DEVICE_OUTCOME_ID)),
+                    new Outcome(SUCCESS_OUTCOME_ID, bundle.getString(SUCCESS_OUTCOME_ID)),
+                    new Outcome(FAILURE_OUTCOME_ID, bundle.getString(FAILURE_OUTCOME_ID)),
+                    new Outcome(ERROR_OUTCOME_ID, bundle.getString(ERROR_OUTCOME_ID)),
+                    new Outcome(RECOVERY_CODE_OUTCOME_ID, bundle.getString(RECOVERY_CODE_OUTCOME_ID)),
+                    new Outcome(SIGN_COUNT_MISMATCH_OUTCOME_ID, bundle.getString(SIGN_COUNT_MISMATCH_OUTCOME_ID)));
         }
     }
 

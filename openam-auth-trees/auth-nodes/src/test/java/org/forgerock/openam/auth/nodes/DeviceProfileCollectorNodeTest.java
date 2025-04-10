@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS.
+ * Copyright 2020-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -20,6 +20,7 @@ package org.forgerock.openam.auth.nodes;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -27,7 +28,6 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.List;
 import java.util.Locale;
@@ -43,15 +43,16 @@ import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.authentication.callbacks.DeviceProfileCallback;
 import org.forgerock.openam.utils.JsonValueBuilder;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Test for Device Profile Collector
  */
+@ExtendWith(MockitoExtension.class)
 public class DeviceProfileCollectorNodeTest {
 
     public static final String COLLECTING_DEVICE_PROFILE = "Collecting device profile";
@@ -64,20 +65,13 @@ public class DeviceProfileCollectorNodeTest {
     @InjectMocks
     DeviceProfileCollectorNode node;
 
-    @BeforeMethod
-    public void setup() {
-        node = null;
-        initMocks(this);
+    @Test
+    void testProcessWithNoCallback()
+            throws NodeProcessException {
         given(config.deviceLocation()).willReturn(true);
         given(config.deviceMetadata()).willReturn(true);
-        given(config.maximumSize()).willReturn("3");
         given(config.message()).willReturn(Map.of(Locale.ENGLISH, COLLECTING_DEVICE_PROFILE));
         when(localeSelector.getBestLocale(any(), any())).thenReturn(Locale.ENGLISH);
-    }
-
-    @Test
-    public void testProcessWithNoCallback()
-            throws NodeProcessException {
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
 
@@ -95,8 +89,9 @@ public class DeviceProfileCollectorNodeTest {
     }
 
     @Test
-    public void testProcessWithCallback()
+    void testProcessWithCallback()
             throws NodeProcessException {
+        given(config.maximumSize()).willReturn("3");
         JsonValue sharedState = json(object(field(USERNAME, "bob")));
         JsonValue transientState = json(object());
 
@@ -124,9 +119,9 @@ public class DeviceProfileCollectorNodeTest {
 
     }
 
-    @Test(expectedExceptions = NodeProcessException.class,
-            expectedExceptionsMessageRegExp = "Device Identifier is not captured")
-    public void testNoIdentifier() throws NodeProcessException {
+    @Test
+    void testNoIdentifier() throws NodeProcessException {
+        given(config.maximumSize()).willReturn("3");
         JsonValue sharedState = json(object(field(USERNAME, "bob")));
         JsonValue transientState = json(object());
 
@@ -137,14 +132,15 @@ public class DeviceProfileCollectorNodeTest {
         callback.setValue(profile.toString());
 
         // When
-        node.process(getContext(sharedState, transientState, singletonList(callback)));
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, singletonList(callback))))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Device Identifier is not captured");
 
     }
 
-    @Test(expectedExceptions = NodeProcessException.class,
-            expectedExceptionsMessageRegExp = "Captured data exceed maximum accepted size")
-    public void testExceedSize() throws NodeProcessException {
-
+    @Test
+    void testExceedSize() throws NodeProcessException {
         given(config.maximumSize()).willReturn("0.01"); //around 30 bytes
         JsonValue sharedState = json(object(field(USERNAME, "bob")));
         JsonValue transientState = json(object());
@@ -157,7 +153,10 @@ public class DeviceProfileCollectorNodeTest {
         callback.setValue(profile.toString());
 
         // When
-        node.process(getContext(sharedState, transientState, singletonList(callback)));
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, singletonList(callback))))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Captured data exceed maximum accepted size");
 
     }
 

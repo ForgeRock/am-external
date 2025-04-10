@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins;
@@ -24,8 +32,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.forgerock.openam.utils.CollectionUtils;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.saml2.assertion.Attribute;
 import com.sun.identity.saml2.common.SAML2Exception;
@@ -34,19 +43,22 @@ public class AttributeMapperPluginHelperTest {
 
     private AttributeMapperPluginHelper pluginHelper;
 
-    @BeforeMethod
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         pluginHelper = new AttributeMapperPluginHelper();
     }
 
-    @Test(expectedExceptions = SAML2Exception.class, expectedExceptionsMessageRegExp = "Null input.")
-    public void shouldForbidNullNameArguments() throws SAML2Exception {
-        // Given, When, Then
-        pluginHelper.createSAMLAttribute(null, "nameFormat", Collections.singleton("value"));
+    @Test
+    void shouldForbidNullNameArguments() {
+        final Throwable thrown = Assertions.assertThrows(SAML2Exception.class, () -> {
+            // Given, When, Then
+            pluginHelper.createSAMLAttribute(null, "nameFormat", Collections.singleton("value"));
+        });
+        assertThat(thrown.getMessage()).matches("Null input.");
     }
 
     @Test
-    public void shouldReturnAttributeContainingProvidedName() throws SAML2Exception {
+    void shouldReturnAttributeContainingProvidedName() throws SAML2Exception {
         // Given
         String name = "attrName";
         // When
@@ -56,7 +68,7 @@ public class AttributeMapperPluginHelperTest {
     }
 
     @Test
-    public void shouldReturnAttributeContainingProvidedNameFormat() throws SAML2Exception {
+    void shouldReturnAttributeContainingProvidedNameFormat() throws SAML2Exception {
         // Given
         String name = "attrName";
         String nameFormat = "nameFormat";
@@ -67,7 +79,7 @@ public class AttributeMapperPluginHelperTest {
     }
 
     @Test
-    public void shouldReturnAttributeContainingProvidedAttributeValues() throws SAML2Exception {
+    void shouldReturnAttributeContainingProvidedAttributeValues() throws SAML2Exception {
         // Given
         String name = "attrName";
         Set<String> values = CollectionUtils.asSet("value1", "value2");
@@ -78,7 +90,7 @@ public class AttributeMapperPluginHelperTest {
     }
 
     @Test
-    public void shouldReturnAttributeContainingProvidedArguments() throws SAML2Exception {
+    void shouldReturnAttributeContainingProvidedArguments() throws SAML2Exception {
         // Given
         String name = "attrName";
         String nameFormat = "nameFormat";
@@ -92,7 +104,7 @@ public class AttributeMapperPluginHelperTest {
     }
 
     @Test
-    public void shouldReturnNullWhenProvidedBinaryValueMapIsNull() {
+    void shouldReturnNullWhenProvidedBinaryValueMapIsNull() {
         // Given
         String samlAttribute = "samlAttribute";
         String localAttribute = "localAttribute";
@@ -104,7 +116,7 @@ public class AttributeMapperPluginHelperTest {
     }
 
     @Test
-    public void shouldReturnNullWhenProvidedBinaryValueMapIsEmpty() {
+    void shouldReturnNullWhenProvidedBinaryValueMapIsEmpty() {
         // Given
         String samlAttribute = "samlAttribute";
         String localAttribute = "localAttribute";
@@ -116,7 +128,7 @@ public class AttributeMapperPluginHelperTest {
     }
 
     @Test
-    public void shouldReturnNullWhenLocalAttributeHasNoValueOnBinaryValueMap() {
+    void shouldReturnNullWhenLocalAttributeHasNoValueOnBinaryValueMap() {
         // Given
         String samlAttribute = "samlAttribute";
         String localAttribute = "localAttribute";
@@ -128,7 +140,7 @@ public class AttributeMapperPluginHelperTest {
     }
 
     @Test
-    public void shouldReturnABase64EncodedSetOfLocalAttributeValues() {
+    void shouldReturnABase64EncodedSetOfLocalAttributeValues() {
         // Given
         String samlAttribute = "samlAttribute";
         String localAttribute = "localAttribute";

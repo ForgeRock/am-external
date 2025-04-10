@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.mfa;
@@ -24,17 +32,17 @@ import java.util.Set;
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Unit tests for MultiFactorRegistrationUtilities.
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class MultiFactorRegistrationUtilitiesTest {
 
     private static final String EXPECTED_USERNAME = "expected_username";
@@ -45,26 +53,26 @@ public class MultiFactorRegistrationUtilitiesTest {
     @Mock(answer = Answers.CALLS_REAL_METHODS)
     private MultiFactorRegistrationUtilities utilities;
 
-    @Before
-    public void setup() throws IdRepoException, SSOException {
+    @BeforeEach
+    void setup() throws IdRepoException, SSOException {
         when(userIdentity.getAttribute(AbstractMultiFactorNode.UserAttributeToAccountNameMapping.USERNAME.toString()))
                 .thenReturn(Set.of(EXPECTED_USERNAME));
     }
 
     @Test
-    public void testGetUserAttributeForAccountNameNullUserAttribute() {
+    void testGetUserAttributeForAccountNameNullUserAttribute() {
         String actualUsername =  utilities.getUserAttributeForAccountName(userIdentity, null);
         assertThat(actualUsername).isEqualTo(EXPECTED_USERNAME);
     }
 
     @Test
-    public void testGetUserAttributeForAccountNameEmptyUserAttribute() {
+    void testGetUserAttributeForAccountNameEmptyUserAttribute() {
         String actualUsername =  utilities.getUserAttributeForAccountName(userIdentity, "");
         assertThat(actualUsername).isEqualTo(EXPECTED_USERNAME);
     }
 
     @Test
-    public void testGetUserAttributeForAccountNameUsernameUserAttribute() {
+    void testGetUserAttributeForAccountNameUsernameUserAttribute() {
         String actualUsername =  utilities.getUserAttributeForAccountName(userIdentity,
                 AbstractMultiFactorNode.UserAttributeToAccountNameMapping.USERNAME.toString());
         assertThat(actualUsername).isEqualTo(EXPECTED_USERNAME);

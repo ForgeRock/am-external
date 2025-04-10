@@ -11,16 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Collections;
 import java.util.Optional;
@@ -29,49 +37,22 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  *
  */
+@ExtendWith(MockitoExtension.class)
 public class SocialOAuthIgnoreProfileNodeTest {
 
     @Mock
     private SocialOAuthIgnoreProfileNode.Config config;
 
-    @BeforeMethod
-    public void before() {
-        initMocks(this);
-    }
-
     @Test
-    public void processReturnsTrueWhenSharedSessionIsValid() throws Exception {
-        //GIVEN
-        JsonValue sharedState = JsonValue.json(object(
-            field("userInfo", object(
-                    field("userNames", object(
-                            field("test", Collections.singletonList("user"))
-                    ))
-            ))
-        ));
-
-        TreeContext context = new TreeContext(sharedState,
-                               new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
-        SocialOAuthIgnoreProfileNode node = new SocialOAuthIgnoreProfileNode(config);
-
-        //WHEN
-        Action process = node.process(context);
-
-        //THEN
-        Assert.assertEquals(process.outcome, "outcome");
-    }
-
-    @Test
-    public void processSetUserInSessionWhenSharedSessionIsValid() throws Exception {
+    void processReturnsTrueWhenSharedSessionIsValid() throws Exception {
         //GIVEN
         JsonValue sharedState = JsonValue.json(object(
                 field("userInfo", object(
@@ -82,14 +63,37 @@ public class SocialOAuthIgnoreProfileNodeTest {
         ));
 
         TreeContext context = new TreeContext(sharedState,
-                            new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
         SocialOAuthIgnoreProfileNode node = new SocialOAuthIgnoreProfileNode(config);
 
         //WHEN
         Action process = node.process(context);
 
         //THEN
-        Assert.assertTrue(process.sharedState.isDefined(USERNAME));
-        Assert.assertEquals(process.sharedState.get(USERNAME).asString(), "user");
+        assertThat(process.outcome).isEqualTo("outcome");
+    }
+
+    @Test
+    void processSetUserInSessionWhenSharedSessionIsValid() throws Exception {
+        //GIVEN
+        JsonValue sharedState = JsonValue.json(object(
+                field("userInfo", object(
+                        field("userNames", object(
+                                field("test", Collections.singletonList("user"))
+                        ))
+                ))
+        ));
+
+        TreeContext context = new TreeContext(sharedState,
+                new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
+        SocialOAuthIgnoreProfileNode node = new SocialOAuthIgnoreProfileNode(config);
+
+        //WHEN
+        Action process = node.process(context);
+
+        //THEN
+
+        assertThat(process.sharedState.isDefined(USERNAME)).isTrue();
+        assertThat(process.sharedState.get(USERNAME).asString()).isEqualTo("user");
     }
 }

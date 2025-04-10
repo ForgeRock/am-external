@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.persistentcookie;
 
@@ -29,8 +37,8 @@ import org.forgerock.jaspi.modules.session.jwt.ServletJwtSessionModule;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.utils.AMKeyProvider;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.Sets;
 
@@ -43,8 +51,8 @@ public class PersistentCookieWrapperTest {
     private AMKeyProvider amKeyProvider;
     private PersistentCookieModuleWrapper persistentCookieWrapper;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
 
         jwtSessionModule = mock(ServletJwtSessionModule.class);
         amKeyProvider = mock(AMKeyProvider.class);
@@ -63,7 +71,7 @@ public class PersistentCookieWrapperTest {
     }
 
     @Test
-    public void generatesConfigWithCorrectValuesUsingSecretsApi() throws Exception {
+    void generatesConfigWithCorrectValuesUsingSecretsApi() throws Exception {
         Map<String, Object> config = persistentCookieWrapper.generateConfig(ANY_STRING, ANY_STRING, ANY_BOOLEAN,
                 ANY_STRING, ANY_BOOLEAN, ANY_BOOLEAN, ANY_STRING, Sets.newHashSet(ANY_STRING),
                 "instance_name");

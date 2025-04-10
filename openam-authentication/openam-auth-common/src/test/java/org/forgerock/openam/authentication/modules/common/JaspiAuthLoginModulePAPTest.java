@@ -11,14 +11,30 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2017 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2013-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.common;
 
-import static org.mockito.BDDMockito.*;
-import static org.testng.AssertJUnit.assertEquals;
-import static org.testng.AssertJUnit.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.doThrow;
+import static org.mockito.BDDMockito.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.isNull;
+import static org.mockito.BDDMockito.mock;
+import static org.mockito.BDDMockito.never;
+import static org.mockito.BDDMockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -27,25 +43,24 @@ import javax.security.auth.message.AuthException;
 import javax.security.auth.message.AuthStatus;
 import javax.security.auth.message.MessageInfo;
 import javax.security.auth.message.module.ServerAuthModule;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.spi.AuthenticationException;
 
 public class JaspiAuthLoginModulePAPTest {
 
+    private final Map<String, Object> config = new HashMap<>();
     private JaspiAuthLoginModulePostAuthenticationPlugin jaspiPostAuthPlugin;
-
-    private Map<String, Object> config = new HashMap<>();
     private boolean onLoginSuccessMethodCalled = false;
     private JaspiAuthModuleWrapper<ServerAuthModule> jaspiAuthWrapper;
 
-    @BeforeMethod
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
 
         jaspiAuthWrapper = mock(JaspiAuthModuleWrapper.class);
 
@@ -76,7 +91,7 @@ public class JaspiAuthLoginModulePAPTest {
     }
 
     @Test
-    public void shouldCallOnLoginSuccessAndThrowAuthenticationExceptionWhenAuthExceptionCaught() throws Exception {
+    void shouldCallOnLoginSuccessAndThrowAuthenticationExceptionWhenAuthExceptionCaught() throws Exception {
 
         //Given
         Map requestParamsMap = new HashMap();
@@ -87,24 +102,17 @@ public class JaspiAuthLoginModulePAPTest {
         doThrow(AuthException.class).when(jaspiAuthWrapper).initialize(isNull(), eq(config));
 
         //When
-        boolean exceptionCaught = false;
-        AuthenticationException exception = null;
-        try {
-            jaspiPostAuthPlugin.onLoginSuccess(requestParamsMap, request, response, ssoToken);
-        } catch (AuthenticationException e) {
-            exceptionCaught = true;
-            exception = e;
-        }
+        assertThatThrownBy(() -> jaspiPostAuthPlugin.onLoginSuccess(requestParamsMap, request, response, ssoToken))
+                //Then
+                .isInstanceOf(AuthenticationException.class)
+                .hasMessage("Authentication Failed");
 
-        //Then
         verify(jaspiAuthWrapper).initialize(any(), eq(config));
         verify(jaspiAuthWrapper, never()).secureResponse(any());
-        assertTrue(exceptionCaught);
-        assertEquals(exception.getErrorCode(), "authFailed");
     }
 
     @Test
-    public void shouldCallOnLoginSuccessWhenSecureResponseReturnsSendSuccess() throws Exception {
+    void shouldCallOnLoginSuccessWhenSecureResponseReturnsSendSuccess() throws Exception {
 
         //Given
         Map requestParamsMap = new HashMap();
@@ -120,12 +128,12 @@ public class JaspiAuthLoginModulePAPTest {
 
         //Then
         verify(jaspiAuthWrapper).initialize(any(), eq(config));
-        assertTrue(onLoginSuccessMethodCalled);
+        assertThat(onLoginSuccessMethodCalled).isTrue();
         verify(jaspiAuthWrapper).secureResponse(any());
     }
 
     @Test
-    public void shouldCallOnLoginSuccessWhenSecureResponseReturnsSendFailure() throws AuthenticationException,
+    void shouldCallOnLoginSuccessWhenSecureResponseReturnsSendFailure() throws
             AuthException {
 
         //Given
@@ -138,25 +146,18 @@ public class JaspiAuthLoginModulePAPTest {
                 .willReturn(AuthStatus.SEND_FAILURE);
 
         //When
-        boolean exceptionCaught = false;
-        AuthenticationException exception = null;
-        try {
-            jaspiPostAuthPlugin.onLoginSuccess(requestParamsMap, request, response, ssoToken);
-        } catch (AuthenticationException e) {
-            exceptionCaught = true;
-            exception = e;
-        }
+        assertThatThrownBy(() -> jaspiPostAuthPlugin.onLoginSuccess(requestParamsMap, request, response, ssoToken))
+                //Then
+                .isInstanceOf(AuthenticationException.class)
+                .hasMessage("Authentication Failed");
 
-        //Then
         verify(jaspiAuthWrapper).initialize(any(), eq(config));
-        assertTrue(onLoginSuccessMethodCalled);
+        assertThat(onLoginSuccessMethodCalled).isTrue();
         verify(jaspiAuthWrapper).secureResponse(any());
-        assertTrue(exceptionCaught);
-        assertEquals(exception.getErrorCode(), "authFailed");
     }
 
     @Test
-    public void shouldCallOnLoginSuccessWhenSecureResponseReturnsSendContinue() throws AuthenticationException,
+    void shouldCallOnLoginSuccessWhenSecureResponseReturnsSendContinue() throws
             AuthException {
 
         //Given
@@ -169,25 +170,18 @@ public class JaspiAuthLoginModulePAPTest {
                 .willReturn(AuthStatus.SEND_CONTINUE);
 
         //When
-        boolean exceptionCaught = false;
-        AuthenticationException exception = null;
-        try {
-            jaspiPostAuthPlugin.onLoginSuccess(requestParamsMap, request, response, ssoToken);
-        } catch (AuthenticationException e) {
-            exceptionCaught = true;
-            exception = e;
-        }
+        assertThatThrownBy(() -> jaspiPostAuthPlugin.onLoginSuccess(requestParamsMap, request, response, ssoToken))
+                //Then
+                .isInstanceOf(AuthenticationException.class)
+                .hasMessage("Authentication Failed");
 
-        //Then
         verify(jaspiAuthWrapper).initialize(any(), eq(config));
-        assertTrue(onLoginSuccessMethodCalled);
+        assertThat(onLoginSuccessMethodCalled).isTrue();
         verify(jaspiAuthWrapper).secureResponse(any());
-        assertTrue(exceptionCaught);
-        assertEquals(exception.getErrorCode(), "authFailed");
     }
 
     @Test
-    public void shouldCallOnLoginSuccessWhenSecureResponseReturnsElse() throws AuthenticationException, AuthException {
+    void shouldCallOnLoginSuccessWhenSecureResponseReturnsElse() throws AuthException {
 
         //Given
         Map requestParamsMap = new HashMap();
@@ -199,25 +193,18 @@ public class JaspiAuthLoginModulePAPTest {
                 .willReturn(AuthStatus.SUCCESS);
 
         //When
-        boolean exceptionCaught = false;
-        AuthenticationException exception = null;
-        try {
-            jaspiPostAuthPlugin.onLoginSuccess(requestParamsMap, request, response, ssoToken);
-        } catch (AuthenticationException e) {
-            exceptionCaught = true;
-            exception = e;
-        }
+        assertThatThrownBy(() -> jaspiPostAuthPlugin.onLoginSuccess(requestParamsMap, request, response, ssoToken))
+                //Then
+                .isInstanceOf(AuthenticationException.class)
+                .hasMessage("Authentication Failed");
 
-        //Then
         verify(jaspiAuthWrapper).initialize(any(), eq(config));
-        assertTrue(onLoginSuccessMethodCalled);
+        assertThat(onLoginSuccessMethodCalled).isTrue();
         verify(jaspiAuthWrapper).secureResponse(any());
-        assertTrue(exceptionCaught);
-        assertEquals(exception.getErrorCode(), "authFailed");
     }
 
     @Test
-    public void shouldCallOnLoginFailureAndDoNothing() throws AuthenticationException {
+    void shouldCallOnLoginFailureAndDoNothing() throws AuthenticationException {
 
         //Given
         Map requestParamsMap = new HashMap();
@@ -228,11 +215,11 @@ public class JaspiAuthLoginModulePAPTest {
         jaspiPostAuthPlugin.onLoginFailure(requestParamsMap, request, response);
 
         //Then
-        verifyZeroInteractions(jaspiAuthWrapper);
+        verifyNoInteractions(jaspiAuthWrapper);
     }
 
     @Test
-    public void shouldCallOnLogoutAndDoNothing() throws Exception {
+    void shouldCallOnLogoutAndDoNothing() throws Exception {
 
         //Given
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -243,6 +230,6 @@ public class JaspiAuthLoginModulePAPTest {
         jaspiPostAuthPlugin.onLogout(request, response, ssoToken);
 
         //Then
-        verifyZeroInteractions(jaspiAuthWrapper);
+        verifyNoInteractions(jaspiAuthWrapper);
     }
 }

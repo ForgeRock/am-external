@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2012-2019 ForgeRock AS. All Rights Reserved
+ * Copyright 2012-2025 Ping Identity Corporation. All Rights Reserved
  */
 
 package org.forgerock.openam.examples.quotaexhaustionaction;
@@ -71,7 +71,7 @@ public class SampleQuotaExhaustionAction implements QuotaExhaustionAction {
         for (Map.Entry<String, Long> entry : existingSessions.entrySet()) {
             try {
                 // Get a Session from the cache based on the session ID, and destroy it.
-                SessionID sessionId = new SessionID(entry.getKey());
+                SessionID sessionId = sessionService.asSessionID(entry.getKey());
                 Session session = sessionCache.getSession(sessionId);
                 sessionService.destroySession(session, sessionId);
                 // Only destroy the first session.

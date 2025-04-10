@@ -24,7 +24,7 @@
  *
  * $Id: RequestSecurityTokenResponse.java,v 1.4 2009/12/14 23:42:48 mallas Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.wsfederation.profile;

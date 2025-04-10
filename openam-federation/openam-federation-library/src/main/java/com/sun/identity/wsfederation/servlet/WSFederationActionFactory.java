@@ -24,13 +24,13 @@
  *
  * $Id: WSFederationActionFactory.java,v 1.3 2008/08/27 19:00:07 superpat7 Exp $
  *
- * Portions copyright 2015-2019 ForgeRock AS.
+ * Portions copyright 2015-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.wsfederation.servlet;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.owasp.esapi.ESAPI;
 import org.slf4j.Logger;

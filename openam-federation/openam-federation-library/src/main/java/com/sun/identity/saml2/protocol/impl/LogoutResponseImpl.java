@@ -24,13 +24,12 @@
  *
  * $Id: LogoutResponseImpl.java,v 1.2 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2019-2023 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 
 package com.sun.identity.saml2.protocol.impl;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -50,7 +49,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  * It provides all the methods required by <code>LogoutResponse</code>
  */
 
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class LogoutResponseImpl extends StatusResponseImpl
 implements LogoutResponse {
     

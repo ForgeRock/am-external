@@ -11,14 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oauth.secrets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Map;
 
@@ -28,12 +35,15 @@ import org.forgerock.openam.social.idp.OAuthClientConfig;
 import org.forgerock.openam.social.idp.OpenIDConnectClientConfig;
 import org.forgerock.openam.social.idp.SocialIdentityProviders;
 import org.forgerock.openam.social.idp.TwitterClientConfig;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.Multimap;
 
+@ExtendWith(MockitoExtension.class)
 public class OidcRpTrustStoreSecretIdProviderTest {
 
     @Mock
@@ -54,17 +64,15 @@ public class OidcRpTrustStoreSecretIdProviderTest {
     @Mock
     private TwitterClientConfig configWithNoOptionToConfigureCustomTrustStore;
 
-
     private OidcRpTrustStoreSecretIdProvider provider;
 
-    @BeforeTest
-    public void setUp() {
-        openMocks(this);
+    @BeforeEach
+    void setUp() {
         provider = new OidcRpTrustStoreSecretIdProvider(providerConfigStore);
     }
 
     @Test
-    public void testRealmMultiInstanceSecretIds() {
+    void testRealmMultiInstanceSecretIds() {
 
         //given
         Map<String, OAuthClientConfig> configs = generateConfigs();
@@ -84,7 +92,6 @@ public class OidcRpTrustStoreSecretIdProviderTest {
     private Map<String, OAuthClientConfig> generateConfigs() {
         given(oidcConfigUsingCustomTrustStore.provider()).willReturn("oidcConfigWithAlias");
         given(oidcSubConfigUsingCustomTrustStore.provider()).willReturn("oidcSubConfigWithAlias");
-        given(oidcConfigUsingDefaultTrustStore.provider()).willReturn("oidcConfigWithOutAlias");
         given(oidcConfigUsingCustomTrustStore.useCustomTrustStore()).willReturn(true);
         given(oidcSubConfigUsingCustomTrustStore.useCustomTrustStore()).willReturn(true);
         given(oidcConfigUsingDefaultTrustStore.useCustomTrustStore()).willReturn(false);

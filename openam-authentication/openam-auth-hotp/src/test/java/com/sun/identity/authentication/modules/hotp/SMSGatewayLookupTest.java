@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.authentication.modules.hotp;
 
@@ -21,8 +29,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.authentication.spi.AuthLoginException;
 
@@ -31,21 +39,21 @@ public class SMSGatewayLookupTest {
     private Map<String, SMSGateway> smsGatewayMap;
     private SMSGatewayLookup smsGatewayLookup;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         smsGatewayMap = new HashMap<>();
         smsGatewayLookup = new SMSGatewayLookup(smsGatewayMap);
     }
 
     @Test
-    public void testGatewayLookupWithNoGuiceBindings() throws ClassNotFoundException, InstantiationException,
+    void testGatewayLookupWithNoGuiceBindings() throws ClassNotFoundException, InstantiationException,
                                                                           IllegalAccessException {
         SMSGateway smsGateway = smsGatewayLookup.getSmsGateway(SMSGatewayTestImpl.class.getName());
         assertThat(smsGateway).isInstanceOf(SMSGatewayTestImpl.class);
     }
 
     @Test
-    public void testGatewayLookupWithGuiceBindings() throws ClassNotFoundException, InstantiationException,
+    void testGatewayLookupWithGuiceBindings() throws ClassNotFoundException, InstantiationException,
                                                                       IllegalAccessException {
         GuiceSMSGatewayTestImpl expected = new GuiceSMSGatewayTestImpl("unused");
         smsGatewayMap.put(GuiceSMSGatewayTestImpl.class.getName(), expected);
@@ -54,7 +62,7 @@ public class SMSGatewayLookupTest {
     }
 
     @Test
-    public void testGatewayLookupWithFakeClassThrowsException() {
+    void testGatewayLookupWithFakeClassThrowsException() {
         assertThatThrownBy(() -> smsGatewayLookup.getSmsGateway("NotAClass"))
                 .isInstanceOf(ClassNotFoundException.class);
     }

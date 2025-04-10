@@ -11,29 +11,38 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.wsfederation.plugins;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.openam.utils.CollectionUtils.asList;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
+import static org.mockito.Mockito.mock;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.forgerock.guice.core.GuiceExtension;
 import org.forgerock.openam.federation.testutils.TestCaseConfigurationInstance;
 import org.forgerock.openam.federation.testutils.TestCaseDataStoreProvider;
 import org.forgerock.openam.federation.testutils.TestCaseSessionProvider;
 import org.forgerock.util.encode.Base64;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.cot.COTConstants;
@@ -43,9 +52,10 @@ import com.sun.identity.saml.assertion.Attribute;
 import com.sun.identity.saml.common.SAMLException;
 import com.sun.identity.shared.xml.XMLUtils;
 
+@ExtendWith(GuiceExtension.class)
 public class DefaultIDPAttributeMapperTest {
 
-    private CircleOfTrustManager cotManager;
+    private static CircleOfTrustManager cotManager;
 
     private static final String TEST_SESSION_ID = "TestSSOTokenId";
     private static final String TEST_USER_ID = "TestUser";
@@ -62,15 +72,16 @@ public class DefaultIDPAttributeMapperTest {
     private static final String SESSION1 = "value1";
     private static final String SESSION2 = "value2";
 
-    @Mock
-    private SSOToken ssoToken;
+    // Mock
+    private static SSOToken ssoToken;
 
-    @BeforeClass
-    public void init() throws Exception {
+    @BeforeAll
+    static void init() throws Exception {
         // Setup the session properties to be used in across all test cases.
         Map<String, List<String>> sessionProperties = new HashMap<>(2);
         sessionProperties.put("sessionProp1", asList(SESSION1));
         sessionProperties.put("sessionProp2", asList(SESSION2));
+        ssoToken = mock(SSOToken.class);
         TestCaseSessionProvider.setState(ssoToken, TEST_SESSION_ID, TEST_USER_ID, sessionProperties);
 
         // Setup the user attributes to be used in across all test cases.
@@ -94,14 +105,12 @@ public class DefaultIDPAttributeMapperTest {
         cotManager = new CircleOfTrustManager();
     }
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void setUp() throws Exception {
         TestCaseConfigurationInstance.resetConfiguration();
     }
 
-    @DataProvider(name = "mappingData")
-    private Object[][] mappingData() {
+    private static Object[][] mappingData() {
         return new Object[][]{
                 { "testIDPAttributeMapping", "idp-extended.xml", "sp-extended.xml",
                         new Object[]{ "EmailAddress", "LastName", "UserCert" },
@@ -115,12 +124,13 @@ public class DefaultIDPAttributeMapperTest {
         };
     }
 
-    @Test(dataProvider = "mappingData")
+    @ParameterizedTest
+    @MethodSource("mappingData")
     public void testAttributeMapping(String realm,
-                                     String idpExtended,
-                                     String spExtended,
-                                     Object[] expectedAttributeNames,
-                                     Object[] expectedAttributeValues) throws Exception {
+            String idpExtended,
+            String spExtended,
+            Object[] expectedAttributeNames,
+            Object[] expectedAttributeValues) throws Exception {
 
         configureRealm(realm, idpExtended, spExtended);
         DefaultIDPAttributeMapper mapper = new DefaultIDPAttributeMapper();

@@ -24,7 +24,7 @@
  *
  * $Id: RPSigninResponse.java,v 1.8 2009/12/14 23:42:48 mallas Exp $
  *
- * Portions Copyrighted 2017-2019 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.wsfederation.servlet;
@@ -38,8 +38,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

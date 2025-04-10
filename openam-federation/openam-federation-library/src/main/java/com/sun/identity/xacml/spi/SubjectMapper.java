@@ -24,7 +24,7 @@
  *
  * $Id: SubjectMapper.java,v 1.2 2008/06/25 05:48:16 qcheng Exp $
  *
- * Portions Copyrighted 2015 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.xacml.spi;

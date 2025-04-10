@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -32,15 +40,15 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * Test class for {@link SocialProviderHandlerNodeV2}
  */
-@RunWith(MockitoJUnitRunner.class)
-public class SocialProviderHandlerNodeV2Test extends SocialProviderHandlerNodeTest {
+@ExtendWith(MockitoExtension.class)
+public class SocialProviderHandlerNodeV2Test extends SocialProviderHandlerNodeTestBase {
 
     private static final String EXPECT_PROFILE_INFORMATION = "expectProfileInformation";
 
@@ -53,11 +61,11 @@ public class SocialProviderHandlerNodeV2Test extends SocialProviderHandlerNodeTe
     protected void setNodeField() {
         node = new SocialProviderHandlerNodeV2((SocialProviderHandlerNodeV2.Config) config, authModuleHelper,
                 providerConfigStore, identityService, realm,
-                __ -> scriptEvaluator, sessionServiceProvider, idmIntegrationService);
+                scriptEvaluatorFactory, idmIntegrationService, authScriptUtilities);
     }
 
     @Test
-    public void processWhenExpectingMissingSocialProviderParamsResultsInSocialAuthInterruptedOutcome()
+    void processWhenExpectingMissingSocialProviderParamsResultsInSocialAuthInterruptedOutcome()
             throws Exception {
         // Given
         TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
@@ -73,7 +81,7 @@ public class SocialProviderHandlerNodeV2Test extends SocialProviderHandlerNodeTe
     }
 
     @Test
-    public void processWhenNotExpectingMissingSocialProviderParamsResultsInNewFlagInNodeState() throws Exception {
+    void processWhenNotExpectingMissingSocialProviderParamsResultsInNewFlagInNodeState() throws Exception {
         // Given
         JsonValue nodeState = json(object(field(SELECTED_IDP, PROVIDER_NAME)));
         TreeContext context = new TreeContext(DEFAULT_IDM_IDENTITY_RESOURCE,
@@ -88,7 +96,7 @@ public class SocialProviderHandlerNodeV2Test extends SocialProviderHandlerNodeTe
     }
 
     @Test
-    public void assertInputsAreCorrect() {
+    void assertInputsAreCorrect() {
         // Given
         var expectedInputs = new InputState[]{
                 new InputState(SELECTED_IDP),

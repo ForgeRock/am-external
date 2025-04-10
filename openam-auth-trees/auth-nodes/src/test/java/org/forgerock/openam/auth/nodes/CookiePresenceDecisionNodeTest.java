@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -20,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.json.JsonValue.object;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Map;
 import java.util.Optional;
@@ -29,16 +36,17 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.ImmutableMap;
 
 /**
  * Test the Cookie presence decision node.
  */
+@ExtendWith(MockitoExtension.class)
 public class CookiePresenceDecisionNodeTest {
 
     private static final String DEFAULT_COOKIE_NAME = "My-Cookie";
@@ -50,13 +58,8 @@ public class CookiePresenceDecisionNodeTest {
     @Mock
     private CookiePresenceDecisionNode.Config config;
 
-    @BeforeMethod
-    public void before() {
-        openMocks(this);
-    }
-
     @Test
-    public void processSetResultInSharedStateWhenNoError() throws Exception {
+    void processSetResultInSharedStateWhenNoError() throws Exception {
         //GIVEN
         whenNodeConfigHasValue(DEFAULT_COOKIE_NAME);
         CookiePresenceDecisionNode cookiePresenceDecisionNode = new CookiePresenceDecisionNode(config);
@@ -65,14 +68,14 @@ public class CookiePresenceDecisionNodeTest {
         Action action = cookiePresenceDecisionNode.process(getContext());
 
         //THEN
-        Assert.assertTrue(config.cookieName().length() > 0);
+        assertThat(config.cookieName().length()).isGreaterThan(0);
         assertThat(action.callbacks).isEmpty();
         assertThat(action.sharedState).isNullOrEmpty();
         assertThat(action.outcome).isEqualTo(FALSE_OUTCOME_ID);
     }
 
     @Test
-    public void shouldGetCorrectOutcomeForExistingDefaultCookie() throws Exception {
+    void shouldGetCorrectOutcomeForExistingDefaultCookie() throws Exception {
         //GIVEN
         whenNodeConfigHasValue(DEFAULT_COOKIE_NAME);
         CookiePresenceDecisionNode cookiePresenceDecisionNode = new CookiePresenceDecisionNode(config);
@@ -86,7 +89,7 @@ public class CookiePresenceDecisionNodeTest {
     }
 
     @Test
-    public void shouldGetCorrectOutcomeForNonExistingDefaultCookie() throws Exception {
+    void shouldGetCorrectOutcomeForNonExistingDefaultCookie() throws Exception {
         //GIVEN
         whenNodeConfigHasValue(DEFAULT_COOKIE_NAME);
         CookiePresenceDecisionNode cookiePresenceDecisionNode = new CookiePresenceDecisionNode(config);
@@ -99,7 +102,7 @@ public class CookiePresenceDecisionNodeTest {
     }
 
     @Test
-    public void shouldGetCorrectOutcomeForExistingCustomCookie() throws Exception {
+    void shouldGetCorrectOutcomeForExistingCustomCookie() throws Exception {
         //GIVEN
         whenNodeConfigHasValue(CUSTOM_COOKIE_NAME);
         CookiePresenceDecisionNode cookiePresenceDecisionNode = new CookiePresenceDecisionNode(config);
@@ -113,7 +116,7 @@ public class CookiePresenceDecisionNodeTest {
     }
 
     @Test
-    public void shouldGetCorrectOutcomeForNotExistingCustomCookie() throws Exception {
+    void shouldGetCorrectOutcomeForNotExistingCustomCookie() throws Exception {
         //GIVEN
         whenNodeConfigHasValue(CUSTOM_COOKIE_NAME);
         CookiePresenceDecisionNode cookiePresenceDecisionNode = new CookiePresenceDecisionNode(config);
@@ -127,7 +130,7 @@ public class CookiePresenceDecisionNodeTest {
     }
 
     @Test
-    public void processNoExceptionWhenEmptyCookieName() throws Exception {
+    void processNoExceptionWhenEmptyCookieName() throws Exception {
         whenNodeConfigHasDefaultValue();
 
         //GIVEN

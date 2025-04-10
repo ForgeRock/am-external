@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins.scripted.bindings;
 
@@ -20,15 +28,17 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.FAULT_DE
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.REQUEST;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.RESPONSE;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.scripting.domain.BindingsMap;
 
-final class SamlIdpPreSendFailureResponseBindings extends BaseSamlIdpBindings {
+public final class SamlIdpPreSendFailureResponseBindings extends BaseSamlIdpBindings {
 
     private final String faultCode;
     private final String faultDetail;
+    private final HttpServletRequest request;
+    private final HttpServletResponse response;
 
     /**
      * Constructor for SamlIdpPreSendFailureResponseBindings.
@@ -39,6 +49,8 @@ final class SamlIdpPreSendFailureResponseBindings extends BaseSamlIdpBindings {
         super(builder);
         this.faultCode = builder.faultCode;
         this.faultDetail = builder.faultDetail;
+        this.request = builder.request;
+        this.response = builder.response;
     }
 
     static SamlIdpPreSendFailureResponseBindingsStep1 builder() {
@@ -48,16 +60,6 @@ final class SamlIdpPreSendFailureResponseBindings extends BaseSamlIdpBindings {
     @Override
     public BindingsMap legacyBindings() {
         BindingsMap bindings = new BindingsMap(legacyCommonBindings());
-        bindings.put(REQUEST, request);
-        bindings.put(FAULT_CODE, faultCode);
-        bindings.put(FAULT_DETAIL, faultDetail);
-        bindings.put(RESPONSE, response);
-        return bindings;
-    }
-
-    @Override
-    public BindingsMap nextGenBindings() {
-        BindingsMap bindings = new BindingsMap(nextGenCommonBindings());
         bindings.put(REQUEST, request);
         bindings.put(FAULT_CODE, faultCode);
         bindings.put(FAULT_DETAIL, faultDetail);
@@ -94,15 +96,44 @@ final class SamlIdpPreSendFailureResponseBindings extends BaseSamlIdpBindings {
      * SamlIdpPreSendFailureResponseBindings.
      */
     public interface SamlIdpPreSendFailureResponseBindingsStep4 {
-        SamlIdpAdapterCommonBindingsStep1 withFaultDetail(String faultDetail);
+        SamlIdpAdapterCommonBindingsStep1<SamlIdpPreSendFailureResponseBindings> withFaultDetail(String faultDetail);
     }
 
-    private static final class Builder extends BaseSamlIdpBindings.Builder<Builder> implements
+    /**
+     * Builder object to construct a {@link SamlIdpPreSendFailureResponseBindings}.
+     * Before modifying this builder, or creating a new one, please read
+     * service-component-api/scripting-api/src/main/java/org/forgerock/openam/scripting/domain/README.md
+     */
+    private static final class Builder extends BaseSamlIdpBindings.Builder<SamlIdpPreSendFailureResponseBindings> implements
             SamlIdpPreSendFailureResponseBindingsStep1, SamlIdpPreSendFailureResponseBindingsStep2,
             SamlIdpPreSendFailureResponseBindingsStep3, SamlIdpPreSendFailureResponseBindingsStep4 {
 
         private String faultCode;
         private String faultDetail;
+        private HttpServletRequest request;
+        private HttpServletResponse response;
+
+        /**
+         * Set the request for the builder.
+         *
+         * @param request The request as HttpServletRequest.
+         * @return The next step of the builder.
+         */
+        public SamlIdpPreSendFailureResponseBindingsStep2 withRequest(HttpServletRequest request) {
+            this.request = wrapRequest(request);
+            return this;
+        }
+
+        /**
+         * Set the response for the builder.
+         *
+         * @param response The response as HttpServletResponse.
+         * @return The next step of the builder.
+         */
+        public SamlIdpPreSendFailureResponseBindingsStep3 withResponse(HttpServletResponse response) {
+            this.response = wrapResponse(response);
+            return this;
+        }
 
         /**
          * Set the faultCode for the builder.
@@ -121,7 +152,7 @@ final class SamlIdpPreSendFailureResponseBindings extends BaseSamlIdpBindings {
          * @param faultDetail The faultDetail as String.
          * @return The next step of the builder.
          */
-        public SamlIdpAdapterCommonBindingsStep1 withFaultDetail(String faultDetail) {
+        public SamlIdpAdapterCommonBindingsStep1<SamlIdpPreSendFailureResponseBindings> withFaultDetail(String faultDetail) {
             this.faultDetail = faultDetail;
             return this;
         }

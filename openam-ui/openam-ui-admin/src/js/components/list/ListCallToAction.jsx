@@ -11,16 +11,35 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import PropTypes from "prop-types";
 import React from "react";
+import { Button } from "react-bootstrap";
+import { t } from "i18next";
 
 import AddButton from "components/AddButton";
 import CallToAction from "components/CallToAction";
 
-const ListCallToAction = ({ addButton, description, title }) => {
+const ListCallToAction = ({ addButton, description, title, showImport = false, onImport }) => {
+    const importButton = showImport && (
+        <Button
+            bsStyle="primary"
+            className="ml-2"
+            onClick={ onImport }
+        >
+            <i className="fa fa-upload" /> { t("common.form.import") }
+        </Button>
+    );
     return (
         <CallToAction>
             <p className="text-primary"><i className="fa fa-list-alt fa-4x" /></p>
@@ -33,6 +52,7 @@ const ListCallToAction = ({ addButton, description, title }) => {
             >
                 { addButton.menuItems }
             </AddButton>
+            { importButton }
         </CallToAction>
     );
 };
@@ -48,6 +68,8 @@ ListCallToAction.propTypes = {
         title: PropTypes.string.isRequired
     }).isRequired,
     description: PropTypes.string.isRequired,
+    onImport: PropTypes.func,
+    showImport: PropTypes.bool,
     title: PropTypes.string.isRequired
 };
 

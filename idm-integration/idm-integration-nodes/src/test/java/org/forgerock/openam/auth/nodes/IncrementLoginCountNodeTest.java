@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -25,16 +33,15 @@ import static org.forgerock.json.resource.ResourceException.BAD_REQUEST;
 import static org.forgerock.json.resource.ResourceException.NOT_FOUND;
 import static org.forgerock.json.resource.ResourceException.newResourceException;
 import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Optional;
 
@@ -43,11 +50,13 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class IncrementLoginCountNodeTest {
 
     @Mock
@@ -62,15 +71,10 @@ public class IncrementLoginCountNodeTest {
     private TreeContext context;
     private IncrementLoginCountNode node;
 
-    @BeforeMethod
-    public void before() throws Exception {
-        initMocks(this);
-
+    @BeforeEach
+    void before() throws Exception {
         when(config.identityAttribute()).thenReturn(DEFAULT_IDM_IDENTITY_ATTRIBUTE);
-        when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any()))
-                .thenReturn(json(object(field(FIELD_CONTENT_ID, "1"))));
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
-        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
 
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveSharedState(), json(object()),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
@@ -78,7 +82,8 @@ public class IncrementLoginCountNodeTest {
     }
 
     @Test
-    public void shouldReturnOutcomeIfNoIdentityFound() throws Exception {
+    void shouldReturnOutcomeIfNoIdentityFound() throws Exception {
+        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, json(object()), json(object()),
                 new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
         node = new IncrementLoginCountNode(config, realm, idmIntegrationService);
@@ -87,7 +92,10 @@ public class IncrementLoginCountNodeTest {
     }
 
     @Test
-    public void shouldReturnOutcomeIfUsernameIdentityFound() throws Exception {
+    void shouldReturnOutcomeIfUsernameIdentityFound() throws Exception {
+        when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any()))
+                .thenReturn(json(object(field(FIELD_CONTENT_ID, "1"))));
+        when(idmIntegrationService.getUsernameFromContext(any())).thenCallRealMethod();
         context = new TreeContext(TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE, retrieveUsernameSharedState(),
                 json(object()), new ExternalRequestContext.Builder().build(), emptyList(), Optional.empty());
         node = new IncrementLoginCountNode(config, realm, idmIntegrationService);
@@ -96,7 +104,7 @@ public class IncrementLoginCountNodeTest {
     }
 
     @Test
-    public void shouldReturnOutcomeIfNoObjectToIncrement() throws Exception {
+    void shouldReturnOutcomeIfNoObjectToIncrement() throws Exception {
         when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any()))
                 .thenThrow(newResourceException(NOT_FOUND));
         verify(idmIntegrationService, times(0)).incrementLoginCount(any(), any(), any(), any());
@@ -104,13 +112,17 @@ public class IncrementLoginCountNodeTest {
     }
 
     @Test
-    public void shouldReturnOutcomeIfLoginCountSuccessfullyIncremented() throws Exception {
+    void shouldReturnOutcomeIfLoginCountSuccessfullyIncremented() throws Exception {
+        when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any()))
+                .thenReturn(json(object(field(FIELD_CONTENT_ID, "1"))));
         doNothing().when(idmIntegrationService).incrementLoginCount(any(), any(), any(), any());
         assertThat(node.process(context).outcome).isEqualTo("outcome");
     }
 
     @Test
-    public void shouldReturnOutcomeIfLoginCountIncrementFailed() throws Exception {
+    void shouldReturnOutcomeIfLoginCountIncrementFailed() throws Exception {
+        when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any()))
+                .thenReturn(json(object(field(FIELD_CONTENT_ID, "1"))));
         doThrow(newResourceException(BAD_REQUEST)).when(idmIntegrationService)
                 .incrementLoginCount(any(), any(), any(), any());
         assertThat(node.process(context).outcome).isEqualTo("outcome");

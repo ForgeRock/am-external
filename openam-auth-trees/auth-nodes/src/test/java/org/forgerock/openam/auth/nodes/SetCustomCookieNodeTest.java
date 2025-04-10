@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -25,19 +33,20 @@ import static org.mockito.BDDMockito.given;
 import java.time.Duration;
 import java.util.Optional;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.http.protocol.Cookie;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class SetCustomCookieNodeTest {
 
     @Mock
@@ -49,13 +58,8 @@ public class SetCustomCookieNodeTest {
     @Mock
     HttpServletResponse servletResponse;
 
-    @BeforeMethod
-    private void init() {
-        MockitoAnnotations.openMocks(this);
-    }
-
     @Test
-    public void testCookiePathFromConfig() throws Exception {
+    void testCookiePathFromConfig() throws Exception {
         givenOptionalConfigDefaults();
         given(config.path()).willReturn(Optional.of("test-path"));
 
@@ -65,7 +69,7 @@ public class SetCustomCookieNodeTest {
     }
 
     @Test
-    public void testCookieSameSiteFromConfig() throws Exception {
+    void testCookieSameSiteFromConfig() throws Exception {
         givenOptionalConfigDefaults();
         given(config.sameSite()).willReturn(Cookie.SameSite.STRICT);
 
@@ -75,7 +79,7 @@ public class SetCustomCookieNodeTest {
     }
 
     @Test
-    public void testCookieMaxLifeFromConfigAtEndOfSession() throws Exception {
+    void testCookieMaxLifeFromConfigAtEndOfSession() throws Exception {
         givenOptionalConfigDefaults();
 
         createAndProcessCustomCookieNode();
@@ -85,7 +89,7 @@ public class SetCustomCookieNodeTest {
     }
 
     @Test
-    public void testCookieMaxLifeFromConfigInFuture() throws Exception {
+    void testCookieMaxLifeFromConfigInFuture() throws Exception {
         givenOptionalConfigDefaults();
         given(config.maxAge()).willReturn(Optional.of(Duration.ofSeconds(600)));
 
@@ -96,7 +100,7 @@ public class SetCustomCookieNodeTest {
     }
 
     @Test
-    public void testCookieUseSecureFlagTrueFromConfig() throws Exception {
+    void testCookieUseSecureFlagTrueFromConfig() throws Exception {
         givenOptionalConfigDefaults();
         given(config.useSecureCookie()).willReturn(true);
 
@@ -106,7 +110,7 @@ public class SetCustomCookieNodeTest {
     }
 
     @Test
-    public void testCookieUseSecureFlagFalseFromConfig() throws Exception {
+    void testCookieUseSecureFlagFalseFromConfig() throws Exception {
         givenOptionalConfigDefaults();
         given(config.useSecureCookie()).willReturn(false);
 

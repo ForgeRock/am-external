@@ -24,7 +24,7 @@
  *
  * $Id: XACMLQueryUtil.java,v 1.1 2009/09/22 22:50:14 madan_ranganath Exp $
  *
- * Portions copyright 2013-2019 ForgeRock AS.
+ * Portions copyright 2013-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.profile;
@@ -34,7 +34,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.openam.annotations.Supported;
 import org.slf4j.Logger;

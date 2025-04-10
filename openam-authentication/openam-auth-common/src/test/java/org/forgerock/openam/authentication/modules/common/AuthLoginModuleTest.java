@@ -11,23 +11,33 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2017 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2013-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.common;
 
-import com.sun.identity.authentication.spi.AuthLoginException;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+import java.security.Principal;
+import java.util.Map;
 
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
-import java.security.Principal;
-import java.util.Map;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.sun.identity.authentication.spi.AuthLoginException;
 
 public class AuthLoginModuleTest {
 
@@ -35,8 +45,8 @@ public class AuthLoginModuleTest {
 
     private AMLoginModuleBinder amLoginModuleBinder;
 
-    @BeforeClass
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
 
         amLoginModuleBinder = mock(AMLoginModuleBinder.class);
 
@@ -59,7 +69,7 @@ public class AuthLoginModuleTest {
     }
 
     @Test
-    public void shouldGetCallbackHandler() {
+    void shouldGetCallbackHandler() {
 
         //Given
 
@@ -71,7 +81,7 @@ public class AuthLoginModuleTest {
     }
 
     @Test
-    public void shouldGetHttpServletRequest() {
+    void shouldGetHttpServletRequest() {
 
         //Given
 
@@ -83,7 +93,7 @@ public class AuthLoginModuleTest {
     }
 
     @Test
-    public void shouldGetHttpServletResponse() {
+    void shouldGetHttpServletResponse() {
 
         //Given
 
@@ -95,7 +105,7 @@ public class AuthLoginModuleTest {
     }
 
     @Test
-    public void shouldGetRequestOrg() {
+    void shouldGetRequestOrg() {
 
         //Given
 
@@ -107,7 +117,7 @@ public class AuthLoginModuleTest {
     }
 
     @Test
-    public void shouldSetUserSessionProperty() throws AuthLoginException {
+    void shouldSetUserSessionProperty() throws AuthLoginException {
 
         //Given
         String name = "NAME";

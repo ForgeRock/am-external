@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.xmlenc;
@@ -24,12 +32,11 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.apache.xml.security.encryption.XMLCipher;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-import org.testng.annotations.DataProvider;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.Element;
 
-import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.key.EncryptionConfig;
 import com.sun.identity.saml2.key.RsaOaepConfig;
 import com.sun.identity.shared.xml.XMLUtils;
@@ -37,15 +44,14 @@ import com.sun.identity.xmlenc.EncryptionConstants;
 
 public class FMEncProviderTest {
 
-    private KeyPair keyPair;
+    private static KeyPair keyPair;
 
-    @BeforeClass
-    public void generateKeyPair() throws Exception {
+    @BeforeAll
+    static void generateKeyPair() throws Exception {
         keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
     }
 
-    @DataProvider
-    public Object[][] dataEncryptionAlgorithms() {
+    public static Object[][] dataEncryptionAlgorithms() {
         return new Object[][] {
                 { XMLCipher.AES_128, 128 },
                 { XMLCipher.AES_192, 192 },
@@ -56,7 +62,8 @@ public class FMEncProviderTest {
         };
     }
 
-    @Test(dataProvider = "dataEncryptionAlgorithms")
+    @ParameterizedTest
+    @MethodSource("dataEncryptionAlgorithms")
     public void testDataEncryption(String dataEncryptionAlgorithm, int keySize) throws Exception {
         // Given
         FMEncProvider encProvider = new FMEncProvider();
@@ -76,7 +83,8 @@ public class FMEncProviderTest {
                         .getMaskGenerationFunction() + "\"");
     }
 
-    @Test(dataProvider = "dataEncryptionAlgorithms")
+    @ParameterizedTest
+    @MethodSource("dataEncryptionAlgorithms")
     public void testDataEncryptionOAEPMGF1SHA1(String dataEncryptionAlgorithm, int keySize) throws Exception {
         // Given
         FMEncProvider encProvider = new FMEncProvider();
@@ -95,7 +103,8 @@ public class FMEncProviderTest {
                         "Algorithm=\"http://www.w3.org/2009/xmlenc11#mgf1sha1\"/>");
     }
 
-    @Test(dataProvider = "dataEncryptionAlgorithms")
+    @ParameterizedTest
+    @MethodSource("dataEncryptionAlgorithms")
     public void testOAEPEncryptionMethodWithMGFP1MaskIsOptional(String dataEncryptionAlgorithm, int keySize)
             throws Exception {
         // Given

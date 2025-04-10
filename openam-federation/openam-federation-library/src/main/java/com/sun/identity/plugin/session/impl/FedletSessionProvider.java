@@ -24,15 +24,15 @@
  *
  * $Id: FedletSessionProvider.java,v 1.4 2008/08/06 17:28:17 exu Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.plugin.session.impl;
 
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -159,6 +159,19 @@ public class FedletSessionProvider implements SessionProvider {
         HttpServletResponse response  // optional input
     ) throws SessionException {
         debug.debug("FedletSessionProvider.invalidateSession called");
+    }
+
+    /**
+     * Removes a persistent cookie, using the cookie name found in a given SSO token.
+     *
+     * @param session a session that contains the cookie name.
+     * @param request the request.
+     * @param response the response.
+     * @throws SessionException if an error occurred during session processing
+     */
+    public void clearPersistentCookie(Object session, HttpServletRequest request, HttpServletResponse response)
+            throws SessionException {
+        debug.debug("FedletSessionProvider.clearPersistentCookie called");
     }
 
     /**

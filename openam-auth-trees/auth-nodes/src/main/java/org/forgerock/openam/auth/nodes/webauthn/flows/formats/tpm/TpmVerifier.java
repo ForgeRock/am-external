@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm;
@@ -28,9 +36,9 @@ import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -41,6 +49,7 @@ import org.bouncycastle.asn1.x500.AttributeTypeAndValue;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.forgerock.json.jose.jwk.KeyType;
+import org.forgerock.openam.auth.nodes.webauthn.Aaguid;
 import org.forgerock.openam.auth.nodes.webauthn.cose.CoseAlgorithm;
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AttestationType;
@@ -56,11 +65,11 @@ import org.slf4j.LoggerFactory;
 /**
  * Provides functionality for verifying a 'TPM' (Trusted Platform Module) format attestation.
  * https://www.w3.org/TR/webauthn/#tpm-attestation.
- *
+ * <p>
  * Note that this IN NO WAY attempts to replicate all of the features of TPM, or adds support for
  * TPM. Rather, it only implements the specific features necessary to perform attestation for the
  * WebAuthn process.
- *
+ * <p>
  * {@see https://trustedcomputinggroup.org/wp-content/uploads/TPM-Rev-2.0-Part-2-Structures-01.38.pdf}
  */
 public class TpmVerifier extends TrustableAttestationVerifier {
@@ -73,20 +82,24 @@ public class TpmVerifier extends TrustableAttestationVerifier {
 
     private final Logger logger = LoggerFactory.getLogger(TpmVerifier.class);
 
+    private final Set<TpmManufacturer> tpmManufacturers;
+
     /**
-     * Constructor taking the trustable attestation validator configured with appropriate certs for this instance.
+     * Constructor taking the trustable attestation validator configured with appropriate certificates.
      *
-     * @param validator the validator containing appropriate certs.
+     * @param validator        the validator containing appropriate certificates
+     * @param tpmManufacturers the providers of TPM manufacturers
      */
-    public TpmVerifier(TrustAnchorValidator validator) {
+    public TpmVerifier(TrustAnchorValidator validator, Set<TpmManufacturer> tpmManufacturers) {
         super(validator);
+        this.tpmManufacturers = tpmManufacturers;
     }
 
     /**
      * Verify the attestation using specific steps defined for the TPM attestation format.
      *
      * @param attestationObject the attestation object.
-     * @param clientDataHash the hash of the client data.
+     * @param clientDataHash    the hash of the client data.
      * @return a {@link VerificationResponse} reporting the validity of the attestation.
      */
     @Override
@@ -145,7 +158,7 @@ public class TpmVerifier extends TrustableAttestationVerifier {
 
         // Verify that attested contains a TPMS_CERTIFY_INFO structure whose name field contains a valid Name for
         // pubArea, as computed using the algorithm in the nameAlg field of pubArea
-        if (!verifyHash(attestationObject.attestationStatement.getPubArea(), tpmtPublic.nameAlg.getCoseAlg(),
+        if (!verifyHash(attestationObject.attestationStatement.getPubArea(), tpmCertInfo.attested.nameAlg.getCoseAlg(),
                 tpmCertInfo.attested.name)) {
             logger.error("unable to verify hash of pubArea against the attested name");
             return VerificationResponse.failure();
@@ -276,10 +289,8 @@ public class TpmVerifier extends TrustableAttestationVerifier {
                         if (((RDN) val).isMultiValued()) {
                             for (AttributeTypeAndValue typeAndValue : ((RDN) val).getTypesAndValues()) {
                                 if (typeAndValue.getType().getId().equals(TPM_MANUFACTURER_OID)) {
-                                    TpmManufacturer manufacturer = TpmManufacturer.getTpmManufacturer(
-                                            ((DERUTF8String) typeAndValue.getValue()).getString());
-                                    if (manufacturer != null) {
-                                        logger.debug("Manufacturer type " + manufacturer.getName());
+                                    String tpmId = ((DERUTF8String) typeAndValue.getValue()).getString();
+                                    if (isValidTpmManufacturer(tpmId)) {
                                         return true;
                                     }
                                 }
@@ -289,10 +300,8 @@ public class TpmVerifier extends TrustableAttestationVerifier {
                             DERSequence seq2 = (DERSequence) set.getObjectAt(0).toASN1Primitive();
                             ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) seq2.getObjectAt(0).toASN1Primitive();
                             if (oid.getId().equals(TPM_MANUFACTURER_OID)) {
-                                DERUTF8String value = (DERUTF8String) seq2.getObjectAt(1).toASN1Primitive();
-                                TpmManufacturer manufacturer = TpmManufacturer.getTpmManufacturer(value.getString());
-                                if (manufacturer != null) {
-                                    logger.debug("Manufacturer type " + manufacturer.getName());
+                                String tpmId = ((DERUTF8String) seq2.getObjectAt(1).toASN1Primitive()).getString();
+                                if (isValidTpmManufacturer(tpmId)) {
                                     return true;
                                 }
                             }
@@ -309,6 +318,17 @@ public class TpmVerifier extends TrustableAttestationVerifier {
         return false;
     }
 
+    private boolean isValidTpmManufacturer(String tpmId) {
+        for (TpmManufacturer tpmManufacturer : tpmManufacturers) {
+            if (tpmManufacturer.getId().equals(tpmId)) {
+                logger.debug("Manufacturer type " + tpmManufacturer.getManufacturerName());
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private boolean verifyExtKeyUsageValue(X509Certificate cert) {
         List<String> extKeyUsages;
         try {
@@ -321,14 +341,15 @@ public class TpmVerifier extends TrustableAttestationVerifier {
         return extKeyUsages.contains(TC_KKP_AIK_CERTIFICATE_OID);
     }
 
-    private boolean verifyAaguidExtension(X509Certificate cert, byte[] authDataAaguid) {
+    private boolean verifyAaguidExtension(X509Certificate cert, Aaguid authDataAaguid) {
         byte[] idFidoGenCeAaguidValue = cert.getExtensionValue(ID_FIDO_GEN_CE_AAGUID);
         if (idFidoGenCeAaguidValue == null) {
             logger.warn("Certificate provides no AAGUID value in the appropriate extension.");
             return true;
         }
+        Aaguid idFidoGenCeAaguid = new Aaguid(idFidoGenCeAaguidValue);
 
-        return Arrays.equals(idFidoGenCeAaguidValue, authDataAaguid);
+        return idFidoGenCeAaguid.equals(authDataAaguid);
     }
 
 }

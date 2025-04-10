@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.common;
@@ -20,6 +28,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -27,14 +36,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.RandomStringUtils;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
@@ -46,12 +57,13 @@ import com.sun.identity.saml2.jaxb.metadata.IndexedEndpointType;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
+import com.sun.identity.saml2.meta.SAML2MetaUtils.MetadataUpdateType;
 import com.sun.identity.shared.encode.URLEncDec;
 
 public class SAML2UtilsTest {
 
     @Test
-    public void encodeDecodeTest() {
+    void encodeDecodeTest() {
 
         // the max length of each random String to encode
         int maxStringLength = 300;
@@ -75,7 +87,7 @@ public class SAML2UtilsTest {
     }
 
     @Test
-    public void getMappedAttributesTest() {
+    void getMappedAttributesTest() {
 
         List<String> mappings = new ArrayList<>(6);
 
@@ -96,8 +108,7 @@ public class SAML2UtilsTest {
         assertThat(mappedAttributes).containsEntry("urn:oasis:names:tc:SAML:2.0:attrname-format:uri|name5", "\"static value\"");
     }
 
-    @DataProvider(name = "cookies")
-    public Object[][] getCookies() {
+    public static Object[][] cookies() {
         String jsessionId = "JSESSIONID=testjsessionidvalue";
         String sessionCookie = "iPlanetDirectoryPro=r3RWxelZgS5tgL8Zgbn46-WfXjw."
                 + "*AAJTSQACMDEAAlNLABxNK1hGSHkwL1lHRkhQdFlsVnIzWFpGYWVud2c9AAR0eXBlAANDVFMAAlMxAAA.*";
@@ -114,7 +125,8 @@ public class SAML2UtilsTest {
      * Perform processing of cookies and verify that no exceptions are thrown.
      * @param headers The set of headers that include 'cookie's
      */
-    @Test(dataProvider = "cookies")
+    @ParameterizedTest
+    @MethodSource("cookies")
     public void processCookiesTest(Map<String, List<?>> headers) {
         HttpServletResponse response = mockHttpServletResponse();
         HttpServletRequest request = mock(HttpServletRequest.class);
@@ -122,7 +134,7 @@ public class SAML2UtilsTest {
     }
 
     @Test
-    public void shouldVerifyAssertionConsumerServiceLocation() throws SAML2Exception {
+    void shouldVerifyAssertionConsumerServiceLocation() throws SAML2Exception {
         // Given
         String spEntityID = "testEntityId_1";
         String acsUrl = getBaseUrl() + "Consumer/metaAlias/sp1";
@@ -133,20 +145,23 @@ public class SAML2UtilsTest {
                 .doesNotThrowAnyException();
     }
 
-    @Test(expectedExceptions = SAML2Exception.class,
-            expectedExceptionsMessageRegExp = "Invalid Assertion Consumer Location specified")
-    public void shouldFailToVerifyAssertionConsumerServiceLocationGivenNoLocationMatch() throws SAML2Exception {
-        // Given
-        String spEntityID = "testEntityId_2";
-        HttpServletRequest request = mockHttpServletRequest(getBaseUrl() + "Consumer/metaAlias/sp1");
-        mockRequestDispatcher(request);
-        createEntityDescriptor(getDefaultRealm(), spEntityID, getBaseUrl() + "AuthConsumer/metaAlias/sp1");
-        // When
-        SAML2Utils.verifyAssertionConsumerServiceLocation(
-                getDefaultRealm(), spEntityID, request, mockHttpServletResponse());
+    @Test
+    void shouldFailToVerifyAssertionConsumerServiceLocationGivenNoLocationMatch() throws SAML2Exception {
+        assertThatThrownBy(() -> {
+            // Given
+            String spEntityID = "testEntityId_2";
+            HttpServletRequest request = mockHttpServletRequest(getBaseUrl() + "Consumer/metaAlias/sp1");
+            mockRequestDispatcher(request);
+            createEntityDescriptor(getDefaultRealm(), spEntityID, getBaseUrl() + "AuthConsumer/metaAlias/sp1");
+            // When
+            SAML2Utils.verifyAssertionConsumerServiceLocation(
+                    getDefaultRealm(), spEntityID, request, mockHttpServletResponse());
+        })
+                .hasMessageMatching("Invalid Assertion Consumer Location specified")
+                .isInstanceOf(SAML2Exception.class);
     }
 
-    private void generateUrlCombinationTestCase(String[] baseUrls, String[] acsUrls, List<Object[]> params) {
+    private static void generateUrlCombinationTestCase(String[] baseUrls, String[] acsUrls, List<Object[]> params) {
         List<String> testList = new ArrayList<>();
         for (String path : baseUrls) {
             for (String acs : acsUrls) {
@@ -160,8 +175,7 @@ public class SAML2UtilsTest {
         }
     }
 
-    @DataProvider
-    public Object[][] spACSPass() {
+    public static Object[][] spACSPass() {
         List<Object[]> params = new ArrayList<>();
         final String spACSURL = "Consumer/metaAlias/sp1";
         final String[] spACSURLs = new String[] { spACSURL, spACSURL + "?q=1", spACSURL + "?q=2", spACSURL + "?q2=1" };
@@ -172,8 +186,8 @@ public class SAML2UtilsTest {
                 spACSURLs, params);
         return params.toArray(new Object[0][0]);
     }
-
-    @Test(dataProvider = "spACSPass")
+    @ParameterizedTest
+    @MethodSource("spACSPass")
     public void shouldVerifyAssertionConsumerServiceLocation(String requestUrl, String acsUrl)  throws SAML2Exception {
         // Given
         String spEntityID = String.format("testEntityId_1_%s_%s", requestUrl, acsUrl);
@@ -185,8 +199,7 @@ public class SAML2UtilsTest {
                 .doesNotThrowAnyException();
     }
 
-    @DataProvider
-    public Object[][] spACSFail() {
+    public static Object[][] spACSFail() {
         final String spACSURL1 = getBaseUrl() + "Consumer/metaAlias/sp1";
         final String spACSURL2 = getBaseUrl() + "AuthConsumer/metaAlias/sp1";
         final String wrongHostRequestACSURL1 = "http://otherhost/am/" + "Consumer/metaAlias/sp1";
@@ -200,35 +213,55 @@ public class SAML2UtilsTest {
                 { wrongHostRequestACSURL2, spACSURL2 }
         };
     }
-
-    @Test(dataProvider = "spACSFail",
-            expectedExceptions = SAML2Exception.class,
-            expectedExceptionsMessageRegExp = "Invalid Assertion Consumer Location specified"
-    )
+    @ParameterizedTest
+    @MethodSource("spACSFail")
     public void shouldFailToVerifyAssertionConsumerServiceLocationGivenNoLocationMatch(
-            String requestURL, String acsUrl) throws SAML2Exception {
-        // Given
-        String spEntityID = String.format("testEntityId_2_%s_%s", requestURL, acsUrl);
-        HttpServletRequest request = mockHttpServletRequest(requestURL);
-        mockRequestDispatcher(request);
-        createEntityDescriptor(getDefaultRealm(), spEntityID, acsUrl);
+            String requestURL, String acsUrl) {
+        assertThatThrownBy(() -> {
+            // Given
+            String spEntityID = String.format("testEntityId_2_%s_%s", requestURL, acsUrl);
+            HttpServletRequest request = mockHttpServletRequest(requestURL);
+            mockRequestDispatcher(request);
+            createEntityDescriptor(getDefaultRealm(), spEntityID, acsUrl);
 
-        // When
-        SAML2Utils.verifyAssertionConsumerServiceLocation(
-                getDefaultRealm(), spEntityID, request, mockHttpServletResponse());
+            // When
+            SAML2Utils.verifyAssertionConsumerServiceLocation(
+                    getDefaultRealm(), spEntityID, request, mockHttpServletResponse());
+        })
+                .isInstanceOf(SAML2Exception.class)
+                .hasMessageMatching("Invalid Assertion Consumer Location specified");
     }
 
-    @Test(expectedExceptions = IllegalStateException.class,
-            expectedExceptionsMessageRegExp = "Request URL in request cannot be null")
-    public void shouldFailToVerifyAssertionConsumerServiceLocationGivenEmptyRequestUrl() throws SAML2Exception {
-        // Given
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        // When
-        SAML2Utils.verifyAssertionConsumerServiceLocation(
-                getDefaultRealm(), "testEntityId_3", request, mockHttpServletResponse());
+    @Test
+    void shouldFailToVerifyAssertionConsumerServiceLocationGivenEmptyRequestUrl() throws SAML2Exception {
+        assertThatThrownBy(() -> {
+            // Given
+            HttpServletRequest request = mock(HttpServletRequest.class);
+            // When
+            SAML2Utils.verifyAssertionConsumerServiceLocation(
+                    getDefaultRealm(), "testEntityId_3", request, mockHttpServletResponse());
+        })
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageMatching("Request URL in request cannot be null");
     }
 
-    private String getBaseUrl() {
+    @Test
+    void shouldConvertSetToMap() {
+        var items = Set.of(
+            "name=forgerock",
+            "forceauth=true",
+            "key=val1=val2",
+            "invalid"
+        );
+        var output = SAML2Utils.setToMap(items);
+        assertThat(output).hasSize(3);
+        assertThat(output).containsEntry("name", "forgerock");
+        assertThat(output).containsEntry("forceauth", "true");
+        assertThat(output).containsEntry("key", "val1=val2");
+        assertThat(output.containsKey("invalid")).isFalse();
+    }
+
+    private static String getBaseUrl() {
         return "http://localhost:8080/am/";
     }
 
@@ -257,7 +290,9 @@ public class SAML2UtilsTest {
         SAML2MetaManager saml2MetaManager = SAML2Utils.getSAML2MetaManager();
         EntityDescriptorElement entityDescriptorElement =
                 createTestEntityDescriptorElement(spEntityID, acsUrl);
-        saml2MetaManager.createEntityDescriptor(realm, entityDescriptorElement);
+        saml2MetaManager.createEntityDescriptor(
+                MetadataUpdateType.CREATE, realm, entityDescriptorElement
+        );
     }
 
     private EntityDescriptorElement createTestEntityDescriptorElement(String spEntityID, String acsUrl) {
@@ -274,7 +309,7 @@ public class SAML2UtilsTest {
     }
 
     @Test
-    public void testParseSamlFragment() throws Exception {
+    void testParseSamlFragment() throws Exception {
         List<Node> nodes = SAML2Utils.parseSAMLFragment("<saml:Extension>foo</saml:Extension><samlp:Artifact/>");
         assertThat(nodes).hasSize(2);
         assertThat(nodes).allMatch(Element.class::isInstance);

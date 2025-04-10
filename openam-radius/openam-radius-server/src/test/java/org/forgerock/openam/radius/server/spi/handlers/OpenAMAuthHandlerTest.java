@@ -12,8 +12,9 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2017-2018 ForgeRock AS.
+ * Portions Copyrighted 2017-2025 Ping Identity Corporation.
  */
+
 package org.forgerock.openam.radius.server.spi.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,7 +45,7 @@ import org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolder;
 import org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolder.AuthPhase;
 import org.forgerock.openam.radius.server.spi.handlers.amhandler.ContextHolderCache;
 import org.forgerock.openam.radius.server.spi.handlers.amhandler.OpenAMAuthFactory;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.eventbus.EventBus;
 import com.sun.identity.authentication.AuthContext;
@@ -67,8 +68,8 @@ public class OpenAMAuthHandlerTest {
      * @throws AuthLoginException - should not happen.
      * @throws IOException - should not happen.
      */
-    @Test()
-    public void handle() throws RadiusProcessingException, AuthLoginException, IOException {
+    @Test
+    void handle() throws RadiusProcessingException, AuthLoginException, IOException {
         // given
         final Callback pagePropCallback = new PagePropertiesCallback("test_module", null, null, 0, null, false, null);
         final Callback nameCallback = new NameCallback("Username:");

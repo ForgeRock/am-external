@@ -12,9 +12,23 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyright 2019-2021 ForgeRock AS.
+ * Portions Copyright 2019-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server.config;
+
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.CLIENT_ATT_CLASSNAME;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.CLIENT_ATT_IP_ADDR;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.CLIENT_ATT_LOG_PACKETS;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.CLIENT_ATT_PROPERTIES;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.CLIENT_ATT_SECRET;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.EMPTY_STRING_ARY;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.GBL_ATT_LISTENER_ENABLED;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.GBL_ATT_LISTENER_PORT;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.GBL_ATT_QUEUE_SIZE;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.GBL_ATT_THREADS_CORE_SIZE;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.GBL_ATT_THREADS_KEEPALIVE_SECONDS;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.GBL_ATT_THREADS_MAX_SIZE;
+import static org.forgerock.openam.radius.server.config.RadiusServerConstants.MESSAGE_AUTHENTICATOR_REQUIRED;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,13 +39,11 @@ import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import io.vavr.control.Either;
-
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.radius.server.spi.AccessRequestHandler;
+import org.forgerock.util.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.forgerock.util.Supplier;
 
 import com.google.inject.ConfigurationException;
 import com.google.inject.ProvisionException;
@@ -40,6 +52,8 @@ import com.sun.identity.shared.datastruct.ValueNotFoundException;
 import com.sun.identity.sm.SMSException;
 import com.sun.identity.sm.ServiceConfig;
 import com.sun.identity.sm.ServiceConfigManager;
+
+import io.vavr.control.Either;
 
 /**
  * Loads configuration values from openam's admin console maintained values into pojos and registers a change listener
@@ -89,17 +103,17 @@ public class ConfigLoader {
             if (serviceConf != null) {
                 final Map<String, Set<String>> configAttributes = serviceConf.getAttributes();
                 final boolean isEnabled = "YES".equals(CollectionHelper.getMapAttrThrows(configAttributes,
-                        RadiusServerConstants.GBL_ATT_LISTENER_ENABLED));
+                        GBL_ATT_LISTENER_ENABLED));
                 final int listenerPort = CollectionHelper.getIntMapAttr(configAttributes,
-                        RadiusServerConstants.GBL_ATT_LISTENER_PORT, -1, LOG);
+                        GBL_ATT_LISTENER_PORT, -1, LOG);
                 final int coreThreads = CollectionHelper.getIntMapAttr(configAttributes,
-                        RadiusServerConstants.GBL_ATT_THREADS_CORE_SIZE, -1, LOG);
+                        GBL_ATT_THREADS_CORE_SIZE, -1, LOG);
                 final int maxThreads = CollectionHelper.getIntMapAttr(configAttributes,
-                        RadiusServerConstants.GBL_ATT_THREADS_MAX_SIZE, -1, LOG);
+                        GBL_ATT_THREADS_MAX_SIZE, -1, LOG);
                 final int queueSize = CollectionHelper.getIntMapAttr(configAttributes,
-                        RadiusServerConstants.GBL_ATT_QUEUE_SIZE, -1, LOG);
+                        GBL_ATT_QUEUE_SIZE, -1, LOG);
                 final int keepaliveSeconds = CollectionHelper.getIntMapAttr(configAttributes,
-                        RadiusServerConstants.GBL_ATT_THREADS_KEEPALIVE_SECONDS, -1, LOG);
+                        GBL_ATT_THREADS_KEEPALIVE_SECONDS, -1, LOG);
 
                 final ThreadPoolConfig poolCfg = new ThreadPoolConfig(coreThreads, maxThreads, queueSize,
                         keepaliveSeconds);
@@ -116,25 +130,28 @@ public class ConfigLoader {
                         final Map<String, Set<String>> map = getServiceAttributes(serviceConf, clientConfigName);
 
                         clientConfig.setIpaddr(CollectionHelper.getMapAttrThrows(map,
-                                RadiusServerConstants.CLIENT_ATT_IP_ADDR));
+                                CLIENT_ATT_IP_ADDR));
                         clientConfig.setSecret(CollectionHelper.getMapAttrThrows(map,
-                                RadiusServerConstants.CLIENT_ATT_SECRET));
+                                CLIENT_ATT_SECRET));
                         final Boolean setLogPackets = "YES".equals(CollectionHelper.getMapAttrThrows(map,
-                                RadiusServerConstants.CLIENT_ATT_LOG_PACKETS));
+                                CLIENT_ATT_LOG_PACKETS));
                         clientConfig.setLogPackets(setLogPackets);
                         clientConfig.setAccessRequestHandlerClassname(CollectionHelper.getMapAttrThrows(map,
-                                RadiusServerConstants.CLIENT_ATT_CLASSNAME));
+                                CLIENT_ATT_CLASSNAME));
 
                         final Class accessRequestHandlerClass = validateClass(clientConfig);
                         if (accessRequestHandlerClass == null) {
                             throw new ClientConfigurationException(clientConfigName,
-                                    RadiusServerConstants.CLIENT_ATT_CLASSNAME);
+                                    CLIENT_ATT_CLASSNAME);
                         } else {
                             clientConfig.setAccessRequestHandler(accessRequestHandlerClass);
                             clientConfig.setClassIsValid(true);
                         }
 
-                        final Set<String> properties = map.get(RadiusServerConstants.CLIENT_ATT_PROPERTIES);
+                        clientConfig.setMessageAuthenticatorRequired((CollectionHelper.getBooleanMapAttr(map,
+                                MESSAGE_AUTHENTICATOR_REQUIRED, true)));
+
+                        final Set<String> properties = map.get(CLIENT_ATT_PROPERTIES);
                         if (properties != null) {
                             clientConfig.setHandlerConfig(extractProperties(properties));
                         } else {
@@ -263,7 +280,7 @@ public class ConfigLoader {
      * @return
      */
     private Properties extractProperties(Set<String> wrappingSet) {
-        final String[] vals = wrappingSet.toArray(RadiusServerConstants.EMPTY_STRING_ARY);
+        final String[] vals = wrappingSet.toArray(EMPTY_STRING_ARY);
         final Properties cfg = new Properties();
 
         for (final String val : vals) {

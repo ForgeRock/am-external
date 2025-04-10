@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.saml2.soap;
@@ -50,7 +58,6 @@ import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -60,10 +67,11 @@ class SecretsAwareSOAPConnectionTest {
     @Mock
     private SamlMtlsHandlerFactory samlMtlsHandlerFactory;
     @Mock
+    SOAPCommunicator soapCommunicator;
+    @Mock
     private Realm realm;
     @Mock
     private SOAPMessage soapMessage;
-    @Mock SOAPCommunicator soapCommunicator;
     @Mock
     private Handler handler;
     @Mock
@@ -115,12 +123,11 @@ class SecretsAwareSOAPConnectionTest {
     }
 
     @Test
-    void testStringURINotRejected() throws SOAPException, IOException {
+    void testStringURINotRejected() {
         //given
         SOAPMessage soapMessage = setupCommonStubs();
         Response response = new Response(Status.OK);
         given(responsePromise.getOrThrowIfInterrupted()).willReturn(response);
-        given(soapCommunicator.getSOAPMessage(any(Response.class))).willReturn(soapMessage);
 
         //when
         Executable soapConnectionCall = () -> secretsAwareSOAPConnection.call(soapMessage, location);

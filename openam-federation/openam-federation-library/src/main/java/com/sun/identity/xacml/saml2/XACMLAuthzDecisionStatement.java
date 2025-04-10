@@ -24,7 +24,7 @@
  *
  * $Id: XACMLAuthzDecisionStatement.java,v 1.4 2008/06/25 05:48:15 qcheng Exp $
  *
- * Portions Copyrighted 2019-2021 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.xacml.saml2;
 

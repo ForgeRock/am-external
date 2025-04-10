@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins.scripted.bindings;
 
@@ -25,7 +33,7 @@ import com.sun.identity.saml2.protocol.AuthnRequest;
 /**
  * Script bindings for the SamlSpPreSingleSignOnRequest script.
  */
-final class SamlSpPreSingleSignOnRequestBindings extends BaseSamlSpBindings {
+public final class SamlSpPreSingleSignOnRequestBindings extends BaseSamlSpBindings {
 
     private final AuthnRequest authnRequest;
     private final String idpEntityId;
@@ -58,14 +66,6 @@ final class SamlSpPreSingleSignOnRequestBindings extends BaseSamlSpBindings {
         return bindings;
     }
 
-    @Override
-    public BindingsMap nextGenBindings() {
-        BindingsMap bindings = new BindingsMap(nextGenCommonBindings());
-        bindings.put(AUTHN_REQUEST, authnRequest);
-        bindings.put(IDP_ENTITY_ID, idpEntityId);
-        return bindings;
-    }
-
     /**
      * Interface utilised by the fluent builder to define step 1 in generating the
      * SamlSpPreSingleSignOnRequestBindings.
@@ -79,13 +79,15 @@ final class SamlSpPreSingleSignOnRequestBindings extends BaseSamlSpBindings {
      * SamlSpPreSingleSignOnRequestBindings.
      */
     public interface SamlSpPreSingleSignOnRequestBindingsStep2 {
-        SamlSpBindingsStep1 withIdpEntityId(String idpEntityID);
+        SamlSpBindingsStep1<SamlSpPreSingleSignOnRequestBindings> withIdpEntityId(String idpEntityID);
     }
 
     /**
      * Builder object to construct a {@link SamlSpPreSingleSignOnRequestBindings}.
+     * Before modifying this builder, or creating a new one, please read
+     * service-component-api/scripting-api/src/main/java/org/forgerock/openam/scripting/domain/README.md
      */
-    private static final class Builder extends BaseSamlSpBindings.Builder<Builder>
+    private static final class Builder extends BaseSamlSpBindings.Builder<SamlSpPreSingleSignOnRequestBindings>
             implements SamlSpPreSingleSignOnRequestBindingsStep1, SamlSpPreSingleSignOnRequestBindingsStep2 {
 
         private AuthnRequest authnRequest;
@@ -109,7 +111,7 @@ final class SamlSpPreSingleSignOnRequestBindings extends BaseSamlSpBindings {
          * @param idpEntityId The idpEntityID.
          * @return The next step of the builder.
          */
-        public SamlSpBindingsStep1 withIdpEntityId(String idpEntityId) {
+        public SamlSpBindingsStep1<SamlSpPreSingleSignOnRequestBindings> withIdpEntityId(String idpEntityId) {
             this.idpEntityId = idpEntityId;
             return this;
         }

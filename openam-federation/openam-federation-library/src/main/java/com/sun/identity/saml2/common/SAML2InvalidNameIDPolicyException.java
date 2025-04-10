@@ -24,7 +24,7 @@
 *
 * $Id: SAML2InvalidNameIDPolicyException.java,v 1.1 2008/07/24 17:46:34 exu Exp $
  *
- * Portions Copyrighted 2019 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
 */ 
 package com.sun.identity.saml2.common;
 

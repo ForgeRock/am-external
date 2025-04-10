@@ -24,7 +24,7 @@
  *
  * $Id: AttributeQueryImpl.java,v 1.3 2008/06/25 05:47:59 qcheng Exp $
  *
- * Portions Copyrighted 2018-2023 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.protocol.impl;
@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -49,7 +48,6 @@ import com.sun.identity.saml2.common.SAML2SDKUtils;
 import com.sun.identity.saml2.protocol.AttributeQuery;
 import com.sun.identity.shared.xml.XMLUtils;
 
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class AttributeQueryImpl
     extends SubjectQueryAbstractImpl implements AttributeQuery {
 

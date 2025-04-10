@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins.scripted;
 
@@ -29,8 +37,10 @@ import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.RESPONSE
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SAML2_RESPONSE;
 import static com.sun.identity.saml2.common.SAML2Constants.ScriptParams.SESSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.entry;
 import static org.forgerock.openam.saml2.service.Saml2ScriptContext.SAML2_IDP_ADAPTER;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstructionWithAnswer;
@@ -42,19 +52,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import org.assertj.core.data.MapEntry;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.LegacyScriptContext;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
@@ -77,7 +89,9 @@ public class ScriptedIdpAdapterTest {
     private static final String faultDetail = "myFaultDetail";
 
     @Mock
-    private ScriptEvaluator scriptEvaluator;
+    private ScriptEvaluatorFactory scriptEvaluatorFactory;
+    @Mock
+    private ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
     @Mock
     private ValidationHelper validationHelper;
     @Mock
@@ -102,7 +116,7 @@ public class ScriptedIdpAdapterTest {
     private final MapEntry<String, Object> FAULT_CODE_BINDING = entry(FAULT_CODE, faultCode);
     private final MapEntry<String, Object> FAULT_DETAIL_BINDING = entry(FAULT_DETAIL, faultDetail);
 
-    private final ArgumentCaptor<ScriptBindings> bindingsCaptor = ArgumentCaptor.forClass(ScriptBindings.class);
+    private final ArgumentCaptor<LegacyScriptBindings> bindingsCaptor = ArgumentCaptor.forClass(LegacyScriptBindings.class);
     private final ArgumentCaptor<Script> scriptConfigurationCaptor = ArgumentCaptor.forClass(Script.class);
 
     private MockedConstruction<HttpServletRequestWrapper> ignoredHttpServletRequestWrapper;
@@ -111,10 +125,11 @@ public class ScriptedIdpAdapterTest {
     // Class under test
     private ScriptedIdpAdapter scriptedIdpAdapter;
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         MockitoAnnotations.openMocks(this).close();
-        scriptedIdpAdapter = new ScriptedIdpAdapter(__ -> scriptEvaluator, validationHelper, idpAdapterScriptHelper,
+        when(scriptEvaluatorFactory.create(any(LegacyScriptContext.class))).thenReturn(scriptEvaluator);
+        scriptedIdpAdapter = new ScriptedIdpAdapter(scriptEvaluatorFactory, validationHelper, idpAdapterScriptHelper,
                 executor);
 
         // Given
@@ -129,14 +144,14 @@ public class ScriptedIdpAdapterTest {
 
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         ignoredHttpServletRequestWrapper.close();
         ignoredHttpServletResponseWrapper.close();
     }
 
     @Test
-    public void shouldEvaluatePreSingleSignOnFunction() throws Exception {
+    void shouldEvaluatePreSingleSignOnFunction() throws Exception {
         // When
         scriptedIdpAdapter.preSingleSignOn(hostedEntityId, realm, request, response, authnRequest, reqId);
 
@@ -148,7 +163,7 @@ public class ScriptedIdpAdapterTest {
     }
 
     @Test
-    public void shouldEvaluatePreAuthenticationFunction() throws Exception {
+    void shouldEvaluatePreAuthenticationFunction() throws Exception {
         // When
         scriptedIdpAdapter.preAuthentication(hostedEntityId, realm, request, response, authnRequest, session, reqId, relayState);
 
@@ -162,7 +177,7 @@ public class ScriptedIdpAdapterTest {
     }
 
     @Test
-    public void shouldEvaluatePreSendResponseFunction() throws Exception {
+    void shouldEvaluatePreSendResponseFunction() throws Exception {
         // When
         scriptedIdpAdapter.preSendResponse(authnRequest, hostedEntityId, realm, request, response, session, reqId, relayState);
 
@@ -176,7 +191,7 @@ public class ScriptedIdpAdapterTest {
     }
 
     @Test
-    public void shouldEvaluatePreSignResponseFunction() throws Exception {
+    void shouldEvaluatePreSignResponseFunction() throws Exception {
         // When
         scriptedIdpAdapter.preSignResponse(authnRequest, saml2Response, hostedEntityId, realm, request, session, relayState);
 
@@ -190,7 +205,7 @@ public class ScriptedIdpAdapterTest {
     }
 
     @Test
-    public void shouldEvaluatePreSendFailureResponseFunction() throws Exception {
+    void shouldEvaluatePreSendFailureResponseFunction() throws Exception {
         // When
         scriptedIdpAdapter.preSendFailureResponse(hostedEntityId, realm, request, response, faultCode, faultDetail);
 
@@ -201,9 +216,13 @@ public class ScriptedIdpAdapterTest {
                 FAULT_DETAIL_BINDING);
     }
 
-    @Test(expected = SAML2Exception.class)
-    public void shouldErrorForDeprecatedPreSendFailureResponseFunction() throws Exception {
-        scriptedIdpAdapter.preSendFailureResponse(request, response, faultCode, faultDetail);
+    @Test
+    void shouldErrorForDeprecatedPreSendFailureResponseFunction() {
+        assertThatThrownBy(() ->
+                scriptedIdpAdapter.preSendFailureResponse(request, response, faultCode, faultDetail))
+                .isInstanceOf(SAML2Exception.class)
+                .hasMessage("Unsupported function for ScriptedIdpAdapter - use preSendFailureResponse" +
+                        "(String, String, HttpServletRequest, HttpServletResponse, String, String)");
     }
 
     private void verifyScriptEvaluation(String functionName, Class returnType, List<String> expectedKeys,

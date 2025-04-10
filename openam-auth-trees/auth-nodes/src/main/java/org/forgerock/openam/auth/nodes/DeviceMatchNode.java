@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2020-2025 Ping Identity Corporation.
  */
 
 
@@ -19,38 +19,43 @@ package org.forgerock.openam.auth.nodes;
 
 import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE;
 import static org.forgerock.openam.auth.nodes.script.AuthNodesScriptContext.AUTHENTICATION_TREE_DECISION_NODE_NAME;
+import static org.forgerock.openam.auth.nodes.script.DeviceMatchNodeScriptContext.DEVICE_MATCH_NODE_NAME;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.script.Bindings;
 
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.audit.validation.PositiveIntegerValidator;
 import org.forgerock.openam.auth.node.api.AbstractDecisionNode;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.AuthScriptUtilities;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.script.AuthNodesGlobalScript;
 import org.forgerock.openam.auth.nodes.script.DeviceMatchNodeBindings;
-import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.openam.auth.nodes.script.DeviceMatchNodeScriptContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.profile.DeviceProfilesDao;
+import org.forgerock.openam.scripting.api.identity.ScriptedIdentityRepository;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.EvaluatorVersion;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
 import org.forgerock.openam.scripting.persistence.config.defaults.GlobalScript;
+import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
@@ -75,35 +80,48 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
     private static final String UNKNOWN_DEVICE_OUTCOME_ID = "unknownDevice";
     private static final String OUTCOME_IDENTIFIER = "outcome";
     private final Logger logger = LoggerFactory.getLogger(DeviceMatchNode.class);
-    private final CoreWrapper coreWrapper;
-    private final LegacyIdentityService identityService;
     private final Config config;
     private final Realm realm;
+    private final DeviceMatchNodeScriptContext deviceMatchNodeScriptContext;
     private final DeviceProfilesDao deviceProfilesDao;
-    private final ScriptEvaluator scriptEvaluator;
+    private final ScriptEvaluator<DeviceMatchNodeBindings> scriptEvaluator;
+    private final NodeUserIdentityProvider identityProvider;
+    private final AuthScriptUtilities authScriptUtils;
+    private final ScriptedIdentityRepository scriptedIdentityRepository;
+    private final UUID nodeId;
+
 
     /**
      * Create the node using Guice injection. Just-in-time bindings can be used to obtain instances of
      * other classes from the plugin.
      *
-     * @param deviceProfilesDao      An DeviceProfilesDao Instance
-     * @param scriptEvaluatorFactory A ScriptEvaluatorFactory Instance
-     * @param coreWrapper            A CoreWrapper Instance
-     * @param identityService        An IdentityService Instance
-     * @param config                 Node Configuration
-     * @param realm                  The Realm
+     * @param deviceProfilesDao            An DeviceProfilesDao Instance
+     * @param scriptEvaluatorFactory       A ScriptEvaluatorFactory Instance
+     * @param identityProvider             The NodeUserIdentityProvider
+     * @param config                       Node Configuration
+     * @param realm                        The Realm
+     * @param deviceMatchNodeScriptContext The device match node script context
+     * @param scriptedIdentityRepository   The scripted identity repository
+     * @param nodeId                       The node ID
+     * @param authScriptUtils              utilities for scripted nodes
      */
     @Inject
     public DeviceMatchNode(DeviceProfilesDao deviceProfilesDao,
             ScriptEvaluatorFactory scriptEvaluatorFactory,
-            CoreWrapper coreWrapper, LegacyIdentityService identityService, @Assisted Config config,
-            @Assisted Realm realm) {
+            DeviceMatchNodeScriptContext deviceMatchNodeScriptContext,
+            NodeUserIdentityProvider identityProvider, @Assisted Config config,
+            @Assisted Realm realm, ScriptedIdentityRepository scriptedIdentityRepository,
+            @Assisted UUID nodeId, AuthScriptUtilities authScriptUtils) {
         this.deviceProfilesDao = deviceProfilesDao;
-        this.scriptEvaluator = scriptEvaluatorFactory.create(AUTHENTICATION_TREE_DECISION_NODE);
-        this.coreWrapper = coreWrapper;
-        this.identityService = identityService;
+        this.scriptEvaluator = scriptEvaluatorFactory.create(AUTHENTICATION_TREE_DECISION_NODE,
+                deviceMatchNodeScriptContext);
+        this.identityProvider = identityProvider;
+        this.deviceMatchNodeScriptContext = deviceMatchNodeScriptContext;
         this.config = config;
         this.realm = realm;
+        this.scriptedIdentityRepository = scriptedIdentityRepository;
+        this.nodeId = nodeId;
+        this.authScriptUtils = authScriptUtils;
     }
 
     @Override
@@ -117,8 +135,8 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
         }
 
         try {
-            AMIdentity identity = getUserIdentity(context.universalId, context.getStateFor(this), coreWrapper,
-                    identityService);
+            AMIdentity identity = getUserIdentity(context.universalId, context.getStateFor(this),
+                    identityProvider);
             List<JsonValue> devices = deviceProfilesDao
                     .getDeviceProfiles(identity.getName(), realm.asPath());
             Optional<JsonValue> result = devices.stream()
@@ -173,12 +191,23 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
     private Action execute(TreeContext context) throws NodeProcessException {
         try {
             Script script = config.script();
-            ScriptBindings scriptBindings = DeviceMatchNodeBindings.builder()
-                    .withNodeState(context.getStateFor(this))
-                    .withCallbacks(context.getAllCallbacks())
+            script = updateScriptContextIfNecessary(script);
+            DeviceMatchNodeBindings scriptBindings = DeviceMatchNodeBindings.builder()
                     .withDeviceProfilesDao(deviceProfilesDao)
                     .withSharedState(context.sharedState)
                     .withTransientState(context.transientState)
+                    .withNodeState(context.getStateFor(this))
+                    .withCallbacks(context.getAllCallbacks())
+                    .withHeaders(authScriptUtils.convertHeadersToModifiableObjects(context.request.headers))
+                    .withQueryParameters(
+                            authScriptUtils.convertParametersToModifiableObjects(context.request.parameters))
+                    .withScriptedIdentityRepository(scriptedIdentityRepository)
+                    .withResumedFromSuspend(context.hasResumedFromSuspend())
+                    .withExistingSession(
+                            StringUtils.isNotEmpty(context.request.ssoTokenId)
+                                    ? authScriptUtils.getSessionProperties(context.request.ssoTokenId)
+                                    : null)
+                    .withRequestCookies(context.request.cookies)
                     .build();
             Bindings binding = scriptEvaluator.evaluateScript(script, scriptBindings, realm).getBindings();
             logger.debug("script {} \n binding {}", script, binding);
@@ -191,10 +220,29 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
             String outcome = (String) rawResult;
             return Action.goTo(outcome).build();
 
-        } catch (javax.script.ScriptException e) {
+        } catch (javax.script.ScriptException | ScriptException e) {
             logger.warn("error evaluating the script", e);
             throw new NodeProcessException(e);
         }
+    }
+
+    // See AME-28469 - Customers can get themselves into a scenario where they have configured a Device Match Node with
+    // an invalid script context, which would cause runtime failures without this check and update.
+    private Script updateScriptContextIfNecessary(Script script) throws ScriptException {
+        if (script.getEvaluatorVersion().equals(EvaluatorVersion.V2_0)
+                && !script.getContext().equals(deviceMatchNodeScriptContext)) {
+            Script updatedScript = script.populatedBuilder()
+                    .setContext(deviceMatchNodeScriptContext)
+                    .build();
+            logger.warn(
+                    "[ACTION REQUIRED] Invalid script configuration found. A Device Match Node with id '{}' is "
+                            + "configured to use a next-gen script with id '{}' which has an invalid context. When "
+                            + "a Device Match Node is configured to use a next-gen script, that script must use the "
+                            + "'{}' script context.", nodeId, updatedScript.getId(),
+                    deviceMatchNodeScriptContext.name());
+            return updatedScript;
+        }
+        return script;
     }
 
     /**
@@ -239,7 +287,7 @@ public class DeviceMatchNode extends AbstractDecisionNode implements DeviceProfi
          * @return The script configuration.
          */
         @Attribute(order = 400)
-        @ScriptContext(AUTHENTICATION_TREE_DECISION_NODE_NAME)
+        @ScriptContext(legacyContext = AUTHENTICATION_TREE_DECISION_NODE_NAME, nextGenContext = DEVICE_MATCH_NODE_NAME)
         default Script script() {
             GlobalScript scriptDetails = AuthNodesGlobalScript.DECISION_NODE_SCRIPT;
             try {

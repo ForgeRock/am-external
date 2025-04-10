@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.service.datastore;
 
@@ -33,8 +41,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.notNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import java.util.Collections;
 import java.util.Set;
@@ -52,22 +58,23 @@ import org.forgerock.openam.sm.ConfigurationAttributes;
 import org.forgerock.openam.sm.ConfigurationAttributesFactory;
 import org.forgerock.openam.sm.ServiceConfigManagerFactory;
 import org.forgerock.openam.sm.annotations.subconfigs.Multiple;
-import org.forgerock.openam.test.rules.LoggerRule;
+import org.forgerock.openam.test.extensions.LoggerExtension;
 import org.forgerock.opendj.ldap.ConnectionFactory;
 import org.forgerock.opendj.ldap.LdapException;
 import org.forgerock.util.Action;
-import org.forgerock.util.query.QueryFilter;
 import org.forgerock.util.thread.listener.ShutdownListener;
 import org.forgerock.util.thread.listener.ShutdownManager;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.google.common.collect.ImmutableMap;
 import com.iplanet.sso.SSOException;
@@ -76,7 +83,6 @@ import com.sun.identity.sm.ServiceConfig;
 import com.sun.identity.sm.ServiceConfigManager;
 import com.sun.identity.sm.ServiceListener;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 
 /**
@@ -84,7 +90,8 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
  *
  * @since 6.5.0
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public final class LdapDataStoreServiceTest {
 
     public static final String DISABLED_CONFIG_STORE_NAME = "disabled-config-store";
@@ -134,13 +141,13 @@ public final class LdapDataStoreServiceTest {
     @Captor
     private ArgumentCaptor<Action<?>> volatileActionCaptor;
 
-    @Rule
-    public LoggerRule loggerRule = new LoggerRule(LdapDataStoreService.class, Level.ERROR);
+    @RegisterExtension
+    public LoggerExtension loggerExtension = new LoggerExtension(LdapDataStoreService.class);
 
     private LdapDataStoreService dataStoreService;
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         given(configConnectionFactoryProvider.get()).willReturn(configConnectionFactory);
         given(connectionFactoryProvider.createLdapConnectionFactory(notNull())).willReturn(connectionFactory);
 
@@ -166,7 +173,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void whenPassedConfigDataStoreIdTheConfigConnectionFactoryReturned() throws LdapException {
+    void whenPassedConfigDataStoreIdTheConfigConnectionFactoryReturned() throws LdapException {
         // When
         dataStoreService.getConnectionFactory(DataStoreId.CONFIG).getConnection();
 
@@ -175,7 +182,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void whenConfigConnectionRequestedTwiceTheFactoryIsCached() throws LdapException {
+    void whenConfigConnectionRequestedTwiceTheFactoryIsCached() throws LdapException {
         // When
         dataStoreService.getConnectionFactory(DataStoreId.CONFIG).getConnection();
         dataStoreService.getConnectionFactory(DataStoreId.CONFIG).getConnection();
@@ -186,7 +193,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void whenConnectionRequestedConnectionFactoryIsCreated() throws LdapException {
+    void whenConnectionRequestedConnectionFactoryIsCreated() throws LdapException {
         // When
         dataStoreService.getConnectionFactory(DataStoreId.of(ENABLED_CONFIG_STORE_NAME)).getConnection();
 
@@ -195,7 +202,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void whenConnectionRequestedTwiceConnectionFactoryIsCached() throws LdapException {
+    void whenConnectionRequestedTwiceConnectionFactoryIsCached() throws LdapException {
         // When
         dataStoreService.getConnectionFactory(DataStoreId.of(ENABLED_CONFIG_STORE_NAME)).getConnection();
         dataStoreService.getConnectionFactory(DataStoreId.of(ENABLED_CONFIG_STORE_NAME)).getConnection();
@@ -206,7 +213,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void whenDataStoreChangeResultingActionsAreRoutedViaTheConsistencyController() {
+    void whenDataStoreChangeResultingActionsAreRoutedViaTheConsistencyController() {
         // Given
         ServiceListener serviceAsListener = (ServiceListener) dataStoreService;
 
@@ -218,7 +225,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void whenDataStoreChangeTheChangeNotifiersAreCalled() throws Exception {
+    void whenDataStoreChangeTheChangeNotifiersAreCalled() throws Exception {
         // Given
         ServiceListener serviceAsListener = (ServiceListener) dataStoreService;
 
@@ -234,7 +241,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void whenServiceIsShutdownFurtherRequestsThrowException() {
+    void whenServiceIsShutdownFurtherRequestsThrowException() {
         // Given
         verify(shutdownManager).addShutdownListener(shutdownListenerCaptor.capture());
         ShutdownListener listener = shutdownListenerCaptor.getValue();
@@ -247,7 +254,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void whenServiceIsShutdownConfigFactoryIsClosed() {
+    void whenServiceIsShutdownConfigFactoryIsClosed() {
         // Given
         verify(shutdownManager).addShutdownListener(shutdownListenerCaptor.capture());
         ShutdownListener listener = shutdownListenerCaptor.getValue();
@@ -261,7 +268,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void whenServiceIsShutdownAllConnectionFactoriesAreClosed() {
+    void whenServiceIsShutdownAllConnectionFactoriesAreClosed() {
         // Given
         verify(shutdownManager).addShutdownListener(shutdownListenerCaptor.capture());
         ShutdownListener listener = shutdownListenerCaptor.getValue();
@@ -275,7 +282,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void shouldNotNotifyGlobalChangesGivenDisabledDataStoreConfigAdded() throws Exception {
+    void shouldNotNotifyGlobalChangesGivenDisabledDataStoreConfigAdded() throws Exception {
         // Given
         setupMockDisabledConfig();
 
@@ -292,7 +299,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void shouldNotNotifyGlobalChangesGivenDisabledDataStoreConfigModified() throws Exception {
+    void shouldNotNotifyGlobalChangesGivenDisabledDataStoreConfigModified() throws Exception {
         // Given
         setupMockDisabledConfig();
 
@@ -311,7 +318,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void shouldNotifyGlobalChangesGivenDisabledDataStoreConfigRemoved() throws Exception {
+    void shouldNotifyGlobalChangesGivenDisabledDataStoreConfigRemoved() throws Exception {
         // Given
         setupMockDisabledConfig();
 
@@ -330,7 +337,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void shouldNotifyGlobalChangesGivenEnabledDataStoreConfigModified() throws Exception {
+    void shouldNotifyGlobalChangesGivenEnabledDataStoreConfigModified() throws Exception {
         // Given
         setUpMockEnabledConfig();
 
@@ -350,7 +357,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void shouldNotifyGlobalChangesGivenEnabledDataStoreConfigRemovedFromCacheAndCleared() throws Exception {
+    void shouldNotifyGlobalChangesGivenEnabledDataStoreConfigRemovedFromCacheAndCleared() throws Exception {
         // Given
         setUpMockEnabledConfig();
 
@@ -366,14 +373,15 @@ public final class LdapDataStoreServiceTest {
         enhancement to tidy the removeFromCacheAndClose method */
         changeNotifierAction.run();
         changeNotifierAction.run();
-        assertThat(loggerRule.getErrors(ILoggingEvent::getFormattedMessage).size()).isEqualTo(1);
-        assertThat(loggerRule.getErrors(ILoggingEvent::getFormattedMessage))
+
+        assertThat(loggerExtension.getErrors(ILoggingEvent::getFormattedMessage).size()).isEqualTo(1);
+        assertThat(loggerExtension.getErrors(ILoggingEvent::getFormattedMessage))
                 .containsExactly("Failed to identify and remove the connection " +
                         "factory from the cache, clearing the entire cache");
     }
 
     @Test
-    public void shouldGetConfigGivenDataStoreExistsAndMTLSDisabled() throws SMSException, SSOException {
+    void shouldGetConfigGivenDataStoreExistsAndMTLSDisabled() throws SMSException, SSOException {
         //Given
         setUpMockConfig(ENABLED_CONFIG_STORE_NAME, "true", "false");
 
@@ -387,7 +395,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void shouldFailToGetConfigGivenDataStoreDoesNotExists() {
+    void shouldFailToGetConfigGivenDataStoreDoesNotExists() {
         //Given
         DataStoreId nonExistentDatastore = DataStoreId.of("NON_EXISTENT_DATASTORE");
 
@@ -399,7 +407,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void shouldGetConfigGivenDataStoreExistsAndMTLSEnabled() throws SMSException, SSOException {
+    void shouldGetConfigGivenDataStoreExistsAndMTLSEnabled() throws SMSException, SSOException {
        //Given
         setUpMockConfig("mtls-enabled-config-store", "true", "true");
 
@@ -413,7 +421,7 @@ public final class LdapDataStoreServiceTest {
     }
 
     @Test
-    public void shouldFailToGetConnectionFactoryGivenDisabledConfig() throws Exception {
+    void shouldFailToGetConnectionFactoryGivenDisabledConfig() throws Exception {
         // Given
         setupMockDisabledConfig();
 

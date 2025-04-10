@@ -24,14 +24,13 @@
  *
  * $Id: FedSystemProperties.java,v 1.9 2009/06/22 23:26:26 rh221556 Exp $
  *
- * Portions Copyrighted 2010-2020 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 package com.sun.identity.configuration;
 
 import static com.iplanet.am.util.SystemProperties.isServerMode;
 
 import java.net.URL;
-import java.security.AccessController;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -101,7 +100,7 @@ public class FedSystemProperties extends FedLibSystemProperties {
             String realm = key.substring(idx + 1, key.length() - 1);
             try {
                 OrganizationConfigManager orgMgr = new OrganizationConfigManager(
-                        AccessController.doPrivileged(AdminTokenAction.getInstance()), realm);
+                        AdminTokenAction.getInstance().run(), realm);
                 Map<String, Set<String>> svcAttrs = orgMgr.getServiceAttributes("sunFAMSAML2Configuration");
                 return CollectionHelper.getMapAttr(svcAttrs, attribute);
             } catch (SMSException smse) {

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -24,14 +32,13 @@ import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.resource.ResourceResponse.FIELD_CONTENT_ID;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_PASSWORD_ATTRIBUTE;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Enumeration;
 import java.util.List;
@@ -50,10 +57,13 @@ import org.forgerock.openam.authentication.callbacks.ValidatedPasswordCallback;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.util.i18n.PreferredLocales;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -61,9 +71,11 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
+@ExtendWith(MockitoExtension.class)
 public class ValidatedPasswordNodeTest {
 
     private static final ObjectMapper OBJECT_MAPPER;
+
     static {
         OBJECT_MAPPER =
                 new ObjectMapper().configure(JsonParser.Feature.ALLOW_COMMENTS, true)
@@ -81,31 +93,18 @@ public class ValidatedPasswordNodeTest {
     @Mock
     private IdmIntegrationService idmIntegrationService;
 
+    @InjectMocks
     private ValidatedPasswordNode node;
     private PreferredLocales preferredLocales;
 
-    @BeforeMethod
-    public void before() throws Exception {
-        initMocks(this);
+    @BeforeEach
+    void before() throws Exception {
         preferredLocales = mock(PreferredLocales.class);
-        ResourceBundle resourceBundle = new ValidatedPasswordNodeTest.MockResourceBundle("Password");
-        given(preferredLocales.getBundleInPreferredLocale(any(), any())).willReturn(resourceBundle);
-
-        when(config.passwordAttribute()).thenReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
         when(config.validateInput()).thenReturn(false);
-        when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
-        when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(new JsonValue(OBJECT_MAPPER.readValue(
-                ValidatedPasswordNodeTest.class.getResource("/ValidatedPasswordNode/idmSchema.json"), Map.class)));
-        when(idmIntegrationService.getValidationRequirements(any(), any(), any()))
-                .thenReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedPasswordNodeTest.class.getResource(
-                        "/ValidatedPasswordNode/idmPolicyRead.json"), Map.class)));
-        when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
-
-        node = new ValidatedPasswordNode(config, realm, idmIntegrationService);
     }
 
     @Test
-    public void processWithoutCallbackShouldReturnCallback() throws Exception {
+    void processWithoutCallbackShouldReturnCallback() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
@@ -113,6 +112,8 @@ public class ValidatedPasswordNodeTest {
                 ))
         ));
         JsonValue transientState = json(object());
+        ResourceBundle resourceBundle = new ValidatedPasswordNodeTest.MockResourceBundle("Password");
+        given(preferredLocales.getBundleInPreferredLocale(any(), any())).willReturn(resourceBundle);
 
         // When
         Action action = node.process(getContext(emptyList(), sharedState, transientState));
@@ -126,7 +127,7 @@ public class ValidatedPasswordNodeTest {
     }
 
     @Test
-    public void processWithCallbackShouldStorePasswordInState() throws Exception {
+    void processWithCallbackShouldStorePasswordInState() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
@@ -136,9 +137,10 @@ public class ValidatedPasswordNodeTest {
         JsonValue transientState = json(object());
 
         // When
-        when(idmIntegrationService.validateInput(any(), any(), any(), any(), any())).thenReturn(json(object(
-                field("result", true)
-        )));
+        ResourceBundle resourceBundle = new ValidatedPasswordNodeTest.MockResourceBundle("Password");
+        given(preferredLocales.getBundleInPreferredLocale(any(), any())).willReturn(resourceBundle);
+        when(config.passwordAttribute()).thenReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
+        when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
         PasswordCallback callback = new PasswordCallback("Enter password", true);
         callback.setPassword("mypw".toCharArray());
         Action action = node.process(getContext(singletonList(callback), sharedState, transientState));
@@ -153,7 +155,7 @@ public class ValidatedPasswordNodeTest {
     }
 
     @Test
-    public void processWithStateContainingIdShouldAppendIdToIdentityResource() throws Exception {
+    void processWithStateContainingIdShouldAppendIdToIdentityResource() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(FIELD_CONTENT_ID, "id"),
@@ -165,6 +167,12 @@ public class ValidatedPasswordNodeTest {
         JsonValue transientState = json(object());
 
         // When
+        when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(new JsonValue(OBJECT_MAPPER.readValue(
+                ValidatedPasswordNodeTest.class.getResource("/ValidatedPasswordNode/idmSchema.json"), Map.class)));
+        when(idmIntegrationService.getValidationRequirements(any(), any(), any()))
+                .thenReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedPasswordNodeTest.class.getResource(
+                        "/ValidatedPasswordNode/idmPolicyRead.json"), Map.class)));
+        when(config.passwordAttribute()).thenReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
         when(config.validateInput()).thenReturn(true);
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         when(idmIntegrationService.validateInput(any(), any(), captor.capture(), any(), any())).thenReturn(json(object(
@@ -189,8 +197,15 @@ public class ValidatedPasswordNodeTest {
     }
 
     @Test
-    public void processWithStateContainingNoIdForIdentityResource() throws Exception {
+    void processWithStateContainingNoIdForIdentityResource() throws Exception {
         // When
+        when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(new JsonValue(OBJECT_MAPPER.readValue(
+                ValidatedPasswordNodeTest.class.getResource("/ValidatedPasswordNode/idmSchema.json"), Map.class)));
+        when(idmIntegrationService.getValidationRequirements(any(), any(), any()))
+                .thenReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedPasswordNodeTest.class.getResource(
+                        "/ValidatedPasswordNode/idmPolicyRead.json"), Map.class)));
+        when(config.passwordAttribute()).thenReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
+        when(idmIntegrationService.storeAttributeInState(any(), any(), any())).thenCallRealMethod();
         when(config.validateInput()).thenReturn(true);
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         when(idmIntegrationService.validateInput(any(), any(), captor.capture(), any(), any())).thenReturn(json(object(
@@ -204,7 +219,7 @@ public class ValidatedPasswordNodeTest {
     }
 
     @Test
-    public void processWithBadPasswordShouldReturnCallbackWithPolicyFailures() throws Exception {
+    void processWithBadPasswordShouldReturnCallbackWithPolicyFailures() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(OBJECT_ATTRIBUTES, object(
@@ -214,6 +229,12 @@ public class ValidatedPasswordNodeTest {
         JsonValue transientState = json(object());
 
         // When
+        when(config.passwordAttribute()).thenReturn(DEFAULT_IDM_PASSWORD_ATTRIBUTE);
+        when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(new JsonValue(OBJECT_MAPPER.readValue(
+                ValidatedPasswordNodeTest.class.getResource("/ValidatedPasswordNode/idmSchema.json"), Map.class)));
+        when(idmIntegrationService.getValidationRequirements(any(), any(), any()))
+                .thenReturn(new JsonValue(OBJECT_MAPPER.readValue(ValidatedPasswordNodeTest.class.getResource(
+                        "/ValidatedPasswordNode/idmPolicyRead.json"), Map.class)));
         when(config.validateInput()).thenReturn(true);
         when(idmIntegrationService.validateInput(any(), any(), any(), any(), any())).thenReturn(json(object(
                 field("result", false),

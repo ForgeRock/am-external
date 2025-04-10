@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.authentication.modules.hotp;
 
@@ -31,16 +39,16 @@ import java.util.Set;
 import javax.mail.MessagingException;
 
 import org.assertj.core.util.Arrays;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.forgerock.am.mail.application.AMSendMail;
 import com.sun.identity.authentication.spi.AuthLoginException;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class DefaultSMSGatewayImplTest {
 
     private static final String FROM = "from@example.com";
@@ -58,13 +66,13 @@ public class DefaultSMSGatewayImplTest {
     private AMSendMail sendMail;
     private SMSGateway emailGateway;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         emailGateway = new DefaultSMSGatewayImpl(sendMail);
     }
 
     @Test
-    public void testNullToAddressNoEmailSent() throws AuthLoginException {
+    void testNullToAddressNoEmailSent() throws AuthLoginException {
         // when
         emailGateway.sendEmail(FROM, null, SUBJECT, MESSAGE, ONE_TIME_PASSWORD, Map.of());
 
@@ -73,7 +81,7 @@ public class DefaultSMSGatewayImplTest {
     }
 
     @Test
-    public void testNullToAddressNoSMSSent() throws AuthLoginException {
+    void testNullToAddressNoSMSSent() throws AuthLoginException {
         // when
         emailGateway.sendSMSMessage(FROM, null, SUBJECT, MESSAGE, ONE_TIME_PASSWORD, Map.of());
 
@@ -82,7 +90,7 @@ public class DefaultSMSGatewayImplTest {
     }
 
     @Test
-    public void testMissingEmailArgsUsesDefault() throws AuthLoginException, MessagingException {
+    void testMissingEmailArgsUsesDefault() throws AuthLoginException, MessagingException {
         // when
         emailGateway.sendEmail(FROM, TO, SUBJECT, MESSAGE, ONE_TIME_PASSWORD, Map.of());
 
@@ -92,7 +100,7 @@ public class DefaultSMSGatewayImplTest {
 
 
     @Test
-    public void testMissingSmsArgsUsesDefault() throws AuthLoginException, MessagingException {
+    void testMissingSmsArgsUsesDefault() throws AuthLoginException, MessagingException {
         // when
         emailGateway.sendSMSMessage(FROM, TO, SUBJECT, MESSAGE, ONE_TIME_PASSWORD, Map.of());
 
@@ -101,7 +109,7 @@ public class DefaultSMSGatewayImplTest {
     }
 
     @Test
-    public void testAllArgsSendsEmailToCorrectPlace() throws AuthLoginException, MessagingException {
+    void testAllArgsSendsEmailToCorrectPlace() throws AuthLoginException, MessagingException {
         //given
         Map<String, Set<String>>  options = Map.of(SMTPHOSTNAME, Set.of(HOST),
                 SMTPHOSTPORT, Set.of(PORT),
@@ -119,7 +127,7 @@ public class DefaultSMSGatewayImplTest {
 
 
     @Test
-    public void testAllArgsSendsSmsToCorrectPlace() throws AuthLoginException, MessagingException {
+    void testAllArgsSendsSmsToCorrectPlace() throws AuthLoginException, MessagingException {
         //given
         Map<String, Set<String>>  options = Map.of(SMTPHOSTNAME, Set.of(HOST),
                 SMTPHOSTPORT, Set.of(PORT),
@@ -136,7 +144,7 @@ public class DefaultSMSGatewayImplTest {
     }
 
     @Test
-    public void testThrowsExceptionWhenEmailMessageFails() throws MessagingException {
+    void testThrowsExceptionWhenEmailMessageFails() throws MessagingException {
         //given
         doThrow(MessagingException.class).when(sendMail).postMail(Arrays.array(TO), SUBJECT,
                 MESSAGE + ONE_TIME_PASSWORD, FROM);
@@ -147,7 +155,7 @@ public class DefaultSMSGatewayImplTest {
     }
 
     @Test
-    public void testThrowsExceptionWhenSmsMessageFails() throws MessagingException {
+    void testThrowsExceptionWhenSmsMessageFails() throws MessagingException {
         //given
         doThrow(MessagingException.class).when(sendMail).postMail(Arrays.array(TO), SUBJECT,
                 MESSAGE + ONE_TIME_PASSWORD, FROM);

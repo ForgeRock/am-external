@@ -24,7 +24,7 @@
  *
  * $Id: CircleOfTrustDescriptor.java,v 1.5 2008/06/25 05:46:38 qcheng Exp $
  *
- * Portions Copyrighted 2018-2020 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
 package com.sun.identity.cot;
 

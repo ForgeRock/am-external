@@ -11,16 +11,23 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins.scripted;
 
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.core.realms.RealmLookupException;
-import org.forgerock.openam.scripting.application.ScriptEvaluationHelper;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptException;
 import org.forgerock.openam.scripting.persistence.ScriptStoreFactory;
 import org.forgerock.util.Reject;
@@ -36,33 +43,30 @@ class ScriptExecutor {
 
     private final ScriptStoreFactory scriptStoreFactory;
     private final RealmLookup realmLookup;
-    private final ScriptEvaluationHelper scriptEvaluationHelper;
 
 
     @Inject
-    public ScriptExecutor(ScriptStoreFactory scriptStoreFactory, RealmLookup realmLookup,
-            ScriptEvaluationHelper scriptEvaluationHelper) {
+    public ScriptExecutor(ScriptStoreFactory scriptStoreFactory, RealmLookup realmLookup) {
         this.scriptStoreFactory = scriptStoreFactory;
         this.realmLookup = realmLookup;
-        this.scriptEvaluationHelper = scriptEvaluationHelper;
     }
 
-    void evaluateVoidScriptFunction(ScriptEvaluator scriptEvaluator, Script script, String realm,
-            ScriptBindings scriptBindings, String functionName) throws SAML2Exception {
+    void evaluateVoidScriptFunction(ScriptEvaluator<LegacyScriptBindings> scriptEvaluator, Script script, String realm,
+            LegacyScriptBindings scriptBindings, String functionName) throws SAML2Exception {
         Reject.ifNull(script);
         try {
-            scriptEvaluationHelper.evaluateFunction(scriptEvaluator, script, scriptBindings, functionName,
+            scriptEvaluator.getScriptEvaluationHelper().evaluateFunction(script, scriptBindings, functionName,
                     realmLookup.lookup(realm));
         } catch (javax.script.ScriptException | RealmLookupException e) {
             throw new SAML2Exception(e);
         }
     }
 
-    boolean evaluateScriptFunction(ScriptEvaluator scriptEvaluator, Script script, String realm,
-            ScriptBindings scriptBindings, String functionName) throws SAML2Exception {
+    boolean evaluateScriptFunction(ScriptEvaluator<LegacyScriptBindings> scriptEvaluator, Script script, String realm,
+            LegacyScriptBindings scriptBindings, String functionName) throws SAML2Exception {
         Reject.ifNull(script);
         try {
-            return scriptEvaluationHelper.evaluateFunction(scriptEvaluator, script, scriptBindings, Boolean.class,
+            return scriptEvaluator.getScriptEvaluationHelper().evaluateFunction(script, scriptBindings, Boolean.class,
                     functionName, realmLookup.lookup(realm)).orElse(false);
         } catch (javax.script.ScriptException | RealmLookupException e) {
             throw new SAML2Exception(e);

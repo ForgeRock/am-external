@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -20,6 +28,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -49,7 +58,6 @@ import java.util.UUID;
 import javax.security.auth.callback.Callback;
 
 import org.assertj.core.data.Offset;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.builders.JwtClaimsSetBuilder;
 import org.forgerock.json.jose.builders.SignedJwtBuilderImpl;
@@ -62,21 +70,23 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.authentication.callbacks.DeviceSigningVerifierCallback;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingManager;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingSettings;
 import org.forgerock.openam.utils.Time;
 import org.forgerock.secrets.SecretBuilder;
 import org.forgerock.secrets.keys.SigningKey;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.AMIdentity;
@@ -86,7 +96,8 @@ import com.sun.identity.idm.IdType;
 /**
  * Test for Device Signing Verifier Node.
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class DeviceSigningVerifierNodeTest {
 
     public static final String ISS = "com.example.app";
@@ -102,9 +113,6 @@ public class DeviceSigningVerifierNodeTest {
     @Mock
     DeviceBindingManager deviceBindingManager;
 
-    @Mock
-    CoreWrapper coreWrapper;
-
     @InjectMocks
     DeviceSigningVerifierNode node;
 
@@ -112,14 +120,14 @@ public class DeviceSigningVerifierNodeTest {
     AMIdentity amIdentity;
 
     @Mock
-    LegacyIdentityService identityService;
+    NodeUserIdentityProvider identityProvider;
 
-    @Before
-    public void setup() throws IdRepoException, SSOException {
+    @BeforeEach
+    void setup() throws IdRepoException, SSOException {
 
-        given(identityService.getUniversalId(any(), any(), (IdType) any())).willReturn(Optional.of("bob"));
+        given(identityProvider.getUniversalId(any())).willReturn(Optional.of("bob"));
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
 
-        given(coreWrapper.getIdentity(anyString())).willReturn(amIdentity);
         given(amIdentity.isExists()).willReturn(true);
         given(amIdentity.isActive()).willReturn(true);
         given(amIdentity.getName()).willReturn("bob");
@@ -137,7 +145,7 @@ public class DeviceSigningVerifierNodeTest {
     }
 
     @Test
-    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+    void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
 
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -179,25 +187,30 @@ public class DeviceSigningVerifierNodeTest {
         assertThat(idid.getIdentityType()).isEqualTo(IdType.USER);
     }
 
-    @Test(expected = NodeProcessException.class)
-    public void testNonExistentUser() throws Exception {
+    @Test
+    void testNonExistentUser() throws Exception {
         // Given
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
 
-        given(identityService.getUniversalId(any(), any(), (IdType) any())).willReturn(Optional.empty());
+        given(identityProvider.getUniversalId(any())).willReturn(Optional.empty());
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.empty());
 
-        node.process(getContext(sharedState, transientState, emptyList()));
+        // When - Then
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("Failed to get the identity object");
     }
 
     @Test
-    public void testNonExistentUserWithFailureOutcome() throws Exception {
+    void testNonExistentUserWithFailureOutcome() throws Exception {
         // Given
         given(config.captureFailure()).willReturn(true);
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
 
-        given(identityService.getUniversalId(any(), any(), (IdType) any())).willReturn(Optional.empty());
+        given(identityProvider.getUniversalId(any())).willReturn(Optional.empty());
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.empty());
 
         Action result = node.process(getContext(sharedState, transientState, emptyList()));
         assertThat(result.outcome).isEqualTo(DeviceSigningVerifierNode.FAILURE_OUTCOME_ID);
@@ -207,7 +220,7 @@ public class DeviceSigningVerifierNodeTest {
     }
 
     @Test
-    public void testProcessWithNoInput() throws NodeProcessException,
+    void testProcessWithNoInput() throws NodeProcessException,
             NoSuchAlgorithmException, DevicePersistenceException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -240,9 +253,12 @@ public class DeviceSigningVerifierNodeTest {
     }
 
     @Test
-    public void testProcessWithNoInputUsernameLess() throws NodeProcessException {
+    void testProcessWithNoInputUsernameLess() throws NodeProcessException {
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
+
+        given(identityProvider.getUniversalId(any())).willReturn(Optional.empty());
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.empty());
 
         // When
         Action result = node.process(getContext(sharedState, transientState, emptyList()));
@@ -260,7 +276,7 @@ public class DeviceSigningVerifierNodeTest {
     }
 
     @Test
-    public void testClientErrorOutcome() throws NodeProcessException {
+    void testClientErrorOutcome() throws NodeProcessException {
 
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -306,7 +322,7 @@ public class DeviceSigningVerifierNodeTest {
     }
 
     @Test
-    public void testProcessWithCallbackSuccess() throws Exception {
+    void testProcessWithCallbackSuccess() throws Exception {
 
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -352,7 +368,7 @@ public class DeviceSigningVerifierNodeTest {
     }
 
     @Test
-    public void testProcessWithInvalidIssuer() throws Exception {
+    void testProcessWithInvalidIssuer() throws Exception {
 
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -396,7 +412,7 @@ public class DeviceSigningVerifierNodeTest {
     }
 
     @Test
-    public void testProcessWithExpiredToken() throws Exception {
+    void testProcessWithExpiredToken() throws Exception {
 
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -443,7 +459,7 @@ public class DeviceSigningVerifierNodeTest {
 
 
     @Test
-    public void testProcessWithCallbackInvalidChallenge() throws Exception {
+    void testProcessWithCallbackInvalidChallenge() throws Exception {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
 
@@ -486,7 +502,7 @@ public class DeviceSigningVerifierNodeTest {
     }
 
     @Test
-    public void testProcessWithCallbackInvalidPublicKey() throws Exception {
+    void testProcessWithCallbackInvalidPublicKey() throws Exception {
 
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -530,7 +546,7 @@ public class DeviceSigningVerifierNodeTest {
     }
 
     @Test
-    public void testProcessWithCallbackKeyNotFound() throws Exception {
+    void testProcessWithCallbackKeyNotFound() throws Exception {
 
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -567,7 +583,7 @@ public class DeviceSigningVerifierNodeTest {
     }
 
     @Test
-    public void testProcessWithNoDeviceRegistered() throws Exception {
+    void testProcessWithNoDeviceRegistered() throws Exception {
 
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -576,18 +592,20 @@ public class DeviceSigningVerifierNodeTest {
         assertThat(result.callbacks).isEmpty();
     }
 
-    @Test(expected = NodeProcessException.class)
-    public void testUserNotActive() throws NodeProcessException, IdRepoException, SSOException {
+    @Test
+    void testUserNotActive() throws IdRepoException, SSOException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
         given(amIdentity.isActive()).willReturn(false);
 
         // When
-        node.process(getContext(sharedState, transientState, emptyList()));
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("User status is not active.");
     }
 
     @Test
-    public void testFailureOutcomeInactiveUserWithoutCallback()
+    void testFailureOutcomeInactiveUserWithoutCallback()
             throws NodeProcessException, IdRepoException, SSOException {
         given(config.captureFailure()).willReturn(true);
         given(amIdentity.isActive()).willReturn(false);
@@ -607,10 +625,13 @@ public class DeviceSigningVerifierNodeTest {
     }
 
     @Test
-    public void testFailureOutcomeInactiveUserWithCallback() throws Exception {
+    void testFailureOutcomeInactiveUserWithCallback() throws Exception {
 
         given(config.captureFailure()).willReturn(true);
         given(amIdentity.isActive()).willReturn(false);
+        given(identityProvider.getAMIdentity(any(), any()))
+                .willReturn(Optional.empty())
+                .willReturn(Optional.of(amIdentity));
 
         JsonValue sharedState = json(object(field(REALM, "/realm")));
         JsonValue transientState = json(object());

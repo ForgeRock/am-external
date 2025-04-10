@@ -12,7 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2016-2020 ForgeRock AS.
+ * Portions Copyrighted 2016-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server.spi.handlers;
 
@@ -116,11 +116,12 @@ import com.sun.identity.authentication.spi.RedirectCallback;
  * </pre>
  * <p/>
  * Of special note to authentication module implementors is what modules are allowed in the chain used by a radius
- * client. If an authentication module uses {@link javax.servlet.http.HttpServletRequest} or
- * {@link javax.servlet.http.HttpServletResponse} they generally won't work for radius clients without modification. For
- * non-http clients the {@link javax.servlet.http.HttpServletRequest} and {@link javax.servlet.http.HttpServletResponse}
- * objects will be null typically leading to a {@link java.lang.NullPointerException}. Looking for a value of null is
- * how such modules can tell if they are dealing with a non-http client and adjust their behavior accordingly.
+ * client. If an authentication module uses {@link jakarta.servlet.http.HttpServletRequest} or
+ * {@link jakarta.servlet.http.HttpServletResponse} they generally won't work for radius clients without modification.
+ * For non-http clients the {@link jakarta.servlet.http.HttpServletRequest} and
+ * {@link jakarta.servlet.http.HttpServletResponse} objects will be null typically leading to a
+ * {@link java.lang.NullPointerException}. Looking for a value of null is how such modules can tell if they are dealing
+ * with a non-http client and adjust their behavior accordingly.
  * <p/>
  * This may include having different sets of callbacks for http clients than for radius clients. For example, a module
  * may support a checkbox causing a cookie to be set in the user's browser to remember that module's use for a period of

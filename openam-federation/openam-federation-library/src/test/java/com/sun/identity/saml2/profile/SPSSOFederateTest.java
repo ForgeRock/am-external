@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 
@@ -19,21 +27,31 @@ import static com.sun.identity.saml2.common.SAML2Constants.HTTP_POST;
 import static com.sun.identity.saml2.common.SAML2Constants.HTTP_REDIRECT;
 import static com.sun.identity.saml2.profile.SPSSOFederate.getSingleSignOnServiceEndpoint;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.testng.annotations.Test;
+import com.sun.identity.saml2.common.SOAPCommunicator;
+import org.forgerock.guice.core.GuiceExtension;
 
 import com.sun.identity.saml2.jaxb.metadata.EndpointType;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@Test
+@ExtendWith(GuiceExtension.class)
 public class SPSSOFederateTest {
+
+    @RegisterExtension
+    GuiceExtension guiceExtension = new GuiceExtension.Builder()
+            .addInstanceBinding(SOAPCommunicator.class, mock(SOAPCommunicator.class)).build();
 
     private static final String SHIBBOLETH_1_0_PROFILES_AUTHN_REQUEST
             = "urn:mace:shibboleth:1.0:profiles:AuthnRequest";
 
-    public void shouldFindEndpointTypeWhenNoPreferredBindingSupplied() {
+    @Test
+    void shouldFindEndpointTypeWhenNoPreferredBindingSupplied() {
         // Given
         List<EndpointType> endpointTypes = new ArrayList<>();
         endpointTypes.add(endpointType(SHIBBOLETH_1_0_PROFILES_AUTHN_REQUEST, "authnrequest"));
@@ -44,7 +62,8 @@ public class SPSSOFederateTest {
         assertThat(getSingleSignOnServiceEndpoint(endpointTypes, null).getBinding()).isEqualTo(HTTP_POST);
     }
 
-    public void shouldNotFindEndpointTypeWhenNoPreferredBindingSuppliedAndNoMatch() {
+    @Test
+    void shouldNotFindEndpointTypeWhenNoPreferredBindingSuppliedAndNoMatch() {
         // Given
         List<EndpointType> endpointTypes = new ArrayList<>();
         endpointTypes.add(endpointType(SHIBBOLETH_1_0_PROFILES_AUTHN_REQUEST, "authnrequest"));
@@ -53,7 +72,8 @@ public class SPSSOFederateTest {
         assertThat(getSingleSignOnServiceEndpoint(endpointTypes, null)).isNull();
     }
 
-    public void shouldFindMatchingEndpointTypeToPreferredBinding() {
+    @Test
+    void shouldFindMatchingEndpointTypeToPreferredBinding() {
         // Given
         List<EndpointType> endpointTypes = new ArrayList<>();
         endpointTypes.add(endpointType(SHIBBOLETH_1_0_PROFILES_AUTHN_REQUEST, "authnrequest"));
@@ -64,7 +84,8 @@ public class SPSSOFederateTest {
         assertThat(getSingleSignOnServiceEndpoint(endpointTypes, HTTP_POST).getBinding()).isEqualTo(HTTP_POST);
     }
 
-    public void shouldNotFindEndpointTypeWhenPreferredBindingNotAMatch() {
+    @Test
+    void shouldNotFindEndpointTypeWhenPreferredBindingNotAMatch() {
         // Given
         List<EndpointType> endpointTypes = new ArrayList<>();
         endpointTypes.add(endpointType(SHIBBOLETH_1_0_PROFILES_AUTHN_REQUEST, "authnrequest"));

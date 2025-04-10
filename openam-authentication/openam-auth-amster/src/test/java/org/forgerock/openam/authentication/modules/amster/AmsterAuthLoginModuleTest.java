@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.amster;
 
@@ -22,6 +30,7 @@ import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
 import static java.util.UUID.randomUUID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.openam.utils.CollectionUtils.asSet;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.contains;
@@ -47,7 +56,7 @@ import java.util.Set;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.forgerock.json.jose.builders.JwtClaimsSetBuilder;
@@ -59,27 +68,28 @@ import org.forgerock.json.jose.jws.handlers.SigningHandler;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.authentication.modules.common.AMLoginModuleBinder;
 import org.forgerock.util.SignatureUtil;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.Logger;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableMap;
 import com.sun.identity.authentication.callbacks.HiddenValueCallback;
 import com.sun.identity.authentication.util.ISAuthConstants;
 
+@ExtendWith(MockitoExtension.class)
 public class AmsterAuthLoginModuleTest {
 
+    public static final Set<String> TRUE = asSet("true");
     private static final Subject SUBJECT = null;
     private static final Map SHARED_STATE = new HashMap();
     private static final Provider BC_PROVIDER = new BouncyCastleProvider();
     private static final String AUTHORIZED_KEYS_SETTING = "forgerock-am-auth-amster-authorized-keys";
     private static final String ENABLED_SETTING = "forgerock-am-auth-amster-enabled";
-    public static final Set<String> TRUE = asSet("true");
-
     @Mock
     private Logger debug;
     @Mock
@@ -93,27 +103,23 @@ public class AmsterAuthLoginModuleTest {
     private ImmutableMap<String, Set<String>> options;
     private SigningHandler rsaSigningHandler;
 
-    @BeforeClass
-    public void addProvider() {
+    @BeforeAll
+    static void addProvider() {
         Security.addProvider(BC_PROVIDER);
     }
 
-    @AfterClass
-    public void removeProvider() {
+    @AfterAll
+    static void removeProvider() {
         Security.removeProvider(BC_PROVIDER.getName());
     }
 
-    @BeforeMethod
-    public void setup() throws Exception {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void setup() throws Exception {
         authorizedKeysFile = new File(System.getProperty("java.io.tmpdir"), randomUUID().toString());
         options = ImmutableMap.of(AUTHORIZED_KEYS_SETTING, asSet(authorizedKeysFile.getAbsolutePath()),
                 ENABLED_SETTING, TRUE);
         this.module = new AmsterAuthLoginModule(debug, authorizedKeys);
         module.setAMLoginModule(binder);
-        when(binder.getHttpServletRequest()).thenReturn(request);
-        when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-        when(request.getRemoteHost()).thenReturn("localhost");
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(2048);
         PrivateKey privateKey = keyGen.generateKeyPair().getPrivate();
@@ -121,7 +127,7 @@ public class AmsterAuthLoginModuleTest {
     }
 
     @Test
-    public void initShouldNotInitKeysWhenDisabled() throws Exception {
+    void initShouldNotInitKeysWhenDisabled() throws Exception {
         // Given
         Map options = new HashMap();
 
@@ -134,7 +140,7 @@ public class AmsterAuthLoginModuleTest {
     }
 
     @Test
-    public void initShouldReportErrorIfAuthorizedKeysSettingIsMissing() throws Exception {
+    void initShouldReportErrorIfAuthorizedKeysSettingIsMissing() throws Exception {
         // Given
         Map options = singletonMap(ENABLED_SETTING, asSet("true"));
 
@@ -146,7 +152,7 @@ public class AmsterAuthLoginModuleTest {
     }
 
     @Test
-    public void initShouldReportErrorIfAuthorizedKeysDoesNotExist() throws Exception {
+    void initShouldReportErrorIfAuthorizedKeysDoesNotExist() throws Exception {
         // Given
         Map options = ImmutableMap.of(AUTHORIZED_KEYS_SETTING, asSet("/does/not/exist"), ENABLED_SETTING, TRUE);
 
@@ -159,7 +165,7 @@ public class AmsterAuthLoginModuleTest {
     }
 
     @Test
-    public void initShouldSucceedIfAuthorizedKeysIsEmpty() throws Exception {
+    void initShouldSucceedIfAuthorizedKeysIsEmpty() throws Exception {
         // Given
         Files.write(authorizedKeysFile.toPath(), new byte[0]);
 
@@ -171,7 +177,7 @@ public class AmsterAuthLoginModuleTest {
     }
 
     @Test
-    public void initShouldReadAuthorizedKeys() throws Exception {
+    void initShouldReadAuthorizedKeys() throws Exception {
         // Given
         Files.write(authorizedKeysFile.toPath(), "".getBytes());
         authorizedKeysFile.deleteOnExit();
@@ -183,15 +189,13 @@ public class AmsterAuthLoginModuleTest {
         verifyNoMoreInteractions(debug);
     }
 
-    @Test(expectedExceptions = LoginException.class)
-    public void shouldFailWhenDisabled() throws Exception {
+    @Test
+    void shouldFailWhenDisabled() throws Exception {
         // Given
         Map options = new HashMap();
         module.init(SUBJECT, SHARED_STATE, options);
 
         Key passKey = mock(Key.class);
-        given(passKey.isValid(isA(SignedJwt.class), isA(HttpServletRequest.class))).willReturn(true);
-        given(authorizedKeys.read(isA(InputStream.class))).willReturn(singleton(passKey));
         JwtClaimsSet claims = new JwtClaimsSetBuilder().sub("amadmin").build();
         claims.setClaim("nonce", module.getNonce());
         String jws = new SignedJwtBuilderImpl(rsaSigningHandler)
@@ -200,19 +204,24 @@ public class AmsterAuthLoginModuleTest {
                 .build();
 
         // When
-        module.process(new Callback[]{new HiddenValueCallback("jwt", jws)}, LOGIN_START);
-
-        // Then - exception
-    }
-
-    @Test(expectedExceptions = LoginException.class)
-    public void shouldThrowExceptionIfNoCallbacks() throws Exception {
-        module.process(new Callback[0], LOGIN_START);
+        assertThatThrownBy(() ->
+                module.process(new Callback[]{new HiddenValueCallback("jwt", jws)}, LOGIN_START))
+                // Then
+                .isInstanceOf(LoginException.class)
+                .hasMessage("Login disabled");
     }
 
     @Test
-    public void shouldProcessSignedJwt() throws Exception {
+    void shouldThrowExceptionIfNoCallbacks() throws Exception {
+        assertThatThrownBy(() -> module.process(new Callback[0], LOGIN_START))
+                .isInstanceOf(LoginException.class)
+                .hasMessage("Login disabled");
+    }
+
+    @Test
+    void shouldProcessSignedJwt() throws Exception {
         // Given
+        when(binder.getHttpServletRequest()).thenReturn(request);
         Key failKey = mock(Key.class);
         given(failKey.isValid(isA(SignedJwt.class), isA(HttpServletRequest.class))).willReturn(false);
         Key passKey = mock(Key.class);
@@ -234,11 +243,10 @@ public class AmsterAuthLoginModuleTest {
         assertThat(module.getPrincipal().getName()).isEqualTo("amadmin");
     }
 
-    @Test(expectedExceptions = LoginException.class)
-    public void shouldFailWithoutNonce() throws Exception {
+    @Test
+    void shouldFailWithoutNonce() throws Exception {
         // Given
         Key passKey = mock(Key.class);
-        given(passKey.isValid(isA(SignedJwt.class), isA(HttpServletRequest.class))).willReturn(true);
         given(authorizedKeys.read(isA(InputStream.class))).willReturn(singleton(passKey));
         module.init(SUBJECT, SHARED_STATE, options);
         JwtClaimsSet claims = new JwtClaimsSetBuilder().sub("amadmin").build();
@@ -248,16 +256,18 @@ public class AmsterAuthLoginModuleTest {
                 .build();
 
         // When
-        module.process(new Callback[]{new HiddenValueCallback("jwt", jws)}, LOGIN_START);
+        assertThatThrownBy(()
+                -> module.process(new Callback[]{new HiddenValueCallback("jwt", jws)}, LOGIN_START))
+                // Then
+                .isInstanceOf(LoginException.class)
+                .hasMessage("Not authenticated");
 
-        // Then - exception
     }
 
-    @Test(expectedExceptions = LoginException.class)
-    public void shouldFailIfNoMatchingKeys() throws Exception {
+    @Test
+    void shouldFailIfNoMatchingKeys() throws Exception {
         // Given
         Key failKey = mock(Key.class);
-        given(failKey.isValid(isA(SignedJwt.class), isA(HttpServletRequest.class))).willReturn(false);
         given(authorizedKeys.read(isA(InputStream.class))).willReturn(singleton(failKey));
         module.init(SUBJECT, SHARED_STATE, options);
 
@@ -267,9 +277,12 @@ public class AmsterAuthLoginModuleTest {
                 .build();
 
         // When
-        module.process(new Callback[] { new HiddenValueCallback("jwt", jws) }, LOGIN_START);
+        assertThatThrownBy(()
+                -> module.process(new Callback[]{new HiddenValueCallback("jwt", jws)}, LOGIN_START))
+                // Then
+                .isInstanceOf(LoginException.class)
+                .hasMessage("Not authenticated");
 
-        // Then - exception
     }
 
 }

@@ -24,7 +24,7 @@
  *
  * $Id: MSISDNValidation.java,v 1.3 2008/06/25 05:41:59 qcheng Exp $
  *
- * Portions Copyrighted 2011-2023 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.authentication.modules.msisdn;

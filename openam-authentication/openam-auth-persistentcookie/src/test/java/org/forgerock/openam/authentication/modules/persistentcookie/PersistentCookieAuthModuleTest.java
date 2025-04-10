@@ -11,12 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2013-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2013-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.persistentcookie;
 
 import static com.sun.identity.authentication.util.ISAuthConstants.MODULE_INSTANCE_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.any;
 import static org.mockito.BDDMockito.anyBoolean;
 import static org.mockito.BDDMockito.anyCollection;
@@ -25,10 +35,6 @@ import static org.mockito.BDDMockito.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.testng.AssertJUnit.assertEquals;
-import static org.testng.AssertJUnit.assertSame;
-import static org.testng.AssertJUnit.assertTrue;
-import static org.testng.AssertJUnit.fail;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,8 +46,8 @@ import javax.security.auth.Subject;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.message.MessageInfo;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.caf.authentication.framework.AuthenticationFramework;
 import org.forgerock.jaspi.modules.session.jwt.JwtSessionModule;
@@ -49,24 +55,22 @@ import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.authentication.modules.common.AMLoginModuleBinder;
 import org.forgerock.openam.core.CoreWrapper;
-import org.mockito.ArgumentMatchers;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.authentication.spi.AuthLoginException;
 import com.sun.identity.authentication.util.ISAuthConstants;
 
 public class PersistentCookieAuthModuleTest {
 
+    private final Map<String, Object> GENERATED_CONFIG = mock(Map.class);
     private PersistentCookieAuthModule persistentCookieAuthModule;
-
     private AMLoginModuleBinder amLoginModuleBinder;
     private CoreWrapper coreWrapper;
     private PersistentCookieModuleWrapper persistentCookieWrapper;
-    private final Map<String, Object> GENERATED_CONFIG = mock(Map.class);
 
-    @BeforeMethod
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
 
         amLoginModuleBinder = mock(AMLoginModuleBinder.class);
         coreWrapper = mock(CoreWrapper.class);
@@ -87,7 +91,7 @@ public class PersistentCookieAuthModuleTest {
     }
 
     @Test
-    public void shouldInitialiseAuthModuleWithIdleTimeoutSetAsNull() throws Exception {
+    void shouldInitialiseAuthModuleWithIdleTimeoutSetAsNull() throws Exception {
 
         //Given
         Subject subject = new Subject();
@@ -103,13 +107,13 @@ public class PersistentCookieAuthModuleTest {
         Map<String, Object> config = persistentCookieAuthModule.generateConfig(subject, sharedState, options);
 
         //Then
-        assertSame(GENERATED_CONFIG, config);
+        assertThat(config).isSameAs(GENERATED_CONFIG);
         verify(persistentCookieWrapper).generateConfig(eq("0"), eq("300"), anyBoolean(), anyString(),
                 anyBoolean(), anyBoolean(), any(), anyCollection(), any());
     }
 
     @Test
-    public void shouldInitialiseAuthModuleWithModuleInstanceName() throws Exception {
+    void shouldInitialiseAuthModuleWithModuleInstanceName() throws Exception {
 
         //Given
         Subject subject = new Subject();
@@ -126,13 +130,13 @@ public class PersistentCookieAuthModuleTest {
         Map<String, Object> config = persistentCookieAuthModule.generateConfig(subject, sharedState, options);
 
         //Then
-        assertSame(GENERATED_CONFIG, config);
+        assertThat(config).isSameAs(GENERATED_CONFIG);
         verify(persistentCookieWrapper).generateConfig(eq("0"), eq("300"), anyBoolean(), anyString(),
                 anyBoolean(), anyBoolean(), any(), anyCollection(), eq("badger"));
     }
 
     @Test
-    public void shouldInitialiseAuthModuleWithMaxLifeSetAsNull() throws Exception {
+    void shouldInitialiseAuthModuleWithMaxLifeSetAsNull() throws Exception {
 
         //Given
         Subject subject = new Subject();
@@ -148,13 +152,13 @@ public class PersistentCookieAuthModuleTest {
         Map<String, Object> config = persistentCookieAuthModule.generateConfig(subject, sharedState, options);
 
         //Then
-        assertSame(GENERATED_CONFIG, config);
+        assertThat(config).isSameAs(GENERATED_CONFIG);
         verify(persistentCookieWrapper).generateConfig(eq("60"), eq("0"), anyBoolean(), anyString(),
                 anyBoolean(), anyBoolean(), any(), anyCollection(), any());
     }
 
     @Test
-    public void shouldInitialiseAuthModule() throws Exception {
+    void shouldInitialiseAuthModule() throws Exception {
 
         //Given
         Subject subject = new Subject();
@@ -172,14 +176,14 @@ public class PersistentCookieAuthModuleTest {
         Map<String, Object> config = persistentCookieAuthModule.generateConfig(subject, sharedState, options);
 
         //Then
-        assertSame(GENERATED_CONFIG, config);
+        assertThat(config).isSameAs(GENERATED_CONFIG);
         verify(persistentCookieWrapper).generateConfig(eq("60"), eq("300"), anyBoolean(), anyString(),
                 anyBoolean(), anyBoolean(), any(), anyCollection(), any());
     }
 
 
     @Test
-    public void shouldInitialiseAuthModuleWithClientIPEnforced() throws Exception {
+    void shouldInitialiseAuthModuleWithClientIPEnforced() throws Exception {
 
         //Given
         Subject subject = new Subject();
@@ -192,63 +196,49 @@ public class PersistentCookieAuthModuleTest {
         Map<String, Object> config = persistentCookieAuthModule.generateConfig(subject, sharedState, options);
 
         //Then
-        assertSame(GENERATED_CONFIG, config);
+        assertThat(config).isSameAs(GENERATED_CONFIG);
         verify(persistentCookieWrapper).generateConfig(anyString(), anyString(), eq(true), anyString(),
                 anyBoolean(), anyBoolean(), any(), anyCollection(), any());
     }
 
     @Test
-    public void shouldProcessCallbacksAndThrowInvalidStateException() throws Exception {
+    void shouldProcessCallbacksAndThrowInvalidStateException() throws Exception {
 
         //Given
         Callback[] callbacks = new Callback[0];
         int state = 0;
 
         //When
-        boolean exceptionCaught = false;
-        AuthLoginException exception = null;
-        try {
-            persistentCookieAuthModule.process(callbacks, state);
-        } catch (AuthLoginException e) {
-            exceptionCaught = true;
-            exception = e;
-        }
-
-        //Then
-        assertTrue(exceptionCaught);
-        assertEquals(exception.getErrorCode(), "incorrectState");
+        assertThatThrownBy(() -> persistentCookieAuthModule.process(callbacks, state))
+                //Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessage("Incorrect State");
     }
 
     @Test
-    public void shouldProcessCallbacksWhenJwtNotPresentOrValid() throws Exception {
+    void shouldProcessCallbacksWhenJwtNotPresentOrValid() throws Exception {
 
         //Given
         Callback[] callbacks = new Callback[0];
         int state = ISAuthConstants.LOGIN_START;
 
-        given(persistentCookieWrapper.validateJwtSessionCookie(ArgumentMatchers.<MessageInfo>anyObject())).willReturn(null);
+        given(persistentCookieWrapper.validateJwtSessionCookie(any())).willReturn(null);
         shouldInitialiseAuthModule();
 
         //When
-        boolean exceptionCaught = false;
-        AuthLoginException exception = null;
-        try {
-            persistentCookieAuthModule.process(callbacks, state);
-        } catch (AuthLoginException e) {
-            exceptionCaught = true;
-            exception = e;
-        }
+        assertThatThrownBy(() -> persistentCookieAuthModule.process(callbacks, state))
+                //Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessage("Persistent Cookie not present or valid");
 
         //Then
         verify(amLoginModuleBinder).setUserSessionProperty(JwtSessionModule.TOKEN_IDLE_TIME_IN_MINUTES_CLAIM_KEY, "60");
         verify(amLoginModuleBinder).setUserSessionProperty(JwtSessionModule.MAX_TOKEN_LIFE_IN_MINUTES_KEY, "300");
-        verify(persistentCookieWrapper).validateJwtSessionCookie(ArgumentMatchers.<MessageInfo>anyObject());
-        assertTrue(exceptionCaught);
-        assertEquals(exception.getErrorCode(), "cookieNotValid");
+        verify(persistentCookieWrapper).validateJwtSessionCookie(any());
     }
 
     @Test
-    public void shouldProcessCallbacksWhenJASPIContextNotFound() throws Exception {
+    void shouldProcessCallbacksWhenJASPIContextNotFound() throws Exception {
 
         //Given
         Callback[] callbacks = new Callback[0];
@@ -256,32 +246,26 @@ public class PersistentCookieAuthModuleTest {
         Jwt jwt = mock(Jwt.class);
         JwtClaimsSet claimsSet = mock(JwtClaimsSet.class);
 
-        given(persistentCookieWrapper.validateJwtSessionCookie(ArgumentMatchers.<MessageInfo>anyObject())).willReturn(jwt);
+        given(persistentCookieWrapper.validateJwtSessionCookie(any())).willReturn(jwt);
 
         given(jwt.getClaimsSet()).willReturn(claimsSet);
         given(claimsSet.getClaim("org.forgerock.authentication.context", Map.class)).willReturn(null);
         shouldInitialiseAuthModule();
 
         //When
-        boolean exceptionCaught = false;
-        AuthLoginException exception = null;
-        try {
-            persistentCookieAuthModule.process(callbacks, state);
-        } catch (AuthLoginException e) {
-            exceptionCaught = true;
-            exception = e;
-        }
+        assertThatThrownBy(() -> persistentCookieAuthModule.process(callbacks, state))
+                //Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessage("User's context inside the Persistent Cookie is invalid");
 
         //Then
         verify(amLoginModuleBinder).setUserSessionProperty(JwtSessionModule.TOKEN_IDLE_TIME_IN_MINUTES_CLAIM_KEY, "60");
         verify(amLoginModuleBinder).setUserSessionProperty(JwtSessionModule.MAX_TOKEN_LIFE_IN_MINUTES_KEY, "300");
-        verify(persistentCookieWrapper).validateJwtSessionCookie(ArgumentMatchers.<MessageInfo>anyObject());
-        assertTrue(exceptionCaught);
-        assertEquals(exception.getErrorCode(), "jaspiContextNotFound");
+        verify(persistentCookieWrapper).validateJwtSessionCookie(any());
     }
 
     @Test
-    public void shouldProcessCallbacksWhenJwtRealmIsDifferent() throws Exception {
+    void shouldProcessCallbacksWhenJwtRealmIsDifferent() throws Exception {
 
         //Given
         Callback[] callbacks = new Callback[0];
@@ -290,7 +274,7 @@ public class PersistentCookieAuthModuleTest {
         JwtClaimsSet claimsSet = mock(JwtClaimsSet.class);
         Map<String, Object> internalMap = mock(HashMap.class);
 
-        given(persistentCookieWrapper.validateJwtSessionCookie(ArgumentMatchers.<MessageInfo>anyObject())).willReturn(jwt);
+        given(persistentCookieWrapper.validateJwtSessionCookie(any())).willReturn(jwt);
 
         given(jwt.getClaimsSet()).willReturn(claimsSet);
         given(claimsSet.getClaim("org.forgerock.authentication.context", Map.class)).willReturn(internalMap);
@@ -299,25 +283,19 @@ public class PersistentCookieAuthModuleTest {
         shouldInitialiseAuthModule();
 
         //When
-        boolean exceptionCaught = false;
-        AuthLoginException exception = null;
-        try {
-            persistentCookieAuthModule.process(callbacks, state);
-        } catch (AuthLoginException e) {
-            exceptionCaught = true;
-            exception = e;
-        }
+        assertThatThrownBy(() -> persistentCookieAuthModule.process(callbacks, state))
+                //Then
+                .isInstanceOf(AuthLoginException.class)
+                .hasMessage("Attempting to log into different realm");
 
         //Then
         verify(amLoginModuleBinder).setUserSessionProperty(JwtSessionModule.TOKEN_IDLE_TIME_IN_MINUTES_CLAIM_KEY, "60");
         verify(amLoginModuleBinder).setUserSessionProperty(JwtSessionModule.MAX_TOKEN_LIFE_IN_MINUTES_KEY, "300");
-        verify(persistentCookieWrapper).validateJwtSessionCookie(ArgumentMatchers.<MessageInfo>anyObject());
-        assertTrue(exceptionCaught);
-        assertEquals(exception.getErrorCode(), "authFailedDiffRealm");
+        verify(persistentCookieWrapper).validateJwtSessionCookie(any());
     }
 
     @Test
-    public void shouldProcessCallbacksWhenJwtValid() throws Exception {
+    void shouldProcessCallbacksWhenJwtValid() throws Exception {
 
         //Given
         Callback[] callbacks = new Callback[0];
@@ -327,7 +305,7 @@ public class PersistentCookieAuthModuleTest {
 
         Map<String, Object> internalMap = mock(HashMap.class);
 
-        given(persistentCookieWrapper.validateJwtSessionCookie(ArgumentMatchers.<MessageInfo>anyObject())).willReturn(jwt);
+        given(persistentCookieWrapper.validateJwtSessionCookie(any())).willReturn(jwt);
 
         given(jwt.getClaimsSet()).willReturn(claimsSet);
         given(claimsSet.getClaim("org.forgerock.authentication.context", Map.class)).willReturn(internalMap);
@@ -342,19 +320,19 @@ public class PersistentCookieAuthModuleTest {
         //Then
         verify(amLoginModuleBinder).setUserSessionProperty(JwtSessionModule.TOKEN_IDLE_TIME_IN_MINUTES_CLAIM_KEY, "60");
         verify(amLoginModuleBinder).setUserSessionProperty(JwtSessionModule.MAX_TOKEN_LIFE_IN_MINUTES_KEY, "300");
-        verify(persistentCookieWrapper).validateJwtSessionCookie(ArgumentMatchers.<MessageInfo>anyObject());
+        verify(persistentCookieWrapper).validateJwtSessionCookie(any());
         verify(amLoginModuleBinder).setUserSessionProperty("jwtValidated", "true");
-        assertEquals(returnedState, ISAuthConstants.LOGIN_SUCCEED);
+        assertThat(returnedState).isEqualTo(ISAuthConstants.LOGIN_SUCCEED);
     }
 
     @Test
-    public void shouldSetUsernameInSharedState() throws Exception {
+    void shouldSetUsernameInSharedState() throws Exception {
         shouldProcessCallbacksWhenJwtValid();
         verify(amLoginModuleBinder).setAuthenticatingUserName("USER");
     }
 
     @Test
-    public void shouldEnforceClientIPOnLoginWhenClientIPIsSame() throws LoginException {
+    void shouldEnforceClientIPOnLoginWhenClientIPIsSame() throws LoginException {
 
         //Given
         MessageInfo messageInfo = mock(MessageInfo.class);
@@ -382,11 +360,11 @@ public class PersistentCookieAuthModuleTest {
         boolean result = persistentCookieAuthModule.process(messageInfo, clientSubject, callbacks);
 
         //Then
-        assertTrue(result);
+        assertThat(result).isTrue();
     }
 
-    @Test(expectedExceptions = AuthLoginException.class)
-    public void shouldEnforceClientIPOnLoginWhenClientIPIsDifferent() throws LoginException {
+    @Test
+    void shouldEnforceClientIPOnLoginWhenClientIPIsDifferent() throws LoginException {
 
         //Given
         MessageInfo messageInfo = mock(MessageInfo.class);
@@ -411,14 +389,13 @@ public class PersistentCookieAuthModuleTest {
         given(request.getRemoteAddr()).willReturn("CLIENT_IP_2");
 
         //When
-        persistentCookieAuthModule.process(messageInfo, clientSubject, callbacks);
-
-        //Then
-        fail();
+        assertThatThrownBy(() -> persistentCookieAuthModule.process(messageInfo, clientSubject, callbacks))
+                //Then
+                .isInstanceOf(AuthLoginException.class);
     }
 
-    @Test(expectedExceptions = AuthLoginException.class)
-    public void shouldEnforceClientIPOnLoginWhenClientIPIsNotStoredInPCookie() throws LoginException {
+    @Test
+    void shouldEnforceClientIPOnLoginWhenClientIPIsNotStoredInPCookie() throws LoginException {
 
         //Given
         MessageInfo messageInfo = mock(MessageInfo.class);
@@ -442,14 +419,13 @@ public class PersistentCookieAuthModuleTest {
         given(request.getRemoteAddr()).willReturn("CLIENT_IP");
 
         //When
-        persistentCookieAuthModule.process(messageInfo, clientSubject, callbacks);
-
-        //Then
-        fail();
+        assertThatThrownBy(() -> persistentCookieAuthModule.process(messageInfo, clientSubject, callbacks))
+                //Then
+                .isInstanceOf(AuthLoginException.class);
     }
 
-    @Test(expectedExceptions = AuthLoginException.class)
-    public void shouldEnforceClientIPOnLoginWhenClientIPIsNotOnRequest() throws LoginException {
+    @Test
+    void shouldEnforceClientIPOnLoginWhenClientIPIsNotOnRequest() throws LoginException {
 
         //Given
         MessageInfo messageInfo = mock(MessageInfo.class);
@@ -473,9 +449,8 @@ public class PersistentCookieAuthModuleTest {
         given(amLoginModuleBinder.getHttpServletRequest()).willReturn(request);
 
         //When
-        persistentCookieAuthModule.process(messageInfo, clientSubject, callbacks);
-
-        //Then
-        fail();
+        assertThatThrownBy(() -> persistentCookieAuthModule.process(messageInfo, clientSubject, callbacks))
+                //Then
+                .isInstanceOf(AuthLoginException.class);
     }
 }

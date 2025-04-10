@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -24,7 +32,6 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.SUCCESS_URL;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Optional;
 
@@ -34,11 +41,12 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.TreeContext;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class SetSuccessUrlNodeTest {
 
     private static final String VALID_URL = "valid-url";
@@ -48,13 +56,8 @@ public class SetSuccessUrlNodeTest {
     @Mock
     SetSuccessUrlNode.Config serviceConfig;
 
-    @BeforeMethod
-    public void before() {
-        initMocks(this);
-    }
-
     @Test
-    public void processSetsNewSuccessUrl() throws Exception {
+    void processSetsNewSuccessUrl() throws Exception {
         given(serviceConfig.successUrl()).willReturn(VALID_URL);
 
         Node node = new SetSuccessUrlNode(serviceConfig);
@@ -75,7 +78,7 @@ public class SetSuccessUrlNodeTest {
     }
 
     @Test
-    public void processSetsNewSuccessUrlAsEmpty() throws Exception {
+    void processSetsNewSuccessUrlAsEmpty() throws Exception {
         given(serviceConfig.successUrl()).willReturn("");
 
         Node node = new SetSuccessUrlNode(serviceConfig);
@@ -96,7 +99,7 @@ public class SetSuccessUrlNodeTest {
     }
 
     @Test
-    public void processSetsNewSuccessUrlAsNull() throws Exception {
+    void processSetsNewSuccessUrlAsNull() throws Exception {
         given(serviceConfig.successUrl()).willReturn(null);
 
         Node node = new SetSuccessUrlNode(serviceConfig);
@@ -117,7 +120,7 @@ public class SetSuccessUrlNodeTest {
     }
 
     @Test
-    public void processReplacesExistingSuccessUrl() throws Exception {
+    void processReplacesExistingSuccessUrl() throws Exception {
         given(serviceConfig.successUrl()).willReturn(NEW_URL);
 
         Node node = new SetSuccessUrlNode(serviceConfig);

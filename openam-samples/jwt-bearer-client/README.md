@@ -91,7 +91,9 @@ When distributing Covered Software, include this CDDL Header Notice in each file
 the License file at legal/CDDLv1.0.txt. If applicable, add the following below the CDDL
 Header, with the fields enclosed by brackets [] replaced by your own identifying
 information: "Portions copyright [year] [name of copyright owner]". -->
+ 
+  Copyright 2025 Ping Identity Corporation.
 
 The code in this project is licensed under the [CDDL License](https://forum.forgerock.com/cddlv1-0/), and as such may be used as the basis for your own projects. 
 
-Copyright 2014 ForgeRock AS.
+Copyright 2014-2025 Ping Identity Corporation.

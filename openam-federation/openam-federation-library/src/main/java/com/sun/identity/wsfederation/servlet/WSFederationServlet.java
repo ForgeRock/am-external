@@ -24,16 +24,16 @@
  *
  * $Id: WSFederationServlet.java,v 1.6 2008/08/19 19:11:17 veiming Exp $
  *
- * Portions Copyrighted 2012-2019 ForgeRock AS.
+ * Portions Copyrighted 2012-2025 Ping Identity Corporation.
  */
 package com.sun.identity.wsfederation.servlet;
 
 import java.io.IOException;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,7 @@ public class WSFederationServlet extends HttpServlet {
     /** Handles the HTTP <code>GET</code> method.
      * @param request servlet request
      * @param response servlet response
-     * @throws javax.servlet.ServletException 
+     * @throws jakarta.servlet.ServletException 
      * @throws java.io.IOException 
      */
     protected void doGet(HttpServletRequest request, 
@@ -85,7 +85,7 @@ public class WSFederationServlet extends HttpServlet {
     /** Handles the HTTP <code>POST</code> method.
      * @param request servlet request
      * @param response servlet response
-     * @throws javax.servlet.ServletException 
+     * @throws jakarta.servlet.ServletException 
      * @throws java.io.IOException 
      */
     protected void doPost(HttpServletRequest request, 

@@ -11,13 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
@@ -28,18 +37,12 @@ import static org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode.NOT_RE
 import static org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode.RECOVERY_CODE_OUTCOME_ID;
 import static org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode.SUCCESS_OUTCOME_ID;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_ALLOW_RECOVERY_CODES;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_HOTP_WINDOW_SIZE;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_MAXIMUM_ALLOWED_CLOCK_DRIFT;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_TOTP_INTERVAL;
-import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DEFAULT_TOTP_TIME_STEPS;
 import static org.forgerock.openam.auth.nodes.oath.OathTokenVerifierNode.RECOVERY;
-import static org.forgerock.openam.auth.nodes.oath.OathTokenVerifierNode.SUBMIT;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.List;
 import java.util.Optional;
@@ -50,43 +53,37 @@ import javax.security.auth.callback.NameCallback;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.BoundedOutcomeProvider;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
+import org.forgerock.openam.auth.node.api.OutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
-import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.AuthenticatorDeviceServiceFactory;
-import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.util.i18n.PreferredLocales;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.ImmutableList;
 
+@ExtendWith({MockitoExtension.class})
 public class OathTokenVerifierNodeTest {
 
     @Mock
-    OathTokenVerifierNode.Config config;
+    private OathTokenVerifierNode.Config config;
     @Mock
     private OathDeviceProfileHelper deviceProfileHelper;
-    @Mock
-    private Realm realm;
-    @Mock
-    private CoreWrapper coreWrapper;
-    @Mock
-    LegacyIdentityService identityService;
 
-    OathTokenVerifierNode node;
+    private OathTokenVerifierNode node;
+    @Mock
+    private NodeUserIdentityProvider identityProvider;
 
-    @BeforeMethod
-    public void setup() {
-        initMocks(this);
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void processThrowExceptionIfUserNameNotPresentInSharedState() throws Exception {
+    @Test
+    void processThrowExceptionIfUserNameNotPresentInSharedState() throws Exception {
         // Given
         JsonValue sharedState = json(object());
         JsonValue transientState = json(object());
@@ -94,14 +91,14 @@ public class OathTokenVerifierNodeTest {
         whenNodeConfigHasDefaultValues();
 
         // When
-        node.process(getContext(sharedState, transientState, emptyList()));
-
-        // Then
-        // throw exception
+        assertThatThrownBy(() -> node.process(getContext(sharedState, transientState, emptyList())))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Expected username to be set.");
     }
 
     @Test
-    public void processShouldReturnCorrectCallbacksDuringFirstPass() throws Exception {
+    void processShouldReturnCorrectCallbacksDuringFirstPass() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -110,6 +107,8 @@ public class OathTokenVerifierNodeTest {
 
         given(deviceProfileHelper.getDeviceSettings(anyString(), anyString()))
                 .willReturn(getDeviceSettings());
+
+        given(config.isRecoveryCodeAllowed()).willReturn(DEFAULT_ALLOW_RECOVERY_CODES);
 
         whenNodeConfigHasDefaultValues();
 
@@ -123,7 +122,7 @@ public class OathTokenVerifierNodeTest {
     }
 
     @Test
-    public void processWhenNoDeviceSettingsThenNotRegisteredOutcome() throws Exception {
+    void processWhenNoDeviceSettingsThenNotRegisteredOutcome() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -140,7 +139,7 @@ public class OathTokenVerifierNodeTest {
     }
 
     @Test
-    public void processWhenRecoveryPressedThenRecoveryCodeOutcome() throws Exception {
+    void processWhenRecoveryPressedThenRecoveryCodeOutcome() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -163,7 +162,7 @@ public class OathTokenVerifierNodeTest {
     }
 
     @Test
-    public void processWhenValidOtpProvidedThenSuccessOutcome() throws Exception {
+    void processWhenValidOtpProvidedThenSuccessOutcome() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -174,8 +173,7 @@ public class OathTokenVerifierNodeTest {
         NameCallback nameCallback = mock(NameCallback.class);
         given(deviceProfileHelper.getDeviceSettings(anyString(), anyString()))
                 .willReturn(getDeviceSettings());
-        when(confirmationCallback.getSelectedIndex())
-                .thenReturn(SUBMIT);
+        given(config.algorithm()).willReturn(OathAlgorithm.HOTP);
         when(nameCallback.getName())
                 .thenReturn("564491");
 
@@ -189,7 +187,7 @@ public class OathTokenVerifierNodeTest {
     }
 
     @Test
-    public void processWhenInvalidOtpProvidedThenFailureOutcome() throws Exception {
+    void processWhenInvalidOtpProvidedThenFailureOutcome() throws Exception {
         // Given
         JsonValue sharedState = json(object(
                 field(USERNAME, "rod"),
@@ -200,8 +198,7 @@ public class OathTokenVerifierNodeTest {
         NameCallback nameCallback = mock(NameCallback.class);
         given(deviceProfileHelper.getDeviceSettings(anyString(), anyString()))
                 .willReturn(getDeviceSettings());
-        when(confirmationCallback.getSelectedIndex())
-                .thenReturn(SUBMIT);
+        given(config.algorithm()).willReturn(OathAlgorithm.HOTP);
         when(nameCallback.getName())
                 .thenReturn("000000");
 
@@ -244,24 +241,82 @@ public class OathTokenVerifierNodeTest {
     }
 
     private void whenNodeConfigHasDefaultValues() {
-        config = mock(OathTokenVerifierNode.Config.class);
-        given(config.hotpWindowSize()).willReturn(DEFAULT_HOTP_WINDOW_SIZE);
-        given(config.maximumAllowedClockDrift()).willReturn(DEFAULT_MAXIMUM_ALLOWED_CLOCK_DRIFT);
-        given(config.isRecoveryCodeAllowed()).willReturn(DEFAULT_ALLOW_RECOVERY_CODES);
-        given(config.totpTimeSteps()).willReturn(DEFAULT_TOTP_TIME_STEPS);
-        given(config.algorithm()).willReturn(OathAlgorithm.HOTP);
-        given(config.totpTimeInterval()).willReturn(DEFAULT_TOTP_INTERVAL);
-        given(config.totpHashAlgorithm()).willReturn(HashAlgorithm.HMAC_SHA1);
-
         node = spy(
                 new OathTokenVerifierNode(
                         config,
-                        realm,
-                        coreWrapper,
                         deviceProfileHelper,
                         new MultiFactorNodeDelegate(mock(AuthenticatorDeviceServiceFactory.class)),
-                        identityService
+                        identityProvider
                 )
+        );
+    }
+
+    @Test
+    void shouldReturnAllOutcomesWhenGetAllOutcomes() throws NodeProcessException {
+        // Given
+        BoundedOutcomeProvider provider = new OathTokenVerifierNode.OutcomeProvider();
+
+        // When
+        List<OutcomeProvider.Outcome> outcomes = provider.getAllOutcomes(new PreferredLocales());
+
+        // Then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList()).containsExactly(
+                SUCCESS_OUTCOME_ID,
+                FAILURE_OUTCOME_ID,
+                NOT_REGISTERED_OUTCOME_ID,
+                RECOVERY_CODE_OUTCOME_ID
+        );
+    }
+
+    @Test
+    void shouldReturnAllOutcomesWhenRecoveryCodeIsAllowed() {
+        // Given
+        var provider = new OathTokenVerifierNode.OutcomeProvider();
+        var attributes = json(object(field("isRecoveryCodeAllowed", true)));
+
+        // When
+        List<OutcomeProvider.Outcome> outcomes = provider.getOutcomes(new PreferredLocales(), attributes);
+
+        // Then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList()).containsExactly(
+                SUCCESS_OUTCOME_ID,
+                FAILURE_OUTCOME_ID,
+                NOT_REGISTERED_OUTCOME_ID,
+                RECOVERY_CODE_OUTCOME_ID
+        );
+    }
+
+    @Test
+    void shouldNotReturnRecoveryCodeOutcomeWhenRecoveryCodeIsNotAllowed() {
+        // Given
+        var provider = new OathTokenVerifierNode.OutcomeProvider();
+        var attributes = json(object(field("isRecoveryCodeAllowed", false)));
+
+        // When
+        List<OutcomeProvider.Outcome> outcomes = provider.getOutcomes(new PreferredLocales(), attributes);
+
+        // Then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList()).containsExactly(
+                SUCCESS_OUTCOME_ID,
+                FAILURE_OUTCOME_ID,
+                NOT_REGISTERED_OUTCOME_ID
+        );
+    }
+
+    @Test
+    void shouldNotReturnRecoveryCodeOutcomeWhenAttributesAreNull() {
+        // Given
+        var provider = new OathTokenVerifierNode.OutcomeProvider();
+        var attributes = json(null);
+
+        // When
+        List<OutcomeProvider.Outcome> outcomes = provider.getOutcomes(new PreferredLocales(), attributes);
+
+        // Then
+        assertThat(outcomes.stream().map(outcome -> outcome.id).toList()).containsExactly(
+                SUCCESS_OUTCOME_ID,
+                FAILURE_OUTCOME_ID,
+                NOT_REGISTERED_OUTCOME_ID
         );
     }
 }

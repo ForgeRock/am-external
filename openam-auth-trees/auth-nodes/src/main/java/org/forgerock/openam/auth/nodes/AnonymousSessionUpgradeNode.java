@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -19,7 +27,6 @@ package org.forgerock.openam.auth.nodes;
 import static com.sun.identity.authentication.util.ISAuthConstants.AUTH_TYPE;
 import static com.sun.identity.authentication.util.ISAuthConstants.NODE_TYPE;
 
-import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 import javax.inject.Inject;
@@ -39,6 +46,7 @@ import com.google.inject.Provider;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.dpro.session.SessionException;
 import com.iplanet.dpro.session.SessionID;
+import com.iplanet.dpro.session.SessionIDFactory;
 import com.iplanet.dpro.session.service.SessionService;
 import com.iplanet.sso.SSOToken;
 import com.sun.identity.authentication.config.AMAuthenticationManager;
@@ -64,6 +72,7 @@ public class AnonymousSessionUpgradeNode extends SingleOutcomeNode {
     private final SessionUpgradeVerifier sessionUpgradeVerifier;
     private final PrivilegedAction<SSOToken> adminTokenAction;
     private final AMAuthenticationManagerFactory amAuthenticationManagerFactory;
+    private final SessionIDFactory sessionIDFactory;
     private final Logger logger = LoggerFactory.getLogger(AnonymousSessionUpgradeNode.class);
 
     /**
@@ -73,16 +82,18 @@ public class AnonymousSessionUpgradeNode extends SingleOutcomeNode {
      * @param sessionUpgradeVerifier The SessionUpgradeVerifier instance.
      * @param adminTokenAction The admin token provider.
      * @param amAuthenticationManagerFactory The authentication manager factory.
+     * @param sessionIDFactory The session ID factory.
      */
     @Inject
     public AnonymousSessionUpgradeNode(@Assisted Realm realm, Provider<SessionService> sessionServiceProvider,
             SessionUpgradeVerifier sessionUpgradeVerifier, PrivilegedAction<SSOToken> adminTokenAction,
-            AMAuthenticationManagerFactory amAuthenticationManagerFactory) {
+            AMAuthenticationManagerFactory amAuthenticationManagerFactory, SessionIDFactory sessionIDFactory) {
         this.realm = realm;
         this.sessionServiceProvider = sessionServiceProvider;
         this.sessionUpgradeVerifier = sessionUpgradeVerifier;
         this.adminTokenAction = adminTokenAction;
         this.amAuthenticationManagerFactory = amAuthenticationManagerFactory;
+        this.sessionIDFactory = sessionIDFactory;
     }
 
     @Override
@@ -91,7 +102,7 @@ public class AnonymousSessionUpgradeNode extends SingleOutcomeNode {
         String authNodes;
         String authModules;
         try {
-            SessionID oldSessionID = new SessionID(context.request.ssoTokenId);
+            SessionID oldSessionID = sessionIDFactory.getSessionIDForString(context.request.ssoTokenId);
             Session oldSession = sessionServiceProvider.get().getSession(oldSessionID);
             authNodes = oldSession.getProperty(NODE_TYPE);
             authModules = oldSession.getProperty(AUTH_TYPE);
@@ -100,7 +111,7 @@ public class AnonymousSessionUpgradeNode extends SingleOutcomeNode {
         }
 
         try {
-            SSOToken adminToken = AccessController.doPrivileged(adminTokenAction);
+            SSOToken adminToken = adminTokenAction.run();
             AMAuthenticationManager authManager = amAuthenticationManagerFactory.create(adminToken, realm);
 
             if (sessionUpgradeVerifier.isAnonymousViaChain(authManager, authModules)

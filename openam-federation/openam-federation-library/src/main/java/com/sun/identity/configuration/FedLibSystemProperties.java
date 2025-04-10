@@ -24,7 +24,7 @@
  *
  * $Id: FedLibSystemProperties.java,v 1.7 2008/06/25 05:46:37 qcheng Exp $
  *
- * Portions Copyrighted 2010-2016 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.configuration;

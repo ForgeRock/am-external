@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -25,88 +33,62 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import javax.security.auth.callback.Callback;
 
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.rest.devices.DevicePersistenceException;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingJsonUtils;
 import org.forgerock.openam.core.rest.devices.binding.DeviceBindingManager;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.iplanet.sso.SSOException;
-import com.iplanet.sso.SSOToken;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.IdRepoException;
-import com.sun.identity.idm.IdType;
 
 /**
  * Test for Device Unbinding.
  */
+@ExtendWith(MockitoExtension.class)
 public class DeviceBindingStorageNodeTest {
 
     @Mock
     DeviceBindingManager deviceBindingManager;
 
     @Mock
-    CoreWrapper coreWrapper;
-
-    @Mock
     AMIdentity amIdentity;
-
-    @Mock
-    LegacyIdentityService identityService;
 
     @Mock
     DeviceBindingJsonUtils deviceBindingJsonUtils;
 
+    @Mock
+    NodeUserIdentityProvider identityProvider;
+
     @InjectMocks
     DeviceBindingStorageNode node;
 
-    @BeforeMethod
-    public void setup() throws IdRepoException, SSOException, DevicePersistenceException {
-        node = null;
-        openMocks(this);
-
-        given(identityService.getAmIdentity(any(SSOToken.class), any(String.class), eq(IdType.USER), any()))
-                .willReturn(amIdentity);
-
-        given(identityService.getUniversalId(any(), (IdType) any(), any()))
-                .willReturn(UUID.randomUUID().toString());
-
-        given(identityService.getUniversalId(any(), any(), (IdType) any())).willReturn(Optional.of("bob"));
-
-        given(coreWrapper.getIdentity(anyString())).willReturn(amIdentity);
-
-        doNothing().when(deviceBindingManager).saveDeviceProfile(anyString(), anyString(), any());
-
-        given(amIdentity.isExists()).willReturn(true);
-        given(amIdentity.isActive()).willReturn(true);
-        given(amIdentity.getName()).willReturn("bob");
-        given(amIdentity.getRealm()).willReturn("/");
-        given(amIdentity.getUniversalId()).willReturn("bob");
-
+    @BeforeEach
+    void setup() throws IdRepoException, SSOException, DevicePersistenceException {
+        given(identityProvider.getAMIdentity(any(), any())).willReturn(Optional.of(amIdentity));
     }
 
     @Test
-    public void testDeviceMissing()
+    void testDeviceMissing()
             throws NodeProcessException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object());
@@ -118,8 +100,10 @@ public class DeviceBindingStorageNodeTest {
     }
 
     @Test
-    public void testDeviceStorage()
-            throws NodeProcessException {
+    void testDeviceStorage() throws Exception {
+        doNothing().when(deviceBindingManager).saveDeviceProfile(anyString(), anyString(), any());
+        given(amIdentity.getName()).willReturn("bob");
+        given(amIdentity.getRealm()).willReturn("/");
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "/realm")));
         JsonValue transientState = json(object(field(DeviceBinding.DEVICE, "dummy")));
 

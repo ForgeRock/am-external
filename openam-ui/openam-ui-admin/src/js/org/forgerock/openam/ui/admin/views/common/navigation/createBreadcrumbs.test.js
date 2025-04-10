@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import { expect } from "chai";
@@ -58,101 +66,6 @@ describe("org/forgerock/openam/ui/admin/views/common/navigation/createBreadcrumb
             expect(createBreadcrumbs(pattern)).to.eql([{
                 title:"Authentication - Settings"
             }]);
-        });
-    });
-
-    context("When on the Authentication - List Chains view", () => {
-        it("correctly outputs object breadcrumbs", () => {
-            URIUtils.getCurrentFragment.returns("realms/%2F/authentication-chains");
-            $.t.returns("Authentication - Chains");
-            const pattern = "realms/?/authentication-chains";
-            expect(createBreadcrumbs(pattern)).to.eql([{
-                title:"Authentication - Chains"
-            }]);
-        });
-    });
-
-    context("When on the Authentication - New Chain view", () => {
-        it("correctly outputs object breadcrumbs", () => {
-            URIUtils.getCurrentFragment.returns("realms/%2F/authentication-chains/new");
-            $.t.returns("Authentication - Chains");
-            const pattern = "realms/?/authentication-chains/new";
-            expect(createBreadcrumbs(pattern)).to.eql([
-                {
-                    title:"Authentication - Chains",
-                    path:"#realms/%2F/authentication-chains"
-                },
-                {
-                    title:"new"
-                }
-            ]);
-        });
-    });
-
-    context("When on the Authentication - Edit Chain view", () => {
-        it("correctly outputs object breadcrumbs", () => {
-            URIUtils.getCurrentFragment.returns("realms/%2F/authentication-chains/edit/foo");
-            $.t.returns("Authentication - Chains");
-            const pattern = "realms/?/authentication-chains/edit/?";
-            expect(createBreadcrumbs(pattern)).to.eql([
-                {
-                    title:"Authentication - Chains",
-                    path:"#realms/%2F/authentication-chains"
-                },
-                {
-                    title:"foo"
-                }
-            ]);
-        });
-    });
-
-    context("When on the Authentication - List Modules view", () => {
-        it("correctly outputs object breadcrumbs", () => {
-            URIUtils.getCurrentFragment.returns("realms/%2F/authentication-modules");
-            $.t.returns("Authentication - Modules");
-            const pattern = "realms/?/authentication-modules";
-            expect(createBreadcrumbs(pattern)).to.eql([
-                {
-                    title:"Authentication - Modules"
-                }
-            ]);
-        });
-    });
-
-    context("When on the Authentication - New Module view", () => {
-        it("correctly outputs object breadcrumbs", () => {
-            URIUtils.getCurrentFragment.returns("realms/%2F/authentication-modules/new");
-            $.t.returns("Authentication - Modules");
-            const pattern = "realms/?/authentication-modules/new";
-            expect(createBreadcrumbs(pattern)).to.eql([
-                {
-                    title:"Authentication - Modules",
-                    path:"#realms/%2F/authentication-modules"
-                },
-                {
-                    title:"new"
-                }
-            ]);
-        });
-    });
-
-    context("When on the Authentication - Edit Module view", () => {
-        it("correctly outputs object breadcrumbs", () => {
-            URIUtils.getCurrentFragment.returns("realms/%2F/authentication-modules/foo/edit/bar");
-            $.t.returns("Authentication - Modules");
-            const pattern = "realms/?/authentication-modules/?/edit/?";
-            expect(createBreadcrumbs(pattern)).to.eql([
-                {
-                    title:"Authentication - Modules",
-                    path:"#realms/%2F/authentication-modules"
-                },
-                {
-                    title:"foo"
-                },
-                {
-                    title:"bar"
-                }
-            ]);
         });
     });
 

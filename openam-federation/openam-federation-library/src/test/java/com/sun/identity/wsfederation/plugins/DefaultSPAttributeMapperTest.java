@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.wsfederation.plugins;
 
@@ -27,11 +35,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.forgerock.guice.core.GuiceExtension;
 import org.forgerock.openam.federation.testutils.TestCaseConfigurationInstance;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import com.sun.identity.cot.COTConstants;
 import com.sun.identity.cot.CircleOfTrustDescriptor;
@@ -40,6 +49,7 @@ import com.sun.identity.saml.assertion.Attribute;
 import com.sun.identity.saml.common.SAMLException;
 import com.sun.identity.wsfederation.common.WSFederationConstants;
 
+@ExtendWith(GuiceExtension.class)
 public class DefaultSPAttributeMapperTest {
 
     private static final String TEST_COT = "TestCOT";
@@ -47,21 +57,20 @@ public class DefaultSPAttributeMapperTest {
     private static final String CN = "Test";
     private static final String SN = "User";
 
-    private CircleOfTrustManager cotManager;
+    private static CircleOfTrustManager cotManager;
 
-    @BeforeClass
-    public void init() throws Exception {
+    @BeforeAll
+    static void init() throws Exception {
         cotManager = new CircleOfTrustManager();
     }
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void setUp() throws Exception {
         TestCaseConfigurationInstance.resetConfiguration();
     }
 
     @Test
-    public void testAttributeMapping() throws Exception {
+    void testAttributeMapping() throws Exception {
 
         final String[] expectedMappedAttributeNames = new String[]{ "upn", "cn", "sn" };
         final String[] expectedMappedAttributeValues = new String[]{ EMAIL, CN, SN };

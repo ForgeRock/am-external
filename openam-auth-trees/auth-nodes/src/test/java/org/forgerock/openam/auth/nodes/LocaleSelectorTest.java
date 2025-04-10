@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -22,28 +30,32 @@ import static java.util.Locale.FRENCH;
 import static java.util.Locale.UK;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Stream;
 
 import org.forgerock.util.i18n.PreferredLocales;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class LocaleSelectorTest {
 
-
-    @DataProvider
-    public Object[][] testCases() {
-        return new Object[][]{
-                {new PreferredLocales(asList(ENGLISH)), asList(UK), null},
-                {new PreferredLocales(asList(UK)), asList(UK), UK},
-                {new PreferredLocales(asList(UK)), asList(ENGLISH), ENGLISH},
-                {new PreferredLocales(asList(UK, FRENCH, ENGLISH)),
-                        asList(FRENCH, ENGLISH), FRENCH}
-        };
+    public static Stream<Arguments> testCases() {
+        return Stream.of(
+            Arguments.of(
+         new PreferredLocales(Collections.singletonList(ENGLISH)), Collections.singletonList(UK), null),
+            Arguments.of(new PreferredLocales(Collections.singletonList(UK)), Collections.singletonList(UK), UK),
+            Arguments.of(
+                    new PreferredLocales(Collections.singletonList(UK)), Collections.singletonList(ENGLISH), ENGLISH),
+            Arguments.of(new PreferredLocales(asList(UK, FRENCH, ENGLISH)),
+                    asList(FRENCH, ENGLISH), FRENCH)
+        );
     }
 
-    @Test(dataProvider = "testCases")
+    @ParameterizedTest
+    @MethodSource("testCases")
     public void matchesCorrectly(PreferredLocales preferredLocales, List<Locale> candidates, Locale expectedOutcome) {
         assertThat(new LocaleSelector().getBestLocale(preferredLocales, candidates)).isEqualTo(expectedOutcome);
     }

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package com.sun.identity.xacml.saml2.impl;
@@ -22,8 +30,9 @@ import java.net.URI;
 import java.util.Date;
 import java.util.List;
 
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.sun.identity.saml2.assertion.Issuer;
 import com.sun.identity.saml2.assertion.impl.IssuerImpl;
@@ -39,8 +48,7 @@ import com.sun.identity.xacml.context.impl.SubjectImpl;
 
 public class XACMLAuthzDecisionQueryImplTest {
 
-    @DataProvider
-    public Object[][] xmlTestCases() {
+    public static Object[][] xmlTestCases() {
         return new Object[][] {
                 { true, true, "<samlp:RequestAbstract xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\" " +
                         "xmlns:xacml-samlp=\"urn:oasis:xacml:2.0:saml:protocol:schema:os\" " +
@@ -142,7 +150,8 @@ public class XACMLAuthzDecisionQueryImplTest {
         };
     }
 
-    @Test(dataProvider = "xmlTestCases")
+    @ParameterizedTest
+    @MethodSource("xmlTestCases")
     public void testToXmlString(boolean includeNS, boolean declareNS, String expectedXml) throws Exception {
         // Given
         XACMLAuthzDecisionQueryImpl query = new XACMLAuthzDecisionQueryImpl();

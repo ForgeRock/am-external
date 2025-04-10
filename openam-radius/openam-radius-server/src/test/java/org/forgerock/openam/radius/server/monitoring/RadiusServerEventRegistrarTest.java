@@ -12,13 +12,14 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2018 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
+
 package org.forgerock.openam.radius.server.monitoring;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.eventbus.EventBus;
 
@@ -34,8 +35,8 @@ public class RadiusServerEventRegistrarTest {
      *
      * @see org.forgerock.openam.radius.server.monitoring.RadiusServerEventRegistrar#RadiusServerEventRegistrar
      */
-    @Test(enabled = true)
-    public void testRadiusServerEventRegistrar() {
+    @Test
+    void testRadiusServerEventRegistrar() {
         // Given
         EventBus eventBus = new EventBus();
         // When
@@ -49,8 +50,8 @@ public class RadiusServerEventRegistrarTest {
      *
      * @see org.forgerock.openam.radius.server.monitoring.RadiusServerEventRegistrar#authRequestAccepted
      */
-    @Test(enabled = true)
-    public void authRequestAccepted() {
+    @Test
+    void authRequestAccepted() {
         // Given
         EventBus eventBus = new EventBus();
         final RadiusServerEventRegistrar eventRegistrar = new RadiusServerEventRegistrar(eventBus);
@@ -65,8 +66,8 @@ public class RadiusServerEventRegistrarTest {
      *
      * @see org.forgerock.openam.radius.server.monitoring.RadiusServerEventRegistrar#authRequestRejected
      */
-    @Test(enabled = true)
-    public void authRequestRejected() {
+    @Test
+    void authRequestRejected() {
         // Given
         EventBus eventBus = new EventBus();
         final RadiusServerEventRegistrar eventRegistrar = new RadiusServerEventRegistrar(eventBus);
@@ -81,8 +82,8 @@ public class RadiusServerEventRegistrarTest {
      *
      * @see org.forgerock.openam.radius.server.monitoring.RadiusServerEventRegistrar#packetAccepted
      */
-    @Test(enabled = true)
-    public void packetAccepted() {
+    @Test
+    void packetAccepted() {
         // Given
         EventBus eventBus = new EventBus();
         final RadiusServerEventRegistrar eventRegistrar = new RadiusServerEventRegistrar(eventBus);
@@ -97,8 +98,8 @@ public class RadiusServerEventRegistrarTest {
      *
      * @see org.forgerock.openam.radius.server.monitoring.RadiusServerEventRegistrar#packetProcessed
      */
-    @Test(enabled = true)
-    public void packetProcessed() {
+    @Test
+    void packetProcessed() {
         // Given
         EventBus eventBus = new EventBus();
         final RadiusServerEventRegistrar eventRegistrar = new RadiusServerEventRegistrar(eventBus);
@@ -113,8 +114,8 @@ public class RadiusServerEventRegistrarTest {
      *
      * @see org.forgerock.openam.radius.server.monitoring.RadiusServerEventRegistrar#packetReceived
      */
-    @Test(enabled = true)
-    public void packetReceived() {
+    @Test
+    void packetReceived() {
         // Given
         EventBus eventBus = new EventBus();
         final RadiusServerEventRegistrar eventRegistrar = new RadiusServerEventRegistrar(eventBus);

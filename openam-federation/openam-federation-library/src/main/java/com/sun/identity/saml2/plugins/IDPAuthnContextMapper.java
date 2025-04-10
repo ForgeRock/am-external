@@ -24,7 +24,7 @@
  *
  * $Id: IDPAuthnContextMapper.java,v 1.6 2008/06/25 05:47:51 qcheng Exp $
  *
- * Portions Copyrighted 2019-2023 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins;
 
@@ -43,7 +43,7 @@ import com.sun.identity.saml2.protocol.AuthnRequest;
  * the AuthnRequest sent by a Service Provider and the AuthnContext
  * configuration at the IDP entity config.
  * The implementation of this class will be used by the IDP to find out
- * the authentication mechaism and set the AuthnContext in the Assertion.
+ * the authentication mechanism and set the AuthnContext in the Assertion.
  *
  */ 
 @SupportedAll

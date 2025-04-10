@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2;
 
@@ -19,36 +27,42 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static com.sun.identity.saml2.common.SAML2Constants.HTTP_POST;
 import static com.sun.identity.saml2.common.SAML2Constants.HTTP_REDIRECT;
 import static com.sun.identity.saml2.common.SAML2Constants.SAML2_REQUEST_JWT_TYPE;
+import static com.sun.identity.saml2.common.SAML2Constants.SP_ROLE;
 import static org.forgerock.http.util.Uris.urlEncodeQueryParameterNameOrValue;
 import static org.forgerock.json.JsonValue.fieldIfNotNull;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.openam.scripting.domain.DecisionNodeApplicationConstants.SAML_OBJECT_KEY_PARAM;
 import static org.forgerock.openam.utils.StringUtils.isNotEmpty;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.soap.SOAPMessage;
 
-import com.sun.identity.saml2.profile.CacheObject;
+import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.exceptions.JwtRuntimeException;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.json.jose.utils.StringOrURI;
 import org.forgerock.openam.jwt.JwtEncryptionHandler;
 import org.forgerock.openam.jwt.JwtEncryptionOptions;
+import org.forgerock.openam.scripting.domain.SAMLScriptedBindingObject;
 import org.forgerock.openam.shared.secrets.Labels;
+import org.forgerock.openam.transactions.core.TransactionConstants;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.openam.utils.IOUtils;
 import org.forgerock.openam.utils.StringUtils;
@@ -79,6 +93,7 @@ import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.meta.SAML2MetaException;
 import com.sun.identity.saml2.plugins.IDPAuthnContextInfo;
 import com.sun.identity.saml2.plugins.IDPECPSessionMapper;
+import com.sun.identity.saml2.profile.CacheObject;
 import com.sun.identity.saml2.profile.ClientFaultException;
 import com.sun.identity.saml2.profile.FederatedSSOException;
 import com.sun.identity.saml2.profile.IDPCache;
@@ -190,7 +205,7 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             if ((HTTP_POST.equals(binding) && authnRequest.isSigned())
                 || (HTTP_REDIRECT.equals(binding) && isNotEmpty(request.getParameter(SAML2Constants.SIGNATURE)))) {
             Set<X509Certificate> certificates = KeyUtil.getVerificationCerts(spSSODescriptor, data.getSpEntityID(),
-                    SAML2Constants.SP_ROLE, data.getRealm());
+                    SP_ROLE, data.getRealm());
             try {
                 boolean isSignatureOK;
                 if (isFromECP) {
@@ -296,8 +311,8 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
         data.setRelayState(request.getParameter(SAML2Constants.RELAY_STATE));
         data.setMatchingAuthnContext(idpAuthnContextInfo.getAuthnContext());
 
-        if (data.getSession() == null) {
-            // the user has not logged in yet, redirect to auth
+        if (data.getSession() == null || idpAuthnContextInfo.requiresRedirectionToAuth()) {
+            // the user has not logged in yet or there is Journey configured, redirect to auth
             redirectToAuth(spSSODescriptor, binding, idpAuthnContextInfo, data);
         } else {
             logger.debug("There is an existing session");
@@ -531,8 +546,9 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
 
         if (isFromECP) {
             try {
-                SOAPMessage msg = SOAPCommunicator.getInstance().getSOAPMessage(request);
-                Element elem = SOAPCommunicator.getInstance().getSamlpElement(msg, SAML2Constants.AUTHNREQUEST);
+                SOAPCommunicator soapCommunicator = InjectorHolder.getInstance(SOAPCommunicator.class);
+                SOAPMessage msg = soapCommunicator.getSOAPMessage(request);
+                Element elem = soapCommunicator.getSamlpElement(msg, SAML2Constants.AUTHNREQUEST);
                 return ProtocolFactory.getInstance().createAuthnRequest(elem);
             } catch (Exception ex) {
                 logger.error("UtilProxySAMLAuthenticator.getAuthnRequest:", ex);
@@ -597,69 +613,63 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             IDPAuthnContextInfo info, IDPSSOFederateRequest data, boolean isSessionUpgrade)
             throws IOException, ServerFaultException {
         // get the authentication service url
-        String authService = IDPSSOUtil.getAuthenticationServiceURL(data.getRealm(), data.getIdpEntityID(), request);
+        String idpEntityID = data.getIdpEntityID();
+        String realm = data.getRealm();
+        String spEntityID = data.getSpEntityID();
+        AuthnRequest authnRequest = data.getAuthnRequest();
+
+        String authService = IDPSSOUtil.getAuthenticationServiceURL(realm, idpEntityID, request);
         StringBuilder appliRootUrl = getAppliRootUrl(request);
-        StringBuilder loginUrl = new StringBuilder(authService);
+        StringBuilder loginUrl;
+        Map<String, String> authnParams = info.getAuthnTypeAndValuesAsMap();
+        Object session = data.getSession();
+        String service = (authnParams != null) ? authnParams.get("service") : null;
 
-        // Pass spEntityID to IdP Auth Module
-        if (data.getSpEntityID() != null) {
-            if (loginUrl.indexOf("?") == -1) {
-                loginUrl.append("?");
-            } else {
-                loginUrl.append("&");
+        String transactionId = null;
+        if (info.requiresRedirectionToAuth()) {
+            if (CollectionUtils.isEmpty(authnParams) || !authnParams.containsKey("service")) {
+                throw new ServerFaultException("Expected to create transaction for redirect, but no service specified");
             }
-
-            loginUrl.append(SAML2Constants.SPENTITYID)
-                  .append("=")
-                  .append(urlEncodeQueryParameterNameOrValue(data.getSpEntityID()));
+            try {
+                transactionId = SAML2Utils.createTransaction(realm, session, service, SessionManager.getProvider());
+            } catch (SAML2Exception | SessionException e) {
+                throw new ServerFaultException(SERVER_ERROR, e.getMessage());
+            }
         }
 
-        Set<String> authnTypeAndValues = info.getAuthnTypeAndValues();
-        if (CollectionUtils.isNotEmpty(authnTypeAndValues)) {
-            boolean isFirst = true;
-            StringBuilder loginParameters = new StringBuilder();
+        Optional<String> ctsKey;
+        try {
+            var samlAuthenticatorLoginUrl = new SamlAuthenticatorLoginUrl(authService);
+            samlAuthenticatorLoginUrl
+                .addSpEntityId(data.getSpEntityID())
+                .addParam(SystemPropertiesManager.get(Constants.AM_AUTH_COOKIE_NAME, "AMAuthCookie"), "");
 
-            for (String authnTypeAndValue : authnTypeAndValues) {
-                int index = authnTypeAndValue.indexOf("=");
-                if (index != -1) {
-                    if (isFirst) {
-                        isFirst = false;
-                    } else {
-                        loginParameters.append("&");
-                    }
-                    loginParameters.append(authnTypeAndValue.substring(0, index + 1))
-                          .append(urlEncodeQueryParameterNameOrValue(authnTypeAndValue.substring(index + 1)));
-                }
-            }
-
-            if (loginUrl.indexOf("?") == -1) {
-                loginUrl.append("?");
+            if (transactionId != null) {
+                samlAuthenticatorLoginUrl.addTransaction(transactionId);
             } else {
-                loginUrl.append("&");
+                samlAuthenticatorLoginUrl.addForceAuth(isSessionUpgrade).addParams(authnParams);
             }
 
-            loginUrl.append(loginParameters.toString());
-
-            logger.debug("login URL parameters= {}", loginParameters.toString());
-        }
-
-        if (loginUrl.indexOf("?") == -1) {
-            if (isSessionUpgrade) {
-                loginUrl.append("?ForceAuth=true&goto=");
-            } else {
-                loginUrl.append("?goto=");
+            try {
+                ctsKey = IDPSSOUtil.addDecisionNodeObjectToCTS(realm, idpEntityID, spEntityID, authnRequest,
+                        SAMLScriptedBindingObject.FlowInitiator.SP, samlAuthenticatorLoginUrl);
+            } catch (SAML2Exception e) {
+                logger.error("Failed to add decision node object to CTS", e);
+                throw new ServerFaultException("Failed to add decision node object to CTS");
             }
 
-        } else {
-            if (isSessionUpgrade) {
-                loginUrl.append("&ForceAuth=true");
-            }
-            loginUrl.append("&goto=");
+            samlAuthenticatorLoginUrl.addGoto("");
+            loginUrl = new StringBuilder(samlAuthenticatorLoginUrl.getUrl());
+
+        } catch (URISyntaxException e) {
+            logger.error("Invalid URI Syntax", e);
+            throw new ServerFaultException("Failed to construct login URL");
         }
 
         StringBuilder secondVisitUrl;
-        String reverseProxyUrl = IDPSSOUtil.getAttributeValueFromIDPSSOConfig(data.getRealm(), data.getIdpEntityID(),
-                SAML2Constants.REVERSE_PROXY_URL);
+        String reverseProxyUrl = IDPSSOUtil.getAttributeValueFromIDPSSOConfig(data.getRealm(), idpEntityID,
+            SAML2Constants.REVERSE_PROXY_URL);
+
         if (isNotEmpty(reverseProxyUrl)) {
             // Trim context to get the path for the reverse proxy
             secondVisitUrl = new StringBuilder(getRelativePath(request.getRequestURI(), request.getContextPath()));
@@ -670,29 +680,34 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
         //adding these extra parameters will ensure that we can send back SAML error response to the SP even when the
         //originally received AuthnRequest gets lost.
         StringBuilder secondVisitUrlNoClientStorage = new StringBuilder(secondVisitUrl.toString());
-        secondVisitUrlNoClientStorage.append("?ReqID=").append(data.getAuthnRequest().getID());
-        secondVisitUrl.append("?ReqID=").append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getID())).append('&')
-                .append(INDEX).append('=').append(data.getAuthnRequest().getAssertionConsumerServiceIndex()).append('&')
-                .append(ACS_URL).append('=')
-                .append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getAssertionConsumerServiceURL()))
-                .append('&')
-                .append(SP_ENTITY_ID).append('=')
-                .append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getIssuer().getValue())).append('&')
-                .append(BINDING).append('=')
-                .append(urlEncodeQueryParameterNameOrValue(data.getAuthnRequest().getProtocolBinding()));
+        secondVisitUrlNoClientStorage.append("?ReqID=").append(authnRequest.getID());
+        secondVisitUrl.append("?ReqID=").append(urlEncodeQueryParameterNameOrValue(authnRequest.getID())).append('&')
+            .append(INDEX).append('=').append(authnRequest.getAssertionConsumerServiceIndex()).append('&')
+            .append(ACS_URL).append('=')
+            .append(urlEncodeQueryParameterNameOrValue(authnRequest.getAssertionConsumerServiceURL()))
+            .append('&')
+            .append(SP_ENTITY_ID).append('=')
+            .append(urlEncodeQueryParameterNameOrValue(authnRequest.getIssuer().getValue())).append('&')
+            .append(BINDING).append('=')
+            .append(urlEncodeQueryParameterNameOrValue(authnRequest.getProtocolBinding()));
+        ctsKey.ifPresent(key -> secondVisitUrl.append('&').append(SAML_OBJECT_KEY_PARAM).append('=').
+                append(urlEncodeQueryParameterNameOrValue(key)));
+
+        if (transactionId != null) {
+            String transactionParam = "&" + TransactionConstants.TRANSACTION_ID + "=" + transactionId;
+            secondVisitUrl.append(transactionParam);
+            secondVisitUrlNoClientStorage.append(transactionParam);
+        }
 
         StringBuilder saml2ContinueUrl = new StringBuilder(appliRootUrl)
-                .append("/saml2/continue/metaAlias")
-                .append(data.getIdpMetaAlias())
-                .append("?secondVisitUrl=")
-                .append(urlEncodeQueryParameterNameOrValue(secondVisitUrlNoClientStorage.toString()));
+            .append("/saml2/continue/metaAlias")
+            .append(data.getIdpMetaAlias())
+            .append("?secondVisitUrl=")
+            .append(urlEncodeQueryParameterNameOrValue(secondVisitUrlNoClientStorage.toString()));
 
         loginUrl.append(urlEncodeQueryParameterNameOrValue(saml2ContinueUrl.toString()));
 
         logger.debug("New URL for authentication: {}", loginUrl.toString());
-
-        loginUrl.append('&').append(SystemPropertiesManager.get(Constants.AM_AUTH_COOKIE_NAME, "AMAuthCookie"));
-        loginUrl.append('=');
 
         logger.debug("Displaying local storage updating page, then sending the user to {}", loginUrl.toString());
         try {
@@ -700,8 +715,8 @@ public class UtilProxySAMLAuthenticator extends SAMLBase implements SAMLAuthenti
             request.setAttribute("secondVisitUrl", secondVisitUrl.toString());
             request.setAttribute("loginUrl", loginUrl.toString());
             request.setAttribute("realm", data.getRealm());
-            request.setAttribute("idpEntityID", data.getIdpEntityID());
-            request.setAttribute("spEntityID", data.getSpEntityID());
+            request.setAttribute("idpEntityID", idpEntityID);
+            request.setAttribute("spEntityID", spEntityID);
             request.getRequestDispatcher("/WEB-INF/saml2/jsp/idpWriteToStorage.jsp").forward(request, response);
         } catch (SAML2Exception | NoSuchSecretException e) {
             logger.error("Fail to redirect authentication", e);

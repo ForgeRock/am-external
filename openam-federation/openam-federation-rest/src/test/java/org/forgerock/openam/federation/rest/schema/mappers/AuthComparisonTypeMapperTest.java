@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -19,52 +27,56 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.openam.objectenricher.EnricherContext.ROOT;
 
 import java.util.List;
 
 import org.forgerock.openam.federation.rest.schema.hosted.service.AuthenticationContext.AuthenticationComparisonType;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class AuthComparisonTypeMapperTest {
 
     private AuthComparisonTypeMapper mapper = new AuthComparisonTypeMapper();
 
     @Test
-    public void shouldMapMissingValueToNull() {
+    void shouldMapMissingValueToNull() {
         AuthenticationComparisonType mappedValue = mapper.map(emptyList(), ROOT);
 
         assertThat(mappedValue).isNull();
     }
 
     @Test
-    public void shouldMapSingleValueToEnum() {
+    void shouldMapSingleValueToEnum() {
         AuthenticationComparisonType mappedValue = mapper.map(singletonList("better"), ROOT);
 
         assertThat(mappedValue).isEqualTo(AuthenticationComparisonType.BETTER);
     }
 
     @Test
-    public void shouldIgnoreAdditionalValues() {
+    void shouldIgnoreAdditionalValues() {
         AuthenticationComparisonType mappedValue = mapper.map(asList("maximum", "better", "minimum"), ROOT);
 
         assertThat(mappedValue).isEqualTo(AuthenticationComparisonType.MAXIMUM);
     }
 
-    @Test(expectedExceptions = IllegalArgumentException.class)
-    public void shouldThrowIllegalArgumentExceptionForUnrecognisedValue() {
-        mapper.map(singletonList("typo"), ROOT);
+    @Test
+    void shouldThrowIllegalArgumentExceptionForUnrecognisedValue() {
+        assertThatThrownBy(() -> mapper.map(singletonList("typo"), ROOT))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("No enum constant org.forgerock.openam.federation.rest.schema.hosted.service"
+                        + ".AuthenticationContext.AuthenticationComparisonType.TYPO");
     }
 
     @Test
-    public void shouldInverseCorrectly() {
+    void shouldInverseCorrectly() {
         List<String> inverse = mapper.inverse(AuthenticationComparisonType.BETTER, ROOT);
 
         assertThat(inverse).containsOnly("better");
     }
 
     @Test
-    public void shouldInverseNullValueToEmptySet() {
+    void shouldInverseNullValueToEmptySet() {
         List<String> inverse = mapper.inverse(null, ROOT);
 
         assertThat(inverse).isEmpty();

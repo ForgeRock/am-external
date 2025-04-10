@@ -24,7 +24,7 @@
  *
  * $Id: MonitorManager.java,v 1.1 2009/06/19 02:48:04 bigfatrat Exp $
  *
- * Portions Copyrighted 2018-2020 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
 package com.sun.identity.plugin.monitoring;
 

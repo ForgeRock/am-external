@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2;
 
@@ -20,14 +28,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.sun.identity.saml2.assertion.AuthnContext;
 import org.forgerock.json.jose.common.JwtReconstruction;
@@ -40,6 +49,7 @@ import org.forgerock.openam.jwt.JwtClaimsValidationOptions;
 import org.forgerock.openam.jwt.JwtDecryptionHandler;
 import org.forgerock.openam.jwt.JwtEncryptionOptions;
 import org.forgerock.openam.jwt.exceptions.DecryptionFailedException;
+import org.forgerock.openam.saml2.audit.SAML2EventLogger;
 import org.forgerock.openam.shared.secrets.Labels;
 import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.openam.utils.Time;
@@ -117,9 +127,10 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
 
         // We need the session to pass it to the IDP Adapter preSendResponse
         SessionProvider sessionProvider = SessionManager.getProvider();
+        SAML2EventLogger eventAuditor = data.getEventAuditor();
         try {
             data.setSession(sessionProvider.getSession(request));
-            data.getEventAuditor().setSSOTokenId(data.getSession());
+            eventAuditor.setSSOTokenId(data.getSession());
         } catch (SessionException se) {
             logger.error("An error occurred while retrieving the session: " + se.getMessage());
             data.setSession(null);
@@ -136,6 +147,7 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
                 validateSaml2RequestJwt(data, claimsSet);
                 ProtocolFactory protocolFactory = ProtocolFactory.getInstance();
                 data.setAuthnRequest(protocolFactory.createAuthnRequest(claimsSet.get("authnRequest").asString()));
+                data.setSpEntityID(data.getAuthnRequest().getIssuer().getValue());
                 data.setRelayState(claimsSet.get("relayState").asString());
                 if (claimsSet.isDefined("authnContext")) {
                     data.setMatchingAuthnContext(AssertionFactory.getInstance().createAuthnContext(
@@ -170,13 +182,22 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
         if (!isForceAuthValid(sessionProvider)) {
             try {
                 IDPSSOUtil.redirectAuthentication(request, response, data.getAuthnRequest(), null, data.getRealm(),
-                        data.getIdpEntityID(), data.getSpEntityID(), true);
-            } catch (IOException | SAML2Exception ex) {
+                        data.getIdpEntityID(), data.getSpEntityID(), true, null);
+            } catch (IOException | SAML2Exception | URISyntaxException ex) {
                 logger.error(classMethod + "Unable to redirect to authentication.", ex);
                 throw new ServerFaultException(data.getIdpAdapter(), "UnableToRedirectToAuth", ex.getMessage());
             }
             return;
         }
+
+        try {
+            if (getIdpAuthnContextInfo().requiresRedirectionToAuth()) {
+                SAML2Utils.validateAndDeleteTransaction(request);
+            }
+        } catch (SAML2Exception e) {
+            throw new ServerFaultException(SERVER_ERROR, e.getMessage());
+        }
+
 
         // Invoke the IDP Adapter after the user has been authenticated
         if (preSendResponse(request, response, data)) {
@@ -204,6 +225,9 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
         data.setSpEntityID(data.getAuthnRequest().getIssuer().getValue());
         NameIDPolicy policy = data.getAuthnRequest().getNameIDPolicy();
         String nameIDFormat = (policy == null) ? null : policy.getFormat();
+
+        SAML2Utils.addConfiguredServiceToAuditMessage(eventAuditor, data.getRealm(), data.getSpEntityID(), data.getIdpEntityID());
+
         try {
             IDPSSOUtil.sendResponseToACS(request, response, out, data.getSession(), data.getAuthnRequest(),
                     data.getSpEntityID(), data.getIdpEntityID(), data.getIdpMetaAlias(), data.getRealm(), nameIDFormat,
@@ -328,12 +352,16 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
         boolean isValidSessionInRealm = data.getSession() != null &&
                 IDPSSOUtil.isValidSessionInRealm(data.getRealm(), data.getSession());
 
+        boolean authnRequestPresent = data.getAuthnRequest() != null;
+        if (authnRequestPresent) {
+            data.setSpEntityID(data.getAuthnRequest().getIssuer().getValue());
+        }
+
         // There should be a session on the second pass. If this is not the case then provide an error message
         // If there is a session then it must belong to the proper realm
         if (!isValidSessionInRealm) {
-            if (data.getAuthnRequest() != null && Boolean.TRUE.equals(data.getAuthnRequest().isPassive())) {
+            if (authnRequestPresent && Boolean.TRUE.equals(data.getAuthnRequest().isPassive())) {
                 // Send an appropriate response to the passive request
-                data.setSpEntityID(data.getAuthnRequest().getIssuer().getValue());
                 try {
                     IDPSSOUtil.sendResponseWithStatus(request, response, out, data.getIdpMetaAlias(),
                             data.getIdpEntityID(), data.getRealm(), data.getAuthnRequest(), data.getRelayState(),

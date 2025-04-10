@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.oath;
@@ -23,14 +31,13 @@ import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.auth.nodes.mfa.AbstractMultiFactorNode;
 import org.forgerock.openam.auth.nodes.mfa.MultiFactorNodeDelegate;
-import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
 import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathService;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.utils.CollectionUtils;
 import org.forgerock.util.annotations.VisibleForTesting;
 import org.forgerock.util.i18n.PreferredLocales;
@@ -73,16 +80,14 @@ public class OathDeviceStorageNode extends AbstractMultiFactorNode {
      * @param realm the realm.
      * @param deviceProfileHelper stores device profiles.
      * @param multiFactorNodeDelegate shared utilities common to second factor implementations.
-     * @param identityService an instance of the IdentityService.
-     * @param coreWrapper A core wrapper instance.
+     * @param identityProvider the identity provider.
      */
     @Inject
     public OathDeviceStorageNode(@Assisted Realm realm,
                                  OathDeviceProfileHelper deviceProfileHelper,
                                  MultiFactorNodeDelegate<AuthenticatorOathService> multiFactorNodeDelegate,
-                                 LegacyIdentityService identityService,
-                                 CoreWrapper coreWrapper) {
-        super(realm, coreWrapper, multiFactorNodeDelegate, identityService);
+                                 NodeUserIdentityProvider identityProvider) {
+        super(multiFactorNodeDelegate, identityProvider);
         this.realm = realm;
         this.deviceProfileHelper = deviceProfileHelper;
     }

@@ -11,38 +11,51 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.test.assertj.AssertJJsonValueAssert.assertThat;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.Mockito.when;
 
-import java.util.HashSet;
 import java.util.Optional;
+import java.util.stream.Stream;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext.Builder;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import org.forgerock.am.identity.application.LegacyIdentityService;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
-
+@ExtendWith(MockitoExtension.class)
 public class ZeroPageLoginNodeTest {
 
     private ZeroPageLoginNode node;
@@ -51,18 +64,22 @@ public class ZeroPageLoginNodeTest {
     @Mock
     private LegacyIdentityService identityService;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
+    public static Stream<Arguments> headers() {
+        return Stream.of(
+                arguments("user"),
+                arguments("pass")
+        );
+    }
+
+    @BeforeEach
+    void setUp() throws Exception {
         when(config.usernameHeader()).thenReturn("user");
         when(config.passwordHeader()).thenReturn("pass");
-        when(config.allowWithoutReferer()).thenReturn(true);
-        when(config.referrerWhiteList()).thenReturn(new HashSet<>());
         node = new ZeroPageLoginNode(config, identityService);
     }
 
     @Test
-    public void shouldReturnFalseOutcomeWhenNoHeaders() throws Exception {
+    void shouldReturnFalseOutcomeWhenNoHeaders() throws Exception {
         // Given
         ListMultimap<String, String> headers = ImmutableListMultimap.of();
         JsonValue sharedState = json(object());
@@ -76,8 +93,9 @@ public class ZeroPageLoginNodeTest {
     }
 
     @Test
-    public void shouldCaptureUsernameWhenPresent() throws Exception {
+    void shouldCaptureUsernameWhenPresent() throws Exception {
         // Given
+        when(config.allowWithoutReferer()).thenReturn(true);
         ListMultimap<String, String> headers = ImmutableListMultimap.of("user", "fred");
         JsonValue sharedState = json(object());
 
@@ -92,8 +110,9 @@ public class ZeroPageLoginNodeTest {
     }
 
     @Test
-    public void shouldCapturePasswordWhenPresent() throws Exception {
+    void shouldCapturePasswordWhenPresent() throws Exception {
         // Given
+        when(config.allowWithoutReferer()).thenReturn(true);
         ListMultimap<String, String> headers = ImmutableListMultimap.of("pass", "secure");
         JsonValue sharedState = json(object());
 
@@ -108,8 +127,9 @@ public class ZeroPageLoginNodeTest {
     }
 
     @Test
-    public void shouldCaptureUsernameAndPasswordWhenPresent() throws Exception {
+    void shouldCaptureUsernameAndPasswordWhenPresent() throws Exception {
         // Given
+        when(config.allowWithoutReferer()).thenReturn(true);
         ListMultimap<String, String> headers = ImmutableListMultimap.of("pass", "secure", "user", "fred");
         JsonValue sharedState = json(object());
 
@@ -124,8 +144,9 @@ public class ZeroPageLoginNodeTest {
     }
 
     @Test
-    public void shouldCaptureEncodedUsernameAndPasswordWhenPresent() throws Exception {
+    void shouldCaptureEncodedUsernameAndPasswordWhenPresent() throws Exception {
         // Given
+        when(config.allowWithoutReferer()).thenReturn(true);
         ListMultimap<String, String> headers = ImmutableListMultimap.of("pass", "=?UTF-8?B?c2VjdXJl?=",
                 "user", "=?UTF-8?B?ZnJlZA==?=");
         JsonValue sharedState = json(object());
@@ -140,21 +161,19 @@ public class ZeroPageLoginNodeTest {
         assertThat(result.transientState.get(PASSWORD).getObject()).isEqualTo("secure");
     }
 
-    @DataProvider
-    public Object[][] headers() {
-        return new String[][]{{"user"}, {"pass"}};
-    }
-
-    @Test(dataProvider = "headers", expectedExceptions = NodeProcessException.class)
-    public void shouldThrowExceptionWhenHeadersAreMultivalued(String header) throws Exception {
+    @ParameterizedTest
+    @MethodSource("headers")
+    public void shouldThrowExceptionWhenHeadersAreMultivalued(String header) {
         // Given
+        when(config.allowWithoutReferer()).thenReturn(true);
         ListMultimap<String, String> headers = ImmutableListMultimap.of(header, "value1", header, "value2");
         JsonValue sharedState = json(object());
 
         // When
-        node.process(getContext(headers, sharedState));
-
-        // Then - exception
+        assertThatThrownBy(() -> node.process(getContext(headers, sharedState)))
+                // Then
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Expecting only one header value for username and/or password but size is2");
     }
 
     private TreeContext getContext(ListMultimap<String, String> headers, JsonValue sharedState) {

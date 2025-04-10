@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.node.api;
 
@@ -20,11 +28,30 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.forgerock.http.protocol.Request;
+import org.forgerock.http.protocol.Response;
 import org.forgerock.openam.annotations.SupportedAll;
+import org.forgerock.openam.core.realms.Realm;
+
+import com.google.inject.assistedinject.Assisted;
+import com.iplanet.sso.SSOToken;
 
 /**
  * A TreeHook encapsulates some functionality that should be executed at the end of a tree, after authentication.
  * They can be added by nodes.
+ *
+ * The following parameters can be injected into the constructor of a class implementing this interface using the
+ * {@link Assisted} annotation:
+ *  <ul>
+ *  <li>{@link SSOToken}</li> - the token containing details of the new session created on successful completion
+ *  of an authentication journey
+ *  <li>{@link Response}</li> - the response sent to the user on successful completion
+ *  of an authentication journey
+ *  <li>{@link Request}</li> - the request submitted by the user agent
+ *  <li>{@link Realm}</li> - the realm in which the authentication is taking place
+ *  <li> {@code config}</li> - the node configuration object; the type of this configuration is defined
+ *  by the annotation {@TreeHook.Metadata}
+ *  </ul>
  *
  */
 @SupportedAll
@@ -49,11 +76,21 @@ public interface TreeHook {
 
     /**
      * Main method that will contain the logic that needs to be executed on tree failure.
-     * The response and session cannot be read or modified on failure.
+     * The session cannot be read or modified on failure.
      *
      * @throws TreeHookException if an exception occurs.
      */
     default void acceptFailure() throws TreeHookException {
+        // do nothing
+    }
+
+    /**
+     * Main method that will contain the logic that needs to be executed on tree exception.
+     * The session cannot be read or modified on exception.
+     *
+     * @throws TreeHookException if an exception occurs.
+     */
+    default void acceptException() throws TreeHookException {
         // do nothing
     }
 

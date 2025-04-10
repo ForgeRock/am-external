@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2022-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.authentication.modules.oauth2;
 
@@ -21,29 +29,29 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class EmailGatewayLookupTest {
 
     private Map<String, EmailGateway> emailGatewayMap;
     private EmailGatewayLookup emailGatewayLookup;
 
-    @Before
-    public void setup() {
+    @BeforeEach
+    void setup() {
         emailGatewayMap = new HashMap<>();
         emailGatewayLookup = new EmailGatewayLookup(emailGatewayMap);
     }
 
     @Test
-    public void testGatewayLookupWithNoGuiceBindings() throws ClassNotFoundException, InstantiationException,
+    void testGatewayLookupWithNoGuiceBindings() throws ClassNotFoundException, InstantiationException,
                                                                       IllegalAccessException {
         EmailGateway emailGateway = emailGatewayLookup.getEmailGateway(EmailGatewayTestImpl.class.getName());
         assertThat(emailGateway).isInstanceOf(EmailGatewayTestImpl.class);
     }
 
     @Test
-    public void testGatewayLookupWithGuiceBindings() throws ClassNotFoundException, InstantiationException,
+    void testGatewayLookupWithGuiceBindings() throws ClassNotFoundException, InstantiationException,
                                                                     IllegalAccessException {
         GuiceEmailGatewayTestImpl expected = new GuiceEmailGatewayTestImpl("unused");
         emailGatewayMap.put(GuiceEmailGatewayTestImpl.class.getName(), expected);
@@ -52,7 +60,7 @@ public class EmailGatewayLookupTest {
     }
 
     @Test
-    public void testGatewayLookupWithFakeClassThrowsException() {
+    void testGatewayLookupWithFakeClassThrowsException() {
         assertThatThrownBy(() -> emailGatewayLookup.getEmailGateway("NotAClass"))
                 .isInstanceOf(ClassNotFoundException.class);
     }

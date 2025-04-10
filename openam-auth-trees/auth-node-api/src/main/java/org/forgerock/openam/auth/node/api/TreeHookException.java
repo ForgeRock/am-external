@@ -11,18 +11,30 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.node.api;
 
+import org.forgerock.openam.annotations.Supported;
+
 /**
- * To be used when an exception has occurred in a session hook.
+ * An exception to indicate there was a problem executing a tree hook.
  */
-public class TreeHookException extends Exception {
+@Supported
+public final class TreeHookException extends Exception {
     /**
-     * Default constructor that constructs the TreeHookException.
+     * Default constructor that constructs a blank TreeHookException.
      */
+    @Supported
     public TreeHookException() {
         super();
     }
@@ -33,6 +45,7 @@ public class TreeHookException extends Exception {
      *
      * @param e Throwable we want to wrap into a TreeHookException.
      */
+    @Supported
     public TreeHookException(Throwable e) {
         super(e);
     }
@@ -42,6 +55,7 @@ public class TreeHookException extends Exception {
      *
      * @param message The message.
      */
+    @Supported
     public TreeHookException(String message) {
         super(message);
     }
@@ -52,6 +66,7 @@ public class TreeHookException extends Exception {
      * @param message The message
      * @param cause   Throwable we want to wrap into a TreeHookException.
      */
+    @Supported
     public TreeHookException(String message, Throwable cause) {
         super(message, cause);
     }

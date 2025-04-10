@@ -24,7 +24,7 @@
  *
  * $Id: HOTP.java,v 1.1 2009/03/24 23:52:12 pluo Exp $
  *
- * Portions Copyrighted 2013-2022 ForgeRock AS.
+ * Portions Copyrighted 2013-2025 Ping Identity Corporation.
  * Portions Copyrighted 2014-2015 Nomura Research Institute, Ltd.
  */
 

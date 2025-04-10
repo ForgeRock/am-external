@@ -11,36 +11,43 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.sae.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.forgerock.openam.test.bazel.ResourceFinder.findPathToResource;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
 
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class SecureAttrsTest {
 
     private static final String PRIVATE_KEY_ALIAS = "privatekey";
     private static final String PUBLIC_KEY_ALIAS = "defaultkey";
     private static final String PRIVATE_KEY_PASSWORD = "keypass";
-    SecureAttrs symSecureAttrs;
-    SecureAttrs asymSecureAttrs;
-    Map<String, String> attributes;
+    static SecureAttrs symSecureAttrs;
+    static SecureAttrs asymSecureAttrs;
+    static Map<String, String> attributes;
 
-    @BeforeClass
-    public void beforeClass() throws Exception {
-        Path keystorePath = findPathToResource(this.getClass(), "keystore.jks");
+    @BeforeAll
+    static void beforeClass() throws Exception {
+        Path keystorePath = findPathToResource(SecureAttrsTest.class, "keystore.jks");
 
-        String password = Files.readAllLines(findPathToResource(this.getClass(), "keystorepass")).stream()
+        String password = Files.readAllLines(findPathToResource(SecureAttrsTest.class, "keystorepass")).stream()
                 .findFirst().orElseThrow();
         SecureAttrs.dbg = true;
         Properties properties = new Properties();
@@ -57,7 +64,7 @@ public class SecureAttrsTest {
         SecureAttrs.init("testasym", SecureAttrs.SAE_CRYPTO_TYPE_ASYM,
                 properties);
 
-        this.attributes = Map.of(
+        attributes = Map.of(
                 "branch", "bb",
                 "mail", "mm",
                 "sun.userid", "uu",
@@ -68,57 +75,57 @@ public class SecureAttrsTest {
     }
 
     @Test
-    public void testEncodeThenDecode() throws Exception {
+    void testEncodeThenDecode() throws Exception {
         String secret = "secret";
         String symEncodedSecret = symSecureAttrs.getEncodedString(attributes, secret);
         System.out.println("Encoded string: " + symEncodedSecret);
         Map<String, String> verificationMap = symSecureAttrs.verifyEncodedString(symEncodedSecret, secret);
-        assertNotNull(verificationMap);
+        assertThat(verificationMap).isNotNull();
 
         secret = "privatekey";
         String asymEncodedSecret = asymSecureAttrs.getEncodedString(attributes, secret);
         System.out.println("Encoded string: " + asymEncodedSecret);
         verificationMap = asymSecureAttrs.verifyEncodedString(asymEncodedSecret, secret);
-        assertNotNull(verificationMap);
+        assertThat(verificationMap).isNotNull();
     }
 
     @Test
-    public void testDecodeWithIncorrectSecrets() throws Exception {
+    void testDecodeWithIncorrectSecrets() throws Exception {
         String secret = "secret";
         String encodedSecret = symSecureAttrs.getEncodedString(attributes, secret);
         Map<String, String> verificationMap = symSecureAttrs.verifyEncodedString(encodedSecret, "junk");
-        assertNull(verificationMap);
+        assertThat(verificationMap).isNull();
 
         secret = "privatekey";
         String secondEncodedSecret = asymSecureAttrs.getEncodedString(attributes, secret);
         verificationMap = asymSecureAttrs.verifyEncodedString(secondEncodedSecret, "junk");
-        assertNull(verificationMap);
+        assertThat(verificationMap).isNull();
     }
 
     @Test
-    public void testDecodeWithCorrectSecret() throws Exception {
+    void testDecodeWithCorrectSecret() throws Exception {
         String secret = "secret";
         String encodedSecret = symSecureAttrs.getEncodedString(attributes, secret);
         Map<String, String> verificationMap = symSecureAttrs.verifyEncodedString(encodedSecret, secret);
-        assertNotNull(verificationMap);
+        assertThat(verificationMap).isNotNull();
 
         secret = "privatekey";
         String secondEncodedSecret = asymSecureAttrs.getEncodedString(attributes, secret);
         verificationMap = asymSecureAttrs.verifyEncodedString(secondEncodedSecret, secret);
-        assertNotNull(verificationMap);
+        assertThat(verificationMap).isNotNull();
     }
 
     @Test
-    public void testEncodeSigned() throws Exception {
+    void testEncodeSigned() throws Exception {
         String secret = "privatekey";
         String secondEncodedSecret = symSecureAttrs.getEncodedString(attributes, secret, secret);
         Map<String, String> verificationMap = symSecureAttrs.verifyEncodedString(secondEncodedSecret, secret, secret);
-        assertNotNull(verificationMap);
+        assertThat(verificationMap).isNotNull();
 
         secret = "secret";
         String encodedSecret = symSecureAttrs.getEncodedString(attributes, secret, secret);
         verificationMap = symSecureAttrs.verifyEncodedString(encodedSecret, secret, secret);
-        assertNotNull(verificationMap);
+        assertThat(verificationMap).isNotNull();
     }
 
 }

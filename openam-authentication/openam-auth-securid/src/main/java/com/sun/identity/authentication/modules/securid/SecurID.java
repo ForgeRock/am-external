@@ -27,7 +27,7 @@
  */
 
 /*
- * Portions Copyrighted 2011-2019 ForgeRock AS.
+ * Portions Copyrighted 2011-2025 Ping Identity Corporation.
  */
 package com.sun.identity.authentication.modules.securid;
 

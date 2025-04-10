@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
@@ -43,8 +51,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import javax.security.auth.callback.Callback;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.am.saml2.api.AuthComparison;
@@ -65,12 +73,14 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.federation.saml2.SAML2TokenRepositoryException;
 import org.forgerock.openam.headers.CookieUtilsWrapper;
 import org.forgerock.util.Options;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -84,6 +94,8 @@ import com.sun.identity.saml2.jaxb.metadata.IDPSSODescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.meta.SAML2MetaManager;
 
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
+@ExtendWith(MockitoExtension.class)
 public class Saml2NodeTest {
 
     private Saml2Node node;
@@ -108,21 +120,16 @@ public class Saml2NodeTest {
     @Mock
     private SystemPropertiesWrapper systemPropertiesWrapper;
 
-    @BeforeMethod
-    public void setup() throws Exception {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void setup() throws Exception {
         given(config.idpEntityId()).willReturn("idp-entity-id");
         given(metaManager.getEntityByMetaAlias(any())).willReturn("sp-entity-id");
         node = new Saml2Node(config, realm, ssoInitiator, responseUtils, cookieUtils, metaManager, identityService,
                 systemPropertiesWrapper);
-        IDPSSODescriptorType idpDescriptor = new IDPSSODescriptorType();
-        given(metaManager.getIDPSSODescriptor(any(), any())).willReturn(idpDescriptor);
-        SPSSODescriptorType spDescriptor = new SPSSODescriptorType();
-        given(metaManager.getSPSSODescriptor(any(), any())).willReturn(spDescriptor);
     }
 
     @Test
-    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+    void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
         // Given
         setupSuccessfulFederation();
 
@@ -134,7 +141,7 @@ public class Saml2NodeTest {
     }
 
     @Test
-    public void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
+    void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
         // Given
         setupSuccessfulFederation(ssoResult("universalId", true));
         given(identityService.doesIdentityExist("universalId")).willReturn(false);
@@ -147,7 +154,11 @@ public class Saml2NodeTest {
     }
 
     @Test
-    public void shouldBuildUpSaml2OptionsUsingConfig() throws Exception {
+    void shouldBuildUpSaml2OptionsUsingConfig() throws Exception {
+        IDPSSODescriptorType idpDescriptor = new IDPSSODescriptorType();
+        given(metaManager.getIDPSSODescriptor(any(), any())).willReturn(idpDescriptor);
+        SPSSODescriptorType spDescriptor = new SPSSODescriptorType();
+        given(metaManager.getSPSSODescriptor(any(), any())).willReturn(spDescriptor);
         mockConfig();
         ArgumentCaptor<Options> captor = ArgumentCaptor.forClass(Options.class);
         given(ssoInitiator.initiateSso(any(), any(), any(), any(), any(), captor.capture())).willReturn(null);
@@ -168,7 +179,11 @@ public class Saml2NodeTest {
     }
 
     @Test
-    public void shouldInitiateSsoOnFirstCall() throws Exception {
+    void shouldInitiateSsoOnFirstCall() throws Exception {
+        IDPSSODescriptorType idpDescriptor = new IDPSSODescriptorType();
+        given(metaManager.getIDPSSODescriptor(any(), any())).willReturn(idpDescriptor);
+        SPSSODescriptorType spDescriptor = new SPSSODescriptorType();
+        given(metaManager.getSPSSODescriptor(any(), any())).willReturn(spDescriptor);
         mockConfig();
         Callback callback = mock(Callback.class);
         given(ssoInitiator.initiateSso(any(), any(), any(), any(), any(), any())).willReturn(callback);
@@ -179,20 +194,24 @@ public class Saml2NodeTest {
         assertThat(action.callbacks).isNotEmpty().containsOnly(callback);
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldThrowExceptionIfResponseCouldNotBeProcessed() throws Exception {
+    @Test
+    void shouldThrowExceptionIfResponseCouldNotBeProcessed() throws Exception {
         given(servletRequest.getParameter("error")).willReturn("true");
 
-        node.process(getContext(emptyMap()));
-    }
-
-    @Test(expectedExceptions = NodeProcessException.class, expectedExceptionsMessageRegExp = ".*response not found.*")
-    public void shouldThrowExceptionIfTheSaml2ResponseDataIsMissing() throws Exception {
-        node.process(getContext(singletonMap(RESPONSE_KEY, new String[]{"storage-key"})));
+        assertThatThrownBy(() -> node.process(getContext(emptyMap())))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Unable to verify the response.");
     }
 
     @Test
-    public void shouldProcessSaml2ResponseOnSecondCall() throws Exception {
+    void shouldThrowExceptionIfTheSaml2ResponseDataIsMissing() throws Exception {
+        assertThatThrownBy(() -> node.process(getContext(singletonMap(RESPONSE_KEY, new String[]{"storage-key"}))))
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("response not found");
+    }
+
+    @Test
+    void shouldProcessSaml2ResponseOnSecondCall() throws Exception {
         setupSuccessfulFederation();
 
         Action action = node.process(getContext(singletonMap(RESPONSE_KEY, new String[]{"storage-key"})));
@@ -208,7 +227,7 @@ public class Saml2NodeTest {
     }
 
     @Test
-    public void shouldMapAttributesToSharedStateWhenAccountExists() throws Exception {
+    void shouldMapAttributesToSharedStateWhenAccountExists() throws Exception {
         setupSuccessfulFederation();
         given(responseUtils.mapSamlAttributes(any(), eq("sp-entity-id"), eq("idp-entity-id"), any(), any()))
                 .willReturn(ImmutableMap.of("badger", singleton("weasel"), "otter", singleton("mink")));
@@ -220,7 +239,7 @@ public class Saml2NodeTest {
     }
 
     @Test
-    public void shouldMapAttributesToSharedStateWhenThereIsNoLocalAccount() throws Exception {
+    void shouldMapAttributesToSharedStateWhenThereIsNoLocalAccount() throws Exception {
         setupSuccessfulFederation(ssoResult(null, false));
         given(responseUtils.mapSamlAttributes(any(), eq("sp-entity-id"), eq("idp-entity-id"), any(), any()))
                 .willReturn(ImmutableMap.of("badger", singleton("weasel"), "otter", singleton("mink")));
@@ -233,7 +252,7 @@ public class Saml2NodeTest {
     }
 
     @Test
-    public void shouldMapEmailAttributeToSharedState() throws Exception {
+    void shouldMapEmailAttributeToSharedState() throws Exception {
         setupSuccessfulFederation();
         given(responseUtils.mapSamlAttributes(any(), eq("sp-entity-id"), eq("idp-entity-id"), any(), any()))
                 .willReturn(singletonMap("mail", singleton("test@example.com")));
@@ -245,7 +264,7 @@ public class Saml2NodeTest {
     }
 
     @Test
-    public void shouldSetSessionProperties() throws Exception {
+    void shouldSetSessionProperties() throws Exception {
         setupSuccessfulFederation();
         given(responseUtils.mapSamlAttributes(any(), eq("sp-entity-id"), eq("idp-entity-id"), any(), any()))
                 .willReturn(ImmutableMap.of("badger", singleton("weasel"), "otter", singleton("mink")));
@@ -260,7 +279,7 @@ public class Saml2NodeTest {
     }
 
     @Test
-    public void shouldSetIsTransientToTrueWhenNameIdIsTransient() throws Exception {
+    void shouldSetIsTransientToTrueWhenNameIdIsTransient() throws Exception {
         setupSuccessfulFederation(ssoResult("universalId", true));
         given(responseUtils.mapSamlAttributes(any(), eq("sp-entity-id"), eq("idp-entity-id"), any(), any()))
                 .willReturn(ImmutableMap.of("badger", singleton("weasel"), "otter", singleton("mink")));
@@ -272,7 +291,7 @@ public class Saml2NodeTest {
     }
 
     @Test
-    public void shouldNotSetNameIdAttributesWhenNameIdShouldNotPersisted() throws Exception {
+    void shouldNotSetNameIdAttributesWhenNameIdShouldNotPersisted() throws Exception {
         setupSuccessfulFederation(ssoResult("universalId", true));
         given(responseUtils.mapSamlAttributes(any(), eq("sp-entity-id"), eq("idp-entity-id"), any(), any()))
                 .willReturn(ImmutableMap.of("badger", singleton("weasel"), "otter", singleton("mink")));
@@ -285,7 +304,7 @@ public class Saml2NodeTest {
     }
 
     @Test
-    public void shouldReportNoAccountExistsWhenTheUniversalIDCanNotBeResolved() throws Exception {
+    void shouldReportNoAccountExistsWhenTheUniversalIDCanNotBeResolved() throws Exception {
         // Given
         setupSuccessfulFederation(ssoResult("universalId", true));
         given(identityService.doesIdentityExist("universalId")).willReturn(false);
@@ -297,25 +316,28 @@ public class Saml2NodeTest {
         assertThat(action.outcome).isEqualTo("NO_ACCOUNT");
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void shouldFailWhenStorageKeyNotFound() throws Exception {
-        setupSuccessfulFederation();
+    @Test
+    void shouldFailWhenStorageKeyNotFound() throws Exception {
         given(responseUtils.readSaml2ResponseData(any())).willThrow(SAML2TokenRepositoryException.class);
 
-        Action action = node.process(getContext(singletonMap(RESPONSE_KEY, new String[]{"storage-key"})));
+        assertThatThrownBy(() -> {
+            Action action = node.process(getContext(singletonMap(RESPONSE_KEY, new String[]{"storage-key"})));
 
-        verify(cookieUtils).addCookieToResponseForRequestDomains(servletRequest, servletResponse, AM_LOCATION_COOKIE,
-                "", 0);
-        assertThat(action.callbacks).isEmpty();
-        assertThat(action.outcome).isEqualTo(ACCOUNT_EXISTS.name());
-        assertThat(action.sharedState).stringAt(USERNAME).isEqualTo("userId");
-        assertThat(action.sharedState).hasArray("userInfo/userNames/username").contains("userId");
-        assertThat(action.sharedState).hasArray("userInfo/attributes/sun-fm-saml2-nameid-info");
-        assertThat(action.sharedState).hasArray("userInfo/attributes/sun-fm-saml2-nameid-infokey");
+            verify(cookieUtils).addCookieToResponseForRequestDomains(servletRequest, servletResponse,
+                    AM_LOCATION_COOKIE, "", 0);
+            assertThat(action.callbacks).isEmpty();
+            assertThat(action.outcome).isEqualTo(ACCOUNT_EXISTS.name());
+            assertThat(action.sharedState).stringAt(USERNAME).isEqualTo("userId");
+            assertThat(action.sharedState).hasArray("userInfo/userNames/username").contains("userId");
+            assertThat(action.sharedState).hasArray("userInfo/attributes/sun-fm-saml2-nameid-info");
+            assertThat(action.sharedState).hasArray("userInfo/attributes/sun-fm-saml2-nameid-infokey");
+        })
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessageContaining("response not found");
     }
 
     @Test
-    public void shouldSucceedOnFailureToRemoveStorageKey() throws Exception {
+    void shouldSucceedOnFailureToRemoveStorageKey() throws Exception {
         setupSuccessfulFederation();
         doThrow(SAML2TokenRepositoryException.class).when(responseUtils).removeSaml2ResponseData(any());
 

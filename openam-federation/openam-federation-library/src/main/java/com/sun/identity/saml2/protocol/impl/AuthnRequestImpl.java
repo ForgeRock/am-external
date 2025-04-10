@@ -24,7 +24,7 @@
  *
  * $Id: AuthnRequestImpl.java,v 1.8 2009/06/09 20:28:32 exu Exp $
  *
- * Portions Copyrighted 2019-2023 ForgeRock AS.
+ * Portions Copyrighted 2019-2025 Ping Identity Corporation.
  */
 
 
@@ -71,14 +71,14 @@ import com.sun.identity.shared.DateUtils;
 import com.sun.identity.shared.xml.XMLUtils;
 
 
-/** 
- * The <code>AuthnRequestImpl</code> implements the 
- * </code>AuthnRequest</code> interface , defines methods for 
+/**
+ * The <code>AuthnRequestImpl</code> implements the
+ * </code>AuthnRequest</code> interface , defines methods for
  * properties required by a saml request.
  */
 
 @SupportedAll(scriptingApi = true, javaApi = false)
-public class AuthnRequestImpl extends RequestAbstractImpl 
+public class AuthnRequestImpl extends RequestAbstractImpl
 			      implements AuthnRequest {
     private static final Logger logger = LoggerFactory.getLogger(AuthnRequestImpl.class);
     private Subject subject;
@@ -93,7 +93,7 @@ public class AuthnRequestImpl extends RequestAbstractImpl
     private Boolean isPassive;
     private String protocolBinding;
     private String assertionConsumerServiceURL;
-    
+
     /**
      * Constructor to create <code>AuthnRequest</code> Object .
      */
@@ -107,8 +107,8 @@ public class AuthnRequestImpl extends RequestAbstractImpl
      * Constructor to create <code>AuthnRequest</code> Object.
      *
      * @param element the Document Element Object.
-     * @throws SAML2Exception if error creating <code>AuthnRequest</code> 
-     *         Object. 
+     * @throws SAML2Exception if error creating <code>AuthnRequest</code>
+     *         Object.
      */
     public AuthnRequestImpl(Element element) throws SAML2Exception {
         super(AUTHN_REQUEST);
@@ -122,12 +122,12 @@ public class AuthnRequestImpl extends RequestAbstractImpl
      * Constructor to create <code>AuthnRequest</code> Object.
      *
      * @param xmlString the XML String.
-     * @throws SAML2Exception if error creating <code>AuthnRequest</code> 
-     *         Object. 
+     * @throws SAML2Exception if error creating <code>AuthnRequest</code>
+     *         Object.
      */
     public AuthnRequestImpl(String xmlString) throws SAML2Exception {
         super(AUTHN_REQUEST);
-        Document xmlDocument = 
+        Document xmlDocument =
                    XMLUtils.toDOMDocument(xmlString);
         if (xmlDocument == null) {
             throw new SAML2Exception(
@@ -139,20 +139,20 @@ public class AuthnRequestImpl extends RequestAbstractImpl
         }
     }
 
-    /** 
-     * Returns the <code>Subject</code> object. 
+    /**
+     * Returns the <code>Subject</code> object.
      *
-     * @return the <code>Subject</code> object. 
+     * @return the <code>Subject</code> object.
      * @see #setSubject(Subject)
      */
     public Subject getSubject() {
 	return subject;
     }
-    
-    /** 
-     * Sets the <code>Subject</code> object. 
+
+    /**
+     * Sets the <code>Subject</code> object.
      *
-     * @param subject the new <code>Subject</code> object. 
+     * @param subject the new <code>Subject</code> object.
      * @throws SAML2Exception if the object is immutable.
      * @see #getSubject
      */
@@ -163,26 +163,26 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 	}
 	this.subject = subject;
     }
-    
-    /** 
+
+    /**
      * Returns the <code>NameIDPolicy</code> object.
      *
-     * @return the <code>NameIDPolicy</code> object. 
+     * @return the <code>NameIDPolicy</code> object.
      * @see #setNameIDPolicy(NameIDPolicy)
      */
     public NameIDPolicy getNameIDPolicy() {
 	return nameIDPolicy;
     }
-    
-    /** 
-     * Sets the <code>NameIDPolicy</code> object. 
+
+    /**
+     * Sets the <code>NameIDPolicy</code> object.
      *
-     * @param nameIDPolicy the new <code>NameIDPolicy</code> object. 
+     * @param nameIDPolicy the new <code>NameIDPolicy</code> object.
      * @throws SAML2Exception if the object is immutable.
      * @see #getNameIDPolicy
      */
-    
-    public void setNameIDPolicy(NameIDPolicy nameIDPolicy) 
+
+    public void setNameIDPolicy(NameIDPolicy nameIDPolicy)
     throws SAML2Exception {
 	if (!isMutable) {
 	    throw new SAML2Exception(
@@ -190,25 +190,25 @@ public class AuthnRequestImpl extends RequestAbstractImpl
         }
 	this.nameIDPolicy = nameIDPolicy;
     }
-    
-    /** 
+
+    /**
      * Returns the <code>Conditions</code> object.
      *
-     * @return the <code>Conditions</code> object. 
+     * @return the <code>Conditions</code> object.
      * @see #setConditions(Conditions)
      */
     public Conditions getConditions() {
 	return conditions;
     }
-    
-    /** 
-     * Sets the <code>Conditions</code> object. 
+
+    /**
+     * Sets the <code>Conditions</code> object.
      *
      * @param conditions the new <code>Conditions</code> object.
      * @throws SAML2Exception if the object is immutable.
      * @see #getConditions
      */
-    
+
     public void setConditions(Conditions conditions) throws SAML2Exception {
        if (!isMutable) {
 	    throw new SAML2Exception(
@@ -216,20 +216,20 @@ public class AuthnRequestImpl extends RequestAbstractImpl
         }
 	this.conditions = conditions;
     }
-    
-    /** 
-     * Returns the <code>RequestedAuthnContext</code> object. 
+
+    /**
+     * Returns the <code>RequestedAuthnContext</code> object.
      *
-     * @return the <code>RequestAuthnContext</code> object. 
+     * @return the <code>RequestAuthnContext</code> object.
      * @see #setRequestedAuthnContext(RequestedAuthnContext)
      */
-    
+
     public RequestedAuthnContext getRequestedAuthnContext() {
 	return reqAuthnContext;
     }
-    
-    /** 
-     * Sets the <code>RequestedAuthnContext</code>. 
+
+    /**
+     * Sets the <code>RequestedAuthnContext</code>.
      *
      * @param reqAuthnContext the new <code>RequestedAuthnContext</code>
      *        object.
@@ -239,14 +239,14 @@ public class AuthnRequestImpl extends RequestAbstractImpl
     public void setRequestedAuthnContext(RequestedAuthnContext reqAuthnContext)
     throws SAML2Exception {
 	if (!isMutable) {
-	    throw new SAML2Exception( 
+	    throw new SAML2Exception(
 		    SAML2SDKUtils.bundle.getString("objectImmutable"));
 	}
 	this.reqAuthnContext = reqAuthnContext;
     }
-    
-    /** 
-     * Sets the <code>Scoping</code> object. 
+
+    /**
+     * Sets the <code>Scoping</code> object.
      *
      * @param scoping the new <code>Scoping</code> Object.
      * @throws SAML2Exception if the object is immutable.
@@ -259,18 +259,18 @@ public class AuthnRequestImpl extends RequestAbstractImpl
         }
 	this.scoping = scoping;
     }
-    
-    /** 
-     * Returns the <code>Scoping</code> object. 
+
+    /**
+     * Returns the <code>Scoping</code> object.
      *
-     * @return the <code>Scoping</code> object. 
+     * @return the <code>Scoping</code> object.
      * @see #setScoping(Scoping)
      */
     public Scoping getScoping() {
         return scoping;
     }
-    
-    /** 
+
+    /**
      * Returns value of <code>isForceAuthn</code> attribute.
      *
      * @return value of <code>isForceAuthn</code> attribute.
@@ -278,8 +278,8 @@ public class AuthnRequestImpl extends RequestAbstractImpl
     public Boolean isForceAuthn() {
         return forceAuthn;
     }
-    
-    /** 
+
+    /**
      * Sets the value of the <code>ForceAuthn</code> attribute.
      *
      * @param value the value of <code>ForceAuthn</code> attribute.
@@ -292,8 +292,8 @@ public class AuthnRequestImpl extends RequestAbstractImpl
         }
 	forceAuthn = value;
     }
-    
-    /** 
+
+    /**
      * Returns the value of the <code>isPassive</code> attribute.
      *
      * @return value of <code>isPassive</code> attribute.
@@ -301,8 +301,8 @@ public class AuthnRequestImpl extends RequestAbstractImpl
     public Boolean isPassive() {
 	return isPassive;
     }
-    
-    /** 
+
+    /**
      * Sets the value of the <code>IsPassive</code> attribute.
      *
      * @param value Value of <code>IsPassive</code> attribute.
@@ -315,8 +315,8 @@ public class AuthnRequestImpl extends RequestAbstractImpl
         }
 	isPassive = value;
     }
-    
-    /** 
+
+    /**
      * Sets the value of the <code>ProtocolBinding</code> attribute.
      *
      * @param protocolBinding value of the <code>ProtocolBinding</code>
@@ -332,8 +332,8 @@ public class AuthnRequestImpl extends RequestAbstractImpl
         }
 	this.protocolBinding = protocolBinding;
     }
-    
-    /** 
+
+    /**
      * Returns the value of the <code>ProtocolBinding</code> attribute.
      *
      * @return the value of <code>ProtocolBinding</code> attribute.
@@ -342,8 +342,8 @@ public class AuthnRequestImpl extends RequestAbstractImpl
     public String getProtocolBinding() {
         return protocolBinding;
     }
-    
-    /** 
+
+    /**
      * Returns the value of the <code>AssertionConsumerServiceURL</code>
      * attribute.
      *
@@ -353,17 +353,17 @@ public class AuthnRequestImpl extends RequestAbstractImpl
     public String getAssertionConsumerServiceURL() {
         return assertionConsumerServiceURL;
     }
-    
-    /** 
-     * Sets the value of the <code>AssertionConsumerServiceURL</code> 
+
+    /**
+     * Sets the value of the <code>AssertionConsumerServiceURL</code>
      * attribute.
      *
-     * @param url the value of <code>AssertionConsumerServiceURL</code> 
+     * @param url the value of <code>AssertionConsumerServiceURL</code>
      *        attribute.
      * @throws SAML2Exception if the object is immutable.
      * @see #getAssertionConsumerServiceURL()
      */
-    public void setAssertionConsumerServiceURL(String url) 
+    public void setAssertionConsumerServiceURL(String url)
 	    throws SAML2Exception {
         if (!isMutable) {
 	    throw new SAML2Exception(
@@ -371,21 +371,21 @@ public class AuthnRequestImpl extends RequestAbstractImpl
         }
 	assertionConsumerServiceURL = url;
     }
-    
-    /** 
-     * Returns the value of the <code>AssertionConsumerServiceIndex</code> 
+
+    /**
+     * Returns the value of the <code>AssertionConsumerServiceIndex</code>
      * attribute.
      *
-     * @return value of the <code>AssertionConsumerServiceIndex<code> 
+     * @return value of the <code>AssertionConsumerServiceIndex<code>
      *         attribute.
      * @see #setAssertionConsumerServiceIndex(Integer)
      */
     public Integer getAssertionConsumerServiceIndex() {
         return assertionConsumerSvcIndex;
     }
-    
-    /** 
-     * Sets the value of the <code>AssertionConsumerServiceIndex</code> 
+
+    /**
+     * Sets the value of the <code>AssertionConsumerServiceIndex</code>
      * attribute.
      *
      * @param index value of the <code>AssertionConsumerServiceIndex</code>
@@ -401,7 +401,7 @@ public class AuthnRequestImpl extends RequestAbstractImpl
         }
 	assertionConsumerSvcIndex = index ;
     }
-    
+
 
     /**
      * Returns the value of the <code>AttributeConsumingServiceIndex</code>
@@ -434,7 +434,7 @@ public class AuthnRequestImpl extends RequestAbstractImpl
      }
 
 
-    /** 
+    /**
      * Sets the <code>ProviderName</code> attribute value.
      *
      * @param providerName value of the <code>ProviderName</code> attribute.
@@ -448,8 +448,8 @@ public class AuthnRequestImpl extends RequestAbstractImpl
         }
 	this.providerName = providerName ;
     }
-    
-    /** 
+
+    /**
      * Returns the <code>ProviderName</code> attribute value.
      *
      * @return value of the <code>ProviderName</code> attribute value.
@@ -556,14 +556,14 @@ public class AuthnRequestImpl extends RequestAbstractImpl
     }
 
     /**
-     * Makes this object immutable. 
+     * Makes this object immutable.
      */
     public void makeImmutable()	 {
 	if (isMutable) {
 	    super.makeImmutable();
 	    if ((subject != null) && (subject.isMutable())) {
 		subject.makeImmutable();
-	    }	
+	    }
 	    if ((nameIDPolicy != null) && (nameIDPolicy.isMutable())) {
 		nameIDPolicy.makeImmutable();
 	    }
@@ -580,30 +580,30 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 	}
     }
 
-    /** 
+    /**
      * Parses the Docuemnt Element for this object.
-     * 
+     *
      * @param element the Document Element of this object.
      * @throws SAML2Exception if error parsing the Document Element.
-     */ 
+     */
     protected void parseDOMElement(Element element) throws SAML2Exception {
 	AssertionFactory assertionFactory = AssertionFactory.getInstance();
 	ProtocolFactory protoFactory = ProtocolFactory.getInstance();
         requestId = element.getAttribute(SAML2Constants.ID);
 	validateID(requestId);
-        
+
         version = element.getAttribute(SAML2Constants.VERSION);
 	validateVersion(version);
 
         String issueInstantStr = element.getAttribute(
 				    SAML2Constants.ISSUE_INSTANT);
 	validateIssueInstant(issueInstantStr);
-        
+
         destinationURI = element.getAttribute(SAML2Constants.DESTINATION);
         consent = element.getAttribute(SAML2Constants.CONSENT);
-        
+
 	NodeList nList = element.getChildNodes();
-	
+
 	if ((nList !=null) && (nList.getLength() >0)) {
 	    for (int i = 0; i < nList.getLength(); i++) {
                 Node childNode = nList.item(i);
@@ -611,7 +611,7 @@ public class AuthnRequestImpl extends RequestAbstractImpl
                 if (cName != null)  {
 		    if (cName.equals(SAML2Constants.ISSUER)) {
 			validateIssuer();
-	                nameID =	
+	                nameID =
 			assertionFactory.createIssuer((Element)childNode);
 		    } else if (cName.equals(SAML2Constants.SIGNATURE)) {
 			validateSignature();
@@ -623,7 +623,7 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 			    protoFactory.createExtensions((Element)childNode);
 		    } else if (cName.equals(SAML2Constants.SUBJECT)) {
 			validateSubject();
-			subject = 
+			subject =
 			    assertionFactory.createSubject((Element)childNode);
 		    } else if (cName.equals(SAML2Constants.NAMEIDPOLICY)) {
 			validateNameIDPolicy();
@@ -652,31 +652,31 @@ public class AuthnRequestImpl extends RequestAbstractImpl
         if ((forceAuthnAttr != null) && (forceAuthnAttr.length() > 0)) {
             forceAuthn = SAML2SDKUtils.booleanValueOf(forceAuthnAttr);
         }
-        
+
         String isPassiveAttr = element.getAttribute(SAML2Constants.ISPASSIVE);
         if ((isPassiveAttr != null) && (isPassiveAttr.length() > 0)) {
             isPassive = SAML2SDKUtils.booleanValueOf(isPassiveAttr);
         }
-        
+
         protocolBinding = element.getAttribute(SAML2Constants.PROTOBINDING);
-        
+
         String index = element.getAttribute(
 			    SAML2Constants.ASSERTION_CONSUMER_SVC_INDEX);
 
 	if ( (index != null) && (index.length() > 0)) {
-	    assertionConsumerSvcIndex = new Integer(index);
+	    assertionConsumerSvcIndex = Integer.parseInt(index);
 	    validateAssertionConsumerServiceIndex(assertionConsumerSvcIndex);
 	}
-        
+
         assertionConsumerServiceURL=XMLUtils.unescapeSpecialCharacters(
             element.getAttribute(SAML2Constants.ASSERTION_CONSUMER_SVC_URL));
 
         index = element.getAttribute(SAML2Constants.ATTR_CONSUMING_SVC_INDEX);
 	if ( (index != null) && (index.length() > 0)) {
-	    attrConsumingSvcIndex = new Integer(index);
+	    attrConsumingSvcIndex = Integer.parseInt(index);
 	    validateAttributeConsumingServiceIndex(attrConsumingSvcIndex);
 	}
-        
+
         providerName = element.getAttribute(SAML2Constants.PROVIDER_NAME);
     }
 
@@ -684,9 +684,9 @@ public class AuthnRequestImpl extends RequestAbstractImpl
     /* validate the value of AssertionConsumerServiceIndex attribute*/
     private void validateAssertionConsumerServiceIndex(
 		Integer assertionConsumerSvcIndex) throws SAML2Exception {
-	if ((assertionConsumerSvcIndex != null) && 
-		((assertionConsumerSvcIndex.intValue() < 0) && 
-		(assertionConsumerSvcIndex.intValue() 
+	if ((assertionConsumerSvcIndex != null) &&
+		((assertionConsumerSvcIndex.intValue() < 0) &&
+		(assertionConsumerSvcIndex.intValue()
 				> SAML2Constants.MAX_INT_VALUE)))  {
 	    throw new SAML2Exception(
 		SAML2SDKUtils.bundle.getString("invalidAssertionConsumerIndex"));
@@ -697,9 +697,9 @@ public class AuthnRequestImpl extends RequestAbstractImpl
     /* validate the value of AttributeConsumingServiceIndex attribute*/
     private void validateAttributeConsumingServiceIndex(
 		Integer attrConsumingSvcIndex) throws SAML2Exception {
-	if ((attrConsumingSvcIndex != null) && 
-		((attrConsumingSvcIndex.intValue() < 0) && 
-		(attrConsumingSvcIndex.intValue() 
+	if ((attrConsumingSvcIndex != null) &&
+		((attrConsumingSvcIndex.intValue() < 0) &&
+		(attrConsumingSvcIndex.intValue()
 				> SAML2Constants.MAX_INT_VALUE))) {
 	    throw new SAML2Exception(
 		SAML2SDKUtils.bundle.getString("invalidAttributeConsumingSvcIdx"));
@@ -712,11 +712,11 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 	    logger.debug("Request has too many Issuer Element");
 	    throw new SAML2Exception(
 		    SAML2SDKUtils.bundle.getString("schemaViolation"));
-	} 
+	}
 
-	if ((signatureString != null) || (extensions != null) 
-	   || (subject != null) || (nameIDPolicy != null) 
-	   || (conditions != null) || (reqAuthnContext != null) 
+	if ((signatureString != null) || (extensions != null)
+	   || (subject != null) || (nameIDPolicy != null)
+	   || (conditions != null) || (reqAuthnContext != null)
 	   || (scoping != null)) {
 	    if (logger.isDebugEnabled()) {
 		logger.debug("Issuer Element should be the " +
@@ -733,10 +733,10 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 	    logger.debug("Request has too many Signature Elements");
 	    throw new SAML2Exception(
 		    SAML2SDKUtils.bundle.getString("schemaViolation"));
-	} 
-	if ((extensions != null) || (subject != null) || (nameIDPolicy != null) 
-				 || (conditions != null) 
-				 || (reqAuthnContext != null) 
+	}
+	if ((extensions != null) || (subject != null) || (nameIDPolicy != null)
+				 || (conditions != null)
+				 || (reqAuthnContext != null)
 				 || (scoping != null)) {
 	    if (logger.isDebugEnabled()) {
 		logger.debug("Signature should be the " +
@@ -749,14 +749,14 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 
     /* validate the sequence and occurence of Extensions Element*/
     private void validateExtensions() throws SAML2Exception {
-	if (extensions != null) { 
+	if (extensions != null) {
 	    logger.debug("Request has too many Extension Elements");
 	    throw new SAML2Exception(
 		    SAML2SDKUtils.bundle.getString("schemaViolation"));
-	} 
-	if ((subject != null) || (nameIDPolicy != null) 
-			      || (conditions != null) 
-			      || (reqAuthnContext != null) 
+	}
+	if ((subject != null) || (nameIDPolicy != null)
+			      || (conditions != null)
+			      || (reqAuthnContext != null)
 			      || (scoping != null)) {
 	    if (logger.isDebugEnabled()) {
 		logger.debug("Extensions should be the " +
@@ -773,10 +773,10 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 	    logger.debug("Request has too many Subject Elements");
 	    throw new SAML2Exception(
 		    SAML2SDKUtils.bundle.getString("schemaViolation"));
-	} 
-	if ((nameIDPolicy != null) 
-		|| (conditions != null) 
-		|| (reqAuthnContext != null) 
+	}
+	if ((nameIDPolicy != null)
+		|| (conditions != null)
+		|| (reqAuthnContext != null)
 		|| (scoping != null)) {
 
 	    if (logger.isDebugEnabled()) {
@@ -797,8 +797,8 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 	    }
 	    throw new SAML2Exception(
 		    SAML2SDKUtils.bundle.getString("schemaViolation"));
-	} 
-	if ((conditions != null) || (reqAuthnContext != null) 
+	}
+	if ((conditions != null) || (reqAuthnContext != null)
 				 || (scoping != null)) {
 	    if (logger.isDebugEnabled()) {
 		logger.debug("Subject should be the " +
@@ -817,7 +817,7 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 	    }
 	    throw new SAML2Exception(
 		    SAML2SDKUtils.bundle.getString("schemaViolation"));
-	} 
+	}
 	if ((reqAuthnContext != null) || (scoping != null)) {
 	    if (logger.isDebugEnabled()) {
 		logger.debug("Conditions should be the " +
@@ -833,11 +833,11 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 	if (reqAuthnContext != null) {
 	    if (logger.isDebugEnabled()) {
 		logger.debug("Request has too many " +
-				     "RequestedAuthnContext Elements");	
-	    }	
+				     "RequestedAuthnContext Elements");
+	    }
 	    throw new SAML2Exception(
 		    SAML2SDKUtils.bundle.getString("schemaViolation"));
-	} 
+	}
 	if (scoping != null) {
 	    if (logger.isDebugEnabled()) {
 		logger.debug("RequestedAuthnContext should " +
@@ -854,6 +854,6 @@ public class AuthnRequestImpl extends RequestAbstractImpl
 	    logger.debug("Request has too many Scoping Elements");
 	    throw new SAML2Exception(
 		    SAML2SDKUtils.bundle.getString("schemaViolation"));
-	} 
+	}
     }
 }

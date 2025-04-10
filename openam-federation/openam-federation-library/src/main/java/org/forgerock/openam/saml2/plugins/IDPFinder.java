@@ -24,15 +24,15 @@
  *
  * $Id: SAML2IDPFinder.java,v 1.3 2008/12/03 00:34:10 hengming Exp $
  *
- * Portions Copyrighted 2022 ForgeRock AS.
+ * Portions Copyrighted 2022-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.saml2.plugins;
 
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.forgerock.openam.annotations.EvolvingAll;
 

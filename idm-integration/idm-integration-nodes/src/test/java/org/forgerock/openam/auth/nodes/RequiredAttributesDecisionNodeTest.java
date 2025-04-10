@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -23,11 +31,10 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.AbstractDecisionNode.FALSE_OUTCOME_ID;
 import static org.forgerock.openam.auth.node.api.AbstractDecisionNode.TRUE_OUTCOME_ID;
-import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.nodes.utils.IdmIntegrationNodeUtils.OBJECT_MAPPER;
+import static org.forgerock.openam.integration.idm.IdmIntegrationService.OBJECT_ATTRIBUTES;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.initMocks;
 
 import java.util.Map;
 import java.util.Optional;
@@ -38,11 +45,14 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class RequiredAttributesDecisionNodeTest {
 
     @Mock
@@ -54,25 +64,22 @@ public class RequiredAttributesDecisionNodeTest {
     @Mock
     private IdmIntegrationService idmIntegrationService;
 
+    @InjectMocks
     private RequiredAttributesDecisionNode node;
     private JsonValue schema;
 
-    @BeforeMethod
-    public void before() throws Exception {
-        initMocks(this);
-
+    @BeforeEach
+    void before() throws Exception {
         schema = json(OBJECT_MAPPER.readValue(getClass().getResource("/RequiredAttributesDecisionNode/idmSchema.json"),
                 Map.class));
 
         when(config.identityResource()).thenReturn("managed/user");
         when(idmIntegrationService.getSchema(any(), any(), any())).thenReturn(schema);
         when(idmIntegrationService.getAttributeFromContext(any(), any())).thenCallRealMethod();
-
-        node = new RequiredAttributesDecisionNode(config, realm, idmIntegrationService);
     }
 
     @Test
-    public void shouldReturnTrueOutcomeIfAllRequiredAttributesArePresent() throws Exception {
+    void shouldReturnTrueOutcomeIfAllRequiredAttributesArePresent() throws Exception {
         // given
         JsonValue sharedState = json(object());
         schema.get("required").stream()
@@ -88,7 +95,7 @@ public class RequiredAttributesDecisionNodeTest {
     }
 
     @Test
-    public void shouldReturnFalseOutcomeIfAnyRequiredAttributesAreMissing() throws Exception {
+    void shouldReturnFalseOutcomeIfAnyRequiredAttributesAreMissing() throws Exception {
         // given
         JsonValue sharedState = json(object());
         sharedState.putPermissive(ptr(OBJECT_ATTRIBUTES).child(schema.get("required").get(0).asString()), "someValue");
@@ -103,7 +110,7 @@ public class RequiredAttributesDecisionNodeTest {
     }
 
     @Test
-    public void shouldReturnFalseOutcomeIfAnyRequiredAttributesAreNull() throws Exception {
+    void shouldReturnFalseOutcomeIfAnyRequiredAttributesAreNull() throws Exception {
         // given
         JsonValue sharedState = json(object());
         schema.get("required").stream()
@@ -119,7 +126,7 @@ public class RequiredAttributesDecisionNodeTest {
     }
 
     @Test
-    public void shouldReturnFalseOutcomeIfObjectAttributesIsMissing() throws Exception {
+    void shouldReturnFalseOutcomeIfObjectAttributesIsMissing() throws Exception {
         // given
         JsonValue sharedState = json(object());
         TreeContext context = new TreeContext(sharedState, json(object()),

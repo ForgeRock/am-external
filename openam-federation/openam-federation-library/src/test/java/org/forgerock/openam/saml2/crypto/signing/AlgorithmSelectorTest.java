@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2.crypto.signing;
 
@@ -30,6 +38,7 @@ import static org.apache.xml.security.signature.XMLSignature.ALGO_ID_SIGNATURE_R
 import static org.apache.xml.security.signature.XMLSignature.ALGO_ID_SIGNATURE_RSA_SHA384;
 import static org.apache.xml.security.signature.XMLSignature.ALGO_ID_SIGNATURE_RSA_SHA512;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.openam.saml2.Saml2EntityRole.SP;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.mock;
@@ -48,12 +57,15 @@ import java.util.List;
 
 import org.forgerock.openam.federation.util.XmlSecurity;
 import org.forgerock.util.Pair;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
 
 import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.jaxb.metadata.EntityDescriptorElement;
@@ -63,6 +75,8 @@ import com.sun.identity.saml2.jaxb.metadata.SPSSODescriptorType;
 import com.sun.identity.saml2.jaxb.metadata.algsupport.DigestMethodType;
 import com.sun.identity.saml2.jaxb.metadata.algsupport.SigningMethodType;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 public class AlgorithmSelectorTest {
 
     private AlgorithmSelector selector;
@@ -70,19 +84,17 @@ public class AlgorithmSelectorTest {
     @Mock
     private Key key;
 
-    @BeforeClass
-    public void setupClass() {
+    @BeforeAll
+    static void setupClass() {
         XmlSecurity.init();
     }
 
-    @BeforeMethod
-    public void setup() {
+    @BeforeEach
+    void setup() {
         selector = new AlgorithmSelector();
-        MockitoAnnotations.initMocks(this);
     }
 
-    @DataProvider(name = "algorithms")
-    public Object[][] algorithms() {
+    public static Object[][] algorithms() {
         return new Object[][]{
                 {rsaKey(2048), ALGO_ID_SIGNATURE_RSA_SHA1, true},
                 {rsaKey(2048), ALGO_ID_SIGNATURE_RSA_SHA256, true},
@@ -112,7 +124,8 @@ public class AlgorithmSelectorTest {
         };
     }
 
-    @Test(dataProvider = "algorithms")
+    @ParameterizedTest
+    @MethodSource("algorithms")
     public void shouldValidateKeyAlgorithm(Key key, String signingMethod, boolean expectedOutcome) {
         // When
         boolean result = selector.checkKeyMatchesSigningAlgorithm(key, signingMethod(signingMethod, null, null));
@@ -120,8 +133,7 @@ public class AlgorithmSelectorTest {
         assertThat(result).isEqualTo(expectedOutcome);
     }
 
-    @DataProvider(name = "keySizes")
-    public Object[][] keySizes() {
+    public static Object[][] keySizes() {
         return new Object[][]{
                 {rsaKey(1), null, null, true},
                 {rsaKey(1024), 1023, null, true},
@@ -160,22 +172,23 @@ public class AlgorithmSelectorTest {
         };
     }
 
-    @Test(dataProvider = "keySizes")
+    @ParameterizedTest
+    @MethodSource("keySizes")
     public void shouldValidateKeySize(Key key, Integer minSize, Integer maxSize, boolean expectedOutcome) {
         // When
         String signingMethod;
         switch (key.getAlgorithm()) {
-        case "RSA":
-            signingMethod = ALGO_ID_SIGNATURE_RSA_SHA256;
-            break;
-        case "DSA":
-            signingMethod = ALGO_ID_SIGNATURE_DSA_SHA256;
-            break;
-        case "EC":
-            signingMethod = ALGO_ID_SIGNATURE_ECDSA_SHA256;
-            break;
-        default:
-            throw new IllegalArgumentException("Unrecognised key algorithm");
+            case "RSA":
+                signingMethod = ALGO_ID_SIGNATURE_RSA_SHA256;
+                break;
+            case "DSA":
+                signingMethod = ALGO_ID_SIGNATURE_DSA_SHA256;
+                break;
+            case "EC":
+                signingMethod = ALGO_ID_SIGNATURE_ECDSA_SHA256;
+                break;
+            default:
+                throw new IllegalArgumentException("Unrecognised key algorithm");
         }
         boolean result = selector.checkKeyMatchesSigningAlgorithm(key, signingMethod(signingMethod, minSize, maxSize));
 
@@ -183,7 +196,7 @@ public class AlgorithmSelectorTest {
     }
 
     @Test
-    public void shouldPickDefaultRsaSigningAlgorithmForRsaKey() {
+    void shouldPickDefaultRsaSigningAlgorithmForRsaKey() {
         // Given
         given(key.getAlgorithm()).willReturn("RSA");
 
@@ -195,7 +208,7 @@ public class AlgorithmSelectorTest {
     }
 
     @Test
-    public void shouldPickDefaultDsaSigningAlgorithmForDsaKey() {
+    void shouldPickDefaultDsaSigningAlgorithmForDsaKey() {
         // Given
         given(key.getAlgorithm()).willReturn("DSA");
 
@@ -207,7 +220,7 @@ public class AlgorithmSelectorTest {
     }
 
     @Test
-    public void shouldPickDefaultEcdsaSigningAlgorithmForEcKey() {
+    void shouldPickDefaultEcdsaSigningAlgorithmForEcKey() {
         // Given
         given(key.getAlgorithm()).willReturn("EC");
 
@@ -219,7 +232,7 @@ public class AlgorithmSelectorTest {
     }
 
     @Test
-    public void shouldPickRoleDescriptorAlgorithmsFirst() throws Exception {
+    void shouldPickRoleDescriptorAlgorithmsFirst() throws Exception {
         // Given
         setupEntityDescriptor(asList(signingMethod(ALGO_ID_SIGNATURE_RSA_SHA384, null, null),
                 digestMethod(ALGO_ID_DIGEST_SHA384)),
@@ -235,7 +248,7 @@ public class AlgorithmSelectorTest {
     }
 
     @Test
-    public void shouldFallbackToProviderAlgorithms() throws Exception {
+    void shouldFallbackToProviderAlgorithms() throws Exception {
         // Given
         setupEntityDescriptor(emptyList(),
                 asList(signingMethod(ALGO_ID_SIGNATURE_RSA_SHA384, null, null), digestMethod(ALGO_ID_DIGEST_SHA384)));
@@ -250,7 +263,7 @@ public class AlgorithmSelectorTest {
     }
 
     @Test
-    public void shouldUseDefaultsWhenThereAreNoExtensions() throws Exception {
+    void shouldUseDefaultsWhenThereAreNoExtensions() throws Exception {
         // Given
         setupEntityDescriptor(emptyList(), emptyList());
 
@@ -263,18 +276,21 @@ public class AlgorithmSelectorTest {
         assertThat(algorithms.getSecond()).isEqualTo(ALGO_ID_DIGEST_SHA256);
     }
 
-    @Test(expectedExceptions = SAML2Exception.class)
-    public void shouldThrowExceptionWhenKeyDoesNotMatchRoleLevelAlgorithms() throws Exception {
-        // Given
-        setupEntityDescriptor(asList(signingMethod(ALGO_ID_SIGNATURE_DSA_SHA256, null, null),
-                signingMethod(ALGO_ID_SIGNATURE_ECDSA_SHA256, null, null)),
-                emptyList());
+    @Test
+    void shouldThrowExceptionWhenKeyDoesNotMatchRoleLevelAlgorithms() throws Exception {
 
-        // When
-        selector.selectSigningAlgorithms(rsaKey(2048), entityDescriptor, SP, key -> null);
+        assertThatThrownBy(() -> {
+            // Given
+            setupEntityDescriptor(asList(signingMethod(ALGO_ID_SIGNATURE_DSA_SHA256, null, null),
+                            signingMethod(ALGO_ID_SIGNATURE_ECDSA_SHA256, null, null)),
+                    emptyList());
+
+            // When
+            selector.selectSigningAlgorithms(rsaKey(2048), entityDescriptor, SP, key -> null);
+        }).isInstanceOf(SAML2Exception.class);
     }
 
-    private Key rsaKey(int size) {
+    private static Key rsaKey(int size) {
         RSAKey rsaKey = mock(RSAKey.class, withSettings().extraInterfaces(Key.class));
         given(((Key) rsaKey).getAlgorithm()).willReturn("RSA");
         BigInteger modulus = mock(BigInteger.class);
@@ -283,7 +299,7 @@ public class AlgorithmSelectorTest {
         return (Key) rsaKey;
     }
 
-    private Key dsaKey(int size) {
+    private static Key dsaKey(int size) {
         DSAKey dsaKey = mock(DSAKey.class, withSettings().extraInterfaces(Key.class));
         given(((Key) dsaKey).getAlgorithm()).willReturn("DSA");
         BigInteger p = mock(BigInteger.class);
@@ -294,7 +310,7 @@ public class AlgorithmSelectorTest {
         return (Key) dsaKey;
     }
 
-    private Key ecKey(int size) {
+    private static Key ecKey(int size) {
         ECKey ecKey = mock(ECKey.class, withSettings().extraInterfaces(Key.class));
         given(((Key) ecKey).getAlgorithm()).willReturn("EC");
         ECParameterSpec ecParams = mock(ECParameterSpec.class);

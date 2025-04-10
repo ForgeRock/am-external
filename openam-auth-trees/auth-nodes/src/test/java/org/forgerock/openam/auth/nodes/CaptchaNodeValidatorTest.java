@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -31,14 +39,14 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.AnnotatedServiceRegistry;
 import org.forgerock.openam.sm.ServiceConfigException;
 import org.forgerock.secrets.Purpose;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @SuppressWarnings("deprecation")
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CaptchaNodeValidatorTest {
 
     private final List<String> path = List.of("somePath");
@@ -53,7 +61,7 @@ public class CaptchaNodeValidatorTest {
     private CaptchaNode.ConfigValidator validator;
 
     @Test
-    public void throwsIfNeitherSecretKeyNorSecretKeyPurposeIsProvided() throws Exception {
+    void throwsIfNeitherSecretKeyNorSecretKeyPurposeIsProvided() throws Exception {
         given(serviceRegistry.getRealmInstance(any(), any(), any())).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> validator.validate(realm, path, emptyMap()))
@@ -61,21 +69,21 @@ public class CaptchaNodeValidatorTest {
     }
 
     @Test
-    public void doesNotThrowIfSecretKeyIsProvided() throws Exception {
+    void doesNotThrowIfSecretKeyIsProvided() throws Exception {
         given(serviceRegistry.getRealmInstance(any(), any(), any())).willReturn(Optional.empty());
 
         validator.validate(realm, path, Map.of("secretKey", Set.of("someValue")));
     }
 
     @Test
-    public void doesNotThrowIfSecretKeyPurposeIsProvided() throws Exception {
+    void doesNotThrowIfSecretKeyPurposeIsProvided() throws Exception {
         given(serviceRegistry.getRealmInstance(any(), any(), any())).willReturn(Optional.empty());
 
         validator.validate(realm, path, Map.of("secretKeyPurpose", Set.of("someValue")));
     }
 
     @Test
-    public void doesNotThrowIfExistingConfigContainsSecretKey() throws Exception {
+    void doesNotThrowIfExistingConfigContainsSecretKey() throws Exception {
         given(serviceRegistry.getRealmInstance(any(), any(), any())).willReturn(Optional.of(existingConfig));
         given(existingConfig.secretKey()).willReturn(Optional.of("someValue"));
 
@@ -83,7 +91,7 @@ public class CaptchaNodeValidatorTest {
     }
 
     @Test
-    public void doesNotThrowIfExistingConfigContainsSecretKeyPurpose() throws Exception {
+    void doesNotThrowIfExistingConfigContainsSecretKeyPurpose() throws Exception {
         given(serviceRegistry.getRealmInstance(any(), any(), any())).willReturn(Optional.of(existingConfig));
         given(existingConfig.secretKeyPurpose()).willReturn(Optional.of(Purpose.PASSWORD));
 
@@ -91,7 +99,7 @@ public class CaptchaNodeValidatorTest {
     }
 
     @Test
-    public void throwsIfExistingValidConfigIsOverriddenByInvalidConfig() throws Exception {
+    void throwsIfExistingValidConfigIsOverriddenByInvalidConfig() throws Exception {
         given(serviceRegistry.getRealmInstance(any(), any(), any())).willReturn(Optional.of(existingConfig));
         lenient().when(existingConfig.secretKey()).thenReturn(Optional.of("someValue"));
         lenient().when(existingConfig.secretKeyPurpose()).thenReturn(Optional.of(Purpose.PASSWORD));
@@ -102,7 +110,7 @@ public class CaptchaNodeValidatorTest {
     }
 
     @Test
-    public void throwsIfExistingValidConfigIsOverriddenByInvalidBlankConfig() throws Exception {
+    void throwsIfExistingValidConfigIsOverriddenByInvalidBlankConfig() throws Exception {
         given(serviceRegistry.getRealmInstance(any(), any(), any())).willReturn(Optional.of(existingConfig));
         lenient().when(existingConfig.secretKey()).thenReturn(Optional.of("someValue"));
         lenient().when(existingConfig.secretKeyPurpose()).thenReturn(Optional.of(Purpose.PASSWORD));

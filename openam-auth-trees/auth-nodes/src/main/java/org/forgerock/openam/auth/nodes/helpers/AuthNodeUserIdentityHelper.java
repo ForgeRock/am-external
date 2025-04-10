@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.helpers;
@@ -24,11 +32,15 @@ import static org.forgerock.openam.utils.StringUtils.isEmpty;
 import java.util.Arrays;
 import java.util.Optional;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeState;
-import org.forgerock.openam.auth.node.api.TreeContext;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.openam.core.realms.Realm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,30 +49,22 @@ import com.sun.identity.idm.AMIdentity;
 /**
  * Helper methods to deal the fetching of AMIdentity.
  */
-public final class AuthNodeUserIdentityHelper {
+@Singleton
+public final class AuthNodeUserIdentityHelper implements NodeUserIdentityProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthNodeUserIdentityHelper.class);
+    private final LegacyIdentityService identityService;
+    private final CoreWrapper coreWrapper;
 
-    private AuthNodeUserIdentityHelper() {
-        //private constructor
+    @Inject
+    AuthNodeUserIdentityHelper(LegacyIdentityService identityService, CoreWrapper coreWrapper) {
+        this.identityService = identityService;
+        this.coreWrapper = coreWrapper;
     }
 
-    /**
-     * Gets the AMIdentity object from the information stored in TreeContext.
-     *
-     *<p>Requires either {@link org.forgerock.openam.auth.node.api.SharedStateConstants#USERNAME} and
-     *  {@link org.forgerock.openam.auth.node.api.SharedStateConstants#REALM} to be present in the state,
-     *  or {@link TreeContext#universalId} to be present in the context.
-     *
-     * @param universalId An optional universal id.
-     * @param nodeState The state data for the node calling this method.
-     * @param identityService The IdentityService instance.
-     * @param coreWrapper The CoreWrapper instance.
-     * @return The AMIdentity object.
-     */
-    public static Optional<AMIdentity> getAMIdentity(Optional<String> universalId, NodeState nodeState,
-            LegacyIdentityService identityService, CoreWrapper coreWrapper) {
-        universalId = universalId.or(() -> getUniversalId(nodeState, identityService));
+    @Override
+    public Optional<AMIdentity> getAMIdentity(Optional<String> universalId, NodeState nodeState) {
+        universalId = universalId.or(() -> getUniversalId(nodeState));
         Optional<AMIdentity> identity = Optional.empty();
         if (universalId.isPresent()) {
             identity = universalId.map(coreWrapper::getIdentity);
@@ -71,17 +75,8 @@ public final class AuthNodeUserIdentityHelper {
         return identity;
     }
 
-    /**
-     * Get the universal id of the identity from the information available in the tree state.
-     *
-     *<p>Requires {@link org.forgerock.openam.auth.node.api.SharedStateConstants#USERNAME} and
-     *  {@link org.forgerock.openam.auth.node.api.SharedStateConstants#REALM} to be present in the state.
-     *
-     * @param nodeState The state data for the node calling this method.
-     * @param identityService An instance of the IdentityService.
-     * @return An optional of the universalId if it can be found, else an empty optional.
-     */
-    public static Optional<String> getUniversalId(NodeState nodeState, LegacyIdentityService identityService) {
+    @Override
+    public Optional<String> getUniversalId(NodeState nodeState) {
         JsonValue username = nodeState.get(USERNAME);
         if (username == null || username.isNull() || isEmpty(username.asString())) {
             logger.warn("Could not find the username in the tree context");
@@ -93,5 +88,10 @@ public final class AuthNodeUserIdentityHelper {
             return Optional.empty();
         }
         return identityService.getUniversalId(username.asString(), realm.asString(), USER);
+    }
+
+    @Override
+    public Optional<String> getUniversalId(final String username, final Realm realm) {
+        return identityService.getUniversalId(username, realm.asPath(), USER);
     }
 }

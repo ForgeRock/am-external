@@ -11,12 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2014-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2014-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.services.push;
 
-import java.security.AccessController;
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -48,8 +55,7 @@ public class PushNotificationServiceSetupListener implements SetupListener {
 
                         Set<String> realms = new HashSet<>();
                         try {
-                            realms.addAll(RealmUtils.getRealmNames(
-                                            AccessController.doPrivileged(AdminTokenAction.getInstance())));
+                            realms.addAll(RealmUtils.getRealmNames(AdminTokenAction.getInstance().run()));
 
                             for (String realm : realms) {
                                 try {

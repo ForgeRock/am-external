@@ -11,13 +11,10 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2020-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
-
-
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 
 import java.util.Optional;
 
@@ -25,8 +22,7 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.am.identity.application.LegacyIdentityService;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 
 import com.iplanet.sso.SSOException;
 import com.sun.identity.idm.AMIdentity;
@@ -101,14 +97,12 @@ interface DeviceProfile {
      *
      * @param universalId the un
      * @param nodeState The NodeState
-     * @param coreWrapper An instace of the CoreWrapper
-     * @param identityService An instance of the IdentityService,
      * @return The identity represent the user.
      * @throws NodeProcessException When username not found from context or datasource or inactive
      */
-    default AMIdentity getUserIdentity(Optional<String> universalId, NodeState nodeState, CoreWrapper coreWrapper,
-            LegacyIdentityService identityService) throws NodeProcessException, IdRepoException, SSOException {
-        Optional<AMIdentity> userIdentity = getAMIdentity(universalId, nodeState, identityService, coreWrapper);
+    default AMIdentity getUserIdentity(Optional<String> universalId, NodeState nodeState,
+            NodeUserIdentityProvider identityProvider) throws NodeProcessException, IdRepoException, SSOException {
+        Optional<AMIdentity> userIdentity = identityProvider.getAMIdentity(universalId, nodeState);
         if (userIdentity.isEmpty() || !userIdentity.get().isExists() || !userIdentity.get().isActive()) {
             throw new NodeProcessException("User does not exist or inactive");
         }

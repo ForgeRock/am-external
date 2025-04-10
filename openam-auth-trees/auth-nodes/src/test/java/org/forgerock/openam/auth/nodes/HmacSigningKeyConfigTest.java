@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -39,15 +47,15 @@ import org.forgerock.secrets.keys.KeyUsage;
 import org.forgerock.secrets.keys.SigningKey;
 import org.forgerock.secrets.keys.VerificationKey;
 import org.forgerock.util.promise.NeverThrowsException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.shared.encode.Base64;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HmacSigningKeyConfigTest {
 
     public static final String HMAC_KEY =
@@ -61,8 +69,8 @@ public class HmacSigningKeyConfigTest {
     @Mock
     private VerificationKey verificationKey;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         hmacSigningKeyConfig = new HmacSigningKeyConfig() {
             @Override
             public Optional<Purpose<SigningKey>> signingKeyPurpose() {
@@ -77,7 +85,7 @@ public class HmacSigningKeyConfigTest {
     }
 
     @Test
-    public void testHmacSigningKeyConfigVerificationKeyPurpose() {
+    void testHmacSigningKeyConfigVerificationKeyPurpose() {
         Purpose<VerificationKey> verificationPurpose =
                 hmacSigningKeyConfig.verificationKeyPurpose()
                         .orElseThrow(() -> new RuntimeException("Verification purpose is not present"));
@@ -87,32 +95,30 @@ public class HmacSigningKeyConfigTest {
 
     @SuppressWarnings("deprecation")
     @Test
-    public void testHmacSigningKeyConfigWrappedSigningKey() {
-        try (SigningKey signingKey = hmacSigningKeyConfig.wrappedHmacSigningKey()
-                                          .orElseThrow(() -> new RuntimeException("Signing key is not present"))) {
-            assertThat(signingKey.getKeyType()).isEqualTo(KeyType.SECRET);
-            assertThat(signingKey.getKeyUsages()).containsExactly(KeyUsage.SIGN);
-            assertThat(signingKey.getStableId()).isEqualTo(HmacSigningKeyConfig.DEPRECATED_STABLE_ID);
-            assertThat(Base64.encode(signingKey.reveal(Key::getEncoded))).isEqualTo(HMAC_KEY);
-            assertThat(signingKey.getExpiryTime()).isEqualTo(Instant.MAX);
-        }
+    void testHmacSigningKeyConfigWrappedSigningKey() {
+        SigningKey signingKey = hmacSigningKeyConfig.wrappedHmacSigningKey()
+                                        .orElseThrow(() -> new RuntimeException("Signing key is not present"));
+        assertThat(signingKey.getKeyType()).isEqualTo(KeyType.SECRET);
+        assertThat(signingKey.getKeyUsages()).containsExactly(KeyUsage.SIGN);
+        assertThat(signingKey.getStableId()).isEqualTo(HmacSigningKeyConfig.DEPRECATED_STABLE_ID);
+        assertThat(Base64.encode(signingKey.reveal(Key::getEncoded))).isEqualTo(HMAC_KEY);
+        assertThat(signingKey.getExpiryTime()).isEqualTo(Instant.MAX);
     }
 
     @SuppressWarnings("deprecation")
     @Test
-    public void testHmacSigningKeyConfigWrappedVerificationKey() {
-        try (VerificationKey verificationKey = hmacSigningKeyConfig.wrappedHmacVerificationKey()
-                                      .orElseThrow(() -> new RuntimeException("Verification key is not present"))) {
-            assertThat(verificationKey.getKeyType()).isEqualTo(KeyType.SECRET);
-            assertThat(verificationKey.getKeyUsages()).containsExactly(KeyUsage.VERIFY);
-            assertThat(verificationKey.getStableId()).isEqualTo(HmacSigningKeyConfig.DEPRECATED_STABLE_ID);
-            assertThat(Base64.encode(verificationKey.reveal(Key::getEncoded))).isEqualTo(HMAC_KEY);
-            assertThat(verificationKey.getExpiryTime()).isEqualTo(Instant.MAX);
-        }
+    void testHmacSigningKeyConfigWrappedVerificationKey() {
+        VerificationKey verificationKey = hmacSigningKeyConfig.wrappedHmacVerificationKey()
+                                          .orElseThrow(() -> new RuntimeException("Verification key is not present"));
+        assertThat(verificationKey.getKeyType()).isEqualTo(KeyType.SECRET);
+        assertThat(verificationKey.getKeyUsages()).containsExactly(KeyUsage.VERIFY);
+        assertThat(verificationKey.getStableId()).isEqualTo(HmacSigningKeyConfig.DEPRECATED_STABLE_ID);
+        assertThat(Base64.encode(verificationKey.reveal(Key::getEncoded))).isEqualTo(HMAC_KEY);
+        assertThat(verificationKey.getExpiryTime()).isEqualTo(Instant.MAX);
     }
 
     @Test
-    public void testHmacSigningKeyConfigSigningKeyReferenceFirstPurpose() throws NoSuchSecretException {
+    void testHmacSigningKeyConfigSigningKeyReferenceFirstPurpose() throws NoSuchSecretException {
         // Given
         given(secretCache.active(hmacSigningKeyConfig.signingKeyPurpose().orElseThrow()))
                 .willReturn(SecretReference.constant(signingKey));
@@ -127,7 +133,7 @@ public class HmacSigningKeyConfigTest {
     }
 
     @Test
-    public void testHmacSigningKeyConfigSigningKeyReferenceDeprecated() throws NoSuchSecretException {
+    void testHmacSigningKeyConfigSigningKeyReferenceDeprecated() throws NoSuchSecretException {
         // Given
         hmacSigningKeyConfig = new HmacSigningKeyConfig() {
             @Override
@@ -152,7 +158,7 @@ public class HmacSigningKeyConfigTest {
     }
 
     @Test
-    public void testHmacSigningKeyConfigSigningKeyReferenceDefault() throws NoSuchSecretException {
+    void testHmacSigningKeyConfigSigningKeyReferenceDefault() throws NoSuchSecretException {
         // Given
         hmacSigningKeyConfig = new HmacSigningKeyConfig() {
             @Override
@@ -178,7 +184,7 @@ public class HmacSigningKeyConfigTest {
     }
 
     @Test
-    public void testHmacSigningKeyConfigVerificationKeyReferenceFirstPurpose() throws NoSuchSecretException {
+    void testHmacSigningKeyConfigVerificationKeyReferenceFirstPurpose() throws NoSuchSecretException {
         // Given
         given(verificationKey.getKeyType()).willReturn(KeyType.PUBLIC);
         given(verificationKey.getKeyUsages()).willReturn(Set.of(KeyUsage.VERIFY));
@@ -199,7 +205,7 @@ public class HmacSigningKeyConfigTest {
     }
 
     @Test
-    public void testHmacSigningKeyConfigVerificationKeyReferenceDeprecated() throws NoSuchSecretException {
+    void testHmacSigningKeyConfigVerificationKeyReferenceDeprecated() throws NoSuchSecretException {
         // Given
         hmacSigningKeyConfig = new HmacSigningKeyConfig() {
             @Override
@@ -224,7 +230,7 @@ public class HmacSigningKeyConfigTest {
     }
 
     @Test
-    public void testHmacSigningKeyConfigVerificationKeyReferenceDefault() throws NoSuchSecretException {
+    void testHmacSigningKeyConfigVerificationKeyReferenceDefault() throws NoSuchSecretException {
         // Given
         hmacSigningKeyConfig = new HmacSigningKeyConfig() {
             @Override

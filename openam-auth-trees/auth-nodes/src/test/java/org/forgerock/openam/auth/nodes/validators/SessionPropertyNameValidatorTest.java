@@ -11,55 +11,55 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.validators;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.forgerock.cuppa.Cuppa.beforeEach;
-import static org.forgerock.cuppa.Cuppa.describe;
-import static org.forgerock.cuppa.Cuppa.it;
-import static org.forgerock.cuppa.Cuppa.when;
 
 import java.util.Collections;
 import java.util.List;
 
-import org.forgerock.cuppa.Test;
-import org.forgerock.cuppa.junit.CuppaRunner;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableSet;
 import com.sun.identity.sm.ServiceAttributeValidator;
 
-@RunWith(CuppaRunner.class)
-@Test
 public class SessionPropertyNameValidatorTest {
     private ServiceAttributeValidator validator;
 
-    {
-        describe("SessionPropertyNameValidator", () -> {
-            describe("validate", () -> {
-                beforeEach(() -> {
-                    List<String> systemPropertyNames = asList("x", "y");
-                    validator = new SessionPropertyNameValidator(systemPropertyNames);
-                });
-                when("the input is valid", () -> {
-                    it("returns true", () -> {
-                        assertThat(validator.validate(ImmutableSet.of("a", "b"))).isTrue();
-                    });
-                });
-                when("there are no values", () -> {
-                    it("returns false", () -> {
-                        assertThat(validator.validate(Collections.emptySet())).isFalse();
-                    });
-                });
-                when("one of the values is a system property", () -> {
-                    it("returns false", () -> {
-                        assertThat(validator.validate(ImmutableSet.of("a", "x"))).isFalse();
-                    });
-                });
-            });
-        });
+    @BeforeEach
+    public void beforeEach() {
+        List<String> systemPropertyNames = asList("x", "y");
+        validator = new SessionPropertyNameValidator(systemPropertyNames);
+    }
+
+    @Test
+    @DisplayName(value = "the input is valid it returns true")
+    public void testTheInputIsValidItReturnsTrue() throws Exception {
+        assertThat(validator.validate(ImmutableSet.of("a", "b"))).isTrue();
+    }
+
+    @Test
+    @DisplayName(value = "there are no values it returns false")
+    public void testThereAreNoValuesItReturnsFalse() throws Exception {
+        assertThat(validator.validate(Collections.emptySet())).isFalse();
+    }
+
+    @Test
+    @DisplayName(value = "one of the values is a system property it returns false")
+    public void testOneOfTheValuesIsASystemPropertyItReturnsFalse() throws Exception {
+        assertThat(validator.validate(ImmutableSet.of("a", "x"))).isFalse();
     }
 }

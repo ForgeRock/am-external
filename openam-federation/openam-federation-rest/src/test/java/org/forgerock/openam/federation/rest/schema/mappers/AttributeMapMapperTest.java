@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -22,8 +30,9 @@ import java.util.Collections;
 import java.util.List;
 
 import org.forgerock.openam.federation.rest.schema.shared.AttributeMap;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Unit test for {@link AttributeMapMapper}.
@@ -32,8 +41,7 @@ import org.testng.annotations.Test;
  */
 public final class AttributeMapMapperTest {
 
-    @DataProvider
-    private Object[][] attributesNamesAndValues() {
+    private static Object[][] attributesNamesAndValues() {
         return new Object[][]{
                 {"abc=def", "abc", "def"},
                 {"abc =def", "abc ", "def"},
@@ -42,7 +50,8 @@ public final class AttributeMapMapperTest {
         };
     }
 
-    @Test(dataProvider = "attributesNamesAndValues")
+    @ParameterizedTest
+    @MethodSource("attributesNamesAndValues")
     public void whenStringContainsAttributesNamesSamlAndLocalAttributesArePopulated(String serializeString,
             String attributeKey, String attributeValue) {
         // When
@@ -59,7 +68,7 @@ public final class AttributeMapMapperTest {
     }
 
     @Test
-    public void whenStringContainsNameFormatUriItIsPopulated() {
+    void whenStringContainsNameFormatUriItIsPopulated() {
         // When
         AttributeMapMapper mapper = new AttributeMapMapper();
         List<String> values = Collections.singletonList("123:456|abc=def");
@@ -73,7 +82,7 @@ public final class AttributeMapMapperTest {
     }
 
     @Test
-    public void whenStringContainsBinaryDefinitionItIsPopulated() {
+    void whenStringContainsBinaryDefinitionItIsPopulated() {
         // When
         AttributeMapMapper mapper = new AttributeMapMapper();
         List<String> values = Collections.singletonList("123:456|abc=def;binary");
@@ -87,7 +96,7 @@ public final class AttributeMapMapperTest {
     }
 
     @Test
-    public void whenAttributeContainsNoNameFormatUriItIsSkipped() {
+    void whenAttributeContainsNoNameFormatUriItIsSkipped() {
         // When
         AttributeMapMapper mapper = new AttributeMapMapper();
         List<AttributeMap> maps = Collections.singletonList(new AttributeMap(null, "456", "789", false));
@@ -101,7 +110,7 @@ public final class AttributeMapMapperTest {
     }
 
     @Test
-    public void whenAttributeContainsNameFormatUriItIsPopulated() {
+    void whenAttributeContainsNameFormatUriItIsPopulated() {
         // When
         AttributeMapMapper mapper = new AttributeMapMapper();
         List<AttributeMap> maps = Collections.singletonList(new AttributeMap("123", "456", "789", false));
@@ -115,7 +124,7 @@ public final class AttributeMapMapperTest {
     }
 
     @Test
-    public void whenAttributeContainsBinaryDefItIsPopulated() {
+    void whenAttributeContainsBinaryDefItIsPopulated() {
         // When
         AttributeMapMapper mapper = new AttributeMapMapper();
         List<AttributeMap> maps = Collections.singletonList(new AttributeMap("123", "456", "789", true));
@@ -129,7 +138,7 @@ public final class AttributeMapMapperTest {
     }
 
     @Test
-    public void shouldInverseAttributeMapWhenBinaryIsNull() {
+    void shouldInverseAttributeMapWhenBinaryIsNull() {
         // When
         AttributeMapMapper mapper = new AttributeMapMapper();
         List<AttributeMap> maps = Collections.singletonList(new AttributeMap("123", "456", "789", null));

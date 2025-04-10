@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 import { bindActionCreators } from "redux";
 import PropTypes from "prop-types";
@@ -31,6 +39,7 @@ import Oops from "components/Oops";
 import withRouter from "org/forgerock/commons/ui/common/components/hoc/withRouter";
 import withRouterPropType from "org/forgerock/commons/ui/common/components/hoc/withRouterPropType";
 import { getAllByScriptType } from "org/forgerock/openam/ui/admin/services/realm/ScriptsService";
+import { getAll as getAllTrees } from "org/forgerock/openam/ui/admin/services/realm/authentication/TreeService";
 
 class EditEntityProviderContainer extends Component {
     static propTypes = {
@@ -44,18 +53,23 @@ class EditEntityProviderContainer extends Component {
     async componentDidMount () {
         const [realm, location,, entityId] = this.props.router.params;
         try {
-            const [instance, schema, idpATMScriptsResponse, idpAdapterScripts, spAdapterScripts] = await Promise.all([
+            const [instance, schema, idpATMScriptsResponse, idpAdapterScripts, spAdapterScripts,
+                nameIDMapperScripts, treeNames] = await Promise.all([
                 getInstance(realm, location, entityId),
                 getSchema(realm, location),
                 getAllByScriptType(realm, "SAML2_IDP_ATTRIBUTE_MAPPER"),
                 getAllByScriptType(realm, "SAML2_IDP_ADAPTER"),
-                getAllByScriptType(realm, "SAML2_SP_ADAPTER")
+                getAllByScriptType(realm, "SAML2_SP_ADAPTER"),
+                getAllByScriptType(realm, "SAML2_NAMEID_MAPPER"),
+                getAllTrees(realm)
             ]);
 
             /* eslint-disable react/no-did-mount-set-state */
             this.setState({ idpATMScripts: idpATMScriptsResponse.result });
             this.setState({ idpAdapterScripts: idpAdapterScripts.result });
             this.setState({ spAdapterScripts: spAdapterScripts.result });
+            this.setState({ nameIDMapperScripts: nameIDMapperScripts.result });
+            this.setState({ treeNames: treeNames.result });
             this.props.setInstance(instance);
             this.props.setSchema(convertFormatToIsPassword(schema));
         } catch (error) {
@@ -66,21 +80,22 @@ class EditEntityProviderContainer extends Component {
     }
 
     /**
-     * Create a JSON Schema for scripts.
-     * This would contain all the realm scripts.
-     * @param scriptProperty a script property retrieved from the schema
-     * @param scripts a list of scripts retrieved from the scripts API
-     * @returns {{enumNames, options: {enum_titles}, description, title, type: string, enum, exampleValue: string}}
+     * Create a JSON Schema for dropdowns.
+     * This would contain all the items in the dropdown.
+     * @param property property retrieved from the schema
+     * @param items list of items to add to the dropdown
+     * @param defaultTitle - The default title for the dropdown
+     * @returns {{enumNames: *, options: {enum_titles: *}, description, title, type: string, enum: *, exampleValue: string}}
      */
-    createScriptsSchema (scriptProperty, scripts) {
-        const enums = scripts.map((item) => { return item._id; });
-        enums.push("[Empty]");
-        const enumTitles = scripts.map((item) => { return item.name; });
-        enumTitles.push("--- Select a script ---");
+    createDropdownSchema (property, items, defaultTitle) {
+        const enums = items.map((item) => { return item._id; });
+        enums.unshift("[Empty]");
+        const enumTitles = items.map((item) => { return item.name; });
+        enumTitles.unshift(defaultTitle);
 
         return {
-            title: scriptProperty.title,
-            description: scriptProperty.description,
+            title: property.title,
+            description: property.description,
             "enum": enums,
             options: {
                 "enum_titles": enumTitles
@@ -105,16 +120,29 @@ class EditEntityProviderContainer extends Component {
                     const assertionProcessing = schema.properties.assertionProcessing;
                     const atmProperties = assertionProcessing.properties.attributeMapper.properties;
                     /* eslint-disable max-len */
-                    atmProperties.attributeMapperScript = this.createScriptsSchema(atmProperties.attributeMapperScript, this.state.idpATMScripts);
+                    atmProperties.attributeMapperScript = this.createDropdownSchema(atmProperties.attributeMapperScript, this.state.idpATMScripts, "--- Select a script ---");
                     // IDP Adapter Script
                     const idpAdapterProperties = schema.properties.advanced.properties.idpAdapter.properties;
                     /* eslint-disable max-len */
-                    idpAdapterProperties.idpAdapterScript = this.createScriptsSchema(idpAdapterProperties.idpAdapterScript, this.state.idpAdapterScripts);
+                    idpAdapterProperties.idpAdapterScript = this.createDropdownSchema(idpAdapterProperties.idpAdapterScript, this.state.idpAdapterScripts, "--- Select a script ---");
                 } else if (role === "serviceProvider") {
                     // SP Adapter Script
                     const spAdapterProperties = schema.properties.assertionProcessing.properties.adapter.properties;
                     /* eslint-disable max-len */
-                    spAdapterProperties.spAdapterScript = this.createScriptsSchema(spAdapterProperties.spAdapterScript, this.state.spAdapterScripts);
+                    spAdapterProperties.spAdapterScript = this.createDropdownSchema(spAdapterProperties.spAdapterScript, this.state.spAdapterScripts, "--- Select a script ---");
+                }
+            }
+            if (location === "remote") {
+                if (role === "serviceProvider") {
+                    // Name ID Mapper Script
+                    const assertionProcessing = schema.properties.assertionProcessing;
+                    const accountMapperProperties = assertionProcessing.properties.accountMapper.properties;
+                    /* eslint-disable max-len */
+                    accountMapperProperties.nameIDMapperScript = this.createDropdownSchema(accountMapperProperties.nameIDMapperScript, this.state.nameIDMapperScripts, "--- Select a script ---");
+                    // JTree Configuration
+                    /* eslint-disable max-len */
+                    const treeConfigurationProperties = schema.properties.advanced.properties.treeConfiguration.properties;
+                    treeConfigurationProperties.treeName = this.createDropdownSchema(treeConfigurationProperties.treeName, this.state.treeNames, "--- Select a tree ---");
                 }
             }
             return schema

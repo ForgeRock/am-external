@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -19,7 +27,6 @@ package org.forgerock.openam.auth.nodes;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.ONE_TIME_PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
-import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 import static org.forgerock.openam.auth.nodes.helpers.IdmIntegrationHelper.getLocalisedMessage;
 
 import java.util.Locale;
@@ -30,7 +37,6 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
@@ -39,7 +45,7 @@ import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.SingleOutcomeNode;
 import org.forgerock.openam.auth.node.api.TreeContext;
-import org.forgerock.openam.core.CoreWrapper;
+import org.forgerock.openam.auth.node.api.NodeUserIdentityProvider;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.sm.annotations.adapters.SecretPurpose;
 import org.forgerock.openam.utils.StringUtils;
@@ -66,11 +72,10 @@ import com.sun.identity.sm.RequiredValueValidator;
 public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
 
     private final Logger logger = LoggerFactory.getLogger(OneTimePasswordSmsSenderNode.class);
-    private final CoreWrapper coreWrapper;
-    private final LegacyIdentityService identityService;
     private final LocaleSelector localeSelector;
     private final SMSGatewayLookup smsGatewayLookup;
     private final Realm realm;
+    private final NodeUserIdentityProvider identityProvider;
 
     /**
      * Configuration for the node.
@@ -131,23 +136,21 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
      *
      * @param config                  Node configuration.
      * @param realm                   The current realm.
-     * @param coreWrapper             A wrapper for core utility methods.
-     * @param identityService         An instance IdentityService.
+     * @param identityProvider        The NodeUserIdentityProvider.
      * @param localeSelector          An instance of LocaleSelector.
      * @param smsGatewayLookup        lookup for {@link SMSGateway}.
      * @param connectionConfigMapper  the config mapper.
      */
     @Inject
-    public OneTimePasswordSmsSenderNode(@Assisted Config config, @Assisted Realm realm, CoreWrapper coreWrapper,
-            LegacyIdentityService identityService, LocaleSelector localeSelector, SMSGatewayLookup smsGatewayLookup,
-            OtpNodeConnectionConfigMapper connectionConfigMapper) {
+    public OneTimePasswordSmsSenderNode(@Assisted Config config, @Assisted Realm realm,
+            NodeUserIdentityProvider identityProvider, LocaleSelector localeSelector,
+            SMSGatewayLookup smsGatewayLookup, OtpNodeConnectionConfigMapper connectionConfigMapper) {
         this.config = config;
         this.realm = realm;
-        this.coreWrapper = coreWrapper;
-        this.identityService = identityService;
         this.localeSelector = localeSelector;
         this.smsGatewayLookup = smsGatewayLookup;
         this.connectionConfigMapper = connectionConfigMapper;
+        this.identityProvider = identityProvider;
     }
 
     @Override
@@ -156,8 +159,8 @@ public class OneTimePasswordSmsSenderNode extends SingleOutcomeNode {
         String phone;
         ResourceBundle bundle = context.request.locales.getBundleInPreferredLocale(BUNDLE, getClass().getClassLoader());
 
-        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityService,
-                coreWrapper);
+        Optional<AMIdentity> identity = identityProvider.getAMIdentity(context.universalId,
+                context.getStateFor(this));
         if (identity.isEmpty()) {
             logger.warn("identity not found");
             throw new NodeProcessException(bundle.getString("identity.failure"));

@@ -24,7 +24,7 @@
  *
  * $Id: WSFederationConstants.java,v 1.13 2009/12/14 23:42:48 mallas Exp $
  *
- * Portions copyright 2016 ForgeRock AS.
+ * Portions copyright 2016-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.wsfederation.common;

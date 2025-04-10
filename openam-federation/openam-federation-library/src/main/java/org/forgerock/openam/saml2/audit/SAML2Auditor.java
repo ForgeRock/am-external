@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2017 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2.audit;
 
@@ -25,7 +33,7 @@ import static org.forgerock.openam.audit.context.AuditRequestContext.getAuditReq
 import static org.forgerock.openam.utils.StringUtils.isEmpty;
 import static org.forgerock.openam.utils.Time.currentTimeMillis;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.forgerock.audit.events.AuditEvent;
 import org.forgerock.json.JsonValue;
@@ -55,6 +63,7 @@ public class SAML2Auditor implements SAML2EventLogger {
     private final AuditEventPublisher auditEventPublisher;
     private final AuditEventFactory auditEventFactory;
     private String message;
+    private JsonValue auditDetails = json(object());
 
     /**
      * Constructor for SAML2Auditor
@@ -100,6 +109,7 @@ public class SAML2Auditor implements SAML2EventLogger {
                     .timestamp(endTime)
                     .eventName(AuditConstants.EventName.AM_ACCESS_OUTCOME)
                     .response(SUCCESSFUL, message, elapsedTime, MILLISECONDS)
+                    .requestDetail(this.auditDetails)
                     .toEvent();
             auditEventPublisher.tryPublish(AuditConstants.ACCESS_TOPIC, auditEvent);
         }
@@ -120,6 +130,7 @@ public class SAML2Auditor implements SAML2EventLogger {
                     .timestamp(endTime)
                     .eventName(AuditConstants.EventName.AM_ACCESS_OUTCOME)
                     .responseWithDetail(FAILED, errorCode, elapsedTime, MILLISECONDS, detail)
+                    .requestDetail(this.auditDetails)
                     .toEvent();
 
             auditEventPublisher.tryPublish(AuditConstants.ACCESS_TOPIC, auditEvent);
@@ -183,4 +194,20 @@ public class SAML2Auditor implements SAML2EventLogger {
             getAuditRequestContext().addTrackingId(getTrackingIdFromSSOToken((SSOToken) session));
         }
     }
+
+    @Override
+    public void setSpEntity(String spEntity) {
+        this.auditDetails.put("spEntity", spEntity);
+    }
+
+    @Override
+    public void setIdpEntity(String idpEntity) {
+        this.auditDetails.put("idpEntity", idpEntity);
+    }
+
+    @Override
+    public void setConfiguredService(String service) {
+        this.auditDetails.put("configuredService", service);
+    }
+
 }

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019-2020 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.rest;
 
@@ -59,6 +67,7 @@ import org.forgerock.json.resource.ResourceException;
 import org.forgerock.json.resource.ResourceResponse;
 import org.forgerock.json.resource.Responses;
 import org.forgerock.json.resource.UpdateRequest;
+import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.objectenricher.EnricherContext;
 import org.forgerock.openam.objectenricher.ObjectEnricher;
 import org.forgerock.openam.rest.RealmContext;
@@ -199,7 +208,7 @@ public abstract class Saml2EntitiesCollectionProvider {
         try {
             JaxbEntity jaxbEntity = getJaxbEntity(context, entityId);
             assertValidEntityLocation(jaxbEntity);
-            validateSecretIdIdentifier(request.getContent());
+            validateEntityJson(request.getContent(), RealmContext.getRealm(context));
 
             replenishJaxbEntity(jaxbEntity, request.getContent(), context);
             persistJaxbEntity(context, jaxbEntity);
@@ -271,7 +280,7 @@ public abstract class Saml2EntitiesCollectionProvider {
      * @param payload The request json payload.
      * @throws BadRequestException When secret id identifier has non permitted characters.
      */
-    protected void validateSecretIdIdentifier(JsonValue payload) throws BadRequestException {
+    private void validateSecretIdIdentifier(JsonValue payload) throws BadRequestException {
         List<String> secretIdIdentifiers = getSecretIdIdentifiers(payload);
         if (!secretIdIdentifiers.isEmpty() && secretIdIdentifiers.stream()
                 .noneMatch(i -> SECRET_ID_PATTERN.matcher(i).matches())) {
@@ -435,6 +444,16 @@ public abstract class Saml2EntitiesCollectionProvider {
             objectEnricher.enrich(jsonRole, role.getExtendedMetadata(jaxbEntity.getExtendedMetadata()), ROOT);
             jsonEntityConsumer.accept(jsonRole);
         });
+    }
+
+    /**
+     * Validate content of request.
+     * @param payload the json content to validate
+     * @param realm the realm in which the request is made
+     * @throws ResourceException if the content fails validation
+     */
+    protected void validateEntityJson(JsonValue payload, Realm realm) throws ResourceException {
+        validateSecretIdIdentifier(payload);
     }
 
     private AttributeType createAttributeType(String name, List<String> value) {

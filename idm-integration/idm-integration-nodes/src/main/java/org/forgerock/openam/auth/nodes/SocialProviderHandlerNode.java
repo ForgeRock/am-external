@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -23,15 +31,14 @@ import static org.forgerock.json.JsonPointer.ptr;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
+import static org.forgerock.oauth.clients.oauth2.OAuth2Client.ACCESS_TOKEN;
+import static org.forgerock.oauth.clients.oauth2.OAuth2Client.REFRESH_TOKEN;
 import static org.forgerock.oauth.clients.twitter.TwitterClient.OAUTH_TOKEN;
 import static org.forgerock.oauth.clients.twitter.TwitterClient.OAUTH_VERIFIER;
 import static org.forgerock.openam.auth.node.api.Action.goTo;
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.ClientType.NATIVE;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertHeadersToModifiableObjects;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.convertParametersToModifiableObjects;
-import static org.forgerock.openam.auth.nodes.helpers.ScriptedNodeHelper.getSessionProperties;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.DEFAULT_IDM_IDENTITY_ATTRIBUTE;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.IDPS;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.SELECTED_IDP;
@@ -54,7 +61,6 @@ import java.util.ResourceBundle;
 import java.util.Set;
 
 import javax.inject.Inject;
-import javax.inject.Provider;
 import javax.security.auth.callback.Callback;
 
 import org.forgerock.am.identity.application.LegacyIdentityService;
@@ -70,9 +76,11 @@ import org.forgerock.oauth.clients.oidc.OpenIDConnectClient;
 import org.forgerock.oauth.clients.twitter.TwitterClient;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.AuthScriptUtilities;
 import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.NodeState;
 import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
@@ -84,16 +92,16 @@ import org.forgerock.openam.authentication.modules.common.mapping.DefaultAccount
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
+import org.forgerock.openam.scripting.application.ScriptEvaluator.ScriptResult;
 import org.forgerock.openam.scripting.application.ScriptEvaluatorFactory;
+import org.forgerock.openam.scripting.domain.LegacyScriptBindings;
 import org.forgerock.openam.scripting.domain.Script;
-import org.forgerock.openam.scripting.domain.ScriptBindings;
 import org.forgerock.openam.scripting.domain.ScriptingLanguage;
 import org.forgerock.openam.scripting.persistence.config.consumer.ScriptContext;
 import org.forgerock.openam.social.idp.OAuthClientConfig;
 import org.forgerock.openam.social.idp.OpenIDConnectClientConfig;
 import org.forgerock.openam.social.idp.SocialIdentityProviders;
 import org.forgerock.openam.social.idp.SocialProviderHandlerNodeBindings;
-import org.forgerock.openam.utils.StringUtils;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.mozilla.javascript.NativeJavaObject;
 import org.slf4j.Logger;
@@ -106,7 +114,6 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.am.util.SystemProperties;
-import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.authentication.service.AuthD;
 import com.sun.identity.authentication.spi.RedirectCallback;
 import com.sun.identity.idm.AMIdentity;
@@ -139,10 +146,10 @@ public class SocialProviderHandlerNode implements Node {
     private final SocialIdentityProviders providerConfigStore;
     private final LegacyIdentityService identityService;
     private final Realm realm;
-    private final ScriptEvaluator scriptEvaluator;
-    private final Provider<SessionService> sessionServiceProvider;
+    private final ScriptEvaluator<LegacyScriptBindings> scriptEvaluator;
     private final Config config;
     private final IdmIntegrationService idmIntegrationService;
+    private final AuthScriptUtilities authScriptUtils;
 
     /**
      * Constructor.
@@ -153,8 +160,8 @@ public class SocialProviderHandlerNode implements Node {
      * @param identityService        an instance of the IdentityService
      * @param realm                  the realm context
      * @param scriptEvaluatorFactory factory for ScriptEvaluators
-     * @param sessionServiceProvider provider of the session service
      * @param idmIntegrationService  service that provides connectivity to IDM
+     * @param authScriptUtils        utilities for scripted nodes
      */
     @Inject
     public SocialProviderHandlerNode(@Assisted Config config,
@@ -163,8 +170,8 @@ public class SocialProviderHandlerNode implements Node {
             LegacyIdentityService identityService,
             @Assisted Realm realm,
             ScriptEvaluatorFactory scriptEvaluatorFactory,
-            Provider<SessionService> sessionServiceProvider,
-            IdmIntegrationService idmIntegrationService
+            IdmIntegrationService idmIntegrationService,
+            AuthScriptUtilities authScriptUtils
     ) {
         this.config = config;
         this.authModuleHelper = authModuleHelper;
@@ -172,8 +179,8 @@ public class SocialProviderHandlerNode implements Node {
         this.identityService = identityService;
         this.realm = realm;
         this.scriptEvaluator = scriptEvaluatorFactory.create(SOCIAL_IDP_PROFILE_TRANSFORMATION);
-        this.sessionServiceProvider = sessionServiceProvider;
         this.idmIntegrationService = idmIntegrationService;
+        this.authScriptUtils = authScriptUtils;
     }
 
     @Override
@@ -303,6 +310,11 @@ public class SocialProviderHandlerNode implements Node {
                 client.handlePostAuth(dataStore, parameters).getOrThrow();
                 logger.debug("Social provider redirect node completed");
 
+                // An access token or refresh token is required to revoke the apple user authorization
+                // for someone when they are no longer associated with the app
+                // so we store the tokens in the node state so that a scripted decision node can
+                // utilise the tokens to revoke the authorization
+                addTokensToNodeState(context, dataStore);
                 return handleUser(context, client, idpConfig, selectedIdp, dataStore);
 
             } catch (OAuthException e) {
@@ -314,6 +326,22 @@ public class SocialProviderHandlerNode implements Node {
             }
         }
         return null;
+    }
+
+    private void addTokensToNodeState(TreeContext context, DataStore dataStore) throws OAuthException {
+
+        if (config.storeTokens()) {
+            NodeState nodeState = context.getStateFor(this);
+
+            JsonValue storedData = dataStore.retrieveData();
+            if (storedData.isDefined(ACCESS_TOKEN)) {
+                nodeState.putTransient(ACCESS_TOKEN, storedData.get(ACCESS_TOKEN).asString());
+            }
+
+            if (storedData.isDefined(REFRESH_TOKEN)) {
+                nodeState.putTransient(REFRESH_TOKEN, storedData.get(REFRESH_TOKEN).asString());
+            }
+        }
     }
 
     private boolean isAllRequiredParametersPresent(OAuthClient client, Map<String, List<String>> parameters)
@@ -484,22 +512,20 @@ public class SocialProviderHandlerNode implements Node {
 
     private JsonValue evaluateScript(TreeContext context, Script script,
             boolean normalized, JsonValue inputData) throws NodeProcessException {
-        ScriptBindings scriptBindings = SocialProviderHandlerNodeBindings.builder()
+        SocialProviderHandlerNodeBindings scriptBindings = SocialProviderHandlerNodeBindings.builder()
                 .withSelectedIDP(context.sharedState.get(SELECTED_IDP).asString())
                 .withInputData(inputData, normalized)
                 .withCallbacks(context.getAllCallbacks())
-                .withQueryParameters(convertParametersToModifiableObjects(context.request.parameters))
+                .withQueryParameters(authScriptUtils.convertParametersToModifiableObjects(context.request.parameters))
                 .withNodeState(context.getStateFor(this))
-                .withHeaders(convertHeadersToModifiableObjects(context.request.headers))
-                .withExistingSession(!StringUtils.isEmpty(context.request.ssoTokenId)
-                        ? getSessionProperties(sessionServiceProvider.get(), context.request.ssoTokenId)
-                        : null)
+                .withHeaders(authScriptUtils.convertHeadersToModifiableObjects(context.request.headers))
+                .withExistingSession(authScriptUtils.getSessionProperties(context.request.ssoTokenId))
                 .withSharedState(context.sharedState.getObject())
                 .withTransientState(context.transientState.getObject())
                 .build();
 
         try {
-            ScriptEvaluator.ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script,
+            ScriptResult<Object> scriptResult = scriptEvaluator.evaluateScript(script,
                     scriptBindings, realm);
             logger.debug("script {} \n binding {}", script, scriptResult.getBindings());
 
@@ -577,7 +603,7 @@ public class SocialProviderHandlerNode implements Node {
          * @return The script configuration
          */
         @Attribute(order = 100, validators = {RequiredValueValidator.class})
-        @ScriptContext(SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME)
+        @ScriptContext(legacyContext = SOCIAL_IDP_PROFILE_TRANSFORMATION_NAME)
         Script script();
 
         /**
@@ -599,6 +625,17 @@ public class SocialProviderHandlerNode implements Node {
         @Attribute(order = 400)
         default ClientType clientType() {
             return ClientType.BROWSER;
+        }
+
+        /**
+         * Indicates whether the tokens should be stored in transient state.
+         * Default to false.
+         *
+         * @return true if the tokens should stored.
+         */
+        @Attribute(order = 500)
+        default boolean storeTokens() {
+            return false;
         }
     }
 

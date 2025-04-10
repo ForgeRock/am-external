@@ -24,7 +24,7 @@
  *
  * $Id: SPAccountMapper.java,v 1.5 2008/08/19 19:11:16 veiming Exp $
  *
- * Portions Copyrighted 2015-2019 ForgeRock AS.
+ * Portions Copyrighted 2015-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.wsfederation.plugins;

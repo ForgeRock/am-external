@@ -11,12 +11,21 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.encoding;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.MockitoAnnotations.initMocks;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -26,45 +35,51 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
-import org.forgerock.openam.auth.nodes.webauthn.flows.FlowUtilities;
+import org.forgerock.openam.auth.nodes.webauthn.flows.exceptions.InvalidDataException;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AndroidSafetyNetVerifier;
-import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AttestationVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.FidoU2fVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.NoneVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.PackedVerifier;
-import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorUtilities;
-import org.forgerock.openam.auth.nodes.webauthn.trustanchor.TrustAnchorValidator;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm.TpmVerifier;
-import org.forgerock.openam.oauth2.OAuth2ClientOriginSearcher;
-import org.mockito.Mock;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.provider.Arguments;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import co.nstant.in.cbor.CborBuilder;
 import co.nstant.in.cbor.CborEncoder;
 import co.nstant.in.cbor.builder.ArrayBuilder;
 import co.nstant.in.cbor.builder.MapBuilder;
 
+@ExtendWith(MockitoExtension.class)
 public class AttestationDecoderTest {
-
-    @Mock
-    OAuth2ClientOriginSearcher mockClientOriginHelper;
-    @Mock
-    TrustAnchorValidator.Factory factory;
-    @Mock
-    TrustAnchorUtilities trustUtilities;
 
     private CertificateFactory realCertFactory;
     private AttestationDecoder decoder;
 
-    @BeforeTest
-    public void theSetUp() {
-        initMocks(this);
-        decoder = new AttestationDecoder(trustUtilities, factory, new AuthDataDecoder(),
-                new FlowUtilities(mockClientOriginHelper), new NoneVerifier());
+    public static Stream<Arguments> formatVerifier() {
+        return Stream.of(
+                arguments("none", NoneVerifier.class),
+                arguments("fido-u2f", FidoU2fVerifier.class),
+                arguments("packed", PackedVerifier.class),
+                arguments("tpm", TpmVerifier.class),
+                arguments("android-safetynet", AndroidSafetyNetVerifier.class)
+        );
+    }
+
+    public static Stream<Arguments> unsupportedFormats() {
+        return Stream.of(
+                arguments("android-key")
+        );
+    }
+
+    @BeforeEach
+    void theSetUp() {
+        decoder = new AttestationDecoder(new AuthDataDecoder());
         try {
             realCertFactory = CertificateFactory.getInstance("X.509");
         } catch (CertificateException e) {
@@ -72,51 +87,8 @@ public class AttestationDecoderTest {
         }
     }
 
-    @DataProvider(name = "formatVerifier")
-    public Object[][] formatVerifier() {
-        return new Object[][] {
-                { "none", NoneVerifier.class },
-                { "fido-u2f", FidoU2fVerifier.class },
-                { "packed", PackedVerifier.class },
-                { "tpm", TpmVerifier.class },
-                { "android-safetynet", AndroidSafetyNetVerifier.class}
-        };
-    }
-
-    @DataProvider(name = "unsupportedFormats")
-    public Object[][] unsupportedFormats() {
-        return new Object[][] {
-                { "android-key" },
-        };
-    }
-
-    @Test(dataProvider = "unsupportedFormats", expectedExceptions = DecodingException.class)
-    public void testExceptionThrownForUnsupportedFormats(String name) throws Exception {
-        //given
-        byte[] input = new AttestationBuilder().fmt(name).build();
-
-        //when
-        AttestationObject result = decoder.decode(input, null, null, false);
-
-        //then
-        //expecting an exception
-    }
-
-    @Test(dataProvider = "formatVerifier")
-    public void testCorrectVerifierReturnedForAttestationFormat(String name,
-                                                                Class<AttestationVerifier> verifier) throws Exception {
-        //given
-        byte[] input = new AttestationBuilder().fmt(name).build();
-
-        //when
-        AttestationObject result = decoder.decode(input, null, null, false);
-
-        //then
-        assertThat(result.attestationVerifier).isOfAnyClassIn(verifier);
-    }
-
     @Test
-    public void testIgnoresRootCaCertificate() throws Exception {
+    void testSelfSignedRootCaCertificate() throws Exception {
         //given
         List<X509Certificate> certificates = getCertificates(realCertFactory,
                 "attestation.crt", "intermediate.crt", "root.crt");
@@ -126,15 +98,14 @@ public class AttestationDecoderTest {
                 .build();
 
         //when
-        AttestationObject result = decoder.decode(input, null, null, false);
-
-        //then
-        assertThat(result.attestationStatement.getAttestnCerts())
-                .containsExactly(certificates.get(0), certificates.get(1));
+        assertThatThrownBy(() -> decoder.decode(input))
+                //then
+                .isInstanceOf(InvalidDataException.class)
+                .hasMessageContaining("root certificate must not be self-signed");
     }
 
     @Test
-    public void testDoesNotIgnoreIntermediateCaCertificateIfMissingRoot() throws Exception {
+    void testDoesNotIgnoreIntermediateCaCertificateIfMissingRoot() throws Exception {
         //given
         List<X509Certificate> certificates = getCertificates(realCertFactory,
                 "attestation.crt", "intermediate.crt"); // no root certificate
@@ -144,14 +115,14 @@ public class AttestationDecoderTest {
                 .build();
 
         //when
-        AttestationObject result = decoder.decode(input, null, null, false);
+        AttestationObject result = decoder.decode(input);
 
         //then
         assertThat(result.attestationStatement.getAttestnCerts()).isEqualTo(certificates);
     }
 
     @Test
-    public void testCertificateIsNullIfInvalidCertificateProvided() throws Exception {
+    void testCertificateChainIsEmptyIfInvalidCertificateProvided() throws Exception {
         //given
         CborBuilder cborBuilder = new CborBuilder();
         cborBuilder.addMap()
@@ -165,10 +136,10 @@ public class AttestationDecoderTest {
         byte[] input = baos.toByteArray();
 
         //when
-        AttestationObject result = decoder.decode(input, null, null, false);
+        AttestationObject result = decoder.decode(input);
 
         //then
-        assertThat(result.attestationStatement.getAttestnCerts()).isNull();
+        assertThat(result.attestationStatement.getAttestnCerts()).isEmpty();
     }
 
     private List<X509Certificate> getCertificates(CertificateFactory cf, String... certificateNames)

@@ -11,16 +11,25 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.saml2;
 
 import java.util.Map;
 import java.util.logging.Level;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
+import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.openam.jwt.JwtEncryptionOptions;
 import org.forgerock.openam.utils.StringUtils;
 import org.slf4j.Logger;
@@ -33,7 +42,6 @@ import com.sun.identity.saml2.common.SAML2Exception;
 import com.sun.identity.saml2.logging.LogUtil;
 import com.sun.identity.saml2.plugins.IDPAuthnContextInfo;
 import com.sun.identity.saml2.plugins.IDPAuthnContextMapper;
-import com.sun.identity.saml2.profile.IDPSSOUtil;
 import com.sun.identity.saml2.profile.ServerFaultException;
 
 /**
@@ -42,13 +50,15 @@ import com.sun.identity.saml2.profile.ServerFaultException;
 public abstract class SAMLBase {
 
     private static final Logger logger = LoggerFactory.getLogger(SAMLBase.class);
-    protected static final String INDEX = "index";
-    protected static final String ACS_URL = "acsURL";
-    protected static final String SP_ENTITY_ID = "spEntityID";
-    protected static final String BINDING = "binding";
-    protected static final String INVALID_SAML_REQUEST = "InvalidSAMLRequest";
-    protected static final String METADATA_ERROR = "metaDataError";
-    protected static final String SSO_OR_FEDERATION_ERROR = "UnableToDOSSOOrFederation";
+    public static final String REQ_ID = "ReqID";
+    public static final String INDEX = "index";
+    public static final String ACS_URL = "acsURL";
+    public static final String SP_ENTITY_ID = "spEntityID";
+    public static final String BINDING = "binding";
+    public static final String INVALID_SAML_REQUEST = "InvalidSAMLRequest";
+    public static final String METADATA_ERROR = "metaDataError";
+    public static final String SSO_OR_FEDERATION_ERROR = "UnableToDOSSOOrFederation";
+    public static final String SERVER_ERROR = "serverError";
 
     final JwtEncryptionOptions localStorageJwtEncryptionOptions;
     protected final HttpServletRequest request;
@@ -90,7 +100,10 @@ public abstract class SAMLBase {
         String classMethod = "SAMLBase.getIdpAuthnContextInfo: ";
         IDPAuthnContextMapper idpAuthnContextMapper = null;
         try {
-            idpAuthnContextMapper = IDPSSOUtil.getIDPAuthnContextMapper(data.getRealm(), data.getIdpEntityID());
+            IDPAuthnContextMapperFactory idpAuthnContextMapperFactory = InjectorHolder.getInstance(
+                    IDPAuthnContextMapperFactory.class);
+            idpAuthnContextMapper = idpAuthnContextMapperFactory.getAuthnContextMapper(data.getRealm(),
+                    data.getIdpEntityID(), data.getSpEntityID());
         } catch (SAML2Exception sme) {
             logger.error(classMethod, sme);
         }

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.treehook;
 
@@ -47,15 +55,15 @@ import org.forgerock.secrets.keys.KeyUsage;
 import org.forgerock.secrets.keys.SigningKey;
 import org.forgerock.secrets.keys.VerificationKey;
 import org.forgerock.util.promise.NeverThrowsException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class UpdatePersistentCookieTreeHookTest {
 
     private static final String DEFAULT_COOKIE_NAME = "session-jwt";
@@ -88,8 +96,8 @@ public class UpdatePersistentCookieTreeHookTest {
     @Mock
     private SecretReferenceCache secretsReferenceCache;
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         given(secretsReferenceCache.realm(realm)).willReturn(realmSecretsCache);
         treeHook = new UpdatePersistentCookieTreeHook(request, response, config, realm, persistentJwtStringSupplier,
                 persistentCookieResponseHandler, secretsReferenceCache);
@@ -108,7 +116,7 @@ public class UpdatePersistentCookieTreeHookTest {
     }
 
     @Test
-    public void testSetCookieOnResponseCalledWithNoKid() throws Exception {
+    void testSetCookieOnResponseCalledWithNoKid() throws Exception {
         // Given
         given(realmSecretsCache.active(NODE_DEFINED_SIGNING_PURPOSE))
                 .willReturn(SecretReference.constant(getTestSigningKey()));
@@ -132,7 +140,7 @@ public class UpdatePersistentCookieTreeHookTest {
     }
 
     @Test
-    public void testSetCookieOnResponseCalledWithKid() throws Exception {
+    void testSetCookieOnResponseCalledWithKid() throws Exception {
         // Given
 
         ValidSecretsReference<VerificationKey, NeverThrowsException> secretsReference =

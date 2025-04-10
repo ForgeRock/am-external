@@ -11,13 +11,25 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.PublicKey;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -28,6 +40,7 @@ import org.forgerock.json.jose.jwk.OkpJWK;
 import org.forgerock.json.jose.jwk.RsaJWK;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.oauth2.OAuth2ClientOriginSearcher;
+import org.forgerock.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FlowUtilities {
 
+    private static final Set<String> MOBILE_SCHEMES = new HashSet<>(List.of("android", "ios"));
     private final Logger logger = LoggerFactory.getLogger(AuthenticationFlow.class);
 
     private final OAuth2ClientOriginSearcher oAuth2ClientOriginSearcher;
@@ -60,35 +74,53 @@ public class FlowUtilities {
      */
     boolean isOriginValid(Realm realm, Set<String> amOriginStrs, String deviceOriginStr) {
 
+        if (amOriginStrs.contains(deviceOriginStr)) {
+            return true;
+        }
         return amOriginStrs.stream().anyMatch(amOriginStr -> {
             if (amOriginStr.equals(deviceOriginStr)) {
                 //exact match
                 return true;
             } else {
-                try {
-                    URL deviceOrigin = new URL(deviceOriginStr);
-                    URL amOrigin = new URL(amOriginStr);
-
-                    return deviceOrigin.getProtocol().equals(amOrigin.getProtocol())
-                            && deviceOrigin.getHost().equals(amOrigin.getHost())
-                            && portsMatch(deviceOrigin, amOrigin);
-
-                } catch (MalformedURLException e) {
-                    logger.error("Invalid error for origin verification, origin {}, validated against {}",
-                            deviceOriginStr, amOriginStrs, e);
-                    return false;
-                }
+                return isOriginFromWebMatch(amOriginStrs, deviceOriginStr, amOriginStr);
             }
         }) || isOriginFromOAuthClient(realm, deviceOriginStr);
     }
 
+    private boolean isOriginFromWebMatch(Set<String> amOriginStrs, String deviceOriginStr, String amOriginStr) {
+        try {
+            URI deviceOriginUri = new URI(deviceOriginStr);
+            URI amOriginUri = new URI(amOriginStr);
+            String deviceScheme = deviceOriginUri.getScheme();
+            String amOriginScheme = amOriginUri.getScheme();
+            if ((!Strings.isNullOrEmpty(deviceScheme) && !deviceScheme.equals(amOriginScheme))
+                    || (MOBILE_SCHEMES.contains(deviceScheme))) {
+                return false;
+            }
+
+            URL deviceOrigin = deviceOriginUri.toURL();
+            URL amOrigin = amOriginUri.toURL();
+            return deviceOrigin.getProtocol().equals(amOrigin.getProtocol())
+                    && deviceOrigin.getHost().equals(amOrigin.getHost())
+                    && portsMatch(deviceOrigin, amOrigin);
+
+        } catch (URISyntaxException | MalformedURLException e) {
+            logger.warn("Invalid error for origin verification, origin {}, validated against {}",
+                    deviceOriginStr, amOriginStrs);
+            return false;
+        }
+    }
+
     private boolean isOriginFromOAuthClient(Realm realm, String deviceOriginStr) {
         try {
-            URL origin = new URL(deviceOriginStr);
+            URI deviceOriginUri = new URI(deviceOriginStr);
+            if (MOBILE_SCHEMES.contains(deviceOriginUri.getScheme())) {
+                return false;
+            }
+            URL origin = deviceOriginUri.toURL();
             return oAuth2ClientOriginSearcher.anyOAuth2ClientsMatchOrigin(realm, origin);
-        } catch (MalformedURLException e) {
-            logger.error("Invalid error for origin verification from OAuth Client, origin {}",
-                    deviceOriginStr, e);
+        } catch (URISyntaxException | MalformedURLException e) {
+            logger.warn("Invalid error for origin verification from OAuth Client, origin {}", deviceOriginStr);
             return false;
         }
     }

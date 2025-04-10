@@ -12,7 +12,7 @@
  * information: "Portions copyright [year] [name of copyright owner]".
  *
  * Copyrighted 2015 Intellectual Reserve, Inc (IRI)
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.radius.server;
 
@@ -94,12 +94,14 @@ public class RadiusRequestListener implements Runnable {
     /**
      * Issue events so that we can do things like audit events and JMXMonitoring etc.
      */
-    private EventBus eventBus;
+    private final EventBus eventBus;
 
     /**
      * A factory that a <code>RadiusRequestHandler</code> may use to create <code>AccessRequestHandler</code> instances.
      */
-    private AccessRequestHandlerFactory accessRequestHandlerFactory;
+    private final AccessRequestHandlerFactory accessRequestHandlerFactory;
+
+    private final MessageAuthenticatorCalculator messageAuthenticatorCalculator;
 
     /**
      * Construct listener, opens the DatagramChannel to receive requests, sets up the thread pool, and launches the
@@ -110,18 +112,21 @@ public class RadiusRequestListener implements Runnable {
      * @param eventBus may used to notify interested parties when events occur during the processing of radius events.
      * @param accessRequestHandlerFactory used to obtain access request handler classes for specific clients, as defined
      *            in the configuration.
+     * @param messageAuthenticatorCalculator used to calculate the Message-Authenticator attribute value.
      * @throws RadiusLifecycleException when the config is insufficient or invalid.
      */
     public RadiusRequestListener(final RadiusServiceConfig config,
             final ExecutorService executorService,
             final EventBus eventBus,
-            final AccessRequestHandlerFactory accessRequestHandlerFactory)
+            final AccessRequestHandlerFactory accessRequestHandlerFactory,
+            MessageAuthenticatorCalculator messageAuthenticatorCalculator)
             throws RadiusLifecycleException {
         LOG.warn("RADIUS service enabled. Starting Listener.");
         this.config = config;
         this.executorService = executorService;
         this.eventBus = eventBus;
         this.accessRequestHandlerFactory = accessRequestHandlerFactory;
+        this.messageAuthenticatorCalculator = messageAuthenticatorCalculator;
 
         // lets get our inbound channel opened and bound
         try {
@@ -306,10 +311,11 @@ public class RadiusRequestListener implements Runnable {
 
                 // prepare buffer for draining and queue up a handler
                 bfr.flip();
-                final RadiusRequestContext reqCtx = new RadiusRequestContext(clientConfig, channel, iAddr);
+                final RadiusRequestContext reqCtx = new RadiusRequestContext(clientConfig, channel, iAddr,
+                        messageAuthenticatorCalculator);
 
                 final RadiusRequestHandler requestHandler = new RadiusRequestHandler(accessRequestHandlerFactory,
-                        reqCtx, bfr, eventBus);
+                        reqCtx, bfr, eventBus, messageAuthenticatorCalculator);
 
                 executorService.execute(requestHandler);
             } catch (final Exception t) {

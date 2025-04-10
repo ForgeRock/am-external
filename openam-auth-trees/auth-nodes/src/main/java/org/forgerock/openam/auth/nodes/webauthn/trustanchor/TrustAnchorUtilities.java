@@ -11,25 +11,28 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.trustanchor;
 
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.inject.Singleton;
 
 import org.forgerock.secrets.keys.CertificateVerificationKey;
-import org.forgerock.util.promise.NeverThrowsException;
-import org.forgerock.util.promise.Promise;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Utility functions for manipulation of trust anchors and secrets.
@@ -37,31 +40,22 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class TrustAnchorUtilities {
 
-    private final Logger logger = LoggerFactory.getLogger(TrustAnchorUtilities.class);
-
     /**
      * Converts a promise of a stream of secrets into a set of trust anchors.
      *
-     * @param secrets incoming promise.
-     * @return set of trust anchors contained within the secrets, or null.
+     * @param secrets a list of secrets to convert into trust anchors.
+     * @return set of trust anchors contained within the secrets, or null if no secrets were provided.
      */
-    public Set<TrustAnchor> trustAnchorsFromSecrets(Promise<Stream<CertificateVerificationKey>,
-            NeverThrowsException> secrets) {
+    public Set<TrustAnchor> trustAnchorsFromSecrets(List<CertificateVerificationKey> secrets) {
         Set<TrustAnchor> anchors = null;
-
         if (secrets != null) {
-            try {
-                anchors = secrets.get().map(secret -> secret.getCertificate(X509Certificate.class))
-                        .filter(Optional::isPresent)
-                        .distinct()
-                        .map(cert -> new TrustAnchor(cert.get(), null))
-                        .collect(Collectors.toUnmodifiableSet());
-            } catch (ExecutionException | InterruptedException e) {
-                logger.error("Unable to read secrets from secret Ids, trust chain verification will not function.", e);
-            }
+            anchors = secrets.stream()
+                    .map(secret -> secret.getCertificate(X509Certificate.class))
+                    .filter(Optional::isPresent)
+                    .distinct()
+                    .map(cert -> new TrustAnchor(cert.get(), null))
+                    .collect(Collectors.toUnmodifiableSet());
         }
-
         return anchors;
     }
-
 }

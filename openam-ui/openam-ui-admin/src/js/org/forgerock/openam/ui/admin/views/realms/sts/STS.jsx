@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 import { Tab, Tabs } from "react-bootstrap";
@@ -19,7 +27,6 @@ import { t } from "i18next";
 import React from "react";
 
 import ListRestSTSContainer from "./rest/list/ListRestSTSContainer";
-import ListSoapSTSContainer from "./soap/list/ListSoapSTSContainer";
 import PageHeader from "components/PageHeader";
 
 const STS = () => {
@@ -29,9 +36,6 @@ const STS = () => {
             <Tabs animation={ false } defaultActiveKey={ 1 } id="sts">
                 <Tab eventKey={ 1 } title={ t("console.sts.tabs.0") }>
                     <ListRestSTSContainer />
-                </Tab>
-                <Tab eventKey={ 2 } title={ t("console.sts.tabs.1") }>
-                    <ListSoapSTSContainer />
                 </Tab>
             </Tabs>
         </div>

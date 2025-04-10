@@ -1,19 +1,19 @@
 <%--
    DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
-  
+
    Copyright (c) 2007 Sun Microsystems Inc. All Rights Reserved
-  
+
    The contents of this file are subject to the terms
    of the Common Development and Distribution License
    (the License). You may not use this file except in
    compliance with the License.
-                                                                                                                                  
+
    You can obtain a copy of the License at
    https://opensso.dev.java.net/public/CDDLv1.0.html or
    opensso/legal/CDDLv1.0.txt
    See the License for the specific language governing
    permission and limitations under the License.
-                                                                                                                                  
+
    When distributing Covered Code, include this CDDL
    Header Notice in each file and include the License file
    at opensso/legal/CDDLv1.0.txt.
@@ -26,7 +26,7 @@
 
 --%>
 <%--
-   Portions Copyrighted 2012-2019 ForgeRock AS.
+   Portions Copyrighted 2012-2025 Ping Identity Corporation
    Portions Copyrighted 2012 Open Source Solution Technology Corporation
 --%>
 
@@ -53,7 +53,7 @@ org.owasp.esapi.ESAPI"
     String errorMsg = null;
     boolean configured = false;
     String debugDir = null;
-    String debugLevel = null; 
+    String debugLevel = null;
     String cookieType = null;
     String cookieDomain = null;
     String secureCookie = null;
@@ -80,10 +80,10 @@ org.owasp.esapi.ESAPI"
         String submit = request.getParameter("submit");
         String servletPath = request.getServletPath();
 
-        if (submit != null) { 
-            if ((debugLevel != null) && !debugLevel.equals("") && 
-                (cookieType != null) && !cookieType.equals("") && 
-                (secureCookie != null) && !secureCookie.equals("") && 
+        if (submit != null) {
+            if ((debugLevel != null) && !debugLevel.equals("") &&
+                (cookieType != null) && !cookieType.equals("") &&
+                (secureCookie != null) && !secureCookie.equals("") &&
                 (debugDir != null) && !debugDir.equals("") &&
                 (encodeCookie != null) && !encodeCookie.equals("") &&
                 (validRedirects != null) && !validRedirects.equals("") &&
@@ -116,7 +116,7 @@ org.owasp.esapi.ESAPI"
                 }
                 configured = true;
             } else {
-                errorMsg = "Missing one or more required fields."; 
+                errorMsg = "Missing one or more required fields.";
             }
         }
     }
@@ -125,20 +125,20 @@ org.owasp.esapi.ESAPI"
 </head>
 
 <body class="DefBdy">
-                                                                                
+
 <div class="MstDiv"><table width="100%" border="0" cellpadding="0" cellspacing="0" class="MstTblTop" title="">
 <tbody><tr>
 <td nowrap="nowrap">&nbsp;</td>
 <td nowrap="nowrap">&nbsp;</td>
 </tr></tbody></table>
-                                                                                
+
 <table width="100%" border="0" cellpadding="0" cellspacing="0" class="MstTblBot" title="">
 <tbody><tr>
 <td class="MstTdTtl" width="99%">
 <div class="MstDivTtl"><img name="ProdName" src="console/images/PrimaryProductName.png" alt="" /></div></td><td class="MstTdLogo" width="1%"><img name="RMRealm.mhCommon.BrandLogo" src="com_sun_web_ui/images/other/javalogo.gif" alt="Java(TM) Logo" border="0" height="55" width="31" /></td></tr></tbody></table>
 <table class="MstTblEnd" border="0" cellpadding="0" cellspacing="0" width="100%"><tbody><tr><td><img name="RMRealm.mhCommon.EndorserLogo" src="com_sun_web_ui/images/masthead/masthead-sunname.gif" alt="Sun(TM) Microsystems, Inc." align="right" border="0" height="10" width="108" /></td></tr></tbody></table></div><div class="SkpMedGry1"><a name="SkipAnchor2089" id="SkipAnchor2089"></a></div>
 <div class="SkpMedGry1"><a href="#SkipAnchor4928"><img src="com_sun_web_ui/images/other/dot.gif" alt="Jump Over Tab Navigation Area. Current Selection is: Access Control" border="0" height="1" width="1" /></a></div>
-                                                                                
+
 <table border="0" cellpadding="10" cellspacing="0" width="100%">
 <tr><td>
 
@@ -149,10 +149,10 @@ org.owasp.esapi.ESAPI"
 
 <h3>Configuring IDP Discovery Service</h3>
 
-<form action="Configurator.jsp" method="GET" 
+<form action="Configurator.jsp" method="GET"
     name="idpdiscoveryconfigurator">
     Please provide the IDP Discovery service information
-    <p>&nbsp;</p>    
+    <p>&nbsp;</p>
 
     <table border=0 cellpadding=5 cellspacing=0>
 

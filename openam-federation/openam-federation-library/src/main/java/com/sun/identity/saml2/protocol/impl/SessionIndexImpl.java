@@ -24,7 +24,7 @@
  *
  * $Id: SessionIndexImpl.java,v 1.2 2008/06/25 05:48:00 qcheng Exp $
  *
- * Portions Copyrighted 2021-2023 ForgeRock AS.
+ * Portions Copyrighted 2021-2025 Ping Identity Corporation.
  */
 
 
@@ -35,7 +35,6 @@ import static com.sun.identity.saml2.common.SAML2Constants.PROTOCOL_PREFIX;
 import static com.sun.identity.saml2.common.SAML2Constants.SESSION_INDEX;
 import static org.forgerock.openam.utils.StringUtils.isNotBlank;
 
-import org.forgerock.openam.annotations.SupportedAll;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
 import org.w3c.dom.Element;
@@ -48,7 +47,6 @@ import com.sun.identity.shared.xml.XMLUtils;
  * This class defines methods for adding <code>SessionIndex</code> element.
  */
 
-@SupportedAll(scriptingApi = true, javaApi = false)
 public class SessionIndexImpl implements SessionIndex {
     
     private String sessionValue = null;

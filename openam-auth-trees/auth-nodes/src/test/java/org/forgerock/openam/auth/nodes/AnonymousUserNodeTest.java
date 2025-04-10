@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2023 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -24,7 +32,6 @@ import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.mockito.Mockito.when;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.util.Optional;
 
@@ -34,16 +41,17 @@ import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.sun.identity.idm.IdType;
 
 /**
  * Test the anonymous user node.
  */
+@ExtendWith(MockitoExtension.class)
 public class AnonymousUserNodeTest {
 
     @Mock
@@ -51,13 +59,8 @@ public class AnonymousUserNodeTest {
     @Mock
     private LegacyIdentityService identityService;
 
-    @BeforeMethod
-    public void before() {
-        openMocks(this);
-    }
-
     @Test
-    public void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
+    void testProcessAddsIdentifiedIdentityOfExistingUser() throws Exception {
         //GIVEN
         when(config.anonymousUserName()).thenReturn("anonymous");
         TreeContext context = new TreeContext(json(object(1)),
@@ -73,8 +76,9 @@ public class AnonymousUserNodeTest {
         assertThat(idid.getUsername()).isEqualTo("anonymous");
         assertThat(idid.getIdentityType()).isEqualTo(IdType.USER);
     }
+
     @Test
-    public void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
+    void testProcessDoesNotAddIdentifiedIdentityOfNonExistentUser() throws Exception {
         //GIVEN
         when(config.anonymousUserName()).thenReturn(null);
         TreeContext context = new TreeContext(json(object(1)),
@@ -88,7 +92,7 @@ public class AnonymousUserNodeTest {
     }
 
     @Test
-    public void processSetTheUsernameInSharedStateWhenNoError() throws Exception {
+    void processSetTheUsernameInSharedStateWhenNoError() throws Exception {
         //GIVEN
         when(config.anonymousUserName()).thenReturn("anonymous");
         TreeContext context = new TreeContext(json(object(1)),
@@ -99,12 +103,12 @@ public class AnonymousUserNodeTest {
         Action process = node.process(context);
 
         //THEN
-        Assert.assertTrue(process.sharedState.isDefined(USERNAME));
-        Assert.assertEquals(process.sharedState.get(USERNAME).asString(), config.anonymousUserName());
+        assertThat(process.sharedState.isDefined(USERNAME)).isTrue();
+        assertThat(process.sharedState.get(USERNAME).asString()).isEqualTo(config.anonymousUserName());
     }
 
     @Test
-    public void processReplacesTheUsernameInSharedStateIfOneAlreadyExists() throws Exception {
+    void processReplacesTheUsernameInSharedStateIfOneAlreadyExists() throws Exception {
         //GIVEN
         when(config.anonymousUserName()).thenReturn("anonymous");
         TreeContext context = new TreeContext(json(object(field(USERNAME, "this_user_will_be_replaced"))),
@@ -115,12 +119,12 @@ public class AnonymousUserNodeTest {
         Action process = node.process(context);
 
         //THEN
-        Assert.assertTrue(process.sharedState.isDefined(USERNAME));
-        Assert.assertEquals(process.sharedState.get(USERNAME).asString(), config.anonymousUserName());
+        assertThat(process.sharedState.isDefined(USERNAME)).isTrue();
+        assertThat(process.sharedState.get(USERNAME).asString()).isEqualTo(config.anonymousUserName());
     }
 
-    @Test(expectedExceptions = NodeProcessException.class)
-    public void processThrowAnExceptionIfAnonymousUserIsNotSetInTheConfiguration() throws Exception {
+    @Test
+    void processThrowAnExceptionIfAnonymousUserIsNotSetInTheConfiguration() throws Exception {
         //GIVEN
         when(config.anonymousUserName()).thenReturn("");
         TreeContext context = new TreeContext(json(object(1)),
@@ -128,10 +132,10 @@ public class AnonymousUserNodeTest {
         AnonymousUserNode node = new AnonymousUserNode(identityService, config);
 
         //WHEN
-        node.process(context);
-
-        //THEN
-        //throw an exception
+        assertThatThrownBy(() -> node.process(context))
+                //THEN
+                .isInstanceOf(NodeProcessException.class)
+                .hasMessage("Anonymous user name could not be found in the configuration");
     }
 
 

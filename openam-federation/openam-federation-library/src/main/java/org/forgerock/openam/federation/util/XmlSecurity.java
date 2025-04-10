@@ -11,15 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.util;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-
 import org.apache.xml.security.Init;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,23 +59,22 @@ public final class XmlSecurity {
             if (initialized) {
                 return;
             }
-            String lineBreakValue = AccessController.doPrivileged((PrivilegedAction<String>) () -> {
-                String prop = System.getProperty(IGNORE_LINE_BREAKS);
-                if (prop == null) {
-                    System.setProperty(IGNORE_LINE_BREAKS, IGNORE_LINE_BREAKS_DEFVAL);
-                    return IGNORE_LINE_BREAKS_DEFVAL;
-                }
-                return prop;
-            });
+            String lineBreakValue;
+            String prop = System.getProperty(IGNORE_LINE_BREAKS);
+            if (prop == null) {
+                System.setProperty(IGNORE_LINE_BREAKS, IGNORE_LINE_BREAKS_DEFVAL);
+                lineBreakValue = IGNORE_LINE_BREAKS_DEFVAL;
+            } else {
+                lineBreakValue = prop;
+            }
             LOGGER.info("Property {} set to '{}'", IGNORE_LINE_BREAKS, lineBreakValue);
-            String xmlSecCfg = AccessController.doPrivileged((PrivilegedAction<String>) () -> {
-                String prop = System.getProperty(XML_SECURITY_RESOURCE_CONFIG);
-                if (prop == null) {
-                    System.setProperty(XML_SECURITY_RESOURCE_CONFIG, XML_SECURITY_CONFIG_XML);
-                    return XML_SECURITY_CONFIG_XML;
-                }
-                return prop;
-            });
+            String xmlSecCfg;
+            prop = System.getProperty(XML_SECURITY_RESOURCE_CONFIG);
+            if (prop == null) {
+                System.setProperty(XML_SECURITY_RESOURCE_CONFIG, XML_SECURITY_CONFIG_XML);
+                xmlSecCfg = XML_SECURITY_CONFIG_XML;
+            }
+            xmlSecCfg = prop;
             LOGGER.info("Property {} set to '{}'", XML_SECURITY_RESOURCE_CONFIG, xmlSecCfg);
             Init.init();
             initialized = Init.isInitialized();

@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -22,14 +30,14 @@ import static org.forgerock.openam.objectenricher.EnricherContext.ROOT;
 import java.util.List;
 
 import org.forgerock.openam.federation.rest.schema.shared.ApplicationSecurityConfigItem;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class ApplicationSecurityConfigItemMapperTest {
 
     private ApplicationSecurityConfigItemMapper mapper = new ApplicationSecurityConfigItemMapper();
 
     @Test
-    public void shouldMapUrl() {
+    void shouldMapUrl() {
         List<ApplicationSecurityConfigItem> mapped = mapper.map(singletonList("url=badger"), ROOT);
 
         assertThat(mapped).isNotNull().hasSize(1);
@@ -38,7 +46,7 @@ public class ApplicationSecurityConfigItemMapperTest {
     }
 
     @Test
-    public void shouldMapType() {
+    void shouldMapType() {
         List<ApplicationSecurityConfigItem> mapped = mapper.map(singletonList("type=weasel"), ROOT);
 
         assertThat(mapped).isNotNull().hasSize(1);
@@ -47,7 +55,7 @@ public class ApplicationSecurityConfigItemMapperTest {
     }
 
     @Test
-    public void shouldMapPubKeyAlias() {
+    void shouldMapPubKeyAlias() {
         List<ApplicationSecurityConfigItem> mapped = mapper.map(singletonList("pubkeyalias=otter"), ROOT);
 
         assertThat(mapped).isNotNull().hasSize(1);
@@ -56,7 +64,7 @@ public class ApplicationSecurityConfigItemMapperTest {
     }
 
     @Test
-    public void shouldMapEncryptionAlgorithm() {
+    void shouldMapEncryptionAlgorithm() {
         List<ApplicationSecurityConfigItem> mapped = mapper.map(singletonList("encryptionalgorithm=mink"), ROOT);
 
         assertThat(mapped).isNotNull().hasSize(1);
@@ -65,7 +73,7 @@ public class ApplicationSecurityConfigItemMapperTest {
     }
 
     @Test
-    public void shouldMapEncryptionKeyStrength() {
+    void shouldMapEncryptionKeyStrength() {
         List<ApplicationSecurityConfigItem> mapped = mapper.map(singletonList("encryptionkeystrength=ferret"), ROOT);
 
         assertThat(mapped).isNotNull().hasSize(1);
@@ -74,7 +82,7 @@ public class ApplicationSecurityConfigItemMapperTest {
     }
 
     @Test
-    public void shouldMapSecret() {
+    void shouldMapSecret() {
         List<ApplicationSecurityConfigItem> mapped = mapper.map(singletonList("secret=marten"), ROOT);
 
         assertThat(mapped).isNotNull().hasSize(1);
@@ -83,7 +91,7 @@ public class ApplicationSecurityConfigItemMapperTest {
     }
 
     @Test
-    public void shouldMapComplexItems() {
+    void shouldMapComplexItems() {
         List<ApplicationSecurityConfigItem> mapped = mapper.map(singletonList("url=badger|type=weasel|"
                 + "pubkeyalias=otter|encryptionalgorithm=mink|encryptionkeystrength=ferret|secret=marten"), ROOT);
 

@@ -11,39 +11,47 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package com.sun.identity.saml2.plugins;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.sun.identity.saml2.common.SAML2Exception;
 
 public class ValidationHelperTest {
     private ValidationHelper validationHelper;
 
-    @BeforeMethod
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         validationHelper = new ValidationHelper();
     }
 
     @Test
-    public void shouldThrowSaml2ExceptionWhenRealmIsNull() {
+    void shouldThrowSaml2ExceptionWhenRealmIsNull() {
         assertThatExceptionOfType(SAML2Exception.class).isThrownBy(() ->
                 validationHelper.validateRealm(null)).withMessage("Null realm.");
     }
 
     @Test
-    public void shouldThrowSaml2ExceptionWhenSessionIsNull() {
+    void shouldThrowSaml2ExceptionWhenSessionIsNull() {
         assertThatExceptionOfType(SAML2Exception.class).isThrownBy(() ->
                 validationHelper.validateSession(null)).withMessage("Null single signon token");
     }
 
     @Test
-    public void shouldThrowSaml2ExceptionWhenHostedEntityIsNull() {
+    void shouldThrowSaml2ExceptionWhenHostedEntityIsNull() {
         assertThatExceptionOfType(SAML2Exception.class).isThrownBy(() ->
                 validationHelper.validateHostedEntity(null)).withMessage("Null host entityid.");
     }}

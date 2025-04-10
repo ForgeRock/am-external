@@ -11,17 +11,17 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+ * Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
  */
 package org.forgerock.openam.example.apidescriptor;
 
 import org.forgerock.openam.test.apidescriptor.ApiAnnotationAssert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Test;
 
 public class ExampleProviderTest {
 
     @Test
-    public void shouldFailIfAnnotationsAreNotValid() {
+    void shouldFailIfAnnotationsAreNotValid() {
         ApiAnnotationAssert.assertThat(ExampleProvider.class).hasValidAnnotations();
     }
 }

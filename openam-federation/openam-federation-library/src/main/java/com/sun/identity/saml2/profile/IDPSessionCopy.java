@@ -24,7 +24,7 @@
  *
  * $Id: IDPSessionCopy.java,v 1.3 2009/05/06 19:48:34 madan_ranganath Exp $
  *
- * Portions copyright 2013-2019 ForgeRock AS.
+ * Portions copyright 2013-2025 Ping Identity Corporation.
  */
 package com.sun.identity.saml2.profile;
 

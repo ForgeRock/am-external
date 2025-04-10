@@ -11,7 +11,15 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.jwt;
 
@@ -59,14 +67,17 @@ import org.forgerock.secrets.keys.VerificationKey;
 import org.forgerock.util.promise.NeverThrowsException;
 import org.forgerock.util.promise.Promise;
 import org.forgerock.util.promise.Promises;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class PersistentJwtProviderTest extends GuiceTestCase {
 
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.EPOCH, ZoneId.systemDefault());
@@ -102,15 +113,15 @@ public class PersistentJwtProviderTest extends GuiceTestCase {
     @Mock
     private DataDecryptionKey dataDecryptionKey;
 
-    @Before
-    public void before() {
+    @BeforeEach
+    void before() {
         given(secretReferenceCache.realm(realm)).willReturn(realmCache);
         given(jwt.getJweHeader()).willReturn(jweHeader);
         given(signingManager.newVerificationHandler(verificationKeysReference)).willReturn(mock(Promise.class));
     }
 
     @Test
-    public void testGetValidDecryptedJwtNullJwtString() {
+    void testGetValidDecryptedJwtNullJwtString() {
         assertThatThrownBy(() -> persistentJwtProvider.getValidDecryptedJwt(null, null,
                 null))
                 .isInstanceOfSatisfying(InvalidPersistentJwtException.class,
@@ -118,7 +129,7 @@ public class PersistentJwtProviderTest extends GuiceTestCase {
     }
 
     @Test
-    public void testGetValidDecryptedJwtMissingOrg() throws Exception {
+    void testGetValidDecryptedJwtMissingOrg() throws Exception {
         given(realmLookup.lookup("missing")).willThrow(RealmLookupException.class);
         assertThatThrownBy(() -> persistentJwtProvider.getValidDecryptedJwt("hello", "missing",
                 verificationKeysReference))
@@ -127,7 +138,7 @@ public class PersistentJwtProviderTest extends GuiceTestCase {
     }
 
     @Test
-    public void testGetValidDecryptedJwtBadJwtError() throws Exception {
+    void testGetValidDecryptedJwtBadJwtError() throws Exception {
         given(realmLookup.lookup(null)).willReturn(realm);
         given(jwtReconstruction.reconstructJwt("hello", EncryptedThenSignedJwt.class))
                 .willThrow(InvalidJwtException.class);
@@ -138,7 +149,7 @@ public class PersistentJwtProviderTest extends GuiceTestCase {
     }
 
     @Test
-    public void testGetValidDecryptedJwtNullJwtError() throws Exception {
+    void testGetValidDecryptedJwtNullJwtError() throws Exception {
         given(realmLookup.lookup(null)).willReturn(realm);
         given(jwtReconstruction.reconstructJwt("hello", EncryptedThenSignedJwt.class))
                 .willReturn(null);
@@ -149,14 +160,14 @@ public class PersistentJwtProviderTest extends GuiceTestCase {
     }
 
     @Test
-    public void testGetValidDecryptedJwtNullHmacKeyError() {
+    void testGetValidDecryptedJwtNullHmacKeyError() {
         assertThatThrownBy(() -> persistentJwtProvider
                 .getValidDecryptedJwt("hello", null, null))
                 .isInstanceOf(NullPointerException.class);
     }
 
     @Test
-    public void testGetValidDecryptedJwtInvalidVerifyError() throws Exception {
+    void testGetValidDecryptedJwtInvalidVerifyError() throws Exception {
         given(realmLookup.lookup(null)).willReturn(realm);
         given(jwtReconstruction.reconstructJwt("hello", EncryptedThenSignedJwt.class))
                 .willReturn(jwt);
@@ -168,7 +179,7 @@ public class PersistentJwtProviderTest extends GuiceTestCase {
     }
 
     @Test
-    public void testGetValidDecryptedJwtDecryptionFileNotFoundError() throws Exception {
+    void testGetValidDecryptedJwtDecryptionFileNotFoundError() throws Exception {
         given(realmLookup.lookup(null)).willReturn(realm);
         given(jwtReconstruction.reconstructJwt("hello", EncryptedThenSignedJwt.class))
                 .willReturn(jwt);
@@ -188,7 +199,7 @@ public class PersistentJwtProviderTest extends GuiceTestCase {
     }
 
     @Test
-    public void testGetValidDecryptedJwtDeprecatedDecryptionReturnsJwt() throws Exception {
+    void testGetValidDecryptedJwtDeprecatedDecryptionReturnsJwt() throws Exception {
         given(realmLookup.lookup(null)).willReturn(realm);
         given(jwtReconstruction.reconstructJwt("hello", EncryptedThenSignedJwt.class))
                 .willReturn(jwt);
@@ -212,7 +223,7 @@ public class PersistentJwtProviderTest extends GuiceTestCase {
     }
 
     @Test
-    public void testGetValidDecryptedJwtOutsideIdleTimeError() throws Exception {
+    void testGetValidDecryptedJwtOutsideIdleTimeError() throws Exception {
         given(realmLookup.lookup(null)).willReturn(realm);
         given(jwtReconstruction.reconstructJwt("hello", EncryptedThenSignedJwt.class))
                 .willReturn(jwt);
@@ -239,7 +250,7 @@ public class PersistentJwtProviderTest extends GuiceTestCase {
     }
 
     @Test
-    public void testGetValidDecryptedJwtOutsideExpiryTimeError() throws Exception {
+    void testGetValidDecryptedJwtOutsideExpiryTimeError() throws Exception {
         given(realmLookup.lookup(null)).willReturn(realm);
         given(jwtReconstruction.reconstructJwt("hello", EncryptedThenSignedJwt.class))
                 .willReturn(jwt);
@@ -266,7 +277,7 @@ public class PersistentJwtProviderTest extends GuiceTestCase {
     }
 
     @Test
-    public void testGetValidDecryptedJwtReturnsDecryptedJwt() throws Exception {
+    void testGetValidDecryptedJwtReturnsDecryptedJwt() throws Exception {
         given(realmLookup.lookup(null)).willReturn(realm);
         given(jwtReconstruction.reconstructJwt("hello", EncryptedThenSignedJwt.class))
                 .willReturn(jwt);

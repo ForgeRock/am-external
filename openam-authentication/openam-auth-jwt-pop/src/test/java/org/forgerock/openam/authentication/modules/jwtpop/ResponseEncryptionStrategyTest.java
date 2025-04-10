@@ -11,17 +11,25 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2021 ForgeRock AS.
+ * Copyright 2025 ForgeRock AS.
+ */
+/*
+ * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
+ *
+ * This code is to be used exclusively in connection with Ping Identity
+ * Corporation software or services. Ping Identity Corporation only offers
+ * such software or services to legal entities who have entered into a
+ * binding license agreement with Ping Identity Corporation.
  */
 
 package org.forgerock.openam.authentication.modules.jwtpop;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.forgerock.json.jose.jwk.KeyUseConstants.ENC;
 import static org.forgerock.json.jose.jwk.KeyUseConstants.SIG;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.MockitoAnnotations.openMocks;
 
 import java.security.KeyPairGenerator;
 import java.security.interfaces.ECPublicKey;
@@ -33,38 +41,34 @@ import org.forgerock.json.jose.jwk.EcJWK;
 import org.forgerock.json.jose.jwk.JWK;
 import org.forgerock.json.jose.jwk.JWKSet;
 import org.forgerock.json.jose.jws.SupportedEllipticCurve;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class ResponseEncryptionStrategyTest {
 
+    private static ECPublicKey publicKey;
     @Mock
     private Provider<JWKSet> mockJwkSetProvider;
 
-    private ECPublicKey publicKey;
-
-    @BeforeClass
-    public void generatePublicKey() throws Exception {
+    @BeforeAll
+    static void generatePublicKey() throws Exception {
         KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance("EC");
         keyGenerator.initialize(SupportedEllipticCurve.P256.getParameters());
-        this.publicKey = (ECPublicKey) keyGenerator.generateKeyPair().getPublic();
-    }
-
-    @BeforeMethod
-    public void setup() {
-        openMocks(this);
+        publicKey = (ECPublicKey) keyGenerator.generateKeyPair().getPublic();
     }
 
     @Test
-    public void shouldUseEphemeralKeyPairForEcdhe() {
+    void shouldUseEphemeralKeyPairForEcdhe() {
         assertThat(ResponseEncryptionStrategy.ECDHE.getEncryptionKeyPair(mockJwkSetProvider)).isInstanceOf(EcJWK.class);
         verifyNoInteractions(mockJwkSetProvider);
     }
 
     @Test
-    public void shouldUseEncryptionKeyWhenPresent() {
+    void shouldUseEncryptionKeyWhenPresent() {
         // Given
         final JWK expectedJwk = new EcJWK(publicKey, ENC, null);
         final JWK differentJwk = new EcJWK(publicKey, SIG, null);
@@ -78,8 +82,8 @@ public class ResponseEncryptionStrategyTest {
         assertThat(JwkUtils.essentialKeys(result)).isEqualTo(JwkUtils.essentialKeys(expectedJwk));
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
-    public void shouldErrorIfMoreThanOneEncryptionKeyRegistered() {
+    @Test
+    void shouldErrorIfMoreThanOneEncryptionKeyRegistered() {
         // Given
         final JWK expectedJwk = new EcJWK(publicKey, ENC, null);
         final JWK differentJwk = new EcJWK(publicKey, ENC, null);
@@ -87,15 +91,15 @@ public class ResponseEncryptionStrategyTest {
         given(mockJwkSetProvider.get()).willReturn(jwkSet);
 
         // When
-        ResponseEncryptionStrategy.PSK.getEncryptionKeyPair(mockJwkSetProvider);
-
-        // Then
-        // exception expected
+        assertThatThrownBy(() -> ResponseEncryptionStrategy.PSK.getEncryptionKeyPair(mockJwkSetProvider))
+                // Then
+                .isInstanceOf(IllegalStateException.class);
     }
 
-    @Test(expectedExceptions = IllegalStateException.class)
-    public void shouldErrorIfNoEncyrpionKeyRegistered() {
+    @Test
+    void shouldErrorIfNoEncyrpionKeyRegistered() {
         given(mockJwkSetProvider.get()).willReturn(new JWKSet());
-        ResponseEncryptionStrategy.PSK.getEncryptionKeyPair(mockJwkSetProvider);
+        assertThatThrownBy(() -> ResponseEncryptionStrategy.PSK.getEncryptionKeyPair(mockJwkSetProvider))
+                .isInstanceOf(IllegalStateException.class);
     }
 }
