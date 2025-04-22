@@ -11,16 +11,22 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2024 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
-import static org.assertj.core.api.Java6Assertions.assertThat;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.forgerock.openam.saml2.UtilProxySAMLAuthenticator.SAML_2_LOCAL_STORAGE_JWT_ENCRYPTION;
 import static org.forgerock.openam.saml2.UtilProxySAMLAuthenticatorLookup.SAML_2_LOCAL_STORAGE_JWT_DECRYPTION;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doCallRealMethod;
 
+import java.net.URLEncoder;
 import java.time.Instant;
 import java.util.Date;
 
@@ -45,6 +51,7 @@ import org.forgerock.secrets.keys.DataEncryptionKey;
 import org.forgerock.util.promise.Promise;
 import org.forgerock.util.promise.Promises;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import com.sun.identity.saml2.assertion.impl.AuthnContextImpl;
@@ -57,18 +64,20 @@ import com.sun.identity.saml2.protocol.impl.AuthnRequestImpl;
 public class UtilProxySAMLAuthenticatorTest {
 
     private static final String IDP_ENTITY_ID = "idp.localtest.me";
+    private static final String NON_URI_ENTITY_ID = "Custom IDP : Non URI";
     private static final String KID = "testKey";
     private final SecretKeySpec key = new SecretKeySpec(new byte[32], "AES");
-    private IDPSSOFederateRequest idpSsoRequest;
+
     private SecretsProviderFacade secretsProviderFacade;
+    private UtilProxySAMLAuthenticatorLookup utilProxySAMLAuthenticatorLookup;
     private Promise<DataEncryptionKey, NoSuchSecretException> encryptionPromise;
     private Promise<DataDecryptionKey, NoSuchSecretException> decryptionPromise;
     private JwtEncryptionOptions jwtEncryptionOptions;
 
     @BeforeMethod
     public void setUp() throws Exception {
-        idpSsoRequest = createIdpSsoRequest();
         secretsProviderFacade = mock(SecretsProviderFacade.class);
+        utilProxySAMLAuthenticatorLookup = mock(UtilProxySAMLAuthenticatorLookup.class);
         encryptionPromise = getEncryptionPromise();
         decryptionPromise = getDecryptionPromise();
         jwtEncryptionOptions = new JwtEncryptionOptions(
@@ -76,8 +85,19 @@ public class UtilProxySAMLAuthenticatorTest {
                 JweAlgorithm.DIRECT, EncryptionMethod.A256GCM, CompressionAlgorithm.DEF);
     }
 
-    @Test
-    public void shouldCreateEncryptedJwtForSamlAuthnRequest() throws Exception {
+    @DataProvider
+    Object[][] idpEntityIds() {
+        return new Object[][] {
+                { IDP_ENTITY_ID },
+                { "'A normal IDP description'" },
+                { "'" + NON_URI_ENTITY_ID + "'" },
+                { "'https://idp.example,.com/IDP'" }
+        };
+    }
+
+    @Test(dataProvider = "idpEntityIds")
+    public void shouldCreateEncryptedJwtForSamlAuthnRequest(String idpEntityID) throws Exception {
+        IDPSSOFederateRequest idpSsoRequest = createIdpSsoRequest(idpEntityID);
         UtilProxySAMLAuthenticator utilProxySAMLAuthenticator = new UtilProxySAMLAuthenticator(idpSsoRequest, null,
                 null, null, false, jwtEncryptionOptions);
 
@@ -89,6 +109,7 @@ public class UtilProxySAMLAuthenticatorTest {
                 decryptionPromise);
         given(secretsProviderFacade.getNamedSecret(SAML_2_LOCAL_STORAGE_JWT_DECRYPTION, KID)).willReturn(
                 decryptionPromise);
+        doCallRealMethod().when(utilProxySAMLAuthenticatorLookup).validateSaml2RequestJwt(eq(idpSsoRequest), any(JwtClaimsSet.class));
 
         //when
         String saml2RequestJwt = utilProxySAMLAuthenticator.createSaml2RequestJwt(idpSsoRequest);
@@ -102,17 +123,19 @@ public class UtilProxySAMLAuthenticatorTest {
         assertThat(decryptedJwt.getHeader().getAlgorithm()).isEqualTo(JwsAlgorithm.NONE);
 
         JwtClaimsSet decryptedJwtClaimsSet = decryptedJwt.getClaimsSet();
-        assertThat(decryptedJwtClaimsSet.getIssuer()).isEqualTo(IDP_ENTITY_ID);
+        assertThat(decryptedJwtClaimsSet.getIssuer()).containsAnyOf(idpEntityID, URLEncoder.encode(idpEntityID, UTF_8));
         assertThat(decryptedJwtClaimsSet.getType()).isEqualTo(SAML2Constants.SAML2_REQUEST_JWT_TYPE);
         assertThat(decryptedJwtClaimsSet.getExpirationTime()).isNotNull();
         assertThat(decryptedJwtClaimsSet.get("authnRequest").asString()).contains("<samlp:AuthnRequest").contains(
                 idpSsoRequest.getAuthnRequest().getID());
         assertThat(decryptedJwtClaimsSet.get("authnContext").asString()).contains("<saml:AuthnContext");
         assertThat(decryptedJwtClaimsSet.get("relayState").asString()).isEqualTo(idpSsoRequest.getRelayState());
+        assertThatNoException().isThrownBy(() -> utilProxySAMLAuthenticatorLookup.validateSaml2RequestJwt(
+                idpSsoRequest, decryptedJwtClaimsSet));
     }
 
-    private IDPSSOFederateRequest createIdpSsoRequest() throws SAML2Exception {
-        IDPSSOFederateRequest idpSsoRequest = new IDPSSOFederateRequest("123", "/", null, "idp", IDP_ENTITY_ID);
+    private IDPSSOFederateRequest createIdpSsoRequest(String idpEntityID) throws SAML2Exception {
+        IDPSSOFederateRequest idpSsoRequest = new IDPSSOFederateRequest("123", "/", null, "idp", idpEntityID);
         AuthnRequest authnReq = new AuthnRequestImpl();
         String authnID = "authnID";
         authnReq.setID(authnID);

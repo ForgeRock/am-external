@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023-2024 ForgeRock AS.
+ * Copyright 2023-2025 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -20,6 +20,7 @@ import java.time.Clock;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -64,14 +65,20 @@ public class JwtAssertionScriptWrapper {
     }
 
     /**
-     * Generates a JWT assertion based on the JWT data provided.
+     * Generates a JWT assertion based on the JWT data and claims provided.
      * <p>
      * Supported jwtData fields are:
      *  <ul>
      *      <li>jwtType</li>
      *      <li>jwsAlgorithm</li>
-     *      <li>accountId</li>
+     *      <li>issuer</li>
      *      <li>audience</li>
+     *      <li>subject</li>
+     *      <li>type</li>
+     *      <li>jwtId</li>
+     *      <li>claims</li>
+     *      <li>stableId</li>
+     *      <li>accountId</li>
      *      <li>validityMinutes</li>
      *      <li>privateKey</li>
      *      <li>signingKey</li>
@@ -79,104 +86,135 @@ public class JwtAssertionScriptWrapper {
      *  </ul>
      * </p>
      *
-     * @param jwtData an object containing data to generate the JWT
+     * @param jwtData an object containing data and claims to generate the JWT
      * @return a string representation of the JWT
      * @throws NoSuchSecretException if the given key set does not contain the verification key
      */
     @Supported(scriptingApi = true, javaApi = false)
     public String generateJwt(Map<String, Object> jwtData) throws NoSuchSecretException {
-        if (!validateJwtData(jwtData.get("jwtType"), jwtData.get("jwsAlgorithm"), jwtData.get("accountId"),
-                jwtData.get("audience"))) {
+        if (!validateJwtData(jwtData.get("jwtType"), jwtData.get("jwsAlgorithm"))) {
+            logger.error("The jwtType and jwsAlgorithm cannot be null or empty");
             return null;
         }
 
         JwtBuilderType jwtBuilderType = JwtBuilderType.valueOf(jwtData.get("jwtType").toString());
         JwsAlgorithm jwsAlgorithm = JwsAlgorithm.valueOf(jwtData.get("jwsAlgorithm").toString());
-        String accountId = jwtData.get("accountId").toString();
-        String audience = jwtData.get("audience").toString();
+
+        String issuer = jwtData.getOrDefault("issuer", "").toString();
+        String stableId = jwtData.getOrDefault("stableId", issuer).toString();
+        String accountId = jwtData.getOrDefault("accountId", "").toString();
+        String subject = jwtData.getOrDefault("subject", "").toString();
+
+        if (!accountId.isEmpty() && (issuer.isEmpty() && stableId.isEmpty() && subject.isEmpty())) {
+            issuer = accountId;
+            stableId = accountId;
+            subject = accountId;
+        }
+
+        if (StringUtils.isEmpty(stableId)) {
+            logger.error("The stableId and issuer cannot be null or empty");
+            return null;
+        }
+
+        if (StringUtils.isNotEmpty(accountId)) {
+            logger.debug("The accountId is deprecated and has been set to the issuer and subject jwt claims.");
+        }
+
+        String audience = jwtData.getOrDefault("audience", "").toString();
+        String type = jwtData.getOrDefault("type", "").toString();
+        String jwtId = jwtData.getOrDefault("jwtId", "").toString();
+        Map<String, Object> unreservedClaims = null;
+        if (!Objects.isNull(jwtData.get("claims"))) {
+            unreservedClaims = (Map) jwtData.get("claims");
+        }
 
         int validity = Double.valueOf(jwtData.getOrDefault("validityMinutes", 0).toString()).intValue();
         JsonValue privateKey = JsonValue.json(jwtData.getOrDefault("privateKey", ""));
         String signingKey = jwtData.getOrDefault("signingKey", "").toString();
         String encryptionKey = jwtData.getOrDefault("encryptionKey", "").toString();
 
-        JwtClaimsSet jwtClaims = createJwtClaimsSet(accountId, audience, validity);
+        JwtClaimsSet jwtClaims = createJwtClaimsSet(jwtId, issuer, subject, audience, type, validity, unreservedClaims);
 
-        return buildJwtForAlgorithm(jwtBuilderType, jwsAlgorithm, accountId, privateKey, signingKey, encryptionKey,
+        return buildJwtForAlgorithm(jwtBuilderType, jwsAlgorithm, stableId, privateKey, signingKey, encryptionKey,
                 jwtClaims);
     }
 
-    private boolean validateJwtData(Object jwtType, Object jwsAlgorithm, Object accountId, Object audience) {
+    private boolean validateJwtData(Object jwtType, Object jwsAlgorithm) {
         if (jwtType == null || StringUtils.isEmpty(jwtType.toString())) {
-            logger.warn("The jwtType cannot be null or empty");
+            logger.error("The jwtType cannot be null or empty");
             return false;
         }
         if (jwsAlgorithm == null || StringUtils.isEmpty(jwsAlgorithm.toString())) {
-            logger.warn("The jwsAlgorithm cannot be null or empty");
-            return false;
-        }
-        if (accountId == null || StringUtils.isEmpty(accountId.toString())) {
-            logger.warn("The accountId cannot be null or empty");
-            return false;
-        }
-        if (audience == null || StringUtils.isEmpty(audience.toString())) {
-            logger.warn("The audience cannot be null or empty");
+            logger.error("The jwsAlgorithm cannot be null or empty");
             return false;
         }
         return true;
     }
 
-    private SecretBuilder getSecretBuilderForKey(String accountId, Key key) {
+    private SecretBuilder getSecretBuilderForKey(String stableId, Key key) {
         return new SecretBuilder()
                 .secretKey(key)
-                .stableId(accountId)
+                .stableId(stableId)
                 .expiresIn(5, ChronoUnit.MINUTES, Clock.systemUTC());
     }
 
-    private JwtClaimsSet createJwtClaimsSet(String accountId, String audience, long validity) {
+    private JwtClaimsSet createJwtClaimsSet(String jwtId, String issuer, String subject, String audience, String type,
+            long validity, Map<String, Object> unreservedClaims) {
         long iatTime = Time.currentTimeMillis();
         Date expiration = Time.newDate(iatTime + (validity * 60 * 1000));
 
         JwtClaimsSet jwtClaimsSet = new JwtClaimsSet();
-        jwtClaimsSet.setIssuer(accountId);
-        jwtClaimsSet.setSubject(accountId);
-        jwtClaimsSet.addAudience(audience);
+        if (!issuer.isEmpty()) {
+            jwtClaimsSet.setIssuer(issuer);
+        }
+        if (!subject.isEmpty()) {
+            jwtClaimsSet.setSubject(subject);
+        }
+        if (!audience.isEmpty()) {
+            jwtClaimsSet.addAudience(audience);
+        }
+        if (!type.isEmpty()) {
+            jwtClaimsSet.setType(type);
+        }
         jwtClaimsSet.setIssuedAtTime(Time.newDate());
         jwtClaimsSet.setExpirationTime(expiration);
-        jwtClaimsSet.setJwtId(UUID.randomUUID().toString());
+        if (jwtId.isEmpty()) {
+            jwtClaimsSet.setJwtId(UUID.randomUUID().toString());
+        } else {
+            jwtClaimsSet.setJwtId(jwtId);
+        }
+        if (unreservedClaims != null) {
+            jwtClaimsSet.setClaims(unreservedClaims);
+        }
         return jwtClaimsSet;
     }
 
-    private String buildJwtForAlgorithm(JwtBuilderType jwtBuilderType, JwsAlgorithm jwsAlgorithm, String accountId,
+    private String buildJwtForAlgorithm(JwtBuilderType jwtBuilderType, JwsAlgorithm jwsAlgorithm, String stableId,
             JsonValue privateKey, String signingKey, String encryptionKey, JwtClaimsSet jwtClaims)
             throws NoSuchSecretException {
 
         switch (jwsAlgorithm) {
         case HS256:
-            SigningKey hmacKey = new SigningKey(getSecretBuilderForKey(accountId,
+            SigningKey hmacKey = new SigningKey(getSecretBuilderForKey(stableId,
                     new SecretKeySpec(Base64.decode(signingKey), "Hmac")));
             SecretHmacSigningHandler hmacSigningHandler = new SecretHmacSigningHandler(hmacKey);
-
             KeyEncryptionKey encryptedKey = null;
             if (jwtBuilderType.isEncrypted()) {
-                encryptedKey = new KeyEncryptionKey(getSecretBuilderForKey(accountId,
+                encryptedKey = new KeyEncryptionKey(getSecretBuilderForKey(stableId,
                         new SecretKeySpec(Base64.decode(encryptionKey), "AES")));
             }
-
             return buildJwt(jwsAlgorithm, jwtBuilderType, hmacSigningHandler, encryptedKey, jwtClaims);
         case RS256:
             if (jwtBuilderType.isEncrypted()) {
-                logger.warn("The jwtType " + jwtBuilderType + " is not supported for algorithm: " + jwsAlgorithm);
+                logger.error("The jwtType " + jwtBuilderType + " is not supported for algorithm: " + jwsAlgorithm);
                 return null;
             }
-
             SecretRSASigningHandler rsaSigningHandler = new SecretRSASigningHandler(
-                    new SigningKey(getSecretBuilderForKey(accountId,
+                    new SigningKey(getSecretBuilderForKey(stableId,
                             RsaJWK.parse(privateKey).toRSAPrivateKey())));
-
             return buildSignedJwt(jwsAlgorithm, rsaSigningHandler, jwtClaims);
         default:
-            logger.warn("The JwsAlgorithm is not supported: " + jwsAlgorithm);
+            logger.error("The JwsAlgorithm is not supported: " + jwsAlgorithm);
             return null;
         }
     }
@@ -211,8 +249,7 @@ public class JwtAssertionScriptWrapper {
                     .signedWith(signingHandler, JwsAlgorithm.HS256)
                     .build();
         default:
-            logger.warn("Unsupported JwtType: " + jwtBuilderType);
-            return null;
+            throw new IllegalArgumentException();
         }
     }
 

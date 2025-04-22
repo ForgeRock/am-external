@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2024 ForgeRock AS.
  */
 
 import "backbone.paginator";
@@ -27,6 +27,8 @@ import BackgridUtils from "org/forgerock/openam/ui/common/util/BackgridUtils";
 import Configuration from "org/forgerock/commons/ui/common/main/Configuration";
 import Constants from "org/forgerock/openam/ui/common/util/Constants";
 import fetchUrl from "api/fetchUrl";
+import IconWithTooltipMessageCellTemplate from
+    "themes/default/templates/user/uma/backgrid/cell/IconWithTooltipMessageCell";
 import PermissionsCell from "org/forgerock/openam/ui/user/uma/views/backgrid/cells/PermissionsCell";
 import UMAService from "org/forgerock/openam/ui/user/uma/services/UMAService";
 
@@ -89,6 +91,23 @@ const ListRequest = AbstractView.extend({
             }),
             editable: false
         }, {
+            name: "userContainsConfusables",
+            label: "",
+            cell: BackgridUtils.TemplateCell.extend({
+                iconClass: "fa-warning",
+                template: IconWithTooltipMessageCellTemplate,
+                render () {
+                    this.$el.html(this.template());
+                    if (this.model.get("userContainsConfusables") === true) {
+                        this.$el.find("i.fa").addClass(this.iconClass);
+                        this.$el.find('[data-toggle="tooltip"]').removeAttr("aria-hidden");
+                        this.$el.find('[data-toggle="tooltip"]').tooltip();
+                    }
+                    return this;
+                }
+            }),
+            editable: false
+        }, {
             name: "actions",
             label: "",
             cell: BackgridUtils.TemplateCell.extend({
@@ -126,13 +145,13 @@ const ListRequest = AbstractView.extend({
             windowSize: 3
         });
 
+        self.data.requests.fetch({ reset: true, processData: false }).then(() => {
+            if (callback) { callback(); }
+        });
+
         this.parentRender(() => {
             self.$el.find(".table-container").append(grid.render().el);
             self.$el.find(".panel-body").append(paginator.render().el);
-
-            self.data.requests.fetch({ reset: true, processData: false }).then(() => {
-                if (callback) { callback(); }
-            });
         });
     }
 });

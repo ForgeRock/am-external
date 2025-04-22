@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2025 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.script;
 
@@ -150,7 +150,9 @@ public class ScriptedCallbacksBuilder {
      */
     @Supported(scriptingApi = true, javaApi = false)
     public void choiceCallback(String prompt, String[] choices, int defaultChoice, boolean multipleSelectionsAllowed) {
-        callbacks.add(new ChoiceCallback(prompt, choices, defaultChoice, multipleSelectionsAllowed));
+        ChoiceCallback choiceCallback = new ChoiceCallback(prompt, choices, defaultChoice, multipleSelectionsAllowed);
+        choiceCallback.setSelectedIndex(defaultChoice);
+        callbacks.add(choiceCallback);
     }
 
     /**
@@ -282,6 +284,46 @@ public class ScriptedCallbacksBuilder {
     public void redirectCallback(String redirectUrl, Map redirectData, String method, String statusParameter,
                                  String redirectBackUrlCookie) {
         callbacks.add(new RedirectCallback(redirectUrl, redirectData, method, statusParameter, redirectBackUrlCookie));
+    }
+
+    /**
+     * Constructs and saves to the list of callbacks a <code>RedirectCallback</code> object with
+     * redirect URL,redirect data,redirect method,status parameter
+     * and redirect back URL Cookie name.
+     *
+     * @param redirectUrl URL to be redirected to.
+     * @param redirectData the data to be redirected to redirect URL.
+     * @param method Method used for redirection, either "GET" or "POST".
+     * @param setTrackingCookie set to true if a tracking cookie should be set.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public void redirectCallback(String redirectUrl, Map redirectData, String method, boolean setTrackingCookie) {
+        RedirectCallback redirectCallback = new RedirectCallback(redirectUrl, redirectData, method);
+        redirectCallback.setTrackingCookie(setTrackingCookie);
+        callbacks.add(redirectCallback);
+    }
+
+    /**
+     * Constructs and saves to the list of callbacks a <code>RedirectCallback</code> object with
+     * redirect URL,redirect data,redirect method,status parameter
+     * and redirect back URL Cookie name.
+     *
+     * @param redirectUrl URL to be redirected to.
+     * @param redirectData the data to be redirected to redirect URL.
+     * @param method Method used for redirection, either "GET" or "POST".
+     * @param statusParameter statusParameter to be checked from
+     * HttpServletRequest object at the result of redirection.
+     * @param redirectBackUrlCookie redirectBackUrlCookie name to be set as the
+     * OpenAM server URL when redirecting to external web site.
+     * @param setTrackingCookie set to true if a tracking cookie should be set.
+     */
+    @Supported(scriptingApi = true, javaApi = false)
+    public void redirectCallback(String redirectUrl, Map redirectData, String method, String statusParameter,
+            String redirectBackUrlCookie, boolean setTrackingCookie) {
+        RedirectCallback redirectCallback = new RedirectCallback(redirectUrl, redirectData, method, statusParameter,
+                redirectBackUrlCookie);
+        redirectCallback.setTrackingCookie(setTrackingCookie);
+        callbacks.add(redirectCallback);
     }
 
     /**

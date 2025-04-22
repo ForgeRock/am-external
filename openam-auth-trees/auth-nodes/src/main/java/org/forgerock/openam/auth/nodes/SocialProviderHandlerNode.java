@@ -16,6 +16,7 @@
 
 package org.forgerock.openam.auth.nodes;
 
+import static com.sun.identity.shared.FeatureEnablementConstants.OIDC_SOCIAL_PROVIDER_SUB_CLAIM_IS_NOT_UNIQUE;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
 import static org.forgerock.json.JsonPointer.ptr;
@@ -105,6 +106,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.am.util.SystemProperties;
 import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.authentication.service.AuthD;
 import com.sun.identity.authentication.spi.RedirectCallback;
@@ -324,8 +326,9 @@ public class SocialProviderHandlerNode implements Node {
                         entry.getKey(), entry.getValue());
             }
         }
-        // Record the social identity subject in the profile, too
-        String identity = selectedIdp + "-" + profile.getSubject();
+        String subject = getSubjectFromProfile(client, idpConfig, profile);
+        // Record the social identity subject in the profile, this should be the authentication ID key
+        String identity = selectedIdp + "-" + subject;
         Optional<String> contextId = idmIntegrationService.getAttributeFromContext(context,
                         config.usernameAttribute())
                 .map(JsonValue::asString);
@@ -373,6 +376,17 @@ public class SocialProviderHandlerNode implements Node {
                 .replaceTransientState(context.transientState.copy()
                         .putPermissive(ptr(SOCIAL_OAUTH_DATA).child(selectedIdp), dataStore.retrieveData()))
                 .build();
+    }
+
+    private static String getSubjectFromProfile(OAuthClient client, OAuthClientConfig idpConfig,
+                                                UserInfo profile) throws OAuthException {
+        if (SystemProperties.getAsBoolean(OIDC_SOCIAL_PROVIDER_SUB_CLAIM_IS_NOT_UNIQUE, false)
+                && client instanceof OpenIDConnectClient) {
+            return profile.getRawProfile().get(idpConfig.authenticationIdKey())
+                    .defaultTo(profile.getSubject()).asString();
+        } else {
+            return profile.getSubject();
+        }
     }
 
     private Optional<JsonValue> getUser(TreeContext context, String identity) throws NodeProcessException {

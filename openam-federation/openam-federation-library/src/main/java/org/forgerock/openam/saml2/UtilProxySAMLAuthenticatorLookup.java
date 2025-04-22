@@ -11,14 +11,16 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2021 ForgeRock AS.
+ * Copyright 2015-2024 ForgeRock AS.
  */
 package org.forgerock.openam.saml2;
 
 import static com.sun.identity.saml2.common.SAML2Constants.SAML2_REQUEST_JWT_TYPE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URLDecoder;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +34,7 @@ import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.jwe.EncryptedJwt;
 import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
+import org.forgerock.json.jose.jwt.JwtClaimsSetKey;
 import org.forgerock.openam.jwt.JwtClaimsValidationHandler;
 import org.forgerock.openam.jwt.JwtClaimsValidationOptions;
 import org.forgerock.openam.jwt.JwtDecryptionHandler;
@@ -130,7 +133,7 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
                 logger.debug("Retrieving saml2Request from client storage");
                 Jwt saml2RequestJwt = decryptLocalStorageJwt(saml2Request);
                 JwtClaimsSet claimsSet = saml2RequestJwt.getClaimsSet();
-                validateSaml2RequestJwt(claimsSet);
+                validateSaml2RequestJwt(data, claimsSet);
                 ProtocolFactory protocolFactory = ProtocolFactory.getInstance();
                 data.setAuthnRequest(protocolFactory.createAuthnRequest(claimsSet.get("authnRequest").asString()));
                 data.setRelayState(claimsSet.get("relayState").asString());
@@ -218,14 +221,18 @@ public class UtilProxySAMLAuthenticatorLookup extends SAMLBase implements SAMLAu
                 .decryptJwe(encryptedJwt, SAML_2_LOCAL_STORAGE_JWT_DECRYPTION);
     }
 
-    private void validateSaml2RequestJwt(JwtClaimsSet claimsSet) throws ClientFaultException {
+    @VisibleForTesting
+    void validateSaml2RequestJwt(IDPSSOFederateRequest data, JwtClaimsSet claimsSet) throws ClientFaultException {
         JwtClaimsValidationOptions<ClientFaultException> validationOptions =
                 new JwtClaimsValidationOptions<>((s) ->
                         new ClientFaultException(data.getIdpAdapter(), "Invalid SAML2 request jwt"))
                         .setIssuer(data.getIdpEntityID())
                         .setType(SAML2_REQUEST_JWT_TYPE)
-                        .setUnreasonableLifetimeLimit(Duration.duration(SPCache.interval, TimeUnit.SECONDS));
-
+                        .setUnreasonableLifetimeLimit(Duration.duration(SPCache.interval, TimeUnit.SECONDS))
+                        .setIssuerRequired(false)
+                        .addClaimValidator(JwtClaimsSetKey.ISS.value(), v -> v.isNotNull() && v.isString() &&
+                                (data.getIdpEntityID().equals(v.asString()) || data.getIdpEntityID()
+                                        .equals(URLDecoder.decode(v.asString(), UTF_8))));
         JwtClaimsValidationHandler<ClientFaultException> claimsValidator =
                 new JwtClaimsValidationHandler<>(validationOptions, claimsSet);
         claimsValidator.validateClaims();

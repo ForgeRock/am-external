@@ -16,6 +16,7 @@
 
 package org.forgerock.openam.auth.nodes;
 
+import static com.sun.identity.shared.FeatureEnablementConstants.OIDC_SOCIAL_PROVIDER_SUB_CLAIM_IS_NOT_UNIQUE;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -25,17 +26,20 @@ import static org.forgerock.json.JsonValue.array;
 import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
-import static org.forgerock.openam.social.idp.SocialIdPScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.OBJECT_ATTRIBUTES;
 import static org.forgerock.openam.auth.node.api.TreeContext.DEFAULT_IDM_IDENTITY_RESOURCE;
 import static org.forgerock.openam.auth.nodes.SocialProviderHandlerNode.ALIAS_LIST;
 import static org.forgerock.openam.auth.nodes.SocialProviderHandlerNode.SOCIAL_OAUTH_DATA;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.IDPS;
 import static org.forgerock.openam.integration.idm.IdmIntegrationService.SELECTED_IDP;
+import static org.forgerock.openam.social.idp.SocialIdPScriptContext.SOCIAL_IDP_PROFILE_TRANSFORMATION;
 import static org.forgerock.util.promise.Promises.newResultPromise;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.openMocks;
 import static org.testng.Assert.assertEquals;
@@ -43,16 +47,19 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import javax.inject.Provider;
 import javax.script.ScriptException;
 
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.http.Handler;
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.jws.JwsAlgorithm;
@@ -62,6 +69,7 @@ import org.forgerock.oauth.OAuthClient;
 import org.forgerock.oauth.OAuthException;
 import org.forgerock.oauth.UserInfo;
 import org.forgerock.oauth.clients.oauth2.OAuth2ClientConfiguration;
+import org.forgerock.oauth.clients.oidc.OpenIDConnectClient;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
@@ -70,7 +78,6 @@ import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.oauth.SocialOAuth2Helper;
 import org.forgerock.openam.authentication.callbacks.IdPCallback;
 import org.forgerock.openam.core.realms.Realm;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.openam.integration.idm.IdmIntegrationService;
 import org.forgerock.openam.scripting.application.ScriptEvaluator;
 import org.forgerock.openam.scripting.domain.Script;
@@ -89,6 +96,7 @@ import org.mozilla.javascript.NativeJavaObject;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import com.iplanet.am.util.SystemProperties;
 import com.iplanet.dpro.session.service.SessionService;
 import com.sun.identity.authentication.spi.RedirectCallback;
 import com.sun.identity.idm.IdType;
@@ -525,6 +533,74 @@ public class SocialProviderHandlerNodeTest {
     }
 
     @Test
+    public void processWithOidcClientWithoutSubjectOverrideFindsExistingUser() throws Exception {
+        // Given
+        setupOidcClient("oidc-user", false);
+        OidcTestClient oidcTestClient = new OidcTestClient();
+        Map<String, String[]> parameters = getStateAndCodeAsParameter();
+        when(providerConfigStore.getProviders(any(Realm.class)))
+                .thenReturn(singletonMap("oidc-test-provider", oidcTestClient));
+        when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any(), any()))
+                .thenReturn(json(object(field("userName", "oidc-user"),
+                        field(IDPS, array("oidc-test-provider-oidc-user")))));
+        TreeContext context = new TreeContext(json(object(
+                field(SELECTED_IDP, "oidc-test-provider"),
+                field(OBJECT_ATTRIBUTES, object(field("userName", "oidc-user")))
+        )), new ExternalRequestContext.Builder().parameters(parameters).build(),
+                emptyList(), Optional.empty());
+
+        // When
+        Action action = node.process(context);
+
+        // Then
+        assertThat(action.outcome).isEqualTo("ACCOUNT_EXISTS");
+        assertThat(action.identifiedIdentity).isPresent();
+        IdentifiedIdentity identifiedIdentity = action.identifiedIdentity.get();
+        assertThat(identifiedIdentity.getUsername()).isEqualTo("oidc-user");
+        assertThat(identifiedIdentity.getIdentityType()).isEqualTo(IdType.USER);
+        assertThat(context.transientState.isDefined(OBJECT_ATTRIBUTES)).isTrue();
+        assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get("aliasList").asList()).containsExactly(
+                "oidc-test-provider-oidc-user");
+        assertThat(context.sharedState.get(OBJECT_ATTRIBUTES).get("userName").asString()).isEqualTo("oidc-user");
+
+    }
+
+    @Test
+    public void processWithOidcClientWithSubjectOverrideFindsExistingUser() throws Exception {
+        // Given
+        try (var ignored = mockStatic(SystemProperties.class)) {
+            given(SystemProperties.getAsBoolean(OIDC_SOCIAL_PROVIDER_SUB_CLAIM_IS_NOT_UNIQUE, false))
+                    .willReturn(true);
+            setupOidcClient(UUID.randomUUID().toString(), true);
+            var oidcTestClient = new OidcTestClient();
+            Map<String, String[]> parameters = getStateAndCodeAsParameter();
+            when(providerConfigStore.getProviders(any(Realm.class)))
+                    .thenReturn(singletonMap("oidc-test-provider", oidcTestClient));
+            when(idmIntegrationService.getObject(any(), any(), any(), any(String.class), any(), any()))
+                    .thenReturn(json(object(field("userName", "oidc-user"),
+                            field(IDPS, array("oidc-test-provider-oidc-user")))));
+            var context = new TreeContext(json(object(
+                    field(SELECTED_IDP, "oidc-test-provider"),
+                    field(OBJECT_ATTRIBUTES, object(field("userName", "oidc-user")))
+            )), new ExternalRequestContext.Builder().parameters(parameters).build(),
+                    emptyList(), Optional.empty());
+
+            // When
+            Action action = node.process(context);
+
+            // Then
+            assertThat(action.outcome).isEqualTo("ACCOUNT_EXISTS");
+            assertThat(action.identifiedIdentity).isPresent();
+            IdentifiedIdentity identifiedIdentity = action.identifiedIdentity.get();
+            assertThat(identifiedIdentity.getUsername()).isEqualTo("oidc-user");
+            assertThat(identifiedIdentity.getIdentityType()).isEqualTo(IdType.USER);
+            assertThat(context.transientState.isDefined(OBJECT_ATTRIBUTES)).isTrue();
+            assertThat(context.transientState.get(OBJECT_ATTRIBUTES).get("aliasList").asList()).containsExactly(
+                    "oidc-test-provider-oidc-user");
+            assertThat(context.sharedState.get(OBJECT_ATTRIBUTES).get("userName").asString()).isEqualTo("oidc-user");
+        }
+    }
+    @Test
     public void nativeProcessWhenInstructedShouldRequestSDKForUserInfoViaIdPCallback() throws Exception {
         when(config.clientType()).thenReturn(ClientType.NATIVE);
         when(providerConfigStore.getProviders(any(Realm.class)))
@@ -658,6 +734,29 @@ public class SocialProviderHandlerNodeTest {
                 .isEqualTo(PROVIDER_NAME + "-user");
     }
 
+    private void setupOidcClient(String subject, boolean overrideOIDCSubject) throws URISyntaxException {
+        OpenIDConnectClient openIDConnectClient = mock(OpenIDConnectClient.class);
+        when(openIDConnectClient.getAuthRedirect(any(), any(), any()))
+                .thenReturn(newResultPromise(new URI(PROVIDER_REDIRECT)));
+        when(openIDConnectClient.handlePostAuth(any(), any())).thenAnswer(answer -> {
+            DataStore dataStore = answer.getArgument(0);
+            dataStore.storeData(json(object(field("testData", "testValue"))));
+            return newResultPromise(json(object()));
+        });
+        when(openIDConnectClient.getUserInfo(any())).thenReturn(Promises.newResultPromise(new UserInfo() {
+            @Override
+            public String getSubject() {
+                return subject;
+            }
+
+            @Override
+            public JsonValue getRawProfile() {
+                return overrideOIDCSubject ? json(object(field("subclaim", "oidc-user"))) : json(object());
+            }
+        }));
+        when(authModuleHelper.newOAuthClient(any(Realm.class), any(OAuth2ClientConfig.class)))
+                .thenReturn(openIDConnectClient);
+    }
 
     private Map<String, String[]> getStateAndCodeAsParameter() {
         Map<String, String[]> parameters = new HashMap<>();
@@ -805,6 +904,12 @@ public class SocialProviderHandlerNodeTest {
         public Set<RevocationOption> revocationCheckOptions() {
             return Set.of(RevocationOption.DISABLE_REVOCATION_CHECKING);
         }
+
+        @Override
+        public String authenticationIdKey() {
+            return "subclaim";
+        }
+
     }
 
     private class AppleTestClientRequestingUserInfo extends OidcTestClient implements AppleClientConfig {

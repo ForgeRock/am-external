@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2019 ForgeRock AS.
+ * Copyright 2015-2024 ForgeRock AS.
  */
 
 import "selectize";
@@ -33,6 +33,8 @@ import RevokeCellTemplate from "themes/default/templates/user/uma/backgrid/cell/
 import SelectizeCell from "themes/default/templates/user/uma/backgrid/cell/SelectizeCell";
 import UMAResourceSetWithPolicy from "org/forgerock/openam/ui/user/uma/models/UMAResourceSetWithPolicy";
 import UMAService from "org/forgerock/openam/ui/user/uma/services/UMAService";
+import IconWithTooltipMessageCellTemplate from
+    "themes/default/templates/user/uma/backgrid/cell/IconWithTooltipMessageCell";
 
 function isUserLabel (label) {
     return label.type === "USER";
@@ -342,6 +344,23 @@ const ResourcePage = AbstractView.extend({
                     cell: SelectizeCell,
                     editable: false,
                     sortable: false
+                }, {
+                    name: "userContainsConfusables",
+                    label: "",
+                    cell: BackgridUtils.TemplateCell.extend({
+                        iconClass: "fa-warning",
+                        template: IconWithTooltipMessageCellTemplate,
+                        render () {
+                            this.$el.html(this.template());
+                            if (this.model.get("userContainsConfusables") === true) {
+                                this.$el.find("i.fa").addClass(this.iconClass);
+                                this.$el.find('[data-toggle="tooltip"]').removeAttr("aria-hidden");
+                                this.$el.find('[data-toggle="tooltip"]').tooltip();
+                            }
+                            return this;
+                        }
+                    }),
+                    editable: false
                 }, {
                     name: "edit",
                     label: "",

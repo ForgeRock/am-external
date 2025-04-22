@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2022 ForgeRock AS.
+ * Copyright 2017-2024 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -19,42 +19,45 @@ import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.Action.goTo;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.RETRY_COUNT;
+import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.helpers.AuthNodeUserIdentityHelper.getAMIdentity;
 import static org.forgerock.opendj.ldap.ResultCode.OBJECTCLASS_VIOLATION;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-import com.iplanet.sso.SSOException;
-import com.sun.identity.idm.AMIdentity;
-import com.sun.identity.idm.IdRepoException;
-
-import com.sun.identity.sm.RequiredValueValidator;
+import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
 import org.forgerock.openam.auth.node.api.Action;
+import org.forgerock.openam.auth.node.api.InputState;
 import org.forgerock.openam.auth.node.api.LifecycleNode;
 import org.forgerock.openam.auth.node.api.Node;
 import org.forgerock.openam.auth.node.api.NodeProcessException;
+import org.forgerock.openam.auth.node.api.OutputState;
 import org.forgerock.openam.auth.node.api.StaticOutcomeProvider;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.auth.nodes.validators.GreaterThanZeroValidator;
 import org.forgerock.openam.core.CoreWrapper;
-import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.util.i18n.PreferredLocales;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.assistedinject.Assisted;
+import com.iplanet.sso.SSOException;
+import com.sun.identity.idm.AMIdentity;
+import com.sun.identity.idm.IdRepoException;
+import com.sun.identity.sm.RequiredValueValidator;
 
 /**
  * A decision node that allows to go through the success path only given number of times.
@@ -128,12 +131,27 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
 
         if (currentRetryCount < config.retryLimit()) {
             retryStateHandler.saveRetryCount(context, currentRetryCount);
-            JsonValue newSharedState = context.sharedState.copy();
-            newSharedState.put(nodeRetryCountKey(), currentRetryCount + 1);
-            return goTo(RETRY).replaceSharedState(newSharedState).build();
+            context.getStateFor(this).putShared(nodeRetryCountKey(), currentRetryCount + 1);
+            return goTo(RETRY).build();
         } else {
             return retryStateHandler.processReject(context);
         }
+    }
+
+    @Override
+    public InputState[] getInputs() {
+        return new InputState[] {
+            new InputState(nodeRetryCountKey()),
+            new InputState(USERNAME),
+            new InputState(REALM)
+        };
+    }
+
+    @Override
+    public OutputState[] getOutputs() {
+        return new OutputState[] {
+            new OutputState(nodeRetryCountKey(), Map.of(RETRY, true, REJECT, false))
+        };
     }
 
     private String nodeRetryCountKey() {
@@ -165,15 +183,8 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
         }
     }
 
-    private AMIdentity getIdentityFromContext(TreeContext context) throws NodeProcessException {
-        Optional<AMIdentity> identity = getAMIdentity(context.universalId, context.getStateFor(this), identityService,
-                coreWrapper);
-        if (identity.isEmpty()) {
-            logger.warn("identity not found");
-            throw new NodeProcessException("identity.failure");
-        }
-
-        return identity.get();
+    private Optional<AMIdentity> getIdentityFromContext(TreeContext context) {
+        return getAMIdentity(context.universalId, context.getStateFor(this), identityService, coreWrapper);
     }
 
     private interface RetryStateHandler {
@@ -190,9 +201,11 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
     private class SharedStateRetryHandler implements RetryStateHandler {
         @Override
         public int getCurrentCount(TreeContext context) {
-            JsonValue retryCountFromSharedState = context.sharedState.get(nodeRetryCountKey());
-            return Optional.ofNullable(retryCountFromSharedState.asInteger())
-                    .orElse(0);
+            JsonValue retryCountFromSharedState = context.getStateFor(RetryLimitDecisionNode.this)
+                                                          .get(nodeRetryCountKey());
+            return Optional.ofNullable(retryCountFromSharedState)
+                           .map(JsonValue::asInteger)
+                           .orElse(0);
         }
 
         @Override
@@ -213,25 +226,31 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
 
     private class UserStoreRetryHandler implements RetryStateHandler {
         @Override
-        public int getCurrentCount(TreeContext context) throws NodeProcessException {
-            try {
-                AMIdentity identity = getIdentityFromContext(context);
-                Set<String> retryLimitNodeCounts = identity.getAttribute(RETRY_COUNT_ATTRIBUTE);
-                if (retryLimitNodeCounts != null && !retryLimitNodeCounts.isEmpty()) {
-                    Optional<String> nodeCount = retryLimitNodeCounts.stream()
-                            .filter(s -> s.startsWith(nodeId.toString()))
-                            .findFirst();
-                    return nodeCount.isPresent() ? Integer.parseInt(nodeCount.get().split("=")[1]) : 0;
-                }
-                return 0;
-            } catch (IdRepoException | SSOException | NodeProcessException e) {
-                logger.warn("Error getting current retry count", e);
-                throw new NodeProcessException("attribute.failure");
-            }
+        public int getCurrentCount(TreeContext context) {
+            return getIdentityFromContext(context)
+                        .map(identity -> {
+                            try {
+                                Set<String> retryLimitNodeCounts = identity.getAttribute(RETRY_COUNT_ATTRIBUTE);
+                                if (retryLimitNodeCounts != null && !retryLimitNodeCounts.isEmpty()) {
+                                    Optional<String> nodeCount = retryLimitNodeCounts.stream()
+                                                                         .filter(s -> s.startsWith(nodeId.toString()))
+                                                                         .findFirst();
+                                    return nodeCount.map(s -> Integer.parseInt(s.split("=")[1])).orElse(0);
+                                }
+                                return 0;
+                            } catch (IdRepoException | SSOException e) {
+                                logger.warn("Error getting current retry count", e);
+                                return 0;
+                            }
+                        })
+                           .or(() -> Optional.ofNullable(context.getStateFor(RetryLimitDecisionNode.this)
+                                                                 .get(nodeRetryCountKey()))
+                                             .map(JsonValue::asInteger))
+                           .orElse(0);
         }
 
         @Override
-        public void saveRetryCount(TreeContext context, int currentRetryCount) throws NodeProcessException {
+        public void saveRetryCount(TreeContext context, int currentRetryCount) {
             setRetryCountOnUserAttribute(context, currentRetryCount + 1);
         }
 
@@ -250,10 +269,7 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
                     AMIdentity identity = amIdentity.get();
                     Set<String> retryLimitNodeCounts = identity.getAttribute(RETRY_COUNT_ATTRIBUTE);
 
-                    retryLimitNodeCounts.removeAll(
-                            retryLimitNodeCounts.stream()
-                                    .filter(s -> s.startsWith(nodeId.toString()))
-                                    .collect(Collectors.toList()));
+                    retryLimitNodeCounts.removeIf(s -> s.startsWith(nodeId.toString()));
                     identity.setAttributes(Collections.singletonMap(RETRY_COUNT_ATTRIBUTE, retryLimitNodeCounts));
                     identity.store();
                 }
@@ -263,30 +279,29 @@ public class RetryLimitDecisionNode implements Node, LifecycleNode {
             }
         }
 
-        private void setRetryCountOnUserAttribute(TreeContext context, Integer value) throws NodeProcessException {
-            try {
-                AMIdentity identity = getIdentityFromContext(context);
-                Set<String> retryLimitNodeCounts = identity.getAttribute(RETRY_COUNT_ATTRIBUTE);
+        private void setRetryCountOnUserAttribute(TreeContext context, Integer value) {
+            getIdentityFromContext(context).ifPresent(identity -> {
+                try {
+                    Set<String> retryLimitNodeCounts = identity.getAttribute(RETRY_COUNT_ATTRIBUTE);
 
-                // Remove any existing entries for this nodes ID
-                retryLimitNodeCounts.removeAll(
-                        retryLimitNodeCounts.stream()
-                                .filter(s -> s.startsWith(nodeId.toString()))
-                                .collect(Collectors.toList()));
+                    // Remove any existing entries for this nodes ID
+                    retryLimitNodeCounts.removeIf(s -> s.startsWith(nodeId.toString()));
 
-                // Add an entry for this nodeID and store in user attribute
-                retryLimitNodeCounts.add(nodeId + "=" + value);
-                identity.setAttributes(Collections.singletonMap(RETRY_COUNT_ATTRIBUTE, retryLimitNodeCounts));
-                identity.store();
-            } catch (IdRepoException e) {
-                if (OBJECTCLASS_VIOLATION.intValue() == e.getLdapErrorIntCode()) {
-                    logger.error("Failed to save retryLimitNodeCount to user: Identity Repo has not been upgraded.");
-                    return;
+                    // Add an entry for this nodeID and store in user attribute
+                    retryLimitNodeCounts.add(nodeId + "=" + value);
+                    identity.setAttributes(Collections.singletonMap(RETRY_COUNT_ATTRIBUTE, retryLimitNodeCounts));
+                    identity.store();
+                } catch (IdRepoException e) {
+                    if (OBJECTCLASS_VIOLATION.intValue() == e.getLdapErrorIntCode()) {
+                        logger.error("Failed to save retryLimitNodeCount to user: "
+                                             + "Identity Repo has not been upgraded.");
+                    } else {
+                        logger.error("Error setting retry count on user attribute", e);
+                    }
+                } catch (SSOException e) {
+                    logger.error("Error setting retry count on user attribute", e);
                 }
-                throw new NodeProcessException("attribute.failure");
-            } catch (SSOException | NodeProcessException e) {
-                throw new NodeProcessException("attribute.failure");
-            }
+            });
         }
     }
 }

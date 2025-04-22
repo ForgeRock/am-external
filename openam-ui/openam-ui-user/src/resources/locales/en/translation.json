@@ -142,7 +142,7 @@
             "complete" : "Complete",
             "confirm": "Confirm",
             "continue" : "Continue",
-            "copyright" : "Copyright &copy; 2010-2024 ForgeRock AS. All rights reserved.",
+            "copyright" : "Copyright &copy; 2010-2025 ForgeRock AS. All rights reserved.",
             "create" : "Create",
             "createdAt" : "Created at",
             "createNew": "Create New",
@@ -593,7 +593,8 @@
         "requests": {
             "list": {
                 "title": "Requests",
-                "description": "Pending requests for access to your resources."
+                "description": "Pending requests for access to your resources.",
+                "mixed_script_warning": "Warning: This username contains confusable characters. Make sure this is the correct person before allowing them access."
             },
             "show": {
                 "title": "Request",
