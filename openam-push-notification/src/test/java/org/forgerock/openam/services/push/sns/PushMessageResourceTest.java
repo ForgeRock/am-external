@@ -31,6 +31,7 @@ import static org.forgerock.json.JsonValue.object;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -48,6 +49,7 @@ import org.forgerock.json.resource.NotFoundException;
 import org.forgerock.json.resource.ResourceException;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmTestHelper;
+import org.forgerock.openam.core.rest.devices.push.PushDeviceSettings;
 import org.forgerock.openam.rest.RealmContext;
 import org.forgerock.openam.rest.resource.SSOTokenContext;
 import org.forgerock.openam.services.push.DefaultMessageTypes;
@@ -60,6 +62,7 @@ import org.forgerock.openam.services.push.PushNotificationService;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcher;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
 import org.forgerock.openam.services.push.dispatch.predicates.PredicateNotMetException;
+import org.forgerock.openam.services.push.utils.PushDeviceUpdater;
 import org.forgerock.util.promise.Promise;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +78,7 @@ public class PushMessageResourceTest {
     private Map<MessageType, ClusterMessageHandler> messageTypeClusterMap;
     private MessageIdFactory mockMessageIdFactory;
     private MessageId mockMessageId;
+    private PushDeviceUpdater mockPushDeviceUpdater;
 
     @BeforeEach
     void setup() throws Exception {
@@ -83,6 +87,8 @@ public class PushMessageResourceTest {
         mockMessageHandler = mock(ClusterMessageHandler.class);
         mockMessageIdFactory = mock(MessageIdFactory.class);
         mockMessageId = mock(MessageId.class);
+        mockPushDeviceUpdater = mock(PushDeviceUpdater.class);
+
         messageTypeClusterMap = new HashMap<>();
         messageTypeClusterMap.put(DefaultMessageTypes.AUTHENTICATE, mockMessageHandler);
         messageTypeClusterMap.put(DefaultMessageTypes.REGISTER, mockMessageHandler);
@@ -91,7 +97,8 @@ public class PushMessageResourceTest {
         realmTestHelper = new RealmTestHelper();
         realmTestHelper.setupRealmClass();
 
-        messageResource = new PushMessageResource(mockService, mockMessageIdFactory);
+        messageResource = new PushMessageResource(mockService, mockMessageIdFactory,
+                mockPushDeviceUpdater);
     }
 
     @AfterEach
@@ -209,6 +216,59 @@ public class PushMessageResourceTest {
                 .hasMessage("Bad request.");
     }
 
+    @Test
+    void shouldUpdateWithUsername() throws Exception {
+        //given
+        Realm realm = realmTestHelper.mockRealm("realm");
+        RealmContext realmContext = mockRealmContext(realm);
+
+        JsonValue content = JsonValue.json(object(
+                field("mechanismUid", "mechanism-uid"),
+                field("username", "some-user"),
+                field("jwt", "")
+        ));
+        ActionRequest request = mock(ActionRequest.class);
+        given(request.getContent()).willReturn(content);
+
+        doReturn(getDeviceSettings()).when(mockPushDeviceUpdater).getDeviceSettings(any(), any(), anyString());
+        doReturn(true).when(mockPushDeviceUpdater).validateSignedJwt(any(), any(), any());
+        doReturn(true).when(mockPushDeviceUpdater).updateDevice(any(), anyString());
+
+        //when
+        Promise<ActionResponse, ResourceException> result = messageResource.update(realmContext, request);
+
+        //then
+        verify(mockPushDeviceUpdater, times(1))
+                .getDeviceSettings(anyString(), anyString(), anyString());
+        verify(mockPushDeviceUpdater, times(1))
+                .validateSignedJwt(any(), any(), any());
+        verify(mockPushDeviceUpdater, times(1))
+                .updateDevice(any(), anyString());
+        verify(mockPushDeviceUpdater, times(1))
+                .saveDeviceSettings(any(), any(), anyString(), anyString());
+        assertThat(result.get()).isNotNull();
+    }
+
+    @Test
+    void shouldFailUpdateWhenNoMechanismId() {
+        //given
+        Realm realm = realmTestHelper.mockRealm("realm");
+        RealmContext realmContext = mockRealmContext(realm);
+
+        JsonValue content = JsonValue.json(object(field("jwt", "")));
+
+        ActionRequest request = mock(ActionRequest.class);
+        given(request.getContent()).willReturn(content);
+
+        //when
+        Promise<ActionResponse, ResourceException> result = messageResource.update(realmContext, request);
+
+        //then
+        assertThatThrownBy(result::getOrThrow)
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Bad request.");
+    }
+
     private RealmContext mockRealmContext(Realm realm) {
         SSOTokenContext mockSSOTokenContext = mock(SSOTokenContext.class);
         return new RealmContext(mockSSOTokenContext, realm);
@@ -218,5 +278,17 @@ public class PushMessageResourceTest {
         given(mockMessageIdFactory.create(eq("asdf"), any())).willReturn(mockMessageId);
         given(mockMessageId.getMessageType()).willReturn(DefaultMessageTypes.AUTHENTICATE);
         given(mockService.getMessageHandlers(realm.asPath())).willReturn(messageTypeClusterMap);
+    }
+
+    private PushDeviceSettings getDeviceSettings() {
+        PushDeviceSettings settings = new PushDeviceSettings();
+        settings.setSharedSecret("shared-secret");
+        settings.setDeviceName("device-name");
+        settings.setDeviceId("device-id");
+        settings.setCommunicationId("communication-id");
+        settings.setDeviceMechanismUID("mechanism-uid");
+        settings.setCommunicationType("communication-type");
+        settings.setDeviceType("device-type");
+        return settings;
     }
 }

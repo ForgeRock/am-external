@@ -68,6 +68,8 @@ public final class OathNodeConstants {
     static final String DIGITS_QR_CODE_KEY = "digits";
     /** The key for the algorithm query component of the QR code. */
     static final String ALGORITHM_QR_CODE_KEY = "algorithm";
+    /** The key for the OATH resource id query component of the QR code. */
+    static final String OATH_RESOURCE_ID_KEY = "oid";
 
     /** The key for URI schema. */
     static final String OATH_URI_SCHEME_QR_CODE_KEY = "otpauth";

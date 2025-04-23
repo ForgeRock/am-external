@@ -30,7 +30,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-parent</artifactId>
-        <version>8.0.0</version>
+        <version>8.0.1</version>
     </parent>
 
     <!-- Component Definition -->
@@ -53,8 +53,8 @@
     <repositories>
         <repository>
             <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 8.0.0</name>
-            <url>https://maven.forgerock.org/artifactory/forgerock-openam-8.0.0-dependencies</url>
+            <name>ForgeRock Private Release Repository for AM 8.0.1</name>
+            <url>https://maven.forgerock.org/artifactory/forgerock-openam-8.0.1-dependencies</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>

@@ -21,13 +21,14 @@
  * such software or services to legal entities who have entered into a
  * binding license agreement with Ping Identity Corporation.
  */
-package org.forgerock.openam.services.push.sns.utils;
+package org.forgerock.openam.services.push.utils;
 
 import static org.forgerock.openam.services.push.PushNotificationConstants.APNS;
 import static org.forgerock.openam.services.push.PushNotificationConstants.COMMUNICATION_ID;
 import static org.forgerock.openam.services.push.PushNotificationConstants.COMMUNICATION_TYPE;
 import static org.forgerock.openam.services.push.PushNotificationConstants.DATA_JSON_POINTER;
 import static org.forgerock.openam.services.push.PushNotificationConstants.DEVICE_ID;
+import static org.forgerock.openam.services.push.PushNotificationConstants.DEVICE_NAME;
 import static org.forgerock.openam.services.push.PushNotificationConstants.DEVICE_TYPE;
 import static org.forgerock.openam.services.push.PushNotificationConstants.MECHANISM_UID;
 
@@ -38,45 +39,44 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.common.JwtReconstruction;
 import org.forgerock.json.jose.jwt.Jwt;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
+import org.forgerock.openam.services.push.PushNotificationDelegate;
+import org.forgerock.openam.services.push.PushNotificationException;
+import org.forgerock.openam.services.push.PushNotificationService;
 import org.forgerock.openam.services.push.PushNotificationServiceConfig;
 import org.forgerock.openam.utils.StringUtils;
 
-import com.amazonaws.services.sns.AmazonSNS;
-import com.amazonaws.services.sns.model.CreatePlatformEndpointRequest;
-import com.amazonaws.services.sns.model.CreatePlatformEndpointResult;
-import com.amazonaws.services.sns.model.InvalidParameterException;
-import com.amazonaws.services.sns.model.SetEndpointAttributesRequest;
 
 /**
- * A utility class for {@see SnsRegistrationPredicate} to aid testing.
+ * A class for updating the response from the client, and gathering the device's communication ID.
  */
-public class SnsPushResponseUpdater {
+public class PushResponseUpdater {
 
     private static final String ENABLED = "Enabled";
     private static final String TOKEN = "Token";
 
-    private SnsClientFactory clientFactory;
+    private final PushNotificationService pushNotificationService;
 
     /**
-     * Generates a new AmazonSNSPushResponseUpdater with the provided factory used to generate
-     * AmazonSNSClients.
-     * @param clientFactory used to generate amazon SNS clients.
+     * Generates a new PushResponseUpdater with the provided PushNotificationService.
+     *
+     * @param pushNotificationService used to retrieve the appropriate PushNotificationDelegate.
      */
-    public SnsPushResponseUpdater(SnsClientFactory clientFactory) {
-        this.clientFactory = clientFactory;
+    public PushResponseUpdater(PushNotificationService pushNotificationService) {
+        this.pushNotificationService = pushNotificationService;
     }
 
     /**
      * Updates the response (held in the content JsonValue) using information communicated
      * back from the client, and gathers the device's communication ID via registering it
-     * with Amazon and retrieving and endpoint ARN.
+     * with the push notification delegate.
      *
      * @param config The config of the amazon push service.
      * @param content The content of the response message from the push device.
      * @param realm   The realm we are operating in.
      * @return true if the update was performed successfully.
      */
-    public boolean updateResponse(PushNotificationServiceConfig.Realm config, JsonValue content, String realm) {
+    public boolean updateResponse(PushNotificationServiceConfig.Realm config, JsonValue content, String realm)
+            throws PushNotificationException {
 
         if (content.get(DATA_JSON_POINTER) == null) {
             return false;
@@ -90,9 +90,8 @@ public class SnsPushResponseUpdater {
     }
 
     private boolean updateCommunicationId(JsonValue content, JwtClaimsSet claimsSet,
-                                       PushNotificationServiceConfig.Realm config,
-            String realm) {
-        AmazonSNS client = clientFactory.produce(config, realm);
+                                       PushNotificationServiceConfig.Realm config, String realm)
+            throws PushNotificationException {
 
         String communicationType = (String) claimsSet.getClaim(COMMUNICATION_TYPE);
         String deviceId = (String) claimsSet.getClaim(DEVICE_ID);
@@ -105,7 +104,8 @@ public class SnsPushResponseUpdater {
             platformApplicationArn = config.googleEndpoint();
         }
 
-        setCommunicationId(client, platformApplicationArn, deviceId, content);
+        var delegate = pushNotificationService.getDelegate(realm);
+        setCommunicationId(delegate, platformApplicationArn, deviceId, content);
 
         return content.get(COMMUNICATION_ID).isNotNull()
                 && !StringUtils.isBlank(content.get(COMMUNICATION_ID).asString());
@@ -121,44 +121,31 @@ public class SnsPushResponseUpdater {
         content.put(DEVICE_TYPE, deviceType);
         content.put(DEVICE_ID, deviceId);
         content.put(COMMUNICATION_TYPE, communicationType);
+
+        if (claims.isDefined(DEVICE_NAME)) {
+            String deviceName = (String) claims.getClaim(DEVICE_NAME);
+            content.put(DEVICE_NAME, deviceName);
+        }
     }
 
-    private void setCommunicationId(AmazonSNS client, String arn, String deviceId, JsonValue content) {
+    private void setCommunicationId(PushNotificationDelegate client, String arn, String deviceId, JsonValue content)
+            throws PushNotificationException {
         Map<String, String> attributes = standardAttributes(deviceId);
         String answer;
 
         try {
-            CreatePlatformEndpointRequest createReq = new CreatePlatformEndpointRequest()
-                    .withPlatformApplicationArn(arn)
-                    .withAttributes(attributes)
-                    .withToken(deviceId);
-
-            CreatePlatformEndpointResult result = client.createPlatformEndpoint(createReq);
-            answer = result.getEndpointArn();
-        } catch (InvalidParameterException e) {
+            answer = client.createPlatformEndpoint(arn, deviceId, attributes);
+        } catch (PushNotificationException e) {
             //endpoint already exists, let's try to re-enable it, first we ensure we get the appropriate endpointArn
             attributes.put(ENABLED, "false");
 
-            CreatePlatformEndpointRequest createReq = new CreatePlatformEndpointRequest()
-                    .withPlatformApplicationArn(arn)
-                    .withToken(deviceId)
-                    .withAttributes(attributes);
-            CreatePlatformEndpointResult result = client.createPlatformEndpoint(createReq);
-
-            String endpointArn = result.getEndpointArn();
-
+            String endpointArn = client.createPlatformEndpoint(arn, deviceId, attributes);
             attributes.put(ENABLED, "true");
 
-            //then we re-enable it, note the attribute-set
-            SetEndpointAttributesRequest attrReq = new SetEndpointAttributesRequest()
-                    .withAttributes(attributes)
-                    .withEndpointArn(endpointArn);
-
-            client.setEndpointAttributes(attrReq);
+            client.setEndpointAttributes(endpointArn, attributes);
             answer = endpointArn;
         }
         content.put(COMMUNICATION_ID, answer);
-
     }
 
     private Map<String, String> standardAttributes(String deviceId) {

@@ -27,54 +27,44 @@ import static org.forgerock.json.JsonValue.field;
 import static org.forgerock.json.JsonValue.json;
 import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.json.test.assertj.AssertJJsonValueAssert.assertThat;
-import static org.mockito.BDDMockito.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
 
 import org.forgerock.json.JsonValue;
 import org.forgerock.json.jose.builders.JwtClaimsSetBuilder;
 import org.forgerock.json.jose.builders.SignedJwtBuilderImpl;
 import org.forgerock.json.jose.jws.JwsAlgorithm;
 import org.forgerock.json.jose.jws.SigningManager;
+import org.forgerock.openam.services.push.PushNotificationDelegate;
+import org.forgerock.openam.services.push.PushNotificationException;
+import org.forgerock.openam.services.push.PushNotificationService;
 import org.forgerock.openam.services.push.PushNotificationServiceConfig;
-import org.forgerock.openam.services.push.sns.utils.SnsClientFactory;
-import org.forgerock.openam.services.push.sns.utils.SnsPushResponseUpdater;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sns.model.CreatePlatformEndpointResult;
+@ExtendWith(MockitoExtension.class)
+public class PushResponseUpdaterTest {
+    @Mock
+    PushNotificationService mockPushNotificationService;
+    @Mock
+    PushNotificationDelegate pushNotificationDelegate;
+    @InjectMocks
+    PushResponseUpdater responseUpdater;
 
-public class AmazonSNSPushResponseUpdaterTest {
-
-    SnsClientFactory mockClientFactory = mock(SnsClientFactory.class);
-    AmazonSNSClient mockClient = mock(AmazonSNSClient.class);
     PushNotificationServiceConfig.Realm config = createConfig();
+    String realm = "/";
 
-    SnsPushResponseUpdater responseUpdater = new SnsPushResponseUpdater(mockClientFactory);
 
     @Test
-    void shouldSucceedWithValidInput() {
-        var realm = "/";
+    void shouldSucceedWithValidInput() throws PushNotificationException {
         //given
-        given(mockClientFactory.produce(config, realm)).willReturn(mockClient);
-
-        CreatePlatformEndpointResult endpointResult = new CreatePlatformEndpointResult();
-        endpointResult.setEndpointArn("endpointArn");
-
-        given(mockClient.createPlatformEndpoint(anyObject())).willReturn(endpointResult);
-
-        JwtClaimsSetBuilder jwtClaimsSetBuilder = new JwtClaimsSetBuilder()
-                .claim("communicationType", "communicationType")
-                .claim("deviceId", "deviceId")
-                .claim("mechanismUid", "mechanismUid")
-                .claim("deviceType", "deviceType");
-
-        String jwt = new SignedJwtBuilderImpl(new SigningManager()
-                .newNopSigningHandler())
-                .claims(jwtClaimsSetBuilder.build())
-                .headers().alg(JwsAlgorithm.NONE).done().build();
-
-        JsonValue content = json(object(field("jwt", jwt)));
+        given(mockPushNotificationService.getDelegate(realm)).willReturn(pushNotificationDelegate);
+        given(pushNotificationDelegate.createPlatformEndpoint(any(), any(), any()))
+                .willReturn("endpointArn");
+        JsonValue content = getContent();
 
         //when
         boolean result = responseUpdater.updateResponse(config, content, realm);
@@ -91,27 +81,13 @@ public class AmazonSNSPushResponseUpdaterTest {
 
 
     @Test
-    void shouldFailWithInvalidAmazonResponse() {
-        var realm = "/";
+    void shouldFailWithInvalidResponse() throws PushNotificationException {
         //given
-        given(mockClientFactory.produce(config, realm)).willReturn(mockClient);
+        given(mockPushNotificationService.getDelegate(realm)).willReturn(pushNotificationDelegate);
+        given(pushNotificationDelegate.createPlatformEndpoint(any(), any(), any()))
+                .willReturn(null);
 
-        CreatePlatformEndpointResult endpointResult = new CreatePlatformEndpointResult();
-
-        given(mockClient.createPlatformEndpoint(anyObject())).willReturn(endpointResult);
-
-        JwtClaimsSetBuilder jwtClaimsSetBuilder = new JwtClaimsSetBuilder()
-                .claim("communicationType", "communicationType")
-                .claim("deviceId", "deviceId")
-                .claim("mechanismUid", "mechanismUid")
-                .claim("deviceType", "deviceType");
-
-        String jwt = new SignedJwtBuilderImpl(new SigningManager()
-                .newNopSigningHandler())
-                .claims(jwtClaimsSetBuilder.build())
-                .headers().alg(JwsAlgorithm.NONE).done().build();
-
-        JsonValue content = json(object(field("jwt", jwt)));
+        JsonValue content = getContent();
 
         //when
         boolean result = responseUpdater.updateResponse(config, content, realm);
@@ -121,10 +97,9 @@ public class AmazonSNSPushResponseUpdaterTest {
     }
 
     @Test
-    void shouldFailWhenNoJwtInContent() {
+    void shouldFailWhenNoJwtInContent() throws PushNotificationException {
         var realm = "/";
         //given
-        mockClientFactory.produce(config, realm);
         JsonValue content = JsonValue.json(object(field("", "")));
 
         //when
@@ -167,4 +142,20 @@ public class AmazonSNSPushResponseUpdaterTest {
             }
         };
     }
+
+    private static JsonValue getContent() {
+        var jwtClaimsSetBuilder = new JwtClaimsSetBuilder()
+                .claim("communicationType", "communicationType")
+                .claim("deviceId", "deviceId")
+                .claim("mechanismUid", "mechanismUid")
+                .claim("deviceType", "deviceType");
+
+        String jwt = new SignedJwtBuilderImpl(new SigningManager()
+                .newNopSigningHandler())
+                .claims(jwtClaimsSetBuilder.build())
+                .headers().alg(JwsAlgorithm.NONE).done().build();
+
+        return json(object(field("jwt", jwt)));
+    }
+
 }

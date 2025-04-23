@@ -30,12 +30,14 @@ import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.BGCOLOUR_
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.HIDDEN_CALLCABK_ID;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.IMG_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.SCAN_QR_CODE_MSG_KEY;
+import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.USER_ID_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.ALGORITHM_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.COUNTER_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.DIGITS_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.HOTP_URI_HOST_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_DEVICE_PROFILE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_ENABLE_RECOVERY_CODE_KEY;
+import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_RESOURCE_ID_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.OATH_URI_SCHEME_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.PERIOD_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.oath.OathNodeConstants.SECRET_QR_CODE_KEY;
@@ -70,6 +72,7 @@ import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.rest.devices.oath.OathDeviceSettings;
 import org.forgerock.openam.core.rest.devices.services.SkipSetting;
 import org.forgerock.openam.core.rest.devices.services.oath.AuthenticatorOathService;
+import org.forgerock.util.encode.Base64url;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,7 +198,7 @@ public class OathRegistrationHelper {
     public String createRegistrationUri(AMIdentity identity, OathDeviceSettings deviceSettings,
                                         OathRegistrationConfig config)
             throws NodeProcessException {
-        Map<String, String> params = buildURIParameters(deviceSettings, config);
+        Map<String, String> params = buildURIParameters(deviceSettings, identity.getName(), config);
 
         return multiFactorRegistrationUtilities.createUri(OATH_URI_SCHEME_QR_CODE_KEY,
                 config.algorithm() == OathAlgorithm.HOTP ? HOTP_URI_HOST_QR_CODE_KEY : TOTP_URI_HOST_QR_CODE_KEY,
@@ -323,12 +326,14 @@ public class OathRegistrationHelper {
     /**
      * Build the OATH URI parameters to create the QR Code.
      *
+     * @param userId        the user ID.
      * @param deviceProfile the Oath device's settings.
      * @param config        the OATH registration configuration.
      * @return the map of parameters.
      * @throws NodeProcessException if unable to decode secret.
      */
-    public Map<String, String> buildURIParameters(OathDeviceSettings deviceProfile, OathRegistrationConfig config)
+    public Map<String, String> buildURIParameters(OathDeviceSettings deviceProfile, String userId,
+                                                  OathRegistrationConfig config)
             throws NodeProcessException {
         Map<String, String> params = new LinkedHashMap<>();
 
@@ -358,6 +363,9 @@ public class OathRegistrationHelper {
                 && (config.totpHashAlgorithm() != HashAlgorithm.HMAC_SHA1)) {
             params.put(ALGORITHM_QR_CODE_KEY, config.totpHashAlgorithm().toString());
         }
+
+        params.put(USER_ID_QR_CODE_KEY, Base64url.encode(userId.getBytes()));
+        params.put(OATH_RESOURCE_ID_KEY, Base64url.encode(deviceProfile.getUUID().getBytes()));
 
         return params;
     }

@@ -62,6 +62,8 @@ public final class MultiFactorConstants {
     public static final String HIDDEN_CALLCABK_ID = "mfaDeviceRegistration";
     /** The key for authenticator policies of the QR code. */
     public static final String POLICIES_QR_CODE_KEY = "policies";
+    /** The key for the userId query component of the QR code. */
+    public static final String USER_ID_QR_CODE_KEY = "uid";
 
     /**
      * RECOVERY CODE KEYS.

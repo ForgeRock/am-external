@@ -17,7 +17,7 @@
 -->
 <!--
   Copyright 2016-2025 Ping Identity Corporation. All Rights Reserved
- 
+
  ! This code is to be used exclusively in connection with Ping Identity
  ! Corporation software or services. Ping Identity Corporation only offers
  ! such software or services to legal entities who have entered into a
@@ -29,7 +29,7 @@
     <parent>
         <artifactId>openam-parent</artifactId>
         <groupId>org.forgerock.am</groupId>
-        <version>8.0.0</version>
+        <version>8.0.1</version>
     </parent>
 
     <properties>
@@ -88,7 +88,6 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>identity-api</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>jakarta.servlet</groupId>
@@ -100,13 +99,17 @@
             <artifactId>session-api</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.forgerock.am</groupId>
+            <artifactId>openam-devices</artifactId>
+        </dependency>
     </dependencies>
 
     <repositories>
         <repository>
             <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 8.0.0</name>
-            <url>https://maven.forgerock.org/artifactory/forgerock-openam-8.0.0-dependencies</url>
+            <name>ForgeRock Private Release Repository for AM 8.0.1</name>
+            <url>https://maven.forgerock.org/artifactory/forgerock-openam-8.0.1-dependencies</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>

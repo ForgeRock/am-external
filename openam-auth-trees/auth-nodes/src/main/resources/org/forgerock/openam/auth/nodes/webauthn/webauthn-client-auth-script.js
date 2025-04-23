@@ -51,7 +51,7 @@ navigator.credentials.get({ "publicKey" : options })
         document.getElementById("loginButton_0").click();
     }).catch(function (err) {
         var outcome = {
-            error: err
+            error: String(err)
         }
         document.getElementById('webAuthnOutcome').value = JSON.stringify(outcome);
         var allowRecoveryCode = 'true' === "{allowRecoveryCode}";

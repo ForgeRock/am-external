@@ -152,7 +152,8 @@ public class OathRegistrationNode extends AbstractMultiFactorNode {
 
     private List<Callback> createScanQRCodeCallbacks(TreeContext context, OathDeviceSettings deviceProfile,
                                              AMIdentity identity) throws NodeProcessException {
-        Map<String, String> params = oathRegistrationHelper.buildURIParameters(deviceProfile, config);
+        Map<String, String> params = oathRegistrationHelper.buildURIParameters(deviceProfile, identity.getName(),
+                config);
 
         Callback textOutputCallback = oathRegistrationHelper.createLocalizedTextCallback(context, this.getClass(),
                 config.scanQRCodeMessage());

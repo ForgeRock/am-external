@@ -25,42 +25,25 @@ package org.forgerock.openam.services.push.sns;
 
 import org.forgerock.guice.core.InjectorHolder;
 import org.forgerock.json.JsonValue;
-import org.forgerock.openam.core.realms.RealmLookup;
-import org.forgerock.openam.secrets.Secrets;
-import org.forgerock.openam.services.push.PushNotificationServiceConfig;
-import org.forgerock.openam.services.push.PushNotificationServiceConfigHelper;
+import org.forgerock.openam.core.rest.devices.push.UserPushDeviceProfileManager;
+import org.forgerock.openam.services.push.PushNotificationService;
 import org.forgerock.openam.services.push.PushNotificationServiceConfigHelperFactory;
 import org.forgerock.openam.services.push.dispatch.predicates.AbstractPredicate;
-import org.forgerock.openam.services.push.sns.utils.SnsClientFactory;
-import org.forgerock.openam.services.push.sns.utils.SnsPushResponseUpdater;
+import org.forgerock.openam.services.push.utils.PushDeviceUpdater;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.iplanet.sso.SSOException;
-import com.sun.identity.sm.SMSException;
 
 /**
- * Acts to register (via communication with SNS) the device that is currently talking to the server
+ * This predicate is used to register the device that is currently talking to the server
  * from the mobile app.
  *
- * {@see org.forgerock.openam.authentication.modules.push.registration.AuthenticatorPushRegistration} for
- * information on the format which the perform() method alters the data to fit.
- *
- * This predicate does NOT have a listener attached to its config reading subsystem, therefore it will
+ * It does NOT have a listener attached to its config reading subsystem, therefore it will
  * use the values from the config at the point of time the message creates this class.
  */
 public class SnsRegistrationPredicate extends AbstractPredicate {
 
     @JsonIgnore
-    private PushNotificationServiceConfigHelperFactory configHelperFactory
-            = InjectorHolder.getInstance(PushNotificationServiceConfigHelperFactory.class);
-
-    @JsonIgnore
-    private final RealmLookup realmLookup = InjectorHolder.getInstance(RealmLookup.class);
-    @JsonIgnore
-    private final Secrets secrets = InjectorHolder.getInstance(Secrets.class);
-
-    @JsonIgnore
-    private final SnsPushResponseUpdater responseUpdater;
+    private final PushDeviceUpdater pushDeviceUpdater;
 
     private String realm;
 
@@ -69,7 +52,13 @@ public class SnsRegistrationPredicate extends AbstractPredicate {
      * purposes.
      */
     public SnsRegistrationPredicate() {
-        responseUpdater = new SnsPushResponseUpdater(new SnsClientFactory(secrets, realmLookup));
+        PushNotificationService pushNotificationService = InjectorHolder.getInstance(PushNotificationService.class);
+        UserPushDeviceProfileManager userPushDeviceProfileManager = InjectorHolder.getInstance(
+                UserPushDeviceProfileManager.class);
+        PushNotificationServiceConfigHelperFactory configHelperFactory = InjectorHolder.getInstance(
+                PushNotificationServiceConfigHelperFactory.class);
+        pushDeviceUpdater = new PushDeviceUpdater(configHelperFactory, userPushDeviceProfileManager,
+                pushNotificationService);
     }
 
     /**
@@ -95,21 +84,11 @@ public class SnsRegistrationPredicate extends AbstractPredicate {
      */
     @Override
     public boolean perform(JsonValue content) {
-        PushNotificationServiceConfigHelper configHelper;
-        PushNotificationServiceConfig.Realm config;
-        try {
-            configHelper = configHelperFactory.getConfigHelperFor(realm);
-            config = configHelper.getConfig();
-            responseUpdater.updateResponse(config, content, realm);
-        } catch (SSOException | SMSException e) {
-            return false;
-        }
-
-        return true;
+        return pushDeviceUpdater.updateDevice(content, realm);
     }
 
     /**
-     * Sets the realm for this predicate. Used when deserilialized from the CTS.
+     * Sets the realm for this predicate. Used when deserialized from the CTS.
      * @param realm The location for this predicate.
      */
     public void setRealm(String realm) {

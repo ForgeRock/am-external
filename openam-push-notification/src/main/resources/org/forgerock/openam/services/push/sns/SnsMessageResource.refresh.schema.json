@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "mechanismUid": {
+      "type": "string",
+      "title": "i18n:api-descriptor/SnsMessageResource#common.request.mechanismUid.title",
+      "description": "i18n:api-descriptor/SnsMessageResource#common.request.mechanismUid.description"
+    },
+    "username": {
+      "type": "string",
+      "title": "i18n:api-descriptor/SnsMessageResource#common.request.username.title",
+      "description": "i18n:api-descriptor/SnsMessageResource#common.request.username.description"
+    },
+    "jwt": {
+      "type": "string",
+      "title": "i18n:api-descriptor/SnsMessageResource#common.request.jwt.title",
+      "description": "i18n:api-descriptor/SnsMessageResource#action.refresh.request.jwt.description"
+    }
+  },
+  "required": ["mechanismUid", "jwt"]
+}

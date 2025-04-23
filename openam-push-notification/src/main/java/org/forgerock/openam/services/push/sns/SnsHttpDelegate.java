@@ -31,6 +31,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.amazonaws.services.sns.model.CreatePlatformEndpointRequest;
+import com.amazonaws.services.sns.model.CreatePlatformEndpointResult;
+import com.amazonaws.services.sns.model.InvalidParameterException;
+import com.amazonaws.services.sns.model.SetEndpointAttributesRequest;
 import org.forgerock.openam.services.push.AbstractPushNotificationDelegate;
 import org.forgerock.openam.services.push.DefaultMessageTypes;
 import org.forgerock.openam.services.push.MessageType;
@@ -44,7 +48,7 @@ import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.model.PublishRequest;
 
 /**
- * Delegate for communicating with SNS over HTTP.
+ * Delegate for communicating with Amazon's SNS over HTTP.
  */
 public class SnsHttpDelegate extends AbstractPushNotificationDelegate {
 
@@ -55,8 +59,7 @@ public class SnsHttpDelegate extends AbstractPushNotificationDelegate {
     private final SnsPushMessageConverter pushMessageConverter;
     private final String realm;
     private final MessageDispatcher messageDispatcher;
-
-    private PushNotificationServiceConfig.Realm config;
+    private final PushNotificationServiceConfig.Realm config;
 
     /**
      * Generates a new SNS HTTP Delegate, used to communicate over the Internet with
@@ -141,4 +144,28 @@ public class SnsHttpDelegate extends AbstractPushNotificationDelegate {
         return request;
     }
 
+    @Override
+    public String createPlatformEndpoint(String arn, String deviceId, Map<String, String> attributes)
+            throws PushNotificationException {
+        CreatePlatformEndpointRequest createReq = new CreatePlatformEndpointRequest()
+                .withPlatformApplicationArn(arn)
+                .withAttributes(attributes)
+                .withToken(deviceId);
+
+        CreatePlatformEndpointResult result;
+        try {
+            result = client.createPlatformEndpoint(createReq);
+        } catch (InvalidParameterException e) {
+            throw new PushNotificationException("Invalid parameters supplied when creating platform endpoint", e);
+        }
+        return result.getEndpointArn();
+    }
+
+    @Override
+    public void setEndpointAttributes(String endpointArn, Map<String, String> attributes) {
+        SetEndpointAttributesRequest attrReq = new SetEndpointAttributesRequest()
+                .withAttributes(attributes)
+                .withEndpointArn(endpointArn);
+        client.setEndpointAttributes(attrReq);
+    }
 }

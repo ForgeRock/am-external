@@ -64,7 +64,7 @@ public class SnsPushMessageConverterTest {
 
         JsonValue gcmValue = JsonValueBuilder.toJsonValue(value.get("GCM").asString());
 
-        assertThat(gcmValue.get("PRIORITY")).isString().isEqualTo("high");
+        assertThat(gcmValue.get("priority")).isString().isEqualTo("high");
         assertThat(gcmValue.get("data")).isNotNull();
 
         JsonValue gcmDataValue = gcmValue.get("data");

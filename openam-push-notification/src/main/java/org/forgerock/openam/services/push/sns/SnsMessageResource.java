@@ -101,4 +101,21 @@ public class SnsMessageResource {
     public Promise<ActionResponse, ResourceException> register(Context context, ActionRequest actionRequest) {
         return pushMessageResource.handle(context, actionRequest);
     }
+
+    /**
+     * For an update request - passes this request into a new a message to be handled
+     * by {@link MessageDispatcher}.
+     *
+     * @param context Context of this request used to retrieve the current realm location.
+     * @param actionRequest The request triggering the dispatch.
+     * @return An empty HTTP 200 if everything was okay, or an HTTP 400 if the request was malformed.
+     */
+    @Action(operationDescription = @Operation(
+            description = SNS_MESSAGE_RESOURCE + ACTION + "refresh." + DESCRIPTION,
+            errors = @ApiError(code = 400, description = SNS_MESSAGE_RESOURCE + ERROR_400_DESCRIPTION)),
+            request = @Schema(schemaResource = "SnsMessageResource.refresh.schema.json"),
+            response = @Schema(schemaResource = "SnsMessageResource.response.schema.json"))
+    public Promise<ActionResponse, ResourceException> refresh(Context context, ActionRequest actionRequest) {
+        return pushMessageResource.update(context, actionRequest);
+    }
 }

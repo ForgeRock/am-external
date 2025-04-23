@@ -37,6 +37,7 @@ import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_MECHAN
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_TYPE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.TIME_INTERVAL_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.TIME_TO_LIVE_KEY;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.USER_ID_KEY;
 import static org.forgerock.openam.oauth2.OAuth2Constants.Params.CIBA_BINDING_MESSAGE;
 import static org.forgerock.openam.services.push.PushNotificationConstants.JWT;
 import static org.forgerock.openam.utils.Time.getCalendarInstance;
@@ -227,6 +228,8 @@ public class PushAuthenticationSenderNode implements Node {
         pushMessage = pushMessage.replaceAll("\\{\\{user\\}\\}", username);
         pushMessage = pushMessage.replaceAll("\\{\\{issuer\\}\\}", device.getIssuer());
 
+        var name = identityProvider.getAMIdentity(context.universalId, context.getStateFor(this))
+                               .map(AMIdentity::getName);
         // Add default keys to the claim
         JwtClaimsSetBuilder jwtClaimsSetBuilder = new JwtClaimsSetBuilder()
                 .claim(MECHANISM_ID_KEY, mechanismId)
@@ -235,7 +238,8 @@ public class PushAuthenticationSenderNode implements Node {
                 .claim(NOTIFICATION_MESSAGE_KEY, pushMessage)
                 .claim(PUSH_TYPE_KEY, config.pushType().getValue())
                 .claim(TIME_INTERVAL_KEY, String.valueOf(calendarInstance.getTimeInMillis()))
-                .claim(TIME_TO_LIVE_KEY, String.valueOf(config.messageTimeout() / 1000));
+                .claim(TIME_TO_LIVE_KEY, String.valueOf(config.messageTimeout() / 1000))
+                .claim(USER_ID_KEY, name.orElse(""));
 
         // Add any custom payload attributes to the claim
         String payloadAttributes = getPayloadAttributes(context, config);

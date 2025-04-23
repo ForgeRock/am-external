@@ -190,8 +190,8 @@ public class PushRegistrationNode extends AbstractMultiFactorNode {
     private List<Callback> createScanQRCodeCallbacks(PushDeviceSettings deviceProfile,
                                                     AMIdentity identity, String messageId, String challenge,
                                                     TreeContext context) throws NodeProcessException {
-        Map<String, String> params = pushRegistrationHelper.buildURIParameters(deviceProfile, messageId,
-                challenge, this.config, context);
+        Map<String, String> params = pushRegistrationHelper.buildURIParameters(deviceProfile, identity.getName(),
+                messageId, challenge, this.config, context);
 
         Callback textOutputCallback = pushRegistrationHelper.createLocalizedTextCallback(context, this.getClass(),
                 config.scanQRCodeMessage());

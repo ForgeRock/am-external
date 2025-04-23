@@ -296,14 +296,24 @@ public class PushNotificationService implements ReloadableSecret {
         throw new PushNotificationException("No Push Notification Service available for realm " + realm);
     }
 
-    private void updatePreferences(String realm) throws PushNotificationException {
+    /**
+     * Gets the {@link PushNotificationDelegate} for the provided realm.
+     *
+     * @param realm The realm to get the delegate for.
+     * @return The delegate for the realm.
+     * @throws PushNotificationException If there was an issue getting the delegate.
+     */
+    public PushNotificationDelegate getDelegate(String realm) throws PushNotificationException {
         PushNotificationServiceConfigHelper configHelper = getConfigHelper(realm);
         String factoryClass = configHelper.getFactoryClass();
         validateFactoryExists(factoryClass);
-        PushNotificationServiceConfig.Realm config = configHelper.getConfig();
-        PushNotificationDelegate pushNotificationDelegate = pushFactoryMap.get(factoryClass)
-                .produceDelegateFor(config, realm, createDispatcher(configHelper));
+        return pushFactoryMap.get(factoryClass)
+                .produceDelegateFor(configHelper.getConfig(), realm, createDispatcher(configHelper));
+    }
 
+    private void updatePreferences(String realm) throws PushNotificationException {
+        var config = getConfigHelper(realm).getConfig();
+        PushNotificationDelegate pushNotificationDelegate = getDelegate(realm);
         if (pushNotificationDelegate == null) {
             debug.error("PushNotificationFactory produced a null delegate. Aborting update.");
         }

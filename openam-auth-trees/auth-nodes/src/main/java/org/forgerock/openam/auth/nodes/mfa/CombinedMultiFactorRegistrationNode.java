@@ -309,9 +309,10 @@ public class CombinedMultiFactorRegistrationNode extends AbstractMultiFactorNode
                                                      AMIdentity identity, String messageId, String challenge,
                                                      TreeContext context) throws NodeProcessException {
 
-        Map<String, String> pushParams = pushRegistrationHelper.buildURIParameters(pushProfile, messageId,
-                challenge, config, context);
-        Map<String, String> oathParams = oathRegistrationHelper.buildURIParameters(oathProfile, config);
+        Map<String, String> pushParams = pushRegistrationHelper.buildURIParameters(pushProfile, identity.getName(),
+                messageId, challenge, config, context);
+        Map<String, String> oathParams = oathRegistrationHelper.buildURIParameters(oathProfile, identity.getName(),
+                config);
 
         Map<String, String> combinedParams = new LinkedHashMap<>();
         combinedParams.putAll(pushParams);

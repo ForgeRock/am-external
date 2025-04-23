@@ -57,7 +57,8 @@ public final class PushNodeConstants {
     static final String NUMBERS_CHALLENGE_KEY = "n";
     /** The key for the context info. */
     static final String CONTEXT_INFO_KEY = "x";
-
+    /** The key for the user id. */
+    static final String USER_ID_KEY = "d";
     /**
      * QR CODE KEYS.
      */
@@ -74,6 +75,8 @@ public final class PushNodeConstants {
     static final String LOADBALANCER_DATA_QR_CODE_KEY = "l";
     /** The key for the JWS challenge for registration of the QR code. */
     static final String CHALLENGE_QR_CODE_KEY = "c";
+    /** The key for the PUSH resource id query component of the QR code. */
+    static final String PUSH_RESOURCE_ID_KEY = "pid";
     /** The key for URI schema. */
     static final String PUSH_URI_SCHEME_QR_CODE_KEY = "pushauth";
     /** The key for host. */

@@ -175,7 +175,8 @@ public class PushRegistrationNodeTest {
         given(deviceProfileHelper.encodeDeviceSettings(any()))
                 .willReturn("ekd1j5Rr2A8DDeg3ekwZVD06bVJCpAHoR9ab");
         doReturn(Collections.emptyMap())
-                .when(pushRegistrationHelper).buildURIParameters(any(), anyString(), anyString(), any(), any());
+                .when(pushRegistrationHelper).buildURIParameters(any(), anyString(), anyString(), anyString(), any(),
+                        any());
         doReturn(mock(ScriptTextOutputCallback.class))
                 .when(pushRegistrationHelper).createQRCodeCallback(any(), any(), anyString(), anyString());
         doReturn(mock(HiddenValueCallback.class))
@@ -184,6 +185,8 @@ public class PushRegistrationNodeTest {
                 .when(pushRegistrationHelper).createPollingWaitCallback();
         doReturn(userIdentity)
                 .when(node).getIdentity(any());
+        doReturn("userId")
+                .when(userIdentity).getName();
         doNothing()
                 .when(pushRegistrationHelper).updateMessageDispatcher(any(), any(), any());
 
@@ -324,13 +327,15 @@ public class PushRegistrationNodeTest {
         // Given
         whenNodeConfigHasDefaultValues();
 
-        given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any())).
-                willReturn(getDeviceSettings());
-        doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
+        given(deviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
+                .willReturn(getDeviceSettings());
+        doReturn(userIdentity).when(node).getIdentity(any());
+        doReturn("userId").when(userIdentity).getName();
         doReturn(MessageState.UNKNOWN).when(pushRegistrationHelper).getMessageState(any());
         doReturn(mock(MessageId.class)).when(pushRegistrationHelper).getMessageId(any());
         doReturn(Collections.emptyMap())
-                .when(pushRegistrationHelper).buildURIParameters(any(), anyString(), anyString(), any(), any());
+                .when(pushRegistrationHelper).buildURIParameters(any(), anyString(), anyString(), anyString(), any(),
+                        any());
         doReturn(mock(ScriptTextOutputCallback.class))
                 .when(pushRegistrationHelper).createQRCodeCallback(any(), any(), anyString(), anyString());
         doReturn(mock(HiddenValueCallback.class))
@@ -416,6 +421,7 @@ public class PushRegistrationNodeTest {
         given(config.timeout()).willReturn(timeout);
         given(config.generateRecoveryCodes()).willReturn(generateRecoveryCodes);
         given(config.scanQRCodeMessage()).willReturn(MAP_SCAN_MESSAGE);
+        given(sessionCookies.getLBCookie()).willReturn("sessionCookie");
 
         localizationHelper = mock(LocalizedMessageProvider.class);
         given(localizationHelper.getLocalizedMessage(any(), any(), any(), anyString())).willReturn(MESSAGE);

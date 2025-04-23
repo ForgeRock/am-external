@@ -162,6 +162,8 @@ public class OathRegistrationNodeTest {
                 .when(oathRegistrationHelper).createHiddenCallback(any(), any(), any(), anyString(), anyString());
         doReturn(userIdentity)
                 .when(node).getIdentity(any());
+        doReturn("userId")
+                .when(userIdentity).getName();
         doReturn("forgerock")
                 .when(oathRegistrationHelper).getBase32Secret(anyString());
 

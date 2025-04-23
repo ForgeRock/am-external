@@ -218,6 +218,8 @@ public class CombinedMultiFactorRegistrationNodeTest {
                 .when(pushRegistrationHelper).createPollingWaitCallback();
         doReturn(userIdentity)
                 .when(node).getIdentity(any());
+        doReturn("userId")
+                .when(userIdentity).getName();
         doReturn("forgerock")
                 .when(oathRegistrationHelper).getBase32Secret(anyString());
         doNothing()
@@ -381,12 +383,14 @@ public class CombinedMultiFactorRegistrationNodeTest {
                 .willReturn(getPushDeviceSettings());
         given(oathDeviceProfileHelper.getDeviceProfileFromSharedState(any(), any()))
                 .willReturn(getOathDeviceSettings());
-        doReturn(mock(AMIdentity.class)).when(node).getIdentity(any());
+        doReturn(userIdentity).when(node).getIdentity(any());
+        doReturn("userId").when(userIdentity).getName();
         doReturn(MessageState.UNKNOWN).when(pushRegistrationHelper).getMessageState(any());
         doReturn(json(object())).when(pushRegistrationHelper).deleteMessage(any());
         doReturn(mock(MessageId.class)).when(pushRegistrationHelper).getMessageId(any());
         doReturn(Collections.emptyMap())
-                .when(pushRegistrationHelper).buildURIParameters(any(), anyString(), anyString(), any(), any());
+                .when(pushRegistrationHelper).buildURIParameters(any(), anyString(), anyString(), anyString(), any(),
+                        any());
         doReturn(mock(ScriptTextOutputCallback.class))
                 .when(pushRegistrationHelper).createQRCodeCallback(any(), any(), anyString(), anyString());
         doReturn(mock(HiddenValueCallback.class))

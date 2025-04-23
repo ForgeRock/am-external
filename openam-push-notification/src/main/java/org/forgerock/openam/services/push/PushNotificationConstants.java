@@ -53,8 +53,12 @@ public final class PushNotificationConstants {
     public static final String COMMUNICATION_ID = "communicationId";
     /** Name of the key where the deviceId is stored. */
     public static final String DEVICE_ID = "deviceId";
+    /** Name of the key where the deviceName is stored. */
+    public static final String DEVICE_NAME = "deviceName";
     /** Name of the key where the mechanismUid is stored. */
     public static final String MECHANISM_UID = "mechanismUid";
+    /** Name of the key where the username is stored. */
+    public static final String USERNAME = "username";
     /** Name of the key where the JWT is stored. */
     public static final String JWT = "jwt";
 
@@ -64,8 +68,12 @@ public final class PushNotificationConstants {
 
     /** Pointer to the location of the messageId in the mobile message. */
     public static final JsonPointer MESSAGE_ID_JSON_POINTER = new JsonPointer(MESSAGE_ID);
+    /** Pointer to the location of the mechanismUID in the mobile message. */
+    public static final JsonPointer MECHANISM_ID_JSON_POINTER = new JsonPointer(MECHANISM_UID);
     /** Pointer to the location of the JWT data returned by the device. */
     public static final JsonPointer DATA_JSON_POINTER = new JsonPointer(JWT);
+    /** Pointer to the location of the username in the mobile message. */
+    public static final JsonPointer USERNAME_JSON_POINTER = new JsonPointer(USERNAME);
     /** Claim set location of response. */
     public static final String JWT_RESPONSE_CLAIM_KEY = "response";
     /** Claim set location of deny. */

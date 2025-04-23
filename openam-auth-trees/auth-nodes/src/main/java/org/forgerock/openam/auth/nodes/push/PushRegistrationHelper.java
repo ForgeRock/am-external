@@ -36,6 +36,7 @@ import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.ISSUER_QR
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_CODE_DEVICE_NAME;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.RECOVERY_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.SCAN_QR_CODE_MSG_KEY;
+import static org.forgerock.openam.auth.nodes.mfa.MultiFactorConstants.USER_ID_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.AUTH_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.CHALLENGE_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.LOADBALANCER_DATA_QR_CODE_KEY;
@@ -44,6 +45,7 @@ import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.MESSAGE_ID_
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_CHALLENGE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_DEVICE_PROFILE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_REGISTRATION_TIMEOUT;
+import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_RESOURCE_ID_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_URI_HOST_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.PUSH_URI_SCHEME_QR_CODE_KEY;
 import static org.forgerock.openam.auth.nodes.push.PushNodeConstants.REG_QR_CODE_KEY;
@@ -368,7 +370,8 @@ public class PushRegistrationHelper {
     public String createRegistrationUri(AMIdentity userIdentity, PushDeviceSettings deviceProfile, String messageId,
                                         String challenge, PushRegistrationConfig config, TreeContext context)
             throws NodeProcessException {
-        Map<String, String> params = buildURIParameters(deviceProfile, messageId, challenge, config, context);
+        Map<String, String> params = buildURIParameters(deviceProfile, userIdentity.getName(), messageId, challenge,
+                config, context);
 
         return multiFactorRegistrationUtilities.createUri(
                 PUSH_URI_SCHEME_QR_CODE_KEY,
@@ -449,6 +452,7 @@ public class PushRegistrationHelper {
      * Build the URI parameters to create the QR Code.
      *
      * @param deviceProfile the Push device's settings.
+     * @param userId        the user ID.
      * @param messageId     the messageId key.
      * @param challenge     the challenge secret.
      * @param config        the Push registration configuration.
@@ -457,6 +461,7 @@ public class PushRegistrationHelper {
      * @throws NodeProcessException if unable to retrieve the Push service URLs.
      */
     public Map<String, String> buildURIParameters(PushDeviceSettings deviceProfile,
+                                                  String userId,
                                                   String messageId,
                                                   String challenge,
                                                   PushRegistrationConfig config,
@@ -476,6 +481,8 @@ public class PushRegistrationHelper {
                     Base64url.encode(getServiceAddressUrl(context, DefaultMessageTypes.REGISTER).getBytes()));
             params.put(AUTH_QR_CODE_KEY,
                     Base64url.encode(getServiceAddressUrl(context, DefaultMessageTypes.AUTHENTICATE).getBytes()));
+            params.put(USER_ID_QR_CODE_KEY, Base64url.encode(userId.getBytes()));
+            params.put(PUSH_RESOURCE_ID_KEY, Base64url.encode(deviceProfile.getUUID().getBytes()));
 
             if (config.bgColor() != null && config.bgColor().startsWith("#")) {
                 params.put(BGCOLOUR_QR_CODE_KEY, config.bgColor().substring(1));

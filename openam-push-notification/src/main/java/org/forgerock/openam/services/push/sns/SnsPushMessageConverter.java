@@ -44,7 +44,7 @@ import com.google.inject.Singleton;
 public class SnsPushMessageConverter implements PushMessageConverter {
 
     private static final String GCM = "GCM";
-    private static final String GCM_PRIORITY = "PRIORITY";
+    private static final String GCM_PRIORITY = "priority";
     private static final String GCM_HIGH_PRIORITY = "high";
     private static final String GCM_DATA = "data";
     private static final String GCM_MESSAGE = "message";

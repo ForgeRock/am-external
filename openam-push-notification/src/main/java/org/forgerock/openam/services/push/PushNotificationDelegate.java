@@ -27,6 +27,7 @@ import java.io.Closeable;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.forgerock.openam.annotations.SupportedAll;
 import org.forgerock.openam.services.push.dispatch.MessageDispatcher;
 import org.forgerock.openam.services.push.dispatch.handlers.ClusterMessageHandler;
@@ -143,4 +144,31 @@ public interface PushNotificationDelegate extends Closeable {
      */
     Map<MessageType, ClusterMessageHandler> getMessageHandlers();
 
+
+    /**
+     * Creates an endpoint for a device and mobile app on one of the supported push notification services, such as
+     * GCM (Firebase Cloud Messaging) and APNS. You can use the returned EndpointArn to send a message to a mobile
+     * app or by the Subscribe action for subscription to a topic.
+     *
+     * @param arn The application ARN.
+     * @param deviceId The device ID.
+     * @param attributes The attributes to set on the endpoint.
+     * @return The ARN of the created endpoint.
+     * @throws PushNotificationException
+     */
+    default String createPlatformEndpoint(String arn, String deviceId, Map<String, String> attributes)
+            throws PushNotificationException {
+        throw new NotImplementedException("This method must be implemented by the delegate.");
+    }
+
+    /**
+     * Sets the attributes for an endpoint for a device on one of the supported push notification services, such as
+     * GCM (Firebase Cloud Messaging) and APNS.
+     *
+     * @param endpointArn The endpoint ARN.
+     * @param attributes A map of the attributes to set on the endpoint.
+     */
+    default void setEndpointAttributes(String endpointArn, Map<String, String> attributes) {
+        throw new NotImplementedException("This method must be implemented by the delegate.");
+    }
 }

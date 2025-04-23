@@ -61,7 +61,7 @@ navigator.credentials.create({publicKey: publicKey})
         document.getElementById("loginButton_0").click();
     }).catch(function (err) {
         var outcome = {
-            error: err
+            error: String(err)
         }
         document.getElementById('webAuthnOutcome').value = JSON.stringify(outcome);
         document.getElementById("loginButton_0").click();
