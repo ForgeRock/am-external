@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-authentication</artifactId>
-        <version>7.3.2</version>
+        <version>7.3.3</version>
     </parent>
 
     <name>OpenAM Device Id Authentication Module</name>

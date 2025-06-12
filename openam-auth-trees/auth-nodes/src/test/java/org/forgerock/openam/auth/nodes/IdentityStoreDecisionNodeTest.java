@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2022 ForgeRock AS.
+ * Copyright 2021-2025 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -34,6 +34,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.MockitoAnnotations.openMocks;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+
 import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.TextOutputCallback;
@@ -55,8 +59,6 @@ import org.testng.annotations.Test;
 
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.common.IdRepoUtilityService;
-
-import java.util.List;
 
 public class IdentityStoreDecisionNodeTest {
 
@@ -92,6 +94,7 @@ public class IdentityStoreDecisionNodeTest {
 
     private JsonValue sharedState;
     private JsonValue secureState;
+    private IdentityStoreDecisionNode identityStoreDecisionNode;
 
     @BeforeMethod
     public void setUp() throws NodeProcessException, LDAPUtilException {
@@ -112,6 +115,8 @@ public class IdentityStoreDecisionNodeTest {
         ));
 
         secureState = json(object(field(ONE_TIME_PASSWORD, TEST_ONE_TIME_PASSWORD)));
+        identityStoreDecisionNode = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory,
+                coreWrapper, identityService, idRepoUtilityService);
     }
 
     @Test
@@ -182,18 +187,33 @@ public class IdentityStoreDecisionNodeTest {
 
     }
 
-    @Test
-    public void accountLockoutResultsInLockedOutcome() throws NodeProcessException {
+@Test
+public void accountLockoutResultsInLockedOutcomeWhenCorrectCreds() throws NodeProcessException {
+    given(ldapAuthUtils.getState()).willReturn(ModuleState.ACCOUNT_LOCKED);
+    Action action = identityStoreDecisionNode.process(newTreeContext(sharedState, secureState));
 
-        given(ldapAuthUtils.getState()).willReturn(ModuleState.ACCOUNT_LOCKED);
-        Action action = new IdentityStoreDecisionNode(serviceConfig, configManagerFactory, coreWrapper, identityService,
-                idRepoUtilityService)
-                .process(newTreeContext(sharedState, secureState));
+    assertThat(action.outcome)
+            .withFailMessage("Outcome was not correct")
+            .isEqualTo(String.valueOf(LdapDecisionNode.LdapOutcome.LOCKED));
+    assertThat(action.lockoutMessage).isEqualTo("User Locked Out.");
+    assertThat(action.errorMessage).isEqualTo("User Locked Out.");
+}
 
-        assertThat(String.valueOf(LdapDecisionNode.LdapOutcome.LOCKED))
-                .withFailMessage("Outcome was not correct")
-                .isEqualTo(String.valueOf(LdapDecisionNode.LdapOutcome.LOCKED));
-    }
+@Test
+public void accountLockoutResultsInLockedOutcomeWhenIncorrectCreds() throws NodeProcessException, LDAPUtilException {
+    doThrow(new LDAPUtilException("Invalid credentials.", ResultCode.INVALID_CREDENTIALS))
+            .when(ldapAuthUtils).authenticateUser(anyString(), anyString());
+    given(ldapAuthUtils.getUserAttributeValues()).willReturn(new HashMap<>() {{
+        put("inetuserstatus", Set.of("Inactive"));
+    }});
+    Action action = identityStoreDecisionNode.process(newTreeContext(sharedState, secureState));
+
+    assertThat(action.outcome)
+            .withFailMessage("Outcome was not correct")
+            .isEqualTo(String.valueOf(LdapDecisionNode.LdapOutcome.LOCKED));
+    assertThat(action.lockoutMessage).isEqualTo("User Locked Out.");
+    assertThat(action.errorMessage).isNull();
+}
 
     @Test
     public void passwordExpiredWithGracePeriodResultsInChangePasswordCallbacks() throws NodeProcessException {

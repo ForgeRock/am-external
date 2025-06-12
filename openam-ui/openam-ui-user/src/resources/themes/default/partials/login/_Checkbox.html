@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020 ForgeRock AS. All Rights Reserved
+ * Copyright 2020-2025 ForgeRock AS. All Rights Reserved
 -->
 <div class="{{#if errorMessages.length}}has-error{{/if}}">
   <div class="checkbox">
@@ -19,7 +19,9 @@
       <input type="checkbox"
         id="{{id}}"
         name="callback_{{index}}"
-        checked="{{value}}"
+        {{#if value}}
+          checked
+        {{/if}}
         data-validator="required"
         required
         data-validator-event="keyup"

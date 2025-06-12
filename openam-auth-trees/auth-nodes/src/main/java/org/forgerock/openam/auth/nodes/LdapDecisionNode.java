@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2024 ForgeRock AS.
+ * Copyright 2018-2025 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -375,7 +375,7 @@ public class LdapDecisionNode implements Node {
                 String userLockedStatus = CollectionUtils.getFirstItem(
                         ldapUtil.getUserAttributeValues().get(USER_STATUS_ATTRIBUTE));
                 if (StringUtils.isNotEmpty(userLockedStatus) && !userLockedStatus.equalsIgnoreCase(STATUS_ACTIVE)) {
-                    action = goTo(LdapOutcome.LOCKED).withErrorMessage(bundle.getString("accountLocked"));
+                    action = goTo(LdapOutcome.LOCKED).withLockoutMessage(bundle.getString("accountLocked"));
                 } else {
                     action = goTo(LdapOutcome.FALSE).withErrorMessage(bundle.getString("authenticationFailed"));
                 }
@@ -597,7 +597,9 @@ public class LdapDecisionNode implements Node {
             break;
         case ACCOUNT_LOCKED:
             logger.debug("Account for user {} has been locked.", ldapUtil.getUserId());
-            loginResult = goTo(LdapOutcome.LOCKED).withErrorMessage(bundle.getString("accountLocked"));
+            loginResult = goTo(LdapOutcome.LOCKED)
+                    .withLockoutMessage(bundle.getString("accountLocked"))
+                    .withErrorMessage(bundle.getString("accountLocked"));
             break;
         case GRACE_LOGINS:
             String message = Locale.formatMessage(bundle.getString("GraceLogins"), ldapUtil.getGraceLogins());

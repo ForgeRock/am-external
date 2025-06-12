@@ -11,41 +11,82 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2020 ForgeRock AS.
+ * Copyright 2018-2025 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn;
 
 /**
  * The various types of DOM-based exceptions that can be thrown during WebAuthn negotiations.
- *
+ * <p>
  * The links below are taken directly from the links given in the Web Authentication Spec.
- *
- * https://www.w3.org/TR/webauthn/
+ * <p>
+ * <a href="https://www.w3.org/TR/webauthn/"/>
  */
 public enum WebAuthnDomExceptionType {
 
-    /** https://heycam.github.io/webidl/#notallowederror. */
+    /** <a href="https://heycam.github.io/webidl/#notallowederror"/>. */
     NotAllowedError,
-    /** https://heycam.github.io/webidl/#securityerror. */
+    /** <a href="https://heycam.github.io/webidl/#securityerror"/>. */
     SecurityError,
-    /** https://heycam.github.io/webidl/#aborterror. */
+    /** <a href="https://heycam.github.io/webidl/#aborterror"/>. */
     AbortError,
-    /** https://heycam.github.io/webidl/#notsupportederror. */
+    /** <a href="https://heycam.github.io/webidl/#notsupportederror"/>. */
     NotSupportedError,
-    /** https://heycam.github.io/webidl/#invalidstateerror. */
+    /** <a href="https://heycam.github.io/webidl/#invalidstateerror"/>. */
     InvalidStateError,
-    /** https://heycam.github.io/webidl/#unknownerror. */
+    /** <a href="https://heycam.github.io/webidl/#unknownerror"/>. */
     UnknownError,
-    /** https://heycam.github.io/webidl/#networkerror. */
+    /** <a href="https://heycam.github.io/webidl/#networkerror"/>. */
     NetworkError,
-    /** https://heycam.github.io/webidl/#timeouterror. */
+    /** <a href="https://heycam.github.io/webidl/#timeouterror"/>. */
     TimeoutError,
-    /** https://heycam.github.io/webidl/#encodingerror. */
+    /** <a href="https://heycam.github.io/webidl/#encodingerror"/>. */
     EncodingError,
-    /** https://heycam.github.io/webidl/#constrainterror. */
+    /** <a href="https://heycam.github.io/webidl/#constrainterror"/>. */
     ConstraintError,
-    /** https://heycam.github.io/webidl/#dataerror. */
-    DataError
+    /** <a href="https://heycam.github.io/webidl/#dataerror"/>. */
+    DataError,
+    /** <a href="https://webidl.spec.whatwg.org/#hierarchyrequesterror"/>. */
+    HierarchyRequestError,
+    /** <a href="https://webidl.spec.whatwg.org/#wrongdocumenterror"/>. */
+    WrongDocumentError,
+    /** <a href="https://webidl.spec.whatwg.org/#invalidcharactererror"/>. */
+    InvalidCharacterError,
+    /** <a href="https://webidl.spec.whatwg.org/#nomodificationallowederror"/>. */
+    NoModificationAllowedError,
+    /** <a href="https://webidl.spec.whatwg.org/#notfounderror"/>. */
+    NotFoundError,
+    /** <a href="https://webidl.spec.whatwg.org/#notsupportederror"/>. */
+    InUseAttributeError,
+    /** <a href="https://webidl.spec.whatwg.org/#invalidstateerror"/>. */
+    SyntaxError,
+    /** <a href="https://webidl.spec.whatwg.org/#invalidmodificationerror"/>. */
+    InvalidModificationError,
+    /** <a href="https://webidl.spec.whatwg.org/#namespaceerror"/>. */
+    NamespaceError,
+    /** <a href="https://webidl.spec.whatwg.org/#invalidaccesserror"/>. */
+    InvalidAccessError,
+    /** <a href="https://webidl.spec.whatwg.org/#typemismatcherror"/>. */
+    TypeMismatchError,
+    /** <a href="https://webidl.spec.whatwg.org/#urlmismatcherror"/>. */
+    URLMismatchError,
+    /** <a href="https://webidl.spec.whatwg.org/#quotaexceedederror"/>. */
+    QuotaExceededError,
+    /** <a href="https://webidl.spec.whatwg.org/#timeouterror"/>. */
+    InvalidNodeTypeError,
+    /** <a href="https://webidl.spec.whatwg.org/#datacloneerror"/>. */
+    DataCloneError,
+    /** <a href="https://webidl.spec.whatwg.org/#notreadableerror"/>. */
+    NotReadableError,
+    /** <a href="https://webidl.spec.whatwg.org/#encodingerror"/>. */
+    TransactionInactiveError,
+    /** <a href="https://webidl.spec.whatwg.org/#readonlyerror"/>. */
+    ReadOnlyError,
+    /** <a href="https://webidl.spec.whatwg.org/#versionerror"/>. */
+    VersionError,
+    /** <a href="https://webidl.spec.whatwg.org/#operationerror"/>. */
+    OperationError
+
 
 }

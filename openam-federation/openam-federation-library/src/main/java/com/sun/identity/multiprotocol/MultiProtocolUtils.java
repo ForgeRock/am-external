@@ -24,7 +24,7 @@
  *
  * $Id: MultiProtocolUtils.java,v 1.4 2009/03/20 21:06:32 weisun2 Exp $
  *
- * Portions Copyrighted 2018-2019 ForgeRock AS.
+ * Portions Copyrighted 2018-2025 ForgeRock AS.
  */
 package com.sun.identity.multiprotocol;
 
@@ -305,6 +305,7 @@ public class MultiProtocolUtils {
         String protocol) throws SessionException {
         SessionProvider provider = SessionManager.getProvider();
         if (!isMultipleProtocolSession(session, protocol)) {
+            provider.clearPersistentCookie(session, request, response);
             provider.invalidateSession(session, request, response);
         } else {
             removeFederationProtocol(session, protocol);

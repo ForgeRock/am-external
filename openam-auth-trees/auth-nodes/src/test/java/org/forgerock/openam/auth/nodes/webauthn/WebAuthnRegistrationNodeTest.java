@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2022 ForgeRock AS.
+ * Copyright 2020-2025 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn;
@@ -27,6 +27,7 @@ import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
 import static org.forgerock.openam.auth.nodes.webauthn.AbstractWebAuthnNode.WEB_AUTHN_DEVICE_DATA;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.MockitoAnnotations.initMocks;
 
@@ -36,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.security.auth.callback.Callback;
@@ -128,7 +130,7 @@ public class WebAuthnRegistrationNodeTest {
         given(coreWrapper.getIdentity(anyString())).willReturn(amIdentity);
         given(amIdentity.isExists()).willReturn(true);
         given(amIdentity.isActive()).willReturn(true);
-        given(amIdentity.getName()).willReturn("bob");
+        given(amIdentity.getName()).willReturn("usernameFromAmIdentity");
 
         given(config.asScript()).willReturn(false);
         given(config.attestationPreference()).willReturn(AttestationPreference.NONE);
@@ -136,7 +138,6 @@ public class WebAuthnRegistrationNodeTest {
         given(config.authenticatorAttachment()).willReturn(AuthenticatorAttachment.PLATFORM);
         given(config.requiresResidentKey()).willReturn(false);
         given(config.timeout()).willReturn(100);
-        given(config.displayNameSharedState()).willReturn(Optional.of("Hello"));
         given(config.relyingPartyName()).willReturn("relyingPartyName");
         given(config.relyingPartyDomain()).willReturn(Optional.of("example.com"));
         given(config.acceptedSigningAlgorithms()).willReturn(Collections.singleton(CoseAlgorithm.ES256));
@@ -153,9 +154,8 @@ public class WebAuthnRegistrationNodeTest {
     }
 
     @Test
-    public void testCallback()
-            throws NodeProcessException, WebAuthnRegistrationException {
-        JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
+    public void testCallback() throws NodeProcessException {
+        JsonValue sharedState = json(object(field(USERNAME, "usernameFromSharedState"), field(REALM, "root")));
         JsonValue transientState = json(object());
 
         // When
@@ -184,7 +184,7 @@ public class WebAuthnRegistrationNodeTest {
         //Original attributes
         assertThat(callback.getOutputValue().get("challenge").asString()).isNotEmpty();
         assertThat(callback.getOutputValue().get("attestationPreference").asString()).isEqualTo("none");
-        assertThat(callback.getOutputValue().get("userName").asString()).isEqualTo("bob");
+        assertThat(callback.getOutputValue().get("userName").asString()).isEqualTo("usernameFromAmIdentity");
         assertThat(callback.getOutputValue().get("userId").asString()).isNotEmpty();
         assertThat(callback.getOutputValue().get("relyingPartyName").asString()).isEqualTo("relyingPartyName");
         assertThat(callback.getOutputValue().get("authenticatorSelection").asString())
@@ -194,7 +194,7 @@ public class WebAuthnRegistrationNodeTest {
         assertThat(callback.getOutputValue().get("timeout").asString()).isEqualTo("100000");
         assertThat(callback.getOutputValue().get("excludeCredentials").asString())
                 .isEqualTo("{ \"type\": \"public-key\", \"id\": new Int8Array([116, 101, 115, 116]).buffer }");
-        assertThat(callback.getOutputValue().get("displayName").asString()).isEqualTo("bob");
+        assertThat(callback.getOutputValue().get("displayName").asString()).isEqualTo("usernameFromAmIdentity");
         assertThat(callback.getOutputValue().get("relyingPartyId").asString()).isEqualTo("id: \"example.com\",");
         assertThat(callback.getOutputValue().get("_type").asString()).isEqualTo("WebAuthn");
 
@@ -202,8 +202,55 @@ public class WebAuthnRegistrationNodeTest {
     }
 
     @Test
-    public void testCallbackWithDeviceLimit()
-            throws NodeProcessException, WebAuthnRegistrationException, DevicePersistenceException {
+    public void testCallbackUsernameAttribute() throws IdRepoException, SSOException,
+            NodeProcessException {
+        JsonValue sharedState = json(object(field(USERNAME, "usernameFromSharedState"), field(REALM, "root")));
+        JsonValue transientState = json(object());
+        given(amIdentity.getAttribute(eq("_username"))).willReturn(Set.of("usernameFromAttribute"));
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+        MetadataCallback callback = (MetadataCallback) result.callbacks.get(0);
+
+        // Then
+        assertThat(callback.getOutputValue().get("userName").asString()).isEqualTo("usernameFromAttribute");
+        assertThat(callback.getOutputValue().get("displayName").asString()).isEqualTo("usernameFromAttribute");
+    }
+
+    @Test
+    public void testCallbackDisplayNameSharedState() throws NodeProcessException {
+        JsonValue sharedState = json(object(field(USERNAME, "usernameFromSharedState"), field(REALM, "root")));
+        JsonValue transientState = json(object());
+        given(config.displayNameSharedState()).willReturn(Optional.of(USERNAME));
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+        MetadataCallback callback = (MetadataCallback) result.callbacks.get(0);
+
+        // Then
+        assertThat(callback.getOutputValue().get("userName").asString()).isEqualTo("usernameFromAmIdentity");
+        assertThat(callback.getOutputValue().get("displayName").asString()).isEqualTo("usernameFromSharedState");
+    }
+
+    @Test
+    public void testCallbackUsernameAttributeAndDisplayNameSharedState() throws IdRepoException, SSOException,
+            NodeProcessException {
+        JsonValue sharedState = json(object(field(USERNAME, "usernameFromSharedState"), field(REALM, "root")));
+        JsonValue transientState = json(object());
+        given(config.displayNameSharedState()).willReturn(Optional.of(USERNAME));
+        given(amIdentity.getAttribute(eq("_username"))).willReturn(Set.of("usernameFromAttribute"));
+
+        // When
+        Action result = node.process(getContext(sharedState, transientState, emptyList()));
+        MetadataCallback callback = (MetadataCallback) result.callbacks.get(0);
+
+        // Then
+        assertThat(callback.getOutputValue().get("userName").asString()).isEqualTo("usernameFromAttribute");
+        assertThat(callback.getOutputValue().get("displayName").asString()).isEqualTo("usernameFromSharedState");
+    }
+
+    @Test
+    public void testCallbackWithDeviceLimit() throws NodeProcessException, DevicePersistenceException {
         JsonValue sharedState = json(object(field(USERNAME, "bob"), field(REALM, "root")));
         JsonValue transientState = json(object());
 
