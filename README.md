@@ -16,6 +16,7 @@ Product Version   |  Branch Name
 ------------------|-----------------
 AM 8.0.1          |  releases/8.0.1
 AM 8.0.0          |  releases/8.0.0
+AM 7.5.2          |  releases/7.5.2
 AM 7.5.1          |  releases/7.5.1
 AM 7.5.0          |  releases/7.5.0
 AM 7.4.2          |  releases/7.4.2
