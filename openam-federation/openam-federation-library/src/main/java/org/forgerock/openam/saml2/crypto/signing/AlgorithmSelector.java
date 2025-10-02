@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2025 ForgeRock AS.
  */
 package org.forgerock.openam.saml2.crypto.signing;
 
@@ -27,6 +27,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
+import javax.crypto.SecretKey;
 import javax.xml.bind.JAXBIntrospector;
 
 import org.apache.xml.security.algorithms.JCEMapper;
@@ -35,6 +36,8 @@ import org.apache.xml.security.signature.XMLSignature;
 import org.forgerock.openam.saml2.Saml2EntityRole;
 import org.forgerock.util.Pair;
 import org.forgerock.util.annotations.VisibleForTesting;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.sun.identity.saml2.common.SAML2Constants;
 import com.sun.identity.saml2.common.SAML2Exception;
@@ -54,6 +57,8 @@ import com.sun.identity.shared.configuration.SystemPropertiesManager;
  */
 @Singleton
 class AlgorithmSelector {
+
+    private static final Logger logger = LoggerFactory.getLogger(AlgorithmSelector.class);
 
     /**
      * Selects the signing algorithm and the digest method to be used based on the remote entity provider's preference.
@@ -207,18 +212,32 @@ class AlgorithmSelector {
         int maxKeySize = Optional.ofNullable(signingMethodType.getMaxKeySize())
                 .map(BigInteger::intValue)
                 .orElse(Integer.MAX_VALUE);
-        int keySize = getKeySize(key);
-        return keySize >= minKeySize && maxKeySize >= keySize;
+        try {
+            Optional<Integer> keySize = getKeySize(key);
+            if (keySize.isEmpty()) {
+                return true;
+            }
+            return keySize.get() >= minKeySize && keySize.get() <= maxKeySize;
+        } catch (IllegalArgumentException e) {
+            logger.debug("Ignoring unsupported key type: {}", key.getClass());
+            return false;
+        }
     }
 
-    private int getKeySize(Key key) {
+    private Optional<Integer> getKeySize(Key key) {
         if (key instanceof RSAKey) {
-            return ((RSAKey) key).getModulus().bitLength();
+            return Optional.of(((RSAKey) key).getModulus().bitLength());
         } else if (key instanceof DSAKey) {
-            return ((DSAKey) key).getParams().getP().bitLength();
+            return Optional.of(((DSAKey) key).getParams().getP().bitLength());
         } else if (key instanceof ECKey) {
-            return ((ECKey) key).getParams().getCurve().getField().getFieldSize();
+            return Optional.of(((ECKey) key).getParams().getCurve().getField().getFieldSize());
+        } else if (key instanceof SecretKey) {
+            logger.debug("Unsupported symmetric key {}", key);
+            throw new IllegalArgumentException("Unsupported symmetric key");
         }
-        throw new IllegalArgumentException("Unable to determine key size for key");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Unable to determine key size for '{}' type {}.", key, key.getClass());
+        }
+        return Optional.empty();
     }
 }

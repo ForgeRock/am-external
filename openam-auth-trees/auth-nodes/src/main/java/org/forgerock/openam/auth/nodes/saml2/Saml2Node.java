@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2024 ForgeRock AS.
+ * Copyright 2017-2025 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.saml2;
 
@@ -289,8 +289,19 @@ public class Saml2Node extends AbstractDecisionNode {
             } else if (context.request.parameters.containsKey(RESPONSE_KEY)) {
                 return handleReturnFromRedirect(context, request, response).build();
             }
+
             IDPSSODescriptorType idpDescriptor = metaManager.getIDPSSODescriptor(realm.asPath(), idpEntityId);
+            if (idpDescriptor == null) {
+                throw new NodeProcessException("Unable to complete SAML2 authentication, IDP descriptor not found for "
+                        + "entity with id: " + idpEntityId);
+            }
+
             SPSSODescriptorType spDescriptor = metaManager.getSPSSODescriptor(realm.asPath(), spEntityId);
+            if (spDescriptor == null) {
+                throw new NodeProcessException("Unable to complete SAML2 authentication, SP descriptor not found for "
+                        + "entity with id: " + spEntityId);
+            }
+
             String nameIdFormat = SAML2Utils.verifyNameIDFormat(config.nameIdFormat(), spDescriptor, idpDescriptor);
             String username = context.sharedState.get(USERNAME).asString();
             return Action

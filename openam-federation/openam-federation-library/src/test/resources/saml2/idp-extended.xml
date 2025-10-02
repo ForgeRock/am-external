@@ -12,8 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS. All Rights Reserved
- * 
+ * Copyright 2017-2018 ForgeRock AS.
 -->
 
 <EntityConfig entityID="openam-saml2-idp" hosted="true" xmlns="urn:sun:fm:SAML:2.0:entityconfig">

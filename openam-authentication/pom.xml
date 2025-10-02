@@ -12,8 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2021 ForgeRock AS. All Rights Reserved
- * 
+ * Copyright 2011-2021 ForgeRock AS.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -22,7 +21,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-parent</artifactId>
-        <version>7.5.1</version>
+        <version>7.5.2</version>
     </parent>
 
     <!-- Component Definition -->
@@ -88,8 +87,8 @@
     <repositories>
         <repository>
             <id>forgerock-build-dependencies</id>
-            <name>ForgeRock Private Release Repository for AM 7.5.1</name>
-            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.5.1-dependencies</url>
+            <name>ForgeRock Private Release Repository for AM 7.5.2</name>
+            <url>https://maven.forgerock.org/artifactory/forgerock-openam-7.5.2-dependencies</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>

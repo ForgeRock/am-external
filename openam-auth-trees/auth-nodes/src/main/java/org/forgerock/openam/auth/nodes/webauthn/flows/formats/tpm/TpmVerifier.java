@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2020-2024 ForgeRock AS.
+ * Copyright 2020-2025 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes.webauthn.flows.formats.tpm;
@@ -145,7 +145,7 @@ public class TpmVerifier extends TrustableAttestationVerifier {
 
         // Verify that attested contains a TPMS_CERTIFY_INFO structure whose name field contains a valid Name for
         // pubArea, as computed using the algorithm in the nameAlg field of pubArea
-        if (!verifyHash(attestationObject.attestationStatement.getPubArea(), tpmtPublic.nameAlg.getCoseAlg(),
+        if (!verifyHash(attestationObject.attestationStatement.getPubArea(), tpmCertInfo.attested.nameAlg.getCoseAlg(),
                 tpmCertInfo.attested.name)) {
             logger.error("unable to verify hash of pubArea against the attested name");
             return VerificationResponse.failure();

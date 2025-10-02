@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2025 ForgeRock AS.
  */
 package org.forgerock.openam.federation.rest.schema.mappers;
 
@@ -30,7 +30,7 @@ public final class KeyValueMapper extends ValueMapper<List<String>, List<KeyValu
     @Override
     public List<KeyValue> map(List<String> values, EnricherContext context) {
         return values.stream()
-                .map(value -> value.split("="))
+                .map(value -> value.split("=", 2))
                 .filter(components -> components.length == 2)
                 .map(components -> new KeyValue(components[0], components[1]))
                 .collect(Collectors.toList());

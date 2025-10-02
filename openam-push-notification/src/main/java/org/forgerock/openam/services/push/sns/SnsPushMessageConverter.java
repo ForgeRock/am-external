@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2023 ForgeRock AS.
+ * Copyright 2016-2025 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.sns;
 
@@ -36,7 +36,7 @@ import com.google.inject.Singleton;
 public class SnsPushMessageConverter implements PushMessageConverter {
 
     private static final String GCM = "GCM";
-    private static final String GCM_PRIORITY = "PRIORITY";
+    private static final String GCM_PRIORITY = "priority";
     private static final String GCM_HIGH_PRIORITY = "high";
     private static final String GCM_DATA = "data";
     private static final String GCM_MESSAGE = "message";

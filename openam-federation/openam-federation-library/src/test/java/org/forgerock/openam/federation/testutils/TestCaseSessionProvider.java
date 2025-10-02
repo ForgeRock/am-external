@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2017-2018 ForgeRock AS.
+ * Copyright 2017-2025 ForgeRock AS.
  */
 package org.forgerock.openam.federation.testutils;
 
@@ -79,6 +79,11 @@ public class TestCaseSessionProvider implements SessionProvider {
     @Override
     public void invalidateSession(Object session, HttpServletRequest request, HttpServletResponse response) throws SessionException {
 
+    }
+
+    @Override
+    public void clearPersistentCookie(Object session, HttpServletRequest request, HttpServletResponse response)
+            throws SessionException {
     }
 
     @Override

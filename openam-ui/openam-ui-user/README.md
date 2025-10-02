@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2015-2024 ForgeRock AS. All Rights Reserved
+ * Copyright 2015-2024 ForgeRock AS.
 -->
 
 # Access Management (AM) UI - User <!-- omit in toc -->

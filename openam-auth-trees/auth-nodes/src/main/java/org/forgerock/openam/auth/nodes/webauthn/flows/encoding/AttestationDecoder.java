@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2018-2024 ForgeRock AS.
+ * Copyright 2018-2025 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.encoding;
 
@@ -30,6 +30,7 @@ import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
 import org.forgerock.openam.auth.nodes.webauthn.data.AuthData;
 import org.forgerock.openam.auth.nodes.webauthn.flows.AttestationStatement;
 import org.forgerock.openam.auth.nodes.webauthn.flows.FlowUtilities;
+import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AndroidKeyVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AndroidSafetyNetVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AttestationVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.FidoU2fVerifier;
@@ -225,8 +226,9 @@ public class AttestationDecoder {
             logger.warn("android-safetynet verifier selected");
             return new AndroidSafetyNetVerifier();
         case "android-key":
-            logger.warn("android-key not a supported attestation format");
-            throw new DecodingException("Unacceptable attestation format provided - android-key not supported.");
+            logger.debug("android-key verifier selected");
+            return new AndroidKeyVerifier(flowUtilities, trustAnchorValidatorFactory.create(
+                    trustAnchorUtilities.trustAnchorsFromSecrets(secrets), enforcedRevocation));
         case "tpm":
             logger.debug("tpm verifier selected");
             return new TpmVerifier(trustAnchorValidatorFactory.create(

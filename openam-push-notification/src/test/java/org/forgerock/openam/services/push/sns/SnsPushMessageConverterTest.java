@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2022 ForgeRock AS.
+ * Copyright 2016-2025 ForgeRock AS.
  */
 package org.forgerock.openam.services.push.sns;
 
@@ -56,7 +56,7 @@ public class SnsPushMessageConverterTest {
 
         JsonValue gcmValue = JsonValueBuilder.toJsonValue(value.get("GCM").asString());
 
-        assertThat(gcmValue.get("PRIORITY")).isString().isEqualTo("high");
+        assertThat(gcmValue.get("priority")).isString().isEqualTo("high");
         assertThat(gcmValue.get("data")).isNotNull();
 
         JsonValue gcmDataValue = gcmValue.get("data");

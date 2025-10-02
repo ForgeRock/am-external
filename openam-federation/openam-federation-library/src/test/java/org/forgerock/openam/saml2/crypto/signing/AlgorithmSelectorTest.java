@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2019 ForgeRock AS.
+ * Copyright 2019-2025 ForgeRock AS.
  */
 package org.forgerock.openam.saml2.crypto.signing;
 
@@ -157,6 +157,10 @@ public class AlgorithmSelectorTest {
                 {ecKey(1024), 1025, 1023, false},
                 {ecKey(1024), 1024, 1023, false},
                 {ecKey(1024), 1025, 1024, false},
+                {p11Key("RSA", -1 ), 1024, 2048, true},
+                {p11Key("RSA", 1024 ), 2048, 2048, true},
+                {p11Key("EC", -1 ), 256, 512, true},
+                {p11Key("EC", 1024 ), 2048, null, true},
         };
     }
 
@@ -183,7 +187,23 @@ public class AlgorithmSelectorTest {
     }
 
     @Test
-    public void shouldPickDefaultRsaSigningAlgorithmForRsaKey() {
+    void shouldCorrectlyValidateUnknownKeyType() {
+        // Given a key of an unknown type (e.g. a PKCS#11 key) which only implements the Key interface.
+        // The key size cannot be determined, so the check should pass as long as the algorithm matches.
+        Key unknownKeyType = mock(Key.class);
+        given(unknownKeyType.getAlgorithm()).willReturn("RSA");
+
+        boolean isMatch = selector.checkKeyMatchesSigningAlgorithm(unknownKeyType,
+                signingMethod(ALGO_ID_SIGNATURE_RSA_SHA256, 2048, 4096));
+        assertThat(isMatch).isTrue();
+
+        boolean isNotMatch = selector.checkKeyMatchesSigningAlgorithm(unknownKeyType,
+                signingMethod(ALGO_ID_SIGNATURE_DSA_SHA256, 2048, 4096));
+        assertThat(isNotMatch).isFalse();
+    }
+
+    @Test
+    void shouldPickDefaultRsaSigningAlgorithmForRsaKey() {
         // Given
         given(key.getAlgorithm()).willReturn("RSA");
 
@@ -305,6 +325,13 @@ public class AlgorithmSelectorTest {
         given(curve.getField()).willReturn(field);
         given(field.getFieldSize()).willReturn(size);
         return (Key) ecKey;
+    }
+
+    private static Key p11Key(String algo, int size) {
+        Key p11Key = mock(Key.class);
+        given(p11Key.getAlgorithm()).willReturn(algo);
+        given(p11Key.toString()).willReturn("P11Key " + size + " bits");
+        return p11Key;
     }
 
     private SigningMethodType signingMethod(String algorithm, Integer minSize, Integer maxSize) {

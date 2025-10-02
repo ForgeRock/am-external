@@ -24,7 +24,7 @@
  *
  * $Id: IDPSSOUtil.java,v 1.56 2009/11/24 21:53:28 madan_ranganath Exp $
  *
- * Portions Copyrighted 2010-2023 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 ForgeRock AS.
  * Portions Copyrighted 2013 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.profile;
@@ -2199,10 +2199,12 @@ public class IDPSSOUtil {
         try {
             IDPSSOConfigElement config = metaManager.getIDPSSOConfig(
                     realm, hostEntityId);
-            Map attrs = SAML2MetaUtils.getAttributes(config);
-            List value = (List) attrs.get(attrName);
-            if (value != null && value.size() != 0) {
-                result = (String) value.get(0);
+            if (config != null) {
+                Map attrs = SAML2MetaUtils.getAttributes(config);
+                List value = (List) attrs.get(attrName);
+                if (value != null && value.size() != 0) {
+                    result = (String) value.get(0);
+                }
             }
         } catch (SAML2MetaException sme) {
             if (logger.isDebugEnabled()) {

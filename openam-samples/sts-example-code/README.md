@@ -21,5 +21,5 @@ For more information about how to consume and publish REST and SOAP STS instance
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2016-2017 ForgeRock AS. All Rights Reserved
+ * Copyright 2016-2017 ForgeRock AS.
 -->

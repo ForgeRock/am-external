@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2011-2024 ForgeRock AS.
+ * Copyright 2011-2025 ForgeRock AS.
  */
 
 import _ from "lodash";
@@ -46,6 +46,7 @@ import SessionValidator from "org/forgerock/openam/ui/common/sessions/SessionVal
 import URIUtils from "org/forgerock/commons/ui/common/util/URIUtils";
 import defaultAppIcon from "../../../../../../../resources/images/default-app.svg";
 import { sanitize } from "org/forgerock/openam/ui/common/util/Sanitizer";
+import { P1Protect } from "../services/P1Protect";
 
 function hasSsoRedirectOrPost (goto) {
     let decodedGoto;
@@ -89,6 +90,20 @@ function routeToLoginUnavailable (fragmentParams) {
  */
 function hasCallback (callbacks, type) {
     return _.some(callbacks, (callback) => callback.type === type);
+}
+
+/**
+ * Given an array of output objects, returns the value of the object with the given name.
+ * If no such object exists, returns the defaultValue.
+ * @param {Array.<object>} outputs array of output objects
+ * @param {string} name the name of the output object to find
+ * @param {*} defaultValue the value to return if no such object exists
+ * @returns {*} the value of the output object with the given name, or defaultValue
+ * if no such object exists
+ */
+function getOutputValue (outputs, name, defaultValue) {
+    const output = outputs.find((o) => o.name === name);
+    return output ? output.value : defaultValue;
 }
 
 const LoginView = AbstractView.extend({
@@ -433,6 +448,34 @@ const LoginView = AbstractView.extend({
                 } else {
                     window.location.replace(redirectCallback.redirectUrl);
                 }
+            } else if (element.type === "PingOneProtectInitializeCallback") {
+                const options = {
+                    envId: getOutputValue(element.output, "envId", ""),
+                    consoleLogEnabled: getOutputValue(element.output, "consoleLogEnabled", false),
+                    deviceAttributesToIgnore: getOutputValue(element.output, "deviceAttributesToIgnore", []),
+                    customHost: getOutputValue(element.output, "customHost", ""),
+                    lazyMetadata: getOutputValue(element.output, "lazyMetadata", false),
+                    behavioralDataCollection: getOutputValue(element.output, "behavioralDataCollection", true),
+                    deviceKeyRsyncIntervals: getOutputValue(element.output, "deviceKeyRsyncIntervals", 14),
+                    enableTrust: getOutputValue(element.output, "enableTrust", false),
+                    disableTags: getOutputValue(element.output, "disableTags", false),
+                    disableHub: getOutputValue(element.output, "disableHub", false)
+                };
+
+                P1Protect.start(options).then(() => {
+                    processLoginRequest();
+                }).catch((err) => {
+                    element.input[0].value = err.message;
+                    processLoginRequest();
+                });
+            } else if (element.type === "PingOneProtectEvaluationCallback") {
+                P1Protect.getData().then((data) => {
+                    element.input[0].value = data;
+                    processLoginRequest();
+                }).catch((err) => {
+                    element.input[1].value = err.message;
+                    processLoginRequest();
+                });
             } else if (element.type === "PollingWaitCallback") {
                 const pollingWaitTimeoutMs = _.find(element.output, { name: "waitTime" }).value;
 
@@ -508,6 +551,8 @@ const LoginView = AbstractView.extend({
             !hasCallback(reqs.callbacks, "PollingWaitCallback") &&
             !hasCallback(reqs.callbacks, "RedirectCallback") &&
             !hasCallback(reqs.callbacks, "SuspendedTextOutputCallback") &&
+            !hasCallback(reqs.callbacks, "PingOneProtectInitializeCallback") &&
+            !hasCallback(reqs.callbacks, "PingOneProtectEvaluationCallback") &&
             !onlyDeviceProfileCallback &&
             !onlySelectIdpCallbacks) {
             const confirmationCallback = {
@@ -816,6 +861,11 @@ Handlebars.registerHelper("callbackRender", function () {
             }
             break;
         }
+        case "PingOneProtectInitializeCallback":
+            break;
+        case "PingOneProtectEvaluationCallback":
+            // Render nothing.
+            break;
         default: result += renderPartial("Default", { errorMessages, type: "text" }); break;
     }
 

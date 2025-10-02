@@ -29,7 +29,7 @@
     <parent>
         <groupId>org.forgerock.am.examples</groupId>
         <artifactId>openam-samples</artifactId>
-        <version>7.5.1</version>
+        <version>7.5.2</version>
     </parent>
 
     <artifactId>jwt-bearer-client</artifactId>

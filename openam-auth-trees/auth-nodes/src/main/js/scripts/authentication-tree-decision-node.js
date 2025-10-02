@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2024 ForgeRock AS.
+ * Copyright 2025 Ping Identity Corporation.
  */
 /*
   - Data made available by nodes that have already executed are available in the sharedState variable.

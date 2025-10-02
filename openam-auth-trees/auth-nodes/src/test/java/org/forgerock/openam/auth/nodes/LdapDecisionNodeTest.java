@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2025 ForgeRock AS.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -32,9 +32,12 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.assertj.core.api.Assertions;
@@ -43,19 +46,29 @@ import org.forgerock.json.JsonValue;
 import org.forgerock.openam.auth.node.api.Action;
 import org.forgerock.openam.auth.node.api.ExternalRequestContext;
 import org.forgerock.openam.auth.node.api.IdentifiedIdentity;
+import org.forgerock.openam.auth.node.api.NodeProcessException;
 import org.forgerock.openam.auth.node.api.TreeContext;
 import org.forgerock.openam.core.CoreWrapper;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.ldap.ConnectionFactoryAuditWrapperFactory;
 import org.forgerock.openam.ldap.LDAPAuthUtils;
+import org.forgerock.openam.ldap.LDAPUtilException;
 import org.forgerock.openam.secrets.Secrets;
+import org.forgerock.opendj.ldap.ResultCode;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.slf4j.LoggerFactory;
 
 import com.sun.identity.idm.IdType;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
+import ch.qos.logback.core.read.ListAppender;
 
 /**
  * Unit tests for {@link LdapDecisionNode}.
@@ -83,9 +96,14 @@ public class LdapDecisionNodeTest {
     @Mock
     private ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory;
     private LdapDecisionNode node;
+    private static ListAppender<ILoggingEvent> listAppender;
 
     @Before
     public void setUp() throws Exception {
+        listAppender = new ListAppender<>();
+        listAppender.start();
+        Logger logger = (Logger) LoggerFactory.getLogger(LdapDecisionNode.class);
+        logger.addAppender(listAppender);
         given(config.searchScope()).willReturn(SUBTREE);
         given(config.heartbeatTimeUnit()).willReturn(MINUTES);
         given(coreWrapper.getLDAPAuthUtils(anySet(), anySet(),
@@ -167,6 +185,58 @@ public class LdapDecisionNodeTest {
         verify(ldapAuthUtils).setConnectionFactoryAuditWrapperFactory(connectionFactoryAuditWrapperFactory);
         Assertions.assertThat(result.universalId.get())
                 .isEqualTo("uid=testUsername@example.com,ou=people,dc=openam,dc=forgerock,dc=org");
+    }
+
+    @Test
+    public void shouldLogErrorWhenLdapUtilThrowsErrors() throws NodeProcessException, LDAPUtilException {
+        // given
+        doThrow(new LDAPUtilException("test LDAP utils exception", ResultCode.OTHER))
+                .when(ldapAuthUtils).authenticateUser(any(), any());
+        JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
+                field("password", "password"),
+                field("realm", "testRealm")));
+
+        // when
+        node.process(getContext(sharedState));
+
+        // then
+        List<String> debugLogEntries = listAppender.list.stream()
+                .filter(e -> Level.ERROR.equals(e.getLevel()))
+                .map(ILoggingEvent::getFormattedMessage)
+                .toList();
+        Assertions.assertThat(debugLogEntries)
+                .contains("LDAPUtilException: test LDAP utils exception");
+        Assertions.assertThat(listAppender.list.stream()
+                .map(ILoggingEvent::getThrowableProxy)
+                .filter(Objects::nonNull)
+                .map(IThrowableProxy::getMessage))
+                .contains("test LDAP utils exception");
+    }
+
+    @Test
+    public void shouldLogInfoWhenLdapUtilThrowsInvalidCredentialError() throws NodeProcessException, LDAPUtilException {
+        // given
+        doThrow(new LDAPUtilException("test LDAP utils exception", ResultCode.INVALID_CREDENTIALS))
+                .when(ldapAuthUtils).authenticateUser(any(), any());
+        JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
+                field("password", "password"),
+                field("realm", "testRealm")));
+
+        // when
+        node.process(getContext(sharedState));
+
+        // then
+        List<String> debugLogEntries = listAppender.list.stream()
+                .filter(e -> Level.INFO.equals(e.getLevel()))
+                .map(ILoggingEvent::getFormattedMessage)
+                .toList();
+        Assertions.assertThat(debugLogEntries)
+                .contains("LDAPUtilException: test LDAP utils exception");
+        Assertions.assertThat(listAppender.list.stream()
+                        .map(ILoggingEvent::getThrowableProxy)
+                        .filter(Objects::nonNull)
+                        .map(IThrowableProxy::getMessage))
+                .contains("test LDAP utils exception");
     }
 
     private TreeContext getContext(JsonValue sharedState) {

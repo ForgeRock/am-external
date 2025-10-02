@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2022-2023 ForgeRock AS.
+ * Copyright 2022-2025 ForgeRock AS.
  */
 
 package org.forgerock.openam.saml2.plugins;
@@ -170,10 +170,10 @@ public class PluginRegistry {
             if (isEmpty(list)) {
                 return emptyMap();
             }
-            return list.stream()
+            return list.stream() 
                     .filter(val -> isNotBlank(val))
                     .filter(val -> val.contains("="))
-                    .map(val -> val.split("="))
+                    .map(val -> val.split("=", 2))
                     .collect(Collectors.toMap(parts -> parts[0], parts -> parts[1]));
         }
     }

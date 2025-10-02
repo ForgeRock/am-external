@@ -22,7 +22,7 @@
  * your own identifying information:
  * "Portions Copyrighted [year] [name of copyright owner]"
  *
- * Portions Copyrighted 2010-2024 ForgeRock AS.
+ * Portions Copyrighted 2010-2025 ForgeRock AS.
  * Portions Copyrighted 2014 Nomura Research Institute, Ltd
  */
 package com.sun.identity.saml2.common;
@@ -3497,7 +3497,10 @@ public class SAML2Utils extends SAML2SDKUtils {
             SPSSODescriptorType spsso, IDPSSODescriptorType idpsso)
             throws SAML2Exception {
 
-        List spNameIDFormatList = spsso.getNameIDFormat();
+        List spNameIDFormatList = null;
+        if (spsso != null) {
+            spNameIDFormatList = spsso.getNameIDFormat();
+        }
 
         List idpNameIDFormatList = null;
         // idpsso is null for ECP case

@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2021-2024 ForgeRock AS.
+ * Copyright 2021-2025 ForgeRock AS.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.encoding;
 
@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.forgerock.openam.auth.nodes.webauthn.data.AttestationObject;
 import org.forgerock.openam.auth.nodes.webauthn.flows.FlowUtilities;
+import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AndroidKeyVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AndroidSafetyNetVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AttestationVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.FidoU2fVerifier;
@@ -79,27 +80,9 @@ public class AttestationDecoderTest {
                 { "fido-u2f", FidoU2fVerifier.class },
                 { "packed", PackedVerifier.class },
                 { "tpm", TpmVerifier.class },
-                { "android-safetynet", AndroidSafetyNetVerifier.class}
+                { "android-safetynet", AndroidSafetyNetVerifier.class},
+                { "android-key", AndroidKeyVerifier.class}
         };
-    }
-
-    @DataProvider(name = "unsupportedFormats")
-    public Object[][] unsupportedFormats() {
-        return new Object[][] {
-                { "android-key" },
-        };
-    }
-
-    @Test(dataProvider = "unsupportedFormats", expectedExceptions = DecodingException.class)
-    public void testExceptionThrownForUnsupportedFormats(String name) throws Exception {
-        //given
-        byte[] input = new AttestationBuilder().fmt(name).build();
-
-        //when
-        AttestationObject result = decoder.decode(input, null, null, false);
-
-        //then
-        //expecting an exception
     }
 
     @Test(dataProvider = "formatVerifier")

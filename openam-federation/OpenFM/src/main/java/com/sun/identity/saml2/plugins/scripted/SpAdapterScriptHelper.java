@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2023 ForgeRock AS.
+ * Copyright 2023-2025 ForgeRock AS.
  */
 
 package com.sun.identity.saml2.plugins.scripted;
@@ -68,7 +68,7 @@ public class SpAdapterScriptHelper {
         return list.stream()
                 .filter(StringUtils::isNotBlank)
                 .filter(val -> val.contains("="))
-                .map(val -> val.split("="))
+                .map(val -> val.split("=", 2))
                 .collect(Collectors.toMap(parts -> parts[0], parts -> parts[1]));
     }
 }
