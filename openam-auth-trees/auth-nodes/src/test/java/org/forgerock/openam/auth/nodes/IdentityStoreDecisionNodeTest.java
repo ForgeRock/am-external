@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2021-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -38,6 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 
@@ -68,6 +61,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.sun.identity.authentication.service.AMAccountLockoutTrees;
 import com.sun.identity.idm.AMIdentity;
 import com.sun.identity.idm.common.IdRepoUtilityService;
 
@@ -109,6 +103,8 @@ public class IdentityStoreDecisionNodeTest {
     private Secrets secrets;
     @Mock
     private ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory;
+    @Mock
+    private AMAccountLockoutTrees.Factory accountLockoutTreesFactory;
 
     private JsonValue sharedState;
     private JsonValue secureState;
@@ -130,7 +126,8 @@ public class IdentityStoreDecisionNodeTest {
 
         secureState = json(object(field(ONE_TIME_PASSWORD, TEST_ONE_TIME_PASSWORD)));
         identityStoreDecisionNode = new IdentityStoreDecisionNode(serviceConfig, realm, configManagerFactory,
-                coreWrapper, identityService, idRepoUtilityService, secrets, connectionFactoryAuditWrapperFactory);
+                coreWrapper, identityService, idRepoUtilityService, secrets, connectionFactoryAuditWrapperFactory,
+                accountLockoutTreesFactory);
     }
 
     @Test
@@ -154,7 +151,8 @@ public class IdentityStoreDecisionNodeTest {
 
         LDAPUtilException credInvalid = new LDAPUtilException("Invalid credentials.", ResultCode.INVALID_CREDENTIALS);
 
-        doThrow(credInvalid).when(ldapAuthUtils).authenticateUser(anyString(), anyString());
+        doThrow(credInvalid).when(ldapAuthUtils).authenticateUser(anyString(), anyString(),
+                eq(accountLockoutTreesFactory));
 
         Action action = identityStoreDecisionNode.process(newTreeContext(sharedState, secureState));
 
@@ -201,7 +199,7 @@ public class IdentityStoreDecisionNodeTest {
     @Test
     void accountLockoutResultsInLockedOutcomeWhenIncorrectCreds() throws Exception {
         doThrow(new LDAPUtilException("Invalid credentials.", ResultCode.INVALID_CREDENTIALS))
-                .when(ldapAuthUtils).authenticateUser(anyString(), anyString());
+                .when(ldapAuthUtils).authenticateUser(anyString(), anyString(), eq(accountLockoutTreesFactory));
         given(ldapAuthUtils.getUserAttributeValues()).willReturn(new HashMap<>() {{
             put("inetuserstatus", Set.of("Inactive"));
         }});

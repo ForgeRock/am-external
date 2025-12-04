@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2017-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.framework;
 
@@ -49,7 +41,7 @@ public class FrameworkNodesPlugin extends AbstractNodeAmPlugin {
      * N.B. If upgrading this version you must ensure that the amPluginService version in the latest.groovy
      * FBC upgrade rules file is kept in sync.
      */
-    public static final String FRAMEWORK_NODES_VERSION = "4.0.0";
+    public static final String FRAMEWORK_NODES_VERSION = "4.1.0";
 
     @Inject
     FrameworkNodesPlugin() {
@@ -89,6 +81,9 @@ public class FrameworkNodesPlugin extends AbstractNodeAmPlugin {
         }
         if (inRange("2.0.0", fromVersion, FRAMEWORK_NODES_VERSION)) {
             pluginTools.upgradeAuthNode(SetPersistentCookieNode.class);
+        }
+        if (inRange("3.0.0", fromVersion, FRAMEWORK_NODES_VERSION)) {
+            pluginTools.upgradeAuthNode(ConfigProviderNode.class);
         }
     }
 

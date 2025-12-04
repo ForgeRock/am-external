@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2024-2025 Ping Identity Corporation.
  */
 
 package com.sun.identity.saml2.plugins.scripted;
@@ -27,7 +19,7 @@ package com.sun.identity.saml2.plugins.scripted;
 import javax.inject.Inject;
 import javax.script.ScriptException;
 
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.forgerock.openam.core.realms.Realm;
 import org.forgerock.openam.core.realms.RealmLookup;
 import org.forgerock.openam.core.realms.RealmLookupException;
@@ -104,17 +96,17 @@ public class ScriptedIDPAccountMapper implements IDPAccountMapper {
     @Override
     public String getIdentity(ManageNameIDRequest manageNameIDRequest, String hostEntityID, String realm)
             throws SAML2Exception {
-        throw new NotImplementedException();
+        throw new NotImplementedException("Code is not implemented");
     }
 
     @Override
     public String getIdentity(NameID nameID, String hostEntityID, String remoteEntityID, String realm) throws SAML2Exception {
-        throw new NotImplementedException();
+        throw new NotImplementedException("Code is not implemented");
     }
 
     @Override
     public boolean shouldPersistNameIDFormat(String realm, String hostEntityID, String remoteEntityID, String nameIDFormat) {
-        throw new NotImplementedException();
+        throw new NotImplementedException("Code is not implemented");
     }
 
     private Script getScript(String realm, String remoteEntityId)

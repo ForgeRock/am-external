@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2020-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2020-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -63,10 +55,10 @@ public class GetAuthenticatorAppNode extends SingleOutcomeNode {
     static final String MESSAGE_KEY = "default.message";
     /** The default label for the Continue button. */
     static final String CONTINUE_LABEL_KEY = "default.continueLabel";
-    /** The link for the ForgeRock Authenticator app on Apple App Store. */
-    static final String APPLE_APP_LINK = "https://itunes.apple.com/app/forgerock-authenticator/id1038442926";
-    /** The link for the ForgeRock Authenticator app on Google Play Store. */
-    static final String GOOGLE_APP_LINK = "https://play.google.com/store/apps/details?id=com.forgerock.authenticator";
+    /** The link for the PingID Authenticator app on Apple App Store. */
+    static final String APPLE_APP_LINK = "https://apps.apple.com/app/pingid/id891247102";
+    /** The link for the PingID Authenticator app on Google Play Store. */
+    static final String GOOGLE_APP_LINK = "https://play.google.com/store/apps/details?id=prod.com.pingidentity.pingid";
     /** The Apple app store name. */
     private static final String APPLE_APP_STORE = "appleStore";
     /** The Google app store name. */

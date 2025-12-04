@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2019-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -39,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
-import com.sun.identity.authentication.service.AMAccountLockout;
+import com.sun.identity.authentication.service.AMAccountLockoutTrees;
 import com.sun.identity.idm.AMIdentity;
 
 /**
@@ -57,7 +49,7 @@ public class AccountActiveDecisionNode extends AbstractDecisionNode {
     }
 
     private final Logger logger = LoggerFactory.getLogger(AccountActiveDecisionNode.class);
-    private final AMAccountLockout.Factory amAccountLockoutFactory;
+    private final AMAccountLockoutTrees.Factory amAccountLockoutFactory;
     private final Realm realm;
     private final NodeUserIdentityProvider identityProvider;
 
@@ -69,7 +61,7 @@ public class AccountActiveDecisionNode extends AbstractDecisionNode {
      * @param identityProvider        the identity provider
      */
     @Inject
-    public AccountActiveDecisionNode(@Assisted Realm realm, AMAccountLockout.Factory amAccountLockoutFactory,
+    public AccountActiveDecisionNode(@Assisted Realm realm, AMAccountLockoutTrees.Factory amAccountLockoutFactory,
             NodeUserIdentityProvider identityProvider) {
         this.amAccountLockoutFactory = amAccountLockoutFactory;
         this.realm = realm;
@@ -85,8 +77,8 @@ public class AccountActiveDecisionNode extends AbstractDecisionNode {
             throw new NodeProcessException("Failed to get the identity object");
         }
 
-        AMAccountLockout accountLockout = amAccountLockoutFactory.create(this.realm);
+        AMAccountLockoutTrees accountLockout = amAccountLockoutFactory.create(this.realm);
         logger.debug("Checking user account status");
-        return goTo(!accountLockout.isAccountLocked(userIdentity.get().getName())).build();
+        return goTo(!accountLockout.isAccountLocked(userIdentity.get())).build();
     }
 }

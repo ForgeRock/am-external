@@ -39,7 +39,7 @@ import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.forgerock.http.util.Json;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;

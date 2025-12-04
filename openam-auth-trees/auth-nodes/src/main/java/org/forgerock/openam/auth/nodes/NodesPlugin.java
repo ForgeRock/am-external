@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2018-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -62,7 +54,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
      * N.B. If upgrading this version you must ensure that the amPluginService version in the latest.groovy
      * FBC upgrade rules file is kept in sync.
      */
-    public static final String NODES_PLUGIN_VERSION = "32.0.0";
+    public static final String NODES_PLUGIN_VERSION = "32.1.0";
 
     @Override
     public String getPluginVersion() {
@@ -76,7 +68,7 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
         } else if (inRangeLess("3.0.0", fromVersion, "24.0.0")) {
             pluginTools.upgradeAuthNode(WebAuthnAuthenticationNode.class);
         }
-        if (inRangeLess("1.0.0", fromVersion, "5.0.0")) {
+        if (inRangeLess("1.0.0", fromVersion, "32.1.0")) {
             pluginTools.upgradeAuthNode(ScriptedDecisionNode.class);
         }
         if (inRangeLess("2.0.0", fromVersion, "17.0.0")) {
@@ -130,6 +122,9 @@ public class NodesPlugin extends AbstractNodeAmPlugin {
         }
         if (inRange("1.0.0", fromVersion, "29.0.0")) {
             pluginTools.upgradeAuthNode(SetSessionPropertiesNode.class);
+        }
+        if (inRange("5.0.0", fromVersion, "32.1.0")) {
+            pluginTools.upgradeAuthNode(DeviceMatchNode.class);
         }
         super.upgrade(fromVersion);
     }

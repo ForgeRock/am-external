@@ -11,26 +11,19 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2025 Ping Identity Corporation.
  */
 
- // The properties field when editing a node has a particularly long placeholder,
- // setting the min height of the field allows the whole placeholder to be visible
- .properties-field {
+ // The properties and script inputs when editing a node benefit from a larger minimum height - this
+ // allows the properties placeholder and script input to be displayed clearly.
+ .codemirror-field {
+   .cm-content,
+   .cm-editor {
+     min-height: 380px;
+   }
 
-  .CodeMirror-code {
-    min-height: 380px;
-  }
-
-  .CodeMirror-gutters {
-    min-height: 390px;
-  }
-}
+   .cm-gutter,
+   .cm-gutters {
+     min-height: 390px;
+   }
+ }

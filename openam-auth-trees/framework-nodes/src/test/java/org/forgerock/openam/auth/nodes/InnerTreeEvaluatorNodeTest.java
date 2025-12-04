@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2017-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -220,7 +212,7 @@ public class InnerTreeEvaluatorNodeTest {
                         .withSharedState(outerTreeSharedState).withCurrentNodeId(innerTreeCurrentNodeId).build(),
                         Outcome.TRUE));
         given(tree.visitNodes(any())).willReturn(emptyList());
-        TreeContext context = getContext(emptyList(), outerTreeSharedState);
+        TreeContext context = getContext(emptyList(), outerTreeSharedState, "123");
 
         node.process(context);
 
@@ -240,7 +232,7 @@ public class InnerTreeEvaluatorNodeTest {
                 .willReturn(new TreeResult(
                         TreeState.builder().withSharedState(outerTreeSharedState).build(), Outcome.TRUE));
         given(tree.visitNodes(any())).willReturn(List.of());
-        TreeContext context = getContext(callbacks, outerTreeSharedState);
+        TreeContext context = getContext(callbacks, outerTreeSharedState, "123");
         node.process(context);
 
         ArgumentCaptor<TreeState> treeState = ArgumentCaptor.forClass(TreeState.class);
@@ -263,7 +255,7 @@ public class InnerTreeEvaluatorNodeTest {
         JsonValue outerSharedState = json(object(
                 field(SHARED_STATE, innerTreeSharedState),
                 field(CURRENT_NODE_ID, innerTreeCurrentNodeId.toString())));
-        TreeContext context = getContext(callbacks, outerSharedState);
+        TreeContext context = getContext(callbacks, outerSharedState, "123");
 
         node.process(context);
 
@@ -288,7 +280,7 @@ public class InnerTreeEvaluatorNodeTest {
         JsonValue outerSharedState = json(object(
                 field(SHARED_STATE, innerTreeSharedState),
                 field(CURRENT_NODE_ID, innerTreeCurrentNodeId.toString())));
-        TreeContext context = getContext(callbacks, outerSharedState);
+        TreeContext context = getContext(callbacks, outerSharedState, "123");
 
         node.process(context);
 
@@ -479,11 +471,33 @@ public class InnerTreeEvaluatorNodeTest {
         JsonValue outerSharedState = json(object(
                 field(SHARED_STATE, innerTreeSharedState),
                 field(CURRENT_NODE_ID, innerTreeCurrentNodeId.toString())));
-        TreeContext context = getContext(callbacks, outerSharedState);
+        TreeContext context = getContext(callbacks, outerSharedState, "123");
 
         var result = node.process(context);
 
         assertThat(result.maxTreeDuration).contains(Duration.ofMinutes(3));
+    }
+
+    @Test
+    void shouldNotPopulateMaxTreeDurationFromContextAfterCallbacksIfNoAuthId() throws Exception {
+        List<? extends Callback> callbacks = List.of(new PasswordCallback("prompt", false));
+        UUID innerTreeCurrentNodeId = UUID.randomUUID();
+        JsonValue innerTreeSharedState = json(object(field("foo", "bar")));
+        given(executor.process(eq(realm), eq(tree), any(), any(), eq(false), any()))
+                .willReturn(new TreeResult(
+                        TreeState.builder()
+                                .withSharedState(innerTreeSharedState)
+                                .withCurrentNodeId(innerTreeCurrentNodeId)
+                                .build(),
+                        Outcome.TRUE));
+        JsonValue outerSharedState = json(object(
+                field(SHARED_STATE, innerTreeSharedState),
+                field(CURRENT_NODE_ID, innerTreeCurrentNodeId.toString())));
+        TreeContext context = getContext(callbacks, outerSharedState, "");
+
+        var result = node.process(context);
+
+        assertThat(result.maxTreeDuration).isEmpty();
     }
 
     @Test
@@ -527,11 +541,11 @@ public class InnerTreeEvaluatorNodeTest {
     }
 
     private TreeContext getContext() {
-        return getContext(emptyList(), json(object()));
+        return getContext(emptyList(), json(object()), "123");
     }
 
-    private TreeContext getContext(List<? extends Callback> callbacks, JsonValue outerSharedState) {
-        return new TreeContext(outerSharedState, json(object()), json(object()), new Builder().build(), callbacks,
-                false, Optional.empty());
+    private TreeContext getContext(List<? extends Callback> callbacks, JsonValue outerSharedState, String authId) {
+        return new TreeContext(outerSharedState, json(object()), json(object()), new Builder().authId(authId).build(),
+                callbacks, false, Optional.empty());
     }
 }

@@ -78,8 +78,8 @@ import javax.security.auth.login.LoginException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.forgerock.am.cts.CTSPersistentStore;
 import org.forgerock.am.cts.api.tokens.CoreTokenField;
 import org.forgerock.am.cts.api.tokens.Token;

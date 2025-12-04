@@ -44,7 +44,7 @@ import java.util.Set;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.forgerock.json.jose.jwt.JwtClaimsSet;
 import org.forgerock.openam.authentication.modules.common.mapping.AccountProvider;
 import org.forgerock.openam.authentication.modules.common.mapping.AttributeMapper;

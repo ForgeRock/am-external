@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2024-2025 Ping Identity Corporation.
  */
 
 /**
@@ -37,7 +29,9 @@ const HEADERS = { "Accept-API-Version": "protocol=2.0,resource=1.0" };
 
 function getCreateOrUpdatePayload (data) {
     const omitReadOnlyProperties = (obj) => omitBy(obj, (prop, key) => startsWith(key, "_"));
-    data["properties"] = JSON.parse(data["properties"]);
+    if (typeof data.properties === "string") {
+        data.properties = JSON.parse(data.properties);
+    }
     return {
         ...omitReadOnlyProperties(data)
     };

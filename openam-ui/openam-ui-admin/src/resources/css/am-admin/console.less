@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2015-2025 Ping Identity Corporation.
  */
 
 
@@ -205,11 +197,6 @@ a[data-toggle="popover"] {
     background-color: @background-color;
 }
 
-.CodeMirror-fullscreen {
-    top: 34px;
-    z-index: 1001;
-}
-
 .call-to-action-block {
 
     text-align: center;
@@ -391,6 +378,12 @@ a[data-toggle="popover"] {
     z-index: 1000;
     width: 100%;
     background: #f7f7f7;
+    padding-top: 34px;
+    box-sizing: border-box;
+
+    .cm-editor {
+        height: 100%;
+    }
 }
 
 .grabbed {

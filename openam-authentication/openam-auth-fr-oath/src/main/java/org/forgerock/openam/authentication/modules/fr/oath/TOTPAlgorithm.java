@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
+ * Copyright 2025 Ping Identity Corporation.
  */
 /**
  Copyright (c) 2011 IETF Trust and the persons identified as

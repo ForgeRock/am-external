@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2023-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -73,47 +65,55 @@ public class NodesPluginTest {
                         PushAuthenticationSenderNode.class, CertificateValidationNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
                         PersistentCookieDecisionNode.class, DeviceSigningVerifierNode.class, CaptchaNode.class,
-                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class}},
+                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class, ScriptedDecisionNode.class,
+                        DeviceMatchNode.class}},
                 {"11.0.0", new Class[]{CombinedMultiFactorRegistrationNode.class, LdapDecisionNode.class,
                         PushAuthenticationSenderNode.class, OneTimePasswordSmsSenderNode.class,
                         OneTimePasswordSmtpSenderNode.class, CertificateValidationNode.class,
                         PersistentCookieDecisionNode.class, CaptchaNode.class, WebAuthnAuthenticationNode.class,
-                        SetSessionPropertiesNode.class}},
+                        SetSessionPropertiesNode.class, ScriptedDecisionNode.class,
+                        DeviceMatchNode.class}},
                 {"10.0.0", new Class[]{LdapDecisionNode.class, PushAuthenticationSenderNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
                         CertificateValidationNode.class, PersistentCookieDecisionNode.class, CaptchaNode.class,
-                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class}},
+                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class, ScriptedDecisionNode.class,
+                        DeviceMatchNode.class}},
                 {"9.0.0", new Class[]{LdapDecisionNode.class, Saml2Node.class, OathRegistrationNode.class,
                         PushAuthenticationSenderNode.class, OneTimePasswordSmsSenderNode.class,
                         OneTimePasswordSmtpSenderNode.class, CertificateValidationNode.class,
                         PersistentCookieDecisionNode.class, CaptchaNode.class,
-                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class}},
+                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class, ScriptedDecisionNode.class,
+                        DeviceMatchNode.class}},
                 {"8.0.0", new Class[]{LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class, OathRegistrationNode.class,
                         PushRegistrationNode.class, ChoiceCollectorNode.class, MessageNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
                         CertificateValidationNode.class, PersistentCookieDecisionNode.class,
-                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class}},
+                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class, ScriptedDecisionNode.class,
+                        DeviceMatchNode.class}},
                 {"7.0.0", new Class[]{LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class, OathRegistrationNode.class,
                         PushRegistrationNode.class, ChoiceCollectorNode.class, MessageNode.class,
                         RetryLimitDecisionNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
                         CertificateValidationNode.class, PersistentCookieDecisionNode.class,
-                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class}},
+                        WebAuthnAuthenticationNode.class, SetSessionPropertiesNode.class, ScriptedDecisionNode.class,
+                        DeviceMatchNode.class}},
                 {"6.0.0", new Class[]{LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class,
                         PushRegistrationNode.class, ChoiceCollectorNode.class, MessageNode.class,
                         RetryLimitDecisionNode.class, OneTimePasswordSmsSenderNode.class,
                         OneTimePasswordSmtpSenderNode.class, CertificateValidationNode.class,
                         PersistentCookieDecisionNode.class, WebAuthnAuthenticationNode.class,
-                        SetSessionPropertiesNode.class}},
+                        SetSessionPropertiesNode.class, ScriptedDecisionNode.class,
+                        DeviceMatchNode.class}},
                 {"5.0.0", new Class[]{LdapDecisionNode.class, Saml2Node.class, WebAuthnDeviceStorageNode.class,
                         WebAuthnRegistrationNode.class, PushAuthenticationSenderNode.class, ChoiceCollectorNode.class,
                         MessageNode.class, RetryLimitDecisionNode.class,
                         OneTimePasswordSmsSenderNode.class, OneTimePasswordSmtpSenderNode.class,
                         WebAuthnAuthenticationNode.class, CertificateValidationNode.class,
-                        PersistentCookieDecisionNode.class, SetSessionPropertiesNode.class}},
+                        PersistentCookieDecisionNode.class, SetSessionPropertiesNode.class, ScriptedDecisionNode.class,
+                        DeviceMatchNode.class}},
                 {"4.0.0", new Class[]{LdapDecisionNode.class, WebAuthnRegistrationNode.class,
                         PushAuthenticationSenderNode.class, ChoiceCollectorNode.class, MessageNode.class,
                         RetryLimitDecisionNode.class, OneTimePasswordSmsSenderNode.class,

@@ -13,6 +13,11 @@
         "test": "mocha-webpack --opts config/mocha-webpack/configuration.opts"
     },
     "dependencies": {
+        "@codemirror/commands": "6.9.0",
+        "@codemirror/lang-javascript": "6.2.4",
+        "@codemirror/legacy-modes": "6.5.2",
+        "@codemirror/state": "6.5.2",
+        "@codemirror/view": "6.38.4",
         "@forgerock/crest-js": "2.1.11",
         "ajv": "6.12.3",
         "backbone": "1.4.0",
@@ -25,7 +30,6 @@
         "bootstrap-dialog": "1.34.6",
         "classnames": "2.2.6",
         "clockpicker": "0.0.7",
-        "codemirror": "5.58.3",
         "core-js": "3.2.1",
         "debug": "3.2.7",
         "eonasdan-bootstrap-datetimepicker": "4.17.49",

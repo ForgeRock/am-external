@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
+ * Copyright 2025 Ping Identity Corporation.
 -->
 NOTE: The certificates used for the unit tests here and presented in this directory are the same as those used in the functional tests and provided under the
 `tests/temper-functional-tests/openam-functional-tests/src/test/resources/certificatechain/` directory.

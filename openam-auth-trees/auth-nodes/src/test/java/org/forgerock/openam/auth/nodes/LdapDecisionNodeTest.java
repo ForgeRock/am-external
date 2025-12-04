@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2023-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2023-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -39,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.only;
@@ -69,6 +62,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.sun.identity.authentication.service.AMAccountLockoutTrees;
 import com.sun.identity.idm.IdType;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -101,6 +95,8 @@ public class LdapDecisionNodeTest {
     private Secrets secrets;
     @Mock
     private ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory;
+    @Mock
+    private AMAccountLockoutTrees.Factory accountLockoutTreesFactory;
     private LdapDecisionNode node;
 
     @BeforeEach
@@ -110,7 +106,7 @@ public class LdapDecisionNodeTest {
         given(coreWrapper.getLDAPAuthUtils(anySet(), anySet(),
                 anyBoolean(), any(), anyString(), any())).willReturn(ldapAuthUtils);
         node = new LdapDecisionNode(config, realm, coreWrapper, identityService, secrets,
-                connectionFactoryAuditWrapperFactory);
+                connectionFactoryAuditWrapperFactory, accountLockoutTreesFactory);
     }
 
     @Test
@@ -189,10 +185,10 @@ public class LdapDecisionNodeTest {
     }
 
     @Test
-    void shouldLogErrorWhenLdapUtilThrows() throws NodeProcessException, LDAPUtilException {
+    void shouldLogErrorWhenLdapUtilThrowsErrors() throws NodeProcessException, LDAPUtilException {
         // given
-        doThrow(new LDAPUtilException("test LDAP utils exception", ResultCode.INVALID_CREDENTIALS))
-                .when(ldapAuthUtils).authenticateUser(any(), any());
+        doThrow(new LDAPUtilException("test LDAP utils exception", ResultCode.OTHER))
+                .when(ldapAuthUtils).authenticateUser(any(), any(), eq(accountLockoutTreesFactory));
         JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
                 field("password", "password"),
                 field("realm", "testRealm")));
@@ -202,6 +198,31 @@ public class LdapDecisionNodeTest {
 
         // then
         Assertions.assertThat(loggerExtension.getErrors(ILoggingEvent::getFormattedMessage))
+                .contains("LDAPUtilException: test LDAP utils exception");
+        Assertions.assertThat(loggerExtension.getDebug(e -> {
+                    if (e.getThrowableProxy() != null) {
+                        return e.getThrowableProxy().getMessage();
+                    } else {
+                        return null;
+                    }
+                }))
+                .contains("test LDAP utils exception");
+    }
+
+    @Test
+    void shouldLogInfoWhenLdapUtilThrowsInvalidCredentialError() throws NodeProcessException, LDAPUtilException {
+        // given
+        doThrow(new LDAPUtilException("test LDAP utils exception", ResultCode.INVALID_CREDENTIALS))
+                .when(ldapAuthUtils).authenticateUser(any(), any(), eq(accountLockoutTreesFactory));
+        JsonValue sharedState = json(object(field("username", "testUsername@example.com"),
+                field("password", "password"),
+                field("realm", "testRealm")));
+
+        // when
+        node.process(getContext(sharedState));
+
+        // then
+        Assertions.assertThat(loggerExtension.getInfo(ILoggingEvent::getFormattedMessage))
                 .contains("LDAPUtilException: test LDAP utils exception");
         Assertions.assertThat(loggerExtension.getDebug(e -> {
                     if (e.getThrowableProxy() != null) {

@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2018-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2018-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -31,7 +23,7 @@ import static javax.security.auth.callback.ConfirmationCallback.OK_CANCEL_OPTION
 import static javax.security.auth.callback.TextOutputCallback.ERROR;
 import static javax.security.auth.callback.TextOutputCallback.INFORMATION;
 import static javax.security.auth.callback.TextOutputCallback.WARNING;
-import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.PASSWORD;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.REALM;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.USERNAME;
@@ -58,7 +50,7 @@ import javax.security.auth.callback.ConfirmationCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.TextOutputCallback;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.forgerock.am.identity.application.LegacyIdentityService;
 import org.forgerock.json.JsonValue;
 import org.forgerock.openam.annotations.sm.Attribute;
@@ -100,6 +92,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
+import com.sun.identity.authentication.service.AMAccountLockoutTrees;
 import com.sun.identity.shared.locale.Locale;
 import com.sun.identity.sm.RequiredValueValidator;
 import com.sun.identity.sm.SMSException;
@@ -134,6 +127,7 @@ public class LdapDecisionNode implements Node {
     private ResourceBundle bundle;
     private LDAPAuthUtils ldapUtil;
     private Set<String> additionalPwdChangeSearchAttrs;
+    private AMAccountLockoutTrees.Factory accountLockoutTreesFactory;
 
     /**
      * The interface Config.
@@ -459,17 +453,20 @@ public class LdapDecisionNode implements Node {
      * @param identityService                      An {@link LegacyIdentityService} instance.
      * @param secrets                              A Secrets instance.
      * @param connectionFactoryAuditWrapperFactory A factory for creating {@link ConnectionFactoryAuditWrapper}.
+     * @param accountLockoutTreesFactory           A factory for creating {@link AMAccountLockoutTrees}.
      */
     @Inject
     public LdapDecisionNode(@Assisted Config config, @Assisted Realm realm, CoreWrapper coreWrapper,
             LegacyIdentityService identityService, Secrets secrets,
-            ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory) {
+            ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory,
+            AMAccountLockoutTrees.Factory accountLockoutTreesFactory) {
         this.config = config;
         this.realm = realm;
         this.coreWrapper = coreWrapper;
         this.identityService = identityService;
         this.secrets = secrets;
         this.connectionFactoryAuditWrapperFactory = connectionFactoryAuditWrapperFactory;
+        this.accountLockoutTreesFactory = accountLockoutTreesFactory;
     }
 
     @Override
@@ -513,13 +510,18 @@ public class LdapDecisionNode implements Node {
                 action = processPasswordChange(context, sharedStateSubmittedUsername, userPassword);
             }
         } catch (LDAPUtilException e) {
-            logger.error("LDAPUtilException: {}", e.getMessage());
+            ResultCode resultCode = e.getResultCode();
+            if (ResultCode.INVALID_CREDENTIALS.equals(resultCode)) {
+                logger.info("LDAPUtilException: {}", e.getMessage());
+            } else {
+                logger.error("LDAPUtilException: {}", e.getMessage());
+            }
             logger.debug("Exception", e);
             ResourceBundle bundle = getBundleInPreferredLocale(context);
-            if (e.getResultCode() == null) {
+            if (resultCode == null) {
                 logger.warn("Invalid configuration");
                 throw new NodeProcessException(bundle.getString("InvalidConfiguration"));
-            } else if (e.getResultCode().equals(ResultCode.UNWILLING_TO_PERFORM)) {
+            } else if (ResultCode.UNWILLING_TO_PERFORM.equals(resultCode)) {
                 logger.warn("Server error");
                 throw new NodeProcessException(bundle.getString("ServerError"));
             } else {
@@ -562,7 +564,7 @@ public class LdapDecisionNode implements Node {
             throw new LDAPUtilException("CredInvalid", ResultCode.INVALID_CREDENTIALS, null);
         }
         try {
-            ldapUtil.authenticateUser(userName, userPassword);
+            ldapUtil.authenticateUser(userName, userPassword, accountLockoutTreesFactory);
             return true;
         } catch (LDAPUtilException ex) {
             if (ResultCode.UNWILLING_TO_PERFORM.equals(ex.getResultCode())) {

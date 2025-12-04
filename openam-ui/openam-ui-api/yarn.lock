@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@scarf/scarf@=1.4.0":
+  version "1.4.0"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/@scarf/scarf/-/scarf-1.4.0.tgz#3bbb984085dbd6d982494538b523be1ce6562972"
+  integrity sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==
+
 abbrev@1:
   version "1.1.1"
   resolved "https://maven.forgerock.org:443/artifactory/api/npm/npm-virtual/abbrev/-/abbrev-1.1.1.tgz#f8f2c887ad10bf67f634f005b6987fed3179aac8"
@@ -746,10 +751,12 @@ supports-preserve-symlinks-flag@^1.0.0:
   resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/supports-preserve-symlinks-flag/-/supports-preserve-symlinks-flag-1.0.0.tgz#6eda4bd344a3c94aea376d4cc31bc77311039e09"
   integrity sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==
 
-swagger-ui-dist@4.13.2:
-  version "4.13.2"
-  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/swagger-ui-dist/-/swagger-ui-dist-4.13.2.tgz#fb814efd51bf06aa8630c0a0af6e3caa48ac6552"
-  integrity sha512-jHL6UyIYpvEI7NsuWd0R3hJaPQTg6Oo4qSBo+oVfOEkv6rrQm/475RGSMmZgV6ajp+Sgrp9CqrDjQYAgQqiv1A==
+swagger-ui-dist@5.22.0:
+  version "5.22.0"
+  resolved "https://maven.forgerock.org/artifactory/api/npm/npm-virtual/swagger-ui-dist/-/swagger-ui-dist-5.22.0.tgz#8280cfa9659d90cf6f682c76f7e792b0da939946"
+  integrity sha512-8YlCSxiyb8uPFa7qoB1lRHYr1PBbT1NuV9RvQdFFPFPudRBTPf9coU5jl02KhzvrtmTEw4jXRgb0kg8pJvVuWQ==
+  dependencies:
+    "@scarf/scarf" "=1.4.0"
 
 swagger-ui-themes@3.0.1:
   version "3.0.1"

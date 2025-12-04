@@ -11,7 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
+ * Copyright 2025 Ping Identity Corporation.
 -->
 The fido-mds3-blob.jwt and fido-mds3-root.crt files in this directory are copies of those which can be obtained from the [FIDO Alliance](https://fidoalliance.org/metadata/).
 

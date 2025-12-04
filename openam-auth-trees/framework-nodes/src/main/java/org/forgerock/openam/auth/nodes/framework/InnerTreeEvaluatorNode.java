@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2017-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2017-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes.framework;
@@ -35,7 +27,9 @@ import static org.forgerock.json.JsonValue.object;
 import static org.forgerock.openam.auth.node.api.Action.send;
 import static org.forgerock.openam.auth.node.api.Action.suspend;
 import static org.forgerock.openam.auth.node.api.SharedStateConstants.CURRENT_NODE_ID;
+import static org.forgerock.openam.utils.StringUtils.isBlank;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -219,9 +213,12 @@ public class InnerTreeEvaluatorNode implements Node {
         return TreeState.fromJson(context.sharedState, getCurrentMaxSessionTime(context.request.authId));
     }
 
-    private long getCurrentMaxSessionTime(String authId) throws NodeProcessException {
+    private Duration getCurrentMaxSessionTime(String authId) throws NodeProcessException {
+        if (isBlank(authId)) {
+            return null;
+        }
         try {
-            return authSessionHelper.getAuthSession(authId).getMaxSessionTime();
+            return Duration.ofMinutes(authSessionHelper.getAuthSession(authId).getMaxSessionTime());
         } catch (SessionException e) {
             throw new NodeProcessException("Unable to update the journey timeout", e);
         }

@@ -11,28 +11,24 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2015-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2015-2025 Ping Identity Corporation.
  */
 
-import "codemirror/mode/groovy/groovy";
-import "codemirror/mode/javascript/javascript";
-import "codemirror/addon/display/fullscreen";
 import "selectize";
 import "popoverclickaway";
 
 import { t } from "i18next";
 import _ from "lodash";
 import $ from "jquery";
-import CodeMirror from "codemirror/lib/codemirror";
 import Handlebars from "handlebars-template-loader/runtime";
+
+import { EditorState, Compartment } from "@codemirror/state";
+import { EditorView, keymap, lineNumbers } from "@codemirror/view";
+import { defaultKeymap } from "@codemirror/commands";
+import { javascript } from "@codemirror/lang-javascript";
+import { StreamLanguage } from "@codemirror/language";
+import { groovy } from "@codemirror/legacy-modes/mode/groovy";
+import { forgerockCmTheme } from "org/forgerock/openam/ui/admin/utils/cm-theme";
 
 import { validate } from "org/forgerock/openam/ui/admin/services/realm/ScriptsService";
 import { collapseContexts, lookupContext } from "org/forgerock/openam/ui/admin/utils/scripts/ScriptContextsHelper";
@@ -63,6 +59,7 @@ export default AbstractView.extend({
         AbstractView.prototype.initialize.call(this);
         this.model = null;
         this.contextModel = null;
+        this.languageConf = new Compartment();
     },
     partials: {
         "alerts/_Alert": AlertPartial
@@ -124,6 +121,14 @@ export default AbstractView.extend({
         }
     },
 
+    remove () {
+        if (this.scriptEditor) {
+            this.scriptEditor.destroy();
+        }
+        $(window).off("hashchange", this.cleanupAfterCodemirror);
+        AbstractView.prototype.remove.call(this);
+    },
+
     /**
      * So the uuid can be omitted to the render function for two reasons:
      * 1. need to create a new script
@@ -167,9 +172,9 @@ export default AbstractView.extend({
     cleanupAfterCodemirror () {
         // When codemirror is in a full screen mode, it adds "overflow: hidden" to the document. Pressing back
         // button while in full screen doesn't remove the style, hence breaking the scrolling for the app
-        if (this.scriptEditor) {
-            this.scriptEditor.setOption("fullScreen", false);
-            window.removeEventListener("hashchange", this.cleanupAfterCodemirror);
+        const editorWrapper = this.$el.find(".cm-editor").parent();
+        if (editorWrapper.hasClass("fullscreen")) {
+            this.toggleFullScreen(false);
         }
     },
 
@@ -274,8 +279,8 @@ export default AbstractView.extend({
                         self.toggleSaveButton(self.checkRequiredFields());
                     });
             }
-        } else {
-            app.script = this.scriptEditor.getValue();
+        } else if (this.scriptEditor) {
+            app.script = this.scriptEditor.state.doc.toString();
         }
     },
 
@@ -354,7 +359,10 @@ ${t("console.scripts.edit.evaluatorVersion")}</p>
     },
 
     validateScript () {
-        const scriptText = this.scriptEditor.getValue();
+        if (!this.scriptEditor) {
+            return;
+        }
+        const scriptText = this.scriptEditor.state.doc.toString();
         const language = this.data.entity.language;
         const self = this;
 
@@ -380,7 +388,9 @@ ${t("console.scripts.edit.evaluatorVersion")}</p>
 
         reader.onload = (function () {
             return function (e) {
-                self.scriptEditor.setValue(e.target.result);
+                self.scriptEditor.dispatch({
+                    changes: { from: 0, to: self.scriptEditor.state.doc.length, insert: e.target.result }
+                });
             };
         }(file));
 
@@ -521,15 +531,31 @@ ${t("console.scripts.edit.evaluatorVersion")}</p>
     },
 
     initScriptEditor () {
-        this.scriptEditor = CodeMirror.fromTextArea(this.$el.find("#script")[0], {
-            lineNumbers: true,
-            autofocus: true,
-            viewportMargin: Infinity,
-            mode: this.data.entity.language.toLowerCase(),
-            theme: "forgerock"
-        });
+        const scriptTextArea = this.$el.find("#script")[0];
+        const editorDiv = document.createElement("div");
 
-        this.scriptEditor.on("update", _.bind(this.checkChanges, this));
+        scriptTextArea.parentElement.insertBefore(editorDiv, scriptTextArea);
+        scriptTextArea.style.display = "none";
+
+        const extensions = [
+            ...forgerockCmTheme,
+            lineNumbers(),
+            keymap.of(defaultKeymap),
+            this.languageConf.of(this.getLanguageSupport(this.data.entity.language)),
+            EditorView.updateListener.of((update) => {
+                if (update.docChanged) {
+                    this.checkChanges();
+                }
+            })
+        ];
+
+        this.scriptEditor = new EditorView({
+            state: EditorState.create({
+                doc: scriptTextArea.value,
+                extensions
+            }),
+            parent: editorDiv
+        });
     },
 
     onChangeLanguage (e) {
@@ -538,7 +564,17 @@ ${t("console.scripts.edit.evaluatorVersion")}</p>
 
     changeLanguage (language) {
         this.data.entity.language = language;
-        this.scriptEditor.setOption("mode", language.toLowerCase());
+        this.scriptEditor.dispatch({ effects: this.languageConf.reconfigure(this.getLanguageSupport(language)) });
+    },
+
+    getLanguageSupport (language) {
+        switch (language.toUpperCase()) {
+            case "GROOVY":
+                return StreamLanguage.define(groovy);
+            case "JAVASCRIPT":
+            default:
+                return javascript();
+        }
     },
 
     showUploadButton () {
@@ -624,8 +660,12 @@ ${t("console.scripts.edit.evaluatorVersion")}</p>
     },
 
     toggleFullScreen (fullScreen) {
-        this.scriptEditor.setOption("fullScreen", fullScreen);
+        const editorWrapper = this.$el.find(".cm-editor").parent();
+        editorWrapper.toggleClass("fullscreen", fullScreen);
         this.$el.find(".full-screen-bar").toggle(fullScreen);
+        if (this.scriptEditor) {
+            this.scriptEditor.focus();
+        }
     },
 
     toggleSaveButton (flag) {

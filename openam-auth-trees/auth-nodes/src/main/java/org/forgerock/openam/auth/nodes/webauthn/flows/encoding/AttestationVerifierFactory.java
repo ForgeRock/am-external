@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2024-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2024-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes.webauthn.flows.encoding;
 
@@ -34,6 +26,7 @@ import javax.inject.Inject;
 import org.forgerock.openam.auth.nodes.webauthn.AttestationPreference;
 import org.forgerock.openam.auth.nodes.webauthn.WebAuthnRegistrationNode;
 import org.forgerock.openam.auth.nodes.webauthn.flows.FlowUtilities;
+import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AndroidKeyVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AndroidSafetyNetVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.AttestationVerifier;
 import org.forgerock.openam.auth.nodes.webauthn.flows.formats.FidoU2fVerifier;
@@ -121,8 +114,8 @@ public class AttestationVerifierFactory {
             logger.warn("android-safetynet verifier selected");
             return new AndroidSafetyNetVerifier();
         case "android-key":
-            logger.warn("android-key not a supported attestation format");
-            throw new DecodingException("Unacceptable attestation format provided - android-key not supported.");
+            logger.debug("android-key verifier selected");
+            return new AndroidKeyVerifier(createTrustAnchorValidator(realm, config), flowUtilities);
         case "tpm":
             logger.debug("tpm verifier selected");
             return new TpmVerifier(createTrustAnchorValidator(realm, config), tpmManufacturers);

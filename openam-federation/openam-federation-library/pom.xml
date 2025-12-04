@@ -12,16 +12,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- * 
--->
-<!--
-  Copyright 2011-2025 Ping Identity Corporation. All Rights Reserved
-
- ! This code is to be used exclusively in connection with Ping Identity
- ! Corporation software or services. Ping Identity Corporation only offers
- ! such software or services to legal entities who have entered into a
- ! binding license agreement with Ping Identity Corporation.
+ * Copyright 2011-2025 Ping Identity Corporation.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -30,7 +21,7 @@
     <parent>
         <groupId>org.forgerock.am</groupId>
         <artifactId>openam-federation</artifactId>
-        <version>8.0.1</version>
+        <version>8.0.2</version>
     </parent>
 
     <!-- Component Definition -->
@@ -271,11 +262,6 @@
         </dependency>
 
         <dependency>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging-api</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>javax.xml</groupId>
             <artifactId>jaxrpc-api</artifactId>
         </dependency>
@@ -322,13 +308,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>commons-lang</groupId>
-            <artifactId>commons-lang</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-jwt-utils</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
             <groupId>org.forgerock.am</groupId>
@@ -373,6 +358,11 @@
         <dependency>
             <groupId>org.forgerock.am</groupId>
             <artifactId>openam-transaction-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

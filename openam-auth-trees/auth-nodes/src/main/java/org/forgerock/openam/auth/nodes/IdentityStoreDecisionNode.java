@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2021-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2021-2025 Ping Identity Corporation.
  */
 package org.forgerock.openam.auth.nodes;
 
@@ -76,6 +68,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.assistedinject.Assisted;
 import com.iplanet.sso.SSOException;
+import com.sun.identity.authentication.service.AMAccountLockoutTrees;
 import com.sun.identity.idm.IdConstants;
 import com.sun.identity.idm.common.IdRepoUtilityService;
 import com.sun.identity.shared.datastruct.CollectionHelper;
@@ -166,16 +159,18 @@ public class IdentityStoreDecisionNode extends LdapDecisionNode {
      * @param idRepoUtilityService                 the IdRepo utilities.
      * @param secrets                              A Secrets instance.
      * @param connectionFactoryAuditWrapperFactory A factory for creating {@link ConnectionFactoryAuditWrapper}.
+     * @param accountLockoutTreesFactory            A factory for creating {@link AMAccountLockoutTrees}.
      * @throws NodeProcessException if there is a problem during construction.
      */
     @Inject
     public IdentityStoreDecisionNode(@Assisted Config config, @Assisted Realm realm,
             ServiceConfigManagerFactory configManagerFactory, CoreWrapper coreWrapper,
             LegacyIdentityService identityService, IdRepoUtilityService idRepoUtilityService, Secrets secrets,
-            ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory)
+            ConnectionFactoryAuditWrapperFactory connectionFactoryAuditWrapperFactory, AMAccountLockoutTrees.Factory
+                    accountLockoutTreesFactory)
             throws NodeProcessException {
         super(config.getConfig(configManagerFactory, idRepoUtilityService), realm, coreWrapper, identityService,
-                secrets, connectionFactoryAuditWrapperFactory);
+                secrets, connectionFactoryAuditWrapperFactory, accountLockoutTreesFactory);
         this.config = config;
     }
 

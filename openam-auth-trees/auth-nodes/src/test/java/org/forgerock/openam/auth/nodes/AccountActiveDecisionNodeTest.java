@@ -11,15 +11,7 @@
  * Header, with the fields enclosed by brackets [] replaced by your own identifying
  * information: "Portions copyright [year] [name of copyright owner]".
  *
- * Copyright 2025 ForgeRock AS.
- */
-/*
- * Copyright 2019-2025 Ping Identity Corporation. All Rights Reserved
- *
- * This code is to be used exclusively in connection with Ping Identity
- * Corporation software or services. Ping Identity Corporation only offers
- * such software or services to legal entities who have entered into a
- * binding license agreement with Ping Identity Corporation.
+ * Copyright 2019-2025 Ping Identity Corporation.
  */
 
 package org.forgerock.openam.auth.nodes;
@@ -49,7 +41,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.sun.identity.authentication.service.AMAccountLockout;
+import com.sun.identity.authentication.service.AMAccountLockoutTrees;
 import com.sun.identity.idm.AMIdentity;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,10 +51,10 @@ public class AccountActiveDecisionNodeTest {
     private AMIdentity mockUser;
 
     @Mock
-    private AMAccountLockout.Factory amAccountLockoutFactory;
+    private AMAccountLockoutTrees.Factory amAccountLockoutFactory;
 
     @Mock
-    private AMAccountLockout amAccountLockout;
+    private AMAccountLockoutTrees amAccountLockout;
 
     @Mock
     private Realm realm;
@@ -86,14 +78,14 @@ public class AccountActiveDecisionNodeTest {
     @Test
     void shouldReturnTrueIfUserIsNotLockedOut() throws Exception {
         when(amAccountLockoutFactory.create(any())).thenReturn(amAccountLockout);
-        when(amAccountLockout.isAccountLocked(any())).thenReturn(false);
+        when(amAccountLockout.isAccountLocked(mockUser)).thenReturn(false);
         assertThat(accountActiveDecisionNode.process(context).outcome).isEqualTo("true");
     }
 
     @Test
     void shouldReturnFalseIfUserIsLockedOut() throws Exception {
         when(amAccountLockoutFactory.create(any())).thenReturn(amAccountLockout);
-        when(amAccountLockout.isAccountLocked(any())).thenReturn(true);
+        when(amAccountLockout.isAccountLocked(mockUser)).thenReturn(true);
         assertThat(accountActiveDecisionNode.process(context).outcome).isEqualTo("false");
     }
 
